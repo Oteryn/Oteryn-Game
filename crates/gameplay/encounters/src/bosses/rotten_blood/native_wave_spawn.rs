@@ -18,6 +18,9 @@ pub enum NativeWaveSpawnError {
     ReplayConflict,
     MissingMap,
     InvalidPosition,
+    UnownedChild,
+    Capacity,
+    Removal(oteryn_gameplay_entities::CarrierError),
     Native(oteryn_gameplay_entities::EncounterSpawnError),
 }
 
@@ -49,6 +52,7 @@ pub struct NativeWaveSpawnOwner {
     content: [u8; 32],
     sequence: u64,
     memos: BTreeMap<u8, SpawnMemo>,
+    wave_children: Vec<ExactActorRef>,
 }
 
 struct SpawnMemo {
@@ -57,6 +61,46 @@ struct SpawnMemo {
 }
 
 impl NativeWaveSpawnOwner {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "current owner and source occurrence stay explicit"
+    )]
+    pub fn spawn_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        sequence: u64,
+        ordinal: u8,
+        effect: &SummonWaveEffect,
+        map: &mut dyn NativeWaveSpawnMap,
+    ) -> Result<NativeWaveSpawnReceipt, NativeWaveSpawnError> {
+        self.spawn_bound(runtime, None, stamp, sequence, ordinal, effect, map)
+    }
+
+    pub fn retire_wave_child(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        child: ExactActorRef,
+    ) -> Result<bool, NativeWaveSpawnError> {
+        self.assert_owner(runtime, None, stamp)?;
+        if !self.wave_children.contains(&child) {
+            return Err(NativeWaveSpawnError::UnownedChild);
+        }
+        if !runtime.contains_live_creature(child) {
+            return Ok(false);
+        }
+        runtime
+            .remove_current_native_encounter_subject(
+                stamp,
+                child,
+                "oteryn:creature.mushroom",
+                self.content,
+            )
+            .map_err(NativeWaveSpawnError::Removal)?;
+        Ok(true)
+    }
+
     pub fn for_boss(runtime: &ChannelRuntimeV1, boss: ExactActorRef) -> Option<Self> {
         let snapshot = runtime.companion_snapshot(boss).ok()?;
         let key = &snapshot.state.policy.definition_key;
@@ -74,6 +118,7 @@ impl NativeWaveSpawnOwner {
             content: runtime.content_pin().server_artifact_digest(),
             sequence: 0,
             memos: BTreeMap::new(),
+            wave_children: Vec::new(),
         })
     }
 
@@ -91,15 +136,54 @@ impl NativeWaveSpawnOwner {
         effect: &SummonWaveEffect,
         map: &mut dyn NativeWaveSpawnMap,
     ) -> Result<NativeWaveSpawnReceipt, NativeWaveSpawnError> {
+        self.spawn_bound(
+            runtime,
+            Some(current),
+            stamp,
+            sequence,
+            ordinal,
+            effect,
+            map,
+        )
+    }
+
+    fn assert_owner(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        current: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<(), NativeWaveSpawnError> {
         let binding = runtime.binding();
         if binding.runtime_scope() != self.scope
             || binding.scope_generation() != self.generation
             || runtime.content_pin().server_artifact_digest() != self.content
-            || !current.is_current_for_scope(self.scope, self.generation)
-            || !current.accepts_stamp(stamp)
+            || !current
+                .or_else(|| runtime.owner_fence().ok())
+                .is_some_and(|fence| {
+                    fence.is_current_for_scope(self.scope, self.generation)
+                        && fence.accepts_stamp(stamp)
+                })
         {
             return Err(NativeWaveSpawnError::StaleOwner);
         }
+        Ok(())
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one implementation serves explicit and installed current custody"
+    )]
+    fn spawn_bound(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        current: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        sequence: u64,
+        ordinal: u8,
+        effect: &SummonWaveEffect,
+        map: &mut dyn NativeWaveSpawnMap,
+    ) -> Result<NativeWaveSpawnReceipt, NativeWaveSpawnError> {
+        self.assert_owner(runtime, current, stamp)?;
         if !runtime.matches_live_creature_identity(self.boss, self.key.as_bytes()) {
             return Err(NativeWaveSpawnError::InvalidSource);
         }
@@ -167,6 +251,18 @@ impl NativeWaveSpawnOwner {
             self.content,
         )
         .map_err(|_| NativeWaveSpawnError::InvalidSource)?;
+        if matches!(placement, SummonPlacement::Random { .. }) {
+            self.wave_children
+                .retain(|child| runtime.contains_live_creature(*child));
+            if self.wave_children.len()
+                >= oteryn_gameplay_entities::carrier::CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
+            {
+                return Err(NativeWaveSpawnError::Capacity);
+            }
+            self.wave_children
+                .try_reserve(1)
+                .map_err(|_| NativeWaveSpawnError::Capacity)?;
+        }
         let result = (|| {
             let (at, allowed) = map
                 .resolve(runtime, self.boss, effect, sequence, ordinal, stamp)
@@ -177,12 +273,30 @@ impl NativeWaveSpawnOwner {
             {
                 return Err(NativeWaveSpawnError::InvalidPosition);
             }
-            runtime
-                .admit_native_encounter_masterless(current, stamp, self.boss, &spec, at, |_, _| {
-                    Some(allowed)
-                })
-                .map_err(NativeWaveSpawnError::Native)
+            match current {
+                Some(fence) => runtime.admit_native_encounter_masterless(
+                    fence,
+                    stamp,
+                    self.boss,
+                    &spec,
+                    at,
+                    |_, _| Some(allowed),
+                ),
+                None => runtime.admit_current_native_encounter_masterless(
+                    stamp,
+                    self.boss,
+                    &spec,
+                    at,
+                    |_, _| Some(allowed),
+                ),
+            }
+            .map_err(NativeWaveSpawnError::Native)
         })();
+        if let Ok(child) = result
+            && matches!(placement, SummonPlacement::Random { .. })
+        {
+            self.wave_children.push(child);
+        }
         if sequence != self.sequence {
             self.memos.clear();
             self.sequence = sequence;

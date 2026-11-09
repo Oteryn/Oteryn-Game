@@ -281,3 +281,57 @@ fn unknown_map_and_source_offset_widening_never_admit_a_child() {
         "invalid source is rejected before current map work"
     );
 }
+
+#[test]
+fn installed_owner_runs_wave_spawn_and_cleanup_after_the_boss_leaves() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.ichgahal");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("source owner");
+    let mut foreign = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("independent consumer");
+    let stamp = runtime.issue_owner_work().expect("installed owner work");
+    let receipt = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &effect(2), &mut map())
+        .expect("current native spawn");
+    assert!(receipt.newly_created);
+    assert_eq!(
+        foreign.retire_wave_child(&mut runtime, stamp, receipt.child),
+        Err(NativeWaveSpawnError::UnownedChild)
+    );
+    assert!(runtime.read_actor_position(receipt.child).is_ok());
+    runtime.remove_test_actor(boss).expect("boss leaves");
+    assert_eq!(
+        owner.retire_wave_child(&mut runtime, stamp, receipt.child),
+        Ok(true)
+    );
+    assert!(runtime.read_actor_position(receipt.child).is_err());
+    assert_eq!(
+        owner.retire_wave_child(&mut runtime, stamp, receipt.child),
+        Ok(false)
+    );
+}
+
+#[test]
+fn cleanup_excludes_population_repairs_and_requires_a_live_scope_owner() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.ichgahal");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("source owner");
+    let stamp = runtime.issue_owner_work().expect("installed owner work");
+    let mut repair = effect(2);
+    if let SummonWaveEffect::Spawn { placement, .. } = &mut repair {
+        *placement = SummonPlacement::Close { offset_tiles: 2 };
+    }
+    let receipt = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &repair, &mut map())
+        .expect("population repair");
+    assert_eq!(
+        owner.retire_wave_child(&mut runtime, stamp, receipt.child),
+        Err(NativeWaveSpawnError::UnownedChild)
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        owner.retire_wave_child(&mut runtime, stamp, receipt.child),
+        Err(NativeWaveSpawnError::StaleOwner)
+    );
+    assert_eq!(
+        owner.spawn_current(&mut runtime, stamp, 1, 0, &repair, &mut map()),
+        Err(NativeWaveSpawnError::StaleOwner)
+    );
+}
