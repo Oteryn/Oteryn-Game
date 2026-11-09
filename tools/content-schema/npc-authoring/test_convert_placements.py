@@ -60,6 +60,27 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual(rows[0]['direction'], 'north')
         self.assertEqual({p['origin'] for p in rows[0]['provenance']}, {'canary', 'crystal'})
 
+    def test_m31_lumberjack_contacts_keep_distinct_source_provenance(self):
+        expected = {
+            'oteryn:npc.chip': {'x': 32418, 'y': 31702, 'floor': 7},
+            'oteryn:npc.queen_eloise': {'x': 32314, 'y': 31754, 'floor': 7},
+        }
+        actual = {r['declaration']['npc']: r['declaration'] for r in self.records
+                  if r['declaration']['npc'] in expected}
+        self.assertEqual(set(actual), set(expected))
+        for key, cell in expected.items():
+            self.assertEqual(actual[key]['cell'], cell)
+            self.assertEqual(actual[key]['direction'], 'north')
+        chip = actual['oteryn:npc.chip']['provenance']
+        self.assertEqual(len(chip), 1)
+        self.assertEqual(chip[0]['origin'], 'native_wiki_br')
+        self.assertEqual(chip[0]['url'], 'https://www.tibiawiki.com.br/wiki/Chip')
+        self.assertEqual(chip[0]['revid'], 416548)
+        self.assertEqual(chip[0]['source_sha256'],
+                         '8f569e3cda079c69cd1d118410c86fceef07cb1bcc77f488d2829f3d601a3402')
+        self.assertEqual({p['origin'] for p in actual['oteryn:npc.queen_eloise']['provenance']},
+                         {'canary', 'crystal'})
+
     def test_m38_mistrock_keeps_the_native_beregar_contact_anchor(self):
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] == 'oteryn:npc.maris_mistrock']
