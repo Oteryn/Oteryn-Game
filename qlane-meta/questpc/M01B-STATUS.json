@@ -41,9 +41,10 @@
       "Hero of Rathleton Quest",
       "Lion Trophy Quest",
       "Deeplings World Change",
-      "Fire from the Earth Mini World Change"
+      "Fire from the Earth Mini World Change",
+      "Fury Gates Mini World Change"
     ],
-    "wired_explore_stages": 35,
+    "wired_explore_stages": 36,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -80,7 +81,7 @@
       "Deeplings World Change",
       "Fire from the Earth Mini World Change"
     ],
-    "wired_native_visit_anchors": 49,
+    "wired_native_visit_anchors": 50,
     "pg_proven_explore_stages": 35
   },
   "validation": {
@@ -230,7 +231,9 @@
     "fire_earth_postgres": "GREEN m01b_fire_earth_native_survey_requires_current_eruption_and_premium, PostgreSQL18.6,71.863157833s on22f06bc007d1;real selected eruption days,Premium,current-reset/replay/freshonce;whole completion0",
     "fury_exact_layer": "RED selected-city assertion -> GREEN23World-change library tests0.03s;strictall-targetsClippy2.25s;exact compiled entry owner only,exit-only andepoch0refuse. No SQL change. Fury content wiring still pending.",
     "fury_approach_resolver": "RED missing module;RED canonical owner HELD rejection -> GREEN4focusedtests0.454s. Exact Crystal201189f layerblob/portal action9710/adjacentground verified;factory retainslevel60,Premium andfury_gates/thais. Inactive untilnativePG;nochangeinwiredcounts.",
-    "fury_authoring_checks": "PASS authoringchecks;1210tests/116modules0failures;content-tree/equipmentpin/duplicatechecks;generatedcallbackverifyunchanged;cargo fmt PASS;workspacealltargets PASS11m11s. Python-onlyresolver/factoryslice;noSQLchange/nativePGnotclaimed."
+    "fury_authoring_checks": "PASS authoringchecks;1210tests/116modules0failures;content-tree/equipmentpin/duplicatechecks;generatedcallbackverifyunchanged;cargo fmt PASS;workspacealltargets PASS11m11s. Python-onlyresolver/factoryslice;noSQLchange/nativePGnotclaimed.",
+    "fury_live_activation": "RED missing callback -> GREEN5focusedtests0.819s;strictquests+dispatchalltargetsClippy6m54s;nativePGbuilding,notyetqualified. One reviewedThaisapproach;noothercity/Furyosapromotion.",
+    "fury_live_publication": "WIPcadence:1211authoringtests/116modulesPASS;checks/tree/nativeproviderregeneration/pins/dupmigrations/fmtPASS;strictquests+dispatchClippy6m54s. NativePGstillbuilding,noPGqualificationclaimed. Latestworkspacecheck11m11swas062fresolverparentbeforelivecallback/testfixture."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],

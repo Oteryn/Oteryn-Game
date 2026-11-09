@@ -1115,5 +1115,5 @@
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
   "m01b_latest_batch": "Deeplings PG GREEN64.396295735s. WIP FireEarth survey:strictClippy5m15s,6profile0.06s,115modules/1206authoringtests/checks/tree/fmt/pins PASS. OwnnativePG building;NOTqualified.34wiredroutes35stages,33PG-provenroutes34stages;M01b PARTIAL.",
-  "m01b_latest_slice": "Fury first-survey resolver/factory tested;livebindingandnativePGpending.34PG-proven routes/35stages. No merges."
+  "m01b_latest_slice": "FuryThaisfirstsurveylive,ownnativePGbuilding;35routes/36stageswired,34routes/35stagesPG-proven;11routes/20stagesunwired;M01bPARTIAL"
 }

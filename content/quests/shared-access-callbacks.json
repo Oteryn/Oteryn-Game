@@ -1131,6 +1131,62 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/fury-gates-mini-world-change/s1/entry",
+      "quest": "oteryn:quest.fury_gates_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32264,
+          "y": 32165,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7066,
+        "native": {
+          "position": {
+            "x": 32264,
+            "y": 32165,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 7066
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/fury_gates_mini_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/fury_gates_mini_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world_changes/fury_gates/thais.otbm",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:native-layer-approach;first-cycle-only"
+      ],
+      "world_change": "fury_gates/thais",
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 60
+    },
+    {
       "key": "oteryn:quest-callback/m01b/geomancer/s1/entry",
       "quest": "oteryn:quest.geomancer_quest",
       "trigger": "step_in",

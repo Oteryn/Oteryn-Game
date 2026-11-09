@@ -75,6 +75,9 @@ mod deeplings_entry;
 #[path = "m01b_explore/fire_earth_entry.rs"]
 mod fire_earth_entry;
 
+#[path = "m01b_explore/fury_entry.rs"]
+mod fury_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -355,6 +358,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/fury-gates-mini-world-change/s1/entry" {
+        return fury_entry::world(native);
+    }
     if name == "m01b/fire-from-the-earth-mini-world-change/s1/entry" {
         return fire_earth_entry::world(native);
     }
@@ -578,6 +584,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/fury-gates-mini-world-change/s1/entry" {
+        return fury_entry::exercise(owner, admitted, h).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/fire-from-the-earth-mini-world-change/s1/entry" {
         return fire_earth_entry::exercise(owner, admitted, h).await;
     }
