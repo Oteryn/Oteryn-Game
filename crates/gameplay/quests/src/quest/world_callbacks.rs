@@ -40,6 +40,7 @@ mod completed_quests;
 mod counterparts;
 mod craft_epoch;
 mod dense_ground;
+mod dense_step_teleport;
 mod effects;
 mod feaster_routes;
 pub mod ground;

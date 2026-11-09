@@ -124,3 +124,63 @@ fn m07_dense_ground_callback_refuses_sparse_multifloor_and_stacked_readsets() ->
     assert!(parse(&doc.to_string()).is_err());
     Ok(())
 }
+
+fn dense_teleport_document() -> serde_json::Value {
+    let mut doc = dense_document();
+    doc["callbacks"][0]["trigger"] = "step_in".into();
+    doc["callbacks"][0]["teleport"] = serde_json::json!({"x":32766,"y":32275,"floor":-14});
+    doc
+}
+
+#[test]
+fn m07_dense_ground_step_teleport_binds_destination_and_all_cells() -> Result<(), String> {
+    let doc = dense_teleport_document();
+    let callback = parse(&doc.to_string())?.remove(0);
+    assert!(callback.supports_ground_stack_guard());
+    let binding = gated_binding(&callback)?.ok_or("physical teleport must be fenced")?;
+    let mut changed = doc.clone();
+    changed["callbacks"][0]["teleport"]["x"] = 32767.into();
+    assert_ne!(
+        gated_binding(&parse(&changed.to_string())?.remove(0))?,
+        Some(binding)
+    );
+    let mut changed = doc;
+    changed["callbacks"][0]["world_requirements"][35]["ground_stack"][0]["item"] =
+        "oteryn:item.tibia.i2395".into();
+    assert_ne!(
+        gated_binding(&parse(&changed.to_string())?.remove(0))?,
+        Some(binding)
+    );
+    Ok(())
+}
+
+#[test]
+fn m07_dense_ground_step_teleport_refuses_unbounded_and_value_compositions() -> Result<(), String> {
+    parse(&dense_teleport_document().to_string())?;
+    for trigger in ["use", "step_out"] {
+        let mut doc = dense_teleport_document();
+        doc["callbacks"][0]["trigger"] = trigger.into();
+        assert!(
+            parse(&doc.to_string()).is_err(),
+            "teleport trigger {trigger}"
+        );
+    }
+    for cells in [8, 35] {
+        let mut doc = dense_teleport_document();
+        doc["callbacks"][0]["world_requirements"]
+            .as_array_mut()
+            .ok_or("requirements")?
+            .truncate(cells);
+        assert!(parse(&doc.to_string()).is_err());
+    }
+    let mut doc = dense_teleport_document();
+    doc["callbacks"][0]["experience"] = 100.into();
+    assert!(parse(&doc.to_string()).is_err());
+    let mut doc = dense_teleport_document();
+    doc["callbacks"][0]["requires_world_admission"] = false.into();
+    assert!(parse(&doc.to_string()).is_err());
+    let mut doc = dense_teleport_document();
+    doc["callbacks"][0]["teleport"]["floor"] = 127.into();
+    assert!(parse(&doc.to_string()).is_err());
+    Ok(())
+}

@@ -11613,7 +11613,11 @@
         "seconds": 158.635,
         "exit": 0
       },
-      "workspace": "Pending after push per owner push-now instruction.",
+      "workspace": {
+        "head": "555146f56b28cea9083b59b9dddbe3018273a060",
+        "seconds": 279.603,
+        "exit": 0
+      },
       "fmt_seconds": 20.098,
       "pin_verify": {
         "seconds": 8.968,
@@ -11621,11 +11625,55 @@
         "error": "key: unknown key oteryn:world-object.tibia.i10736"
       },
       "default_lib_failure": "Unrelated ChannelContentPin comparison/Clone errors: world_respawns/elemental.rs:158 and monster_profile_cycle/native_callbacks/outburst_cast.rs:390.",
-      "dispatch_test_targets": "Original all-target Clippy run failed unused Position import, now cfg(test); full rerun pending."
+      "dispatch_test_targets": "All-target Clippy PASS, not a dispatch test execution claim.",
+      "clippy_all_targets": {
+        "head": "555146f56b28cea9083b59b9dddbe3018273a060",
+        "seconds": 290.878,
+        "exit": 0
+      },
+      "focused_pushed_head": {
+        "head": "555146f56b28cea9083b59b9dddbe3018273a060",
+        "case_seconds": 0.055,
+        "command_seconds": 122.24,
+        "exit": 0
+      }
     },
     "sql_changed": false,
     "pending": "Native Dreamer callback/pillow profile wiring remains incomplete; foreign migration 2020 still prevents repair PG setup.",
     "preserved": "House, visible movable Base, volatile overlay, definition family, World/Channel scope, nonzero instance identity and durable ordinal checks are retained. Existing dispatch Ground movement/revision test remains unchanged.",
     "fixture_compile_fix": "Gate test-only ground_stack::matches consistently with its already-gated imports, row type and callers. No production predicate or SQL changes; test-support path remains enabled."
+  },
+  "m07_dense_ground_step_teleport_slice": {
+    "state": "PARTIAL",
+    "scope": "Allow fenced progress-only StepIn teleport composition with a complete 36-cell Ground readset. Legacy small Ground callbacks, use/step-out triggers, rewards and map mutations remain excluded.",
+    "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua:46-66",
+    "red": "Two new parser/binding tests failed invalid callback before implementation; /tmp/questpc4-ground-teleport-red.log.",
+    "validation": {
+      "focused_tests": 27,
+      "focused_seconds": 6.802,
+      "clippy": {
+        "seconds": 15.095,
+        "exit": 0
+      },
+      "workspace": {
+        "seconds": 324.251,
+        "exit": 0
+      },
+      "sql_changed": false,
+      "pg": "Not run for parser-only change; no durable SQL or runtime teleport ordering changed.",
+      "fmt": {
+        "seconds": 22.837,
+        "exit": 0
+      },
+      "pin_verify": {
+        "seconds": 10.106,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "duplicates": "PASS"
+    },
+    "ordering_evidence": "quest_callbacks/execute.rs preflights teleport at498-516, commits fenced world callback at881, applies source step at1071-1073. gated_binding hashes the full callback including destination and Ground predicates.",
+    "pending": "Native Dreamer portal wiring, row/column shifts and pillow reset remain. Full M07 not qualified.",
+    "checked_facts": "Current spell-native-profiles already admits i2394 as materializable with inventory/Ground destinations and definition-r1. Did not invent a revision mismatch or alter profiles."
   }
 }
