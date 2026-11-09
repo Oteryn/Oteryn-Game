@@ -214,6 +214,75 @@ fn run_scenario(case: Case) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResult {
+    // Pure content activation: this regression test never opens PostgreSQL.
+    super::kill_reward_e2e::scenario_thread::run("endgame-progression-content", || {
+        let world = crate::foundation::WorldId::decode(&fixture::id(42)).map_err(debug)?;
+        let (controller, _) = endgame_progression_generation(world)?;
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native fixture")?;
+        let creature = "oteryn:creature.goshnar_s_spite";
+        assert!(matches!(
+            native.reward_table().row(creature),
+            Err(crate::content::creature_reward::NoSettlementReason::LootTableMissing)
+        ));
+        assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+        assert!(
+            native
+                .reward_table()
+                .row("oteryn:creature.the_primal_menace")
+                .is_ok()
+        );
+        Ok(())
+    })
+}
+
+// Keep this negative progression fixture without personal-loot admission even
+// after the production source independently admits Goshnar's Spite. Retain the
+// exact native policy, XP and corpse; only its private-loot table is absent.
+fn endgame_progression_generation(
+    world: crate::foundation::WorldId,
+) -> TestResult<super::quest_catalogue_chests::CatalogueActivation> {
+    use sha2::{Digest, Sha256};
+    let mut input = super::death_ml_loss_composed::production_input_with_source("content-1", None)?;
+    let section = input
+        .loot_tables
+        .as_mut()
+        .ok_or("production loot section")?;
+    let mut loot: serde_json::Value = serde_json::from_slice(&section.bytes)?;
+    let bindings = loot["creature_loot"].as_array().ok_or("creature loot")?;
+    let excluded = bindings
+        .iter()
+        .find(|row| row["creature"]["key"] == "oteryn:creature.goshnar_s_spite")
+        .ok_or("Spite source binding")?["loot"]
+        .clone();
+    assert!(
+        excluded.is_object(),
+        "production personal loot is independently admitted"
+    );
+    assert_eq!(
+        bindings
+            .iter()
+            .filter(|row| row["loot"] == excluded)
+            .count(),
+        1,
+        "exclude only Spite's private loot"
+    );
+    let tables = loot["tables"].as_array_mut().ok_or("loot tables")?;
+    let before = tables.len();
+    tables.retain(|table| table["identity"] != excluded);
+    assert_eq!(tables.len() + 1, before, "one exact private table removed");
+    section.bytes = serde_json::to_vec(&loot)?;
+    section.sha256 = Sha256::digest(&section.bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    crate::content::native_gameplay::test_support::try_activate_input(world, &input).map_err(debug)
+}
+
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let started = std::time::Instant::now();
@@ -258,10 +327,12 @@ fn scenario(case: Case) -> TestResult {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
             )
-        } else if with_death || endgame_death {
+        } else if endgame_death {
             // Like the existing composed-death fixture, bind unchanged native
             // training bytes to the fixture Character's content-1 interpretation
             // before activation. Production pairs both under s3b-content-1.
+            endgame_progression_generation(world)?
+        } else if with_death {
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
@@ -424,7 +495,9 @@ fn scenario(case: Case) -> TestResult {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
             )
-        } else if with_death || endgame_death {
+        } else if endgame_death {
+            endgame_progression_generation(world)?
+        } else if with_death {
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)

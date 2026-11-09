@@ -1167,6 +1167,7 @@ mod container_tests {
             "quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
             "quest.u15_24.targuna.silver_amulet_chest",
             "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
+            "kv.ornamentedshield",
             "kv.goblintemple2",
             "quest.u7_9.dreamers_challenge.chests_wine",
             "kv.present_box",
@@ -1176,14 +1177,14 @@ mod container_tests {
                 .expect("decoded")
                 .expect(suffix);
             if suffix == "kv.ornamentedshield" {
-                // Existing ITEMHOLD-Q exact Wiki precedence admits this leaf at full150.
+                // The source instance has one charge; the Item definition stays at 150.
                 let necklace = parsed.placements[0]
                     .contents
                     .iter()
                     .find(|c| c.item.key().as_str() == "oteryn:item.tibia.i3083")
                     .expect("exact necklace");
                 assert_eq!(necklace.count, 1);
-                assert_eq!(necklace.charges_remaining, None);
+                assert_eq!(necklace.charges_remaining, Some(1));
                 let profiles: Value = serde_json::from_slice(include_bytes!(
                     "../../../../../content/items/definitions/spell-native-profiles.json"
                 ))
@@ -1244,19 +1245,22 @@ mod container_tests {
     }
 
     #[test]
-    fn ornamented_shield_preserves_the_full_definition_charge_choice() {
-        // ITEMHOLD-Q: the exact Wiki-selected Garlic Necklace has its full
-        // definition state. No timed-state override means full charges, not one.
+    fn ornamented_shield_preserves_the_exact_source_charge_choice() {
+        // Crystal201189f chest UID6063 passes raw1: one charge, while the
+        // independent Item definition retains its full 150-charge default.
         let source = authored("kv.ornamentedshield").expect("Ornamented Shield source");
         let parsed = candidate(source.as_object().expect("definition"), &|_| true)
             .expect("decoded")
-            .expect("exact full-charge recipe");
+            .expect("exact source-charge recipe");
         assert_eq!(parsed.placements.len(), 1);
         let child = &parsed.placements[0].contents[2];
         assert_eq!(child.item.key().as_str(), "oteryn:item.tibia.i3083");
         assert_eq!(child.count, 1);
-        assert_eq!(child.charges_remaining, None);
-        assert!(source["native_contents"].get("source_difference").is_none());
+        assert_eq!(child.charges_remaining, Some(1));
+        assert_eq!(
+            source["native_contents"]["source_difference"],
+            "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"
+        );
         for field in ["schema", "source_sha256"] {
             let mut changed = source.clone();
             changed["native_contents"][field] = "invalid".into();
@@ -1329,7 +1333,7 @@ mod container_tests {
     }
 
     #[test]
-    fn itemhold_q_full_charge_claims_reach_the_native_reader() {
+    fn itemhold_q_charge_choices_reach_the_native_reader() {
         let ornament = authored("kv.ornamentedshield").expect("Ornamented Shield source");
         let ornament = candidate(ornament.as_object().expect("definition"), &|_| true)
             .expect("decoded")
@@ -1338,8 +1342,9 @@ mod container_tests {
             .contents
             .iter()
             .find(|row| row.item.key().as_str() == "oteryn:item.tibia.i3083")
-            .expect("one necklace at the admitted definition's full 150 charges");
+            .expect("one necklace with the exact source charge state");
         assert_eq!(necklace.count, 1);
+        assert_eq!(necklace.charges_remaining, Some(1));
         let power = authored("kv.powerring2").expect("Power Ring source");
         let power = candidate(power.as_object().expect("definition"), &|_| true)
             .expect("decoded")
@@ -1349,6 +1354,7 @@ mod container_tests {
             "oteryn:item.tibia.i3056"
         );
         assert_eq!(power.placements[0].count, 1);
+        assert_eq!(power.placements[0].root_charges_remaining, None);
     }
 
     #[test]

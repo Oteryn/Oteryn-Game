@@ -43,11 +43,12 @@ class ItemholdQTests(unittest.TestCase):
             self.assertEqual(self.items[f'oteryn:item.tibia.i{item}']['semantics']['charges'],
                              {'state': 'KNOWN', 'value': {'count': {'state': 'KNOWN', 'value': charges}}})
 
-    def test_ornamented_shield_full_charge_projection_keeps_conflicting_witness(self):
+    def test_ornamented_shield_exact_source_charge_keeps_conflicting_witness(self):
         path = ROOT / 'content/interactions/reward_claims/reward-claim-variants-00000-00099.json'
         claim = next(row['definition'] for row in json.loads(path.read_bytes())['records']
                      if row['definition']['identity']['key'].endswith('.kv.ornamentedshield'))
-        self.assertFalse(any(hold['code'] == 'SOURCE_CHARGE_MISMATCH' for hold in claim['data_holds']))
+        self.assertEqual(claim['data_holds'], [{'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH',
+                          'placement_index': 0, 'reward_field': 'items', 'reward_index': 2}])
         self.assertTrue(any(c['reason'] == 'SOURCE_CHARGE_MISMATCH'
                             for c in claim['source_variant']['charge_dispositions']))
         self.assertTrue(claim['native_contents']['placements'])
@@ -55,8 +56,13 @@ class ItemholdQTests(unittest.TestCase):
         child = placement['contents'][2]
         self.assertEqual(child['item']['key'], 'oteryn:item.tibia.i3083')
         self.assertEqual(child['count'], 1)
-        self.assertNotIn('charges_remaining', child)
-        self.assertNotIn('source_difference', claim['native_contents'])
+        self.assertEqual(child['charges_remaining'], 1)
+        self.assertEqual(claim['native_contents']['source_difference'],
+                         'EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS')
+        import itemhold_charge_precedence as precedence
+        self.assertFalse(precedence.qualifies(self.items['oteryn:item.tibia.i3083'],
+            'canary:reward-claim/kv/ornamentedshield', {'x': 32769, 'y': 32302, 'z': 10},
+            'oteryn:item.tibia.i3083', 1))
 
     def test_remaining_sources_apply_precedence_and_reject_corruption(self):
         import itemhold_q_remaining as remaining
@@ -71,8 +77,9 @@ class ItemholdQTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'CONFLICT'):
             remaining.apply_admissions(rows, ROOT)
 
-    def test_full_charge_source_projection_is_closed_to_two_exact_cases(self):
+    def test_full_charge_source_projection_is_closed_to_exact_power_ring(self):
         import itemhold_charge_precedence as precedence
+        self.assertEqual(set(precedence.CASES), {'canary:reward-claim/kv/powerring2'})
         for claim, values in precedence.CASES.items():
             item, raw, _, position, *_ = values
             key = f'oteryn:item.tibia.i{item}'
