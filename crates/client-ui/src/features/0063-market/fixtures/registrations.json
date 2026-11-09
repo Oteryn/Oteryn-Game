@@ -16,6 +16,21 @@
   },
   {
     "mechanic": "0063-market",
+    "kind": "handlers",
+    "id": "0063-market-details",
+    "status": "supported",
+    "commands": [
+      6117
+    ],
+    "direction": "client_to_server",
+    "capability": 63,
+    "entry": "state/details.rs::request",
+    "not_applicable": {
+      "settings": "Market state and offers are server-owned; no local authority settings."
+    }
+  },
+  {
+    "mechanic": "0063-market",
     "kind": "keybindings",
     "id": "0063-market-open",
     "status": "supported",

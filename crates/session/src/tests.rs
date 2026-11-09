@@ -189,6 +189,7 @@ include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
+include!("session_tests_market_details.rs");
 include!("session_tests_admission.rs");
 #[path = "property_services/house_transfer_tests.rs"]
 mod pc04_house_transfer;

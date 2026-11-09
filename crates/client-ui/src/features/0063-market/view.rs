@@ -51,6 +51,7 @@ pub fn panel_text(panel: &MarketPanel) -> String {
     }
 
     if panel.definition != 0 {
+        lines.push(super::details::statistics_text(panel));
         lines.push(tr!("Statistics cover the loaded item page").into());
         for (side, name) in [(1, "buy"), (2, "sell")] {
             let mut count = 0u64;
@@ -86,4 +87,15 @@ pub fn visible_rows(panel: &MarketPanel) -> Vec<usize> {
         .filter(|(_, row)| panel.side_filter == 0 || row.side == 0 || row.side == panel.side_filter)
         .map(|(index, _)| index)
         .collect()
+}
+
+/// A native table click refers to the identity that was displayed before asynchronous replies.
+pub fn table_selection<'a>(
+    rows: &'a [market::MarketRow],
+    shown: &[([u8; 16], u32)],
+    index: usize,
+) -> Option<&'a market::MarketRow> {
+    let &(offer, definition) = shown.get(index)?;
+    rows.iter()
+        .find(|row| row.offer == offer && row.definition == definition)
 }

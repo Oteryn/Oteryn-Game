@@ -1,13 +1,14 @@
 {
   "id": 63,
   "name": "MARKET_V1",
-  "owner_decision": "MARKET-1 coordinator decision (b), 2026-10-25",
+  "owner_decision": "MARKET-1 coordinator decision (b), 2026-10-25; T124 owner decision B 2026-11-09 read projections",
   "owner": "World Market and native settlement owner",
   "requires": [
     37
   ],
   "command_types": [
-    80
+    80,
+    6117
   ],
   "state_domains": [
     28

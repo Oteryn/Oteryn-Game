@@ -7,7 +7,8 @@
   ],
   "acceptance_requires": false,
   "commands": [
-    80
+    80,
+    6117
   ],
   "domains": [
     28

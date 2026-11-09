@@ -93,6 +93,7 @@ pub use oteryn_protocol_oteryn::hireling;
 pub use oteryn_protocol_oteryn::hotkey_equip;
 /// Market wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::market;
+pub use oteryn_protocol_oteryn::market_details;
 /// Party wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::party;
 pub use oteryn_protocol_oteryn::quest_log;

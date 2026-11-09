@@ -1,0 +1,10 @@
+{
+  "id": 6117,
+  "name": "MARKET_DETAILS",
+  "owner_decision": "T124 owner decision B 2026-11-09",
+  "capability": 63,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/market-details-t124.md#read-command",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/market-details-t124.md#read-command",
+  "max_payload_bytes": 512,
+  "max_result_payload_bytes": 32768
+}

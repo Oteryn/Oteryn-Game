@@ -41,7 +41,9 @@ impl Application {
         false
     }
     pub(super) fn redraw(&mut self, event_loop: &ActiveEventLoop) {
-        if !self.frame_timing.begin_redraw(self.settings.performance()) { return; }
+        if !self.frame_timing.begin_redraw(self.settings.performance()) {
+            return;
+        }
         let scene = self
             .play
             .as_ref()
@@ -65,7 +67,9 @@ impl Application {
             self.fail(event_loop, ShellError::RendererRender);
             return;
         }
-        if renderer.state().presented_frames() > before { self.frame_timing.presented(); }
+        if renderer.state().presented_frames() > before {
+            self.frame_timing.presented();
+        }
         self.settings
             .screenshots(renderer, scene, self.play.as_ref().map(|play| &play.link));
     }

@@ -1,7 +1,11 @@
 //! Native market form, paged server lists and trade controls.
 #![allow(unsafe_code)]
 use crate::play::mailbox::{SharedMailbox, lock};
-use oteryn_client_ui::market::{Intent, panel_text, row_text};
+use oteryn_client_ui::market::{Intent, panel_text};
+#[path = "view/catalogue_native.rs"]
+mod catalogue;
+#[path = "view/table_native.rs"]
+mod table;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
@@ -20,6 +24,15 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
                     || ((20..=22).contains(&(w & 0xffff)) && w >> 16 == EN_CHANGE as usize))
             {
                 (*p).0.push(w & 0xffff);
+            }
+            return 0;
+        }
+        if msg == WM_NOTIFY
+            && let Some(id) = table::selection_notification(l)
+        {
+            let p = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            if !p.is_null() && (*p).0.len() < 16 {
+                (*p).0.push(id);
             }
             return 0;
         }
@@ -69,7 +82,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             720,
-            620,
+            740,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -86,14 +99,11 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
-        let list = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            1,
-            [10, 85, 680, 280],
-            WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY as u32,
-        );
+        let Some(mut tables) = table::Offers::create(hwnd) else {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        };
         let item = control(
             hwnd,
             "EDIT",
@@ -179,7 +189,6 @@ fn run(
             [330, 415, 150, 28],
             WS_TABSTOP,
         );
-        let status = control(hwnd, "STATIC", "", 9, [10, 455, 680, 110], 0);
         control(
             hwnd,
             "BUTTON",
@@ -188,7 +197,14 @@ fn run(
             [490, 415, 190, 28],
             WS_TABSTOP,
         );
-        let mut displayed_rows: Vec<usize> = Vec::new();
+        let status = control(
+            hwnd,
+            "EDIT",
+            "",
+            9,
+            [10, 455, 680, 220],
+            WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
+        );
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
@@ -206,6 +222,7 @@ fn run(
             if m.market_shutdown {
                 break;
             }
+            let mut browse_catalogue = false;
             for id in std::mem::take(&mut actions.0) {
                 if (20..=22).contains(&id) && read(item).trim().is_empty() {
                     continue;
@@ -232,30 +249,23 @@ fn run(
                     8 => Some(Intent::Refresh),
                     10 => Some(Intent::PreviousPage),
                     11 => Some(Intent::NextPage),
+                    12 => {
+                        browse_catalogue = true;
+                        None
+                    }
                     13 => {
                         m.market.side_filter = (m.market.side_filter + 1) % 3;
                         m.market.selected_offer = None;
                         None
                     }
-                    12 => {
-                        SetWindowTextW(item, wide("").as_ptr());
-                        Some(Intent::Wares)
-                    }
-                    1 => {
-                        m.market.selected_offer =
-                            usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
-                                .ok()
-                                .and_then(|i| displayed_rows.get(i))
-                                .and_then(|i| m.market.rows.get(*i))
-                                .map(|r| r.offer);
-                        if let Some(row) = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
-                            .ok()
-                            .and_then(|i| displayed_rows.get(i))
-                            .and_then(|i| m.market.rows.get(*i))
-                        {
-                            SetWindowTextW(item, wide(&row.definition.to_string()).as_ptr());
-                            if row.price > 0 {
-                                SetWindowTextW(price, wide(&row.price.to_string()).as_ptr());
+                    1 | 14 => {
+                        if let Some(row) = tables.selected(&m.market.rows, id) {
+                            let (offer, definition, unit_price) =
+                                (row.offer, row.definition, row.price);
+                            m.market.selected_offer = Some(offer);
+                            SetWindowTextW(item, wide(&definition.to_string()).as_ptr());
+                            if unit_price > 0 {
+                                SetWindowTextW(price, wide(&unit_price.to_string()).as_ptr());
                             }
                         }
                         None
@@ -263,31 +273,30 @@ fn run(
                     _ => None,
                 };
                 if let Some(intent) = intent {
-                    super::super::input::enqueue(&mut m, &commands, intent);
+                    if matches!(
+                        intent,
+                        Intent::Browse | Intent::Refresh | Intent::NextPage | Intent::PreviousPage
+                    ) && (intent == Intent::Browse
+                        || m.market.view == oteryn_client_ui::market::MarketView::Browse)
+                        && m.market.definition > 0
+                    {
+                        crate::play::feature_0063_market::protocol::details::enqueue_book(
+                            &mut m, &commands, intent,
+                        );
+                    } else {
+                        super::super::input::enqueue(&mut m, &commands, intent);
+                    }
                 }
             }
             if held.as_ref() != Some(&m.market) {
-                SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                displayed_rows = oteryn_client_ui::market::visible_rows(&m.market);
-                for index in &displayed_rows {
-                    let row = &m.market.rows[*index];
-                    SendMessageW(
-                        list,
-                        LB_ADDSTRING,
-                        0,
-                        wide(&row_text(row)).as_ptr() as isize,
-                    );
-                }
-                if let Some(index) = displayed_rows
-                    .iter()
-                    .position(|index| Some(m.market.rows[*index].offer) == m.market.selected_offer)
-                {
-                    SendMessageW(list, LB_SETCURSEL, index, 0);
-                }
+                tables.refresh(&m.market);
                 SetWindowTextW(status, wide(&panel_text(&m.market)).as_ptr());
                 held = Some(m.market.clone());
             }
             drop(m);
+            if browse_catalogue {
+                catalogue::open(hwnd, item, &weak, &commands);
+            }
             std::thread::sleep(std::time::Duration::from_millis(30));
         }
         if IsWindow(hwnd) != 0 {

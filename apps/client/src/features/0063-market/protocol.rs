@@ -38,3 +38,6 @@ impl Outbox {
         Ok(())
     }
 }
+
+#[path = "protocol/details.rs"]
+pub(in crate::play) mod details;

@@ -40,6 +40,7 @@ pub async fn run_session<T: Stepper>(
                     outbox.performance_command_result(started.elapsed());
                     match command.capability {
                         10 => outbox.analyser_result(&command, &result),
+                        63 => outbox.market_details_result(&command, &result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),

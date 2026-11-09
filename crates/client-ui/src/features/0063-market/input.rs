@@ -32,6 +32,9 @@ pub fn edit_details(
     {
         if panel.definition != definition {
             panel.page = 0;
+            panel.selected_offer = None;
+            panel.rows.clear();
+            panel.details.statistics = None;
         }
         panel.definition = definition;
         panel.amount = amount;

@@ -52,6 +52,7 @@ impl Mailbox {
         self.hireling.pending = Default::default();
         self.hireling_management.pending = Default::default();
         self.market.pending = Default::default();
+        self.market.details = Default::default();
         self.chat_private.pending = Default::default();
         self.boss_rewards.pending = Default::default();
         self.discovery.loot.pending = Default::default();
