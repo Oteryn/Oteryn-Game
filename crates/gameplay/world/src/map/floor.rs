@@ -472,6 +472,9 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
         return None;
     };
     let bundle = index.map();
+    if let Some(destination) = bundle.facts.phase_teleport(at) {
+        return destination;
+    }
     bundle.floors.teleport_for_source(at, |ordinal| {
         let key = placement_key(at, ordinal)?;
         if bundle.facts.base_hidden(key) {

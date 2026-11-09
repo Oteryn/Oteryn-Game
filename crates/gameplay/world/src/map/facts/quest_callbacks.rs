@@ -45,6 +45,7 @@ pub enum QuestCallbackProjection {
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
+    pub(super) feroxa_phase: Option<Arc<super::feroxa_map_phases::FeroxaMapPhase>>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
@@ -254,8 +255,29 @@ impl CallbackStates {
             })
         })
     }
-    fn has_capacity(&self, additional: usize) -> bool {
-        let used = self.changed.len()
+    pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
+        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+    }
+
+    pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
+        let key_inside = |key: &u64| view::placement_of(*key).is_some_and(|(p, _)| inside(p));
+        self.changed.retain(|key, _| !key_inside(key));
+        self.hidden.retain(|key| !key_inside(key));
+        self.passable.retain(|key, _| !key_inside(key));
+        self.movement_decays.retain(|(_, key), _| !key_inside(key));
+        let cleared = |p: &TilePos| {
+            p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
+        };
+        self.movement_items.retain(|p, _| !cleared(p));
+        self.solid_items.retain(|p| !cleared(p));
+        self.batch_blockers.retain(|p| !inside(*p));
+        self.portals.retain(|p, _| !cleared(p));
+        self.presences.retain(|_, (p, _)| !cleared(p));
+    }
+
+    pub(super) fn has_capacity(&self, additional: usize) -> bool {
+        let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
+            + self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
@@ -278,6 +300,9 @@ impl BundleFacts {
     ) -> Option<u8> {
         let states = self.callbacks.lock().ok().map(|s| Arc::clone(&s))?;
         let first = placement_key(pos, 0)?;
+        if states.phase_entry(pos, 0).is_some() {
+            return Some(0);
+        }
         if states.changed.range(first..=first + 63).next().is_none()
             && states.hidden.range(first..=first + 63).next().is_none()
         {
@@ -891,7 +916,10 @@ impl BundleFacts {
     /// Reserve no durable inputs unless the bounded local projection can be installed.
     pub fn quest_callback_capacity(&self, key: u64, expected: u64, passages: usize) -> bool {
         self.callbacks.lock().is_ok_and(|s| {
-            s.changed.get(&key).map_or(0, |(r, _)| *r) == expected
+            s.changed
+                .get(&key)
+                .map_or_else(|| s.phase_revision(key).unwrap_or(0), |(r, _)| *r)
+                == expected
                 && expected < u64::MAX
                 && passages <= 8
                 && s.has_capacity(passages)
@@ -966,7 +994,11 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+        if states
+            .changed
+            .get(&key)
+            .map_or_else(|| states.phase_revision(key).unwrap_or(0), |(r, _)| *r)
+            != expected
             || expected == u64::MAX
             || passages.len() + replacements.len() > 8
             || !states.has_capacity(
@@ -1093,6 +1125,13 @@ impl BundleFacts {
         };
         if states.solid_items.contains(&pos) || states.batch_blockers.contains(&pos) {
             return true;
+        }
+        if states.phase_entry(pos, 0).is_some() {
+            return states
+                .phase_spell(pos)
+                .ok()
+                .flatten()
+                .is_none_or(|tile| tile.flags().block_solid);
         }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
             return true;

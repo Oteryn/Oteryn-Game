@@ -271,6 +271,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        self.inner.phase_tile(pos)
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.inner.movement_item(id)
     }

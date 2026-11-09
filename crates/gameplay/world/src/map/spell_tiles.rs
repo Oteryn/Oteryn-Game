@@ -290,8 +290,8 @@ impl SpellTilesBuilder {
         Ok(BundleSpellTiles {
             phases: Default::default(),
             base: self.base,
-            tiles: self.tiles,
-            shapes: self.shapes,
+            tiles: self.tiles.into(),
+            shapes: self.shapes.into(),
         })
     }
 }

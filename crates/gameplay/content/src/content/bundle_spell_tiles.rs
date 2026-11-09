@@ -38,8 +38,8 @@ pub trait BundleTilePhases: Send + Sync {
 pub struct BundleSpellTiles {
     pub base: Arc<dyn WorldBase>,
     /// Per base tile ([`WorldBase::tile_index`]): an index into `shapes`, or [`UNKNOWN`].
-    pub tiles: Vec<u32>,
-    pub shapes: Vec<QualifiedSpellTile>,
+    pub tiles: Arc<[u32]>,
+    pub shapes: Arc<[QualifiedSpellTile]>,
     pub phases: OnceLock<Arc<dyn BundleTilePhases>>,
 }
 
@@ -65,6 +65,16 @@ impl PartialEq for BundleSpellTiles {
 impl Eq for BundleSpellTiles {}
 
 impl BundleSpellTiles {
+    /// Share immutable base data without sharing the parent's mutable Channel owner.
+    pub fn fork_without_phases(&self) -> Self {
+        Self {
+            base: Arc::clone(&self.base),
+            tiles: Arc::clone(&self.tiles),
+            shapes: Arc::clone(&self.shapes),
+            phases: OnceLock::new(),
+        }
+    }
+
     /// Bind the actual map owner once, before exposing the Channel's tile data.
     pub fn install_phases(&self, owner: Arc<dyn BundleTilePhases>) -> bool {
         self.phases.set(owner).is_ok()
@@ -155,8 +165,8 @@ mod phase_tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let map = BundleSpellTiles {
             base: Arc::new(Base),
-            tiles: vec![0],
-            shapes: vec![tile(13988, true)],
+            tiles: vec![0].into(),
+            shapes: vec![tile(13988, true)].into(),
             phases: OnceLock::new(),
         };
         let cell = LogicalCell {

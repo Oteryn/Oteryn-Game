@@ -39,8 +39,10 @@ pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
+mod feroxa_map_phases;
 mod quest_callbacks;
 mod world_change_phases;
+pub use feroxa_map_phases::FeroxaPhaseTile;
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
 
@@ -133,7 +135,7 @@ pub struct BundleFacts {
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
-    callbacks: Mutex<Arc<CallbackStates>>,
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
@@ -247,7 +249,7 @@ impl BundleFacts {
                 .collect(),
             doors: self.doors.activity_copy(inside),
             rotations: Mutex::new(Arc::new(BTreeMap::new())),
-            callbacks: Mutex::new(Arc::new(CallbackStates::default())),
+            callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
             monster_steps: Mutex::new(VecDeque::new()),
         }
     }
@@ -341,7 +343,7 @@ impl BundleFacts {
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
-            callbacks: Mutex::default(),
+            callbacks: Arc::default(),
             monster_steps: Mutex::default(),
         })
     }
@@ -1124,6 +1126,13 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        Ok(self
+            .callbacks
+            .lock()
+            .map_err(|_| view::ViewError::MissingFacts)?
+            .phase_composition(pos))
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.lock().ok()?.movement_item(id)
     }
@@ -1151,6 +1160,9 @@ impl MapFacts for BundleFacts {
         {
             return Some(*facts);
         }
+        if let Some(entry) = self.callbacks.lock().ok()?.phase_entry(pos, ordinal) {
+            return entry;
+        }
         let rotations = self.rotations.lock().ok()?;
         self.entry(pos, ordinal, id, None, &rotations)
     }
@@ -1177,6 +1189,11 @@ impl MapFacts for BundleFacts {
         {
             return *r;
         }
+        if let Ok(s) = self.callbacks.lock()
+            && let Some(revision) = s.phase_revision(placement_key)
+        {
+            return revision;
+        }
         self.rotations.lock().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
                 || self.doors.revision(placement_key),
@@ -1195,6 +1212,13 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        Ok(self
+            .callbacks
+            .as_ref()
+            .ok_or(view::ViewError::MissingFacts)?
+            .phase_composition(pos))
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.as_ref()?.movement_item(id)
     }
@@ -1215,6 +1239,9 @@ impl MapFacts for PinnedFacts<'_> {
             .get(&placement_key(pos, ordinal)?)
         {
             return Some(*facts);
+        }
+        if let Some(entry) = self.callbacks.as_ref()?.phase_entry(pos, ordinal) {
+            return entry;
         }
         self.facts.entry(
             pos,
@@ -1244,6 +1271,11 @@ impl MapFacts for PinnedFacts<'_> {
             && let Some((r, _)) = s.changed.get(&placement_key)
         {
             return *r;
+        }
+        if let Some(s) = &self.callbacks
+            && let Some(revision) = s.phase_revision(placement_key)
+        {
+            return revision;
         }
         self.rotations.as_ref().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
