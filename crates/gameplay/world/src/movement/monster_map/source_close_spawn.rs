@@ -3,7 +3,8 @@
 use super::*;
 
 impl MonsterMap {
-    /// Current movement admission plus Tile:isWalkable()'s unconditional projectile refusal.
+    /// Source no-argument Tile:isWalkable(): ground, non-solid, and projectile-clear.
+    /// Native creation admission remains a separate check after candidate selection.
     /// Unknown or stale views withhold the candidate rather than inventing tile facts.
     pub fn admits_close_spawn_candidate(
         &self,
@@ -13,7 +14,8 @@ impl MonsterMap {
         if !self.matches(runtime) {
             return None;
         }
-        self.tile(at).map(|tile| tile.admits && !tile.projectile)
+        self.tile(at)
+            .map(|tile| tile.ground_clear && !tile.projectile)
     }
 }
 
@@ -69,6 +71,7 @@ mod tests {
             (at.x, at.y, at.floor),
             Some(Tile {
                 admits: true,
+                ground_clear: true,
                 projectile: true,
                 speed: 150,
                 field: None,
@@ -83,6 +86,7 @@ mod tests {
             (at.x, at.y, at.floor),
             Some(Tile {
                 admits: true,
+                ground_clear: true,
                 projectile: false,
                 speed: 150,
                 field: None,
@@ -93,12 +97,32 @@ mod tests {
             (at.x, at.y, at.floor),
             Some(Tile {
                 admits: false,
+                ground_clear: false,
                 projectile: false,
                 speed: 0,
                 field: None,
             }),
         );
         assert_eq!(map.admits_close_spawn_candidate(&runtime, at), Some(false));
+        map.tiles.insert(
+            (at.x, at.y, at.floor),
+            Some(Tile {
+                admits: false,
+                ground_clear: true,
+                projectile: false,
+                speed: 150,
+                field: None,
+            }),
+        );
+        assert!(
+            !map.admits(at),
+            "native creation/movement restrictions remain enforced"
+        );
+        assert_eq!(
+            map.admits_close_spawn_candidate(&runtime, at),
+            Some(true),
+            "source no-argument walkability does not use movement-only PZ/floor restrictions"
+        );
         runtime.retire_owner_cycle();
         assert_eq!(map.admits_close_spawn_candidate(&runtime, at), None);
         Ok(())

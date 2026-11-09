@@ -21,6 +21,7 @@ use std::collections::BTreeMap;
 #[derive(Clone, Copy)]
 struct Tile {
     admits: bool,
+    ground_clear: bool,
     projectile: bool,
     speed: u16,
     field: Option<oteryn_gameplay_domain::domain::condition::DotElement>,
@@ -256,6 +257,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         {
             return Some(Tile {
                 admits: false,
+                ground_clear: false,
                 projectile: true,
                 speed: 0,
                 field: None,
@@ -317,6 +319,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             }
         }
         Some(Tile {
+            ground_clear: tile.ground_present() && !solid,
             admits: tile.ground_present()
                 && !solid
                 && !tile.flags().protection_zone

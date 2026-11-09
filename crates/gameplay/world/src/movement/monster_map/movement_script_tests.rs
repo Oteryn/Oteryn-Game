@@ -151,6 +151,7 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         (6, 0, 7),
         Some(Tile {
             admits: true,
+            ground_clear: true,
             projectile: false,
             speed: 150,
             field: None,
