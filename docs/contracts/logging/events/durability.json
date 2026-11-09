@@ -9,6 +9,30 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "holder_usage",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Durability holder usage diagnostics (NBDIAG-4, #3057)."
+    },
+    {
+      "event": "holder_window",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Durability holder usage diagnostics (NBDIAG-4, #3057)."
+    },
+    {
+      "event": "pass_dropped",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Durability holder usage diagnostics (NBDIAG-4, #3057)."
     }
   ]
 }

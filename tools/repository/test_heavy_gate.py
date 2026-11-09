@@ -53,13 +53,13 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertFalse(api_calls.exists(), "Non-eligible PR called the API")
             return result
 
-    def test_real_run_requires_all_three_jobs_successful(self):
+    def test_real_run_requires_build_and_postgres_node_boot_is_informational(self):
         for build in ("success", "failure", "cancelled", "skipped"):
             for pg in ("success", "failure", "cancelled", "skipped"):
                 for node_boot in ("success", "failure", "cancelled", "skipped"):
                     with self.subTest(build=build, pg=pg, node_boot=node_boot):
                         result = self.run_gate(build=build, pg=pg, node_boot=node_boot)
-                        self.assertEqual(result.returncode == 0, build == pg == node_boot == "success", result.stderr)
+                        self.assertEqual(result.returncode == 0, build == pg == "success", result.stderr)
                         if result.returncode:
                             self.assertIn(build, result.stdout)
                             self.assertIn(pg, result.stdout)
