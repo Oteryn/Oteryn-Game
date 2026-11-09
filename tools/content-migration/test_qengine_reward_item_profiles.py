@@ -60,6 +60,15 @@ class NativeFactJoin(unittest.TestCase):
             self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
             self.assertEqual(record['semantics']['physical']['value']['weight']['value'], weight)
 
+    def test_m07_fire_bug_has_exact_portable_source_custody(self):
+        record = next((r for r in q.capture()['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i5467'), None)
+        self.assertIsNotNone(record, 'Machinery burn actions require their exact carried Fire Bug')
+        self.assertEqual(record['production_binding']['external_id'], '5467')
+        self.assertTrue(record['admission']['materializable'])
+        self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 3050)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)

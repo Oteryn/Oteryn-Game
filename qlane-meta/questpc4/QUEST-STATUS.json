@@ -11278,5 +11278,35 @@
         "cause": "source and remote reset preparations sampled owner clock separately; use one operation timestamp"
       }
     ]
+  },
+  "m07_machinery_firebug_input": {
+    "status": "INPUT_SLICE_DONE",
+    "scope": "Qualified physical prerequisite only; native Machinery burn callbacks are next",
+    "source": {
+      "path": "imports/canary/items-xml/items.xml:14936",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "item": 5467,
+      "weight": 3050
+    },
+    "red": "Importer test failed: exact carried Fire Bug5467 missing",
+    "green": {
+      "importer_tests": "8/8 12.610s",
+      "native_artifact_firebug_seconds": 9.278,
+      "native_artifact_lion_regression_seconds": 9.405,
+      "profile_review": "only5467 added; no removed/modified existing profiles; source-update records unchanged",
+      "independent_equipment_profile_count": 5800,
+      "shared_engine_profile_count": 68,
+      "authoring_checks_seconds": 308.665,
+      "authoring_unit_modules": 117,
+      "authoring_unit_seconds": 502.031,
+      "content_tree_seconds": 161.168,
+      "clippy_content_dispatch_seconds": 253.281,
+      "workspace_all_targets_seconds": 270.25,
+      "fmt_seconds": 15.555,
+      "pin_check_seconds": 26.665,
+      "duplicate_migrations": "PASS"
+    },
+    "pending": "Native Machinery repair/burn callbacks and their PG stories; M07 remains PARTIAL",
+    "sql_changed": false
   }
 }

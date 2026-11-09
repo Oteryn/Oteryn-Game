@@ -27,6 +27,8 @@ IDS |= {21504, 21505}
 IDS |= {21466, 21389}
 # M07 retained Realm key and source bricklayers kit for the assigned repair stages.
 IDS |= {14682, 7785}
+# M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
+IDS |= {5467}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
