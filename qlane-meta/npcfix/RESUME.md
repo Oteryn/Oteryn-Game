@@ -47,3 +47,7 @@ Rascalio Carlin event occurrence: production boot and timed loop now project com
 Rascalio focused publication gates PASS: strict game-server all-target/all-feature Clippy4m02s, fmt, unchanged World pin-check and duplicate migrations. Full workspace/node-boot checks remain pending; no whole M38 completion claim.
 
 Rascalio basic talk-book API: real catalogue RED45.64s missing entry -> GREEN3 cases51.93s, including name/job, neutral greeting and admitted-name rendering, no travel/service authority, unknown/stateful topic rejection, and Minzy regression. Strict NPC all-target/all-feature Clippy, fmt and duplicate migrations PASS. Greeting explicitly adapts the neutral source prefix because the full retained line asserts a Cook mission. Live PG scenario is drafted at /tmp/npcfix-evidence/m38-rascalio-chat-story.rs for next publication; no PG chat pass claimed yet. M38 remains PARTIAL.
+
+Rascalio basic contact API4ea708ff1 verified on origin. Live dispatch PG case GREEN109.392083377s with start/completion markers: Carlin anchor, rendered neutral greeting, name/job replies, replay, held passage, stale actor refusal and no fee burn. Scenario hook executed for real. Strict dispatch Clippy is running before proof publication. Whole M38 and full workspace/node-boot qualification remain incomplete.
+
+Rascalio live proof publication: real PG109.392083377s, strict dispatch all-target/all-feature Clippy5m22s, fmt and duplicate migrations PASS. No SQL/content input changes or merges. Pin verification is the final unchanged-input gate. M38 remains PARTIAL.

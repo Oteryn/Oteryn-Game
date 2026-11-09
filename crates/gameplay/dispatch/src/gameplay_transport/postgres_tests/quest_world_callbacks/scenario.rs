@@ -128,6 +128,7 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
         || name == "npcfix-m38-minzy"
+        || name == "npcfix-m38-rascalio"
         || matches!(
             name,
             "engnpc-m04"
@@ -974,6 +975,8 @@ fn scenario_case(
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "npcfix-m38-minzy" {
             super::super::npcfix_m38_minzy::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "npcfix-m38-rascalio" {
+            super::super::npcfix_m38_rascalio::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("npcfix-m38-mistrock") {
             super::super::npcfix_m38_mistrock::exercise(
                 &mut owner,

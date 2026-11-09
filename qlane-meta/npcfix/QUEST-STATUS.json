@@ -283,6 +283,28 @@
       "fmt PASS",
       "duplicate migration check PASS"
     ],
-    "pg": "Live dispatch scenario drafted; not yet executed"
+    "pg": {
+      "state": "GREEN",
+      "seconds": 109.392083377,
+      "test": "npcfix_m38_rascalio_basic_contact_and_stale_actor_are_fenced_postgres",
+      "proof": [
+        "POSTGRES_STARTED NPCFIX_M38 Rascalio basic source contact",
+        "POSTGRES_CASE_COMPLETED NPCFIX_M38_RASCALIO duration=109.392083377s"
+      ],
+      "coverage": [
+        "exact Carlin anchor",
+        "rendered neutral greeting",
+        "name/job leaves",
+        "same-command replay",
+        "passage stays closed",
+        "stale generation refused",
+        "unchanged fee receipts"
+      ],
+      "checks": [
+        "strict dispatch all-target/all-feature Clippy PASS 5m22s",
+        "fmt PASS",
+        "duplicate migrations PASS"
+      ]
+    }
   }
 }
