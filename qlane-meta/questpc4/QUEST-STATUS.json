@@ -11519,5 +11519,11 @@
     "red": "Refresh rejected unrelated canonical shard changes and accepted a stale current-input pin",
     "green": "Regression tests pass: unchanged selected cookbook records accepted; selected changes and stale current pins rejected; capture --refresh and verify PASS",
     "scope": "No cookbook records changed; immutable predecessor selected-record hashes retained"
+  },
+  "native_authored_track_composition": {
+    "status": "QUALIFIED_SLICE",
+    "red": "DuplicateKey chosen-source/25_years_of_tibia_quest/s1; exact reuse regression failed",
+    "green": "16/16 focused composition and M07 tests7.234s; questsClippy14.095s;fmt23.801s",
+    "scope": "Exact owned track declarations reuse; conflicting owner/initial/bounds reject; explicitly marked native chosen-entry s1 counters initialize0; legacy donor defaults unchanged"
   }
 }

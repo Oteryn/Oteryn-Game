@@ -65,3 +65,48 @@ fn collection_composition_does_not_migrate_an_old_npc_route_into_a_new_binding()
     );
     Ok(())
 }
+
+#[test]
+fn authored_composition_reuses_only_identical_owned_track_declarations() -> Result<(), String> {
+    let (bindings, _) = fixture()?;
+    let declared = &bindings.quests[0].tracks[0];
+    let track = QuestTrack {
+        key: declared.key.clone(),
+        quest: bindings.quests[0].quest.clone(),
+        initial: declared.initial,
+        min: declared.minimum,
+        max: declared.maximum,
+    };
+    let base = QuestStateCatalogue::new("shared-track", vec![track.clone()], Vec::new())
+        .map_err(|error| format!("{error:?}"))?;
+    let attached = bindings.attach(&base)?;
+    assert_eq!(
+        attached
+            .tracks
+            .values()
+            .filter(|t| t.key == track.key)
+            .count(),
+        1
+    );
+    for variant in 0..3 {
+        let mut conflict = track.clone();
+        match variant {
+            0 => conflict.quest = "oteryn:quest.other_owner".into(),
+            1 => conflict.max += 1,
+            _ => {
+                conflict.initial = if conflict.initial == conflict.min {
+                    conflict.max
+                } else {
+                    conflict.min
+                }
+            }
+        }
+        let conflicting = QuestStateCatalogue::new("conflict", vec![conflict], Vec::new())
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(
+            bindings.attach(&conflicting).is_err(),
+            "conflicting track variant {variant}"
+        );
+    }
+    Ok(())
+}

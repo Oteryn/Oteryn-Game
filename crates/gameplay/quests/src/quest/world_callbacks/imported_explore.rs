@@ -76,7 +76,26 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
     if let Some(initial) = super::character_requirements::entry_initial(callback, storage) {
         return initial;
     }
-    if admitted(callback) && !storage.track.is_empty() {
+    let chosen_entry = callback
+        .quest
+        .strip_prefix("oteryn:quest.")
+        .is_some_and(|quest| {
+            storage.track == format!("oteryn:quest-progress/chosen-source/{quest}/s1")
+                && callback.selector.native.is_some()
+                && callback.requires_world_admission
+                && callback.actor_kind == ActorKind::Player
+                && !callback.reversible
+                && storage.minimum <= 0
+                && storage.maximum >= 0
+                && storage.at_least
+                && storage.set == 1
+                && !storage.preserve
+                && !storage.increment
+                && callback.sources.iter().any(|source| {
+                    source == "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only"
+                })
+        });
+    if chosen_entry || (admitted(callback) && !storage.track.is_empty()) {
         0
     } else {
         -1
