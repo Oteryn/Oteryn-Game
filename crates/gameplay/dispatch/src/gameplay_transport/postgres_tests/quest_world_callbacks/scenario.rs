@@ -552,7 +552,7 @@ fn scenario_case(
         } else if elemental_pin {
             super::super::qn1_elemental_world_pin::world(
                 generation.native_gameplay().ok_or("elemental policies")?,
-                name == "qn1-elemental-energy-soil",
+                name.starts_with("qn1-elemental-energy-"),
             )?
         } else if qready_workbench {
             super::super::qready1_workbenches::world(
@@ -1024,6 +1024,7 @@ fn scenario_case(
                 name,
                 deps.actor,
                 fence.item_fence(),
+                admitted,
             )
             .await?;
         } else if qready_workbench {

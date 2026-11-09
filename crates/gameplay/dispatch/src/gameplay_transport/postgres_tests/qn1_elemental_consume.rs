@@ -63,6 +63,8 @@ use oteryn_gameplay_quests::quest::elemental_arrival as rules;
 
 #[path = "qn1_elemental_consume/handoff.rs"]
 mod handoff;
+#[path = "qn1_elemental_consume/nested.rs"]
+mod nested;
 #[path = "qn1_elemental_consume/projection.rs"]
 mod projection;
 
@@ -149,6 +151,18 @@ fn qn1_elemental_arrival_consumes_fluid_loot_and_archives_its_state() -> f::Test
 fn qn1_elemental_corpse_keeps_classification_after_owner_generation_move() -> f::TestResult {
     run(true, 4)
 }
+#[test]
+fn qn1_elemental_arrival_consumes_text_loot_without_auditing_its_body() -> f::TestResult {
+    run(true, 5)
+}
+#[test]
+fn qn1_elemental_arrival_consumes_nested_kill_loot_child_first() -> f::TestResult {
+    run(true, 6)
+}
+#[test]
+fn qn1_elemental_arrival_rolls_back_nested_loot_for_parent_failure() -> f::TestResult {
+    run(true, 7)
+}
 fn run(native: bool, loot: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
@@ -167,6 +181,9 @@ fn run(native: bool, loot: u8) -> f::TestResult {
                             (_, 2) => "qn1_elemental_loot_rollback",
                             (_, 3) => "qn1_elemental_fluid_loot",
                             (_, 4) => "qn1_elemental_corpse_handoff",
+                            (_, 5) => "qn1_elemental_text_loot",
+                            (_, 6) => "qn1_elemental_nested_loot",
+                            (_, 7) => "qn1_elemental_nested_rollback",
                             (true, _) => "qn1_elemental_native",
                             (false, _) => "qn1_elemental_consume",
                         },
@@ -269,6 +286,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     tx.commit().await?;
+    let mut loot_ids = Vec::new();
     if native {
         let mut request = mint_request(
             2,
@@ -284,30 +302,33 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             .freeze_item_mint(&authority, &h.node, request)
             .await
             .map_err(f::debug)?;
-        let permit = candidate.fresh_death_lane_permit().await;
-        let outcome = h
-            .root
-            .commit_corpse_mint(
-                &permit,
-                &authority,
-                &h.node,
-                &mut candidate,
-                f::id(f::CHARACTER),
-            )
-            .await
-            .map_err(f::debug)?;
-        assert!(matches!(
-            outcome,
-            crate::durability::item_mint::ItemMintOutcome::Committed(_)
-        ));
+        if loot >= 6 {
+            loot_ids = nested::mint(h, &authority, &mut candidate).await?;
+        } else {
+            let permit = candidate.fresh_death_lane_permit().await;
+            let outcome = h
+                .root
+                .commit_corpse_mint(
+                    &permit,
+                    &authority,
+                    &h.node,
+                    &mut candidate,
+                    f::id(f::CHARACTER),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(
+                outcome,
+                crate::durability::item_mint::ItemMintOutcome::Committed(_)
+            ));
+        }
     }
     let (item,revision):(Vec<u8>,String)=sqlx::query_as("SELECT decode(replace(item_instance_id::text,'-',''),'hex'),state_revision::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i8139' AND lifecycle=1").fetch_one(&h.pool).await?;
     let item: [u8; 16] = item.try_into().map_err(|_| "corpse identity")?;
     if loot == 4 {
         return handoff::exercise(h, &authority, &content, item).await;
     }
-    let mut loot_ids = Vec::new();
-    if loot > 0 {
+    if loot > 0 && loot < 6 {
         use crate::durability::item_mint::{
             CorpseContainerPlacement, CorpseLootMintRequest, ItemMintCause, ItemMintOutcome,
         };
@@ -331,13 +352,19 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
                         ),
                         item: f::definition(
                             "Item",
-                            if loot >= 2 && ordinal == 2 {
+                            if loot == 5 && ordinal == 1 {
+                                "oteryn:item.tibia.i3505"
+                            } else if loot >= 2 && ordinal == 2 {
                                 "oteryn:item.tibia.i2874"
                             } else {
                                 "oteryn:item.tibia.i3031"
                             },
                         ),
-                        quantity: if loot >= 2 && ordinal == 2 { 1 } else { 60 },
+                        quantity: if loot == 5 || loot >= 2 && ordinal == 2 {
+                            1
+                        } else {
+                            60
+                        },
                         placement: CorpseContainerPlacement {
                             corpse_item_instance_id: item,
                             placement_ordinal: ordinal,
@@ -362,9 +389,33 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             }
         }
     }
+    const PRIVATE_TEXT: &str = "A private letter carried by the elemental corpse.";
+    let text_before: Option<serde_json::Value> = if loot == 5 {
+        // Storage fixture only: real minted letter and the Text owner's writer.
+        // Current altar authority is independently supplied by the actual Root call below.
+        let written = crate::durability::item_text::tests::store_fixture_request(
+            &h.pool,
+            &f::id(f::CHARACTER),
+            crate::durability::item_text::ItemTextWriteRequest {
+                command: f::command(92)?,
+                item_instance_id: loot_ids[0],
+                definition: f::definition("Item", "oteryn:item.tibia.i3505"),
+                text: PRIVATE_TEXT.into(),
+            },
+        )
+        .await?;
+        assert_eq!(written.text_revision, 1);
+        assert!(written.changed);
+        eprintln!("QN1_ELEMENTAL_TEXT_LOOT_PG_READY");
+        Some(sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_texts t WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?)
+    } else {
+        None
+    };
+    let fluid_index = if loot >= 6 { 2 } else { 1 };
     let fluid_before: Option<serde_json::Value> = if loot >= 2 {
         sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
-            .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?
+            .bind(loot_ids[fluid_index].as_slice()).fetch_optional(&h.pool).await?
     } else {
         None
     };
@@ -374,7 +425,11 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             "fixture must mint a real fluid state"
         );
     }
-    if loot == 2 {
+    let mut children_before = Vec::new();
+    for child in &loot_ids {
+        children_before.push(nested::snapshot(&h.pool, child).await?);
+    }
+    if loot == 2 || loot == 7 {
         // A nontransactional sequence witnesses that the injected failure ran only
         // after every child retired and the real parent admission guard accepted.
         sqlx::raw_sql("CREATE SEQUENCE qn1_elemental_parent_fault_hits;
@@ -607,7 +662,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         )
         .await
         .map_err(f::debug)?;
-    if loot == 2 {
+    if loot == 2 || loot == 7 {
         assert!(matches!(
             result,
             Err(crate::durability::item_loop_move::LoopMoveRefusal::Rejected)
@@ -615,12 +670,10 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         assert!(!window.commit_called());
         window.release();
         for (ordinal, child) in loot_ids.iter().enumerate() {
-            let state: (i64, i16, i64) = sqlx::query_as("SELECT i.quantity,i.lifecycle,(SELECT count(*) FROM game_item_corpse_container_entries e WHERE e.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
-                .bind(child.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
-                state,
-                (if ordinal == 0 { 60 } else { 1 }, 1, 1),
-                "refusal must roll back an earlier child retirement"
+                nested::snapshot(&h.pool, child).await?,
+                children_before[ordinal],
+                "parent refusal restores each exact item and its original custody"
             );
         }
         let body: (i64, i16, String) = sqlx::query_as("SELECT quantity,lifecycle,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -640,12 +693,15 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         assert_eq!(
             fault,
             (1, true),
-            "must fail at parent admission after retiring both children"
+            "must fail at parent admission after retiring every child"
         );
         let restored: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
-            .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?;
+            .bind(loot_ids[fluid_index].as_slice()).fetch_optional(&h.pool).await?;
         assert_eq!(restored, fluid_before);
         eprintln!("QN1_ELEMENTAL_LOOT_ROLLBACK_PG_EXECUTED");
+        if loot == 7 {
+            eprintln!("QN1_ELEMENTAL_NESTED_ROLLBACK_PG_EXECUTED");
+        }
         return Ok(());
     }
     let receipt = result.map_err(|e| format!("arrival refused {e:?}"))?;
@@ -656,7 +712,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
     );
     window.install();
     for child in &loot_ids {
-        let state: (i64, i16, i64, i64) = sqlx::query_as("SELECT i.quantity,i.lifecycle,(SELECT count(*) FROM game_item_corpse_container_entries e WHERE e.item_instance_id=i.item_instance_id),(SELECT count(*) FROM game_item_audit_outbox a WHERE a.item_instance_id=i.item_instance_id AND a.transaction_id=i.last_transaction_id) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
+        let state: (i64, i16, i64, i64) = sqlx::query_as("SELECT i.quantity,i.lifecycle,(SELECT count(*) FROM (SELECT item_instance_id FROM game_item_corpse_container_entries UNION ALL SELECT item_instance_id FROM game_item_nested_entries) e WHERE e.item_instance_id=i.item_instance_id),(SELECT count(*) FROM game_item_audit_outbox a WHERE a.item_instance_id=i.item_instance_id AND a.transaction_id=i.last_transaction_id) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
             .bind(child.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(
             state,
@@ -664,11 +720,55 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             "arrival must retire and audit each loot entry"
         );
     }
-    if loot == 3 {
+    if loot >= 6 {
+        let proof: (i64, i64, i64) = sqlx::query_as("SELECT count(*),count(*) FILTER(WHERE entry_kind=2),count(*) FILTER(WHERE ground_root_item_instance_id=encode($1,'hex')::uuid) FROM game_elemental_loot_retire_receipts")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            proof,
+            (3, 2, 3),
+            "every real nested entry binds its actual consumed Ground root"
+        );
+        eprintln!("QN1_ELEMENTAL_NESTED_LOOT_PG_EXECUTED");
+    }
+    if loot == 5 {
+        let archived: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_texts t WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            Some(archived),
+            text_before,
+            "retirement preserves the private Text component"
+        );
+        let captured: serde_json::Value = sqlx::query_scalar("SELECT text_state_before FROM game_elemental_loot_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            captured,
+            serde_json::json!({"text_revision":"1","high_water":"1"})
+        );
+        use crate::durability::item_mint_audit::{
+            EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1,
+        };
+        use prost::Message;
+        let wire: Vec<u8> = sqlx::query_scalar("SELECT a.envelope FROM game_item_audit_outbox a JOIN game_elemental_loot_retire_receipts r ON r.transaction_id=a.transaction_id WHERE r.item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?;
+        assert!(
+            !wire
+                .windows(PRIVATE_TEXT.len())
+                .any(|window| window == PRIVATE_TEXT.as_bytes())
+        );
+        let envelope = EventEnvelopeV1::decode(wire.as_slice())?;
+        let transaction = OneItemTransactionV1::decode(envelope.payload.as_slice())?;
+        let Some(OneItemOperationV1::Craft(craft)) = transaction.operation else {
+            return Err("text loot audit operation".into());
+        };
+        let proof: serde_json::Value = serde_json::from_slice(&craft.proof)?;
+        assert_eq!(proof["text_state_before"], captured);
+        eprintln!("QN1_ELEMENTAL_TEXT_LOOT_PG_EXECUTED");
+    }
+    if loot == 3 || loot == 6 {
         let archived: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
-            .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?;
+            .bind(loot_ids[fluid_index].as_slice()).fetch_optional(&h.pool).await?;
         let captured: Option<serde_json::Value> = sqlx::query_scalar("SELECT fluid_before FROM game_elemental_loot_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid")
-            .bind(loot_ids[1].as_slice()).fetch_one(&h.pool).await?;
+            .bind(loot_ids[fluid_index].as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(
             archived, fluid_before,
             "retirement archives the fluid component unchanged"
@@ -682,7 +782,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         };
         use prost::Message;
         let wire: Vec<u8> = sqlx::query_scalar("SELECT a.envelope FROM game_item_audit_outbox a JOIN game_elemental_loot_retire_receipts r ON r.transaction_id=a.transaction_id WHERE r.item_instance_id=encode($1,'hex')::uuid")
-            .bind(loot_ids[1].as_slice()).fetch_one(&h.pool).await?;
+            .bind(loot_ids[fluid_index].as_slice()).fetch_one(&h.pool).await?;
         let envelope = EventEnvelopeV1::decode(wire.as_slice())?;
         let transaction = OneItemTransactionV1::decode(envelope.payload.as_slice())?;
         let Some(OneItemOperationV1::Craft(craft)) = transaction.operation else {
