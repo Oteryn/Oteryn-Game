@@ -114,6 +114,18 @@ MARKER_NOTE = " Additionally 79 exact source Sugar Daddy room appearance-only Te
 
 @lru_cache(maxsize=4)
 def outputs(root=ROOT):
+    return qualified_outputs(root, IDS, PROFILE, SHARD, CAPTURE, CAPTURE_SHA256,
+                             MARKER_NOTE, "appearance_only_boss_room")
+
+
+@lru_cache(maxsize=8)
+def qualified_outputs(root, ids, profile, shard, capture_path, capture_sha256,
+                      marker_note, reason):
+    """One bounded static corpus, verified against complete artifacts and exact source flags.
+
+    The caller supplies a closed, independently captured id set. This produces Terrain
+    only; Item identities, use hooks and generic donor-key fallbacks remain inadmissible.
+    """
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
     )
@@ -135,8 +147,8 @@ def outputs(root=ROOT):
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    if any(int(row["external_id"]) in IDS for row in bindings["bindings"]):
-        raise ValueError("Sugar appearance-only identity unexpectedly has Item binding")
+    if any(int(row["external_id"]) in ids for row in bindings["bindings"]):
+        raise ValueError("Static appearance-only identity unexpectedly has Item binding")
     admitted = json.loads(
         (root / "imports/official/appearance-membership/admitted.json").read_bytes()
     )
@@ -153,8 +165,8 @@ def outputs(root=ROOT):
         or membership["appearances_sha256"] != digest
     ):
         raise ValueError("official appearance membership digest")
-    if not IDS.issubset({row[0] for row in members["entries"]}):
-        raise ValueError("Sugar room lacks official appearance membership")
+    if not ids.issubset({row[0] for row in members["entries"]}):
+        raise ValueError("Static corpus lacks official appearance membership")
     # The complete artifact supplies every witnessed geometry fact. There is no
     # generic donor-key fallback, Item admission or authorization of use hooks.
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
@@ -163,16 +175,16 @@ def outputs(root=ROOT):
     objects = source.engine_items.load_appearance_objects(
         (root / artifact).read_bytes()
     )
-    capture_raw = (root / CAPTURE).read_bytes()
-    if hashlib.sha256(capture_raw).hexdigest() != CAPTURE_SHA256:
-        raise ValueError("Sugar exact source capture digest")
+    capture_raw = (root / capture_path).read_bytes()
+    if hashlib.sha256(capture_raw).hexdigest() != capture_sha256:
+        raise ValueError("Static exact source capture digest")
     witness = json.loads(capture_raw)
     records = []
     known = lambda value: {"state": "KNOWN", "value": value}
-    for item in sorted(IDS):
+    for item in sorted(ids):
         flags = objects[item]["flags"]
         if witness["flags"][str(item)] != flags:
-            raise ValueError("Sugar source geometry flags differ")
+            raise ValueError("Static source geometry flags differ")
         kind = (
             "ground"
             if flags.get("flags.bank")
@@ -212,14 +224,14 @@ def outputs(root=ROOT):
                     "publisher": "CipSoft",
                     "product": "Tibia-client",
                     "revision": digest,
-                    "profile": PROFILE,
+                    "profile": profile,
                     "client_version": "15.30",
                     "artifact": artifact,
                     "membership_manifest_sha256": membership["manifest_sha256"],
                     "membership_entries_sha256": members["entries_sha256"],
                 },
                 "source_item_id": item,
-                "route": {"owner": "Terrain", "reason": "appearance_only_boss_room"},
+                "route": {"owner": "Terrain", "reason": reason},
                 "fields": {
                     name: [f"official_client:{digest}.{fact}"]
                     for name, fact in [
@@ -237,7 +249,7 @@ def outputs(root=ROOT):
             if appearance.speed is None or (
                 appearance.speed == 0 and not flags.get("flags.unpass")
             ):
-                raise ValueError("Sugar unknown ground speed")
+                raise ValueError("Static unknown ground speed")
             record["ground_speed"] = known(appearance.speed)
             record["provenance"]["fields"]["ground_speed"] = [
                 f"official_client:{digest}.bank.waypoints"
@@ -245,11 +257,11 @@ def outputs(root=ROOT):
         records.append(record)
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
-    for item in sorted(IDS):
+    for item in sorted(ids):
         selected = [row for row in index["palette"] if row["source_item_id"] == item]
         if len(selected) != 1:
             raise ValueError(
-                "Sugar room requires one stable palette index per identity"
+                "Static corpus requires one stable palette index per identity"
             )
         selected[0].update(key=f"oteryn:terrain.tibia.i{item}", provisional=False)
     encode = lambda value: (
@@ -258,11 +270,11 @@ def outputs(root=ROOT):
     ).encode()
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((root / marker_path).read_bytes())
-    if MARKER_NOTE not in marker["notes"]:
-        marker["notes"] += MARKER_NOTE
+    if marker_note not in marker["notes"]:
+        marker["notes"] += marker_note
     marker_bytes = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     return {
-        SHARD: encode({"family": "Terrain", "records": records}),
+        shard: encode({"family": "Terrain", "records": records}),
         index_path: encode(index),
         marker_path: marker_bytes,
     }

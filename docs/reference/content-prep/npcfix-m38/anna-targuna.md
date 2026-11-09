@@ -30,3 +30,27 @@ by catalogue admission alone: its confirmed route, actual placement, citizenship
 tutorial reset must qualify together, including reconnect/replay after pending arrival.
 The existing HomeTownRelocation owner already composes arrival consumption, position
 and citizenship in one fenced transaction; reuse it for that continuation.
+
+Native landing investigation after c95897fdb: the repository B3 decoder (`tools/content-schema/world-authoring/world_region_codec.py:370`) finds `(31938,31928,z7)` with flags1, house0, and one top-level palette94 entry. The pinned placement index resolves palette94 to `oteryn:item.tibia.i231`; Terrain `oteryn:terrain.tibia.i231` declares ground, walkable=true and speed160. This is a raw-input fact, not a substitute for the compiler/runtime landing gate. The canonical Anna placement is `(32552,32497,z7)`, with Lua definition SHA2565ad524861ac070192466d751215e9be859f6cea67a3d8fa2612e43a12b4fdd2e. No NPC placement was found on the Targuna landing itself. Input SHA256s:
+
+- `content/world/placements/region-z07-x124-y124.b3`: `d4354c21e1d3342f9ef92b9f7f249ef3c484d4da3d67d88bbff1a7da19deff93`
+- `content/world/placements/index.json`: `f770da7cceec09faf63e6086fa099efa001db57045d4e9906d0057ff42c90af6`
+- `content/world/terrain/terrain-00000-00499.json`: `d54273ee59a6703392a27ecc0ea0778961b66a2abdcba52167beb7548badfd21`
+- `content/world/npc-placements/placements-00000-00055.json`: `d5d0a7bd0a5d382364fc79cf7ea943ac4cd5cc2efd9577afbaa609ac5c4ba993`
+
+Static geometry closure at these three anchors also requires appearance-only IDs
+20661, 34434 and 51921. Source: CrystalServer revision
+`00ce02a57ca5a12e48f32a3476e37471167e4c3f`,
+[appearances.dat](https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/appearances.dat)
+(SHA256 `17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1`)
+and [items.xml](https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml)
+(SHA256 `13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece`).
+The exact normalized flags are retained in
+`tools/content-schema/world-object-authoring/samples/npcfix-travel-source-flags.json:1`
+(SHA256 `e4a8aad823a249072f8050c4ae101f6e941ae7be430ee31f1e8512e408af458f`)
+and reproduced by `npcfix_travel_static.py --donor-dat ... --donor-xml ...`.
+All three are absent from that XML and the Item binding catalogue. The admitted
+15.30 appearances artifact independently has the identical flags. In particular
+20661 is a clipping, unpassable border; qualification must preserve its collision.
+This bounded Terrain corpus does not admit Item identities or interactive hooks,
+and does not enable Anna's Targuna offer.

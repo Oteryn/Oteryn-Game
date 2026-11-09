@@ -51,6 +51,30 @@ def without_sugar(root, raw):
     return (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
 
 
+NPCFIX_GROUND = "terrain-08693-08695.json"
+
+
+@lru_cache(maxsize=1)
+def npcfix_owner():
+    path = Path(__file__).resolve().parents[1] / "world-object-authoring"
+    import sys
+    sys.path.insert(0, str(path))
+    import npcfix_travel_static
+    return npcfix_travel_static.MARKER_NOTE, npcfix_travel_static.outputs()[npcfix_travel_static.SHARD]
+
+
+def without_npcfix(root, raw):
+    marker = json.loads(raw)
+    note, expected = npcfix_owner()
+    shard = root / "content/world/terrain" / NPCFIX_GROUND
+    if not marker["notes"].endswith(note) or shard.read_bytes() != expected:
+        raise ValueError("source digest drift: NPC travel terrain witness")
+    if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
+        raise ValueError("source digest drift: NPC travel terrain marker bytes")
+    marker["notes"] = marker["notes"].removesuffix(note)
+    return (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
+
+
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
@@ -59,6 +83,8 @@ def original_marker(root):
     """Recover the exact old marker after independently qualified owner additions."""
     root = Path(root)
     raw = (root / MARKER).read_bytes()
+    if (root / "content/world/terrain" / NPCFIX_GROUND).exists():
+        raw = without_npcfix(root, raw)
     sugar = root / "content/world/terrain" / SUGAR_GROUND
     if sugar.exists():
         raw = without_sugar(root, raw)
@@ -111,7 +137,7 @@ def link_world(root, target, detached=()):
         for path in source.iterdir():
             if path.name == "index.json":
                 (destination / path.name).write_bytes(original)
-            elif path.name not in {GROUND, SOULPIT, SUGAR_GROUND}:
+            elif path.name not in {GROUND, SOULPIT, SUGAR_GROUND, NPCFIX_GROUND}:
                 (destination / path.name).symlink_to(path.resolve())
 
 
@@ -133,7 +159,17 @@ def original_hit_packet(root):
     ground = "content/world/terrain/" + GROUND
     soulpit = "content/world/terrain/" + SOULPIT
     sugar = "content/world/terrain/" + SUGAR_GROUND
-    if sugar in inputs and inputs.get(MARKER) == sha((root / MARKER).read_bytes()):
+    npcfix = "content/world/terrain/" + NPCFIX_GROUND
+    if npcfix in inputs:
+        _, expected = npcfix_owner()
+        if inputs[npcfix] != sha(expected):
+            raise ValueError("source digest drift: historical Hit NPC travel footprint")
+        del inputs[npcfix]
+    live_marker = (root / MARKER).read_bytes()
+    admitted_markers = {sha(live_marker)}
+    if (root / npcfix).exists():
+        admitted_markers.add(sha(without_npcfix(root, live_marker)))
+    if sugar in inputs and inputs.get(MARKER) in admitted_markers:
         if inputs[sugar] != sha((root / sugar).read_bytes()):
             raise ValueError("source digest drift: historical Hit Sugar footprint")
         del inputs[sugar]

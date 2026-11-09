@@ -93,6 +93,7 @@ class ContextTests(unittest.TestCase):
                 "content/world/terrain/" + world_context.GROUND,
                 "content/world/terrain/" + world_context.SOULPIT,
                 "content/world/terrain/" + world_context.SUGAR_GROUND,
+                "content/world/terrain/" + world_context.NPCFIX_GROUND,
             ):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -108,6 +109,7 @@ class ContextTests(unittest.TestCase):
             "content/world/terrain/" + world_context.GROUND,
             "content/world/terrain/" + world_context.SOULPIT,
             "content/world/terrain/" + world_context.SUGAR_GROUND,
+            "content/world/terrain/" + world_context.NPCFIX_GROUND,
         ):
             with (
                 self.subTest(relative=relative),
@@ -119,6 +121,7 @@ class ContextTests(unittest.TestCase):
                     "content/world/terrain/" + world_context.GROUND,
                     "content/world/terrain/" + world_context.SOULPIT,
                     "content/world/terrain/" + world_context.SUGAR_GROUND,
+                    "content/world/terrain/" + world_context.NPCFIX_GROUND,
                 ):
                     target = root / source
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -140,6 +143,7 @@ class ContextTests(unittest.TestCase):
                 "content/world/terrain/" + world_context.GROUND,
                 "content/world/terrain/" + world_context.SOULPIT,
                 "content/world/terrain/" + world_context.SUGAR_GROUND,
+                "content/world/terrain/" + world_context.NPCFIX_GROUND,
                 world_context.HIT_PACKET,
             ):
                 target = root / relative

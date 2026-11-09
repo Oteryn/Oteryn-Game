@@ -504,6 +504,19 @@ def validate_record(record):
     if errors:
         return errors
     if "item_pointer" not in record["provenance"]:
+        import npcfix_travel_static
+
+        if (
+            record["provenance"]["source"].get("profile") == npcfix_travel_static.PROFILE
+            or record["provenance"]["source_item_id"] in npcfix_travel_static.IDS
+        ):
+            expected = json.loads(
+                npcfix_travel_static.outputs()[npcfix_travel_static.SHARD]
+            )["records"]
+            return (
+                [] if record in expected
+                else ["NPC travel static Terrain differs from its exact source"]
+            )
         import soulpit_static
 
         if (

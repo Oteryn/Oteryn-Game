@@ -626,5 +626,39 @@
     "pins": "PASS unchanged",
     "duplicate_migrations": "PASS HEAD",
     "clippy": "PASS durability+dispatch --lib -D warnings"
+  },
+  "targuna_atomic_owner_slice": {
+    "state": "GREEN_PUSHED",
+    "code_commit": "c95897fdb1a1fa68e7d5946fc241bbc879d802f4",
+    "pg_seconds": 18.396251785,
+    "legacy_return_pg_seconds": 19.175548114,
+    "legacy_p20_pg_seconds": 139.48,
+    "workspace_check": "PASS 18m40s",
+    "native_offer": "disabled; real Anna story still unqualified"
+  },
+  "targuna_static_anchor_slice": {
+    "state": "GREEN_PUSH_READY",
+    "source_ids": [
+      20661,
+      34434,
+      51921
+    ],
+    "red": "Native source story refused omitted geometry before PostgreSQL marker; 452.00s, not a PG story proof",
+    "scope": "Exact official/donor static Terrain flags; 20661 remains unpassable. No Item/use admission or native route activation.",
+    "world_digest": "699bcd9ef0d06555c4cd89b67cd4d993944cfd384436406aa82e167ef89d0e11",
+    "focused_world_object_tests": 28,
+    "historical_owner_tests": 11,
+    "compiler_unit_tests": 8,
+    "compiler_source_test_seconds": 89.58,
+    "client_asset_unit_tests": 10,
+    "workspace_check": "PASS 13m32s",
+    "authoring_checks": "PASS",
+    "content_tree_validation": "PASS",
+    "clippy": "PASS compiler integration target and client-assets lib; -D warnings",
+    "pins": "PASS serial retry after overlapping check was killed",
+    "unit_runner": "PASS full 114-module retry alone; all cases executed, existing skips unchanged",
+    "native_story": "Unqualified; fixture geometry now closes, but prior attempt failed unrelated progression setup before marker. Corrected fixture and P20 regression are excluded from this slice. Their attempted test build was SIGKILLed; no semantic RED or PG proof claimed.",
+    "deployment_handoff": "Protected topology unchanged; coordinator must refresh World digest at integration.",
+    "unit_cases": 1145
   }
 }

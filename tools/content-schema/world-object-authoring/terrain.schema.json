@@ -365,7 +365,8 @@
                     "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
-                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                    "OTERYN_OFFICIAL_CLIENT_NPCFIX_TRAVEL_STATIC/v1"
                   ]
                 },
                 "client_version": {
@@ -836,6 +837,42 @@
               "item_pointer"
             ]
           }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_NPCFIX_TRAVEL_STATIC/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "appearance_only_npc_travel"
+                }
+              }
+            },
+            "source_item_id": {
+              "enum": [
+                20661,
+                34434,
+                51921
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
         }
       ]
     },
@@ -906,7 +943,8 @@
                     "profile": {
                       "enum": [
                         "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
-                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1"
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
+                        "OTERYN_OFFICIAL_CLIENT_NPCFIX_TRAVEL_STATIC/v1"
                       ]
                     }
                   }
