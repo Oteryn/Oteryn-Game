@@ -96,6 +96,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub audio_device: String,
     #[serde(default = "default_opacity")]
     pub effect_opacity: [u8; 3],
     /// Disable TCP small-packet buffering on the next gameplay connection.
@@ -165,6 +167,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            audio_device: String::new(),
             effect_opacity: default_opacity(),
             optimise_connection: false,
             ambient_brightness: 0,
@@ -211,6 +214,9 @@ impl ReferencePreferences {
 
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if self.audio_device.len() > 256 || self.audio_device.chars().any(char::is_control) {
+            return Err(PreferenceError);
+        }
         if self.effect_opacity.iter().any(|opacity| *opacity > 100) {
             return Err(PreferenceError);
         }

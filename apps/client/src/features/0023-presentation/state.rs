@@ -163,7 +163,7 @@ impl SoundCatalog {
 pub mod native;
 
 #[cfg(windows)]
-pub use native::{AudioOutput, NativeAudio};
+pub use native::{AudioOutput, NativeAudio, audio_device_names};
 
 pub const MAX_VISUAL_CUES: usize = 64;
 pub const VISUAL_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1000);
@@ -177,3 +177,7 @@ pub struct VisualCue {
 #[path = "ui_sound.rs"]
 pub mod ui_sound;
 pub use ui_sound::UiSound;
+
+#[path = "device.rs"]
+mod device;
+pub use device::select_audio_device;

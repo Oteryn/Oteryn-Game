@@ -2,6 +2,8 @@
 use super::*;
 use oteryn_client::play::ReferencePreferences;
 pub(crate) struct BattleSoundControls {
+    device_label: HWND,
+    device: HWND,
     labels: [HWND; 4],
     ui_checks: [HWND; 4],
     edits: [HWND; 4],
@@ -9,6 +11,21 @@ pub(crate) struct BattleSoundControls {
 impl BattleSoundControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let device_label = control(hwnd, "STATIC", "Output device", 0, [10, 100, 220, 26], 0);
+            let device = control(
+                hwnd,
+                "COMBOBOX",
+                "",
+                0,
+                [240, 100, 470, 200],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+            );
+            for name in std::iter::once("System default".to_owned())
+                .chain(oteryn_client::play::audio_device_names())
+            {
+                SendMessageW(device, CB_ADDSTRING, 0, wide(&name).as_ptr() as isize);
+            }
+            SendMessageW(device, CB_SETCURSEL, 0, 0);
             let ui_checks = [
                 "UI interactions",
                 "Party messages",
@@ -53,8 +70,11 @@ impl BattleSoundControls {
                 .iter()
                 .chain(&edits)
                 .chain(&ui_checks)
+                .chain(&[device_label, device])
                 .any(|handle| handle.is_null()))
             .then_some(Self {
+                device_label,
+                device,
                 labels,
                 edits,
                 ui_checks,
@@ -63,13 +83,24 @@ impl BattleSoundControls {
     }
     pub(crate) unsafe fn show(&self, visible: bool) {
         unsafe {
-            for handle in self.labels.iter().chain(&self.edits).chain(&self.ui_checks) {
+            for handle in self
+                .labels
+                .iter()
+                .chain(&self.edits)
+                .chain(&self.ui_checks)
+                .chain(&[self.device_label, self.device])
+            {
                 ShowWindow(*handle, if visible { SW_SHOW } else { SW_HIDE });
             }
         }
     }
     pub(crate) unsafe fn read(&self, preferences: &mut ReferencePreferences) -> Result<(), String> {
         unsafe {
+            preferences.audio_device = if SendMessageW(self.device, CB_GETCURSEL, 0, 0) == 0 {
+                String::new()
+            } else {
+                text(self.device)
+            };
             for (index, handle) in self.edits[..3].iter().enumerate() {
                 preferences.audio.battle_volumes[index] = text(*handle)
                     .parse()
@@ -86,6 +117,21 @@ impl BattleSoundControls {
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
+            let name = if preferences.audio_device.is_empty() {
+                "System default"
+            } else {
+                &preferences.audio_device
+            };
+            let mut index = SendMessageW(
+                self.device,
+                CB_FINDSTRINGEXACT,
+                usize::MAX,
+                wide(name).as_ptr() as isize,
+            );
+            if index == CB_ERR as isize {
+                index = SendMessageW(self.device, CB_ADDSTRING, 0, wide(name).as_ptr() as isize);
+            }
+            SendMessageW(self.device, CB_SETCURSEL, index as usize, 0);
             for (handle, enabled) in self.ui_checks.iter().zip(preferences.audio.ui_sounds) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
             }

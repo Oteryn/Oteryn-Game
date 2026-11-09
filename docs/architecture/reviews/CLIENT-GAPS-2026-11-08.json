@@ -397,7 +397,7 @@
   "status": "PARTIAL",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/native.rs:54 + ambient_channel_gain_is_independent_and_honours_master_mute; checked origin/main 2033ddc54 and lane before implementation. Ambient mixer applies to new and existing loops with persisted Sound control. Remaining: device selection and music/items/events/UI channels; native playback caller test."
+  "evidence": "apps/client/src/features/0023-presentation/native.rs:23 + requested_audio_device_is_exact_and_never_silently_falls_back (apps/client/tests/audio_device.rs:3), missing_device_choice_survives_preference_reload (apps/client/tests/audio_device.rs:11). Sound device selector persists exact name, switches native CPAL output, preserves active ambient loop, reports missing device without fallback. Ambient mixer also implemented. Checked main and own branch first. Remaining: independent music/items/events/UI channels and native device integration validation."
  },
  {
   "id": "T065",
