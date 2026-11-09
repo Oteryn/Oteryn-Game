@@ -504,6 +504,12 @@ def validate_record(record):
     if errors:
         return errors
     if "item_pointer" not in record["provenance"]:
+        import engnpc2_ram_world
+
+        if (record["provenance"]["source_item_id"] == engnpc2_ram_world.IDENTIFIER
+                or record["provenance"]["source"].get("profile") == engnpc2_ram_world.PROFILE):
+            return ([] if record == engnpc2_ram_world.record()
+                    else ["Reliable Ram differs from its qualified official source"])
         import soulpit_static
 
         if (

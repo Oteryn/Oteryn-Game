@@ -529,6 +529,56 @@
                 "membership_entries_sha256",
                 "wiki_source"
               ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "publisher": {
+                  "const": "CipSoft"
+                },
+                "product": {
+                  "const": "Tibia-client"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$",
+                  "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1"
+                },
+                "client_version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+$"
+                },
+                "artifact": {
+                  "type": "string",
+                  "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$"
+                },
+                "membership_manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "membership_entries_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "engine",
+                "publisher",
+                "product",
+                "revision",
+                "profile",
+                "client_version",
+                "artifact",
+                "membership_manifest_sha256",
+                "membership_entries_sha256"
+              ]
             }
           ]
         },
@@ -836,6 +886,38 @@
               "item_pointer"
             ]
           }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "appearance_only_quest_target"
+                }
+              }
+            },
+            "source_item_id": {
+              "const": 53439
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
         }
       ]
     },
@@ -918,6 +1000,16 @@
                     },
                     "profile": {
                       "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1"
                     }
                   }
                 }

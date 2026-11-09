@@ -408,6 +408,14 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import engnpc2_ram_world
+
+        files[engnpc2_ram_world.SHARD] = engnpc2_ram_world.outputs()[engnpc2_ram_world.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += engnpc2_ram_world.NOTE
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     return files, world_objects.census_document_bytes(result)
 
 

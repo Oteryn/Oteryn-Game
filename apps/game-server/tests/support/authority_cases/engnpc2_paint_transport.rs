@@ -35,7 +35,28 @@ fn engnpc2_paint_postgres_native_three_seals_through_caller() -> TestResult {
         }).map_err(debug)
     })?.join().map_err(|_| "paint caller PG thread failed")?.map_err(Into::into)
 }
+#[test]
+fn engnpc2_ram_postgres_native_turnip_through_caller() -> TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(128 << 20).spawn(move || -> Result<(), String> {
+        fixture::runtime().map_err(debug)?.block_on(async {
+            let started = std::time::Instant::now();
+            let h = fixture::Harness::create_with_admission_seed(admin, "engnpc2_ram_caller", true, false).await?;
+            let result = exercise_case(&h, true).await;
+            h.cleanup().await?;
+            result?;
+            assert!(started.elapsed().as_secs_f64() > 0.01);
+            eprintln!("PG_EXECUTED engnpc2_ram_postgres_native_turnip_through_caller duration={:?}", started.elapsed());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }).map_err(debug)
+    })?.join().map_err(|_| "ram caller PG thread failed")?.map_err(Into::into)
+}
 async fn exercise(h: &fixture::Harness) -> TestResult {
+    exercise_case(h, false).await
+}
+async fn exercise_case(h: &fixture::Harness, ram: bool) -> TestResult {
     super::engnpc2_live_transport::fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
@@ -51,17 +72,45 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session)
             .await?;
+    let (source, region, bounds, start) = if ram {
+        (
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z07-x124-y124.b3"
+            ))
+            .as_slice(),
+            (7, 124, 124),
+            (31926, 31895, 31928, 31897),
+            (31927, 31895),
+        )
+    } else {
+        (
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z07-x125-y121.b3"
+            ))
+            .as_slice(),
+            (7, 125, 121),
+            (32000, 31164, 32003, 31168),
+            (32000, 31165),
+        )
+    };
     let scene = world::native_scene(
         native,
         vec![world::NativeCrop {
-            bytes: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z07-x125-y121.b3"
-            )),
-            region: (7, 125, 121),
-            bounds: (32000, 31164, 32003, 31168),
-            start: (32000, 31165),
-            expected: vec![],
+            bytes: source,
+            region,
+            bounds,
+            start,
+            expected: if ram {
+                vec![world::ExpectedTile {
+                    position: (31926, 31896),
+                    ids: vec![4515, 5485, 53439],
+                    counted_entry: None,
+                }]
+            } else {
+                vec![]
+            },
         }],
         &[],
         &[7252],
@@ -78,8 +127,8 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
             scene.frame_binding_digest(world),
             scene.map_revision_digest(),
             oteryn_gameplay_content::content::NativeEntryStart {
-                x: 32000,
-                y: 31165,
+                x: i32::from(start.0),
+                y: i32::from(start.1),
                 floor: 7,
             },
         )
@@ -130,7 +179,7 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         .read_actor_position(actor)
         .map_err(debug)?
         .position();
-    assert_eq!((at.x, at.y, at.floor), (32000, 31165, 7));
+    assert_eq!((at.x, at.y, at.floor), (start.x, start.y, 7));
     let runtime = Mutex::new(runtime);
     let content =
         oteryn_gameplay_world::world_runtime::ReferenceContentGeneration::from_content(room.door())
@@ -196,6 +245,11 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     }
     .build();
     owner.active_generation = Some(generation);
+    if ram {
+        use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+        let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) = room.movement_cells().index() else { return Err("native bundle index".into()); };
+        return exercise_ram(h, native, &mut owner, index.map(), actor, session).await;
+    }
     use oteryn_gameplay_quests::quest::{
         QuestStateCatalogue, QuestTrack, ice_islands_seals as seals, world_callbacks,
     };
@@ -308,5 +362,96 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     assert!(states.contains(&(seals::QUESTLINE.into(), 9)));
     assert!(states.contains(&(seals::MISSION04.into(), 2)));
     assert_eq!(h.count("game_character_quest_receipts").await?, 3);
+    Ok(())
+}
+
+async fn exercise_ram(
+    h: &fixture::Harness,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    map: &oteryn_gameplay_world::map::boot::BundleMap,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+) -> TestResult {
+    use oteryn_gameplay_quests::quest::{
+        QuestStateCatalogue, QuestTrack, targuna_ram as ram, world_callbacks,
+    };
+    let callback = ram::callback().map_err(debug)?;
+    let tracks = [(ram::TURNIPS, 1, 1), (ram::MISSION, 4, 5), (ram::RAM, 0, 1)]
+        .into_iter()
+        .map(|(key, initial, max)| QuestTrack {
+            key: key.into(),
+            quest: ram::QUEST.into(),
+            initial,
+            min: 0,
+            max,
+        })
+        .collect();
+    owner.quest_catalogue = Some(Arc::new(
+        QuestStateCatalogue::new(
+            "content-1",
+            tracks,
+            vec![world_callbacks::primary_transition(&callback).map_err(debug)?],
+        )
+        .map_err(debug)?,
+    ));
+    super::engnpc2_live_transport::seed_tool(h, native, "oteryn:item.tibia.i53073").await?;
+    let key = oteryn_world_bundle::bundle::placement_key(-7, 31926, 31896, 2).ok_or("ram key")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let target = oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    };
+    assert_eq!(
+        composed_test_owner::world_tool_callbacks(owner, &target)?,
+        vec![ram::KEY]
+    );
+    let definition = native
+        .item_index()
+        .ok_or("native index")?
+        .definition_ref("Item", "oteryn:item.tibia.i53073", "definition-r1")
+        .ok_or("turnip definition")?;
+    let intent = UseIntent {
+        target: UseTarget::ItemByDefinition(definition),
+        use_with: None,
+        use_with_map_item: Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+            target,
+        )),
+        use_with_position: None,
+    };
+    let payload = encode_item_use_intent(&intent).map_err(debug)?;
+    let intent = decode_use_intent_target(&[4, 6, 11, 15, 17], &payload).map_err(debug)?;
+    let fence = composed_test_owner::load_quests(owner, session).await?;
+    let result = owner
+        .tame_mount(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 15000,
+                item_fence: Some(fence.item_fence()),
+            },
+            intent,
+            None,
+            None,
+            false,
+        )
+        .await
+        .map_err(|_| "ram caller failed")?
+        .ok_or("ram caller fell through")?;
+    assert_eq!(result.disposition, UseDisposition::Committed);
+    let state: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key='oteryn:content.mount.reliable_ram/quest-grant'), (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/a_reliable_friend')").bind(id(92).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(state, (0, 1, 1));
+    let states: Vec<(String, i64)> =
+        sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks")
+            .fetch_all(&h.pool)
+            .await?;
+    assert!(states.contains(&(ram::MISSION.into(), 5)));
+    assert!(states.contains(&(ram::RAM.into(), 1)));
+    assert_eq!(h.count("game_character_quest_receipts").await?, 1);
+    assert!(
+        callback.selector.native.is_some(),
+        "Ram must have its exact native map counterpart"
+    );
     Ok(())
 }
