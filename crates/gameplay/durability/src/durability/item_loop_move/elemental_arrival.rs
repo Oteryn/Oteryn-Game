@@ -1,5 +1,6 @@
 //! M49: retire the exact arriving corpse and persist its summon intent in the drop transaction.
 use super::*;
+use crate::durability::spell_owner_commit::SpellCommitWindow;
 use oteryn_gameplay_quests::quest::elemental_arrival::SummonPlan;
 
 /// The actual source item and requested arrival cell, before reserving the map readset.
@@ -108,9 +109,9 @@ impl DurabilityRoot {
         clippy::too_many_arguments,
         reason = "the physical successor shares the ordinary move's complete authority and content fence"
     )]
-    pub async fn commit_item_loop_elemental_arrival<C: ItemLoopContent>(
+    pub async fn commit_item_loop_elemental_arrival<C: ItemLoopContent, T: Send + 'static>(
         &self,
-        permit: &SpellLanePermit,
+        window: &mut SpellCommitWindow<'_, T>,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
@@ -119,14 +120,16 @@ impl DurabilityRoot {
         request: LoopMoveRequest,
         target: ElementalArrivalTarget,
     ) -> Result<Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError> {
-        permit.check_scope(fence.runtime_scope)?;
+        window.permit().check_scope(fence.runtime_scope)?;
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (permit, content);
+        let mut context = (window, content);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
-            let (permit, content) = *context;
+            let (window, content) = context;
+            let permit = window.permit();
+            let content = *content;
             let mut tx = crate::durability::db::begin_type2_transaction(holder, deadline).await?;
             let attempt: LoopResult<LoopMoveReceipt> = async {
                 assert_recovery_fence(&mut tx, &record).await?;
@@ -183,7 +186,7 @@ impl DurabilityRoot {
                 Ok(moved)
             }.await;
             match attempt {
-                Ok(receipt) => { tx.commit(deadline).await?; Ok(Ok(receipt)) },
+                Ok(receipt) => { window.commit_type2_transaction(tx, deadline).await?; Ok(Ok(receipt)) },
                 Err(LoopError::Database(sqlx::Error::Database(error))) if error.code().is_some_and(|code| code=="23514" || code=="23505") => Ok(Err(LoopMoveRefusal::Rejected)),
                 Err(error) => loop_error(error).map(Err),
             }

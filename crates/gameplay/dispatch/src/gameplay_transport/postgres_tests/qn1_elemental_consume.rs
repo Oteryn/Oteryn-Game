@@ -346,7 +346,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             placement_context: vec![3; 32],
         }),
     };
-    let permit = SpellLanePermit::of_fresh_scope(f::scope()?)
+    let mut permit = SpellLanePermit::of_fresh_scope(f::scope()?)
         .await
         .map_err(f::debug)?;
     if native {
@@ -427,10 +427,11 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         false,
     )
     .ok_or("well-formed stale physical revision")?;
+    let mut window = permit.open_commit_window((), |attempt| Box::new(attempt));
     let stale = h
         .root
         .commit_item_loop_elemental_arrival(
-            &permit,
+            &mut window,
             &authority,
             &h.node,
             f::fence()?,
@@ -445,6 +446,8 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         stale,
         Err(crate::durability::item_loop_move::LoopMoveRefusal::Stale)
     ));
+    assert!(!window.commit_called());
+    window.release();
     let unchanged: (String, i64) = sqlx::query_as(
         "SELECT state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid"
     ).bind(item.as_slice()).fetch_one(&h.pool).await?;
@@ -485,10 +488,11 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     );
     inflight.rollback().await?;
     assert!(pending.await.map_err(f::debug)?.is_none());
+    let mut window = permit.open_commit_window((), |attempt| Box::new(attempt));
     let result = h
         .root
         .commit_item_loop_elemental_arrival(
-            &permit,
+            &mut window,
             &authority,
             &h.node,
             f::fence()?,
@@ -501,6 +505,11 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         .map_err(f::debug)?;
     let receipt = result.map_err(|e| format!("arrival refused {e:?}"))?;
     assert!(!receipt.replayed);
+    assert!(
+        window.commit_called(),
+        "arrival COMMIT escaped its caller window"
+    );
+    window.install();
     let recovered = h
         .root
         .reconcile_item_loop_move(
@@ -538,10 +547,11 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     assert_eq!(counts, (1, 1, 1));
     let on_ground:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)").bind(item.as_slice()).fetch_one(&h.pool).await?;
     assert!(!on_ground);
+    let mut window = permit.open_commit_window((), |attempt| Box::new(attempt));
     let replay = h
         .root
         .commit_item_loop_elemental_arrival(
-            &permit,
+            &mut window,
             &authority,
             &h.node,
             f::fence()?,
@@ -554,6 +564,11 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         .map_err(f::debug)?
         .map_err(|e| format!("replay refused {e:?}"))?;
     assert!(replay.replayed);
+    assert!(
+        window.commit_called(),
+        "historical arrival did not retain its attempt"
+    );
+    window.install();
     assert_eq!(replay.transaction_id, receipt.transaction_id);
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_elemental_summon_intents")
         .fetch_one(&h.pool)
