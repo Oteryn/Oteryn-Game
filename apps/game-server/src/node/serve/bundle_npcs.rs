@@ -25,6 +25,8 @@ use std::sync::Arc;
 
 #[path = "bundle_npcs/conditional.rs"]
 mod conditional;
+#[path = "bundle_npcs/event_contacts.rs"]
+mod event_contacts;
 mod seasonal;
 
 /// W05c: NPCs that stand only by day or only by night. Donor
@@ -149,6 +151,7 @@ pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
     seasonal: seasonal::SeasonalNpcSpawns,
     conditional: conditional::ConditionalNpcSpawns,
+    event_contacts: event_contacts::EventContacts,
 }
 
 impl TimedNpcSpawns {
@@ -163,6 +166,7 @@ impl TimedNpcSpawns {
             admitted,
             seasonal: seasonal::SeasonalNpcSpawns::default(),
             conditional: conditional::ConditionalNpcSpawns::default(),
+            event_contacts: event_contacts::EventContacts::default(),
         }
     }
 
@@ -173,6 +177,7 @@ impl TimedNpcSpawns {
         enterable: impl Fn(crate::map::overlay::TilePos) -> bool,
     ) -> Self {
         self.conditional = conditional::ConditionalNpcSpawns::admit(boot, &enterable);
+        self.event_contacts = event_contacts::EventContacts::admit(boot, &enterable);
         self.seasonal = seasonal::SeasonalNpcSpawns::admit(boot, events, enterable);
         self
     }
@@ -180,6 +185,14 @@ impl TimedNpcSpawns {
     pub(super) fn with_calendar(mut self, calendar: Option<(u8, u8)>) -> Self {
         self.conditional.set_calendar(calendar);
         self
+    }
+
+    pub(super) async fn refresh_event_contacts(
+        &mut self,
+        root: &crate::durability::DurabilityRoot,
+        world: crate::foundation::WorldId,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        self.event_contacts.refresh(root, world).await
     }
 
     pub(super) fn set_brutus_present(&mut self, present: bool) {
@@ -190,6 +203,7 @@ impl TimedNpcSpawns {
         !self.admitted.iter().any(|admitted| *admitted)
             && self.seasonal.is_empty()
             && self.conditional.is_empty()
+            && self.event_contacts.is_empty()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
@@ -251,7 +265,9 @@ impl TimedNpcSpawns {
                 outcome = outcome.and(placed.map(|_| ()));
             }
         }
-        outcome.and(self.conditional.tick(runtime))
+        outcome
+            .and(self.conditional.tick(runtime))
+            .and(self.event_contacts.tick(runtime))
     }
 }
 
@@ -1110,5 +1126,9 @@ pub(crate) mod tests {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/src/node/serve/bundle_npcs/m38_hoaxette_tests.rs"
+    ));
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/node/serve/bundle_npcs/m38_rascalio_tests.rs"
     ));
 }

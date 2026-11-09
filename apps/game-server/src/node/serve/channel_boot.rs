@@ -373,6 +373,10 @@ pub(super) async fn prepare_channel(
             })
         })
         .with_calendar(npc_calendar);
+    timed_npcs
+        .refresh_event_contacts(root, material.world)
+        .await
+        .map_err(|_| BootError::Readiness("event NPC presence"))?;
     timed_npcs.set_brutus_present(
         root.cake_brutus_present(material.world)
             .await

@@ -248,5 +248,26 @@
       "policy_revision_bound": true,
       "api_commit": "4024aa021f8378144204ffbd609b68feaa6f7c54"
     }
+  },
+  "rascalio_event_slice": {
+    "state": "GREEN_FOCUSED",
+    "binding": "nimmersatts_lair",
+    "anchor": [
+      32259,
+      31643,
+      7
+    ],
+    "red_seconds": 7.17,
+    "red": "PostgreSQL committed active=true; expected 2 occurrences, got 1",
+    "scope": "Projects committed world-change presence at the Carlin anchor only; preserves other Rascalio roles. Event producer/schedule and Banor anchor remain unqualified.",
+    "migration": "none",
+    "green_pg_seconds": 7.996967822,
+    "test": "m38_rascalio_postgres_event_presence_preserves_other_quest_occurrences",
+    "checks": [
+      "strict game-server all-target/all-feature clippy PASS 4m02s",
+      "cargo fmt --all --check PASS",
+      "World pin-check PASS (unchanged inputs)",
+      "duplicate migrations PASS"
+    ]
   }
 }
