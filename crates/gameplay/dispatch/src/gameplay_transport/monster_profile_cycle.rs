@@ -7,6 +7,7 @@ use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 pub(super) mod physical_spell;
+pub(super) mod rotten_waves;
 pub(super) mod source_heals;
 mod source_items;
 
@@ -58,6 +59,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                let wave_enabled = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+                    && room.source_world().is_some() && rotten_waves::has_boss(runtime);
+                let wave_taints = if wave_enabled {
+                    let sessions = runtime.positioned_actor_census()
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                        .into_iter().filter_map(|(_, _, session)| session).collect::<Vec<_>>();
+                    crate::durability::quest_state::rotten_blood::room_taints::read_in_transaction(
+                        &mut tx, &authority, owner.holder, &sessions, native.source_digest(),
+                    ).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                } else { Vec::new() };
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
@@ -109,6 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await;
                 }
+                if wave_enabled { rotten_waves::warm(runtime, &mut map).await; }
                 let mut reader = NativeMonsterThinkRead::new(
                     map,
                     native,
@@ -163,6 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|profile| &profile.target)
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
+                let waves = &mut states.rotten_waves;
                 let mut proposals = Vec::new();
                 let native_reports = table
                     .run_due_current_thinks(
@@ -183,7 +196,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .cloned(),
                             );
                             summons
-                                .consume_report(runtime, table, native, actor, report, reader, now)
+                                .consume_report(runtime, table, native, actor, report, reader, now);
+                            if wave_enabled && waves.consume(runtime, table, native, actor, report,
+                                reader.map.view(), room, &wave_taints, now).is_err() {
+                                eprintln!("oteryn-game-server event=rotten_wave_refused current_owner=true");
+                            }
                         },
                     )
                     .await;

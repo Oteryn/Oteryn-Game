@@ -170,6 +170,8 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_map_initialization_pass_us: u64,
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_summons: crate::monster_summon::NativeSummonOwner,
+    pub(in crate::gameplay_transport) rotten_waves:
+        super::monster_profile_cycle::rotten_waves::RoomWaveStates,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
     pub(in crate::gameplay_transport) monster_spells:
         crate::creature_damage_spell::DamageSpellOwner,
@@ -334,6 +336,7 @@ impl Default for ChannelSpellStates {
             monster_chains: None,
             monster_composed: Default::default(),
             monster_summons: Default::default(),
+            rotten_waves: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),
@@ -621,8 +624,11 @@ impl ChannelSpellStates {
 
     /// Shared carrier-owner bookkeeping. This uses the carrier's actual Channel
     /// binding to maintain its existing timer owner; it grants no actor authority.
-    /// Each caller first proves either ordinary Channel or explicit House custody.
-    fn initialize_owner_bookkeeping(&mut self, runtime: &ChannelRuntimeV1) -> Option<()> {
+    /// Each caller first proves ordinary Channel, named House, or activity custody.
+    pub(in crate::gameplay_transport) fn initialize_owner_bookkeeping(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Option<()> {
         let binding = runtime.binding();
         if self.spell_timers.as_ref().is_some_and(|timers| {
             timers.scope() != binding.runtime_scope()

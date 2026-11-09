@@ -1289,6 +1289,8 @@ async fn prepare_source_self_from_owners(
         now,
         &mut |minimum, _| minimum,
     )?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=paid_preview");
     item_spell_augments::cooldown(owned, spell, &mut preview.next, &mut preview.anchor, now)?;
     // Source reentry protection suppresses outgoing ally healing; self healing
     // remains eligible. This selection preview consumes no live random stream.
@@ -1329,11 +1331,17 @@ async fn prepare_source_self_from_owners(
             preview_requests,
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=presentation_preview");
     runtime
         .stage_spell_batch(&preview_batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=runtime_preview");
     stage_player_batch(runtime, states, &preview_batch, Some(preview.next.clone()))
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=player_preview");
     before
         .prepare_paid_training(
             &preview.next,

@@ -17,6 +17,7 @@ import sys
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPOSITORY_ROOT / "tools/content-migration"))
 import boss_reward_item_profiles
+import m26_endgame_capture
 
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 POSITION = r"Position\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)"
@@ -25,6 +26,8 @@ def sha(value):
     return hashlib.sha256(value).hexdigest()
 
 def number(expression):
+    if (duration := m26_endgame_capture.duration_ratio(expression)) is not None:
+        return duration
     node = ast.parse(expression.strip(), mode="eval").body
     def visit(value):
         if isinstance(value, ast.Constant) and type(value.value) is int:
@@ -62,8 +65,7 @@ def position(text, marker):
     return [int(value) for value in found.groups()] if found else None
 
 def policy(config, name, default):
-    match = re.search(r"\b" + name + r"\s*=\s*([^,\n}]+)", config)
-    return number(match.group(1)) if match else default
+    return m26_endgame_capture.last_policy(config, name, default, number)
 
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
@@ -120,7 +122,7 @@ def capture_primal_hooks(root):
     return hooks, bool(events) and set(events).issubset(declared) and think
 
 
-def capture(root, path, profiles, defaults):
+def capture(root, path, profiles, defaults, *, configuration=None):
     raw = path.read_bytes()
     text = raw.decode()
     # Comments carry examples and cannot define gameplay candidates.
@@ -128,7 +130,7 @@ def capture(root, path, profiles, defaults):
     clean = re.sub(r"--[^\n]*", "", clean)
     if not re.search(r"\bBossLever\s*\(", clean):
         return None
-    config = table(clean, r"\blocal\s+config")
+    config = table(clean, r"\blocal\s+config") if configuration is None else configuration[1]
     boss = table(config or "", r"\bboss")
     name = re.search(r'\bname\s*=\s*"([^"\n]+)"', boss or "")
     key = "oteryn:creature." + re.sub(r"[^a-z0-9]+", "_", name.group(1).lower()).strip("_") if name else None
@@ -146,9 +148,9 @@ def capture(root, path, profiles, defaults):
     disabled = re.search(r"\bdisableCooldown\s*=\s*([^,\n}]+)", config or "")
     if disabled and disabled.group(1).strip() != "false":
         blockers.append("config.disableCooldown")
-    if table(config or "", r"\bmonsters") not in [None,"{}"]: blockers.append("extra_monster_closure")
-    if "zone:addArea" in clean: blockers.append("additional_zone_closure")
-    if len(re.findall(r"\bBossLever\s*\(",clean)) != 1: blockers.append("multiple_lever_constructors")
+    if not m26_endgame_capture.empty_monsters(table(config or "", r"\bmonsters")): blockers.append("extra_monster_closure")
+    if "zone:addArea" in (clean if configuration is None else config): blockers.append("additional_zone_closure")
+    if configuration is None and len(re.findall(r"\bBossLever\s*\(",clean)) != 1: blockers.append("multiple_lever_constructors")
     hooks, callbacks_known = native_callback_closure(key, profiles)
     if key == "oteryn:creature.faceless_bane":
         monster = root/"data-global/monster/quests/the_dream_courts/bosses/faceless_bane.lua"
@@ -159,9 +161,12 @@ def capture(root, path, profiles, defaults):
             callbacks_known = True
     if key == "oteryn:creature.the_primal_menace":
         hooks, callbacks_known = capture_primal_hooks(root)
+    if key == "oteryn:creature.goshnar_s_spite" and configuration is not None:
+        hooks, callbacks_known = m26_endgame_capture.spite_hooks(root, table)
     row = {
         "path":path.relative_to(root).as_posix(),"sha256":sha(raw),
-        "line":text.count("\n",0,text.find("local config"))+1,
+        "line":text.count("\n",0,text.find("local config") if configuration is None else
+            re.search(r"\b"+re.escape(configuration[0])+r"\s*=\s*\{",text).start())+1,
         "boss_name":name.group(1) if name else None,"creature_key":key,
         "boss_position":position(boss,r"\bposition"),"lever_positions":lever,"entry_positions":entry,
         "zone_from":position(area,r"\bfrom"),"zone_to":position(area,r"\bto"),
@@ -179,20 +184,45 @@ def capture(root, path, profiles, defaults):
     row["complete_literal_layout"] = bool(name and row["boss_position"] and lever and row["zone_from"] and row["zone_to"] and row["exit_position"])
     return row
 
+def capture_records(root, path, profiles, defaults):
+    if path.relative_to(root).as_posix() in m26_endgame_capture.ENDGAME_PATHS:
+        m26_endgame_capture.verify_source_file(path.relative_to(root).as_posix(), path.read_bytes())
+    if path.relative_to(root).as_posix() == m26_endgame_capture.SOUL_PATH:
+        configurations = m26_endgame_capture.soul_configurations(path.read_bytes(), table)
+        return [capture(root, path, profiles, defaults, configuration=configuration)
+                for configuration in configurations]
+    row = capture(root, path, profiles, defaults)
+    return [row] if row else []
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--source-root",type=Path,required=True)
     parser.add_argument("--native-profiles",type=Path,required=True)
     parser.add_argument("--output",type=Path,required=True)
+    parser.add_argument("--update-endgame",action="store_true",
+                        help="replace only the seven SHA-verified M26 source files in an existing capture")
     args=parser.parse_args()
     config=(args.source_root/"config.lua.dist").read_text()
     defaults={key:number(re.search(r"^"+name+r"\s*=\s*([^\n-]+)",config,re.M).group(1))
         for key,name in [("cooldown","bossDefaultTimeToFightAgain"),("timeout","bossDefaultTimeToDefeat")]}
     profiles={r["profile"]["target"]["key"]:r for r in json.loads(args.native_profiles.read_bytes())["records"]}
     records=[]
-    for path in sorted(args.source_root.rglob("*.lua")):
-        row=capture(args.source_root,path,profiles,defaults)
-        if row: records.append(row)
+    paths=sorted(args.source_root.rglob("*.lua"))
+    if args.update_endgame:
+        existing=json.loads(args.output.read_bytes())
+        if (existing["schema"] != "OTERYN_CRYSTAL_BOSS_LEVER_CANDIDATES/v1"
+                or existing["source_repository"] != "zimbadev/crystalserver"
+                or existing["source_revision"] != PIN):
+            raise ValueError("M26_CAPTURE_SOURCE_MISMATCH")
+        paths=[args.source_root/name for name in m26_endgame_capture.ENDGAME_PATHS]
+        for path in paths:
+            if not any(row["path"] == path.relative_to(args.source_root).as_posix()
+                       and row["sha256"] == sha(path.read_bytes()) for row in existing["records"]):
+                raise ValueError("M26_SOURCE_SUBSTITUTION:"+str(path))
+        records=[row for row in existing["records"] if row["path"] not in m26_endgame_capture.ENDGAME_PATHS]
+    for path in paths:
+        records.extend(capture_records(args.source_root,path,profiles,defaults))
+    records.sort(key=lambda row:(row["path"],row["line"]))
     output={"schema":"OTERYN_CRYSTAL_BOSS_LEVER_CANDIDATES/v1","source_repository":"zimbadev/crystalserver","source_revision":PIN,
         "defaults_source":"config.lua.dist:658-659;data/libs/functions/boss_lever.lua:63-76","records":records}
     args.output.parent.mkdir(parents=True,exist_ok=True)

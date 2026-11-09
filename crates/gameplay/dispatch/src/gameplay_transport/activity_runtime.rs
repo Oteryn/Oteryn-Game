@@ -923,6 +923,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             )
             .map_err(|_| ActivityRuntimeRegistrationError)?;
         let states = self.states.for_activity();
+        states
+            .spell_states
+            .lock()
+            .await
+            .initialize_owner_bookkeeping(&runtime)
+            .ok_or(ActivityRuntimeRegistrationError)?;
         self.activity_runtimes
             .insert(RegisteredRuntime {
                 scope: assignment.scope,

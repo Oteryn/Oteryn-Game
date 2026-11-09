@@ -434,7 +434,7 @@ def native_item_semantics(ref: dict, profile: dict, destinations: set[str]) -> d
     return semantics
 
 
-def native_corpse_capacity(ref: dict, profile: dict) -> int | None:
+def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = False) -> int | None:
     """Ground-container admission applies only to canonical corpse mint purposes."""
     semantics = native_item_semantics(ref, profile, {'Ground'})
     if semantics is None:
@@ -446,8 +446,11 @@ def native_corpse_capacity(ref: dict, profile: dict) -> int | None:
             or known_native(stack['stackable']) is not False or not isinstance(container, dict)):
         return None
     capacity = known_native(container.get('capacity', {}))
-    # GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX, domain/loot_data.rs:6.
-    return capacity if type(capacity) is int and 1 <= capacity <= 30 else None
+    # Reward-boss loot stays in personal entitlements; the physical corpse retains
+    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 30-entry cap,
+    # matching CreatureRewardTable's existing per-creature admission rule.
+    maximum = 0xffffffff if reward_boss else 30
+    return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
 
 def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
@@ -506,6 +509,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     facts = item_facts(item_definitions)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
+    reward_boss_corpses = set()
     profile_path = item_definitions / 'spell-native-profiles.json'
     if native_item_profiles is None:
         _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
@@ -534,6 +538,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             if corpse is not None:
                 name(corpse)
                 corpse_refs[corpse['key']] = corpse
+                if record['profile']['data']['profile']['details'].get('system_eligibility', {}).get('reward_boss') is True:
+                    reward_boss_corpses.add(corpse['key'])
             loot = definition['loot']
             if loot is not None:
                 table = tables.get(loot['key'])
@@ -557,7 +563,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         profiles = native_by_key.get(key, [])
         if key in yield_keys or len(profiles) != 1:
             continue
-        capacity = native_corpse_capacity(ref, profiles[0])
+        capacity = native_corpse_capacity(ref, profiles[0], reward_boss=key in reward_boss_corpses)
         if capacity is not None:
             facts[key]['materializable'] = True
             facts[key]['container_capacity'] = capacity

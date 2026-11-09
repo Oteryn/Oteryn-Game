@@ -9,6 +9,7 @@ Input SHA-256: `61c3f20d8c14f8841fc1cffdeefd023efe972f7a32e143515897b34991214d43
 Input SHA-256: `34091bcb573de2639546f62f6b2ff3fa7bf7bcf205bc7e6a9b2ad012624e26d8`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
 Input SHA-256: `dfbb3951f0cc1739cfc77a147fad2f3fbb8b0273370da6233df629bf28899a4d`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
 Input SHA-256: `f963028b77e556dc1fdd8e85e0db5351d9b9196f5ceae0adaee070e28bc4491f`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
+Input SHA-256: `facf4a81c38b8bd4123caf940aee4465185b740eed5859d474bd4596e6a999d2`. Seed: `20261101`. Prey duration: `7200` seconds, read from `progression::prey::HUNTING_SECONDS`.
 
 Sampling: up to 32 seeded duels per creature; each duel is bounded to 3600 seconds. Sampling stops at the first duel without a kill; a positive throughput estimate requires all 32 duels to finish with kills. Each route is observed for at most 24 hours, or until all four time policies exhaust the Prey.
 

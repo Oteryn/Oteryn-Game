@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "native_encounter_current.rs"]
+mod current;
+
 /// Immutable source-qualified admission description. It grants no scope or placement authority.
 /// The source adapter binds exact child revision; current physical owner reads its active policy.
 #[derive(Debug, Clone)]

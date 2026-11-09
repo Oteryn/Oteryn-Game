@@ -4,10 +4,15 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "character_equipment/activity_read.rs"]
+mod activity_read;
+#[path = "character_equipment/cast_read.rs"]
+mod cast_read;
 #[path = "character_equipment/hotkey.rs"]
 mod hotkey;
 #[path = "character_equipment/house_read.rs"]
 mod house_read;
+pub use cast_read::{CastEquipmentReader, read_cast_equipment_in_transaction};
 pub(crate) use house_read::read_house_equipment_in_transaction;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -1084,6 +1089,13 @@ impl DurabilityRoot {
         command: CommandRef,
         content_digest: [u8; 32],
     ) -> Result<RawCastDurableFacts> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read_cast(self, recovery, node, fence, command, content_digest)
+                .await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;
@@ -1143,6 +1155,12 @@ impl DurabilityRoot {
         fence: &CurrentCharacterItemFence,
         content_digest: [u8; 32],
     ) -> Result<MovementEquipmentSnapshot> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read(self, recovery, node, fence, content_digest).await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;
@@ -1179,6 +1197,13 @@ impl DurabilityRoot {
         fence: &super::character_progression::CurrentCharacterGameplayFence,
         content_digest: [u8; 32],
     ) -> Result<RawLifecycleDurableFacts> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read_lifecycle(self, recovery, node, fence, content_digest)
+                .await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;

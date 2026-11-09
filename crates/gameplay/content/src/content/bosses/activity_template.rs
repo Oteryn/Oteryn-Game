@@ -136,9 +136,14 @@ pub struct QualifiedActivityRoomTemplate {
     server_digest: [u8; 32],
     client_digest: [u8; 32],
     activation_frame_binding_digest: [u8; 32],
+    spite_source_setup: Option<super::spite_closure::QualifiedSpiteClosure>,
 }
 
 impl QualifiedActivityRoomTemplate {
+    pub fn spite_source_setup(&self) -> Option<&super::spite_closure::QualifiedSpiteClosure> {
+        self.spite_source_setup.as_ref()
+    }
+
     pub fn activation_frame_binding_digest(&self) -> [u8; 32] {
         self.activation_frame_binding_digest
     }
@@ -233,7 +238,10 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
         || document.defaults_source.is_empty()
         || document.records.is_empty()
         || document.records.len() > 256
-        || document.records.windows(2).any(|w| w[0].path >= w[1].path)
+        || document
+            .records
+            .windows(2)
+            .any(|w| (w[0].path.as_str(), w[0].line) >= (w[1].path.as_str(), w[1].line))
     {
         return Err(ActivityTemplateRefusal::InvalidSourceCapture);
     }
@@ -457,11 +465,20 @@ impl ContentActivationController {
         let selected = first_dragon::qualify(native, candidate);
         if !candidate.blockers.is_empty()
             || !candidate.callbacks_known
+        // Only this exact captured source world proves the entry cleanup empty.
+        // A bundle map cannot borrow that proof from a different map capture.
+        let spite = source.and_then(|_| super::spite_closure::qualify(native, candidate));
+        if candidate.blockers.iter().any(|hook| {
+            spite
+                .as_ref()
+                .is_none_or(|closure| !closure.implements_setup(hook))
+        }) || !candidate.callbacks_known
             || unavailable_source_hooks(candidate).any(|hook| {
                 primal
                     .as_ref()
                     .is_none_or(|closure| !closure.implements(hook))
                     && selected
+                    && spite
                         .as_ref()
                         .is_none_or(|closure| !closure.implements(hook))
             })
@@ -540,6 +557,7 @@ impl ContentActivationController {
             server_digest: active.identity().server_artifact_digest(),
             client_digest: active.identity().client_artifact_digest(),
             activation_frame_binding_digest: parent.frame_binding().digest(),
+            spite_source_setup: spite,
         })
     }
 }
@@ -792,6 +810,51 @@ mod tests {
             first.required_callbacks,
             vec!["dreamCourtsDeath", "facelessHealth", "facelessThink"]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn m26_source_levers_keep_six_soul_rooms_and_canonical_bakragore_cooldown() -> Result<(), String>
+    {
+        let candidates = captured_boss_levers().map_err(debug)?;
+        let soul: Vec<_> = candidates
+            .iter()
+            .filter(|row| row.path == "data-global/lib/quests/soul_war.lua")
+            .collect();
+        assert_eq!(soul.len(), 6);
+        assert!(soul.windows(2).all(|rows| rows[0].line < rows[1].line));
+        for (row, (key, hours)) in soul.iter().zip([
+            ("goshnar_s_spite", 20),
+            ("goshnar_s_malice", 20),
+            ("goshnar_s_greed", 20),
+            ("goshnar_s_hatred", 20),
+            ("goshnar_s_cruelty", 20),
+            ("goshnar_s_megalomania_purple", 72),
+        ]) {
+            assert_eq!(
+                row.creature_key.as_deref(),
+                Some(format!("oteryn:creature.{key}").as_str())
+            );
+            assert!(row.complete_literal_layout);
+            assert_eq!(row.minimum_level, Some(250));
+            assert_eq!(row.minimum_players, Some(1));
+            assert_eq!(row.entry_positions.len(), 5);
+            assert_eq!(row.lever_positions.len(), 5);
+            assert_eq!(row.cooldown_seconds, Some(hours * 3600));
+            assert_eq!(row.time_limit_seconds, Some(1200));
+            assert_eq!(row.after_kill_seconds, Some(60));
+        }
+        for (suffix, seconds) in [
+            ("rotten_bakragore.lua", 244800),
+            ("rotten_bakragore1.lua", 72000),
+        ] {
+            let row = candidates
+                .iter()
+                .find(|row| row.path.ends_with(suffix))
+                .ok_or("source Bakragore lever")?;
+            assert_eq!(row.cooldown_seconds, Some(seconds));
+            assert!(row.complete_literal_layout);
+        }
         Ok(())
     }
 }
