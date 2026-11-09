@@ -499,6 +499,28 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         )
         .ok_or("selection")?;
 
+        let legacy = board(&owner, &mut admitted, 0, 0).await?;
+        assert!(!legacy.refused);
+        assert!(
+            legacy.tasks.is_empty(),
+            "the retired fixed board cannot remain a second implementation"
+        );
+        assert!(board(&owner, &mut admitted, 1, 1).await?.refused);
+        assert!(board(&owner, &mut admitted, 2, 1).await?.refused);
+        assert_eq!(
+            full_board(&owner, &mut admitted, 5, 0, "").await?.refusal,
+            3,
+            "level one cannot start Beginner tasks"
+        );
+        // This Character entered the fixture at level one; accepted progression at
+        // level eight is now fixture input. All task mutations below use real dispatch.
+        // Capacity admission must run before the accepted Elite preference toggles
+        // create the Task Board quest state and track. The Elite case reaches level
+        // eight through the real XP receipt chain instead of the fixture shortcut.
+        if !elite_case_enabled {
+            progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+            capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
+        }
         let first = admitted.continuity.next_command_id;
         let (_, elite) = serve_attempt_kind(
             &owner,
@@ -520,21 +542,6 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         )
         .await?;
         assert_eq!(normal[0].1, CommandStatus::Accepted);
-        let legacy = board(&owner, &mut admitted, 0, 0).await?;
-        assert!(!legacy.refused);
-        assert!(
-            legacy.tasks.is_empty(),
-            "the retired fixed board cannot remain a second implementation"
-        );
-        assert!(board(&owner, &mut admitted, 1, 1).await?.refused);
-        assert!(board(&owner, &mut admitted, 2, 1).await?.refused);
-        assert_eq!(
-            full_board(&owner, &mut admitted, 5, 0, "").await?.refusal,
-            3,
-            "level one cannot start Beginner tasks"
-        );
-        // This Character entered the fixture at level one; accepted progression at
-        // level eight is now fixture input. All task mutations below use real dispatch.
         if elite_case_enabled {
             // T201 keeps the real XP receipt chain intact before mutating bounty state.
             let policy = progression_case::policy(&owner, &harness).await?;
@@ -554,8 +561,6 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
             return Ok(());
         }
 
-        progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
-        capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
         let start_id = admitted.continuity.next_command_id;
         let started = full_board(&owner, &mut admitted, 5, 0, "").await?;
         assert_eq!(started.refusal, 0);
