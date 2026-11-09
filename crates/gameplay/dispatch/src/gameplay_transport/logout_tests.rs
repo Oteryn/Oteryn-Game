@@ -4,6 +4,46 @@
 use super::logout::{in_fight_logout_retry, in_fight_retry_after_ms};
 
 #[test]
+fn nbeof_logout_storage_and_unknown_commit_fail_without_retry()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::{DurabilityError, SqlxFailureClass};
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?;
+    runtime.block_on(async {
+        for error in [
+            DurabilityError::Database(SqlxFailureClass::RetryableStatement),
+            DurabilityError::CommitOutcomeUnknown,
+            DurabilityError::InvalidStoredState,
+        ] {
+            let budget = super::AdmissionRetryBudget {
+                deadline: tokio::time::Instant::now() + super::COMMAND_HOLDER_WINDOW,
+                backoff: super::RECONCILE_BACKOFF,
+                stale_rounds: super::FRESH_ADMISSION_ROUNDS,
+                root: None,
+            };
+            let mut failure = Some(error);
+            let mut attempts = 0;
+            let started = tokio::time::Instant::now();
+            let result = budget
+                .retry_durability("release_commit", async || {
+                    attempts += 1;
+                    failure.take().map_or(Ok(()), Err)
+                })
+                .await;
+            assert!(
+                result.is_err(),
+                "a storage/unknown failure must remain a failure"
+            );
+            assert_eq!(attempts, 1, "storage errors must never replay the release");
+            assert_eq!(started.elapsed(), std::time::Duration::ZERO);
+        }
+    });
+    Ok(())
+}
+
+#[test]
 fn the_in_fight_retry_rounds_up_to_whole_milliseconds_within_1_to_60000() {
     assert_eq!(in_fight_retry_after_ms(1_000_001, 1_000_000), 1);
     assert_eq!(in_fight_retry_after_ms(1_001_000, 1_000_000), 1);

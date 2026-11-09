@@ -62,6 +62,194 @@ async fn enter(
 }
 
 #[test]
+fn nbeof_logout_busy_holder_postgres() -> TestResult {
+    run(async |admin| {
+        use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+        use std::time::{Duration, Instant};
+
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_busy_holder", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+
+        let held = owner.root.try_issue_semantic_pass()?;
+        let started = Instant::now();
+        assert_eq!(
+            owner
+                .reconcile_terminal_session(dependencies.admitted)
+                .await,
+            GraceExpiryResult::Unknown
+        );
+        assert!(
+            started.elapsed() >= Duration::from_millis(500),
+            "reconciliation must retry the busy holder"
+        );
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "reconciliation retry must be bounded"
+        );
+        assert!(owner.runtime.try_lock().is_ok());
+        assert!(owner.states.spell_states.try_lock().is_ok());
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+
+        {
+            use crate::gameplay_transport::{FenceHold, FenceStep, TerminalRelease, UnendedSettle};
+            let controller = dependencies.admitted.controller.ok_or("controller")?;
+            let token = TerminalRelease::Logout(controller.transport)
+                .fence(&mut *owner.runtime.lock().await)
+                .map_err(debug)?;
+            let mut hold = FenceHold::new(dependencies.admitted.game_session_id, token);
+            assert!(matches!(
+                owner
+                    .fence_transition(dependencies.actor, &mut hold, true)
+                    .await,
+                FenceStep::Fenced
+            ));
+            let held = owner.root.try_issue_semantic_pass()?;
+            let store = FreshAdmissionStore::from_root(harness.root.clone());
+            let settling = owner.settle_unended(&store, dependencies.actor, &mut hold);
+            tokio::pin!(settling);
+            let polled = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(settling.as_mut(), cx))
+            })
+            .await;
+            assert!(
+                polled.is_pending(),
+                "release reconciliation must wait for its holder"
+            );
+            assert!(owner.runtime.try_lock().is_ok());
+            assert!(owner.states.spell_states.try_lock().is_ok());
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(matches!(settling.await, UnendedSettle::Lifted));
+        }
+
+        {
+            let held = owner.root.try_issue_semantic_pass()?;
+            let logout = owner.logout(dependencies.admitted);
+            tokio::pin!(logout);
+            let polled = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(logout.as_mut(), cx))
+            })
+            .await;
+            assert!(polled.is_pending(), "logout must wait for a busy holder");
+            assert!(owner.runtime.try_lock().is_ok());
+            assert!(owner.states.spell_states.try_lock().is_ok());
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert_eq!(logout.await, LogoutReply::Result(LogoutResult::Accepted));
+        }
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Terminal
+        );
+        assert!(!actor_present(&owner, &dependencies).await);
+        assert_eq!(last_positions(&harness).await?, 1);
+        eprintln!(
+            "NBEOF-2 executed busy-holder reconciliation and real logout; elapsed_ms={}",
+            started.elapsed().as_millis()
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn nbeof_logout_wire_postgres() -> TestResult {
+    run(async |admin| {
+        use crate::foundation::{MessageType, decode_wire_envelope};
+        use crate::gameplay_transport::capabilities::{SelectedCapabilities, test_command};
+        use crate::gameplay_transport::connection::{
+            ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+            serve_admitted,
+        };
+        use oteryn_protocol_oteryn::logout::{
+            CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT, decode_logout_result,
+            encode_logout_intent,
+        };
+        use tokio::io::AsyncWriteExt;
+
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_wire", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        let mut admitted = dependencies.admitted;
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[CAPABILITY_LOGOUT_V1])
+                .ok_or("logout capability")?;
+        {
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            let serving = async {
+                let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
+                assert!(
+                    matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)),
+                    "{end:?}"
+                );
+                drop(server);
+            };
+            let requesting = async {
+                let command = test_command(1, COMMAND_TYPE_LOGOUT_INTENT, &encode_logout_intent());
+                client.write_u32(u32::try_from(command.len())?).await?;
+                client.write_all(&command).await?;
+                loop {
+                    let frame = super::item_look::read_frame(&mut client).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    if envelope.message_type() == MessageType::CommandResult {
+                        let result =
+                            oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                                .map_err(debug)?;
+                        assert_eq!(result.command_id, 1);
+                        assert_eq!(
+                            result.status,
+                            oteryn_protocol_oteryn::CommandStatus::Accepted
+                        );
+                        assert_eq!(
+                            decode_logout_result(result.payload).map_err(debug)?,
+                            LogoutResult::Accepted
+                        );
+                        break;
+                    }
+                }
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            let ((), result) = tokio::join!(serving, requesting);
+            result?;
+        }
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Terminal
+        );
+        assert!(!actor_present(&owner, &dependencies).await);
+        eprintln!(
+            "NBEOF-2 executed LOGOUT_INTENT through real serve dispatch and PostgreSQL terminal release"
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
 fn logout_commits_terminal_saves_the_position_and_retires_the_actor() -> TestResult {
     run(async |admin| {
         reset();

@@ -494,12 +494,19 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
           'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
           'step_rejected_stale_position', 'step_rejected_pending_spell',
-          'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy'}
+          'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
+          'session_durability_failed', 'logout_unknown'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
     'kind': {'Actor', 'SnapshotMismatch', 'ContextMismatch', 'ScopeMismatch',
-             'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified'},
+             'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified',
+             'holder_busy', 'storage', 'deadline', 'commit_unknown', 'authority',
+             'invalid_state', 'unavailable', 'unknown'},
+    'failure_stage': {'pvp_refresh', 'logout_settle', 'terminal_session',
+                      'retire_session', 'account_closure', 'release_commit',
+                      'release_attempt', 'retire', 'activity_view', 'activity_return',
+                      'activity_publish', 'activity_successor', 'activity_destination'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
                'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
@@ -521,6 +528,8 @@ started = time.monotonic()
 def report(line):
     global emitted
     fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+    # Keep the qualification stage and the session failure stage distinct.
+    fields['failure_stage'] = fields.get('stage', '')
     event = fields.get('event') if line.startswith('oteryn-game-server ') else None
     marker = line.split(' ', 1)[0]
     if marker in legacy:

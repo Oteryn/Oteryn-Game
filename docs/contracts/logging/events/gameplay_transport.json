@@ -91,6 +91,17 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "logout_unknown",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."
+    },
+    {
       "event": "serve_command_end",
       "level": "info",
       "span": false,
@@ -105,6 +116,17 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "session_durability_failed",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
     },
     {
       "event": "spell_cast_condition_gated",

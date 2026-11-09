@@ -66,7 +66,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         hold: &mut FenceHold,
     ) -> UnendedSettle {
-        let Ok(current) = store.current_session(hold.session).await else {
+        let Ok(current) = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("logout_settle", async || {
+                store.current_session(hold.session).await
+            })
+            .await
+        else {
             return UnendedSettle::Unknown;
         };
         if current.session_state() == GameSessionState::Terminal {
@@ -119,7 +124,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Presence is advisory. Resolve the terminal session's canonical character
                 // even when its peer never selected CHAT and has no local chat entry.
                 let store = FreshAdmissionStore::from_root(self.root.clone());
-                let current = store.current_session(session).await;
+                let current = AdmissionRetryBudget::for_command(self.root)
+                    .retry_durability("retire_session", async || {
+                        store.current_session(session).await
+                    })
+                    .await;
                 let current_scope = current.as_ref().ok().map(|s| s.current_runtime_scope());
                 if let Ok(current) = current
                     && current.session_state() == GameSessionState::Terminal
@@ -130,21 +139,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.vip_presence_publish_target(target, false).await;
                 }
                 self.states.forget_session(session);
-                let absent = {
-                    let runtime = self.runtime.lock().await;
-                    current_scope.and_then(|scope| {
-                        runtime
-                            .prove_player_session_absent_in(session, scope)
-                            .ok()
-                            .flatten()
+                if AdmissionRetryBudget::for_command(self.root)
+                    .retry_durability("account_closure", async || {
+                        let absent = {
+                            let runtime = self.runtime.lock().await;
+                            current_scope.and_then(|scope| {
+                                runtime
+                                    .prove_player_session_absent_in(session, scope)
+                                    .ok()
+                                    .flatten()
+                            })
+                        }
+                        .ok_or(crate::durability::DurabilityError::CommitRejected)?;
+                        self.root
+                            .acknowledge_account_closure_offline(
+                                self.character,
+                                self.holder,
+                                absent,
+                            )
+                            .await
                     })
-                };
-                let Some(absent) = absent else {
-                    return GraceExpiryResult::Unknown;
-                };
-                if self
-                    .root
-                    .acknowledge_account_closure_offline(self.character, self.holder, absent)
                     .await
                     .is_err()
                 {

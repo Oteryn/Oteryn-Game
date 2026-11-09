@@ -238,28 +238,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return ReleaseAttempt::Retry;
         };
-        let outcome = match release {
-            TerminalRelease::Abandoned(transport) => {
-                releasing
-                    .release_abandoned_session(session, &account_id, transport)
-                    .await
-            }
-            TerminalRelease::CapabilityMismatch(epoch) => {
-                releasing
-                    .release_capability_mismatch(session, &account_id, epoch)
-                    .await
-            }
-            TerminalRelease::StaffKickLost(epoch) => {
-                releasing
-                    .release_staff_lost_session(session, &account_id, epoch)
-                    .await
-            }
-            TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
-                releasing
-                    .release_logout_session(session, &account_id, transport)
-                    .await
-            }
-        };
+        let outcome = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("release_commit", async || match release {
+                TerminalRelease::Abandoned(transport) => {
+                    releasing
+                        .release_abandoned_session(session, &account_id, transport)
+                        .await
+                }
+                TerminalRelease::CapabilityMismatch(epoch) => {
+                    releasing
+                        .release_capability_mismatch(session, &account_id, epoch)
+                        .await
+                }
+                TerminalRelease::StaffKickLost(epoch) => {
+                    releasing
+                        .release_staff_lost_session(session, &account_id, epoch)
+                        .await
+                }
+                TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
+                    releasing
+                        .release_logout_session(session, &account_id, transport)
+                        .await
+                }
+            })
+            .await;
         if ends_session(&outcome) {
             // PREM-1b (D476): the session is over, whether abandoned, mismatched or logged out;
             // its Premium pulls stop, as at grace expiry.

@@ -25,6 +25,22 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_logout_failures_keep_only_closed_schema_stage_and_kind(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        lines = [
+            'oteryn-game-server event=session_durability_failed stage=logout_settle kind=holder_busy '
+            'database_url=secret character=secret payload=secret',
+            'oteryn-game-server event=logout_unknown stage=pvp_refresh kind=unknown',
+            'oteryn-game-server event=session_durability_failed stage=secret kind=secret',
+        ]
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        self.assertIn('event=session_durability_failed kind=holder_busy failure_stage=logout_settle', result.stdout)
+        self.assertIn('event=logout_unknown kind=unknown failure_stage=pvp_refresh', result.stdout)
+        self.assertNotIn('secret', result.stdout)
+
     def test_step_rejections_keep_only_closed_schema_fields(self):
         monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
