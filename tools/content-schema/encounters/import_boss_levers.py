@@ -249,6 +249,8 @@ def main():
     parser.add_argument("--output",type=Path,required=True)
     parser.add_argument("--update-endgame",action="store_true",
                         help="replace only the seven SHA-verified M26 source files in an existing capture")
+    parser.add_argument("--update-galthen",action="store_true",
+                        help="replace only the two pinned Galthen source files in an existing capture")
     args=parser.parse_args()
     config=(args.source_root/"config.lua.dist").read_text()
     defaults={key:number(re.search(r"^"+name+r"\s*=\s*([^\n-]+)",config,re.M).group(1))
@@ -256,21 +258,26 @@ def main():
     profiles={r["profile"]["target"]["key"]:r for r in json.loads(args.native_profiles.read_bytes())["records"]}
     records=[]
     paths=sorted(args.source_root.rglob("*.lua"))
-    if args.update_endgame:
+    if args.update_endgame or args.update_galthen:
         existing=json.loads(args.output.read_bytes())
         if (existing["schema"] != "OTERYN_CRYSTAL_BOSS_LEVER_CANDIDATES/v1"
                 or existing["source_repository"] != "zimbadev/crystalserver"
                 or existing["source_revision"] != PIN):
             raise ValueError("M26_CAPTURE_SOURCE_MISMATCH")
-        paths=[args.source_root/name for name in m26_endgame_capture.ENDGAME_PATHS]
+        selected=set(m26_endgame_capture.ENDGAME_PATHS) if args.update_endgame else set()
+        if args.update_galthen:
+            selected.update(proof[0] for proof in GALTHEN_CLOSURES.values())
+        paths=[args.source_root/name for name in sorted(selected)]
         for path in paths:
             if not any(row["path"] == path.relative_to(args.source_root).as_posix()
                        and row["sha256"] == sha(path.read_bytes()) for row in existing["records"]):
                 raise ValueError("M26_SOURCE_SUBSTITUTION:"+str(path))
-        records=[row for row in existing["records"] if row["path"] not in m26_endgame_capture.ENDGAME_PATHS]
+        records=[row for row in existing["records"] if row["path"] not in selected]
     for path in paths:
         records.extend(capture_records(args.source_root,path,profiles,defaults))
     records.sort(key=lambda row:(row["path"],row["line"]))
+    if len({(row["path"],row["line"]) for row in records}) != len(records):
+        raise ValueError("BOSS_DUPLICATE_SOURCE_CAPTURE")
     output={"schema":"OTERYN_CRYSTAL_BOSS_LEVER_CANDIDATES/v1","source_repository":"zimbadev/crystalserver","source_revision":PIN,
         "defaults_source":"config.lua.dist:658-659;data/libs/functions/boss_lever.lua:63-76","records":records}
     args.output.parent.mkdir(parents=True,exist_ok=True)
