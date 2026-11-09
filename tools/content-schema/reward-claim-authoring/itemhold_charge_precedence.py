@@ -1,4 +1,4 @@
-"""Owner ITEMHOLD-Q continuation: two exact full-definition-charge projections.
+"""Owner ITEMHOLD-Q continuation: exact full-definition-charge projection.
 
 Keep OTS raw arguments and their conflicting source disposition as witnesses.
 Wiki quest consensus selects the reward entity; its current Item definition supplies
@@ -9,9 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 CASES = {
-    'canary:reward-claim/kv/ornamentedshield': (3083, 1, 150, {'x': 32769, 'y': 32302, 'z': 10},
-        'Ornamented Shield Quest', 'Garlic Necklace', 2452, 1194208,
-        '98fe433538d10ce11f211a1414ca63f04a5229e2513a6e58d95dcbb0c0bb5b36'),
+    # Crystal201189f chest UID6063 passes raw1 for the Garlic Necklace.
+    # Its one-charge instance belongs to charge_native, not full defaults.
     'canary:reward-claim/kv/powerring2': (3056, 200, 200, {'x': 32601, 'y': 31776, 'z': 9},
         'Power Ring Quest', 'Bronze Amulet', 2466, 1194240,
         '5fa91126008b798f1c9e3950dcd01757133a7aa0d0d23a4ae6baf3c4f9bb71c9'),
@@ -49,11 +48,8 @@ def qualifies(item, pilot_key, position, key, raw_count, root=ROOT):
                 visit(child)
 
     visit(json.loads((root / 'tools/content-schema/quest-authoring/wiki_quest_facts.json').read_bytes()))
-    expected = ({('tibia_fandom', 1043470, 'e5961fdfce9ef4ae29439f5712b9f76349c4fb6e6510ab8a1ab4fcc0324e10b4'),
-                 ('tibiawiki_br', 378590, 'bc7d40af62e9872c694fe019dabe7e7ee8cd7204a5cd165ae08b5441fc782a34')}
-                if number == 3083 else
-                {('tibia_fandom', 683946, 'b5ef6edb39a0926308fb6bf73d3b51a9ee853ca96a810ce8ce040c03907be287'),
-                 ('tibiawiki_br', 201567, 'fcaf455986599ae199df12901f1b2193998046d71a43e47d550c20bd87393241')})
+    expected = {('tibia_fandom', 683946, 'b5ef6edb39a0926308fb6bf73d3b51a9ee853ca96a810ce8ce040c03907be287'),
+                ('tibiawiki_br', 201567, 'fcaf455986599ae199df12901f1b2193998046d71a43e47d550c20bd87393241')}
     if not expected <= set(witnesses):
         raise ValueError('ITEMHOLD_CHARGE_QUEST_CONSENSUS')
     return True

@@ -4,6 +4,7 @@ import hashlib
 import json
 import unittest
 
+import charge_native
 import container_native
 import reward_claim_authoring as plain
 
@@ -202,6 +203,14 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
+        ornament = next(d for d in self.rows
+                        if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield')
+        self.assertIsNone(container_native.derive(ornament, self.items, plain.stack_problem))
+        recipe = charge_native.derive(ornament, self.items, plain.stack_problem)
+        self.assertEqual(recipe, ornament['native_contents'])
+        self.assertEqual(recipe['placements'][0]['contents'][2]['charges_remaining'], 1)
+        # Count the migrated exact-charge recipe alongside the generic recipes.
+        native.append(ornament)
         self.assertEqual(len(native), 77)  # Includes the milk, wine, Present and Poison Daggers recipes.
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
                              for d in native), 64)

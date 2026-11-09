@@ -142,12 +142,28 @@ fn scenario(
         } else if production {
             let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../../content/spells.manifest.json");
-            Some(
-                crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
-                    .map_err(debug)?
-                    .cosmetics
-                    .bytes,
-            )
+            let bytes = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
+                .map_err(debug)?
+                .cosmetics
+                .bytes;
+            if matches!(case, Some(positive::Case::ProductionOtOnly)) {
+                // This negative case needs complete production mappings without
+                // source acquisition. The production doll now has an explicit
+                // admission; stock::random_outfit covers that positive route.
+                let mut packet: serde_json::Value = serde_json::from_slice(&bytes)?;
+                packet["authoring"]["document"]["item_acquisitions"] = serde_json::json!([]);
+                let promotions = packet["authoring"]["promotions"]
+                    .as_array_mut()
+                    .ok_or("cosmetic promotions")?;
+                let admission = promotions
+                    .iter_mut()
+                    .find(|row| row["path"] == "/item_acquisitions")
+                    .ok_or("production acquisition promotion")?;
+                admission["value"] = serde_json::json!([]);
+                Some(serde_json::to_vec(&packet)?)
+            } else {
+                Some(bytes)
+            }
         } else {
             match case {
                 Some(_) => Some(packet::cosmetics_packet()?),
@@ -176,6 +192,21 @@ fn scenario(
             );
         } else {
             assert!(native.cosmetics().is_some(), "explicit admitted authoring");
+        }
+        if matches!(case, Some(positive::Case::ProductionOtOnly)) {
+            let catalogue =
+                oteryn_gameplay_items::item_cosmetics::catalogue().ok_or("cosmetic rules")?;
+            let key = "oteryn:item.tibia.i6579";
+            let rule = oteryn_gameplay_items::item_cosmetics::rule(key).ok_or("doll rule")?;
+            let cosmetics = native.cosmetics().ok_or("complete production cosmetics")?;
+            assert!(
+                oteryn_gameplay_items::item_cosmetics::qualify_rule(catalogue, rule, cosmetics).is_ok(),
+                "the refusal must not come from a missing random outcome"
+            );
+            assert!(
+                !oteryn_gameplay_items::item_cosmetics::source_policy_allows(rule, Some(cosmetics), key),
+                "this case deliberately has no acquisition admission"
+            );
         }
         if !matches!(case, Some(positive::Case::Glider { .. })) {
             assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
