@@ -1,16 +1,14 @@
 //! Read the same Channel overlay used by native movement and pickup.
 use super::*;
 use crate::content::item_ref::ItemDefinitionIndex;
-use crate::map::{
-    overlay::{AddedItem, ChannelOverlay},
-    view::EntrySource,
-};
+#[cfg(test)]
+use crate::map::overlay::AddedItem;
+use crate::map::overlay::{ChannelOverlay, quest_ground::snapshot};
+#[cfg(test)]
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_gameplay_quests::quest::{
-    ground_stack::{
-        GroundStackEntry as SnapshotEntry, GroundStackRequirement, GroundStackSnapshot,
-        StackItemRequirement, match_readset,
-    },
-    world_callbacks::{Position, WorldRequirement},
+    ground_stack::{GroundStackRequirement, StackItemRequirement, match_readset},
+    world_callbacks::WorldRequirement,
 };
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -62,7 +60,13 @@ fn requirements_match(
         let Some(stack) = &requirement.ground_stack else {
             continue;
         };
-        let Some(snapshot) = snapshot(overlay, facts, tile(requirement.position), ordinal) else {
+        let Some(snapshot) = snapshot(
+            overlay,
+            facts,
+            tile(requirement.position),
+            stack.len(),
+            ordinal,
+        ) else {
             return false;
         };
         let mut items = Vec::with_capacity(stack.len());
@@ -83,58 +87,6 @@ fn requirements_match(
         observed.push(snapshot);
     }
     required.is_empty() || matches!(match_readset(&required, &observed), Ok(Some(_)))
-}
-
-fn snapshot(
-    overlay: &ChannelOverlay,
-    facts: &impl MapFacts,
-    pos: TilePos,
-    ordinal: &impl Fn(&[u8; 16]) -> Option<u64>,
-) -> Option<GroundStackSnapshot> {
-    // Base roots are distinct from portable custody. A movable base root or a
-    // volatile overlay object cannot stand in for a durable Item instance.
-    let view = overlay.tile(pos)?;
-    let mut base = Vec::new();
-    if facts.house_tile(pos)
-        || crate::map::view::compose_into(overlay.base(), None, facts, pos, &mut base).is_err()
-        || base.iter().any(|entry| match entry.source {
-            EntrySource::Base {
-                ordinal, movable, ..
-            } => movable && !view.is_hidden(ordinal),
-            _ => true,
-        })
-    {
-        return None;
-    }
-    let mut entries = Vec::new();
-    for entry in view.added() {
-        let AddedItem::Ground(ground) = entry.item() else {
-            return None;
-        };
-        if ground.definition.family != "Item"
-            || ground.world_id != overlay.world_id()
-            || ground.runtime_scope != overlay.runtime_scope()
-            || ground.item_instance_id == [0; 16]
-        {
-            return None;
-        }
-        entries.push(SnapshotEntry {
-            instance: ground.item_instance_id,
-            item: ground.definition.production_key.clone(),
-            revision: ground.definition.revision_ref.clone(),
-            quantity: ground.quantity,
-            // Preserve the durable append ordinal retained by the custody owner.
-            ordinal: ordinal(&ground.item_instance_id)?,
-        });
-    }
-    Some(GroundStackSnapshot {
-        position: Position {
-            x: pos.x,
-            y: pos.y,
-            floor: pos.floor,
-        },
-        entries,
-    })
 }
 
 #[cfg(test)]

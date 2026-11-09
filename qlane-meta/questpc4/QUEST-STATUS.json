@@ -11593,5 +11593,39 @@
     },
     "pending": "Native Dreamer puzzle callback and pillow profile qualification remain. Repair PG blocked by published migration 2020.",
     "decision": "Portable Ground-only predicates already permit appearance=0 in production. Preserve that admission and test rejection when both the immutable appearance and Ground predicate are absent."
+  },
+  "m07_native_ground_snapshot_slice": {
+    "state": "PARTIAL",
+    "scope": "Move the typed Channel Ground snapshot adapter to the map owner and reject unexpected stack cardinality before resolving custody ordinals. Dispatch uses the shared adapter.",
+    "red": "m07_native_ground_snapshot_bounds_cells_before_identity_resolution failed because an expected one-item cell returned a two-item snapshot. /tmp/questpc4-runtime-ground-red.log",
+    "validation": {
+      "focused_test": "map::overlay::quest_ground::tests::m07_native_ground_snapshot_bounds_cells_before_identity_resolution",
+      "focused_seconds": 0.06,
+      "database_used": false,
+      "clippy": {
+        "crates": [
+          "oteryn-gameplay-world",
+          "oteryn-gameplay-dispatch",
+          "oteryn-gameplay-durability"
+        ],
+        "features": "test-support",
+        "targets": "lib",
+        "seconds": 158.635,
+        "exit": 0
+      },
+      "workspace": "Pending after push per owner push-now instruction.",
+      "fmt_seconds": 20.098,
+      "pin_verify": {
+        "seconds": 8.968,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "default_lib_failure": "Unrelated ChannelContentPin comparison/Clone errors: world_respawns/elemental.rs:158 and monster_profile_cycle/native_callbacks/outburst_cast.rs:390.",
+      "dispatch_test_targets": "Original all-target Clippy run failed unused Position import, now cfg(test); full rerun pending."
+    },
+    "sql_changed": false,
+    "pending": "Native Dreamer callback/pillow profile wiring remains incomplete; foreign migration 2020 still prevents repair PG setup.",
+    "preserved": "House, visible movable Base, volatile overlay, definition family, World/Channel scope, nonzero instance identity and durable ordinal checks are retained. Existing dispatch Ground movement/revision test remains unchanged.",
+    "fixture_compile_fix": "Gate test-only ground_stack::matches consistently with its already-gated imports, row type and callers. No production predicate or SQL changes; test-support path remains enabled."
   }
 }

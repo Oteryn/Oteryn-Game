@@ -26,6 +26,7 @@ use std::mem::size_of;
 use std::sync::Arc;
 
 pub mod pickup;
+pub mod quest_ground;
 
 /// `MAP01-CHANNEL-OVERLAY-BYTES`: the default budget of one channel overlay.
 pub const OVERLAY_BUDGET_BYTES: usize = 64 * 1024 * 1024;
