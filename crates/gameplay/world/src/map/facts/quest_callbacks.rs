@@ -39,9 +39,6 @@ struct DynamicPortal {
     entry: Option<EntryId>,
     owner_revision: Option<u64>,
     expires: Option<u64>,
-    source_revision: Option<u64>,
-    restore: Option<EntryFacts>,
-    group: Option<String>,
 }
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
@@ -81,15 +78,6 @@ pub enum QuestCallbackProjection {
     ReadsetTransforms {
         entries: Vec<(u64, u64, Option<EntryFacts>)>,
         reset: Option<(u64, EntryFacts)>,
-    },
-    /// One source-fenced entrance, optionally restoring its replaced base Item.
-    SourcePortal {
-        position: TilePos,
-        destination: TilePos,
-        entry: EntryFacts,
-        restore: Option<EntryFacts>,
-        expires: u64,
-        group: String,
     },
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
@@ -226,9 +214,6 @@ impl CallbackStates {
                         destination: *destination,
                         entry: None,
                         owner_revision: Some(revision),
-                        source_revision: None,
-                        restore: None,
-                        group: None,
                         expires: Some(*due),
                     },
                 );
@@ -342,95 +327,7 @@ impl CallbackStates {
                     },
                 );
             }
-            QuestCallbackProjection::SourcePortal {
-                position,
-                destination,
-                entry: facts,
-                restore,
-                expires,
-                group,
-            } => {
-                if close
-                    || self.hidden.contains(&owner)
-                    || *expires == 0
-                    || group.is_empty()
-                    || group.len() > 128
-                {
-                    return false;
-                }
-                // A replaced source cannot keep an old portal or let that portal
-                // reserve another source's group. Its old timer must never restore it.
-                let stale: BTreeSet<_> = self
-                    .portals
-                    .values()
-                    .filter(|p| {
-                        p.source_revision.is_some_and(|revision| {
-                            self.hidden.contains(&p.owner)
-                                || self.changed.get(&p.owner).map_or(0, |(r, _)| *r) != revision
-                        })
-                    })
-                    .map(|p| p.owner)
-                    .collect();
-                for key in stale {
-                    self.remove_portals(key);
-                }
-                if self.portals.contains_key(position)
-                    || self
-                        .portals
-                        .values()
-                        .any(|p| p.owner == owner || p.group.as_deref() == Some(group.as_str()))
-                {
-                    return false;
-                }
-                let Some(revision) = self
-                    .changed
-                    .get(&owner)
-                    .map_or(0, |(r, _)| *r)
-                    .checked_add(1)
-                else {
-                    return false;
-                };
-                let entry = if restore.is_none() {
-                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
-                        return false;
-                    };
-                    let Some(id) = EntryId::callback(sequence) else {
-                        return false;
-                    };
-                    self.movement_sequence = sequence;
-                    self.movement_items
-                        .entry(*position)
-                        .or_default()
-                        .push(view::ComposedEntry {
-                            source: view::EntrySource::Added(id),
-                            facts: *facts,
-                        });
-                    Some(id)
-                } else {
-                    None
-                };
-                self.portals.insert(
-                    *position,
-                    DynamicPortal {
-                        owner,
-                        destination: *destination,
-                        entry,
-                        owner_revision: None,
-                        expires: Some(*expires),
-                        source_revision: Some(revision),
-                        restore: *restore,
-                        group: Some(group.clone()),
-                    },
-                );
-            }
             QuestCallbackProjection::Portals { endpoints, expires } => {
-                if self
-                    .portals
-                    .values()
-                    .any(|p| p.owner == owner && p.source_revision.is_some())
-                {
-                    self.remove_portals(owner);
-                }
                 if close {
                     if endpoints
                         .iter()
@@ -470,9 +367,6 @@ impl CallbackStates {
                             entry: Some(entry),
                             owner_revision: None,
                             expires: *expires,
-                            source_revision: None,
-                            restore: None,
-                            group: None,
                         },
                     );
                 }
@@ -824,21 +718,7 @@ impl BundleFacts {
             .map(|p| p.owner)
             .collect();
         for owner in expired {
-            let source = states
-                .portals
-                .values()
-                .find(|p| p.owner == owner)
-                .and_then(|p| p.source_revision.map(|revision| (revision, p.restore)));
             states.remove_portals(owner);
-            if let Some((expected, restore)) = source
-                && let Some(&(revision, current)) = states.changed.get(&owner)
-                && revision == expected
-                && let Some(next) = revision.checked_add(1)
-            {
-                states
-                    .changed
-                    .insert(owner, (next, restore.unwrap_or(current)));
-            }
             changed += 1;
         }
         let due: Vec<_> = states
@@ -1403,26 +1283,10 @@ impl BundleFacts {
         }) {
             return None;
         }
-        (portal.expires.is_none_or(|due| due > now)
-            && portal.source_revision.is_none_or(|revision| {
-                !states.hidden.contains(&portal.owner)
-                    && states.changed.get(&portal.owner).map_or(0, |(r, _)| *r) == revision
-            }))
-        .then_some(portal.destination)
-    }
-
-    /// A shared source family may own only one live entrance in this Channel.
-    pub fn quest_portal_group_live(&self, group: &str, now: u64) -> bool {
-        self.callbacks.lock().is_ok_and(|states| {
-            states.portals.values().any(|p| {
-                p.group.as_deref() == Some(group)
-                    && p.expires.is_none_or(|due| due > now)
-                    && p.source_revision.is_none_or(|revision| {
-                        !states.hidden.contains(&p.owner)
-                            && states.changed.get(&p.owner).map_or(0, |(r, _)| *r) == revision
-                    })
-            })
-        })
+        portal
+            .expires
+            .is_none_or(|due| due > now)
+            .then_some(portal.destination)
     }
     /// Source selector validation against the original bound placement, never a client id.
     pub fn quest_callback_matches(
@@ -1892,87 +1756,6 @@ mod primal_pod_removal_tests {
 mod lifecycle_tests {
     use super::*;
 
-    #[test]
-    fn single_source_portal_restores_exact_deadline_and_fences_newer_source() -> Result<(), String>
-    {
-        let facts = BundleFacts::default();
-        let position = TilePos {
-            x: 100,
-            y: 100,
-            floor: -9,
-        };
-        let destination = TilePos {
-            x: 101,
-            y: 100,
-            floor: -10,
-        };
-        let ashes = EntryFacts {
-            definition: MapDefinition::Item(NonZeroU32::MIN),
-            terrain_kind: None,
-            appearance_id: 3134,
-            blocks_projectile: false,
-            pickupable: false,
-            bound: true,
-            count: 1,
-            sub_type: 0,
-        };
-        let portal = EntryFacts {
-            appearance_id: 1949,
-            ..ashes
-        };
-        let projection = |expires| QuestCallbackProjection::SourcePortal {
-            position,
-            destination,
-            entry: portal,
-            restore: Some(ashes),
-            expires,
-            group: "oteryn:quest-source/dreamer-entrance".into(),
-        };
-        assert!(facts.apply_quest_callback(
-            1,
-            0,
-            portal,
-            &[],
-            &[],
-            false,
-            Some(&projection(300_000_000))
-        ));
-        assert_eq!(
-            facts.quest_portal_destination(position, 299_999_999),
-            Some(destination)
-        );
-        assert!(facts.quest_portal_group_live("oteryn:quest-source/dreamer-entrance", 299_999_999));
-        assert_eq!(facts.quest_portal_destination(position, 300_000_000), None);
-        assert_eq!(facts.expire_movement_items(299_999_999), 0);
-        assert_eq!(facts.expire_movement_items(300_000_000), 1);
-        assert_eq!(facts.object_revision(1), 2);
-        assert!(
-            !facts.quest_portal_group_live("oteryn:quest-source/dreamer-entrance", 300_000_000)
-        );
-        assert!(facts.apply_quest_callback(
-            1,
-            2,
-            portal,
-            &[],
-            &[],
-            false,
-            Some(&projection(600_000_000))
-        ));
-        let newer = EntryFacts {
-            appearance_id: 9999,
-            ..ashes
-        };
-        assert!(facts.apply_quest_callback(1, 3, newer, &[], &[], false, None));
-        assert_eq!(facts.quest_portal_destination(position, 300_000_001), None);
-        facts.expire_movement_items(600_000_000);
-        assert_eq!(facts.object_revision(1), 4);
-        let state = facts.callbacks.lock().map_err(|_| "portal lock")?;
-        assert_eq!(
-            state.changed.get(&1).map(|(_, e)| e.appearance_id),
-            Some(9999)
-        );
-        Ok(())
-    }
     #[test]
     fn remote_source_reset_is_atomic_and_fences_the_target_revision() -> Result<(), String> {
         let facts = BundleFacts::default();

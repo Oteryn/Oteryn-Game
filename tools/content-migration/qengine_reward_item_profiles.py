@@ -66,8 +66,6 @@ IDS |= {2973}
 IDS |= {22082}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
-# M44 retained source tools: Dreamer firebug and Cursed Crystal bell.
-IDS |= {5467, 21554}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

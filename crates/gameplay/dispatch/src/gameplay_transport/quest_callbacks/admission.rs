@@ -4,8 +4,7 @@ use world_callbacks::Callback;
 
 pub(super) fn stateless_observation_required(callback: &Callback) -> bool {
     !callback.has_personal_state()
-        && (callback.effects.source_portal.is_some()
-            || world_callbacks::world_change_requirement(&callback.key).is_some()
+        && (world_callbacks::world_change_requirement(&callback.key).is_some()
             || world_callbacks::stateless_ground_requirements(&callback.key).is_some())
 }
 

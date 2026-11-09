@@ -1,7 +1,4 @@
 //! Source world-object lifecycle bindings. OTS_HYPOTHESIS_ONLY, retained donor corpus.
-mod entrances;
-pub(crate) use entrances::dreamer_entrance;
-
 use super::world_callbacks::{
     Callback, CallbackEffectSet, NativeSelector, Position, Selector, Storage, Trigger,
 };

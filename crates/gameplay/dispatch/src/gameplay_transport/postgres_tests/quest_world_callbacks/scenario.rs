@@ -22,7 +22,6 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
-    let m44_dreamer = name == "m44-dreamer-entrance";
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering = name == "m07-ring-offering";
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
@@ -40,7 +39,7 @@ fn scenario_case(
     let m44_amphora = name == "m44-lions-amphora-1";
     let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower || m44_dreamer;
+    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
@@ -120,8 +119,6 @@ fn scenario_case(
         Position { x: 32762, y: 32289, floor: -14 }
     } else if m44_flower {
         Position { x: trigger.x + 1, ..trigger }
-    } else if m44_dreamer {
-        Position { x: 32011, y: 32907, floor: -7 }
     } else if m44_amphora {
         Position { y: trigger.y - 1, ..trigger }
     } else if m03_pits {
@@ -513,9 +510,7 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m44_dreamer {
-            super::super::m44_dreamer_lifecycle::world(generation.native_gameplay().ok_or("dreamer policies")?)?
-        } else if m03_pits {
+        let world = if m03_pits {
             super::super::qengine_m03_pits::world(
                 generation.native_gameplay().ok_or("Pits native policies")?,
             )?
@@ -874,7 +869,7 @@ fn scenario_case(
                     name.ends_with("/later"),
                 )?,
             ));
-        } else if m44 && callback.has_personal_state() {
+        } else if m44 {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
@@ -1160,8 +1155,6 @@ fn scenario_case(
                 source_id,
             )
             .await?;
-        } else if m44_dreamer {
-            super::super::m44_dreamer_lifecycle::exercise(&owner, &mut admitted, &h, fence).await?;
         } else if m49 {
             super::super::m49_elemental_arrival::exercise(
                 &mut owner,

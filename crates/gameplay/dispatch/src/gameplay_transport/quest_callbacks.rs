@@ -555,7 +555,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         revision: u64,
         expected: Option<MovementPositionSnapshot>,
-        source_command: Option<CommandRef>,
     ) -> Result<Option<ObservedWorldCallback>, UseDisposition> {
         if callback
             .world_requirements
@@ -623,22 +622,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // No runtime or spell-state guard is retained over this independent current query.
         // Only the derived observation key bypasses stage/scent for egress. The actual
         // callback key, selector, movement snapshot and source revision stay unchanged.
-        let observation = if callback.effects.source_portal.is_some() {
-            let Some(command) = source_command else {
-                return Err(UseDisposition::Rejected);
-            };
-            self.root
-                .observe_source_portal_use(
-                    self.character,
-                    self.holder,
-                    permit,
-                    fence,
-                    context.clone(),
-                    backend_callback,
-                    command,
-                )
-                .await
-        } else {
+        if !matches!(
             self.root
                 .observe_world_callback_gate(
                     self.character,
@@ -648,9 +632,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context.clone(),
                     backend_callback,
                 )
-                .await
-        };
-        if !matches!(observation, Ok(true)) {
+                .await,
+            Ok(true)
+        ) {
             return Err(UseDisposition::Rejected);
         }
         Ok(Some(ObservedWorldCallback {
@@ -709,10 +693,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.key,
                     pending.revision,
                     Some(pending.expected),
-                    match pending.cause {
-                        QuestCause::Use(command) => Some(command),
-                        _ => None,
-                    },
                 )
                 .await;
             if stateless_observation_required(callback) {
@@ -954,7 +934,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let observation=match self.observe_stateless_world_callback(
                 &permit,fence,actor,command.game_session_id,map,callback,resolved.placement_key,target.expected_revision,None,
-                CommandId::new(command.command_id).ok().map(|id|CommandRef::new(command.game_session_id,id)),
             ).await {Ok(observation)=>observation,Err(disposition)=>return disposition};
             let optional_pvp = self
                 .special_movement_policy(&permit, actor, command.game_session_id)
@@ -1183,7 +1162,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     *key,
                     revision,
                     Some(entered),
-                    None,
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;

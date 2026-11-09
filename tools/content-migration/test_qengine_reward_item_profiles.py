@@ -58,16 +58,6 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(temporal['duration'], {'state': 'KNOWN', 'value': 3600000})
         self.assertEqual(temporal['decay_target'], {'state': 'NOT_APPLICABLE'})
 
-    def test_m44_source_portal_tools_keep_exact_portable_identity(self):
-        rows = {r['production_definition']['production_key']: r
-                for r in q.capture(ids={5467, 21554})['records']}
-        for item, weight in ((5467, 3050), (21554, 280)):
-            row = rows[f'oteryn:item.tibia.i{item}']
-            self.assertEqual(row['production_binding']['external_id'], str(item))
-            self.assertEqual(row['admission'], dict(materializable=True,
-                stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
-            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], weight)
-
     def test_daily_roots_source_profile_is_portable_and_bounded(self):
         records = q.capture()['records']
         record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21291'), None)
