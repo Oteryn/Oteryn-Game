@@ -271,6 +271,10 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn ground_speed_override(&self, pos: TilePos) -> Option<u16> {
+        self.inner.ground_speed_override(pos)
+    }
+
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.inner.movement_item(id)
     }

@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::map::overlay::TilePos;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 #[test]
@@ -87,6 +88,24 @@ fn m57_cake_bridge_creation_cleanup_and_real_traversal() -> TestResult {
                     .all(|(_, entry)| entry.facts.definition == oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)));
                 owner.refresh_terrain_tools().await;
                 assert_eq!(world.facts().movement_item_entries(), entries, "repeated current projection creates no duplicate floor");
+                // Both the live collision owner and the pinned client snapshot
+                // must use the donor's two different ground speeds.
+                let rail = TilePos { x: 33300, y: 32053, floor: -7 };
+                assert_eq!(world.facts().cake_bridge_ground_speed(water), Some(150));
+                assert_eq!(world.facts().cake_bridge_ground_speed(rail), Some(100));
+                let mut map_view = crate::gameplay_transport::world_map::SessionMapView::default();
+                let mut item_view = crate::gameplay_transport::item_view::SessionItemView::resume(Default::default()).with_map_view();
+                let update = owner.observe_world_map(deps.actor, &mut map_view, &mut item_view).await
+                    .ok_or("bridge client observer")?.map_err(debug)?.ok_or("bridge client snapshot")?;
+                let crate::gameplay_transport::world_map::MapUpdate::Snapshot(snapshot) = update else {
+                    return Err("fresh bridge client snapshot".into());
+                };
+                let decoded = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
+                for (x, speed) in [(33303, 150), (33300, 100)] {
+                    let tile = decoded.tiles.iter().find(|tile| tile.position.x == x && tile.position.y == 32053)
+                        .ok_or("bridge client ground")?;
+                    assert_eq!(tile.ground_speed, speed);
+                }
                 for y in 32053..=32060 {
                     let (outcome, wait) = owner.ordinary_paced_step(deps.actor, deps.admitted.game_session_id, StepDirection::South, None, None).await;
                     assert_eq!(outcome.moved_to.ok_or("real Cake bridge crossing")?.actor_position.y, y);
@@ -101,6 +120,10 @@ fn m57_cake_bridge_creation_cleanup_and_real_traversal() -> TestResult {
                 owner.refresh_terrain_tools().await;
                 assert!(!world.enterable(water), "cleanup restores the original impassable water");
                 assert!(world.facts().movement_item_entries().is_empty());
+                assert_eq!(world.facts().cake_bridge_ground_speed(water), None);
+                assert_eq!(world.facts().cake_bridge_ground_speed(rail), None);
+                assert!(world.enterable(TilePos { x: 33303, y: 32052, floor: -7 }),
+                    "cleanup restores the original walkable shore as well as the blocked water");
                 owner.refresh_terrain_tools().await;
                 assert!(!world.enterable(water), "cleanup replay does not rebuild the bridge");
             }
