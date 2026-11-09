@@ -2400,3 +2400,16 @@ GREEN three real PG stories: timeout57.486779623s, departure52.457049843s,
 ten-pit native combat/portals/reward60.129570758s (439.318s with cold build).
 Dispatch clippy --lib -D warnings PASS95.419s; fmt PASS15.862s; engine-only pin
 identity unchanged. M51 remains PARTIAL for full source pit-reset cleanup.
+
+## M51: complete source monster reset census (rules slice)
+
+Rechecked Crystal201189f svargrond_arena.lua:207-246 directly: it removes Monsters,
+not NPCs, within the inclusive reset rectangle. PitLayout now enumerates the exact
+100 cells and selects only the native caller's live Monster identities inside
+that box. Ambiguous duplicate cells/identities refuse the read plan; it grants no
+removal or Item authority. Spectator radius and the last-pit center remain distinct.
+Six source tests PASS12.599s including build, covering all ten boxes, all100 cells,
+outside/floor exclusion and ambiguous observations. Quest crate clippy --all-targets
+-D warnings PASS8.980s; fmt PASS15.850s; engine-only pin identity unchanged.
+No SQL/id allocated; no content data changed. M51 remains PARTIAL; production
+monster reset composition and physical top-Item cleanup follow.

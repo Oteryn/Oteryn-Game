@@ -87,6 +87,43 @@ pub struct PitLayout {
 }
 
 impl PitLayout {
+    /// Crystal svargrond_arena.lua:213-216: inclusive source reset rectangle,
+    /// deliberately distinct from spectator range and the last pit's center.
+    pub fn reset_cells(self) -> impl Iterator<Item = [i32; 3]> {
+        (self.reset_from[0]..=self.reset_to[0]).flat_map(move |x| {
+            (self.reset_from[1]..=self.reset_to[1]).flat_map(move |y| {
+                (self.reset_from[2]..=self.reset_to[2]).map(move |floor| [x, y, floor])
+            })
+        })
+    }
+
+    pub fn contains_reset(self, at: [i32; 3]) -> bool {
+        (0..3).all(|axis| (self.reset_from[axis]..=self.reset_to[axis]).contains(&at[axis]))
+    }
+
+    /// Source lib:229-232 removes the top Monster, never an NPC or Player.
+    /// The native caller supplies only real live Monster observations and keeps
+    /// its runtime guard. Duplicate cells/identities are ambiguous, so no plan
+    /// is returned; the current native placement owner forbids overlapping mobs.
+    /// This read plan grants no removal or durable Item authority.
+    pub fn monsters_to_reset<T: Copy + PartialEq>(
+        self,
+        monsters: impl IntoIterator<Item = (T, [i32; 3])>,
+    ) -> Option<Vec<T>> {
+        let mut cells = std::collections::BTreeSet::new();
+        let mut selected = Vec::new();
+        for (actor, at) in monsters {
+            if !self.contains_reset(at) {
+                continue;
+            }
+            if selected.len() == 100 || !cells.insert(at) || selected.contains(&actor) {
+                return None;
+            }
+            selected.push(actor);
+        }
+        Some(selected)
+    }
+
     /// Crystal svargrond_arena.lua:193-205,249-256: every other player in
     /// the spectator rectangle blocks admission, including unregistered players.
     pub fn occupied_by_other<T: PartialEq>(
