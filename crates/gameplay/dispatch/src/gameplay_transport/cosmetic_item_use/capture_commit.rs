@@ -36,12 +36,9 @@ impl<'a> CaptureCommitGuard<'a> {
         target: Option<ExactActorRef>,
         key: Option<&str>,
     ) -> Result<(), ()> {
-        if self.capture
-            && matches!(
-                outcome,
-                QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
-            )
-        {
+        // A historical receipt grants no fresh authority over this runtime's
+        // target, which may be a different creature or incarnation.
+        if self.capture && matches!(outcome, QuestTransitionOutcome::Committed(_)) {
             let (Some(target), Some(key)) = (target, key) else {
                 return Err(());
             };

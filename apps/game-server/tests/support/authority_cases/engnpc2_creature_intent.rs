@@ -469,6 +469,31 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
         );
     }
     if capture {
+        let other = runtime
+            .admit_source_pinned_lab_creature(
+                MovementLocalPosition {
+                    x: at.x.checked_add(1).ok_or("position overflow")?,
+                    y: at.y,
+                    floor: at.floor,
+                },
+                "oteryn:creature.rotworm",
+                100,
+            )
+            .map_err(f::debug)?;
+        assert_ne!(other.placement_identity(), creature.placement_identity());
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::finish_capture(
+            &mut runtime,
+            other,
+            "oteryn:creature.rotworm",
+            &replay,
+        )
+        .map_err(f::debug)?;
+        runtime
+            .check_mount_taming_subject(other, "oteryn:creature.rotworm")
+            .map_err(|_| "a historical capture receipt retired a fresh live target")?;
+        assert_eq!(h.count("game_quest_creature_captures").await?, 1);
+    }
+    if capture {
         oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::cancel_capture(
             &mut runtime,
         );
