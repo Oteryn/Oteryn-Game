@@ -8,6 +8,7 @@ mod imported_recipe;
 mod npc_keys;
 pub use npc_keys::native_dialogue_npcs;
 pub mod kills;
+mod shared_tracks;
 mod state_operations;
 pub use kills::KillCounter;
 
@@ -292,13 +293,16 @@ impl Bindings {
         let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
         for quest in &self.quests {
             for t in &quest.tracks {
-                tracks.push(QuestTrack {
-                    key: t.key.clone(),
-                    quest: quest.quest.clone(),
-                    initial: t.initial,
-                    min: t.minimum,
-                    max: t.maximum,
-                });
+                shared_tracks::insert(
+                    &mut tracks,
+                    QuestTrack {
+                        key: t.key.clone(),
+                        quest: quest.quest.clone(),
+                        initial: t.initial,
+                        min: t.minimum,
+                        max: t.maximum,
+                    },
+                )?;
             }
             for stage in &quest.stages {
                 transitions.extend(stage.transitions(&quest.quest)?);
