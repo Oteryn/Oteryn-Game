@@ -1,16 +1,17 @@
 use super::*;
 
 pub fn soulseals_text(panel: &TaskBoardPanel) -> String {
-    let mut text = String::from("Soul Seals fight dialog\r\n");
+    let mut text = String::from(tr!("Soul Seals fight dialog\r\n"));
     if let Some(reply) = &panel.weekly {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "Balance: {} Soulseals\r\nPending weekly rewards: {} Soulseals\r\n",
-            reply.soulseals, reply.weekly.pending_soulseals
+            reply.soulseals,
+            reply.weekly.pending_soulseals
         ));
     } else {
-        text.push_str("Refresh to load the confirmed balance\r\n");
+        text.push_str(tr!("Refresh to load the confirmed balance\r\n"));
     }
-    text.push_str("No fight catalogue is supplied by this server protocol. Encounter selection is unavailable.");
+    text.push_str(tr!("No fight catalogue is supplied by this server protocol. Encounter selection is unavailable."));
     text
 }
 

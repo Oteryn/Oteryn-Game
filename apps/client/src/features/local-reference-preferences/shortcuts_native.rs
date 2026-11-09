@@ -76,8 +76,8 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             [370, 50, 310, 280],
             LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL,
         );
-        let add = control(hwnd, "BUTTON", "Add", 803, [16, 345, 145, 30], 0);
-        let remove = control(hwnd, "BUTTON", "Remove", 804, [175, 345, 145, 30], 0);
+        let add = control(hwnd, "BUTTON", tr!("Add"), 803, [16, 345, 145, 30], 0);
+        let remove = control(hwnd, "BUTTON", tr!("Remove"), 804, [175, 345, 145, 30], 0);
         let up = control(hwnd, "BUTTON", "Move up", 805, [370, 345, 145, 30], 0);
         let down = control(hwnd, "BUTTON", "Move down", 806, [530, 345, 145, 30], 0);
         let status = control(hwnd, "STATIC", "", 0, [16, 395, 680, 50], 0);

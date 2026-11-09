@@ -4,7 +4,9 @@ use super::ForgeMarker;
 pub fn label(name: &str, marker: Option<ForgeMarker>) -> String {
     match marker {
         Some(ForgeMarker::Fiendish) => format!("[Fiendish] {name}"),
-        Some(ForgeMarker::Influenced(stacks)) => format!("[Influenced {stacks}] {name}"),
+        Some(ForgeMarker::Influenced(stacks)) => {
+            lfmt!("[Influenced {stacks}] {name}", name = name, stacks = stacks)
+        }
         None => name.to_owned(),
     }
 }

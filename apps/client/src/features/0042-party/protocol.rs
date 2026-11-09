@@ -33,7 +33,7 @@ impl Outbox {
         {
             mailbox.analyser.party.clear();
             mailbox.analyser.party_revision = mailbox.analyser.party_revision.saturating_add(1);
-            mailbox.analyser.party_feedback = Some("Party changed; refresh party accounting");
+            mailbox.analyser.party_feedback = Some(tr!("Party changed; refresh party accounting"));
         }
     }
 }

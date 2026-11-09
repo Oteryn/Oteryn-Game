@@ -66,7 +66,8 @@ pub(in crate::play) fn task_progress(mailbox: &mut crate::play::mailbox::Mailbox
         mailbox.analyser.task_progress = Some(rows);
         mailbox.analyser.task_feedback = None;
     } else {
-        mailbox.analyser.task_feedback =
-            Some("Hunting tasks not updated; previous confirmation retained");
+        mailbox.analyser.task_feedback = Some(tr!(
+            "Hunting tasks not updated; previous confirmation retained"
+        ));
     }
 }

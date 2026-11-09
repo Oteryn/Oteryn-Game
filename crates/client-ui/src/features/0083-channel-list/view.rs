@@ -12,7 +12,7 @@ fn identity(bytes: &[u8; 16]) -> String {
 }
 pub fn channel_text(channel: ServedChannel) -> String {
     // oteryn-choice: the contract supplies UUIDs, so display both with explicit labels.
-    format!(
+    lfmt!(
         "World: {} | Channel: {} | Premium-only: {}",
         identity(&channel.world_id),
         identity(&channel.channel_id),

@@ -25,8 +25,10 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
                 > u64::from(oteryn_client_runtime::highscores::wire::MAX_HIGHSCORES_LIST_ROWS)
             {
                 p.feedback = Some(
-                    "Your rank is outside the published top 1000; your rank remains shown below"
-                        .into(),
+                    tr!(
+                        "Your rank is outside the published top 1000; your rank remains shown below"
+                    )
+                    .into(),
                 );
                 return None;
             }
@@ -81,7 +83,7 @@ pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse) {
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        p.feedback = Some(format!(
+        p.feedback = Some(lfmt!(
             "Server refused highscores: {:?}. Refresh to retry with the current snapshot.",
             r.status
         ));
@@ -96,6 +98,6 @@ pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse) {
             p.reply = Some(reply);
             p.feedback = None;
         }
-        _ => p.feedback = Some("The server returned invalid highscores".into()),
+        _ => p.feedback = Some(tr!("The server returned invalid highscores").into()),
     }
 }

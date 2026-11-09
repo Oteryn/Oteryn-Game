@@ -17,7 +17,7 @@ pub(crate) struct Launcher {
 }
 impl std::fmt::Debug for Launcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CoinShopLauncher")
+        f.debug_struct(tr!("CoinShopLauncher"))
             .field("active", &self.active.load(Ordering::Acquire))
             .finish_non_exhaustive()
     }
@@ -93,7 +93,7 @@ impl Launcher {
                 {
                     let view = super::View {
                         unavailable: true,
-                        feedback: format!(
+                        feedback: lfmt!(
                             "Coin shop sign-in was not completed. {}",
                             crate::native_login::error_text(error)
                         ),

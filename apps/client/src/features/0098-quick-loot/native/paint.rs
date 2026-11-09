@@ -75,7 +75,7 @@ pub(super) unsafe fn window(
             control(
                 hwnd,
                 "STATIC",
-                "Store tabs: Catalogue / Purchase history",
+                tr!("Store tabs: Catalogue / Purchase history"),
                 400,
                 (10, 360, 800, 30),
                 0,

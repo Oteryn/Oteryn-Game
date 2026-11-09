@@ -50,7 +50,7 @@ impl PlayLink {
                             .is_err()
                         {
                             m.task_board.pending = false;
-                            m.task_board.feedback = Some("The session has ended");
+                            m.task_board.feedback = Some(tr!("The session has ended"));
                         }
                     },
                 },

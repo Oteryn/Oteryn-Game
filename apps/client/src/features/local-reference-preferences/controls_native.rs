@@ -89,7 +89,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             [320, 148, 160, 28],
             WS_BORDER | ES_NUMBER as u32,
         );
-        let apply = control(hwnd, "BUTTON", "Apply", 705, [490, 148, 150, 28], 0);
+        let apply = control(hwnd, "BUTTON", tr!("Apply"), 705, [490, 148, 150, 28], 0);
         let help = control(
             hwnd,
             "STATIC",

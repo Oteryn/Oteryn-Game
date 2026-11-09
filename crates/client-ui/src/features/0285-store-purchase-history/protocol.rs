@@ -20,7 +20,7 @@ pub fn request(panel: &mut Panel, next: bool) -> Option<ServerMechanicCommand> {
     })
     .ok()?;
     panel.pending = true;
-    panel.feedback = "Waiting for the server".into();
+    panel.feedback = tr!("Waiting for the server").into();
     Some(ServerMechanicCommand {
         capability: 285,
         command_type: 501,
@@ -38,8 +38,8 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
     ) && let Ok(page) = decode_history_page(&response.payload)
     {
         panel.page = Some(page);
-        panel.feedback = "History received".into();
+        panel.feedback = tr!("History received").into();
         return;
     }
-    panel.feedback = "Purchase history refused or invalid reply; refresh".into();
+    panel.feedback = tr!("Purchase history refused or invalid reply; refresh").into();
 }

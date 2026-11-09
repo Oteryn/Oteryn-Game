@@ -13,7 +13,7 @@ pub enum Intent {
 
 pub fn request(panel: &mut ArenaPanel, intent: Intent) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("Arena unavailable in this session");
+        panel.feedback = Some(tr!("Arena unavailable in this session"));
         return None;
     }
     if panel.pending.is_some() {
@@ -23,7 +23,7 @@ pub fn request(panel: &mut ArenaPanel, intent: Intent) -> Option<FeatureCommand>
         Intent::Catalogue => (arena::COMMAND_TYPE_ARENA_CATALOGUE, Vec::new()),
         Intent::Action(action) => {
             let Ok(payload) = arena::encode_match_request(action) else {
-                panel.feedback = Some("Invalid reward selection");
+                panel.feedback = Some(tr!("Invalid reward selection"));
                 return None;
             };
             (arena::COMMAND_TYPE_ARENA_MATCH, payload)
@@ -46,7 +46,7 @@ pub fn apply_result(panel: &mut ArenaPanel, result: &GatedCommandResult) -> bool
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the arena request");
+        panel.feedback = Some(tr!("The server refused the arena request"));
         return false;
     }
     let valid = match kind {
@@ -63,7 +63,7 @@ pub fn apply_result(panel: &mut ArenaPanel, result: &GatedCommandResult) -> bool
     panel.feedback = if valid {
         None
     } else {
-        Some("Invalid arena reply; refresh to retry")
+        Some(tr!("Invalid arena reply; refresh to retry"))
     };
     valid
 }

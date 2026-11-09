@@ -13,7 +13,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::ChatPublic(intent)).is_err()
         {
             mailbox.chat_party_room.pending = false;
-            mailbox.chat_party_room.feedback = Some("The session has ended".into());
+            mailbox.chat_party_room.feedback = Some(tr!("The session has ended").into());
         }
     }
 

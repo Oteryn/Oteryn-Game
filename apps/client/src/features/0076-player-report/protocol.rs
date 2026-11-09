@@ -10,7 +10,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         panel.fields[index]
             .trim()
             .parse::<u8>()
-            .map_err(|_| "Enter a valid category, reason or report type")
+            .map_err(|_| tr!("Enter a valid category, reason or report type"))
     };
     let mut request = wire::PlayerReportRequest {
         kind: wire::KIND_BUG,
@@ -29,13 +29,13 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
             if request.category == wire::BUG_CATEGORY_MAP {
                 let coordinates: Vec<_> = panel.fields[3].split(',').map(str::trim).collect();
                 let [x, y, floor] = coordinates.as_slice() else {
-                    return Err("Enter map position as x,y,floor".into());
+                    return Err(tr!("Enter map position as x,y,floor").into());
                 };
-                request.map_x = x.parse().map_err(|_| "Invalid map x coordinate")?;
-                request.map_y = y.parse().map_err(|_| "Invalid map y coordinate")?;
-                request.map_floor = floor.parse().map_err(|_| "Invalid map floor")?;
+                request.map_x = x.parse().map_err(|_| tr!("Invalid map x coordinate"))?;
+                request.map_y = y.parse().map_err(|_| tr!("Invalid map y coordinate"))?;
+                request.map_floor = floor.parse().map_err(|_| tr!("Invalid map floor"))?;
                 if request.map_floor > 15 {
-                    return Err("Map floor must be 0-15".into());
+                    return Err(tr!("Map floor must be 0-15").into());
                 }
             }
         }
@@ -46,9 +46,9 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
             request.target = panel.fields[2].trim().to_owned();
         }
     }
-    wire::validate_player_report(&request).map_err(|_| "Invalid report fields")?;
+    wire::validate_player_report(&request).map_err(|_| tr!("Invalid report fields"))?;
     let payload = wire::encode_player_report_request(&request)
-        .map_err(|_| "Comment must fit 1,024 UTF-8 bytes; target must fit 29 bytes")?;
+        .map_err(|_| tr!("Comment must fit 1,024 UTF-8 bytes; target must fit 29 bytes"))?;
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_PLAYER_REPORT_V1,
         kind: wire::COMMAND_TYPE_PLAYER_REPORT,
@@ -66,25 +66,29 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
-        panel.feedback = "The server refused the report".into();
+        panel.feedback = tr!("The server refused the report").into();
         return;
     }
     let Ok(reply) = wire::decode_player_report_reply(&result.payload) else {
-        panel.feedback = "Invalid report reply".into();
+        panel.feedback = tr!("Invalid report reply").into();
         return;
     };
     panel.feedback = match reply.code {
         wire::PlayerReportCode::Accepted => {
-            panel.summary = format!("Report #{} queued", reply.report);
-            "Report accepted".into()
+            panel.summary = lfmt!("Report #{} queued", reply.report);
+            tr!("Report accepted").into()
         }
-        wire::PlayerReportCode::Invalid => "The server refused the report: invalid fields".into(),
-        wire::PlayerReportCode::SelfReport => "The server refused a report about yourself".into(),
+        wire::PlayerReportCode::Invalid => {
+            tr!("The server refused the report: invalid fields").into()
+        }
+        wire::PlayerReportCode::SelfReport => {
+            tr!("The server refused a report about yourself").into()
+        }
         wire::PlayerReportCode::AlreadyPending => {
-            "A report about this player is already pending".into()
+            tr!("A report about this player is already pending").into()
         }
         wire::PlayerReportCode::RateLimited => {
-            format!("Wait {} seconds before reporting again", reply.wait_seconds)
+            lfmt!("Wait {} seconds before reporting again", reply.wait_seconds)
         }
     };
 }

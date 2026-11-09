@@ -8,7 +8,7 @@ pub enum Intent {
 }
 pub fn request(p: &mut AchievementsPanel, intent: Intent) -> Option<u32> {
     if !p.selected {
-        p.error = Some("Session ended");
+        p.error = Some(tr!("Session ended"));
         return None;
     }
     if p.pending.is_some() {
@@ -43,11 +43,11 @@ pub fn apply_result(p: &mut AchievementsPanel, response: &Response) {
         }
         Response::Page(_) => {
             p.catalog.collecting = false;
-            p.error = Some("Invalid achievements page");
+            p.error = Some(tr!("Invalid achievements page"));
         }
         Response::Refused => {
             p.catalog.collecting = false;
-            p.error = Some("The server refused the achievements query");
+            p.error = Some(tr!("The server refused the achievements query"));
         }
     }
 }

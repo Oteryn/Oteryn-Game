@@ -1,26 +1,27 @@
 use super::{CATEGORIES, CATEGORY_IDS, HighscoresPanel, VOCATIONS};
 use std::fmt::Write;
 pub fn panel_text(p: &HighscoresPanel) -> String {
-    let mut text = format!(
+    let mut text = lfmt!(
         "Highscores — {} / {}",
         CATEGORY_IDS
             .iter()
             .position(|id| *id == p.category)
-            .map(|index| CATEGORIES[index])
-            .unwrap_or("Unavailable"),
-        VOCATIONS[p.vocation as usize]
+            .map(|index| crate::localization::tr(CATEGORIES[index]))
+            .unwrap_or(tr!("Unavailable")),
+        crate::localization::tr(VOCATIONS[p.vocation as usize])
     );
     if !p.selected {
-        text.push_str("\nHighscores unavailable in this session");
+        text.push_str(tr!("\nHighscores unavailable in this session"));
     }
     if p.pending {
-        text.push_str("\nLoading…");
+        text.push_str(tr!("\nLoading…"));
     }
     if let Some(reply) = &p.reply {
-        let _ = write!(
+        let _ = lwrite!(
             text,
             "\nPage {} — snapshot {} (Unix milliseconds)\nRank | Name | Vocation | Level | Value",
-            reply.page, reply.computed_at
+            reply.page,
+            reply.computed_at
         );
         for row in &reply.rows {
             let _ = write!(
@@ -30,16 +31,20 @@ pub fn panel_text(p: &HighscoresPanel) -> String {
             );
         }
         if reply.rows.is_empty() {
-            text.push_str("\nNo rankings on this page");
+            text.push_str(tr!("\nNo rankings on this page"));
         }
         if let Some(row) = &reply.own_row {
-            let _ = write!(
+            let _ = lwrite!(
                 text,
                 "\nYour rank: {} — {} | {} | level {} | {}",
-                row.rank, row.name, row.vocation, row.level, row.value
+                row.rank,
+                row.name,
+                row.vocation,
+                row.level,
+                row.value
             );
         } else {
-            text.push_str("\nYour character is not ranked in this list");
+            text.push_str(tr!("\nYour character is not ranked in this list"));
         }
     }
     if let Some(feedback) = &p.feedback {

@@ -69,7 +69,10 @@ impl Outbox {
             })
             .await?;
         if refreshed != NpcIntentDisposition::Ok {
-            lock(&self.0).npc_shop.live.feedback = format!("Quote refresh refused: {refreshed:?}");
+            lock(&self.0).npc_shop.live.feedback = lfmt!(
+                "Quote refresh refused: {refreshed:?}",
+                refreshed = refreshed
+            );
         }
         Ok(())
     }

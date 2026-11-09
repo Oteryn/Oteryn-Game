@@ -2,24 +2,28 @@ use super::*;
 
 pub fn row_text(row: &market::MarketRow) -> String {
     if row.side == 0 {
-        return format!("Item {} · select and Browse to see offers", row.definition);
+        return lfmt!("Item {} · select and Browse to see offers", row.definition);
     }
-    format!(
+    lfmt!(
         "Item {} · {} · amount {} · price {} · total {}{}",
         row.definition,
         if row.side == 1 { "buy" } else { "sell" },
         row.amount,
         row.price,
         u128::from(row.amount) * u128::from(row.price),
-        if row.anonymous { " · anonymous" } else { "" }
+        if row.anonymous {
+            tr!(" · anonymous")
+        } else {
+            ""
+        }
     )
 }
 pub fn panel_text(panel: &MarketPanel) -> String {
     let mut lines = vec![
         match panel.view {
-            MarketView::Browse => "Market offers",
-            MarketView::Own => "My offers",
-            MarketView::History => "Market history",
+            MarketView::Browse => tr!("Market offers"),
+            MarketView::Own => tr!("My offers"),
+            MarketView::History => tr!("Market history"),
         }
         .to_owned(),
     ];
@@ -31,23 +35,23 @@ pub fn panel_text(panel: &MarketPanel) -> String {
             _ => "all",
         }
     ));
-    lines.push(format!(
+    lines.push(lfmt!(
         "Page {} · Total: {}",
         panel.page + 1,
         u128::from(panel.amount) * u128::from(panel.price)
     ));
     if !panel.selected {
-        lines.push("Market is unavailable in this session".into());
+        lines.push(tr!("Market is unavailable in this session").into());
     }
     if panel.pending.is_some() {
-        lines.push("Waiting for the server…".into());
+        lines.push(tr!("Waiting for the server…").into());
     }
     if let Some(feedback) = panel.feedback {
         lines.push(feedback.into());
     }
 
     if panel.definition != 0 {
-        lines.push("Statistics cover the loaded item page".into());
+        lines.push(tr!("Statistics cover the loaded item page").into());
         for (side, name) in [(1, "buy"), (2, "sell")] {
             let mut count = 0u64;
             let mut units = 0u128;
@@ -64,9 +68,9 @@ pub fn panel_text(panel: &MarketPanel) -> String {
                 max = max.max(row.price);
             }
             if let Some(average) = value.checked_div(units) {
-                lines.push(format!("Loaded page {name}: {count} offers, {units} units, price {min}–{max}, weighted average {average}"));
+                lines.push(lfmt!("Loaded page {name}: {count} offers, {units} units, price {min}–{max}, weighted average {average}",average=average,count=count,max=max,min=min,name=name,units=units));
             } else {
-                lines.push(format!("Loaded page {name}: no offers"));
+                lines.push(lfmt!("Loaded page {name}: no offers", name = name));
             }
         }
     }

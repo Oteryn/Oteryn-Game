@@ -1,7 +1,7 @@
 use super::*;
 pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
-        return "Leader advertisement is unavailable in this session".into();
+        return tr!("Leader advertisement is unavailable in this session").into();
     }
     let mut text = format!("Assemble team — Your advertisement\r\n{}", panel.feedback);
     if let Some(listing) = panel.confirmed {

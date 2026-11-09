@@ -10,35 +10,39 @@ pub fn panel_text(panel: &PlayerTradePanel) -> String {
 #[must_use]
 pub fn status_text(panel: &PlayerTradePanel) -> String {
     if !panel.selected {
-        return "Player trade unavailable in this session".into();
+        return tr!("Player trade unavailable in this session").into();
     }
     let Some(state) = &panel.state else {
-        return panel.feedback.unwrap_or("No active trade").into();
+        return panel.feedback.unwrap_or(tr!("No active trade")).into();
     };
     let offer = |name: &str, value: Option<player_trade::Offer>| {
         value.map_or_else(
-            || format!("{name}: none"),
+            || lfmt!("{name}: none", name = name),
             |value| {
-                format!(
+                lfmt!(
                     "{name}: item {} x{} (subtype {})",
-                    value.definition, value.count, value.sub_type
+                    value.definition,
+                    value.count,
+                    value.sub_type,
+                    name = name
                 )
             },
         )
     };
     let phase = match state.phase {
         1 => "offered",
-        2 => "ready",
+        2 => tr!("ready"),
         3 => "transferring",
-        _ => "closed",
+        _ => tr!("closed"),
     };
     let mut lines = vec![
-        format!("Trade: {phase}"),
-        offer("Your offer", state.own),
-        offer("Their offer", state.counter),
-        format!(
+        lfmt!("Trade: {phase}", phase = phase),
+        offer(tr!("Your offer"), state.own),
+        offer(tr!("Their offer"), state.counter),
+        lfmt!(
             "Accepted: you={} partner={}",
-            state.accepted[0], state.accepted[1]
+            state.accepted[0],
+            state.accepted[1]
         ),
     ];
     if !state.message.is_empty() {

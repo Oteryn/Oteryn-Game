@@ -1,8 +1,8 @@
 pub fn panel_text(p: &super::ItemForgePanel) -> String {
-    let mut s = format!(
+    let mut s = lfmt!(
         "Item Forge\nAction: {}\nItem: {} / {}",
         if p.query_current_dust {
-            "Current dust".to_owned()
+            tr!("Current dust").to_owned()
         } else {
             format!("{:?}", p.operation)
         },
@@ -12,7 +12,11 @@ pub fn panel_text(p: &super::ItemForgePanel) -> String {
     if let Some(reply) = &p.decoded {
         match reply {
             super::reply::Reply::CurrentDust { dust, limit } => {
-                s.push_str(&format!("\nCurrent dust: {dust} / {limit}"));
+                s.push_str(&lfmt!(
+                    "\nCurrent dust: {dust} / {limit}",
+                    dust = dust,
+                    limit = limit
+                ));
             }
             super::reply::Reply::Result(receipt) => {
                 s.push('\n');
@@ -20,12 +24,13 @@ pub fn panel_text(p: &super::ItemForgePanel) -> String {
             }
             super::reply::Reply::History(rows) => {
                 if rows.is_empty() {
-                    s.push_str("\nNo forge operations yet");
+                    s.push_str(tr!("\nNo forge operations yet"));
                 }
                 for (ordinal, receipt) in rows {
-                    s.push_str(&format!(
+                    s.push_str(&lfmt!(
                         "\nHistory #{ordinal}\n{}",
-                        super::reply::render(receipt)
+                        super::reply::render(receipt),
+                        ordinal = ordinal
                     ));
                 }
             }

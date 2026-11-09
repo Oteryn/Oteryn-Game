@@ -14,7 +14,7 @@ pub enum Intent {
 
 pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<PrivateChannelIntent> {
     if !panel.selected || panel.pending {
-        panel.feedback = Some("Private channels unavailable or waiting for the server".into());
+        panel.feedback = Some(tr!("Private channels unavailable or waiting for the server").into());
         return None;
     }
     let command = match intent {
@@ -23,7 +23,7 @@ pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<PrivateChannelIn
         Intent::Invite | Intent::Exclude => {
             let name = panel.name.trim();
             if name.is_empty() || name.len() > 120 || name.contains('\0') {
-                panel.feedback = Some("Enter a player name of at most 120 bytes".into());
+                panel.feedback = Some(tr!("Enter a player name of at most 120 bytes").into());
                 return None;
             }
             if intent == Intent::Invite {
@@ -34,7 +34,7 @@ pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<PrivateChannelIn
         }
         Intent::Join | Intent::Leave | Intent::Send => {
             let Some(channel_id) = panel.channel else {
-                panel.feedback = Some("Select your channel or an invitation".into());
+                panel.feedback = Some(tr!("Select your channel or an invitation").into());
                 return None;
             };
             match intent {
@@ -45,7 +45,7 @@ pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<PrivateChannelIn
                         || panel.text.len() > 1_020
                         || panel.text.contains('\0')
                     {
-                        panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
+                        panel.feedback = Some(tr!("Enter a message of at most 1,020 bytes").into());
                         return None;
                     }
                     PrivateChannelIntent::Say {

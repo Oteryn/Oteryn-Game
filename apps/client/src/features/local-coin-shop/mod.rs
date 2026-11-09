@@ -38,8 +38,10 @@ impl View {
     pub fn new(character_id: Option<String>) -> Self {
         Self {
             character_id,
-            feedback: "Choose an Oteryn coin package. Sandbox checkout never charges real money."
-                .into(),
+            feedback: tr!(
+                "Choose an Oteryn coin package. Sandbox checkout never charges real money."
+            )
+            .into(),
             ..Self::default()
         }
     }
@@ -68,26 +70,26 @@ impl View {
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
         if let Some(request) = &self.pending {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\nUnresolved order request {}: retry this request or check status.",
                 request.request_id
             ));
         }
         if let Some(balance) = &self.balance {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\nBalance: {} coins; available {}; transferable {}.{}",
                 balance.total_coins,
                 balance.available_coins,
                 balance.transferable_coins,
                 if balance.review_required {
-                    " Account review required; new purchases are disabled."
+                    tr!(" Account review required; new purchases are disabled.")
                 } else {
                     ""
                 }
             ));
         }
         if let Some(order) = &self.order {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\nOrder {}: {:?}, {} coins for {}. {}",
                 order.order_id,
                 order.state,
@@ -96,10 +98,10 @@ impl View {
                 order.code
             ));
             if let Some(id) = &order.receipt_id {
-                text.push_str(&format!("\nReceipt {id}"));
+                text.push_str(&lfmt!("\nReceipt {id}", id = id));
             }
             if order.review_required {
-                text.push_str("\nPayment review required. Contact Oteryn support.");
+                text.push_str(tr!("\nPayment review required. Contact Oteryn support."));
             }
         }
         text
@@ -107,7 +109,7 @@ impl View {
 }
 pub fn price_text(price: &Price) -> String {
     if !price.valid() {
-        return "Unsupported price".into();
+        return tr!("Unsupported price").into();
     }
     let divisor = 10_u64.pow(u32::from(price.exponent));
     if price.exponent == 0 {

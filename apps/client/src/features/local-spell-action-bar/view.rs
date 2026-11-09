@@ -3,9 +3,10 @@ mod hotkeys;
 #[path = "item_actions.rs"]
 mod item_actions;
 pub use hotkeys::ActionKeys;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(in crate::play) use hotkeys::bind as bind_custom_key;
 pub use item_actions::ItemUseMode;
+pub(in crate::play) use item_actions::{visible_items, item_source, item_target};
 #[path = "amount.rs"]
 mod amount;
 #[path = "layout.rs"]
@@ -18,10 +19,12 @@ use crate::spell::SPELL_SLOTS;
 pub(crate) use assignments::BarActionsState;
 #[cfg(any(windows, test))]
 pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(in crate::play) use assignments::set_action as set_extra;
 pub use assignments::{BarAction, BarActions, PassiveAbility};
+pub(in crate::play) use assignments::label as action_label;
 pub(in crate::play) use assignments::{activate as activate_extra, clear_extra};
+
 
 impl PlayView {
     #[must_use]
@@ -40,7 +43,7 @@ impl PlayView {
             self.world_clock_text().unwrap_or_default(),
             oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
             self.battle_instinct
-                .map_or_else(String::new, |status| format!(
+                .map_or_else(String::new, |status| lfmt!(
                     "Battle Instinct: {} (+{} melee, +{} shielding)",
                     if !status.active {
                         "inactive"
@@ -68,10 +71,14 @@ impl PlayView {
             .or(self.combat_line)
             .unwrap_or("");
         let mut status = match self.cursor_spell {
-            Some(spell) => format!("Spell {spell}: Click a tile; Escape cancels"),
-            None => format!("spells 1-{SPELL_SLOTS} {line}")
-                .trim_end()
-                .to_owned(),
+            Some(spell) => lfmt!("Spell {spell}: Click a tile; Escape cancels", spell = spell),
+            None => lfmt!(
+                "spells 1-{SPELL_SLOTS} {line}",
+                SPELL_SLOTS = SPELL_SLOTS,
+                line = line
+            )
+            .trim_end()
+            .to_owned(),
         };
         if let Some(notice) = self.death_notice() {
             status = format!("{notice} — {status}");
@@ -150,14 +157,60 @@ impl crate::play::PlayLink {
             cast_index,
         )
     }
+    pub fn spell_slot_tooltips(&self) -> Vec<String> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(&mailbox.spell_bar, &mailbox.spell_catalog.catalog);
+        for (slot, action) in &mailbox.bar_actions.saved.0 {
+            if let Some(label)=labels.get_mut(*slot) { *label=assignments::label(&mailbox,action); }
+        }
+        if !mailbox.local_preferences.action_bar.tooltips { labels.iter_mut().for_each(String::clear); }
+        labels
+    }
+    pub fn action_bar_grid(&self) -> (usize, usize) {
+        crate::play::mailbox::lock(&self.mailbox)
+            .local_preferences
+            .action_bar
+            .grid()
+    }
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
+        if mailbox.local_preferences.action_bar.auto_insert {
+            let learned: Vec<_> = mailbox
+                .spell_catalog
+                .catalog
+                .entries()
+                .iter()
+                .filter(|entry| entry.learned)
+                .map(|entry| entry.cast_index)
+                .collect();
+            for id in learned {
+                if !mailbox.spell_bar.observed_spells.insert(id) {
+                    continue;
+                }
+                let fields = mailbox.spell_bar.bar.fields();
+                if fields
+                    .iter()
+                    .any(|field| field.parse::<u32>().ok() == Some(id))
+                {
+                    continue;
+                }
+                if let Some(slot) = fields.iter().enumerate().position(|(slot, field)| {
+                    field.is_empty() && !mailbox.bar_actions.saved.0.contains_key(&slot)
+                }) {
+                    mailbox
+                        .spell_bar
+                        .bar
+                        .bind(slot, std::num::NonZeroU32::new(id));
+                }
+            }
+        }
         let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(
             &mailbox.spell_bar,
             &mailbox.spell_catalog.catalog,
         );
         for (slot, label) in labels.iter_mut().enumerate() {
+            if !mailbox.local_preferences.action_bar.amounts { continue; }
             let Some(spell) = u32::try_from(slot + 1)
                 .ok()
                 .and_then(std::num::NonZeroU32::new)
@@ -183,6 +236,9 @@ impl crate::play::PlayLink {
         for (slot, action) in &mailbox.bar_actions.saved.0 {
             if let Some(label) = labels.get_mut(*slot) {
                 *label = format!("{}: {}", slot + 1, assignments::label(&mailbox, action));
+                if !mailbox.local_preferences.action_bar.amounts {
+                    *label = label.lines().filter(|line| !line.starts_with("Visible:")).collect::<Vec<_>>().join("\n");
+                }
             }
         }
         for (slot, key) in &mailbox.bar_actions.keys.0 {
@@ -190,6 +246,7 @@ impl crate::play::PlayLink {
                 label.push_str(&format!("\n{key}"));
             }
         }
+        mailbox.local_preferences.action_bar.project(&mut labels);
         labels
     }
     pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {

@@ -17,7 +17,7 @@ impl Outbox {
 impl crate::play::mailbox::Mailbox {
     pub(in crate::play) fn boss_encounter_end(&mut self) {
         self.boss_encounter = oteryn_client_ui::boss_encounter::BossEncounterPanel {
-            feedback: Some("The session has ended"),
+            feedback: Some(tr!("The session has ended")),
             ..Default::default()
         };
         self.boss_encounter_shutdown = true;

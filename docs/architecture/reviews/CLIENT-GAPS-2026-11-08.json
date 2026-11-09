@@ -264,20 +264,20 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Action Bar Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:77 + action_bar_hotkeys_route_every_supported_slot; Additional action-bar rows remain unsupported; all four existing slots are configurable."
+  "evidence": "apps/client/src/features/local-reference-preferences/bar_hotkeys.rs:85 + options_key_edit_uses_action_keys_and_executes_the_live_mixed_slot + action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch; Options reads and edits cg-options ActionKeys for all 36 slots; native bar edits sync back, named saved settings survive restart, mixed slots dispatch through the owner executor, repeats are suppressed and chat letters remain available. Legacy custom slot chords remain readable."
  },
  {
   "id": "T049",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Custom Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:20 + hotkey_profiles_preserve_routes_across_restart; Object/text/passive action editor remains."
+  "evidence": "apps/client/src/features/local-reference-preferences/custom_dispatch.rs:8 + custom_passive_choices_use_confirmed_action_bar_status_interfaces; apps/client/src/features/local-reference-preferences/profiles.rs:107 + named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments; apps/client/src/features/local-spell-action-bar/item_actions.rs:78 + custom_object_picker_uses_open_container_handles_and_current_combat_generation. Native custom actions reuse cg-options visible-item/combat-target resolution and confirmed passive labels. Profiles restore owner ActionKeys and mixed BarActions, explicit loads win older pending edits, and disconnect ends custom tracking. Existing text draft/send, equip and cooldown caller tests pass."
  },
  {
   "id": "T050",
@@ -363,9 +363,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej strony ustawień barów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/view.rs:153 + t058_tooltip_toggle_projects_live_slot_details; apps/client/src/features/local-spell-action-bar/view.rs:165 + t058_rune_amounts_use_live_inventory_stacks + t058_auto_insert_uses_learned_server_catalog_once + t058_bar_labels_and_cooldowns_are_independent; apps/client/src/features/local-spell-action-bar/view.rs:162 + t058_row_layout_preserves_all_twelve_slots"
  },
  {
   "id": "T059",
@@ -402,45 +403,50 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: ambient/separator/indoor/cloud attenuation",
-  "status": "PARTIAL",
-  "gap": "Światło jest; brak grupy ambient/separator/attenuation.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0019-world-light/view.rs:7 + apps/client/src/features/local-reference-preferences/lighting_controls.rs:6 + graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation (apps/client/src/features/local-reference-preferences/tests/graphics.rs:44)"
  },
  {
   "id": "T063",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: own/other/creature/boss-area opacity",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawień opacity według źródła efektu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/view.rs:120 + apps/client/src/features/local-reference-preferences/frame_controls.rs:20 + crates/client-assets/src/effects.rs:22; pinned_boss_area_category_reaches_wire_caller_and_gpu_alpha (apps/client/src/features/0023-presentation/tests/boss_area.rs:9), source_opacity_reaches_confirmed_effect_gpu_upload, pinned_manifest_owns_boss_area_classification and boss_area_metadata_rejects_invalid_and_duplicate_ids (crates/client-assets/tests/boss_area_metadata.rs). Four persisted opacity groups consume existing MagicEffect IDs; pinned asset metadata marks the boss-area appearance category independently of caster/source. Both offline and live world loading carry the catalog. Legacy packs without categories retain source-group rendering; no wire or capability extension."
  },
  {
   "id": "T064",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound: master/mute/device/music/ambient/items/events/UI",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "Existing implementation reverified after cgmech sync on 692b8b9da: apps/client/src/features/0023-presentation/native.rs:25 (device), native.rs:69 (active/new voice gains), native.rs:211 (UI); apps/client/src/features/local-reference-preferences/mixer_controls.rs:50 (settings caller). Tests: confirmed_sound_cues_use_pinned_mixer_routes (apps/client/tests/audio_mixer.rs:28), mixer_channels_are_independent_and_master_mute_wins (:4), requested_audio_device_is_exact_and_never_silently_falls_back (apps/client/tests/audio_device.rs:3), missing_device_choice_survives_preference_reload (:11), ambient_channel_gain_is_independent_and_honours_master_mute (apps/client/tests/ambient_sound_mix.rs:3). Main checked; full implementation is already on this lane."
  },
  {
   "id": "T065",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / Battle Sounds: own/others/creatures, attack/heal/support",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Playback istnieje; brak suwaków i filtrów walki.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/mixer.rs:37 + apps/client/src/features/0023-presentation/native.rs:72 + apps/client/src/features/local-reference-preferences/battle_filter_controls.rs:1; confirmed_battle_cues_respect_each_source_and_class (apps/client/tests/battle_filters.rs:34), battle_filters_separate_source_and_spell_class, battle_sound_source_gain_multiplies_master_and_mute. Nine persisted filters and three source gains consume confirmed sound cues and pinned battle_classes metadata; active voices reapply filters. Main and own branch checked first; legacy unclassified cues retain existing behaviour."
  },
  {
   "id": "T066",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / UI Sounds: interactions/party/VIP/chat channels",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak filtrów dźwięków UI, party, VIP i kanałów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/battle_sound_controls.rs:12 + apps/client/src/features/0023-presentation/ui_sound.rs:1 + apps/client/src/features/0023-presentation/native.rs:143; confirmed_ui_events_reach_filtered_native_audio_queue (apps/client/tests/ui_sound_filters.rs:13). Persisted interaction/party/VIP/chat filters drive native notification tones from confirmed events; queue bounded and VIP refreshes deduplicated. Checked origin/main and own branch before implementation."
  },
  {
   "id": "T067",
@@ -456,18 +462,20 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous: optimise connection stability",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/controls.rs:57 + apps/client/src/native_entry.rs:146 + crates/session-tcp/src/lib.rs:96; connection_optimisation_configures_real_tls_socket (crates/session-tcp/src/tests.rs:101), connection_optimisation_survives_the_admission_store_read. Settings disables TCP small-packet buffering at next login; existing TLS, admission and retries preserved. Checked origin/main 2033ddc54 and own branch first."
  },
  {
   "id": "T069",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme",
-  "status": "PARTIAL",
-  "gap": "Inspect/loot/walk są osobno; brak pełnej strony i chase cancel/mouse loot controls.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/gameplay.rs:24 + gameplay_options_cancel_chase_before_manual_step; gameplay_mouse_loot_uses_negotiated_caller_and_saved_choices"
  },
  {
   "id": "T070",
@@ -477,16 +485,17 @@
   "status": "DONE",
   "gap": "Natywna strona Screenshots zapisuje folder i zakres game-only/full render; Print Screen pobiera klatkę z renderera i zapisuje BMP bez nadpisywania istniejących plików.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller and rendered-frame save at :106; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller; apps/client/src/features/local-reference-preferences/screenshot_native.rs:12 + native GPU/full-window capture; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
  },
  {
   "id": "T071",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: backlog i event triggers",
-  "status": "MISSING",
-  "gap": "Brak bufora wstecznego i automatycznych screenshotów zdarzeń.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Trwałe przełączniki level/death/achievement i opcjonalny backlog 0–10 s; renderowane klatki są próbkowane raz na sekundę, ograniczone do 64 MiB i zapisywane przy rzeczywistym zdarzeniu lub ręcznym capture.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native backlog and event settings; apps/client/src/features/local-reference-preferences/capture_backlog.rs:53 + bounded sampling and :94 + capture writer; apps/client/src/features/local-reference-preferences/screenshot_backlog.rs:44 + unified confirmed-event and bounded-backlog runner; apps/client/src/features/local-reference-preferences/screenshot_native.rs:12 + actual renderer/full-window capture caller; apps/client/src/screenshots_live_tests.rs:165 + screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_policy; apps/client/src/features/local-reference-preferences/capture_backlog.rs:126 + backlog_evicts_oldest_frames_before_exceeding_memory_budget"
  },
  {
   "id": "T072",
@@ -1035,9 +1044,10 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Guest/subowner/door ACL, bid/leave/notice",
-  "status": "PARTIAL",
-  "gap": "Controller i wire są; brak play.json i produkcyjnego wywołania controller::submit (montaż tylko apps/client/tests/gap_house.rs:21).",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Produkcyjny formularz Houses i play.json montują komendy: bid, guest/subowner/door ACL, leave oraz notice/cancel. Zmiany wymagają potwierdzenia, bieżącego katalogu i rewizji ACL z odpowiedzi serwera.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0049-house/play.json:1 + mounted state/input/view; apps/client/src/features/0049-house/view.rs:11 + native form submit to production input; apps/client/src/features/0049-house/input.rs:122 + controller::submit and :136 + command queue; apps/client/src/features/0049-house/tests/play.rs:6 + house_production_queue_and_result_cleanup; apps/client/src/features/0049-house/tests/play.rs:50 + house_changes_require_confirmation_and_current_catalogue; apps/client/src/features/0049-house/tests/play.rs:117 + house_acl_editor_loads_each_server_list_and_saves_its_revision; apps/client/tests/gap_house.rs:24 + gap_house_all_action_selections"
  },
  {
   "id": "T135",
@@ -1321,18 +1331,20 @@
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Lokalizacja interfejsu",
-  "status": "PARTIAL",
-  "gap": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/localization.rs:5 + crates/client-ui/src/components/localization/build.rs:8 + language_selection_persists_and_localizes_real_chat_view_without_changing_messages (apps/client/src/features/local-reference-preferences/tests/localization.rs:5)"
  },
  {
   "id": "O006",
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Opcje i ustawienia",
-  "status": "PARTIAL",
-  "gap": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/presentation.rs:72 + console_and_action_bar_settings_reach_received_chat_and_cast_caller; existing graphics projection covered by t012_visual_preferences_control_live_effect_projection"
  },
  {
   "id": "O010",

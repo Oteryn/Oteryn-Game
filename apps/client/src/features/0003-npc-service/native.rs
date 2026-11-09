@@ -46,8 +46,8 @@ pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::Entity
         if menu.is_null() {
             return;
         }
-        AppendMenuW(menu, MF_STRING, 1, wide("Talk").as_ptr());
-        AppendMenuW(menu, MF_STRING, 2, wide("Trade").as_ptr());
+        AppendMenuW(menu, MF_STRING, 1, wide(tr!("Talk")).as_ptr());
+        AppendMenuW(menu, MF_STRING, 2, wide(tr!("Trade")).as_ptr());
         let mut point = POINT { x: 0, y: 0 };
         GetCursorPos(&mut point);
         let chosen = TrackPopupMenu(
@@ -97,7 +97,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("NPC dialogue — Ctrl+Shift+X").as_ptr(),
+            wide(tr!("NPC dialogue — Ctrl+Shift+X")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -136,17 +136,24 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
         SendMessageW(input, EM_SETLIMITTEXT, 255, 0);
-        let send = control(hwnd, "BUTTON", "Send", 102, (570, 320, 110, 30), 0);
-        control(hwnd, "BUTTON", "Trade", 105, (400, 510, 110, 30), 0);
+        let send = control(hwnd, "BUTTON", tr!("Send"), 102, (570, 320, 110, 30), 0);
+        control(hwnd, "BUTTON", tr!("Trade"), 105, (400, 510, 110, 30), 0);
         let previous = control(
             hwnd,
             "BUTTON",
-            "Previous keywords",
+            tr!("Previous keywords"),
             103,
             (10, 510, 180, 30),
             0,
         );
-        let next = control(hwnd, "BUTTON", "Next keywords", 104, (200, 510, 180, 30), 0);
+        let next = control(
+            hwnd,
+            "BUTTON",
+            tr!("Next keywords"),
+            104,
+            (200, 510, 180, 30),
+            0,
+        );
         if [reply, input, send, previous, next]
             .iter()
             .any(|h| h.is_null())

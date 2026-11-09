@@ -1,3 +1,5 @@
+#[path = "input/selector.rs"]
+pub(in crate::play) mod selector;
 #[path = "input/catalogue.rs"]
 pub(in crate::play) mod catalogue;
 #[path = "input/charm_browser.rs"]
@@ -18,11 +20,11 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.charm_progression;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
     if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+        panel.feedback = tr!("Waiting for the server").into();
         return;
     }
     match super::protocol::command(panel, intent) {
@@ -30,7 +32,7 @@ pub(in crate::play) fn submit(
             if oteryn_client_ui::charm_progression::request(panel, command.kind)
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
-                panel.failed("The session has ended");
+                panel.failed(tr!("The session has ended"));
             }
         }
         Err(message) => panel.feedback = message,

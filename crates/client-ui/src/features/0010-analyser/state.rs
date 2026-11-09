@@ -135,22 +135,22 @@ impl Tool {
             Self::Bosses => "bosses",
         }
     }
-    pub const fn title(self) -> &'static str {
+    pub fn title(self) -> &'static str {
         match self {
-            Self::Overview => "Overview",
-            Self::Hunting => "Hunting",
-            Self::Experience => "Experience",
-            Self::Loot => "Loot",
-            Self::Supplies => "Supplies",
-            Self::Damage => "Damage",
-            Self::Healing => "Healing",
-            Self::Impact => "Impact",
-            Self::Input => "Input",
-            Self::Session => "Hunting Session",
-            Self::Party => "Party Hunt",
-            Self::LootTracker => "Loot Tracker",
-            Self::Kills => "Kill Tracker",
-            Self::Bosses => "Boss Tracker",
+            Self::Overview => tr!("Overview"),
+            Self::Hunting => tr!("Hunting"),
+            Self::Experience => tr!("Experience"),
+            Self::Loot => tr!("Loot"),
+            Self::Supplies => tr!("Supplies"),
+            Self::Damage => tr!("Damage"),
+            Self::Healing => tr!("Healing"),
+            Self::Impact => tr!("Impact"),
+            Self::Input => tr!("Input"),
+            Self::Session => tr!("Hunting Session"),
+            Self::Party => tr!("Party Hunt"),
+            Self::LootTracker => tr!("Loot Tracker"),
+            Self::Kills => tr!("Kill Tracker"),
+            Self::Bosses => tr!("Boss Tracker"),
         }
     }
 }

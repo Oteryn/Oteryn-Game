@@ -63,7 +63,7 @@ pub fn select_boss(panel: &mut BossEncounterPanel, forward: bool) -> bool {
 }
 
 pub fn browser_text(panel: &BossEncounterPanel) -> String {
-    let mut text = format!("\nBosstiary browser — {:?}\n", panel.browser_category);
+    let mut text = lfmt!("\nBosstiary browser — {:?}\n", panel.browser_category);
     let rows = boss_records(panel);
     for key in &rows {
         let _ = write!(
@@ -73,10 +73,10 @@ pub fn browser_text(panel: &BossEncounterPanel) -> String {
         );
         if let Some(snapshot) = &panel.snapshot {
             if let Some((_, kills)) = snapshot.progress.iter().find(|(id, _)| id == key) {
-                let _ = write!(text, ": {kills} kills");
+                let _ = lwrite!(text, ": {kills} kills", kills = kills);
             }
             if let Some((_, deadline)) = snapshot.cooldowns.iter().find(|(id, _)| id == key) {
-                let _ = write!(
+                let _ = lwrite!(
                     text,
                     " | {} ms remaining",
                     deadline.saturating_sub(snapshot.now)
@@ -86,24 +86,26 @@ pub fn browser_text(panel: &BossEncounterPanel) -> String {
         text.push('\n');
     }
     if rows.is_empty() {
-        text.push_str("No boss records match this search on the current page\n");
+        text.push_str(tr!(
+            "No boss records match this search on the current page\n"
+        ));
     }
     if let Some(snapshot) = &panel.snapshot
         && rows.contains(&panel.fields[0].as_str())
     {
         let key = &panel.fields[0];
-        let _ = writeln!(text, "\nBoss details: {key}");
+        let _ = lwriteln!(text, "\nBoss details: {key}", key = key);
         if let Some((_, kills)) = snapshot.progress.iter().find(|(id, _)| id == key) {
-            let _ = writeln!(text, "Progress: {kills} kills");
+            let _ = lwriteln!(text, "Progress: {kills} kills", kills = kills);
         }
         if let Some((_, deadline)) = snapshot.cooldowns.iter().find(|(id, _)| id == key) {
-            let _ = writeln!(
+            let _ = lwriteln!(
                 text,
                 "Cooldown: {} ms at snapshot time",
                 deadline.saturating_sub(snapshot.now)
             );
         }
     }
-    text.push_str("Previous/Next boss selects a record for details, entry and slot actions. Next page loads more server records.\n");
+    text.push_str(tr!("Previous/Next boss selects a record for details, entry and slot actions. Next page loads more server records.\n"));
     text
 }

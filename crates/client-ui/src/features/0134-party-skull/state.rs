@@ -21,11 +21,11 @@ pub struct Panel {
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;
@@ -55,18 +55,22 @@ impl SkullTimer {
     }
     pub fn text_at(self, elapsed_ms: u64) -> String {
         let name = match self.skull {
-            0 => "No",
-            1 => "Yellow",
-            2 => "Green",
-            3 => "White",
-            4 => "Red",
-            5 => "Black",
-            6 => "Orange",
-            _ => "Unknown",
+            0 => tr!("No"),
+            1 => tr!("Yellow"),
+            2 => tr!("Green"),
+            3 => tr!("White"),
+            4 => tr!("Red"),
+            5 => tr!("Black"),
+            6 => tr!("Orange"),
+            _ => tr!("Unknown"),
         };
         match self.remaining_seconds(elapsed_ms) {
-            Some(seconds) => format!("{name} skull: {seconds}s at observation"),
-            None => format!("{name} skull: expiry unavailable"),
+            Some(seconds) => lfmt!(
+                "{name} skull: {seconds}s at observation",
+                name = name,
+                seconds = seconds
+            ),
+            None => lfmt!("{name} skull: expiry unavailable", name = name),
         }
     }
 }
@@ -85,8 +89,11 @@ pub struct UnjustifiedSnapshot {
 }
 impl UnjustifiedSnapshot {
     pub fn text(&self) -> String {
-        let mut text = String::from("Unjustified Points\r\n");
-        for (label, window) in ["Daily", "Weekly", "Monthly"].into_iter().zip(self.windows) {
+        let mut text = String::from(tr!("Unjustified Points\r\n"));
+        for (label, window) in [tr!("Daily"), tr!("Weekly"), tr!("Monthly")]
+            .into_iter()
+            .zip(self.windows)
+        {
             text.push_str(&format!(
                 "{label}: {}.{:03} / {}.{:03}\r\n",
                 window.points_milli / 1000,
@@ -96,10 +103,12 @@ impl UnjustifiedSnapshot {
             ));
         }
         match &self.open_situations {
-            None => text.push_str("Open PvP situations unavailable"),
-            Some(situations) if situations.is_empty() => text.push_str("No open PvP situations"),
+            None => text.push_str(tr!("Open PvP situations unavailable")),
+            Some(situations) if situations.is_empty() => {
+                text.push_str(tr!("No open PvP situations"))
+            }
             Some(situations) => {
-                text.push_str("Open PvP situations:\r\n");
+                text.push_str(tr!("Open PvP situations:\r\n"));
                 for situation in situations {
                     text.push_str(situation);
                     text.push_str("\r\n");

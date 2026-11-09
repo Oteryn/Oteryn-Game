@@ -41,11 +41,11 @@ pub fn apply(panel: &mut ImbuePanel, command: &FeatureCommand, result: &GatedCom
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.details_feedback = Some("The server refused material details; refresh to retry");
+        panel.details_feedback = Some(tr!("The server refused material details; refresh to retry"));
         return;
     }
     let Ok(reply) = wire::decode_reply(&result.payload) else {
-        panel.details_feedback = Some("Invalid material details; refresh the shrine");
+        panel.details_feedback = Some(tr!("Invalid material details; refresh the shrine"));
         return;
     };
     let Some(window) = &panel.window else {
@@ -62,7 +62,9 @@ pub fn apply(panel: &mut ImbuePanel, command: &FeatureCommand, result: &GatedCom
             })
         })
     {
-        panel.details_feedback = Some("Material details no longer match this item; refresh it");
+        panel.details_feedback = Some(tr!(
+            "Material details no longer match this item; refresh it"
+        ));
         return;
     }
     panel.details = Some(reply);

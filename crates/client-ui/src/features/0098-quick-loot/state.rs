@@ -26,10 +26,10 @@ pub struct Panel {
 impl Discovery {
     pub fn end(&mut self) {
         *self = Self::default();
-        self.loot.feedback = "Session ended".into();
-        self.inspection.feedback = "Session ended".into();
-        self.leader.feedback = "Session ended".into();
-        self.teams.feedback = "Session ended".into();
-        self.history.feedback = "Session ended".into();
+        self.loot.feedback = tr!("Session ended").into();
+        self.inspection.feedback = tr!("Session ended").into();
+        self.leader.feedback = tr!("Session ended").into();
+        self.teams.feedback = tr!("Session ended").into();
+        self.history.feedback = tr!("Session ended").into();
     }
 }

@@ -13,7 +13,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Party(command)).is_err()
         {
             mailbox.party.pending = None;
-            mailbox.party.feedback = Some("The session has ended");
+            mailbox.party.feedback = Some(tr!("The session has ended"));
         }
     }
 

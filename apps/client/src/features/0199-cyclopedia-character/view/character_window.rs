@@ -62,7 +62,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Character cyclopedia").as_ptr(),
+            wide(tr!("Character cyclopedia")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -116,10 +116,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let mut browser = None;
             for action in std::mem::take(&mut actions.0) {
                 if action == 150 {
-                    super::profile_table::toggle_badge(
-                        &mut mailbox.cyclopedia_character,
-                        badge_id,
-                    );
+                    super::profile_table::toggle_badge(&mut mailbox.cyclopedia_character, badge_id);
                     continue;
                 }
                 if let Some(selected) =
@@ -140,7 +137,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 ) && commands.send(PlayCommand::Feature(command)).is_err()
                 {
                     mailbox.cyclopedia_character.pending = false;
-                    mailbox.cyclopedia_character.feedback = Some("The session has ended");
+                    mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
                 }
                 SetWindowTextW(
                     edits[0],
@@ -158,7 +155,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 p.pending = false;
-                p.feedback = Some("The session has ended");
+                p.feedback = Some(tr!("The session has ended"));
             }
             let panel = &mailbox.cyclopedia_character;
             EnableWindow(
@@ -176,7 +173,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 },
             );
             let status = if panel.pending {
-                "Waiting for the server"
+                tr!("Waiting for the server")
             } else {
                 panel.feedback.unwrap_or("")
             };

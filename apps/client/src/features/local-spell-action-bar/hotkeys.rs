@@ -27,6 +27,13 @@ pub(super) fn reservations(preferences: &ReferencePreferences) -> Vec<Chord> {
         chords.extend(
             bindings
                 .iter()
+                .filter(|binding| {
+                    !binding
+                        .id
+                        .strip_prefix("local-spell-action-bar-spell-")
+                        .and_then(|slot| slot.parse::<usize>().ok())
+                        .is_some_and(|slot| slot > 4)
+                })
                 .filter_map(|binding| parse(preferences.binding_chord(binding))),
         );
     }
@@ -47,6 +54,12 @@ pub(super) fn reservations(preferences: &ReferencePreferences) -> Vec<Chord> {
             );
         }
     }
+    chords.extend(
+        preferences
+            .custom_hotkeys
+            .keys()
+            .filter_map(|key| parse(key)),
+    );
     chords
 }
 impl ActionKeys {

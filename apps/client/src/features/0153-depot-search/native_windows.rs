@@ -187,12 +187,17 @@ fn run(
                                 let tiers = row
                                     .tiers
                                     .iter()
-                                    .map(|t| format!("tier {}: {}", t.tier, t.count))
+                                    .map(|t| lfmt!("tier {}: {}", t.tier, t.count))
                                     .collect::<Vec<_>>()
                                     .join(", ");
-                                let text = format!(
+                                let text = lfmt!(
                                     "{} | Item {} | Depot {} | Stash {} | Inbox {} | {}",
-                                    index, row.client_id, row.depot, row.stash, row.inbox, tiers
+                                    index,
+                                    row.client_id,
+                                    row.depot,
+                                    row.stash,
+                                    row.inbox,
+                                    tiers
                                 );
                                 SendMessageW(
                                     results,

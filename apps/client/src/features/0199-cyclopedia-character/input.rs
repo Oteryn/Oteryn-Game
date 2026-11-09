@@ -9,7 +9,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.cyclopedia_character.pending = false;
-            mailbox.cyclopedia_character.feedback = Some("The session has ended");
+            mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn cyclopedia_character_input(&self, events: &[NormalizedInputEvent]) -> bool {

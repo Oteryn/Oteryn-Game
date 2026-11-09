@@ -13,7 +13,7 @@ pub fn command(payload: Vec<u8>) -> ServerMechanicCommand {
 }
 pub fn control_request(p: &mut HotkeyEquipPanel) -> Option<ServerMechanicCommand> {
     let definition = NonZeroU32::new(p.item_definition).or_else(|| {
-        p.feedback = Some("Select an item".into());
+        p.feedback = Some(tr!("Select an item").into());
         None
     })?;
     request(p, command(Request { definition }.encode().to_vec()))
@@ -35,7 +35,7 @@ pub fn apply_result(p: &mut HotkeyEquipPanel, r: &ServerMechanicResponse) {
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        p.feedback = Some(format!("Server refused hotkey equip: {:?}", r.status));
+        p.feedback = Some(lfmt!("Server refused hotkey equip: {:?}", r.status));
         return;
     }
     match hotkey_equip::decode_reply(&r.payload) {
@@ -43,7 +43,7 @@ pub fn apply_result(p: &mut HotkeyEquipPanel, r: &ServerMechanicResponse) {
             p.outcome = Some(v);
             p.feedback = None
         }
-        Err(_) => p.feedback = Some("The server returned an invalid equip result".into()),
+        Err(_) => p.feedback = Some(tr!("The server returned an invalid equip result").into()),
     }
 }
 #[cfg(test)]

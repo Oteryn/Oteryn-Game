@@ -10,11 +10,11 @@ pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
     format!(
         "{}\r\n{}\r\n{}",
         if p.pending {
-            "Waiting for the server"
+            tr!("Waiting for the server")
         } else if !p.selected {
-            "Feature unavailable in this session"
+            tr!("Feature unavailable in this session")
         } else {
-            "Ready"
+            tr!("Ready")
         },
         p.feedback.unwrap_or(""),
         oteryn_client_ui::weapon_proficiency::panel_text(p).replace('\n', "\r\n")
@@ -71,11 +71,11 @@ pub(in crate::play) fn submit(
         ))
     })();
     let Some((weapon, level, perk, slot, revision, choice)) = parsed else {
-        p.feedback = Some("Enter valid numeric proficiency fields");
+        p.feedback = Some(tr!("Enter valid numeric proficiency fields"));
         return None;
     };
     if level > 6 || (!clear && perk == u8::MAX) || choice > 2 {
-        p.feedback = Some("Enter level 0-6, perk 0-254 and choice 0-2");
+        p.feedback = Some(tr!("Enter level 0-6, perk 0-254 and choice 0-2"));
         return None;
     }
     p.weapon = weapon;
@@ -125,6 +125,7 @@ pub(in crate::play) fn choose(p: &mut WeaponProficiencyPanel, field: usize, row:
         _ => false,
     }
 }
+
 pub(in crate::play) fn visual_submit(
     p: &mut WeaponProficiencyPanel,
     id: usize,
@@ -145,7 +146,7 @@ pub(in crate::play) fn visual_submit(
         return None;
     }
     if id == 102 && level.selected != Some(p.perk) {
-        p.feedback = Some("Apply the selected perk before modifying it");
+        p.feedback = Some(tr!("Apply the selected perk before modifying it"));
         return None;
     }
     if id != 101 {
@@ -154,7 +155,9 @@ pub(in crate::play) fn visual_submit(
             .as_ref()
             .filter(|state| state.definition == p.weapon && state.revision != 0)
         else {
-            p.feedback = Some("Refresh committed shaping state before changing a slot");
+            p.feedback = Some(tr!(
+                "Refresh committed shaping state before changing a slot"
+            ));
             return None;
         };
         p.revision = state.revision;
@@ -165,7 +168,7 @@ pub(in crate::play) fn visual_submit(
                 .and_then(Option::as_ref)
                 .is_none_or(|slot| usize::from(p.shaping_choice) >= slot.offers.len())
         {
-            p.feedback = Some("Select one of the server's current reshape offers");
+            p.feedback = Some(tr!("Select one of the server's current reshape offers"));
             return None;
         }
     }

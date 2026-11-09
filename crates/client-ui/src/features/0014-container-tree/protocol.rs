@@ -9,5 +9,5 @@ pub fn apply_result(panel: &mut ContainerPanel, outcome: Option<ContainerViewOut
     } else {
         panel.clear_focus();
     }
-    panel.finish(Some(feedback(outcome)));
+    panel.finish(Some(crate::localization::tr(feedback(outcome))));
 }

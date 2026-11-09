@@ -21,9 +21,9 @@ pub(super) unsafe fn apply(action: usize, hwnd: HWND, shared: &Arc<Mutex<Shared>
             _ => state.reset_defaults(),
         };
         state.feedback = match result {
-                        Ok(()) if action == 111 => "Export saved. Existing files are never overwritten.".into(),
-                        Ok(()) => "Settings replaced and saved. The previous settings are available through Restore backup.".into(),
-                        Err(error) => format!("Settings transfer failed: {error}"),
+                        Ok(()) if action == 111 => tr!("Export saved. Existing files are never overwritten.").into(),
+                        Ok(()) => tr!("Settings replaced and saved. The previous settings are available through Restore backup.").into(),
+                        Err(error) => lfmt!("Settings transfer failed: {error}",error=error),
                     };
     }
 }

@@ -97,7 +97,10 @@ impl ReferencePreferences {
         &self,
         chat_on: bool,
     ) -> Result<(&KeyMap, &KeyMap), PreferenceError> {
-        if chat_on == self.hotkey_contexts.chat_on {
+        if self.manual_hotkey_profile
+            || self.chat_context_hotkeys
+            || chat_on == self.hotkey_contexts.chat_on
+        {
             return Ok((&self.keybindings, &self.secondary_keybindings));
         }
         let preset = self
@@ -115,6 +118,8 @@ impl ReferencePreferences {
 
     pub fn select_hotkey_context(&mut self, chat_on: bool) -> Result<(), PreferenceError> {
         let mut candidate = self.clone();
+        candidate.manual_hotkey_profile = false;
+        candidate.chat_context_hotkeys = false;
         candidate.capture_hotkeys()?;
         candidate.hotkey_contexts.chat_on = chat_on;
         candidate.load_hotkeys()?;
@@ -125,6 +130,8 @@ impl ReferencePreferences {
 
     pub fn select_hotkey_profile(&mut self, name: &str) -> Result<(), PreferenceError> {
         let mut candidate = self.clone();
+        candidate.manual_hotkey_profile = false;
+        candidate.chat_context_hotkeys = false;
         candidate.capture_hotkeys()?;
         candidate.hotkey_contexts.selected = name.to_owned();
         candidate.load_hotkeys()?;

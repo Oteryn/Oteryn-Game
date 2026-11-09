@@ -60,7 +60,7 @@ pub(in crate::play) fn enqueue(
     if commands.send(PlayCommand::ServerMechanic(command)).is_err() {
         mailbox.discovery.inspection.pending = false;
         mailbox.imbue.equipment.pending = None;
-        mailbox.imbue.equipment.feedback = Some("The session has ended");
+        mailbox.imbue.equipment.feedback = Some(tr!("The session has ended"));
         return false;
     }
     true

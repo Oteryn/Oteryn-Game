@@ -12,7 +12,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.player_trade.pending = false;
-            mailbox.player_trade.feedback = Some("The session has ended");
+            mailbox.player_trade.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn player_trade_choose_partner(&self, partner: oteryn_session::EntityRef) -> bool {
@@ -37,7 +37,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.player_trade.pending = false;
-            mailbox.player_trade.feedback = Some("The session has ended");
+            mailbox.player_trade.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn player_trade_open_container(&self, row: usize) {
@@ -161,6 +161,6 @@ pub(in crate::play) fn open_container(
         .is_err()
     {
         panel.items.pending = false;
-        panel.feedback = Some("The session has ended");
+        panel.feedback = Some(tr!("The session has ended"));
     }
 }

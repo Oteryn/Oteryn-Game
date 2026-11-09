@@ -32,7 +32,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Depot(command)).is_err()
     {
         mailbox.depot.pending = false;
-        mailbox.depot.feedback = "The session has ended";
+        mailbox.depot.feedback = tr!("The session has ended");
     }
 }
 
@@ -45,6 +45,6 @@ pub(in crate::play) fn enqueue_container(
         && commands.send(PlayCommand::DepotContainer(handle)).is_err()
     {
         mailbox.depot.pending = false;
-        mailbox.depot.feedback = "The session has ended";
+        mailbox.depot.feedback = tr!("The session has ended");
     }
 }

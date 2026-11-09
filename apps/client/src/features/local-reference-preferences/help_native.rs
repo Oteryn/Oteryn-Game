@@ -75,7 +75,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             return;
         }
         for label in [
-            "Frequently asked questions",
+            tr!("Frequently asked questions"),
             "Playing manual",
             "Client help and troubleshooting",
         ] {

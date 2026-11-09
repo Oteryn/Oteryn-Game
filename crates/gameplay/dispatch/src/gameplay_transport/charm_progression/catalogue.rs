@@ -11,24 +11,15 @@ pub(super) async fn dispatch(
     admitted: AdmittedSession,
     payload: &[u8],
 ) -> GuildReply {
-    let charm_after = if payload.first() == Some(&254) {
-        let Ok(after) = wire::decode_charm_request(payload) else {
-            return GuildReply::Rejected;
-        };
-        Some(after)
-    } else {
-        None
-    };
-    let request = if charm_after.is_some() {
-        Request {
-            after: 0,
-            race: 0,
-            category: 0,
-        }
-    } else {
-        let Ok(request) = wire::decode_request(payload) else {
-            return GuildReply::Rejected;
-        };
+    let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len().is_multiple_of(2) {
+        let races:Vec<_>=payload[2..].as_chunks::<2>().0.iter().map(|b|u16::from_le_bytes(*b)).collect();
+        if races.iter().any(|r|!(1..=1024).contains(r)) || races.windows(2).any(|p|p[0]>=p[1]) { return GuildReply::Rejected; }
+        Some(races)
+    } else { None };
+    let charm_after = match payload { [255, 2, after] if *after <= 32 => Some(*after), _ => None };
+    let metadata_after = if payload.first() == Some(&254) { match wire::decode_charm_request(payload) { Ok(after) => Some(after), Err(_) => return GuildReply::Rejected } } else { None };
+    let request = if metadata_after.is_some() || charm_after.is_some() || named_races.is_some() { Request { after: 0, race: 0, category: 0 } } else {
+        let Ok(request) = wire::decode_request(payload) else { return GuildReply::Rejected; };
         request
     };
     let Some(current) =
@@ -48,7 +39,7 @@ pub(super) async fn dispatch(
         return GuildReply::Rejected;
     }
     drop(runtime);
-    if let Some(after) = charm_after {
+    if let Some(after) = metadata_after {
         return super::metadata::project(owner.imported_charms, after)
             .and_then(|page| wire::encode_page(&page).ok())
             .map_or(GuildReply::Rejected, GuildReply::Payload);
@@ -59,6 +50,14 @@ pub(super) async fn dispatch(
     else {
         return GuildReply::Rejected;
     };
+    if let Some(ids) = named_races {
+        let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
+        let cards:Option<Vec<_>>=ids.into_iter().map(|id|card(native,races.get(usize::from(id-1))?,id)).collect();
+        return cards.and_then(|cards| { let categories=cards.iter().map(|c|c.category.clone()).collect::<BTreeSet<_>>().into_iter().collect(); wire::encode_page(&Page {next:None,cards,categories}).ok() }).map_or(GuildReply::Rejected,GuildReply::Payload);
+    }
+    if let Some(after) = charm_after {
+        return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     project(native, request)
         .and_then(|page| wire::encode_page(&page).ok())
         .map_or(GuildReply::Rejected, GuildReply::Payload)
@@ -85,6 +84,8 @@ fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Opti
         .iter()
         .find(|p| p.definition_key == race.key())?;
     Some(Card {
+        outfit_look_type: policy.outfit_look_type,
+        object_look_type: policy.object_look_type,
         race: ordinal,
         name: policy.display_name.clone(),
         category: category(native, race.key()).into(),
@@ -303,6 +304,10 @@ mod tests {
                 assert!(detail.cards[0].detail.contains("Health:"));
                 assert!(detail.cards[0].detail.contains("Loot"));
                 assert!(!page.categories.is_empty());
+                let race_key = super::canonical_races().ok_or("races")?[usize::from(first.race - 1)].key();
+                let policy = native.policies().policies().iter().find(|p| p.definition_key == race_key).ok_or("policy")?;
+                assert_eq!(detail.cards[0].outfit_look_type, policy.outfit_look_type);
+                assert_eq!(detail.cards[0].object_look_type, policy.object_look_type);
                 let filtered = project(
                     native,
                     Request {

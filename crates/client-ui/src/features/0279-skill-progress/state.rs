@@ -46,7 +46,7 @@ impl SkillProgressPanel {
                 .into_iter()
                 .map(|index| {
                     (
-                        SKILL_LABELS[index],
+                        crate::localization::tr(SKILL_LABELS[index]),
                         snapshot.skills[index].percent.min(10000),
                         self.hidden_skills & (1 << index) == 0,
                     )
@@ -64,7 +64,7 @@ impl SkillProgressPanel {
                 self.error = None;
                 return true;
             }
-            self.error = Some("Skill display could not be refreshed. Try Refresh.");
+            self.error = Some(tr!("Skill display could not be refreshed. Try Refresh."));
             return false;
         }
         if accepted && let Some(snapshot) = SkillProgressSnapshot::decode(payload) {
@@ -72,7 +72,7 @@ impl SkillProgressPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Skill progress could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Skill progress could not be refreshed. Try Refresh."));
         false
     }
 }

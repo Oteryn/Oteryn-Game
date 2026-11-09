@@ -17,7 +17,7 @@ impl BattleInstinctStatusPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Battle Instinct could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Battle Instinct could not be refreshed. Try Refresh."));
         false
     }
 }

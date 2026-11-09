@@ -1,6 +1,6 @@
 //! Local projection filters retain received events so toggles can restore them.
-use serde::{Deserialize, Serialize};
 use oteryn_session::{PresentationEventKind, PresentationSource};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -16,7 +16,16 @@ pub struct GameWindowPreferences {
 }
 impl Default for GameWindowPreferences {
     fn default() -> Self {
-        Self { own_spells: true, other_spells: true, value_text: true, pvp_frame: false, loot_highlight: false, banner: true, target_frame: true, loot_messages: true }
+        Self {
+            own_spells: true,
+            other_spells: true,
+            value_text: true,
+            pvp_frame: false,
+            loot_highlight: false,
+            banner: true,
+            target_frame: true,
+            loot_messages: true,
+        }
     }
 }
 impl GameWindowPreferences {

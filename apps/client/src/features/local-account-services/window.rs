@@ -162,7 +162,7 @@ impl Window {
             MessageBoxW(
                 self.hwnd,
                 wide(text).as_ptr(),
-                wide("Confirm Oteryn account action").as_ptr(),
+                wide(tr!("Confirm Oteryn account action")).as_ptr(),
                 MB_YESNO | MB_DEFBUTTON2,
             ) == IDYES
         }
@@ -172,7 +172,7 @@ impl Window {
             MessageBoxW(
                 self.hwnd,
                 wide(text).as_ptr(),
-                wide("Oteryn account services").as_ptr(),
+                wide(tr!("Oteryn account services")).as_ptr(),
                 MB_OK,
             );
         }
@@ -261,8 +261,8 @@ impl Progress {
     pub(crate) fn open(cancel: CancellationToken) -> Option<Self> {
         let (done, incoming) = std::sync::mpsc::channel();
         let thread = std::thread::Builder::new().name("account-service-wait".into()).spawn(move || {
-            let Some(window) = Window::new("Oteryn — Account service", 540, 170, cancel) else { return; };
-            let _label = window.label("Contacting Oteryn…\nClosing this notice does not cancel a submitted action.\nCheck its receipt before submitting another action.", [15, 15, 500, 100]);
+            let Some(window) = Window::new(tr!("Oteryn — Account service"), 540, 170, cancel) else { return; };
+            let _label = window.label(tr!("Contacting Oteryn…\nClosing this notice does not cancel a submitted action.\nCheck its receipt before submitting another action."), [15, 15, 500, 100]);
             loop {
                 match incoming.try_recv() {
                     Ok(()) | Err(std::sync::mpsc::TryRecvError::Disconnected) => break,

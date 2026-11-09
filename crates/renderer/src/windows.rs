@@ -4,6 +4,8 @@ use crate::{
     SurfaceState, TileBatch,
 };
 use oteryn_foundation::ProcessGeneration;
+#[path = "offscreen_capture.rs"]
+mod offscreen_capture;
 
 pub struct WindowsRenderer<T>
 where

@@ -78,28 +78,32 @@ impl LoginSettings {
                 || value.contains('\0')
                 || value.len() > 4096
             {
-                return Err(format!("Enter a valid {}.", FIELDS[index].0));
+                return Err(lfmt!(
+                    "Enter a valid {}.",
+                    oteryn_client_ui::localization::tr(FIELDS[index].0)
+                ));
             }
         }
         for (label, value) in [
-            ("Platform", &self.platform_url),
-            ("Gateway", &self.gateway_url),
+            (tr!("Platform"), &self.platform_url),
+            (tr!("Gateway"), &self.gateway_url),
         ] {
             // URLs are public settings, never a place for credentials or tokens.
             if value.contains(['@', '?', '#'])
                 || value.chars().any(char::is_whitespace)
                 || PlatformClientConfig::new(value).is_err()
             {
-                return Err(format!(
-                    "{label} URL: use HTTPS (HTTP only on loopback), without credentials, query or fragment."
+                return Err(lfmt!(
+                    "{label} URL: use HTTPS (HTTP only on loopback), without credentials, query or fragment.",
+                    label = label
                 ));
             }
         }
         if !self.character_id.is_empty() && parse_uuid_v7(&self.character_id).is_none() {
-            return Err("Character: enter a canonical lowercase UUIDv7.".into());
+            return Err(tr!("Character: enter a canonical lowercase UUIDv7.").into());
         }
         oteryn_session_tcp::load_root_certificate(Path::new(&self.dev_root)).map_err(|_| {
-            "Certificate: choose a readable PEM or DER trust certificate.".to_owned()
+            tr!("Certificate: choose a readable PEM or DER trust certificate.").to_owned()
         })?;
         Ok(())
     }
@@ -113,16 +117,18 @@ impl LoginSettings {
                 .map(|index| self.values()[index].to_owned())
         })
         .map_err(|error| error.to_string())?
-        .ok_or_else(|| "Enter the Platform URL.".into())
+        .ok_or_else(|| tr!("Enter the Platform URL.").into())
     }
 
     pub fn load(path: &Path) -> Result<Self, String> {
         match std::fs::read(path) {
             Ok(bytes) => serde_json::from_slice(&bytes).map_err(|_| {
-                "Saved login settings are invalid. Correct the fields and save again.".into()
+                tr!("Saved login settings are invalid. Correct the fields and save again.").into()
             }),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Self::default()),
-            Err(_) => Err("Cannot read saved login settings. Check the file permissions.".into()),
+            Err(_) => {
+                Err(tr!("Cannot read saved login settings. Check the file permissions.").into())
+            }
         }
     }
 
@@ -137,7 +143,7 @@ impl LoginSettings {
             std::fs::rename(temporary, path)?;
             Ok(())
         };
-        write().map_err(|_| "Cannot save login settings. Check the configuration directory permissions and try again.".into())
+        write().map_err(|_| tr!("Cannot save login settings. Check the configuration directory permissions and try again.").into())
     }
 }
 
@@ -149,7 +155,7 @@ pub fn settings_path() -> Result<PathBuf, String> {
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")));
     base.map(|base| base.join("Oteryn").join("native-login.json"))
-        .ok_or_else(|| "Cannot locate the user configuration directory.".into())
+        .ok_or_else(|| tr!("Cannot locate the user configuration directory.").into())
 }
 
 pub struct LoginForm {
@@ -161,14 +167,14 @@ pub struct LoginForm {
 
 impl LoginForm {
     pub fn new(settings: LoginSettings) -> Self {
-        Self { settings, pending: false, retry: false, message: "Enter connection settings, then choose Save and sign in. Sign-in opens your browser.".into() }
+        Self { settings, pending: false, retry: false, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
     }
     /// Action shown after a failed attempt starts a fresh browser admission.
     pub fn submit_caption(&self) -> &'static str {
         if self.retry {
-            "Retry sign-in"
+            tr!("Retry sign-in")
         } else {
-            "Save and sign in"
+            tr!("Save and sign in")
         }
     }
     pub fn pending(&self) -> bool {
@@ -182,17 +188,17 @@ impl LoginForm {
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
         if self.pending {
-            return Err(
+            return Err(tr!(
                 "Sign-in is already running. Complete browser sign-in or wait for it to time out."
-                    .into(),
-            );
+            )
+            .into());
         }
         let config = self
             .settings
             .config()
             .inspect_err(|error| self.message = error.clone())?;
         self.pending = true;
-        self.message = "Signing in: complete sign-in in your browser (up to five minutes). Please wait for gateway admission.".into();
+        self.message = tr!("Signing in: complete sign-in in your browser (up to five minutes). Please wait for gateway admission.").into();
         Ok(config)
     }
     pub fn finish(&mut self, result: Result<(), GameplayEntryError>) {
@@ -200,38 +206,50 @@ impl LoginForm {
         self.retry = result.is_err();
         self.message = result.map_or_else(
             |error| error_text(error).to_owned(),
-            |()| "Connected.".into(),
+            |()| tr!("Connected.").into(),
         );
     }
 }
 
-pub const fn error_text(error: GameplayEntryError) -> &'static str {
+pub fn error_text(error: GameplayEntryError) -> &'static str {
     match error {
         GameplayEntryError::NativeProtocolUnavailable => {
-            "Enter connection settings and choose Save and sign in."
+            tr!("Enter connection settings and choose Save and sign in.")
         }
         GameplayEntryError::InvalidConfiguration => {
-            "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
+            tr!(
+                "Check Platform and Gateway URLs, OAuth client ID, optional character preselect and the trust certificate path, then sign in again."
+            )
         }
         GameplayEntryError::WorldUnavailable => {
-            "World is absent from the Platform directory. Check the World reference and Platform URL, then sign in again."
+            tr!(
+                "World is absent from the Platform directory. Check the World reference and Platform URL, then sign in again."
+            )
         }
         GameplayEntryError::Rejected(
             PublicClass::RetryLogin | PublicClass::AuthenticationRequired,
         ) => {
-            "Browser sign-in failed or expired. Check the OAuth client ID and complete a fresh browser sign-in within five minutes."
+            tr!(
+                "Browser sign-in failed or expired. Check the OAuth client ID and complete a fresh browser sign-in within five minutes."
+            )
         }
         GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable) => {
-            "Connection unavailable. Check your network and the Platform/Gateway URLs; if correct, try again later."
+            tr!(
+                "Connection unavailable. Check your network and the Platform/Gateway URLs; if correct, try again later."
+            )
         }
         GameplayEntryError::Rejected(PublicClass::SessionUnavailable) => {
-            "Game connection ended or could not be established. Check your network and trust certificate; sign in again. Contact the operator if this repeats."
+            tr!(
+                "Game connection ended or could not be established. Check your network and trust certificate; sign in again. Contact the operator if this repeats."
+            )
         }
         GameplayEntryError::Rejected(PublicClass::ClientUpdateRequired) => {
-            "Install the current Oteryn client, then sign in again."
+            tr!("Install the current Oteryn client, then sign in again.")
         }
         GameplayEntryError::Rejected(PublicClass::CharacterAlreadyActive) => {
-            "Character is already active. Log out its other session or wait for it to end, then sign in again."
+            tr!(
+                "Character is already active. Log out its other session or wait for it to end, then sign in again."
+            )
         }
     }
 }

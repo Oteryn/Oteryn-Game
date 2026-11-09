@@ -34,11 +34,11 @@ pub enum Intent {
 }
 pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<FeatureCommand> {
     if !p.selected {
-        p.feedback = Some("Feature unavailable in this session");
+        p.feedback = Some(tr!("Feature unavailable in this session"));
         return None;
     }
     if p.pending || p.blessings.pending {
-        p.feedback = Some("Waiting for the server");
+        p.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     if let Intent::SpellAugments(intent) = intent {
@@ -140,7 +140,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
                     target: p.target,
                 })
             {
-                p.feedback = Some("Enter a valid page and target");
+                p.feedback = Some(tr!("Enter a valid page and target"));
                 return None;
             }
             (388, v)
@@ -221,12 +221,12 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        p.feedback = Some("The server refused the character query");
+        p.feedback = Some(tr!("The server refused the character query"));
         return false;
     }
     if auxiliary {
         let Some(stats) = decode_general(&r.payload) else {
-            p.feedback = Some("The server returned invalid resource statistics");
+            p.feedback = Some(tr!("The server returned invalid resource statistics"));
             return false;
         };
         p.misc_general = Some(stats);
@@ -246,7 +246,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         Some(v) => {
             let general = if tab == Some(cyclopedia_character::CharacterTab::GeneralStats) {
                 let Some(stats) = decode_general(&r.payload) else {
-                    p.feedback = Some("The server returned invalid general statistics");
+                    p.feedback = Some(tr!("The server returned invalid general statistics"));
                     return false;
                 };
                 Some(stats)
@@ -282,7 +282,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
                 )
             }) {
                 let Some(rows) = decode_history(&r.payload, tab, p.limit) else {
-                    p.feedback = Some("The server returned invalid character history");
+                    p.feedback = Some(tr!("The server returned invalid character history"));
                     return false;
                 };
                 p.history = rows;
@@ -296,7 +296,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             true
         }
         None => {
-            p.feedback = Some("The server returned an invalid character view");
+            p.feedback = Some(tr!("The server returned an invalid character view"));
             false
         }
     }

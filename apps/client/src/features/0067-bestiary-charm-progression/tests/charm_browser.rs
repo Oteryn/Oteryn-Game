@@ -24,7 +24,7 @@ fn named_charms_and_creatures_drive_the_real_progression_caller()
     );
     link.charm_catalogue_request(false);
     assert!(commands.try_recv().is_err());
-    let page = cards::Page { next: None, categories: vec!["Major".into()], cards: vec![cards::Card {
+    let page = cards::Page { next: None, categories: vec!["Major".into()], cards: vec![cards::Card { outfit_look_type: 0, object_look_type: None,
         race: 1, name: "Dodge".into(), category: "Major".into(), detail: "Avoid a qualifying creature attack.\r\nStage 1: 240 Charm Points; trigger chance 5.00%".into(),
     }] };
     let accepted = |payload| GatedCommandResult {
@@ -53,7 +53,7 @@ fn named_charms_and_creatures_drive_the_real_progression_caller()
     let page = cards::Page {
         next: None,
         categories: vec!["Forest dwellers".into()],
-        cards: vec![cards::Card {
+        cards: vec![cards::Card { outfit_look_type: 0, object_look_type: None,
             race: 7,
             name: "Grove watcher".into(),
             category: "Forest dwellers".into(),

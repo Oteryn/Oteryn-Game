@@ -63,7 +63,7 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
         let h = CreateWindowExW(
             0,
             w("STATIC").as_ptr(),
-            w("Character titles — Ctrl+Alt+Shift+Y").as_ptr(),
+            w(tr!("Character titles — Ctrl+Alt+Shift+Y")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -98,7 +98,13 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
             [380, 10, 320, 160],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
-        for label in ["All titles", "Earned", "Locked", "Permanent", "Temporary"] {
+        for label in [
+            tr!("All titles"),
+            tr!("Earned"),
+            tr!("Locked"),
+            tr!("Permanent"),
+            tr!("Temporary"),
+        ] {
             SendMessageW(filter, CB_ADDSTRING, 0, w(label).as_ptr() as isize);
         }
         SendMessageW(filter, CB_SETCURSEL, 0, 0);
@@ -111,10 +117,31 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
             WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
         );
         let status = ctl(h, "STATIC", "", 204, [10, 360, 690, 95], 0);
-        let refresh = ctl(h, "BUTTON", "Refresh", 100, [10, 465, 160, 28], 0);
-        let unlock = ctl(h, "BUTTON", "Unlock selected", 101, [185, 465, 160, 28], 0);
-        let select = ctl(h, "BUTTON", "Use selected", 102, [360, 465, 160, 28], 0);
-        let clear = ctl(h, "BUTTON", "Clear selection", 103, [535, 465, 160, 28], 0);
+        let refresh = ctl(h, "BUTTON", tr!("Refresh"), 100, [10, 465, 160, 28], 0);
+        let unlock = ctl(
+            h,
+            "BUTTON",
+            tr!("Unlock selected"),
+            101,
+            [185, 465, 160, 28],
+            0,
+        );
+        let select = ctl(
+            h,
+            "BUTTON",
+            tr!("Use selected"),
+            102,
+            [360, 465, 160, 28],
+            0,
+        );
+        let clear = ctl(
+            h,
+            "BUTTON",
+            tr!("Clear selection"),
+            103,
+            [535, 465, 160, 28],
+            0,
+        );
         if [search, filter, list, status, refresh, unlock, select, clear]
             .iter()
             .any(|h| h.is_null())
@@ -191,8 +218,16 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
                     let label = format!(
                         "{} — {}{}",
                         row.title.name(),
-                        if row.earned { "Earned" } else { "Locked" },
-                        if row.selected { " — Selected" } else { "" }
+                        if row.earned {
+                            tr!("Earned")
+                        } else {
+                            tr!("Locked")
+                        },
+                        if row.selected {
+                            tr!(" — Selected")
+                        } else {
+                            ""
+                        }
                     );
                     SendMessageW(list, LB_ADDSTRING, 0, w(&label).as_ptr() as isize);
                 }
@@ -202,34 +237,37 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
                 .own_titles
                 .as_ref()
                 .and_then(|o| o.selected)
-                .map_or("None", |t| t.name());
+                .map_or(tr!("None"), |t| t.name());
             let message = if p.pending {
-                "Waiting for the server"
+                tr!("Waiting for the server")
             } else if !p.selected {
-                "Feature unavailable in this session"
+                tr!("Feature unavailable in this session")
             } else if p.own_titles.is_none() {
-                "Refresh to load your earned titles"
+                tr!("Refresh to load your earned titles")
             } else {
                 &p.feedback
             };
             let selected_info =
                 chosen
                     .as_ref()
-                    .map_or("Select a title to unlock or use it".into(), |r| {
-                        format!(
+                    .map_or(tr!("Select a title to unlock or use it").into(), |r| {
+                        lfmt!(
                             "{} · {}. The server checks unlock requirements.",
                             r.title.name(),
                             if r.title.permanent() {
-                                "Permanent"
+                                tr!("Permanent")
                             } else {
-                                "Temporary"
+                                tr!("Temporary")
                             }
                         )
                     });
             SetWindowTextW(
                 status,
-                w(&format!(
-                    "Current title: {current}\r\n{selected_info}\r\n{message}"
+                w(&lfmt!(
+                    "Current title: {current}\r\n{selected_info}\r\n{message}",
+                    current = current,
+                    message = message,
+                    selected_info = selected_info
                 ))
                 .as_ptr(),
             );

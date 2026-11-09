@@ -29,25 +29,27 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         Intent::Projection => (wire::COMMAND_PROJECTION, item.to_vec()),
         Intent::Set => {
             if panel.loaded_item != panel.fields[0] {
-                return Err("Refresh this podium before editing".into());
+                return Err(tr!("Refresh this podium before editing").into());
             }
             let request = wire::SetRequest {
                 item,
-                expected_revision: panel.revision.ok_or("Refresh this podium before editing")?,
+                expected_revision: panel
+                    .revision
+                    .ok_or(tr!("Refresh this podium before editing"))?,
                 display_kind: panel.fields[1]
                     .trim()
                     .parse()
-                    .map_err(|_| "Choose display kind 1, 2 or 3")?,
+                    .map_err(|_| tr!("Choose display kind 1, 2 or 3"))?,
                 direction: panel.fields[2]
                     .trim()
                     .parse()
-                    .map_err(|_| "Choose direction 0, 1, 2 or 3")?,
+                    .map_err(|_| tr!("Choose direction 0, 1, 2 or 3"))?,
                 key: panel.fields[3].trim().into(),
             };
             let payload = request
                 .encode()
-                .ok_or("Enter a display content key of at most 160 bytes")?;
-            wire::SetRequest::decode(&payload).ok_or("Invalid display kind or direction")?;
+                .ok_or(tr!("Enter a display content key of at most 160 bytes"))?;
+            wire::SetRequest::decode(&payload).ok_or(tr!("Invalid display kind or direction"))?;
             (wire::COMMAND_SET, payload)
         }
     };
@@ -69,7 +71,7 @@ pub(in crate::play) fn apply(
     if !accepted(result) {
         panel.artwork = None;
         panel.revision = None;
-        panel.feedback = "The server refused the podium request".into();
+        panel.feedback = tr!("The server refused the podium request").into();
         return;
     }
     if command.kind == wire::preview::COMMAND_PREVIEW {
@@ -90,16 +92,19 @@ pub(in crate::play) fn apply(
                 panel.summary.clear();
                 panel.projection.clear();
                 panel.feedback =
-                    "Display saved. Refresh the projection to view the committed display".into();
+                    tr!("Display saved. Refresh the projection to view the committed display")
+                        .into();
             }
             Some(wire::SetResult::Refused(reason)) => {
                 panel.revision = None;
-                panel.feedback =
-                    format!("Podium edit refused: {reason:?}. Refresh before retrying");
+                panel.feedback = lfmt!(
+                    "Podium edit refused: {reason:?}. Refresh before retrying",
+                    reason = reason
+                );
             }
             None => {
                 panel.revision = None;
-                panel.feedback = "Invalid podium reply".into();
+                panel.feedback = tr!("Invalid podium reply").into();
             }
         }
         return;
@@ -114,20 +119,23 @@ pub(in crate::play) fn apply(
                 panel.fields[3] = p.key.clone();
             }
             panel.projection = projection.map_or_else(
-                || "Empty podium".into(),
+                || tr!("Empty podium").into(),
                 |p| {
-                    format!(
+                    lfmt!(
                         "Display: {} | kind {} | facing {} | revision {}",
-                        p.key, p.display_kind, p.direction, p.revision
+                        p.key,
+                        p.display_kind,
+                        p.direction,
+                        p.revision
                     )
                 },
             );
             panel.summary = panel.projection.clone();
-            panel.feedback = "Projection confirmed by the server".into();
+            panel.feedback = tr!("Projection confirmed by the server").into();
         }
         None => {
             panel.revision = None;
-            panel.feedback = "Invalid podium projection".into();
+            panel.feedback = tr!("Invalid podium projection").into();
         }
     }
 }

@@ -31,9 +31,9 @@ impl Movement {
         let item = self.dragged.take()?;
         self.feedback = None;
         let Some(destination) = destination else {
-            self.feedback = Some(
-                "Move cancelled: choose inventory, an equipment slot, an open container or map tile",
-            );
+            self.feedback = Some(tr!(
+                "Move cancelled: choose inventory, an equipment slot, an open container or map tile"
+            ));
             return None;
         };
         if item.count > 1
@@ -54,7 +54,7 @@ impl Movement {
     pub fn confirm(&mut self, count: u32) -> Option<MoveRequest> {
         let (item, destination) = self.prompt?;
         if count == 0 || count > item.count || count > 100 {
-            self.feedback = Some("Enter a count from 1 to the stack size (maximum 100)");
+            self.feedback = Some(tr!("Enter a count from 1 to the stack size (maximum 100)"));
             return None;
         }
         self.prompt = None;
@@ -71,7 +71,7 @@ impl Movement {
     pub fn cancel(&mut self) {
         self.dragged = None;
         self.prompt = None;
-        self.feedback = Some("Move cancelled");
+        self.feedback = Some(tr!("Move cancelled"));
     }
 }
 

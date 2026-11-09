@@ -109,11 +109,15 @@ impl super::Application {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let audio = self.audio.status(&mut play.view);
             let movement = play.link.item_movement_status();
-            let status = format!(
+            let custom = play.link.custom_hotkey_status();
+            let status = lfmt!(
                 "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
                 play.view.hud_status(),
-                play.link.movement_feedback().unwrap_or("")
+                play.link.movement_feedback().unwrap_or(""),
+                audio = audio,
+                movement = movement
             );
+            let status = format!("{custom} — {status}");
             if let Some(hud) = &self.hud {
                 hud.update(
                     play.view
@@ -126,7 +130,15 @@ impl super::Application {
             if let Some(hud) = &mut self.hud {
                 hud.arcs.update(play.view.hud_arc_layout());
                 let labels = play.link.spell_slot_labels();
-                for gesture in hud.spells.update(Some(&labels), &play.link.bar_layout()) {
+                for gesture in hud.spells.update(
+                    play.view
+                        .preferences()
+                        .action_bar
+                        .visible
+                        .then_some(&labels),
+                    &play.link.bar_layout(),
+                    &play.link.spell_slot_tooltips(),
+                ) {
                     play.link.bar_gesture(gesture);
                 }
                 for id in hud
@@ -137,8 +149,9 @@ impl super::Application {
                 }
             }
             if status != play.status {
-                window.set_title(&format!(
-                    "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"
+                window.set_title(&lfmt!(
+                    "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements",
+                    status = status
                 ));
                 play.status = status;
             }
@@ -147,7 +160,7 @@ impl super::Application {
             && let Some(hud) = &mut self.hud
         {
             hud.spells
-                .update(None, &oteryn_client::play::BarLayout::default());
+                .update(None, &oteryn_client::play::BarLayout::default(), &[]);
             hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);
