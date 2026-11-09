@@ -28,6 +28,13 @@ pub(super) async fn retire_contents(
             sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text")
                 .fetch_one(&mut ***tx)
                 .await?;
+        // The entry/item locks above precede Text-owner revision/live-row locks.
+        // Value audit retains revision metadata only, never player text or a digest.
+        let text_state: serde_json::Value =
+            sqlx::query_scalar("SELECT game_elemental_loot_text_state($1::uuid)")
+                .bind(&child)
+                .fetch_one(&mut ***tx)
+                .await?;
         let tuple = tx.tuple();
         let envelope = crate::durability::item_craft::audit::encode_map_harvest(
             fence,
@@ -36,7 +43,8 @@ pub(super) async fn retire_contents(
                 "quest":"oteryn:quest.elemental_spheres_quest", "arrival_transaction":arrival,
                 "corpse":parent, "item_before":row.try_get::<serde_json::Value,_>("item_before")?,
                 "entry_before":row.try_get::<serde_json::Value,_>("entry_before")?,
-                "fluid_before":row.try_get::<Option<serde_json::Value>,_>("fluid_before")?, "quantity_after":0,
+                "fluid_before":row.try_get::<Option<serde_json::Value>,_>("fluid_before")?,
+                "text_state_before":text_state, "quantity_after":0,
             }),
             &transaction,
             &event,

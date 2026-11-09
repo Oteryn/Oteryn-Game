@@ -149,6 +149,10 @@ fn qn1_elemental_arrival_consumes_fluid_loot_and_archives_its_state() -> f::Test
 fn qn1_elemental_corpse_keeps_classification_after_owner_generation_move() -> f::TestResult {
     run(true, 4)
 }
+#[test]
+fn qn1_elemental_arrival_consumes_text_loot_without_auditing_its_body() -> f::TestResult {
+    run(true, 5)
+}
 fn run(native: bool, loot: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
@@ -167,6 +171,7 @@ fn run(native: bool, loot: u8) -> f::TestResult {
                             (_, 2) => "qn1_elemental_loot_rollback",
                             (_, 3) => "qn1_elemental_fluid_loot",
                             (_, 4) => "qn1_elemental_corpse_handoff",
+                            (_, 5) => "qn1_elemental_text_loot",
                             (true, _) => "qn1_elemental_native",
                             (false, _) => "qn1_elemental_consume",
                         },
@@ -331,13 +336,19 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
                         ),
                         item: f::definition(
                             "Item",
-                            if loot >= 2 && ordinal == 2 {
+                            if loot == 5 && ordinal == 1 {
+                                "oteryn:item.tibia.i3505"
+                            } else if loot >= 2 && ordinal == 2 {
                                 "oteryn:item.tibia.i2874"
                             } else {
                                 "oteryn:item.tibia.i3031"
                             },
                         ),
-                        quantity: if loot >= 2 && ordinal == 2 { 1 } else { 60 },
+                        quantity: if loot == 5 || loot >= 2 && ordinal == 2 {
+                            1
+                        } else {
+                            60
+                        },
                         placement: CorpseContainerPlacement {
                             corpse_item_instance_id: item,
                             placement_ordinal: ordinal,
@@ -362,6 +373,29 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             }
         }
     }
+    const PRIVATE_TEXT: &str = "A private letter carried by the elemental corpse.";
+    let text_before: Option<serde_json::Value> = if loot == 5 {
+        // Storage fixture only: real minted letter and the Text owner's writer.
+        // Current altar authority is independently supplied by the actual Root call below.
+        let written = crate::durability::item_text::tests::store_fixture_request(
+            &h.pool,
+            &f::id(f::CHARACTER),
+            crate::durability::item_text::ItemTextWriteRequest {
+                command: f::command(92)?,
+                item_instance_id: loot_ids[0],
+                definition: f::definition("Item", "oteryn:item.tibia.i3505"),
+                text: PRIVATE_TEXT.into(),
+            },
+        )
+        .await?;
+        assert_eq!(written.text_revision, 1);
+        assert!(written.changed);
+        eprintln!("QN1_ELEMENTAL_TEXT_LOOT_PG_READY");
+        Some(sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_texts t WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?)
+    } else {
+        None
+    };
     let fluid_before: Option<serde_json::Value> = if loot >= 2 {
         sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
             .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?
@@ -663,6 +697,40 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             (0, 2, 0, 1),
             "arrival must retire and audit each loot entry"
         );
+    }
+    if loot == 5 {
+        let archived: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_texts t WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            Some(archived),
+            text_before,
+            "retirement preserves the private Text component"
+        );
+        let captured: serde_json::Value = sqlx::query_scalar("SELECT text_state_before FROM game_elemental_loot_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            captured,
+            serde_json::json!({"text_revision":"1","high_water":"1"})
+        );
+        use crate::durability::item_mint_audit::{
+            EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1,
+        };
+        use prost::Message;
+        let wire: Vec<u8> = sqlx::query_scalar("SELECT a.envelope FROM game_item_audit_outbox a JOIN game_elemental_loot_retire_receipts r ON r.transaction_id=a.transaction_id WHERE r.item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[0].as_slice()).fetch_one(&h.pool).await?;
+        assert!(
+            !wire
+                .windows(PRIVATE_TEXT.len())
+                .any(|window| window == PRIVATE_TEXT.as_bytes())
+        );
+        let envelope = EventEnvelopeV1::decode(wire.as_slice())?;
+        let transaction = OneItemTransactionV1::decode(envelope.payload.as_slice())?;
+        let Some(OneItemOperationV1::Craft(craft)) = transaction.operation else {
+            return Err("text loot audit operation".into());
+        };
+        let proof: serde_json::Value = serde_json::from_slice(&craft.proof)?;
+        assert_eq!(proof["text_state_before"], captured);
+        eprintln!("QN1_ELEMENTAL_TEXT_LOOT_PG_EXECUTED");
     }
     if loot == 3 {
         let archived: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
