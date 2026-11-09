@@ -568,6 +568,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let mut success_preface = None;
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -655,6 +656,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) => {
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                        // Crystal action_mead.lua:8-11 says both lines on the winning sip.
+                        if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
+                            && committed.changes.iter().any(|change|
+                                change.track == oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0]
+                                    && change.before == 2 && change.after == 3)
+                        {
+                            success_preface = Some("The world seems to spin but you manage to stay on your feet.");
+                        }
                     }
                     #[cfg(test)]
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
@@ -816,6 +825,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // it cannot turn a committed movement into a failed command.
             map.facts
                 .emit_movement_effect(tile(effect.position), effect.effect);
+        }
+        if let Some(message) = success_preface {
+            self.states.chat.push_quest_feedback(session, message);
         }
         if let Some(message) = success_message {
             self.states.chat.push_quest_feedback(session, &message);

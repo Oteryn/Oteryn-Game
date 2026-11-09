@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let qm47 = name == "barbarian-test-mead-native";
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -41,7 +42,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = qm47
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -63,7 +65,7 @@ fn scenario_case(
             y: trigger.y - 1,
             ..trigger
         }
-    } else if m01b_explore {
+    } else if qm47 || m01b_explore {
         Position {
             x: trigger.x + 1,
             ..trigger
@@ -168,6 +170,8 @@ fn scenario_case(
             || shared_gate
         {
             "fish-napping-key"
+        } else if qm47 {
+            "barbarian-test-mead"
         } else {
             name.strip_suffix("-expiry").unwrap_or(name)
         })?
@@ -337,7 +341,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if qm47 {
+            super::super::qm47_mead_dispatch::world(
+                generation.native_gameplay().ok_or("mead policies")?,
+            )?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -649,7 +657,16 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == "barbarian-test-mead" {
+        if qm47 {
+            super::super::qm47_mead_dispatch::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            )
+            .await?;
+        } else if name == "barbarian-test-mead" {
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
