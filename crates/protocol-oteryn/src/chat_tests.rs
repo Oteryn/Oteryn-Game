@@ -391,7 +391,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     assert_eq!(capability["offered"], true, "offered since CHAT-WIRE-1");
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_CHAT_INTENT])
+        serde_json::json!([COMMAND_TYPE_CHAT_INTENT, super::console::COMMAND])
     );
     assert_eq!(
         capability["state_domains"],

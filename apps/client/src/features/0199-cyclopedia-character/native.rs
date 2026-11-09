@@ -42,21 +42,13 @@ pub(in crate::play) fn submit(
         };
         return None;
     }
-    if id == 150 {
-        let badge = values[0].trim().parse::<u8>().ok()?;
-        return request(
-            p,
-            Intent::SetBadgeVisibility {
-                badge,
-                public: p.hidden_badges.contains(&badge),
-            },
-        );
-    }
-    if target::badge_filter(p, id) { return None; }
+    if id == 154 { return request(p, Intent::Badges); }
     if id == 153 {
-        p.tab=oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
-        p.badges_open=false;
-        return request(p, Intent::Badges);
+        let badge = values[0].trim().parse::<u8>().ok()?;
+        return request(p, Intent::SetBadgeVisibility { badge, public: p.server_hidden_badges.contains(&badge) });
+    }
+    if target::badge_filter(p, id) {
+        return None;
     }
     if let Some(result) = target::submit_profile(p, id, values) {
         return result;

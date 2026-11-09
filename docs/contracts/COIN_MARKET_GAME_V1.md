@@ -46,7 +46,7 @@ bank proof branches are retained. Published coin receipts are immutable.
 
 ## Wire
 
-MARKET_V1 capability 63, command 6117. Closed protobuf request fields:
+MARKET_V1 capability 63, command 6126. Closed protobuf request fields:
 1 action; 2 amount; 3 per-coin gold price; 4 offer/operation-to-inspect UUIDv7;
 5 immutable confirmation UUIDv7; 6 history UUID cursor or bounded decimal offer-page cursor.
 Offers use 100-row pages, at most 700 visible per side; My Offers shows up to 700

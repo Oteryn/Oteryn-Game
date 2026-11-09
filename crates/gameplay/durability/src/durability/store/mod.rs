@@ -20,3 +20,4 @@ pub(crate) use prey_expansion::write_prey_expansion_receipt;
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 #[cfg(test)]
 mod tests;
+mod popularity;

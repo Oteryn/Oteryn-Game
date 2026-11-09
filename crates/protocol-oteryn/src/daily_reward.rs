@@ -101,3 +101,17 @@ mod tests;
 mod codec_tests;
 #[path = "daily_reward_details.rs"]
 pub mod details;
+
+#[cfg(test)]
+#[path = "daily_reward/picker_tests.rs"]
+mod picker_tests;
+
+#[path = "daily_reward/picker.rs"]
+pub mod picker;
+
+#[cfg(test)]
+#[path = "daily_reward/returner_tests.rs"]
+mod returner_tests;
+
+#[path = "daily_reward/returner.rs"]
+pub mod returner;

@@ -212,6 +212,7 @@ pub use oteryn_session::loyalty_skills;
 pub use oteryn_session::mechanics_status;
 pub use oteryn_session::party_effects;
 pub use oteryn_session::potion_durations;
+pub use oteryn_session::premium_overview;
 pub use oteryn_session::rest_status;
 pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;
@@ -335,6 +336,11 @@ pub mod cui3 {
     };
 }
 
+/// Optional server-executed Gem modifier presentation.
+pub use oteryn_session::gem_presentation;
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_session::wheel_presentation;
 #[path = "features/0450-server-modal/protocol.rs"]
 pub mod server_modal;
 

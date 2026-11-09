@@ -279,3 +279,17 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
     }
     true
 }
+
+/// Read-only executed modifiers from the existing Wheel/Atelier capability.
+pub fn gem_presentation_query(
+    p: &mut WheelPanel,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::gems::query(p)
+}
+
+/// Read-only graph and draft projection via the existing Wheel capability.
+pub fn wheel_presentation_query(
+    p: &mut WheelPanel,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::diagram::query(p)
+}

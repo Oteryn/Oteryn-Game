@@ -161,6 +161,19 @@ pub(super) async fn exercise(
             ),
             (1, 65, 50)
         );
+        super::forge_resource_confirmation::read_quotes(
+            &mut client,
+            current.continuity.connection_generation,
+            &mut command,
+        )
+        .await?;
+        super::exaltation::read_effects(
+            &mut client,
+            current.continuity.connection_generation,
+            &mut command,
+            swords[0].handle,
+        )
+        .await?;
         assert_eq!(
             assets(h).await?,
             before,
@@ -226,13 +239,14 @@ pub(super) async fn exercise(
         current
             .continuity
             .next_command_id
-            .checked_add(4)
+            .checked_add(9)
             .ok_or("expected command overflow")?,
-        "one connection executes Browse, Quote, paid writer and exact occurrence replay"
+        "one connection executes Browse, Quote, three resource reads, two effect reads, paid writer and exact occurrence replay"
     );
     let after = result.map_err(|error| {
         format!("Preview one-connection flow failed: {error}; server: {summary}")
     })?;
+    super::forge_resource_confirmation::read_without_handles(owner, admitted).await?;
     // The exact durability reader rejects a stale connection fence against real PG rows.
     let mut stale = admitted.item_fence.ok_or("current item fence")?;
     stale.connection_generation =

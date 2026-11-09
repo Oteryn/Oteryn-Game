@@ -35,6 +35,7 @@ fn public_badge_visibility_caller_waits_for_server_and_filters_confirmed_state()
     };
     outbox.cyclopedia_character_result(&reply(vec![])?);
     assert!(link.cyclopedia_character_panel().badge_visibility_known);
+    lock(&outbox.0).cyclopedia_character.hidden_badges.insert(1);
     link.cyclopedia_character_request(Intent::SetBadgeVisibility {
         badge: 1,
         public: false,
@@ -50,13 +51,13 @@ fn public_badge_visibility_caller_waits_for_server_and_filters_confirmed_state()
         }
     );
     assert!(
-        link.cyclopedia_character_panel().hidden_badges.is_empty(),
+        link.cyclopedia_character_panel().server_hidden_badges.is_empty(),
         "no optimistic visibility change"
     );
     outbox.cyclopedia_character_result(&reply(vec![Badge::FledgelingHero])?);
     {
         let mut mailbox = lock(&outbox.0);
-        mailbox.cyclopedia_character.badge_filter = BadgeFilter::Hidden;
+        mailbox.cyclopedia_character.badge_filter = BadgeFilter::HiddenPublic;
         assert_eq!(badge_rows(&mailbox.cyclopedia_character).len(), 1);
         mailbox.cyclopedia_character.badge_filter = BadgeFilter::Public;
         assert!(badge_rows(&mailbox.cyclopedia_character).is_empty());
@@ -72,7 +73,8 @@ fn public_badge_visibility_caller_waits_for_server_and_filters_confirmed_state()
         command_id: 2,
         server_sequence: 2,
     });
-    assert!(link.cyclopedia_character_panel().hidden_badges.contains(&1));
+    assert!(link.cyclopedia_character_panel().server_hidden_badges.contains(&1));
+    assert!(link.cyclopedia_character_panel().hidden_badges.contains(&1), "server visibility updates preserve local hiding");
     lock(&outbox.0)
         .cyclopedia_character
         .change_target(Some([7; 16]));
@@ -99,7 +101,7 @@ fn native_badge_controls_route_public_filters_and_confirmed_visibility_changes()
     };
     assert!(native::submit(&mut panel, 152, ["", "", ""]).is_none());
     assert_eq!(panel.badge_filter, BadgeFilter::Public);
-    let command = native::submit(&mut panel, 150, ["1", "", ""]).ok_or("native toggle")?;
+    let command = native::submit(&mut panel, 153, ["1", "", ""]).ok_or("native toggle")?;
     assert_eq!(
         wire::Request::decode(&command.payload).map_err(|_| "wire")?,
         wire::Request::Set {
@@ -107,9 +109,9 @@ fn native_badge_controls_route_public_filters_and_confirmed_visibility_changes()
             public: false
         }
     );
-    assert!(panel.hidden_badges.is_empty());
+    assert!(panel.server_hidden_badges.is_empty());
     panel.pending = false;
     panel.change_target(Some([7; 16]));
-    assert!(native::submit(&mut panel, 150, ["1", "", ""]).is_none());
+    assert!(native::submit(&mut panel, 153, ["1", "", ""]).is_none());
     Ok(())
 }

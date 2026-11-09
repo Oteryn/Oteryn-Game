@@ -5,7 +5,7 @@
     "id": "0063-coin-market-actions",
     "status": "supported",
     "commands": [
-      6117
+      6126
     ],
     "direction": "client_to_server",
     "capability": 63,

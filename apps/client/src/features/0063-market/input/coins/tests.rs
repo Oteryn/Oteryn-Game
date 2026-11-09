@@ -23,7 +23,7 @@
                 request.amount,
                 request.price
             ),
-            (63, 6117, 3, 25, 100)
+            (63, 6126, 3, 25, 100)
         );
         assert!(lock(&outbox.0).market.coins.view.is_none());
         outbox.coin_market_result(&oteryn_session::GatedCommandResult {

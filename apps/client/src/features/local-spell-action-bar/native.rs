@@ -1,14 +1,22 @@
-//! Child control on the shell thread; its parent window owns the native lifetime.
-// SAFETY: only this module calls Win32 for a child of winit's live window, on its thread.
-#![allow(unsafe_code)]
-
-use windows_sys::Win32::Foundation::HWND;
-use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DestroyWindow, MoveWindow, SW_HIDE, SW_SHOW, SetWindowTextW, ShowWindow,
-    WS_CHILD, WS_VISIBLE,
+//! Docked HUD child windows are created and updated exclusively on the shell thread.
+#![allow(
+    unsafe_code,
+    reason = "Win32 HUD controls stay on their creating UI thread"
+)]
+#[path = "native/events.rs"]
+mod events;
+#[path = "native/panes.rs"]
+mod panes;
+use events::Actions;
+use oteryn_client::play::{HudAction, HudPanel};
+use windows_sys::Win32::{
+    Foundation::HWND,
+    UI::Controls::{ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx},
 };
-use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use winit::window::Window;
+use winit::{
+    raw_window_handle::{HasWindowHandle, RawWindowHandle},
+    window::Window,
+};
 
 #[path = "../local-reference-preferences/arcs_native.rs"]
 mod arcs;
@@ -18,95 +26,77 @@ mod shortcuts;
 mod slots;
 pub(super) struct Hud {
     arcs: arcs::ArcHud,
-    status: HWND,
     spells: slots::SpellRow,
     shortcuts: shortcuts::ShortcutStrip,
+    panes: Vec<panes::Pane>,
+    actions: Actions,
 }
-
 fn wide(text: &str) -> Vec<u16> {
-    text.encode_utf16().chain(Some(0)).collect()
+    text.replace('\0', "\u{fffd}")
+        .encode_utf16()
+        .chain(Some(0))
+        .collect()
 }
-
 impl Hud {
     pub(super) fn new(window: &Window) -> Option<Self> {
         let RawWindowHandle::Win32(handle) = window.window_handle().ok()?.as_raw() else {
             return None;
         };
-        // A STATIC control displays the spell status, HP/MP bars and numbers without taking
-        // keyboard focus from gameplay. Win32 copies both strings during creation.
-        let hwnd = unsafe {
-            CreateWindowExW(
-                0,
-                wide("STATIC").as_ptr(),
-                wide("").as_ptr(),
-                WS_CHILD | WS_VISIBLE,
-                8,
-                8,
-                900,
-                40,
-                handle.hwnd.get() as HWND,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                std::ptr::null(),
-            )
+        let common = INITCOMMONCONTROLSEX {
+            dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+            dwICC: ICC_PROGRESS_CLASS,
         };
-        if hwnd.is_null() {
+        if unsafe { InitCommonControlsEx(&common) } == 0 {
             return None;
         }
-        let Some(shortcuts) = shortcuts::ShortcutStrip::new(handle.hwnd.get() as HWND) else {
-            unsafe {
-                DestroyWindow(hwnd);
-            }
-            return None;
-        };
-        let Some(arcs) = arcs::ArcHud::new(handle.hwnd.get() as HWND) else {
-            unsafe {
-                DestroyWindow(hwnd);
-            }
-            return None;
-        };
-        let Some(spells) = slots::SpellRow::new(handle.hwnd.get() as HWND) else {
-            unsafe {
-                DestroyWindow(hwnd);
-            }
-            return None;
-        };
+        let actions = Actions::default();
+        let panes = HudPanel::ALL
+            .into_iter()
+            .map(|id| panes::Pane::new(handle.hwnd.get() as HWND, id, actions.clone()))
+            .collect::<Option<Vec<_>>>()?;
         Some(Self {
-            spells,
-            arcs,
-            status: hwnd,
-            shortcuts,
+            panes,
+            actions,
+            arcs: arcs::ArcHud::new(handle.hwnd.get() as HWND)?,
+            spells: slots::SpellRow::new(handle.hwnd.get() as HWND)?,
+            shortcuts: shortcuts::ShortcutStrip::new(handle.hwnd.get() as HWND)?,
         })
     }
-
-    pub(super) fn update(&self, text: Option<&str>, bounds: [u16; 4]) {
-        unsafe {
-            MoveWindow(
-                self.status,
-                i32::from(bounds[0]),
-                i32::from(bounds[1]),
-                i32::from(bounds[2]),
-                i32::from(bounds[3]),
-                1,
-            );
-            SetWindowTextW(self.status, wide(text.unwrap_or("")).as_ptr());
-            ShowWindow(self.status, if text.is_some() { SW_SHOW } else { SW_HIDE });
+    pub(super) fn take_actions(&self) -> Vec<HudAction> {
+        std::mem::take(&mut *self.actions.borrow_mut())
+    }
+    pub(super) fn hide(&self) {
+        for pane in &self.panes {
+            pane.hide();
         }
     }
 }
-
-impl Drop for Hud {
-    fn drop(&mut self) {
-        // DestroyWindow is also safe if the parent already destroyed its child.
-        unsafe {
-            DestroyWindow(self.status);
-        }
-    }
-}
-
 impl super::Application {
     pub(super) fn update_hud(&mut self) {
-        if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
+        let menu = self.settings.take_hud_toggle();
+        if let (Some(play), Some(window), Some(hud)) = (&mut self.play, &self.window, &mut self.hud)
+        {
+            let size = window.inner_size();
+            let root =
+                [size.width, size.height].map(|value| u16::try_from(value).unwrap_or(u16::MAX));
+            let mut actions = hud.take_actions();
+            if let Some(id) = menu {
+                actions.push(HudAction::Visible(
+                    id,
+                    !play
+                        .view
+                        .preferences()
+                        .effective_hud_layout()
+                        .pane(id)
+                        .visible,
+                ));
+            }
+            for action in actions {
+                match play.view.hud_action(action, root) {
+                    Ok(()) => self.settings.capture(&mut play.view),
+                    Err(error) => eprintln!("Could not apply HUD layout: {error}"),
+                }
+            }
             let audio = self.audio.status(&mut play.view);
             let movement = play.link.item_movement_status();
             let custom = play.link.custom_hotkey_status();
@@ -114,56 +104,64 @@ impl super::Application {
                 "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
                 play.view.hud_status(),
                 play.link.movement_feedback().unwrap_or(""),
-                audio = audio,
-                movement = movement
+                movement = movement,
+                audio = audio
             );
             let status = format!("{custom} — {status}");
-            if let Some(hud) = &self.hud {
-                hud.update(
-                    play.view
-                        .preferences()
-                        .status_panel_visible
-                        .then_some(status.as_str()),
-                    play.view.preferences().scaled_hud_bounds(),
+            let texts = [
+                status.clone(),
+                play.view.combat_status(),
+                play.view.hud_conditions_text(),
+                play.view.hud_monk_text(),
+            ];
+            let layout = play.view.preferences().effective_hud_layout();
+            self.settings.sync_hud_menu(&layout);
+            hud.arcs.update(play.view.hud_arc_layout());
+            let labels = play.link.spell_slot_labels();
+            for gesture in hud.spells.update(
+                play.view
+                    .preferences()
+                    .action_bar
+                    .visible
+                    .then_some(&labels),
+                &play.link.bar_layout(),
+                &play.link.spell_slot_tooltips(),
+            ) {
+                play.link.bar_gesture(gesture);
+            }
+            for id in hud
+                .shortcuts
+                .update(Some(&play.view.preferences().shortcuts))
+            {
+                play.link.activate_shortcut(&id);
+            }
+            for (index, pane) in hud.panes.iter().enumerate() {
+                let id = HudPanel::ALL[index];
+                let rect =
+                    if id == HudPanel::Resources && !play.view.preferences().status_panel_visible {
+                        None
+                    } else {
+                        layout.rect(id, root, play.view.preferences().interface_scale)
+                    };
+                pane.update(
+                    &texts[index],
+                    rect,
+                    play.view.actor_vitals(),
+                    play.view.preferences().hud_bars,
                 );
             }
-            if let Some(hud) = &mut self.hud {
-                hud.arcs.update(play.view.hud_arc_layout());
-                let labels = play.link.spell_slot_labels();
-                for gesture in hud.spells.update(
-                    play.view
-                        .preferences()
-                        .action_bar
-                        .visible
-                        .then_some(&labels),
-                    &play.link.bar_layout(),
-                    &play.link.spell_slot_tooltips(),
-                ) {
-                    play.link.bar_gesture(gesture);
-                }
-                for id in hud
-                    .shortcuts
-                    .update(Some(&play.view.preferences().shortcuts))
-                {
-                    play.link.activate_shortcut(&id);
-                }
-            }
             if status != play.status {
-                window.set_title(&lfmt!(
-                    "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements",
-                    status = status
+                window.set_title(&format!(
+                    "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"
                 ));
                 play.status = status;
             }
-        }
-        if self.play.is_none()
-            && let Some(hud) = &mut self.hud
-        {
+        } else if let Some(hud) = &mut self.hud {
+            hud.hide();
             hud.spells
                 .update(None, &oteryn_client::play::BarLayout::default(), &[]);
             hud.arcs.update(None);
             hud.shortcuts.update(None);
-            hud.update(None, [8, 8, 900, 40]);
         }
     }
 }

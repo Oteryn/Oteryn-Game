@@ -28,7 +28,11 @@ fn soulpit_native_entry_refuses_insufficient_wave_capacity_without_burning_core_
     scenario(false, 11)
 }
 
-fn scenario(drive_native: bool, capacity: usize) -> TestResult {
+fn scenario(drive_native: bool, capacity: usize) -> TestResult { scenario_inner(drive_native,capacity,None) }
+pub(in super::super) fn soulseal_scenario(mode:super::super::soulseal_fights::Mode)->TestResult {
+    scenario_inner(false,if mode==super::super::soulseal_fights::Mode::Capacity {11} else {32},Some(mode))
+}
+fn scenario_inner(drive_native: bool, capacity: usize, soulseals:Option<super::super::soulseal_fights::Mode>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -178,7 +182,7 @@ fn scenario(drive_native: bool, capacity: usize) -> TestResult {
             admitted.item_fence = Some(source);
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                 BUNDLE_WORLD_OFFERED_CAPABILITIES,
-                &[4, 6, 11, 15, 18, 117, 168],
+                &[4, 6, 11, 15, 18, 72, 117, 168],
             )
             .ok_or("Soulpit capabilities")?;
             let mut owner = deps.owner(&h, &authority);
@@ -208,6 +212,10 @@ fn scenario(drive_native: bool, capacity: usize) -> TestResult {
             .bind(active.identity().client_artifact_digest().as_slice()).bind(map.frame_binding_digest(world).as_slice()).execute(&h.pool).await?;
             super::super::item_look::seed_main_backpack(&h, &[(&core, 2)]).await?;
             super::super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+            if let Some(mode)=soulseals {
+                super::super::soulseal_fights::exercise(&owner,&h,admitted,mode).await?;
+                drop(owner);drop(authority);drop(seal);return h.cleanup().await;
+            }
             let target =
                 super::super::autowalk::object(map.base().digest(), tile(32375, 31157), 0)?;
             let intent = UseIntent {

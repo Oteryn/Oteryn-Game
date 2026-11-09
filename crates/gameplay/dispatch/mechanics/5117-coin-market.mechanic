@@ -1,5 +1,5 @@
 name=coin_market
-commands=6117
+commands=6126
 transport=coin_market
 composed=coin_market
 authority=coin_market

@@ -18,6 +18,8 @@ pub struct SceneLighting {
     pub sources: Vec<PointLight>,
     /// Emissive UI palette, in atlas UV coordinates.
     pub palette: Option<[f32; 4]>,
+    /// Transient overlays appended after world sprites use their original colors.
+    pub emissive_from: Option<usize>,
     /// Dimming of bounded painter-order ranges (lower floors); UI quads lie outside them.
     pub dimmed: Vec<(std::ops::Range<usize>, u8)>,
 }
@@ -29,6 +31,7 @@ impl Default for SceneLighting {
             ambient: [255; 3],
             sources: Vec::new(),
             palette: None,
+            emissive_from: None,
             dimmed: Vec::new(),
         }
     }
@@ -95,9 +98,13 @@ impl SceneLighting {
         let mut bytes = Vec::with_capacity(instances.len() * LIT_INSTANCE_BYTES);
         for (index, quad) in instances.iter().enumerate() {
             bytes.extend_from_slice(&quad.to_bytes());
-            let emissive = self.palette.is_some_and(|p| {
-                quad.uv[0] >= p[0] && quad.uv[1] >= p[1] && quad.uv[2] <= p[2] && quad.uv[3] <= p[3]
-            });
+            let emissive = self.emissive_from.is_some_and(|start| index >= start)
+                || self.palette.is_some_and(|p| {
+                    quad.uv[0] >= p[0]
+                        && quad.uv[1] >= p[1]
+                        && quad.uv[2] <= p[2]
+                        && quad.uv[3] <= p[3]
+                });
             let rgb = if emissive {
                 [1.0; 3]
             } else {
@@ -179,6 +186,7 @@ mod tests {
                 color: light_color(180),
             }],
             palette: Some([0.5, 0.5, 1.0, 1.0]),
+            emissive_from: None,
             dimmed: Vec::new(),
         };
         assert_eq!(lighting.sample([16.0; 2]), [1.0, 0.0, 0.0]);
@@ -209,6 +217,31 @@ mod tests {
             .0
         {
             assert_eq!(chunk, &1.0_f32.to_ne_bytes());
+        }
+    }
+}
+
+#[cfg(test)]
+mod effect_tests {
+    use super::*;
+    #[test]
+    fn t012_effect_sprites_remain_visible_in_complete_darkness() {
+        let lighting = SceneLighting {
+            ambient: [0; 3],
+            emissive_from: Some(1),
+            ..SceneLighting::default()
+        };
+        let quad = QuadInstance {
+            position: [0.0; 2],
+            size: [32.0; 2],
+            uv: [0.0, 0.0, 1.0, 1.0],
+        };
+        let bytes = lighting.instance_bytes(&[quad, quad]);
+        for index in 0..2 {
+            for channel in 0..3 {
+                let at = index * LIT_INSTANCE_BYTES + QUAD_INSTANCE_BYTES + channel * 4;
+                assert_eq!(&bytes[at..at + 4], &(index as f32).to_ne_bytes());
+            }
         }
     }
 }

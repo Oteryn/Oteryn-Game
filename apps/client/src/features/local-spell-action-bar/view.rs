@@ -41,7 +41,7 @@ impl PlayView {
             "{}   {}   {}   {}   {}   {}   {}",
             self.served_channel_text().unwrap_or_default(),
             self.world_clock_text().unwrap_or_default(),
-            oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
+            self.resource_status(),
             self.battle_instinct
                 .map_or_else(String::new, |status| lfmt!(
                     "Battle Instinct: {} (+{} melee, +{} shielding)",

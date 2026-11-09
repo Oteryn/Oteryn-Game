@@ -10,3 +10,8 @@ pub use input::{categories, open_key, select_category};
 pub use protocol::{apply_result, catalogue, claim, command, history, purchase, request};
 pub use state::{GiftDraft, StorePage, StorePanel, StoreSort, confirm_gift, review_gift};
 pub use view::{offer_preview, panel_text, visible_offers};
+
+#[path = "state/browser.rs"]
+mod browser;
+pub use browser::{Browser, select_product};
+pub use protocol::browse_request as browse;

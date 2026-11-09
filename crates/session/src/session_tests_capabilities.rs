@@ -101,141 +101,179 @@ fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_sel
         .map_err(|_| "Prey selection thread panicked")?
 }
 
+#[path = "session_tests_capabilities/gated_routes.rs"]
+mod gated_route_tests;
+
 #[test]
-fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
-    // Former routes plus PKG5 hotkeys and CP01 property/service commands.
-    // Compare sets because
-    // the protocol registry generates its entries in capability order.
-    let expected: &[(u32, &[u32], &[u32])] = &[
-        (3, &[7, 8], &[7, 8]),
-        (17, &[11, 12, 740], &[10]),
-        (182, &[354, 355, 738], &[]),
-        (51, &[60, 61], &[]),
-        // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.
-        (39, &[38], &[]),
-        (57, &[72, 73], &[]),
-        (134, &[155], &[]),
-        (40, &[40, 41], &[]),
-        (42, &[45, 46], &[]),
-        (43, &[48, 49, 50], &[]),
-        (53, &[64], &[]),
-        (54, &[66, 67], &[]),
-        (55, &[68, 69], &[]),
-        // P-C04: existing move-out, scope-transfer and guildhall leadership routes.
-        (59, &[76, 77], &[]),
-        (86, &[102], &[51]),
-        (99, &[115], &[]),
-        // P-C01 already routes charm progression and expert fight modes on this base.
-        (67, &[84], &[]),
-        (87, &[103], &[52]),
-        (60, &[78], &[26]),
-        (62, &[79], &[27]),
-        (63, &[80, 6117], &[28]),
-        (64, &[81], &[]),
-        // P-C01 already enables charm progression and PvP expert; preserve that exact table.
-        (67, &[84], &[]),
-        (87, &[103], &[52]),
-        (68, &[85], &[]),
-        (72, &[89], &[]),
-        (75, &[], &[40]),
-        (81, &[97], &[]),
-        (82, &[98], &[]),
-        // P-C03 routes the existing character-info and raid-schedule commands.
-        (97, &[113], &[]),
-        (149, &[171, 172, 173], &[]),
-        (98, &[114], &[63]),
-        (132, &[153], &[97]),
-        (200, &[390, 391], &[]),
-        (232, &[444, 445, 446], &[]),
-        (285, &[501], &[]),
-        (287, &[], &[100]),
-        (115, &[124], &[]),
-        // P-C05 exposes the existing 117 routes (133, 169, 178-180, 340, 491); no table change.
-        // C49: the boss status panel uses the registry-owned capability 117 route.
-        (117, &[133, 169, 178, 179, 180, 340, 491, 710], &[99]),
-        (140, &[160], &[]),
-        (165, &[220], &[]),
-        (16, &[22], &[16]),
-        (18, &[], &[17]),
-        (19, &[], &[18]),
-        (23, &[], &[19, 20]),
-        (288, &[], &[101]),
-        // CLCAST: native caster controls and room; Watch 289 stays account-only.
-        (290, &[502, 505], &[]),
-        (291, &[504], &[103]),
-        (292, &[503], &[]),
-        (330, &[560, 561], &[]),
-        (37, &[36], &[]),
-        (31, &[], &[23]),
-        (25, &[25], &[21]),
-        (26, &[], &[22]),
-        (1, &[4, 5], &[4, 5]),
-        (8, &[], &[13]),
-        (9, &[14], &[]),
-        (10, &[734, 735], &[15]),
-        // C12 enables the existing world-interaction and item-look command routes.
-        (11, &[15, 31], &[]),
-        (28, &[30], &[]),
-        (14, &[21], &[14]),
-        (179, &[348], &[]),
-        (180, &[], &[]),
-        // PREY-DIFF: native Prey controls use the existing command160.
-        (140, &[160], &[]),
-        (147, &[170], &[]),
-        // Wheel and Atelier are playable through the selected capability 148.
-        (148, &[161, 308, 309, 424], &[]),
-        (150, &[174, 175, 176, 739], &[]),
-        // Live balances use their own selected capability without changing Atelier V1.
-        (272, &[484], &[]),
-        // pkg4 additions: raid server messages arrive on domain 57 under 92 zones_nologout;
-        // animus mastery (168) and loyalty skills (274) query through their gated commands.
-        (92, &[], &[57]),
-        (168, &[232], &[]),
-        (274, &[488], &[]),
-        (276, &[492], &[]),
-        (277, &[493], &[]),
-        (278, &[494], &[]),
-        (279, &[495], &[]),
-        (280, &[496], &[]),
-        // NX-5: item-only visuals use a separate transient stream.
-        (
-            350,
-            &[],
-            &[oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS],
-        ),
-        (370, &[640], &[]),
-        (381, &[662], &[]),
-        (382, &[664], &[]),
-        (383, &[], &[]),
-        (384, &[669], &[]),
-        (448, &[732], &[]),
-        (450, &[736, 737], &[]),
-        (449, &[733], &[]),
-        (207, &[402], &[]),
-        (445, &[730], &[]),
-        (446, &[], &[]),
-        (447, &[731], &[]),
-        // CL25J: native feature adapters now use these existing gated wire routes.
-        (151, &[177], &[]),
-        (152, &[181, 668, 6116], &[]),
-        (153, &[182], &[]),
-        (154, &[183, 184, 185, 186], &[]),
-        (195, &[378, 379, 380, 392, 393, 394, 395, 641, 660], &[]),
-        (197, &[383, 384], &[98]),
-        (199, &[387, 388], &[]),
-        (225, &[431], &[]),
-        (230, &[440], &[]),
-        (233, &[447], &[]),
-        // P-C01: native Bestiary/Charms (command 84) and PvP expert (command 103,
-        // confirmed-mode domain 52) panels use their existing gated routes.
-        (67, &[84], &[]),
-        (83, &[], &[48]),
-        (87, &[103], &[52]),
-    ];
-    let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
-    let derived: std::collections::BTreeSet<_> = gated_routes().collect();
-    assert_eq!(derived, expected);
-    Ok(())
+fn console_query_uses_selected_chat_capability_and_leaves_legacy_lines_unchanged()
+-> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                use oteryn_protocol_oteryn::chat::console;
+                for selected in [false, true] {
+                    let (client, mut server) = tokio::io::duplex(128 * 1024);
+                    let peer = tokio::spawn(async move {
+                        let raw = if selected {
+                            vec![(
+                                12,
+                                0,
+                                1,
+                                oteryn_protocol_oteryn::chat::encode_chat_rooms(
+                                    ChatRoomSet::default(),
+                                ),
+                            )]
+                        } else {
+                            vec![]
+                        };
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            if selected { &[7] } else { &[] },
+                            &[],
+                            (1, spatial(0)),
+                            &raw,
+                        )
+                        .await?;
+                        if selected {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(command.command_type, console::COMMAND);
+                            assert_eq!(
+                                console::decode_names(command.payload),
+                                Some(vec!["Bryn".into()])
+                            );
+                            let payload = console::encode_levels(&[Some(42)]).ok_or("levels")?;
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    41,
+                                    command.command_id,
+                                    CommandStatus::Accepted,
+                                    &payload,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut admission = admission()?;
+                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                    let mut session = Session::admit(client, admission).await?;
+                    let payload = console::encode_names(&["Bryn".into()]).ok_or("names")?;
+                    let result = session.gated_command(7, 6117, &payload).await;
+                    if selected {
+                        assert_eq!(
+                            console::decode_levels(&result?.payload),
+                            Some(vec![Some(42)])
+                        );
+                    } else {
+                        assert!(matches!(
+                            result,
+                            Err(SessionError::CapabilityNotSelected { capability: 7 })
+                        ));
+                    }
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })
+        })?
+        .join()
+        .map_err(|_| "console session scenario panicked")??
+}
+
+#[test]
+fn t114_soulseal_command_crosses_selected_session_gate_and_refuses_unselected()
+-> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                use oteryn_protocol_oteryn::task_board::soulpit as wire;
+                for selected in [false, true] {
+                    let (client, mut server) = tokio::io::duplex(128 * 1024);
+                    let peer = tokio::spawn(async move {
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            if selected { &[72] } else { &[] },
+                            &[],
+                            (1, spatial(0)),
+                            &[],
+                        )
+                        .await?;
+                        if selected {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(
+                                (command.command_type, command.command_id),
+                                (wire::COMMAND_TYPE, 7)
+                            );
+                            assert_eq!(
+                                wire::Request::decode(command.payload).map_err(|_| "request")?,
+                                wire::Request::Catalogue { after: 0 }
+                            );
+                            let reply = wire::Reply {
+                                status: wire::Status::Refused,
+                                balance: None,
+                                authorization: None,
+                                next: None,
+                                total: 0,
+                                entries: vec![],
+                                rules: wire::EntryRules {
+                                    required_level: 8,
+                                    time_limit_seconds: 600,
+                                    authorization_ms: 10000,
+                                },
+                                reason: "Stand at the Soulpit entrance".into(),
+                            };
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    41,
+                                    7,
+                                    CommandStatus::Accepted,
+                                    &reply.encode().map_err(|_| "reply")?,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut admission = admission()?;
+                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                    let mut session = Session::admit(client, admission).await?;
+                    let payload = wire::Request::Catalogue { after: 0 }
+                        .encode()
+                        .map_err(|_| "payload")?;
+                    let result = session
+                        .gated_command(72, wire::COMMAND_TYPE, &payload)
+                        .await;
+                    if selected {
+                        assert_eq!(
+                            wire::Reply::decode(&result?.payload)
+                                .map_err(|_| "reply")?
+                                .status,
+                            wire::Status::Refused
+                        );
+                    } else {
+                        assert!(matches!(
+                            result,
+                            Err(SessionError::CapabilityNotSelected { capability: 72 })
+                        ));
+                    }
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "Soulseal session test thread failed")?
 }
 
 include!("session_tests_coin_history.rs");

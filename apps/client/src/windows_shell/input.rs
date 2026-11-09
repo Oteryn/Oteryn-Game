@@ -15,6 +15,12 @@ impl Application {
         if self.capture_input(events) {
             return;
         }
+        if oteryn_client::bulletin::open_key(events) {
+            if let Some(login) = &self.login {
+                login.show_bulletin();
+            }
+            return;
+        }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let (routed, custom_actions) = self
             .settings
@@ -122,6 +128,7 @@ impl Application {
                 || play.link.cyclopedia_atlas_input(events)
                 || play.link.cyclopedia_map_input(events)
                 || play.link.party_skull_input(events)
+                || play.link.premium_overview_input(events)
                 || play.link.character_info_input(events)
                 || play.link.raid_schedule_input(events)
                 || play.link.container_sort_input(events)

@@ -5,6 +5,9 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn client_bulletin(&self) -> Option<String> {
+        self.states.bulletin_source.as_ref()?.load().await
+    }
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
@@ -239,6 +242,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
         self.chat_open(session).await
+    }
+
+    async fn console_levels(
+        &self,
+        admitted: AdmittedSession,
+        names: Vec<String>,
+    ) -> Option<Vec<Option<u32>>> {
+        if !admitted.continuity.selected_capabilities.contains(7)
+            || !self.states.chat.knows(admitted.game_session_id)
+        {
+            return None;
+        }
+        let names = names
+            .iter()
+            .map(|name| crate::domain::character_name::CharacterName::parse(name))
+            .collect::<Result<Vec<_>, _>>()
+            .ok()?;
+        self.root
+            .read_console_levels(self.character, *self.world_id.as_bytes(), names)
+            .await
+            .ok()
     }
 
     async fn chat_intent(

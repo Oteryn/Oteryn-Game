@@ -38,6 +38,7 @@ impl EntryState {
 /// One attempt at a time on the existing runtime. Every request starts native entry afresh;
 /// no credential, ticket, grant or admitted stream is retained for the next attempt.
 pub struct Reentry {
+    bulletin: Option<String>,
     client: ClientBootstrap,
     state: EntryState,
     attempt_cancellation: Option<CancellationToken>,
@@ -49,8 +50,12 @@ pub struct Reentry {
 }
 
 impl Reentry {
+    pub fn take_bulletin(&mut self) -> Option<String> {
+        self.bulletin.take()
+    }
     pub fn new(client: ClientBootstrap) -> Self {
         Self {
+            bulletin: None,
             client,
             state: EntryState::Offline,
             attempt_cancellation: None,
@@ -155,7 +160,10 @@ impl Reentry {
                 .as_ref()
                 .is_none_or(|(held, _)| held.started != wait.started)
             {
-                self.waiting = Some((wait, QueueWait::new(None, wait.started, wait.retry_in)));
+                self.waiting = Some((
+                    wait,
+                    QueueWait::new(wait.queue_position, wait.started, wait.retry_in),
+                ));
             }
             let (_, queue) = self.waiting.as_ref()?;
             if wait.code == 1115 {
@@ -201,7 +209,12 @@ impl Reentry {
         self.progress = None;
         self.waiting = None;
         self.last_wait_text = None;
-        let result = result.and_then(|admitted| self.client.start_play(admitted));
+        let result = result.and_then(|admitted| {
+            let bulletin = admitted.bulletin().map(str::to_owned);
+            let play = self.client.start_play(admitted)?;
+            self.bulletin = bulletin;
+            Ok(play)
+        });
         self.training_completion = result
             .as_ref()
             .ok()
@@ -325,6 +338,7 @@ mod tests {
         let now = Instant::now();
         progress.send_replace(Some(AdmissionWait {
             code: 1115,
+            queue_position: None,
             started: now,
             retry_in: std::time::Duration::from_secs(2),
         }));

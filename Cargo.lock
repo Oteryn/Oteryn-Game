@@ -2188,6 +2188,7 @@ dependencies = [
  "rcgen",
  "rodio",
  "rustls",
+ "semver",
  "serde",
  "serde_json",
  "sha2 0.11.1",

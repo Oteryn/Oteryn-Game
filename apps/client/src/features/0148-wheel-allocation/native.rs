@@ -31,6 +31,8 @@ const DISMANTLE: usize = 116;
 const GRADE: usize = 117;
 const RETRY: usize = 118;
 const PRESETS: usize = 121;
+const VISUAL_ATELIER: usize = 122;
+const WHEEL_DIAGRAM: usize = 123;
 
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
@@ -84,3 +86,8 @@ fn close(weak: &WeakMailbox) {
 mod native_localized_11;
 
 use native_localized_11::control;
+
+#[path = "native_layout.rs"]
+mod layout;
+#[path = "native_refresh.rs"]
+mod refresh;

@@ -85,31 +85,6 @@ fn shared_host_refresh_routes_to_selected_feature_and_recovers_closed_session()
 }
 
 #[test]
-fn item_catalogue_loads_from_shared_host_with_pending_and_disconnect_gates()
--> Result<(), Box<dyn std::error::Error>> {
-    use crate::{combat_input::PlayCommand, play::play_channel};
-    let (link, mut receiver, _) = play_channel();
-    let mut mailbox = crate::play::mailbox::Mailbox::default();
-    mailbox.discovery.inspection.selected = true;
-    mailbox.discovery.inspection.catalogue_definition = "7".into();
-    super::actions::load_item_definition(&mut mailbox, &link.commands);
-    assert!(
-        matches!(receiver.try_recv()?, PlayCommand::ServerMechanic(command) if command.capability == 132)
-    );
-    super::actions::load_item_definition(&mut mailbox, &link.commands);
-    assert!(receiver.try_recv().is_err());
-    mailbox.discovery.inspection.pending = false;
-    drop(receiver);
-    super::actions::load_item_definition(&mut mailbox, &link.commands);
-    assert!(!mailbox.discovery.inspection.pending);
-    assert_eq!(
-        mailbox.discovery.inspection.feedback,
-        "The session has ended"
-    );
-    Ok(())
-}
-
-#[test]
 fn cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::{

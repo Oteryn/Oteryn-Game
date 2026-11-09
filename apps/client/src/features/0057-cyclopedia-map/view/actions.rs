@@ -39,7 +39,7 @@ pub(super) fn refresh_section(mailbox: &mut Mailbox, commands: &UnboundedSender<
             use oteryn_client_ui::inspection::{Request, request};
             let panel = &mut mailbox.discovery.inspection;
             let Some(previous @ Request::Catalogue(_)) = panel.last_request else {
-                panel.feedback = tr!("Inspect a catalogue definition to load it here").into();
+                browse_items(mailbox, commands, false);
                 return;
             };
             if let Some(command) = request(panel, previous)
@@ -91,4 +91,79 @@ pub(super) fn navigate_section(mailbox: &mut Mailbox, index: usize, values: &[St
         mailbox.discovery.inspection.category = values.get(2).cloned().unwrap_or_default();
     }
     true
+}
+
+pub(super) fn browse_items(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    next: bool,
+) {
+    let panel = &mut mailbox.discovery.inspection;
+    if let Some(command) = oteryn_client_ui::inspection::request_page(panel, next)
+        && commands.send(PlayCommand::ServerMechanic(command)).is_err()
+    {
+        panel.pending = false;
+        panel.feedback = "The session has ended".into();
+    }
+}
+
+pub(super) fn item_sources(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    next: bool,
+) {
+    let panel = &mut mailbox.discovery.inspection;
+    if let Some(command) = oteryn_client_ui::inspection::request_sources(panel, next)
+        && commands.send(PlayCommand::ServerMechanic(command)).is_err()
+    {
+        panel.pending = false;
+        panel.feedback = "The session has ended".into();
+    }
+}
+
+pub(super) fn item_market(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    next: bool,
+) {
+    use oteryn_client_ui::market::{Intent, MarketView};
+    let panel = &mut mailbox.discovery.inspection;
+    let Some(definition) = panel
+        .catalogue_definition
+        .parse::<u32>()
+        .ok()
+        .filter(|id| panel.catalogue.contains_key(id))
+    else {
+        panel.feedback = "Select a catalogue item".into();
+        return;
+    };
+    if mailbox.market.pending.is_some() {
+        panel.feedback = "Waiting for the market query".into();
+        return;
+    }
+    if next
+        && (mailbox.market.definition != definition || mailbox.market.view != MarketView::Browse)
+    {
+        panel.feedback = "Load market offers for this item first".into();
+        return;
+    }
+    mailbox.market.definition = definition;
+    crate::play::feature_0063_market::input::enqueue(
+        mailbox,
+        commands,
+        if next {
+            Intent::NextPage
+        } else {
+            Intent::Browse
+        },
+    );
+    if mailbox.market.pending.is_some() {
+        mailbox.discovery.inspection.catalogue_market_requested = Some(definition);
+    } else {
+        mailbox.discovery.inspection.feedback = mailbox
+            .market
+            .feedback
+            .unwrap_or("Market query unavailable")
+            .into();
+    }
 }

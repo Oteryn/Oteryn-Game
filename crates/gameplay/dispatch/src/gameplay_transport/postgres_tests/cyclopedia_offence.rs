@@ -256,7 +256,7 @@ fn scenario() -> TestResult {
         .map_err(debug)?;
         assert!(
             owner
-                .cyclopedia_character_wire(admitted, 1, tab, &foreign)
+                .cyclopedia_character_wire(admitted, 0, tab, &foreign)
                 .await
                 .is_err()
         );
@@ -264,7 +264,7 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) SELECT account_id,world_id,encode($2,'hex')::uuid,1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).bind(id(60).as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_vip_consents(account_id,world_id,inviter_character_id,character_id,consent,invite_expires_at) SELECT account_id,world_id,character_id,encode($2,'hex')::uuid,2,now()+interval '1 day' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).bind(id(60).as_slice()).execute(&h.pool).await?;
         let permitted = owner
-            .cyclopedia_character_wire(admitted, 1, tab, &foreign)
+            .cyclopedia_character_wire(admitted, 0, tab, &foreign)
             .await
             .map_err(|_| "foreign read")?;
         let permitted = Page::decode(&permitted).map_err(debug)?;
@@ -278,7 +278,7 @@ fn scenario() -> TestResult {
         .await?;
         assert!(
             owner
-                .cyclopedia_character_wire(admitted, 1, tab, &foreign)
+                .cyclopedia_character_wire(admitted, 0, tab, &foreign)
                 .await
                 .is_err()
         );

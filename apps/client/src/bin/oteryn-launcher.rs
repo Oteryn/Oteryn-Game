@@ -102,10 +102,18 @@ fn active_client(install_dir: &Path) -> Result<PathBuf, LaunchError> {
     }
 }
 
+#[path = "../launcher/package_status.rs"]
+mod package_checks;
+
 /// Local diagnosis never downloads or replaces a release behind the installer.
 fn installation_report(install_dir: &Path) -> String {
     let status = match active_client(install_dir) {
-        Ok(client) => lfmt!("Ready to launch: {}", client.display()),
+        Ok(client) => format!(
+            "{}\r\n{}: {}",
+            lfmt!("Ready to launch: {}", client.display()),
+            tr!("Active client"),
+            package_checks::status(&client)
+        ),
         Err(error) => lfmt!("Installation check failed: {error}", error = error),
     };
     lfmt!(
@@ -226,7 +234,7 @@ mod tests {
         assert!(std::fs::write(directory.join("current.txt"), RELEASE).is_ok());
         let report = installation_report(&directory);
         assert!(report.contains(RELEASE));
-        assert!(report.contains("Ready to launch"));
+        assert!(report.contains("Active client"));
     }
 
     #[test]

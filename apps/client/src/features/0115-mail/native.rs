@@ -185,6 +185,8 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 }
                 y += height + 8;
             }
+            let columns = if form.title == "Cyclopedia" { 5 } else { 4 };
+            let button_width = if columns == 5 { 128 } else { 160 };
             let mut buttons = editor_buttons;
             for (index, label) in form.buttons.iter().enumerate() {
                 let label = oteryn_client_ui::localization::tr(label);
@@ -194,15 +196,15 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                     label,
                     index + 100,
                     [
-                        12 + (index % 4) as i32 * 160,
-                        y + (index / 4) as i32 * 34,
-                        150,
+                        12 + (index % columns) as i32 * button_width,
+                        y + (index / columns) as i32 * 34,
+                        button_width - 10,
                         28,
                     ],
                     WS_TABSTOP,
                 ));
             }
-            y += form.buttons.len().div_ceil(4) as i32 * 34 + 8;
+            y += form.buttons.len().div_ceil(columns) as i32 * 34 + 8;
             let summary = control(
                 hwnd,
                 "EDIT",

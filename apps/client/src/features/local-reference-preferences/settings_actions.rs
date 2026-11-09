@@ -1,5 +1,24 @@
 use super::*;
 impl SettingsState {
+    pub fn request_hud_toggle(&mut self, panel: crate::play::HudPanel) {
+        self.hud_toggle = Some(panel);
+    }
+    pub fn take_hud_toggle(&mut self) -> Option<crate::play::HudPanel> {
+        self.hud_toggle.take()
+    }
+    pub fn take_window_selection(&mut self) -> Option<(&'static str, Vec<NormalizedInputEvent>)> {
+        let id = self.window_actions.pop_front()?;
+        let raw = super::super::bindings::window_events(&self.preferences, id);
+        let (events, _) = self.input(&raw);
+        Some((id, events))
+    }
+    pub fn request_magical_archive(&mut self) {
+        self.magical_archive_requested = true;
+    }
+    pub fn take_magical_archive_request(&mut self) -> bool {
+        std::mem::take(&mut self.magical_archive_requested)
+    }
+
     pub fn select_page(&mut self, index: usize) -> bool {
         let Some(page) = SettingsPage::ALL.get(index) else {
             return false;
@@ -29,6 +48,9 @@ impl SettingsState {
             .condition_status
             .order
             .clone_from(&self.preferences.condition_order);
+        if mailbox.local_preferences.console_font_px != self.preferences.console_font_px {
+            mailbox.chat.console.display.font_px = self.preferences.console_font_px;
+        }
         if mailbox.local_preferences != self.preferences {
             mailbox.local_preferences.clone_from(&self.preferences);
         }
@@ -101,6 +123,7 @@ impl SettingsState {
         self.item_hotkeys_edit = self.battle_edit;
         self.bar_actions_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
+        self.hud_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
         Ok(())
@@ -143,6 +166,7 @@ impl SettingsState {
             item_hotkeys_edit: 0,
             bar_actions_edit: 0,
             minimap_edit: 0,
+            hud_edit: 0,
             spellbook_edit: 0,
             archive_edit: 0,
             battle_edit: 0,
@@ -153,6 +177,8 @@ impl SettingsState {
             shutdown: false,
             input: PreferenceInput::default(),
             page: SettingsPage::default(),
+            hud_toggle: None,
+            magical_archive_requested: false,
             last_key: Default::default(),
         }
     }
@@ -276,6 +302,9 @@ impl SettingsState {
         if self.preferences.minimap != preferences.minimap {
             self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if self.preferences.hud_layout != preferences.hud_layout || self.preferences.hud_bounds != preferences.hud_bounds {
+            self.hud_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.skills_layout != preferences.skills_layout {
             self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
         }
@@ -298,11 +327,24 @@ impl SettingsState {
         };
     }
 
+    fn capture_hud_layout(&mut self, view: &PlayView) {
+        if view.local.hud_edit > self.hud_edit {
+            let edit = view.local.hud_edit;
+            let mut preferences = self.preferences.clone();
+            preferences.hud_layout = view.preferences().hud_layout.clone();
+            preferences.hud_bounds = view.preferences().hud_bounds;
+            self.apply(preferences);
+            self.hud_edit = edit;
+        }
+    }
+
     pub fn restore(
         &mut self,
         view: &mut PlayView,
         viewport: [u32; 2],
     ) -> Result<(), PreferenceError> {
+        self.capture_hud_layout(view);
+        view.local.hud_edit = self.hud_edit;
         if view.local.minimap_edit > self.minimap_edit {
             let edit = view.local.minimap_edit;
             let mut preferences = self.preferences.clone();
@@ -319,6 +361,8 @@ impl SettingsState {
     }
 
     pub fn capture(&mut self, view: &mut PlayView) -> Result<(), PreferenceError> {
+        self.capture_hud_layout(view);
+        view.local.hud_edit = self.hud_edit;
         if view.preferences().audio != self.preferences.audio {
             let mut preferences = self.preferences.clone();
             preferences.audio = view.preferences().audio;

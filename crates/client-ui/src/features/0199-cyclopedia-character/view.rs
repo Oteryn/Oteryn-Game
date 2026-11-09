@@ -293,23 +293,38 @@ pub fn badge_rows(p: &CyclopediaCharacterPanel) -> Vec<super::BadgeRow> {
             BadgeFilter::Earned => row.earned,
             BadgeFilter::Locked => !row.earned,
             BadgeFilter::Hidden => row.hidden,
-            BadgeFilter::Public => p.badge_visibility_known && row.earned && !row.hidden,
+            BadgeFilter::Public => {
+                p.badge_visibility_known && row.earned && !p.server_hidden_badges.contains(&row.id)
+            }
+            BadgeFilter::HiddenPublic => {
+                p.badge_visibility_known && p.server_hidden_badges.contains(&row.id)
+            }
         })
         .collect()
 }
 pub fn badge_text(p: &CyclopediaCharacterPanel) -> String {
-    let mut text = String::from(if p.badge_visibility_known {
-        "Badges — server-confirmed visibility\r\n"
+    let mut text = String::from(tr!("Badges — local display preferences\r\n"));
+    if p.badge_visibility_known {
+        text.push_str("Server-confirmed public visibility\r\n");
     } else {
-        "Badges — public visibility unavailable\r\n"
-    });
+        text.push_str("Public visibility unavailable\r\n");
+    }
     for row in badge_rows(p) {
         text.push_str(&format!(
-            "#{} {} — {}{}\r\n",
+            "#{} {} — {}{}{}\r\n",
             row.id,
             row.name,
             if row.earned { "earned" } else { "locked" },
-            if row.hidden { "; hidden publicly" } else { "" }
+            if row.hidden {
+                tr!("; hidden locally")
+            } else {
+                ""
+            },
+            if p.badge_visibility_known && p.server_hidden_badges.contains(&row.id) {
+                "; hidden publicly"
+            } else {
+                ""
+            }
         ));
     }
     text

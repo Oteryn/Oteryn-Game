@@ -145,13 +145,30 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, error);
             return;
         }
-        let menu_events = self.settings.take_window_events(self.play.is_some());
-        if !menu_events.is_empty() && self.play.is_some() {
-            self.handle_input(event_loop, &menu_events);
+        if self.settings.take_magical_archive_request()
+            && let Some(play) = &self.play
+        {
+            play.link.magical_archive_open();
+        }
+        let open_states: Vec<_> = oteryn_client::play::WINDOW_ACTIONS
+            .iter()
+            .map(|(id, _)| {
+                self.play
+                    .as_ref()
+                    .is_some_and(|play| play.link.window_open(id))
+            })
+            .collect();
+        if let Some((id, events)) = self
+            .settings
+            .take_window_events(self.play.is_some(), &open_states)
+            && let Some(play) = &self.play
+        {
+            play.link.window_toggle(id, &events);
         }
         self.poll_entry();
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
+            play.view.enable_resource_hud(true);
         }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)
@@ -163,6 +180,11 @@ impl ApplicationHandler for Application {
         }
         if let (Some(play), Some(window)) = (&self.play, &self.window) {
             play.link.item_drag_tick(&play.view, window);
+        }
+        if self.play.is_some()
+            && let Some(window) = &self.window
+        {
+            oteryn_client::miniwindow::native::update(window);
         }
         self.update_hud();
         self.schedule_frames(event_loop);

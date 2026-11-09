@@ -59,6 +59,7 @@ fn item_catalogue_search_drops_and_market_use_production_queues()
             server_sequence: 1,
             status: CommandStatus::Accepted,
             payload: wire::encode_reply(&Reply {
+                catalogue: None,
                 status: 1,
                 items: vec![item.clone()],
                 requests: vec![],
@@ -87,6 +88,7 @@ fn item_catalogue_search_drops_and_market_use_production_queues()
             server_sequence: 2,
             status: CommandStatus::Accepted,
             payload: wire::encode_reply(&Reply {
+                catalogue: None,
                 status: 1,
                 items: vec![detailed],
                 requests: vec![],
@@ -124,6 +126,7 @@ fn item_catalogue_search_drops_and_market_use_production_queues()
             server_sequence: 2,
             status: CommandStatus::Accepted,
             payload: wire::encode_reply(&Reply {
+                catalogue: None,
                 status: 1,
                 items: vec![dropped],
                 requests: vec![],

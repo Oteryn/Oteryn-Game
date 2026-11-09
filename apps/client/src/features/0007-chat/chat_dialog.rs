@@ -149,6 +149,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         let mut private = PrivateControls::new(hwnd);
         let mut font = console_font::ConsoleFont::default();
+        let mut console = console_controls::Controls::new(hwnd);
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
@@ -185,6 +186,9 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.0) {
+                if console.action(action, &mut mailbox, &commands, transcript) {
+                    continue;
+                }
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
                 }
@@ -264,7 +268,8 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
-            font.update(transcript, mailbox.local_preferences.console_font_px);
+            console.tick(&mut mailbox, &commands, transcript);
+            font.update(transcript, mailbox.chat.console.display.font_px);
             private.render(&mailbox.chat_private);
             let text = format!(
                 "{}\n{}",

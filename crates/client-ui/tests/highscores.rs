@@ -46,6 +46,8 @@ fn tibiadrome_highscore_filters_decode_and_render_native_rankings()
             value: 145,
         };
         let result = HighscoresResult {
+            world: None,
+            own_page: None,
             category,
             snapshot_id: 73,
             computed_at: 9000,
@@ -99,6 +101,8 @@ fn live_page_projection_and_snapshot_navigation() -> Result<(), Box<dyn std::err
         value: 123456,
     };
     let result = HighscoresResult {
+        world: None,
+        own_page: None,
         category: 1,
         snapshot_id: 73,
         computed_at: 9000,
@@ -268,6 +272,8 @@ fn show_me_uses_the_confirmed_rank_and_snapshot_page() -> Result<(), Box<dyn std
     p.selected = true;
     assert!(highscores::request(&mut p, Action::Refresh).is_some());
     let result = HighscoresResult {
+        world: None,
+        own_page: Some(2),
         category: 1,
         snapshot_id: 9,
         computed_at: 100,

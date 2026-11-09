@@ -101,6 +101,7 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
             slots.ready_at_ms
         );
     }
+    text.push_str(&super::slot_text(panel));
     let _ = writeln!(text, "{}", panel.summary);
     if panel.pending {
         text.push_str(tr!("Waiting for the server\n"));

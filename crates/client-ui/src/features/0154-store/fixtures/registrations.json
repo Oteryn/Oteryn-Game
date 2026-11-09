@@ -2,6 +2,22 @@
   {
     "mechanic": "0154-store",
     "kind": "handlers",
+    "id": "0154-store-browse",
+    "status": "supported",
+    "commands": [
+      6118
+    ],
+    "direction": "client_to_server",
+    "capability": 154,
+    "entry": "protocol.rs::browse_request",
+    "not_applicable": {
+      "settings": "The catalogue, ranking and artwork are server-owned.",
+      "input": "Native Store category/search/sort controls request bounded server pages."
+    }
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "handlers",
     "id": "0154-store-catalogue",
     "status": "supported",
     "commands": [

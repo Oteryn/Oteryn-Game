@@ -4,6 +4,7 @@ use crate::play::ReferencePreferences;
 use oteryn_client_runtime::spell::ActorVitals;
 
 pub(super) struct Options {
+    combo: bool,
     bars: bool,
     health: bool,
     mana: bool,
@@ -18,6 +19,7 @@ pub(super) struct Options {
 impl From<&ReferencePreferences> for Options {
     fn from(preferences: &ReferencePreferences) -> Self {
         Self {
+            combo: preferences.resource_hud.combo,
             bars: preferences.hud_bars,
             health: preferences.hud_health,
             mana: preferences.hud_mana,
@@ -40,6 +42,7 @@ pub(super) fn draw(
     options: Options,
 ) -> Result<(), BatchError> {
     let Options {
+        combo,
         bars,
         health,
         mana,
@@ -161,6 +164,28 @@ pub(super) fn draw(
         }
         let end = batch.len();
         batch.lighting.set_opacity(start..end, opacity)?;
+    }
+    // The small combo gauge repeats confirmed Harmony charges beside the actor.
+    if combo && let Some(vitals) = vitals {
+        let [x, y] = view.tile_to_screen(own);
+        let segment = (view.tile_px() as f32 - 4.0) / 5.0;
+        for charge in 0..5_u32 {
+            pixel(
+                batch,
+                view,
+                atlas,
+                [
+                    x + 2.0 + charge as f32 * segment,
+                    y + view.tile_px() as f32 + 2.0,
+                ],
+                [(segment - 1.0).max(1.0), 4.0],
+                if charge < vitals.harmony.min(5) {
+                    PresentationColor::Purple
+                } else {
+                    PresentationColor::LightGrey
+                },
+            )?;
+        }
     }
     Ok(())
 }

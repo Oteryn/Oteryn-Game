@@ -48,7 +48,7 @@ impl ItemForgePanel {
         })
     }
     pub fn editing(&self) -> bool {
-        self.selected && !self.pending && self.retry.is_none()
+        self.selected && !self.pending && self.retry.is_none() && !self.resource_dialog.confirming()
     }
     pub fn choose_operation(&mut self, operation: Operation) -> bool {
         if !self.editing() || !operation.requires_pair() {
@@ -117,6 +117,8 @@ impl ItemForgePanel {
         self.selection()?.canonical(occurrence)
     }
     pub fn scope_changed(&mut self) {
+        self.tier_effects.clear();
+        self.resource_dialog.reset();
         self.pending = false;
         self.submitted = None;
         self.preview.invalidate();
@@ -151,6 +153,10 @@ impl ItemForgePanel {
         {
             self.second_item = 0;
         }
+        if self.resource_dialog.confirming() {
+            self.resource_dialog.reset();
+        }
+        self.tier_effects.clear();
         self.preview.live = live;
         self.preview.invalidate();
         self.preview.page = None;

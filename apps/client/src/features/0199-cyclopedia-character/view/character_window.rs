@@ -15,7 +15,48 @@ use windows_sys::Win32::UI::{
     WindowsAndMessaging::*,
 };
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
-
+#[derive(Default)]
+struct Actions(Vec<usize>);
+unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+    unsafe {
+        if msg == WM_COMMAND {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            let id = w & 0xffff;
+            let note = (w >> 16) & 0xffff;
+            if !actions.is_null()
+                && (*actions).0.len() < 32
+                && matches!(id, 101..=119 | 140 | 145..=150 | 152..=155 | 180..=185)
+                && note == BN_CLICKED as usize
+            {
+                (*actions).0.push(id);
+            }
+            return 0;
+        }
+        DefWindowProcW(hwnd, msg, w, l)
+    }
+}
+pub(in crate::play) fn open_window(link: &PlayLink) {
+    {
+        let mut m = lock(&link.mailbox);
+        if m.cyclopedia_character.open {
+            return;
+        }
+        m.cyclopedia_character.open = true;
+    }
+    link.cyclopedia_character_request(super::target::refresh_intent(
+        &link.cyclopedia_character_panel(),
+    ));
+    let weak = Arc::downgrade(&link.mailbox);
+    let rollback = weak.clone();
+    let commands = link.commands.clone();
+    if std::thread::Builder::new()
+        .name("0199-cyclopedia-character-panel".into())
+        .spawn(move || run(weak, commands))
+        .is_err()
+    {
+        close(&rollback);
+    }
+}
 fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -26,7 +67,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             740,
-            740,
+            780,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -74,15 +115,17 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let mut analytics = false;
             let mut browser = None;
             for action in std::mem::take(&mut actions.0) {
-                if action == 150 {
+                if action == 153 {
                     let badge = read_text(badge_id);
-                    if let Some(command) =
-                        submit(&mut mailbox.cyclopedia_character, 150, [&badge, "", ""])
-                        && commands.send(PlayCommand::Feature(command)).is_err()
-                    {
+                    if let Some(command) = submit(&mut mailbox.cyclopedia_character, 153, [&badge, "", ""])
+                        && commands.send(PlayCommand::Feature(command)).is_err() {
                         mailbox.cyclopedia_character.pending = false;
                         mailbox.cyclopedia_character.feedback = Some("The session has ended");
                     }
+                    continue;
+                }
+                if action == 150 {
+                    super::profile_table::toggle_badge(&mut mailbox.cyclopedia_character, badge_id);
                     continue;
                 }
                 if let Some(selected) =
@@ -144,7 +187,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 panel.feedback.unwrap_or("")
             };
             SetWindowTextW(status_label, wide(status).as_ptr());
-            super::character_paint::paint(panel,hwnd,[output,stamina_bar,training_bar,heading,detail,history],&cards,&mut tables);
+            super::character_paint::paint(
+                panel,
+                hwnd,
+                [output, stamina_bar, training_bar, heading, detail, history],
+                &cards,
+                &mut tables,
+            );
             drop(mailbox);
             if let Some(browser) = browser {
                 browser.open(weak.clone(), commands.clone());
@@ -163,8 +212,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
 #[path = "character_widgets.rs"]
 mod character_widgets;
 
-#[path = "character_events.rs"]
-mod character_events;
-use character_events::{Actions, close, proc};
 
-pub(in crate::play) use character_events::open_window;
+fn close(weak: &WeakMailbox) {
+    if let Some(shared) = weak.upgrade() { lock(&shared).cyclopedia_character.open = false; }
+}

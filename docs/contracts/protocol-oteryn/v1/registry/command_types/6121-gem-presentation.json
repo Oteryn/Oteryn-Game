@@ -1,0 +1,10 @@
+{
+  "id": 6121,
+  "name": "GEM_PRESENTATION",
+  "owner_decision": "CLIENTGAP-SYSTEMS T121 owner authorization 2026-11-08",
+  "capability": 148,
+  "payload_schema": "gem-presentation-v1.md",
+  "result_schema": "gem-presentation-v1.md",
+  "max_payload_bytes": 16,
+  "max_result_payload_bytes": 65536
+}

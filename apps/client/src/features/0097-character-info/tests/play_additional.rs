@@ -202,6 +202,7 @@ fn pc03_character_info_scenario() -> Result<(), Error> {
                     assert!(!link.character_info_panel().pending);
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };

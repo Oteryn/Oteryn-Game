@@ -16,8 +16,10 @@ pub mod crash_report;
 pub mod cyclopedia;
 pub mod input;
 pub mod map;
+pub mod miniwindow;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
+pub mod package_integrity;
 pub mod play;
 #[path = "features/local-premium/mod.rs"]
 pub mod premium;

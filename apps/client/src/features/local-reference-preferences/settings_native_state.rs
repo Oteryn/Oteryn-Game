@@ -49,6 +49,20 @@ impl Settings {
                 }
                 DrawMenuBar(self.parent);
             }
+            let hud_menu = CreatePopupMenu();
+            let menu = GetMenu(self.parent);
+            if !hud_menu.is_null() && !menu.is_null() {
+                for (index, panel) in oteryn_client::play::HudPanel::ALL.into_iter().enumerate() {
+                    AppendMenuW(
+                        hud_menu,
+                        MF_STRING,
+                        25440 + index,
+                        wide(panel.title()).as_ptr(),
+                    );
+                }
+                AppendMenuW(menu, MF_POPUP, hud_menu as usize, wide("HUD").as_ptr());
+                DrawMenuBar(self.parent);
+            }
             self.collapse = control(
                 self.parent,
                 "BUTTON",
@@ -81,10 +95,39 @@ impl Settings {
             );
         }
     }
+    pub(in super::super) fn take_hud_toggle(&self) -> Option<oteryn_client::play::HudPanel> {
+        lock(&self.shared).take_hud_toggle()
+    }
+    pub(in super::super) fn sync_hud_menu(&self, layout: &oteryn_client::play::HudLayout) {
+        unsafe {
+            let menu = GetSubMenu(GetMenu(self.parent), 2);
+            if !menu.is_null() {
+                for (index, panel) in oteryn_client::play::HudPanel::ALL.into_iter().enumerate() {
+                    CheckMenuItem(
+                        menu,
+                        (25440 + index) as u32,
+                        MF_BYCOMMAND
+                            | if layout.pane(panel).visible {
+                                MF_CHECKED
+                            } else {
+                                MF_UNCHECKED
+                            },
+                    );
+                }
+            }
+        }
+    }
+    pub(in super::super) fn take_magical_archive_request(&self) -> bool {
+        lock(&self.shared).take_magical_archive_request()
+    }
     pub(in super::super) fn take_window_events(
         &self,
         playing: bool,
-    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        open_states: &[bool],
+    ) -> Option<(
+        &'static str,
+        Vec<oteryn_input_actions::NormalizedInputEvent>,
+    )> {
         let mut state = lock(&self.shared);
         unsafe {
             let mut rect: RECT = std::mem::zeroed();
@@ -112,6 +155,16 @@ impl Settings {
             );
             for (index, handle) in self.shortcuts.iter().enumerate() {
                 let id = oteryn_client::play::WINDOW_ACTIONS[index].0;
+                let open = open_states.get(index).copied().unwrap_or(false);
+                SendMessageW(*handle, BM_SETSTATE, usize::from(open), 0);
+                let windows = GetSubMenu(GetMenu(self.parent), 1);
+                if !windows.is_null() {
+                    CheckMenuItem(
+                        windows,
+                        (25100 + index) as u32,
+                        MF_BYCOMMAND | if open { MF_CHECKED } else { MF_UNCHECKED },
+                    );
+                }
                 let position = state
                     .preferences
                     .shortcut_order
@@ -135,7 +188,7 @@ impl Settings {
             }
         }
         let percentage = state.preferences.interface_scale;
-        let events = state.take_window_events();
+        let events = state.take_window_selection();
         drop(state);
         self.ui_scaler.borrow_mut().refresh(self.parent, percentage);
         events

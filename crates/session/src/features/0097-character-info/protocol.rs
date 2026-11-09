@@ -5,6 +5,10 @@ pub use oteryn_protocol_oteryn::character_info::*;
 pub fn encode_operation(operation: CharacterInfoOperation) -> Vec<u8> {
     let mut bytes = Vec::new();
     let page = match operation {
+        CharacterInfoOperation::QueryPremium => {
+            bytes.push(5);
+            None
+        }
         CharacterInfoOperation::QuerySelf(page) => {
             bytes.push(0);
             Some(page)

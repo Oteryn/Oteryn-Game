@@ -105,8 +105,12 @@ remaining Platform work, see [the challenge contract](../contracts/OTERYN_NATIVE
 
 ## Native Premium overview (T165)
 
-The [Premium panel v1 projection](../contracts/OTERYN_PREMIUM_PANEL_V1.md)
-defines the read-only native status, expiry and feature list. Platform must expose
-that authenticated projection over its existing entitlement read model before
-live use. Game's existing mutual-TLS snapshot and durable Premium fence remain
-unchanged; the panel grants no eligibility and includes no payment control.
+The [Premium overview v1](../contracts/OTERYN_PREMIUM_PANEL_V1.md) uses the existing
+Game character-information command (113, capability97), operation5, to observe
+the current session's account through its existing Premium fence/coordinator.
+The native in-game panel requires no additional Platform customer endpoint.
+Actual subscription end remains separate from the shorter authority lease;
+current indicators fail closed and all gameplay decisions remain unchanged.
+The optional pre-login Platform projection remains unqualified and has no default
+native entry; it is not required by the supported in-game flow. No payment or
+Premium-grant control is added.

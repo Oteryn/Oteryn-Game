@@ -1,7 +1,7 @@
 //! Coin market intents. Account and World identity always come from the session.
 use crate::world_interaction::WorldInteractionWireError as Error;
 pub const CAPABILITY: u32 = 63;
-pub const COMMAND: u32 = 6117;
+pub const COMMAND: u32 = 6126;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
     pub action: u8,

@@ -259,6 +259,9 @@ fn blessings_shortcut_opens_dedicated_state_and_rejects_repeat()
     assert!(!link.blessings_panel().pending);
     Ok(())
 }
+
+#[path = "visibility.rs"]
+mod visibility;
 #[path = "profile.rs"]
 mod profile;
 
@@ -269,6 +272,3 @@ mod history;
 mod augments;
 #[path = "offence.rs"]
 mod offence;
-
-#[path = "visibility.rs"]
-mod visibility;

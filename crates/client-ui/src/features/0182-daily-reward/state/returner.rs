@@ -9,12 +9,13 @@ pub struct ReturnerOffer {
 pub struct ReturnerRewardPanel {
     pub offer: Option<ReturnerOffer>,
     pub pending: bool,
+    pub feedback: Option<&'static str>,
     pending_offer: Option<[u8; 16]>,
     claimed_offer: Option<[u8; 16]>,
 }
 impl ReturnerRewardPanel {
     pub fn notification(&self) -> String {
-        self.offer.as_ref().map_or_else(
+        let mut text = self.offer.as_ref().map_or_else(
             || tr!("No returner reward announced").into(),
             |offer| {
                 lfmt!(
@@ -29,7 +30,29 @@ impl ReturnerRewardPanel {
                     }
                 )
             },
-        )
+        );
+        if let Some(feedback) = self.feedback {
+            text.push('\n');
+            text.push_str(feedback);
+        }
+        text
+    }
+    pub fn install(&mut self, id: Option<[u8; 16]>, claimed: bool) {
+        let claimed = claimed || (id.is_some() && self.claimed_offer == id);
+        self.offer = id.map(|id| ReturnerOffer {
+            id,
+            expires_epoch: u64::MAX,
+            description: tr!("Claim one health potion for your Inbox.").into(),
+        });
+        self.pending = false;
+        self.pending_offer = None;
+        self.claimed_offer = if claimed { id } else { None };
+        self.feedback = None;
+    }
+    pub fn is_claimed(&self) -> bool {
+        self.offer
+            .as_ref()
+            .is_some_and(|o| self.claimed_offer == Some(o.id))
     }
     /// Returns an entitlement identity for a server claim, never a local grant.
     pub fn claim(&mut self, now_epoch: u64) -> Option<[u8; 16]> {

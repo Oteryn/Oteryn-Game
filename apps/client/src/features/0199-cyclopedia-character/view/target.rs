@@ -49,12 +49,12 @@ pub(super) fn refresh_intent(
 ) -> oteryn_client_ui::cyclopedia_character::Intent {
     use oteryn_client_runtime::cyclopedia_character::CharacterTab;
     use oteryn_client_ui::cyclopedia_character::Intent;
+    if p.command_kind == 387 { return Intent::Badges; }
     if p.augments.open && p.tab == CharacterTab::Offence {
         return Intent::SpellAugments(
             oteryn_client_ui::cyclopedia_character::AugmentIntent::Refresh,
         );
     }
-    if p.command_kind==387 {return Intent::Badges;}
     if p.tab == CharacterTab::Inspection {
         if p.badges_open {
             Intent::ProfileBadges
@@ -77,6 +77,7 @@ pub(super) fn badge_filter(
         147 => BadgeFilter::Locked,
         148 => BadgeFilter::Hidden,
         152 => BadgeFilter::Public,
+        155 => BadgeFilter::HiddenPublic,
         _ => return false,
     };
     true

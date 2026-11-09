@@ -23,10 +23,10 @@ pub enum Intent {
     GalleryPrevious,
     Achievements,
     Badges,
+    SetBadgeVisibility { badge: u8, public: bool },
     ProfileBadges,
     ProfileInspection,
     SpellAugments(super::AugmentIntent),
-    SetBadgeVisibility { badge: u8, public: bool },
     MiscResources,
     Tab,
     SelectTab(cyclopedia_character::CharacterTab),
@@ -257,7 +257,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             match cyclopedia_character::badge_visibility::Reply::decode(&r.payload) {
                 Ok(reply) => {
                     p.badges = Some(reply.earned.iter().map(|badge| badge.id()).collect());
-                    p.hidden_badges = reply.hidden.iter().map(|badge| badge.id()).collect();
+                    p.server_hidden_badges = reply.hidden.iter().map(|badge| badge.id()).collect();
                     p.badge_visibility_known = true;
                     Some("Server-confirmed badge visibility".into())
                 }
@@ -267,7 +267,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             let decoded = decode_badges(&r.payload);
             if decoded.is_some() {
                 p.badges = Some(r.payload[1..].to_vec());
-                p.hidden_badges.clear();
+                p.server_hidden_badges.clear();
                 p.badge_visibility_known = false;
             }
             decoded

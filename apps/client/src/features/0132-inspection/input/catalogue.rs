@@ -124,7 +124,7 @@ pub(in crate::play) fn submit(
                 0
             } else {
                 let Some(index) = panel
-                    .categories()
+                    .catalogue_query_categories
                     .iter()
                     .position(|name| name.eq_ignore_ascii_case(panel.category.trim()))
                 else {

@@ -26,30 +26,38 @@ pub enum ComposerMode {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Console {
+    pub display: super::ConsoleDisplay,
+    pub metadata: super::Metadata,
     pub presentation: super::Presentation,
     pub communication: CommunicationLists,
     pub tab: ConsoleTab,
     pub mode: ComposerMode,
     pub show_messages: bool,
-    filters: [bool; 4],
+    pub filters: super::ConsoleFilters,
+    pub notices: super::ConsoleNotices,
+    tab_filters: [bool; 4],
 }
 impl Default for Console {
     fn default() -> Self {
         Self {
+            display: Default::default(),
+            metadata: Default::default(),
             presentation: Default::default(),
             communication: Default::default(),
             tab: ConsoleTab::All,
             mode: ComposerMode::On,
             show_messages: true,
-            filters: [true; 4],
+            filters: Default::default(),
+            notices: Default::default(),
+            tab_filters: [true; 4],
         }
     }
 }
 impl Console {
     pub fn select(&mut self, tab: ConsoleTab) {
-        self.filters[self.tab as usize] = self.show_messages;
+        self.tab_filters[self.tab as usize] = self.show_messages;
         self.tab = tab;
-        self.show_messages = self.filters[tab as usize];
+        self.show_messages = self.tab_filters[tab as usize];
     }
     pub fn temporary_on(&mut self) {
         self.mode = ComposerMode::Temporary;

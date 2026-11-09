@@ -49,6 +49,38 @@
   {
     "mechanic": "0182-daily-reward",
     "kind": "handlers",
+    "id": "0182-daily-reward-picker-claim",
+    "status": "supported",
+    "commands": [
+      6123
+    ],
+    "direction": "client_to_server",
+    "capability": 182,
+    "entry": "protocol.rs::request_picker",
+    "not_applicable": {
+      "settings": "Selection catalogue and allowance are server-owned.",
+      "input": "The native reward picker exposes catalogue and claim controls."
+    }
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "handlers",
+    "id": "0182-daily-reward-picker-query",
+    "status": "supported",
+    "commands": [
+      6122
+    ],
+    "direction": "client_to_server",
+    "capability": 182,
+    "entry": "protocol.rs::request_picker",
+    "not_applicable": {
+      "settings": "Selection catalogue and allowance are server-owned.",
+      "input": "The native reward picker exposes catalogue and claim controls."
+    }
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "handlers",
     "id": "0182-daily-reward-query",
     "status": "supported",
     "commands": [
@@ -59,6 +91,38 @@
     "entry": "protocol.rs::request",
     "not_applicable": {
       "settings": "Daily reward state is server-owned."
+    }
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "handlers",
+    "id": "0182-daily-reward-returner-claim",
+    "status": "supported",
+    "commands": [
+      6125
+    ],
+    "direction": "client_to_server",
+    "capability": 182,
+    "entry": "protocol.rs::request_returner",
+    "not_applicable": {
+      "settings": "Returner eligibility and gift are server-owned.",
+      "input": "Queried at play entry; native notification and claim form."
+    }
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "kind": "handlers",
+    "id": "0182-daily-reward-returner-query",
+    "status": "supported",
+    "commands": [
+      6124
+    ],
+    "direction": "client_to_server",
+    "capability": 182,
+    "entry": "protocol.rs::request_returner",
+    "not_applicable": {
+      "settings": "Returner eligibility and gift are server-owned.",
+      "input": "Queried at play entry; native notification and claim form."
     }
   }
 ]

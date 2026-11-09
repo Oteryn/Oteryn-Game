@@ -111,6 +111,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) hud_resource: super::resource_hud::MailboxState,
     pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) ui_sounds: Vec<super::UiSound>,
     pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,
@@ -174,6 +175,7 @@ pub(super) struct Mailbox {
     pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
+    pub(super) premium_game: crate::premium::game::Panel,
     pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,

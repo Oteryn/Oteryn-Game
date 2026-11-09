@@ -13,7 +13,7 @@ pub(super) unsafe fn paint(
     held: &mut Vec<ProfileRow>,
 ) {
     use oteryn_client_runtime::cyclopedia_character::CharacterTab;
-    if p.tab != CharacterTab::Inspection {
+    if p.tab != CharacterTab::Inspection || p.command_kind == 387 {
         held.clear();
         return;
     }
@@ -60,7 +60,7 @@ pub(super) fn badge_controls(hwnd: HWND) -> HWND {
         (145, "All badges", 10),
         (146, "Earned badges", 185),
         (147, "Locked badges", 360),
-        (148, "Hidden publicly", 535),
+        (148, "Hidden locally", 535),
     ] {
         control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
     }
@@ -76,13 +76,24 @@ pub(super) fn badge_controls(hwnd: HWND) -> HWND {
     control(
         hwnd,
         "BUTTON",
-        "Hide / show publicly",
+        "Hide / show locally",
         150,
         [210, 655, 200, 25],
         WS_TABSTOP,
     );
 
-    control(hwnd,"BUTTON","Public badges",152,[430,655,165,25],WS_TABSTOP);
-    control(hwnd,"BUTTON","Visibility",153,[610,655,90,25],WS_TABSTOP);
+    for (id, label, x, y) in [
+        (152, "Public badges", 10, 690), (155, "Hidden publicly", 185, 690),
+        (154, "Public visibility", 360, 690), (153, "Hide / show publicly", 430, 655),
+    ] { control(hwnd, "BUTTON", label, id, [x, y, 165, 25], WS_TABSTOP); }
     badge_id
+}
+pub(super) fn toggle_badge(p: &mut CyclopediaCharacterPanel, edit: HWND) {
+    use super::controls::read_text;
+    if let Ok(id) = read_text(edit).parse::<u8>()
+        && p.badges.as_ref().is_some_and(|ids| ids.contains(&id))
+        && !p.hidden_badges.remove(&id)
+    {
+        p.hidden_badges.insert(id);
+    }
 }

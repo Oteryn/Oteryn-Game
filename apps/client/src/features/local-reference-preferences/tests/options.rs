@@ -76,6 +76,18 @@ fn console_font_preference_reaches_the_live_panel_mailbox() -> Result<(), Box<dy
             .console_font_px,
         20
     );
+    assert_eq!(link.chat_panel().console.display.font_px, 20);
+    link.console_display(oteryn_client_ui::chat::ConsoleDisplay {
+        font_px: 24,
+        ..Default::default()
+    })?;
+    settings.sync_local_preferences(&link);
+    assert_eq!(link.chat_panel().console.display.font_px, 24);
+    let mut updated = settings.preferences.clone();
+    updated.console_font_px = 32;
+    settings.apply(updated);
+    settings.sync_local_preferences(&link);
+    assert_eq!(link.chat_panel().console.display.font_px, 32);
     let mut invalid = settings.preferences.clone();
     invalid.console_font_px = 33;
     assert!(view()?.set_preferences(invalid).is_err());

@@ -7,6 +7,7 @@ pub struct CyclopediaCharacterPanel {
     pub badges: Option<Vec<u8>>,
     pub badge_filter: BadgeFilter,
     pub badge_visibility_known: bool,
+    pub server_hidden_badges: std::collections::BTreeSet<u8>,
     pub hidden_badges: std::collections::BTreeSet<u8>,
     pub augments: super::AugmentPanel,
     pub selected: bool,
@@ -47,8 +48,9 @@ impl Default for CyclopediaCharacterPanel {
             badges: None,
             badge_filter: Default::default(),
             hidden_badges: Default::default(),
-            augments: Default::default(),
+            server_hidden_badges: Default::default(),
             badge_visibility_known: false,
+            augments: Default::default(),
             selected: false,
             blessings: Default::default(),
             open: false,
@@ -98,6 +100,7 @@ impl CyclopediaCharacterPanel {
             self.gallery = Default::default();
             self.badges = None;
             self.hidden_badges.clear();
+            self.server_hidden_badges.clear();
             self.badge_visibility_known = false;
             self.profile_generation = self.profile_generation.saturating_add(1);
             self.achievements = Default::default();
@@ -126,6 +129,7 @@ pub enum BadgeFilter {
     Locked,
     Hidden,
     Public,
+    HiddenPublic,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BadgeRow {

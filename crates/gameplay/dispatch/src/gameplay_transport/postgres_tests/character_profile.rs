@@ -58,7 +58,7 @@ fn scenario() -> TestResult {
         let query = request(None);
         assert!(
             owner
-                .cyclopedia_character_wire(admitted, 1, TAB, &query)
+                .cyclopedia_character_wire(admitted, 0, TAB, &query)
                 .await
                 .is_err()
         );
@@ -85,7 +85,7 @@ fn scenario() -> TestResult {
         let foreign = request(Some(id(60)));
         assert!(
             owner
-                .cyclopedia_character_wire(admitted, 1, TAB, &foreign)
+                .cyclopedia_character_wire(admitted, 0, TAB, &foreign)
                 .await
                 .is_err()
         );
@@ -94,7 +94,7 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_vip_consents(account_id,world_id,inviter_character_id,character_id,consent,invite_expires_at) SELECT account_id,world_id,character_id,encode($2,'hex')::uuid,2,now()+interval '1 day' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
             .bind(id(41).as_slice()).bind(id(60).as_slice()).execute(&h.pool).await?;
         let permitted = owner
-            .cyclopedia_character_wire(admitted, 1, TAB, &foreign)
+            .cyclopedia_character_wire(admitted, 0, TAB, &foreign)
             .await
             .map_err(|_| "permitted profile")?;
         let permitted = Profile::decode(&permitted).map_err(debug)?;
@@ -111,7 +111,7 @@ fn scenario() -> TestResult {
         stale.item_fence = Some(stale_fence);
         assert!(
             owner
-                .cyclopedia_character_wire(stale, 1, TAB, &foreign)
+                .cyclopedia_character_wire(stale, 0, TAB, &foreign)
                 .await
                 .is_err()
         );
@@ -123,7 +123,7 @@ fn scenario() -> TestResult {
         .await?;
         assert!(
             owner
-                .cyclopedia_character_wire(admitted, 1, TAB, &foreign)
+                .cyclopedia_character_wire(admitted, 0, TAB, &foreign)
                 .await
                 .is_err()
         );

@@ -2,6 +2,7 @@ use crate::play::PlayLink;
 use oteryn_client_ui::boss_encounter::Intent;
 pub(in crate::play) fn open_window(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
+    super::gallery::open(link);
     open(
         link,
         Form {
@@ -34,6 +35,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Rotten Blood boss",
                 "Apply search",
                 "Next unlocked slot",
+                "Browse boss gallery",
+                "Next gallery page",
+                "Previous eligible slot boss",
+                "Next eligible slot boss",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
@@ -51,9 +56,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if mailbox.boss_encounter.pending {
                     return;
                 }
-                let search = values.get(3).cloned().unwrap_or_default();
+                if let Some(search) = values.get(3) {
+                    mailbox.boss_encounter.boss_search = search.clone();
+                    mailbox.boss_encounter.browser_search = search.clone();
+                }
                 for (index, value) in values.into_iter().take(3).enumerate() {
-                    super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                    if index != 0 || mailbox.boss_encounter.catalogue.is_none() {
+                        super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                    }
                 }
                 if let Some(chain) = match action {
                     17 => Some(oteryn_client_ui::boss_encounter::EndgameChain::SoulWar),
@@ -66,20 +76,37 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     );
                     return;
                 }
-                if action >= 14 {
-                    if matches!(action, 14..=16 | 19) {
-                        let category = mailbox.boss_encounter.browser_category;
-                        let category = if action == 16 {
-                            category.next()
+                if action == 23 || action == 24 {
+                    mailbox.boss_encounter.select_slot_boss(action == 23);
+                    return;
+                }
+                if action == 21 || action == 22 || action == 19 {
+                    super::super::input::enqueue(
+                        mailbox,
+                        commands,
+                        if action == 22 {
+                            Intent::CatalogueNext
                         } else {
-                            category
-                        };
+                            Intent::Catalogue
+                        },
+                    );
+                    return;
+                }
+                if action >= 14 {
+                    if action <= 15 {
+                        let category = mailbox.boss_encounter.browser_category;
+                        let search = mailbox.boss_encounter.browser_search.clone();
                         super::super::input::browse(
                             &mut mailbox.boss_encounter,
                             &search,
                             category,
                             action == 14,
                         );
+                    }
+                    if action == 16 {
+                        mailbox.boss_encounter.browser_category =
+                            mailbox.boss_encounter.browser_category.next();
+                        super::super::input::enqueue(mailbox, commands, Intent::Catalogue);
                     }
                     if action == 20 {
                         mailbox.boss_encounter.select_slot();
@@ -94,9 +121,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     4 => Intent::Timeout,
                     5 => Intent::HazardQuery,
                     6 => Intent::HazardSelect,
-                    7 => Intent::SlotsQuery,
-                    8 => Intent::SlotEquip,
-                    9 => Intent::SlotRemove,
+                    7 => Intent::SlotsDetailed,
+                    8 => Intent::SlotEquipSelected,
+                    9 => Intent::SlotRemoveSelected,
                     10 => Intent::Rewards,
                     11 => Intent::RewardsNext,
                     12 => Intent::HazardLower,

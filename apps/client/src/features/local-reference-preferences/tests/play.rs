@@ -352,13 +352,20 @@ fn every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchan
 mod options_lane;
 #[path = "presentation.rs"]
 mod presentation;
+
+include!("health_circle.rs");
+
+include!("window_buttons.rs");
+
+include!("overhead_icons.rs");
+
+include!("resource_hud.rs");
+
+include!("monk_hud.rs");
+
+include!("hud_layout.rs");
 #[path = "shortcuts.rs"]
 mod shortcuts;
-
-#[path = "compatibility_1.rs"]
-mod compatibility_1;
-#[path = "compatibility_2.rs"]
-mod compatibility_2;
 
 #[path = "reserved.rs"]
 mod reserved;
