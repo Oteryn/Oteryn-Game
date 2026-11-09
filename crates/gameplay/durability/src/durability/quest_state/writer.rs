@@ -68,7 +68,7 @@ impl DurabilityRoot {
             fence,
             request,
             catalogue,
-            Some((permit, context, Some(admission.native))),
+            Some((permit, context.into(), Some(admission.native))),
             None,
             None,
             None,
@@ -108,7 +108,7 @@ impl DurabilityRoot {
             fence,
             request,
             catalogue,
-            Some((permit, context, None)),
+            Some((permit, context.into(), None)),
             None,
             None,
             None,
@@ -179,7 +179,7 @@ impl DurabilityRoot {
             fence,
             request,
             catalogue,
-            Some((permit, context, native)),
+            Some((permit, context.into(), native)),
             None,
             None,
             None,
@@ -204,6 +204,24 @@ impl DurabilityRoot {
         catalogue: Arc<QuestStateCatalogue>,
         permit: &super::super::spell_owner_commit::SpellLanePermit,
         context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_character_world_callback_with_items_selected(authority,node,fence,request,catalogue,permit,context.into(),native,admission,gate).await
+    }
+
+    /// The same World transaction retains the checked source-instance envelope.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_items_selected<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldToolContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         admission: Option<QuestRewardAdmission<'_>>,
         gate: &G,
@@ -304,7 +322,7 @@ impl DurabilityRoot {
         catalogue: Arc<QuestStateCatalogue>,
         context: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
-            super::super::quest_world_callback::QuestWorldContext,
+            super::super::quest_world_callback::QuestWorldToolContext,
             Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         )>,
         grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,
@@ -363,7 +381,7 @@ impl DurabilityRoot {
         catalogue: Arc<QuestStateCatalogue>,
         context: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
-            super::super::quest_world_callback::QuestWorldContext,
+            super::super::quest_world_callback::QuestWorldToolContext,
             Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         )>,
         grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,

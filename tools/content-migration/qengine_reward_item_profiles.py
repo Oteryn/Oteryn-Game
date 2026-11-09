@@ -1,8 +1,8 @@
 """Qualify the physical Items required by shared quest exchanges.
 
 Uses the existing native source importer and exact canonical identity bindings.
-Known canonical facts win. No use effect, subtype, timer or custom script is
-inferred, and the canonical Item admission records remain unchanged.
+Known canonical facts win. No use effect, subtype or custom script is
+inferred; the selected corpse chain retains its exact source timers, and the canonical Item admission records remain unchanged.
 """
 import hashlib
 import json
@@ -22,6 +22,11 @@ IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 161
 CUSTODY_PROMOTIONS = {5805, 5806}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
+# M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
+IDS |= {17669, 17670, 17672, 17673, 17674, 17675, 7253}
+# M13: native Slug corpse closure; Ground-only source durations remain authoritative.
+CORPSE_IDS = {12526, 12533, 12534, 12535}
+IDS |= CORPSE_IDS
 # Retain questpc4's qualified native offerings and source tool through this owner.
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 # M36: exact Rock Steady collection hand-ins from the pinned NPC source.
@@ -79,21 +84,23 @@ def capture(root=ROOT, *, item_ids=IDS):
     for item_id in sorted(ids):
     for item_id in sorted(item_ids):
         node=xml[item_id]
-        if {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        if item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
-        for group in ('physical','stack','container'):
-            if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
+        semantics = definition.get('semantics', {})
+        for group in ('physical','stack','container','temporal'):
+            if accepted.known_conflict(semantics.get(group, source.U),record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
+        destinations = ['Ground'] if item_id in CORPSE_IDS else ['CharacterInventory','Ground']
+        if record['admission']['legal_destinations']!=destinations:
             raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
-        record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
+        record['semantics']=accepted.accepted_first(semantics,record['semantics'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected_ids)['records']
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected)['records']

@@ -40,6 +40,7 @@ pub mod grizzly_adams;
 pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
+pub mod ice_seal_paint;
 #[path = "batch3_a/hot_cuisine.rs"]
 pub mod hot_cuisine;
 pub mod isle_of_evil;

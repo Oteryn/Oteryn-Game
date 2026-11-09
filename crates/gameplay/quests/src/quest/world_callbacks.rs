@@ -37,9 +37,12 @@ mod clock;
 mod counterparts;
 mod effects;
 mod ground_stack;
+mod guarded_routes;
 mod imported_explore;
 mod live_admission;
 pub mod phase;
+#[cfg(test)]
+mod selected_tool_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence, MagicEffect,
@@ -138,6 +141,9 @@ pub struct ItemOnTarget {
     pub target_remove: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub reusable: bool,
+    /// Require the exact carried source selected by the fenced USE gesture.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub selected_instance: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -393,6 +399,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(nomads_land::callback()?);
+    callbacks.extend(super::ice_seal_paint::callbacks()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
@@ -417,6 +424,8 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
     let mut selectors = std::collections::BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
+    let mut selectors: std::collections::BTreeMap<Vec<u8>, Vec<&Callback>> =
+        std::collections::BTreeMap::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
@@ -432,6 +441,14 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             return Err("duplicate callback selector across registries".into());
         }
         peers.push(callback);
+        let previous = selectors.entry(selector).or_default();
+        if previous
+            .iter()
+            .any(|other| !guarded_routes::disjoint(callback, other))
+        {
+            return Err("duplicate callback selector across registries".into());
+        }
+        previous.push(callback);
     }
     Ok(())
 }
@@ -639,6 +656,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.has_personal_state()
                     || callback.trigger != Trigger::Use
+                    || (item.selected_instance && !callback.requires_world_admission)
                     || item.count == 0
                     || item.count > 100
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))

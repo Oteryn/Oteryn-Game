@@ -50,8 +50,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with_map_item.is_some() {
+            let corpse = match item_target {
+                Some(ItemKey::Instance(id)) => Some(id),
+                _ => None,
+            };
+            if let Some(result) = self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await?
+            {
+                return Ok(Some(result));
+            }
+        }
         if let Some(result) = self
-            .tame_quest_object(actor, command, &intent, source)
+            .use_quest_tool_object(actor, command, &intent, source)
             .await?
         {
             return Ok(Some(result));
@@ -66,8 +78,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// M14 uses the existing world receipt, not an unguarded chance-based grant.
-    async fn tame_quest_object(
+    /// Carried quest tools use the registered World receipt and exact selected custody.
+    async fn use_quest_tool_object(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -101,7 +113,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
-            callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY
+            callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use
+                && callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|item| item.selected_instance)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
@@ -129,7 +145,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !selected {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         }
-        Ok(self.use_quest_callback(actor, command, map, target).await)
+        let intent =
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        Ok(self
+            .use_quest_callback_with_tool(actor, command, map, target, Some((source, intent)))
+            .await)
     }
 
     async fn tame(

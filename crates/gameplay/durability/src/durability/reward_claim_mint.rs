@@ -125,6 +125,7 @@ pub(crate) mod quest;
 mod quest_actor_conditions;
 mod quest_participants;
 pub mod quest_creature;
+mod quest_corpse;
 pub mod quest_peer;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 pub use quest_actor_conditions::QuestActorConditionProof;

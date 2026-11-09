@@ -63,7 +63,23 @@ pub(crate) fn uneasy_crystal() -> Callback {
 
 /// Source readiness is re-proven by the Channel owner immediately before projection.
 pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
-    callback.key != UNEASY_CRYSTAL || appearance == 10186
+    (callback.key != UNEASY_CRYSTAL || appearance == 10186)
+        && (!callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|item| item.selected_instance)
+            || (callback.effects.transform.is_none()
+                && callback
+                    .item_on_target
+                    .as_ref()
+                    .is_none_or(|item| item.target_replacement.is_none()))
+            || callback
+                .selector
+                .native
+                .as_ref()
+                .map(|binding| binding.appearance)
+                .or(callback.selector.appearance)
+                .is_none_or(|expected| expected == appearance))
 }
 
 #[cfg(test)]
