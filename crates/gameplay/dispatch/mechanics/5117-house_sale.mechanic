@@ -4,8 +4,4 @@ transport=house_sale
 composed=house_sale
 authority=house_sale
 [route]
-match authority.house_sale_command(session.admitted, command.command_id, command.payload).await {
-    crate::gameplay_transport::house_sale::HouseSaleReply::Payload(bytes) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes),
-    crate::gameplay_transport::house_sale::HouseSaleReply::Rejected => Dispatch::Unregistered,
-    crate::gameplay_transport::house_sale::HouseSaleReply::Unavailable => return Err(ServeEnd::Disconnected),
-}
+match routing::house_sale::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

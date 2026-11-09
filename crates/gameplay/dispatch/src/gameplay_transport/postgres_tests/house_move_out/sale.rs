@@ -3,6 +3,8 @@ use super::*;
 use oteryn_protocol_oteryn::house_sale as sale;
 #[path = "sale_fixture.rs"]
 mod setup;
+#[path = "charged.rs"]
+mod charged;
 #[test]
 fn t135_house_transfer_catalogue_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -31,6 +33,7 @@ fn scenario() -> TestResult {
         .execute(&h.pool)
         .await?;
         let wrapped = seed::furniture_item(&h).await?;
+        let charged = charged::seed(&h,wrapped).await?;
         h.root = seed::runtime_root(&h, &admin).await?;
         let result=async {
             let deps=Dependencies::new()?;
@@ -76,6 +79,7 @@ fn scenario() -> TestResult {
             assert_eq!(setup::balance(&h,id(40)).await?,300);
             assert_eq!(setup::balance(&h,setup::account()).await?,750);
             seed::assert_wrapped(&h,wrapped).await?;
+            charged::delivered(&h,charged).await?;
             let left:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_house_interior_locations WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?;
             assert_eq!(left,0,"buyer receives the empty house");
             owner.drain_source_house_dispositions().await.map_err(debug)?;

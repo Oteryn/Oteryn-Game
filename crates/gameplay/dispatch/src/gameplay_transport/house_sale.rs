@@ -27,23 +27,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let binding = runtime.binding();
-        if !admitted
-            .continuity
-            .selected_capabilities
-            .contains(wire::CAPABILITY)
-            || fence.game_session_id != admitted.game_session_id
-            || fence.connection_generation.get() != admitted.continuity.connection_generation
-            || admitted.world_id != binding.world_id()
-            || Some(admitted.channel_id) != binding.channel_id()
-            || fence.runtime_scope != binding.runtime_scope()
-            || fence.scope_ownership_generation != binding.scope_generation()
-            || runtime.owner_fence().is_err()
-            || !admitted.runtime_actor.is_some_and(|actor| {
-                runtime
-                    .player_control_facts(actor, admitted.game_session_id)
-                    .is_ok_and(|facts| facts.control_loss.is_none())
-            })
-        {
+        let actor_current=admitted.runtime_actor.is_some_and(|actor| match fence.runtime_scope {
+            crate::foundation::RuntimeScopeRefV1::Channel{..}=>
+                Some(admitted.channel_id)==binding.channel_id() && fence.runtime_scope==binding.runtime_scope()
+                && fence.scope_ownership_generation==binding.scope_generation() && runtime.owner_fence().is_ok()
+                && runtime.player_control_facts(actor,admitted.game_session_id).is_ok_and(|facts|facts.control_loss.is_none()),
+            crate::foundation::RuntimeScopeRefV1::Instance{..}=>
+                runtime.house_actor_state(actor,admitted.game_session_id).is_ok_and(|state|
+                    state.scope==fence.runtime_scope && state.generation==fence.scope_ownership_generation
+                    && state.lease.generation()==fence.character_lease_generation
+                    && state.lease.character_id().as_bytes()==fence.character_id.as_bytes())
+                && runtime.house_player_control_facts(actor,admitted.game_session_id).is_ok_and(|facts|facts.control_loss.is_none()),
+        });
+        if !admitted.continuity.selected_capabilities.contains(wire::CAPABILITY)
+            || fence.game_session_id!=admitted.game_session_id
+            || fence.connection_generation.get()!=admitted.continuity.connection_generation
+            || admitted.world_id!=binding.world_id() || !actor_current {
+            #[cfg(test)] eprintln!("T135 sale actor rejected current={actor_current} scope={:?}",fence.runtime_scope);
             return HouseSaleReply::Rejected;
         }
         let snapshot = match self

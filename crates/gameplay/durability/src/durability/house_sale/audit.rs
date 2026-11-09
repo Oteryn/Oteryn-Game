@@ -50,6 +50,9 @@ pub(in crate::durability) async fn write(
     event: &str,
 ) -> std::result::Result<(), DurabilityError> {
     let mut p = json!({"world":scope["world"],"channel":scope["channel"],"generation":scope["generation"],"event":event});
+    for key in ["instance","session","character","connection","lease"] {
+        if let Some(value)=scope.get(key) {p[key]=value.clone();}
+    }
     let row = audit_port(tx, node, "snapshot", &p).await?;
     let bad = || DurabilityError::InvalidStoredState;
     let id = |key: &str| -> std::result::Result<Vec<u8>, DurabilityError> {

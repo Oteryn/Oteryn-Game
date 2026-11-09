@@ -20,7 +20,9 @@ Canary commit `99902524`, `src/map/house/house.cpp`:
 - Failed moves are logged and leave the item in its current location.
 - `src/game/game.cpp:5593-5621` converts furniture to decoration kit `23398`
   and records its original form for unwrapping. This automatic disposition path
-  does not select a legacy manual-wrap kit.
+  does not select a legacy manual-wrap kit. Cask amounts are retained in the
+  wrapping metadata (`game.cpp:5593-5621`) and restored on unwrapping
+  (`game.cpp:5623-5655`); wrapping never refills a partly used cask.
 
 ## Required Game behavior
 
@@ -40,7 +42,11 @@ on reconciling a durable asynchronous handoff with the empty-house requirement.
 ## Authority and confirmation
 
 The server resolves the current owner, item owner, World and session generation;
-client fields are selection intents, never custody or ownership proof. WorldId
+client fields are selection intents, never custody or ownership proof. Management
+uses the current Channel or named-House assignment and its live actor, session
+and lease generations. The origin Channel cannot authorize a command while the
+actor is inside a House. Private activities do not inherit House authority:
+owner decision B 2026-11-09, reference silent on Oteryn activity instances. WorldId
 and ChannelId remain distinct. Replays cannot move, wrap or hand over twice.
 Persist item effects, custody evidence and progress consistently, so retries and
 restarts cannot duplicate or lose contents.

@@ -621,7 +621,7 @@ async fn furniture_query(
     Err("missing furniture catalogue result".into())
 }
 
-async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,admitted:AdmittedSession)->TestResult {
+async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut admitted:AdmittedSession)->TestResult {
     use oteryn_protocol_oteryn::world_object::{UseIntent,UseTarget,MapUseTarget,UseDisposition};
     use crate::gameplay_transport::item_view::ItemKey;
     // Historical fixture with real named-House placement/provenance and a partial counter.
@@ -645,23 +645,24 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,admitte
     let keg_position:Vec<u8>=keg_position.iter().flat_map(|value|value.to_be_bytes()).collect();
     sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING").bind(id(42).as_slice()).bind(HOUSE).bind(&keg_position).execute(&mut *tx).await?;
     tx.commit().await?;
+    charged_wrap::roundtrip(owner,h,&mut admitted).await?;
     house_keg_custody(owner,h,admitted,keg_position).await?;
     let intent=UseIntent{target:UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("flask handle")?),use_with:None,
         use_with_map_item:Some(MapUseTarget::Item(std::num::NonZeroU64::new(2).ok_or("cask handle")?)),use_with_position:None};
     let command=|id|crate::gameplay_transport::connection::UseCommand{game_session_id:admitted.game_session_id,command_id:id,item_fence:admitted.item_fence};
     let actor=admitted.runtime_actor.ok_or("House actor")?;
-    let first=owner.use_dispenser_action(actor,command(1),intent.clone(),Some(ItemKey::Instance(id(71))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House first use unknown")?.ok_or("House dispenser production route")?;
+    let first=owner.use_dispenser_action(actor,command(6),intent.clone(),Some(ItemKey::Instance(id(71))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House first use unknown")?.ok_or("House dispenser production route")?;
     assert_eq!(first.disposition,UseDisposition::Committed);
     assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?,1);
     let actor=admitted.runtime_actor.ok_or("House actor")?;
-    let last=owner.use_dispenser_action(actor,command(2),intent.clone(),Some(ItemKey::Instance(id(72))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House last use unknown")?.ok_or("House exhaustion route")?;
+    let last=owner.use_dispenser_action(actor,command(7),intent.clone(),Some(ItemKey::Instance(id(72))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House last use unknown")?.ok_or("House exhaustion route")?;
     assert_eq!(last.disposition,UseDisposition::Committed);
     let item:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(item,(0,2));
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT (SELECT count(*) FROM game_item_house_interior_locations WHERE item_instance_id=encode($1,'hex')::uuid)+(SELECT count(*) FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid)").bind(id(80).as_slice()).fetch_one(&h.pool).await?,0);
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i236' AND lifecycle=1").fetch_one(&h.pool).await?,3);
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&h.pool).await?,1);
-    for number in [1,2] {
+    for number in [6,7] {
         let replay=owner.use_dispenser_action(actor,command(number),intent.clone(),None,None).await.map_err(|_|"House replay unknown")?.ok_or("House replay receipt")?;
         assert_eq!(replay.disposition,UseDisposition::Committed);
     }
@@ -696,3 +697,6 @@ async fn house_keg_custody(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,
     eprintln!("SRX1_PG House keg placement/take/replay preserves 498 charges");
     Ok(())
 }
+
+#[path = "house_wrap/charged_wrap.rs"]
+mod charged_wrap;

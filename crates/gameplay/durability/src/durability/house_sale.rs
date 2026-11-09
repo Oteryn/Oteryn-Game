@@ -3,7 +3,7 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current};
+use super::item_transfer::CurrentCharacterItemFence;
 use super::premium_activation_latch::{PremiumGateOwner, PremiumGateTx};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -55,8 +55,6 @@ pub struct HouseSaleSnapshot {
 }
 #[derive(Clone)]
 struct Work {
-    fence: CurrentCharacterItemFence,
-    command: CommandRef,
     p: Value,
     mode: &'static str,
 }
@@ -76,22 +74,16 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseSaleError::Rejected)?;
-        let RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } = fence.runtime_scope
-        else {
-            return Err(HouseSaleError::Rejected);
-        };
-        let p = json!({"world":hex(world_id.as_bytes()),"channel":hex(channel_id.as_bytes()),
+        let world_id=fence.runtime_scope.world_id();
+        let channel=match fence.runtime_scope { RuntimeScopeRefV1::Channel{channel_id,..}=>Some(hex(channel_id.as_bytes())),RuntimeScopeRefV1::Instance{..}=>None };
+        let mut p = json!({"world":hex(world_id.as_bytes()),"channel":channel,
             "generation":fence.scope_ownership_generation.get().to_string(),"session":hex(fence.game_session_id.as_bytes()),
             "character":hex(fence.character_id.as_bytes()),"command":command.command_id().get().to_string(),
             "connection":fence.connection_generation.get().to_string(),"lease":fence.character_lease_generation.to_string(),
             "action":request.action,"house":request.house,"revision":request.expected_revision.to_string(),
             "due":request.due_at_unix_ms,"recipient":request.recipient,"price":request.price,"after":request.after_house});
+        if let RuntimeScopeRefV1::Instance {instance_id,..}=fence.runtime_scope {p["instance"]=hex(&instance_id).into();}
         let mut work = Work {
-            fence,
-            command,
             p,
             mode: "inspect",
         };
@@ -192,43 +184,18 @@ async fn execute(
     lock_admission_relations(tx).await?;
     let value = port(tx, node, work.mode, &work.p).await?;
     if value.is_null() {
+        #[cfg(test)] eprintln!("T135 native sale refused mode={} action={}",work.mode,work.p["action"]);
         return Err(HouseSaleError::Rejected);
     }
     if value.get("conflict").is_some() {
         return Err(HouseSaleError::Conflict);
     }
-    if value.get("prior").is_none() {
-        let RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } = work.fence.runtime_scope
-        else {
-            return Err(HouseSaleError::Rejected);
-        };
-        if !character_item_fence_is_current(
-            tx,
-            node,
-            &work.fence,
-            work.command,
-            work.fence.character_id,
-            *world_id.as_bytes(),
-            *channel_id.as_bytes(),
-        )
-        .await?
-        {
-            return Err(HouseSaleError::Rejected);
-        }
+    if value.get("prior").is_none() && port(tx,node,"fence",&work.p).await? != Value::Bool(true) {
+        return Err(HouseSaleError::Rejected);
     }
     if value.get("new").and_then(Value::as_bool) == Some(true) {
         if let Some(operation) = value.get("disposition").and_then(Value::as_str) {
-            super::house_disposition::write_disposition_audit(
-                tx,
-                node,
-                work.fence.runtime_scope,
-                work.fence.scope_ownership_generation.get(),
-                operation,
-            )
-            .await?;
+            super::house_disposition::write_actor_disposition_audit(tx,node,&work.p,operation).await?;
         }
         if let Some(event) = value.get("event").and_then(Value::as_str) {
             audit::write(tx, node, &work.p, event).await?;
