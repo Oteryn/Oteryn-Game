@@ -46,6 +46,9 @@ mod world_change_phases;
 pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove, QuestTimedPassage};
+pub use quest_callbacks::{
+    ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove, RafzaneElevator,
+};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -125,6 +128,7 @@ pub struct BundleFacts {
     movement_definitions: BTreeMap<u16, EntryFacts>,
     /// Blocking facts retained from the same native owner as unplaced states.
     movement_solidities: BTreeMap<u16, bool>,
+    movement_blocks: BTreeMap<u16, bool>,
     /// `(compact id, palette index)` ascending by id, for the ids only one palette entry has.
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
@@ -219,6 +223,7 @@ impl BundleFacts {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
             movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements,
             map_source_items: self
@@ -265,6 +270,7 @@ impl BundleFacts {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
             movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements: self
                 .placements
@@ -318,6 +324,10 @@ impl BundleFacts {
             12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
             14163, 14164, 14255, 17939, 21804, 21805, 21812, 26077, 26087, 26100,
             14163, 14164, 14255, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100,
+        let movement_definitions: BTreeMap<_, _> = [
+            1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
+            12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
+            14163, 14164, 14255, 17939, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -339,10 +349,15 @@ impl BundleFacts {
             ))
         })
         .collect();
+        let movement_blocks = movement_definitions
+            .keys()
+            .filter_map(|id| Some((*id, item(&format!("oteryn:item.tibia.i{id}"))?.solid?)))
+            .collect();
         Ok(Self {
             palette,
             movement_definitions,
             movement_solidities,
+            movement_blocks,
             ids: unique,
             placements: Vec::new(),
             map_source_items: BTreeMap::new(),
@@ -380,6 +395,11 @@ impl BundleFacts {
             return Some(*solid);
         }
 
+        if self.movement_definitions.get(&after.appearance_id) == Some(&after)
+            && let Some(blocked) = self.movement_blocks.get(&after.appearance_id)
+        {
+            return Some(*blocked);
+        }
         let reference = match after.definition {
             MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
         };
@@ -802,6 +822,13 @@ impl BundleFacts {
         let Ok(mut states) = self.rotations.lock() else {
             return UseDisposition::Rejected;
         };
+        if !self
+            .callbacks
+            .lock()
+            .is_ok_and(|callbacks| !callbacks.reserved.contains(&key))
+        {
+            return UseDisposition::StaleState;
+        }
         let current = states.get(&key);
         if current.map_or(0, |(revision, _)| *revision) != expected_revision
             || current.is_some_and(|(_, facts)| *facts != before)

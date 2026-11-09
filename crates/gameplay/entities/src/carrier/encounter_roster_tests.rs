@@ -2,6 +2,9 @@
 use super::*;
 use crate::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
 
+#[path = "elemental_boss_spawns_tests.rs"]
+mod elemental_boss_spawns_tests;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn checked<T, E: std::fmt::Debug>(value: Result<T, E>) -> TestResult<T> {
@@ -242,6 +245,44 @@ fn qm50_platform_displaces_every_occupant_and_rolls_back_failed_projection() -> 
     assert_eq!(
         checked(runtime.read_actor_position(creatures[2]))?.position(),
         position(101)
+    );
+    Ok(())
+}
+
+#[test]
+fn qm50_platform_ride_carries_only_the_exact_rider_and_projects_atomically() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let rider = player(&mut runtime)?;
+    let creatures =
+        checked(runtime.commit_quest_creature_spawn(&[("creature:rat", 20, position(100))]))?;
+    let before = runtime.encounter_fixture_snapshot();
+    assert!(
+        runtime
+            .commit_quest_platform_ride(
+                position(100),
+                position(110),
+                rider.actor,
+                |_, _, _| true,
+                || false
+            )
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let moved = checked(runtime.commit_quest_platform_ride(
+        position(100),
+        position(110),
+        rider.actor,
+        |_, _, _| true,
+        || true,
+    ))?;
+    assert_eq!(moved.len(), 1);
+    assert_eq!(
+        checked(runtime.read_actor_position(rider.actor))?.position(),
+        position(110)
+    );
+    assert_eq!(
+        checked(runtime.read_actor_position(creatures[0]))?.position(),
+        position(100)
     );
     Ok(())
 }

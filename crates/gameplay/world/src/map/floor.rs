@@ -541,6 +541,31 @@ fn ground_of(cells: &NativeEntryMovementCells) -> impl Fn(Cell) -> Ground + '_ {
     }
 }
 
+/// Forced platform movement permits stacked occupants, while retaining the
+/// ordinary collision and protection-zone landing rules for every occupant.
+pub fn quest_platform_landable(
+    cells: &NativeEntryMovementCells,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &dyn CellBlocker,
+    projected_walkable: bool,
+) -> bool {
+    let cell = (destination.x, destination.y, i32::from(destination.floor));
+    projected_walkable
+        && cells
+            .index()
+            .lookup(
+                cells.scope(),
+                LogicalCell {
+                    x: cell.0,
+                    y: cell.1,
+                    z: cell.2,
+                },
+            )
+            .is_ok()
+        && landable_of(cells, pz_blocked, closed)(cell)
+}
+
 fn movement_error(refusal: Refusal) -> MovementError {
     match refusal {
         Refusal::Absent => MovementError::Cell(StaticCellEngineError::Absent),

@@ -19,6 +19,7 @@ mod mead;
 pub(super) mod monsters;
 mod personal_encounter;
 mod phase;
+mod rafzane_elevator;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
@@ -764,6 +765,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &WorldObjectTarget,
         selected_tool: Option<([u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
+            return Some(outcome);
+        }
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
         }

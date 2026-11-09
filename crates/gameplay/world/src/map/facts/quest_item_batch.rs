@@ -219,6 +219,8 @@ impl BundleFacts {
                 return false;
             };
             if !seen.insert(key)
+                || states.position_reserved(movement.from)
+                || states.position_reserved(movement.to)
                 || self.house_tile(movement.from)
                 || self.house_tile(movement.to)
                 || movement.entry.facts.pickupable

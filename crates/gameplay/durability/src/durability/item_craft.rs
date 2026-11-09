@@ -258,6 +258,26 @@ async fn write_with_skinning<C: ItemLoopContent>(
                 && request.tool.is_none()
                 && tool_id == request.source
         });
+        let soil = definition
+            .production_key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u16>().ok())
+            .and_then(|soil| {
+                u16::try_from(gathering.mutation.before)
+                    .ok()
+                    .and_then(|target| oteryn_gameplay_items::elemental_soil::charge(soil, target))
+            });
+        let soil_is_qualified = soil.is_some_and(|plan| {
+            plan == gathering.attempt
+                && gathering.mutation.after == plan.after.map_or(0, u32::from)
+                && gathering.mutation.decay
+                    == plan
+                        .after
+                        .map(oteryn_gameplay_items::elemental_soil::decays)
+                        .unwrap_or_default()
+                && request.tool.is_none()
+                && tool_id == request.source
+        });
         if tool
             .as_ref()
             .map(|(key, revision)| (key.as_str(), revision.as_str()))
@@ -267,7 +287,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
             ))
             || tool_id != gathering.mutation.tool
             || gathering.scope.content_generation != native.source_digest()
-            || (consumes_source && definition.production_key != bait && !seed_is_qualified)
+            || (consumes_source
+                && definition.production_key != bait
+                && !seed_is_qualified
+                && !soil_is_qualified)
         {
             return Ok(UseDisposition::StaleState);
         }
@@ -289,7 +312,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .collect::<Option<Vec<_>>>();
         outputs.map(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: if seed_is_qualified {
+                recipe: if soil_is_qualified {
+                    "oteryn:elemental_soil.crystal"
+                } else if seed_is_qualified {
                     "oteryn:planting.crystal"
                 } else {
                     "oteryn:gathering.crystal"

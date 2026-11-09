@@ -48,6 +48,12 @@ impl ItemLoopContent for WheelItemWeights<'_> {
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         self.content.loop_facts(definition)
     }
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        self.content.loop_native_corpse_facts(definition)
+    }
     fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         self.content.loop_ground_facts(definition)
     }

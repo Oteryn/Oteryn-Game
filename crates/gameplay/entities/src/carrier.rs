@@ -81,6 +81,8 @@ pub mod house_custody;
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 
+mod elemental_boss_spawns;
+
 mod equipment_reflection;
 
 #[cfg(any(test, feature = "test-support"))]

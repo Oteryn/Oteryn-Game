@@ -28,6 +28,7 @@ fn scenario_case(
     let m07_lion = name.starts_with("m07/lion-");
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let qm48 = name == "qm48/mammoth";
+    let elemental_pin = name.starts_with("qn1-elemental-");
     let m01b_explore = name.starts_with("m01b/");
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
@@ -52,6 +53,8 @@ fn scenario_case(
         || qready_craft
         || qm48
     let native_crop = m07_machinery || m07_realm || m07_lion || m07_dreamer || qm48
+    let native_crop = elemental_pin
+        || qm48
         || m01b_explore
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let native_crop = last_creep || m01b_explore
@@ -210,6 +213,8 @@ fn scenario_case(
         } else if m07_machinery {
             name.strip_suffix("-level49").unwrap_or(name)
         } else if target_swap
+        } else if elemental_pin
+            || target_swap
             || reusable_tool
             || floor_profiles
             || floor_assembly
@@ -417,6 +422,9 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("grinder native policies")?,
+        let world = if elemental_pin {
+            super::super::qn1_elemental_world_pin::world(
+                generation.native_gameplay().ok_or("elemental policies")?,
             )?
         } else if qm48 {
             super::super::qm48_mammoth::world(
@@ -775,6 +783,15 @@ fn scenario_case(
                 .await?;
         } else if name == "barbarian-test-mead" {
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
+        if elemental_pin {
+            super::super::qn1_elemental_world_pin::exercise(
+                &owner,
+                &h,
+                name,
+                deps.actor,
+                fence.item_fence(),
+            )
+            .await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if m07_machinery {
