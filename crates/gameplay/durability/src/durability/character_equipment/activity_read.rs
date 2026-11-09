@@ -2,7 +2,7 @@
 //! The authority never leaves this transaction and authorizes no equipment move.
 use super::*;
 
-async fn assert_current_activity_equipment_in_transaction(
+pub(super) async fn assert_current_activity_equipment_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,

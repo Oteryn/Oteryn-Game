@@ -446,6 +446,26 @@ async fn scenario(admin: String) -> TestResult {
         ),
         "a command cannot substitute another activity content generation: {refused:?}"
     );
+    let owned = read_owned_activity_cast(&destination, &gameplay.item_fence(), command).await?;
+    assert!(
+        owned.is_ok(),
+        "ordinary activity cast reads actual Character and Wheel facts: {owned:?}"
+    );
+    let refused =
+        read_owned_activity_cast(&destination, &gameplay.item_fence(), foreign_command).await?;
+    assert!(
+        matches!(
+            refused,
+            Err(
+                crate::gameplay_transport::spell_access_facts::AccessFactsError::Equipment(
+                    crate::durability::character_equipment::EquipmentError::Rejected(
+                        "activity cast command session"
+                    )
+                )
+            )
+        ),
+        "ordinary cast cannot borrow the origin session command: {refused:?}"
+    );
     assert!(started.elapsed().as_secs_f64() > 0.01);
     eprintln!(
         "M26_STATIC_INSTANCE POSTGRES_CASE_COMPLETED duration={:?} success=true",
@@ -521,4 +541,39 @@ async fn read_activity_cast(
         })
         .await
         .map_err(debug)
+}
+
+// Exercise the real ordinary-cast reader in its owner's physical SQL transaction.
+async fn read_owned_activity_cast(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    command: CommandRef,
+) -> TestResult<Result<(), crate::gameplay_transport::spell_access_facts::AccessFactsError>> {
+    use crate::durability::{DurabilityError, character_equipment::EquipmentError};
+    use crate::gameplay_transport::{
+        connection::AdmissionRefusal,
+        spell_access_facts::{AccessFactsError, read_owned_cast_facts_in_transaction},
+    };
+    crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root)
+        .retry_unavailable(async || {
+            let pass = owner.root.try_issue_semantic_pass().map_err(|_| AdmissionRefusal::Unavailable)?;
+            let mut context = owner;
+            let result = pass.run_with_context(&mut context, |holder, deadline, owner| Box::pin(async move {
+                let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
+                let active = owner.active_generation.ok_or(DurabilityError::Unavailable)?;
+                let result = read_owned_cast_facts_in_transaction(&mut tx, owner.root, owner.character,
+                    owner.holder, fence, command, active).await.map(|_| ());
+                // This is a read-only transaction, as in the production fresh cast recheck.
+                drop(tx);
+                Ok(result)
+            })).await.map_err(|_| AdmissionRefusal::Unavailable)?;
+            match result {
+                Err(AccessFactsError::Durability(DurabilityError::Unavailable
+                    | DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded))
+                | Err(AccessFactsError::Equipment(EquipmentError::Durability(DurabilityError::Unavailable
+                    | DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded))) =>
+                    Err(AdmissionRefusal::Unavailable),
+                result => Ok(result),
+            }
+        }).await.map_err(debug)
 }

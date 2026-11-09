@@ -6,10 +6,13 @@
 )]
 #[path = "character_equipment/activity_read.rs"]
 mod activity_read;
+#[path = "character_equipment/cast_read.rs"]
+mod cast_read;
 #[path = "character_equipment/hotkey.rs"]
 mod hotkey;
 #[path = "character_equipment/house_read.rs"]
 mod house_read;
+pub use cast_read::{CastEquipmentReader, read_cast_equipment_in_transaction};
 pub(crate) use house_read::read_house_equipment_in_transaction;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
