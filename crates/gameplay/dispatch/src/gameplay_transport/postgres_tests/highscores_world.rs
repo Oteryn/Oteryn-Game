@@ -15,10 +15,9 @@ async fn snapshot(
     character: &[u8; 16],
     own_position: i32,
 ) -> TestResult<u64> {
+    let mut tx = pool.begin().await?;
     let snapshot: i64 = sqlx::query_scalar("INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) VALUES(encode($1,'hex')::uuid,$2,100,'t143',102) RETURNING snapshot_id")
-        .bind(world.as_bytes().as_slice()).bind(category).fetch_one(pool).await?;
-    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) VALUES(encode($1,'hex')::uuid,$2,$3)")
-        .bind(world.as_bytes().as_slice()).bind(category).bind(snapshot).execute(pool).await?;
+        .bind(world.as_bytes().as_slice()).bind(category).fetch_one(&mut *tx).await?;
     for filter in [0i16, 2] {
         for position in 1..=51 {
             let own = position == own_position;
@@ -27,9 +26,14 @@ async fn snapshot(
                 .bind(snapshot).bind(filter).bind(position).bind(if own {1500i64} else {i64::from(position)})
                 .bind(if own {character.as_slice()} else {other.as_slice()})
                 .bind(if own {"Own Knight"} else {"Other Knight"})
-                .bind(if own {500i64} else {2000 - i64::from(position)}).execute(pool).await?;
+                .bind(if own {500i64} else {2000 - i64::from(position)}).execute(&mut *tx).await?;
         }
     }
+    // 0129 freezes membership once a head publishes the snapshot, just as in
+    // the production publisher: insert every row before publishing atomically.
+    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) VALUES(encode($1,'hex')::uuid,$2,$3)")
+        .bind(world.as_bytes().as_slice()).bind(category).bind(snapshot).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(u64::try_from(snapshot)?)
 }
 fn result(reply: HighscoresReply) -> TestResult<HighscoresResult> {
