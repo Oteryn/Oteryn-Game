@@ -13,7 +13,7 @@ category = "runtime"
 release-role = "production"
 
 [dependencies]
-oteryn-error-codes = { path = "../error-codes" }
+oteryn-error-codes = { version = "=0.1.0", path = "../error-codes" }
 tokio.workspace = true
 
 [dev-dependencies]
