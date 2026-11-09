@@ -44,6 +44,27 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_paid_step_requires_explicit_native_world_admission(self):
+        row = callback('waterfall', 'paid-step')
+        row['requires_world_admission'] = True
+        row['selector']['native'] = {'position': row['selector']['position'],
+                                     'ordinal': 0, 'appearance': 353}
+        row['storage'] = [{'track': 'oteryn:quest-progress/paid-step',
+                           'minimum': 0, 'maximum': 1, 'set': 1}]
+        row['item_on_target'] = {'item': 'oteryn:item.tibia.i3595', 'count': 1,
+                                 'on_step': True}
+        tool.validate_callback(row, 'waterfall')
+        for field, value in (('on_step', False), ('on_step', 1),
+                             ('reusable', True), ('target_replacement', 1949)):
+            changed = copy.deepcopy(row)
+            changed['item_on_target'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                tool.validate_callback(changed, 'waterfall')
+        changed = copy.deepcopy(row)
+        changed['requires_world_admission'] = False
+        with self.assertRaises(ValueError):
+            tool.validate_callback(changed, 'waterfall')
+
     def test_callback_source_presentation_is_bounded_and_validated(self):
         row = callback('waterfall', 'waterfall-presentation')
         row['facing'] = 2

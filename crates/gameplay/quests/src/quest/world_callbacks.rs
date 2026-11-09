@@ -34,6 +34,8 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+#[cfg(test)]
+mod paid_step_tests;
 pub mod personal_trial;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
@@ -123,6 +125,9 @@ pub struct ItemOnTarget {
     pub target_replacement: Option<u16>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub reusable: bool,
+    /// Explicit automatic debit on a fenced native STEP, without a client tool handle.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub on_step: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -561,7 +566,16 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.has_personal_state()
-                    || callback.trigger != Trigger::Use
+                    || if item.on_step {
+                        callback.trigger != Trigger::StepIn
+                            || !callback.requires_world_admission
+                            || callback.selector.native.is_none()
+                            || item.reusable
+                            || item.replacement.is_some()
+                            || item.target_replacement.is_some()
+                    } else {
+                        callback.trigger != Trigger::Use
+                    }
                     || item.count == 0
                     || item.count > 100
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))
