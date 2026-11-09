@@ -18,6 +18,8 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod dreamer_ring;
+pub use dreamer_ring::DreamerRingTarget;
 mod floor_assembly;
 pub(in crate::durability) mod floor_transform;
 pub use floor_assembly::FloorAssemblyTarget;

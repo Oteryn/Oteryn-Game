@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let carrot = name.starts_with("m07-carrot-");
+    let ring_offering = name == "m07-ring-offering";
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -152,7 +153,7 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if carrot { "dreamers-challenge-carrot-entry" } else if name == "triangle-tower-wall" {
+        callback(if ring_offering { "dreamers-challenge-death-ring-reset" } else if carrot { "dreamers-challenge-carrot-entry" } else if name == "triangle-tower-wall" {
             "triangle-tower-lever"
         } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
@@ -939,6 +940,8 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if ring_offering {
+            super::super::m07_dreamer_ring_offering::exercise(&mut owner,&mut admitted,&h,fence).await?;
         } else if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
             super::super::m07_dreamer_ring_reset::exercise(&mut owner,&mut admitted,&callback,trigger).await?;
         } else if carrot {

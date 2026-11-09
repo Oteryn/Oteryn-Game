@@ -372,6 +372,12 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
+        // Synthetic literal UID2244; no production-map position correspondence is claimed.
+        cells.entry((trigger.floor,trigger.x-1,trigger.y+1)).or_default().push(sector::Item {
+            palette:1,depth:0,attrs:sector::Attrs {unique:Some(2244),..Default::default()}
+        });
+    }
     if callback.key == "oteryn:quest-callback/l6-shared-gate-fixture" {
         let (action, _, _) =
             super::l6_shared_gates::spec(callback.selector.unique.ok_or("gate UID")?)?;
