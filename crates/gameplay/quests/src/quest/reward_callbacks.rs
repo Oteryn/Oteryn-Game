@@ -214,6 +214,8 @@ pub struct RewardCallback {
 
 #[cfg(test)]
 mod fresh_corpse_tests;
+#[cfg(test)]
+mod ice_paint_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -289,6 +291,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
@@ -1257,10 +1260,10 @@ mod tests {
                 "oteryn:quest.outfit_and_addon_quests",
                 "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
             ),
-            // Includes the source seal callbacks and their owned packed counter.
+            // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
-                "93443bade8f92947bb3efc2b7f0e2fa4b2ca5d4233feae2835fddd6d0dc5531e",
+                "9782c7b0b02cbac847e7630db5ca2846a0888592611c35d4070840b1123bc018",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

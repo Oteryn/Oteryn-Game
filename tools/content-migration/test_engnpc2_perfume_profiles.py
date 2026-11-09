@@ -1,10 +1,21 @@
-"""Source-qualified physical Items for the Goblin Merchant perfume samples."""
+"""Source-qualified physical quest tools: perfume gatherers and Siflind paint."""
 import unittest
 
 import qengine_reward_item_profiles as profiles
 
 
 class PerfumeCustody(unittest.TestCase):
+    def test_paint_vial_has_exact_native_portable_facts(self):
+        records = {row['production_definition']['production_key']: row
+                   for row in profiles.capture()['records']}
+        self.assertIn('oteryn:item.tibia.i7253', records)
+        row = records['oteryn:item.tibia.i7253']
+        self.assertEqual(row['admission'], {
+            'materializable': True, 'stack_class': 'NonStackable',
+            'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(row['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 180})
+
     def test_perfume_inputs_and_outputs_keep_exact_portable_source_facts(self):
         records = {row['production_definition']['production_key']: row
                    for row in profiles.capture()['records']}
