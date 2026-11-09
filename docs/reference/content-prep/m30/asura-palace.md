@@ -75,3 +75,31 @@ action/storage ID or third room in the teleport alcove is introduced here.
 M30a's named Child of Destiny spear/rune bindings and native hit pipeline already
 exist. The mounted `engenc_combat_credit` PostgreSQL cases cover successful hit
 settlement, exact source checks, retained queued outcomes, fencing and replay.
+
+
+## Crystal 201189f8 follow-up
+
+The complete, non-truncated Git tree and all 3,209 Lua files under
+`data-global/scripts`, `data-crystal/scripts` and `data/scripts` were checked at
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`.
+Neither `greater fire elemental` nor `greater energy elemental` occurs in these
+scripts, case-insensitively. The complete tree also contains no monster definition
+for either name. This is a bounded search of that exact donor revision, not a
+claim that no other source can supply the missing associations.
+
+The relevant executable door source is
+[actions_doors.lua](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_doors.lua),
+SHA256 `d14bc25d03361937d29e4f3345bcc88604a1b17bd0b0224bedf9c6b539a99950`.
+It registers action 4911 for two exact positions:
+
+- `(32959,32679,2)` requires Secret Library Asuras Questline storage >= 1.
+- `(32962,32674,2)` requires Flaming Orchid storage >= 1 and level >= 250.
+
+Neither handler spawns or admits a defender pair, counts their deaths, or selects
+the lower Destroyer room's two exits. These are Secret Library access predicates;
+copying them would not implement the chosen Asura Palace s2/s3/s4 recipe.
+The sibling `movements_elemental_portals.lua` describes timed boss encounters
+for Diamond Blossom, Lily of Night and Blazing Rose at different underground
+coordinates. It does not define the two Greater Elemental pairs required here.
+Thus Crystal confirms exact existing access-door positions but does not supply
+the missing s2 exit selection, s3 elemental entry/pair, or s4 entry/pair/door.
