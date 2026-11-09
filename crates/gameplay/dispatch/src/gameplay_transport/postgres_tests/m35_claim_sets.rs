@@ -63,6 +63,7 @@ enum Case {
     Fanfare,
     Key3520,
     Koshei,
+    BlackKnight,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -82,6 +83,25 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:932-947: independent Crown Armor and Crown Shield.
+#[test]
+fn m35_black_knight_dispatch_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::BlackKnight).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Black Knight dispatch scenario panicked")??;
+    println!("M35_BLACK_KNIGHT_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua:2459-2472: the two final reward storage groups.
@@ -124,6 +144,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             2472,
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
+        ),
+        Case::BlackKnight => (
+            (32868, 31955, -11),
+            3634,
+            "oteryn:quest.black_knight_quest",
+            &[(32868, 6047), (32880, 6048)],
         ),
         Case::Koshei => (
             (33261, 32444, -12),
@@ -192,7 +218,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(case, Case::Alawar | Case::Koshei) {
+            if matches!(case, Case::Alawar | Case::Koshei | Case::BlackKnight) {
                 2
             } else {
                 1
@@ -404,10 +430,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
-                        || matches!(case, Case::Alawar | Case::Koshei) && index == 1
+                        || matches!(case, Case::Alawar | Case::Koshei | Case::BlackKnight)
+                            && index == 1
                 );
             }
-            if matches!(case, Case::Koshei) {
+            if matches!(case, Case::Koshei | Case::BlackKnight) {
                 let rewards: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
                      JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
@@ -419,11 +446,21 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     } else {
                         selected
                     };
-                    expected.push(if pos == 0 {
-                        ("oteryn:item.tibia.i645".to_owned(), 1)
+                    let (item, count) = if matches!(case, Case::BlackKnight) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3381"
+                            } else {
+                                "oteryn:item.tibia.i3419"
+                            },
+                            1,
+                        )
+                    } else if pos == 0 {
+                        ("oteryn:item.tibia.i645", 1)
                     } else {
-                        ("oteryn:item.tibia.i3035".to_owned(), 100)
-                    });
+                        ("oteryn:item.tibia.i3035", 100)
+                    };
+                    expected.push((item.to_owned(), count));
                 }
                 expected.sort();
                 assert_eq!(rewards, expected);

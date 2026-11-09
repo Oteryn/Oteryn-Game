@@ -247,3 +247,19 @@ the Crystal custom map SHA256 is
 `3021fa0cd15a0a34cb805571f783da0f852441a6bbe98fed99ad277787710817`.
 The final Ferumbras action remains source evidence, but these maps do not yet
 supply its physical reward-chest binding; no coordinate is fabricated.
+
+## Black Knight physical caller proof
+
+Crystal 201189f8 `chest.lua:932-947` declares two independent source KV rewards:
+UID6047 at (32868,31955,11), appearance3634, Crown Armor3381 x1; UID6048 at
+(32880,31955,11), appearance3634, Crown Shield3419 x1. The mounted literal USE
+case drives both orders through dispatch, reloads durable tracks between chests,
+requires incomplete state after either first chest, completion only after both,
+exact MINT quantities, duplicate replay, and refusal of another fresh claim.
+
+Fresh checks: dispatch all-features/all-target clippy with `-D warnings` passed;
+formatting passed; the live PostgreSQL case passed in154.24 seconds and printed
+`M35_BLACK_KNIGHT_POSTGRES_CASE_COMPLETED`. This slice changes no content or pins.
+The expanded donor scan also checked every additional pinned OTBM (41 maps,
+verifying each Git blob identity), finding no UID1035 under any carrier; together
+with the two primary maps, all43 source maps lack that unique binding.
