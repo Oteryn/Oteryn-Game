@@ -48,7 +48,14 @@ impl InterfaceControls {
                 )
             });
             for (index, handle) in game_window.iter().enumerate() {
-                MoveWindow(*handle, 10 + (index % 3) as i32 * 230, 305 + (index / 3) as i32 * 35, 220, 26, 1);
+                MoveWindow(
+                    *handle,
+                    10 + (index % 3) as i32 * 230,
+                    305 + (index / 3) as i32 * 35,
+                    220,
+                    26,
+                    1,
+                );
             }
             if game_window.iter().any(|handle| handle.is_null()) {
                 return None;
