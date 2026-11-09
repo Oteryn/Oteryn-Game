@@ -1,4 +1,5 @@
 """M50: source-qualified Rafzan elevator ground, retaining its exact Item pointer."""
+import argparse
 import hashlib
 import json
 import sys
@@ -11,6 +12,7 @@ import qengine_reward_item_profiles as shared
 SHARD = 'content/world/terrain/terrain-08693-08693.json'
 IDENTIFIER = 17970
 KEY = 'oteryn:terrain.tibia.i17970'
+MARKER_NOTE = ' Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.'
 
 
 def record(root=ROOT):
@@ -50,5 +52,29 @@ def record(root=ROOT):
 
 
 def outputs(root=ROOT):
-    return {SHARD: (json.dumps({'family': 'Terrain', 'records': [record(root)]},
-                              sort_keys=True, separators=(',', ':')) + '\n').encode()}
+    marker_path = 'content/world/terrain/index.json'
+    marker = json.loads((root / marker_path).read_bytes())
+    if MARKER_NOTE not in marker['notes']:
+        marker['notes'] += MARKER_NOTE
+    return {
+        SHARD: (json.dumps({'family': 'Terrain', 'records': [record(root)]},
+                           sort_keys=True, separators=(',', ':')) + '\n').encode(),
+        marker_path: (json.dumps(marker, indent=2, ensure_ascii=False) + '\n').encode(),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args()
+    for name, raw in outputs().items():
+        path = ROOT / name
+        if args.check:
+            if not path.exists() or path.read_bytes() != raw:
+                raise SystemExit(f'stale M50 elevator ground: {name}')
+        else:
+            path.write_bytes(raw)
+
+
+if __name__ == '__main__':
+    main()

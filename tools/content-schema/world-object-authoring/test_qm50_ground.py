@@ -1,4 +1,5 @@
 import unittest
+
 import qm50_ground
 import world_objects
 
@@ -12,6 +13,10 @@ class ElevatorGroundTests(unittest.TestCase):
         self.assertEqual(row['kind'], {'state': 'KNOWN', 'value': 'ground'})
         self.assertEqual(row['walkable'], {'state': 'KNOWN', 'value': True})
         self.assertEqual(row['ground_speed'], {'state': 'KNOWN', 'value': 110})
+
+    def test_qm50_generated_ground_is_committed_and_current(self):
+        for path, raw in qm50_ground.outputs().items():
+            self.assertEqual((qm50_ground.ROOT / path).read_bytes(), raw, path)
 
     def test_qm50_ground_collision_cannot_be_changed(self):
         row = qm50_ground.record()
