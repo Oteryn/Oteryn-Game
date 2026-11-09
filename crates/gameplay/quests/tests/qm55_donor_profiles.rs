@@ -61,3 +61,19 @@ fn qm55_empty_donor_missions_are_typed_unavailable_instead_of_daily() -> Result<
     assert_eq!(personal_event_profile("oteryn:quest.unrelated"), None);
     Ok(())
 }
+
+#[test]
+fn qm55_canonical_aliases_are_declared_in_the_production_catalogue() -> Result<(), String> {
+    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    for quest in [
+        "oteryn:quest.authored.hive_born_world_change",
+        "oteryn:quest.deeplings_worldchange",
+    ] {
+        assert!(
+            loaded.catalogue().definition_hash(quest).is_some(),
+            "canonical completion needs a production declaration: {quest}"
+        );
+    }
+    Ok(())
+}
