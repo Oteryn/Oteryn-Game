@@ -50,5 +50,26 @@ class ElementalProfiles(unittest.TestCase):
             self.assertEqual(profile["details"]["display_name"], name)
             self.assertFalse(any(profile["details"]["system_eligibility"].values()))
             self.assertNotIn("soul_core_item", profile["details"])
+            self.assertNotIn("corpse_item", profile["details"])
+            closure = row["attack_definitions"]
+            self.assertIn(row["profile"], closure["profiles"])
+            creatures = [
+                r for r in closure["records"] if r["identity"]["family"] == "Creature"
+            ]
+            self.assertEqual(len(creatures), 1)
+            self.assertEqual(creatures[0]["identity"], row["profile"]["target"])
+            self.assertIsNone(creatures[0]["loot"])
+
+        loot = json.loads(
+            (root / "tools/content-schema/native-gameplay/loot-tables.json").read_text()
+        )
+        for _, target, _ in elemental.PAIRS:
+            matches = [
+                r
+                for r in loot["creature_loot"]
+                if r["creature"]["key"] == "oteryn:creature." + target
+            ]
+            self.assertEqual(len(matches), 1)
+            self.assertIsNone(matches[0]["loot"])
         with self.assertRaisesRegex(ValueError, "duplicate authored elemental"):
             elemental.apply(document)

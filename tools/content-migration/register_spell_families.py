@@ -472,6 +472,13 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
+    # Owner-authored quest variants retain admitted attack closures, with no donor identity.
+    import engenc_elemental_profiles
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    creatures = json.loads(generated[creature_path])
+    engenc_elemental_profiles.apply(creatures)
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
+
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
@@ -490,6 +497,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
                                  provider_order, spell_import.canonical_bytes)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
+    native_manifest["creature_profiles"]["sha256"] = hashlib.sha256(generated[creature_path]).hexdigest()
     # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
     # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
     catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]

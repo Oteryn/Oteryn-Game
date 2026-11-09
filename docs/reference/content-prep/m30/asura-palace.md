@@ -180,6 +180,33 @@ retaining their health, speed, attacks, armor and resistances. The variants use
 new Greater identities and display names, zero XP, no bestiary progression,
 no prey/forge eligibility and no inherited soul-core or encyclopedia reference.
 The original provider records remain byte-for-byte equivalent as JSON values.
-This factory does not yet register the variants: provider integration, explicit
-loot admission and native activation qualification still remain. No donor script
-is represented as implementing a Greater Elemental identity.
+The factory is registered by the provider integration described below. No donor
+script is represented as implementing a Greater Elemental identity.
+
+Provider integration now adds the two variants after donor attack-closure binding
+and before native manifest and loot pins are generated. Their exact authored
+baselines are Fire: 1800 HP, armor 57, speed 119; Energy: 1100 HP, armor 35,
+speed 215. Both variants have no corpse reference and an explicit null-loot row;
+no canonical donor identity or external monster ID is invented. The retained
+Ability and Presentation references remain the admitted Massive Elemental ones.
+
+MediaWiki API requests for page titles `Greater Fire Elemental` and
+`Greater Energy Elemental`, using the same honest research User-Agent, returned
+HTTP 402 on 2026-11-09. No revid was received for either page. Their unresolved
+values therefore use the documented **authored per owner rule** fallback.
+The existing Prey generator was rerun with `--simulate` (15 cases, 777 eligible
+creatures): model results and slot values are unchanged, except their input
+hashes. Both authored variants remain outside Prey eligibility.
+
+
+Native activation qualification now passes with the corrected attack packet:
+its Creature declaration and Creature profile bind the authored identity, while
+its admitted Ability, Behavior and Presentation references remain unchanged.
+The activation regression was observed failing on the original copied Creature
+binding and passing after this correction. Explicit null-loot rows and no corpse
+references keep the variants outside loot/corpse rewards. Registration freshness,
+123 repository content tests, fmt and dispatch all-target clippy passed. World
+pin regeneration preserved digest
+`7b680a6007b27dff037ef35cfdb4bd97deec63b32e47c88cc597a603cd28a41c`.
+The remaining M30b qualification is the full three-chamber dispatch path through
+admission, ordinary-combat deaths and personal door opening.

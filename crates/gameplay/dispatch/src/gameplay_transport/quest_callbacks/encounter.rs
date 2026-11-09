@@ -259,3 +259,7 @@ fn pending_encounter_matches(
 #[cfg(test)]
 #[path = "encounter_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "elemental_tests.rs"]
+mod elemental_tests;

@@ -30,10 +30,26 @@ def apply(document):
         details = profile["details"]
         details["display_name"] = name
         details["inspection"] = "a " + name.lower()
-        for field in ["encyclopedia_document", "soul_core_item", "bestiary"]:
+        for field in [
+            "encyclopedia_document",
+            "soul_core_item",
+            "bestiary",
+            "corpse_item",
+        ]:
             details.pop(field, None)
         details["system_eligibility"] = {
             k: False for k in details["system_eligibility"]
         }
+        closure = row.get("attack_definitions")
+        if closure is not None:
+            for definition in closure["records"]:
+                if definition["identity"]["family"] == "Creature":
+                    if definition["identity"]["key"] != "oteryn:creature." + source:
+                        raise ValueError("unexpected elemental attack Creature")
+                    definition["identity"] = copy.deepcopy(row["profile"]["target"])
+                    definition["loot"] = None
+            for index, bound in enumerate(closure["profiles"]):
+                if bound["target"]["family"] == "Creature":
+                    closure["profiles"][index] = copy.deepcopy(row["profile"])
         additions.append(row)
     records.extend(additions)
