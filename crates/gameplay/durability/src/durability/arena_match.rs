@@ -20,9 +20,11 @@ use sha2::{Digest, Sha256};
 use sqlx::Row;
 pub mod donor;
 mod native_death;
+mod native_departure;
 mod native_origin;
 mod native_step;
 pub use native_death::NativeArenaDeath;
+pub use native_departure::NativeArenaDeparture;
 pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 mod pit_lease;
@@ -267,7 +269,7 @@ impl DurabilityRoot {
             let prior=load_state(&mut tx,fence).await?;
             if prior!=request.before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
             let now_ms=now(&mut tx).await?;
-            if request.native_origin.is_some()
+            if request.native_origin.as_ref().is_some_and(NativeArenaOrigin::requires_live_pit)
                 && !pit_lease::owned(&mut tx,fence,&prior,now_ms).await? {
                 return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
             }

@@ -2315,3 +2315,22 @@ GREEN10 M51 tests35.060s including build; actual death commit/refusal/replay PG
 M51 remains PARTIAL for departure and full source reset closure.
 Durability clippy --all-targets -D warnings PASS80.717s; cargo fmt --all --check
 PASS15.382s; engine-only pin identity unchanged.
+
+## M51: typed native departure reset origin (SDK slice)
+
+NativeArenaDeparture binds the real actor position snapshot, epoch, session,
+scope generation, pit and run. Its constructor refuses positions inside the
+same live-owner pit envelope, including the pillar/portal tile. The origin is
+only Leave with no victory; completed ranks and other run/pit/scope states are
+refused. Cleanup does not require a still-live pit lease: the current Character
+root, node/session fence and exact prior state still guard it, and Leave can
+only cancel or preserve state. STEP/DEATH progress retains its live custody check.
+Source: Crystal201189f movements_arena_pit.lua:14-20 and svargrond_arena.lua:
+259-287. No new DDL/ids; existing native-origin receipt holds the full binding.
+GREEN11 M51 tests74.799s including build; own PG origin5.644428609s, terminal
+5.682860425s, pit custody5.684731297s, runtime role5.68501567s, actual Character
+death5.129897409s. New source geometry/validation regression covers all ten pits.
+M51 remains PARTIAL: this slice exposes the SDK; native departure producer and
+complete source reset closure follow.
+Durability clippy --all-targets -D warnings PASS53.614s; cargo fmt --all --check
+PASS15.231s; engine-only pin identity unchanged.
