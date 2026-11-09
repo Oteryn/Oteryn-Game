@@ -121,6 +121,25 @@ fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
         .world_context
         .pending = false;
     outbox.inventory_initialize(Some(inventory(item(99)?)), false);
+    let own = oteryn_session::WorldSpatialEntity {
+        display_name: None,
+        kind: oteryn_session::EntityKind::Player,
+        entity: oteryn_session::EntityRef {
+            identity: [3; 16],
+            generation: 1,
+        },
+        position: oteryn_session::ActorPosition {
+            x: play.own().x,
+            y: play.own().y,
+            floor: play.map_center().2,
+        },
+        detail: oteryn_session::EntityDetail::Actor {
+            direction: oteryn_session::StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    outbox.hotkey_own_actor(Some(own));
     assert!(link.custom_hotkey_action(
         &play,
         &CustomAction::Object {
@@ -130,7 +149,7 @@ fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
         }
     ));
     assert!(
-        matches!(commands.try_recv()?, PlayCommand::WorldContext(command) if command.action == Action::UseOn(99u64.try_into()?) && command.target == Target::Position(oteryn_session::ActorPosition { x: play.own().x, y: play.own().y, floor: play.map_center().2 }))
+        matches!(commands.try_recv()?, PlayCommand::WorldContext(command) if command.action == Action::UseOn(99u64.try_into()?) && command.target == Target::Creature(own.entity))
     );
     crate::play::mailbox::lock(&link.mailbox)
         .world_context
@@ -214,3 +233,6 @@ fn custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns()
     assert!(fresh.custom_hotkey_status().is_empty());
     Ok(())
 }
+
+#[path = "custom_interfaces.rs"]
+mod custom_interfaces;

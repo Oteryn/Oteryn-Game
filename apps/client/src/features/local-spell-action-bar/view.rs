@@ -6,6 +6,7 @@ pub use hotkeys::ActionKeys;
 #[cfg(any(windows, test))]
 pub(in crate::play) use hotkeys::bind as bind_custom_key;
 pub use item_actions::ItemUseMode;
+pub(in crate::play) use item_actions::{visible_items, item_source, item_target};
 #[path = "amount.rs"]
 mod amount;
 #[path = "layout.rs"]
@@ -21,6 +22,7 @@ pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
 #[cfg(any(windows, test))]
 pub(in crate::play) use assignments::set_action as set_extra;
 pub use assignments::{BarAction, BarActions, PassiveAbility};
+pub(in crate::play) use assignments::label as action_label;
 pub(in crate::play) use assignments::{activate as activate_extra, clear_extra};
 
 

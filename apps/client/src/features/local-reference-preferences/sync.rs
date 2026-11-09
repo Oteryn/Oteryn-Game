@@ -269,6 +269,9 @@ impl SettingsState {
             .ok_or_else(|| "Preference storage is unavailable".to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
+        if self.preferences.bar_actions != preferences.bar_actions || self.preferences.action_keys != preferences.action_keys {
+            self.bar_actions_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.archive_bindings != preferences.archive_bindings {
             self.archive_edit = crate::play::feature_0017_attack::view::next_edit();
         }

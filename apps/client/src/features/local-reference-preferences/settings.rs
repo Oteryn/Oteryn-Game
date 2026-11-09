@@ -194,6 +194,16 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub custom_hotkeys: std::collections::BTreeMap<String, CustomAction>,
     #[serde(default)]
+    pub bar_hotkey_profiles: std::collections::BTreeMap<
+        String,
+        crate::play::feature_local_spell_action_bar::view::ActionKeys,
+    >,
+    #[serde(default)]
+    pub bar_action_profiles: std::collections::BTreeMap<
+        String,
+        crate::play::feature_local_spell_action_bar::view::BarActions,
+    >,
+    #[serde(default)]
     pub custom_hotkey_profiles:
         std::collections::BTreeMap<String, std::collections::BTreeMap<String, CustomAction>>,
     #[serde(default)]
@@ -264,6 +274,8 @@ impl Default for ReferencePreferences {
             hotkey_contexts: HotkeyProfiles::default(),
             item_hotkeys: Default::default(),
             custom_hotkeys: std::collections::BTreeMap::new(),
+            bar_hotkey_profiles: std::collections::BTreeMap::new(),
+            bar_action_profiles: std::collections::BTreeMap::new(),
             custom_hotkey_profiles: std::collections::BTreeMap::new(),
             hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,

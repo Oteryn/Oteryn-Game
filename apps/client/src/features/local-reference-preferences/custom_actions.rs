@@ -15,6 +15,9 @@ pub enum ObjectTarget {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CustomAction {
+    PassiveStatus {
+        ability: crate::play::PassiveAbility,
+    },
     ActionBar {
         slot: u32,
     },
@@ -35,6 +38,7 @@ pub enum CustomAction {
 impl CustomAction {
     pub(super) fn valid(&self) -> bool {
         match self {
+            Self::PassiveStatus { .. } => true,
             Self::ActionBar { slot } => usize::try_from(*slot).is_ok_and(|slot| {
                 (1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS).contains(&slot)
             }),
@@ -69,7 +73,11 @@ impl ReferencePreferences {
 }
 
 impl ReferencePreferences {
-    pub(super) fn validate_custom_chords(&self, primary: &std::collections::BTreeMap<String, String>, secondary: &std::collections::BTreeMap<String, String>) -> Result<(), PreferenceError> {
+    pub(super) fn validate_custom_chords(
+        &self,
+        primary: &std::collections::BTreeMap<String, String>,
+        secondary: &std::collections::BTreeMap<String, String>,
+    ) -> Result<(), PreferenceError> {
         super::bindings::validate_custom(self, primary, secondary)
     }
 }

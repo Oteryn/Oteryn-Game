@@ -275,7 +275,7 @@
   "status": "DONE",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/custom_editor.rs:91 + custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns + custom_hotkeys_suppress_builtin_input_and_survive_profiles; Native create/edit/delete editor binds text draft/send, object use/self/current/cursor/equip and read-only ability cooldown tracking from live inventory/catalogue. Shell input dispatches once per gesture through existing chat/item/equip callers; profiles persist custom actions and cooldown tracking never casts."
+  "evidence": "apps/client/src/features/local-reference-preferences/custom_dispatch.rs:8 + custom_passive_choices_use_confirmed_action_bar_status_interfaces; apps/client/src/features/local-reference-preferences/profiles.rs:107 + named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments; apps/client/src/features/local-spell-action-bar/item_actions.rs:78 + custom_object_picker_uses_open_container_handles_and_current_combat_generation. Native custom actions reuse cg-options visible-item/combat-target resolution and confirmed passive labels. Profiles restore owner ActionKeys and mixed BarActions, explicit loads win older pending edits, and disconnect ends custom tracking. Existing text draft/send, equip and cooldown caller tests pass."
  },
  {
   "id": "T050",

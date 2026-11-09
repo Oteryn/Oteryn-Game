@@ -1,13 +1,14 @@
 //! Custom actions use the same live session callers as inventory, chat and cooldown panels.
 use super::{CustomAction, ObjectTarget};
+use crate::play::feature_local_spell_action_bar::view::{item_source, item_target, visible_items};
 use crate::play::{PlayLink, PlayView, mailbox::lock};
-use oteryn_client_runtime::world_interaction::{Action, Command, Target};
+use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
 
 impl PlayLink {
     pub fn custom_hotkey_choices(&self) -> Vec<(String, CustomAction)> {
         let mailbox = lock(&self.mailbox);
         let mut choices = Vec::new();
-        for item in mailbox.inventory.rows() {
+        for item in visible_items(&mailbox) {
             let action = CustomAction::Object {
                 definition: item.item_definition_ref.get(),
                 sub_type: item.sub_type,
@@ -45,6 +46,16 @@ impl PlayLink {
                 },
             ));
         }
+        for (label, ability) in [
+            (
+                "Passive: Battle Instinct",
+                crate::play::PassiveAbility::BattleInstinct,
+            ),
+            ("Passive: Harmony", crate::play::PassiveAbility::Harmony),
+            ("Passive: Serene", crate::play::PassiveAbility::Serene),
+        ] {
+            choices.push((label.into(), CustomAction::PassiveStatus { ability }));
+        }
         for slot in 1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
             if let Ok(number) = u32::try_from(slot) {
                 choices.push((
@@ -60,11 +71,21 @@ impl PlayLink {
         choices
     }
 
-    pub fn custom_hotkey_action(&self, view: &PlayView, action: &CustomAction) -> bool {
+    pub fn custom_hotkey_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
         if !action.valid() {
             return false;
         }
         match action {
+            CustomAction::PassiveStatus { ability } => {
+                let mut mailbox = lock(&self.mailbox);
+                if mailbox.quest_shutdown || mailbox.custom_hotkeys_ended {
+                    return false;
+                }
+                mailbox.tracked_custom_passive = Some(*ability);
+                mailbox.tracked_custom_ability = None;
+                mailbox.custom_hotkey_feedback = None;
+                true
+            }
             CustomAction::ActionBar { slot } => {
                 let Some(slot) = std::num::NonZeroU32::new(*slot) else {
                     return false;
@@ -72,6 +93,7 @@ impl PlayLink {
                 {
                     let mailbox = lock(&self.mailbox);
                     if mailbox.quest_shutdown
+                        || mailbox.custom_hotkeys_ended
                         || mailbox.world_input_blocked()
                         || (mailbox.spell_bar.bar.spell(slot).is_none()
                             && !mailbox
@@ -89,7 +111,11 @@ impl PlayLink {
             CustomAction::Text { text, send } => {
                 use oteryn_client_ui::chat::{ComposerMode, Mode};
                 let mut mailbox = lock(&self.mailbox);
-                if mailbox.chat_public_shutdown || !mailbox.chat.selected || mailbox.chat.pending {
+                if mailbox.custom_hotkeys_ended
+                    || mailbox.chat_public_shutdown
+                    || !mailbox.chat.selected
+                    || mailbox.chat.pending
+                {
                     return false;
                 }
                 if *send {
@@ -121,6 +147,7 @@ impl PlayLink {
             CustomAction::Passive { cast_index } => {
                 let mut mailbox = lock(&self.mailbox);
                 if mailbox.quest_shutdown
+                    || mailbox.custom_hotkeys_ended
                     || !mailbox
                         .spell_catalog
                         .catalog
@@ -130,6 +157,7 @@ impl PlayLink {
                 {
                     return false;
                 }
+                mailbox.tracked_custom_passive = None;
                 mailbox.tracked_custom_ability = Some(*cast_index);
                 mailbox.custom_hotkey_feedback = None;
                 true
@@ -168,16 +196,18 @@ impl PlayLink {
                     }
                     return true;
                 }
-                let Some(item) = mailbox.inventory.rows().into_iter().find(|item| {
-                    item.item_definition_ref.get() == *definition && item.sub_type == *sub_type
-                }) else {
+                let Some(definition_id) = std::num::NonZeroU32::new(*definition) else {
+                    return false;
+                };
+                let Some(item) = item_source(&mailbox, definition_id, Some(*sub_type)) else {
                     mailbox.custom_hotkey_feedback =
-                        Some("Custom hotkey: item is no longer in inventory".into());
+                        Some("Custom hotkey: item is no longer visible in inventory or an open container".into());
                     return false;
                 };
                 if *target != ObjectTarget::Use && !mailbox.world_context.use_with {
                     return false;
                 }
+                let mut selection = None;
                 let target = match target {
                     ObjectTarget::Use => Target::Item(item.handle),
                     ObjectTarget::Cursor => {
@@ -191,25 +221,21 @@ impl PlayLink {
                         mailbox.world_context.rune_targeting = rune;
                         return true;
                     }
-                    ObjectTarget::SelfActor => Target::Position(oteryn_session::ActorPosition {
-                        x: view.own.x,
-                        y: view.own.y,
-                        floor: view.floor,
-                    }),
                     ObjectTarget::Equip => return false,
-                    ObjectTarget::CurrentTarget => {
-                        let Some(reference) =
-                            view.scene.target().and_then(|target| target.entity).filter(
-                                |reference| {
-                                    view.entities
-                                        .iter()
-                                        .any(|entity| entity.entity == *reference)
-                                },
-                            )
-                        else {
+                    ObjectTarget::SelfActor | ObjectTarget::CurrentTarget => {
+                        let mode = if *target == ObjectTarget::SelfActor {
+                            crate::play::ItemUseMode::SelfActor
+                        } else {
+                            crate::play::ItemUseMode::Target
+                        };
+                        let Some(actor) = item_target(&mailbox, mode) else {
                             return false;
                         };
-                        Target::Creature(reference)
+                        selection = Some(Selection {
+                            position: actor.position,
+                            binding: None,
+                        });
+                        Target::Creature(actor.entity)
                     }
                 };
                 let command = Command {
@@ -225,7 +251,7 @@ impl PlayLink {
                     } else {
                         Action::UseOn(item.handle)
                     },
-                    selection: None,
+                    selection,
                 };
                 if self
                     .commands
@@ -244,6 +270,15 @@ impl PlayLink {
     /// Track server-owned cooldowns without claiming an unlocked or executable ability.
     pub fn custom_hotkey_status(&self) -> String {
         let mailbox = lock(&self.mailbox);
+        if mailbox.quest_shutdown || mailbox.custom_hotkeys_ended {
+            return String::new();
+        }
+        if let Some(ability) = mailbox.tracked_custom_passive {
+            return crate::play::feature_local_spell_action_bar::view::action_label(
+                &mailbox,
+                &crate::play::BarAction::Passive { ability },
+            );
+        }
         if let Some(feedback) = &mailbox.custom_hotkey_feedback {
             return feedback.clone();
         }
@@ -273,5 +308,15 @@ impl PlayLink {
                 .bar
                 .remaining_ms(spell, &entry.cooldown_groups)
         )
+    }
+}
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn end_custom_hotkeys(&mut self) {
+        self.custom_hotkeys_ended = true;
+        self.custom_chat_paste = None;
+        self.tracked_custom_passive = None;
+        self.tracked_custom_ability = None;
+        self.custom_hotkey_feedback = None;
     }
 }

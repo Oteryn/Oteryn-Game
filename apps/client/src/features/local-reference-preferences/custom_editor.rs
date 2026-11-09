@@ -9,13 +9,20 @@ pub(super) fn profile_action(action: usize, parent: HWND, shared: &Arc<Mutex<Sha
         return;
     }
     let mut state = lock(shared);
+    if action == 232 {
+        if let Err(error) = state.load_custom_hotkey_profile(name) {
+            state.feedback = error.to_string();
+        }
+        return;
+    }
     let mut preferences = state.preferences.clone();
     let result = match action {
         231 => preferences.save_hotkey_profile(name),
-        232 => preferences.load_hotkey_profile(name),
         _ => {
             preferences.hotkey_profiles.remove(name);
             preferences.custom_hotkey_profiles.remove(name);
+            preferences.bar_hotkey_profiles.remove(name);
+            preferences.bar_action_profiles.remove(name);
             Ok(())
         }
     };
@@ -36,7 +43,7 @@ fn kind(action: &CustomAction) -> usize {
             ObjectTarget::CurrentTarget => 5,
             ObjectTarget::Equip => 6,
         },
-        CustomAction::Passive { .. } => 7,
+        CustomAction::Passive { .. } | CustomAction::PassiveStatus { .. } => 7,
     }
 }
 fn source_matches(left: &CustomAction, right: &CustomAction) -> bool {
@@ -83,6 +90,9 @@ fn action_from(kind: usize, text: String, source: Option<&CustomAction>) -> Opti
             ][kind - 2],
         }),
         (8, CustomAction::ActionBar { slot }) => Some(CustomAction::ActionBar { slot: *slot }),
+        (7, CustomAction::PassiveStatus { ability }) => {
+            Some(CustomAction::PassiveStatus { ability: *ability })
+        }
         (7, CustomAction::Passive { cast_index }) => Some(CustomAction::Passive {
             cast_index: *cast_index,
         }),
@@ -155,7 +165,7 @@ fn run(parent: HWND, shared: &Arc<Mutex<Shared>>) {
             "Object: use on self",
             "Object: use on current target",
             "Object: equip / unequip",
-            "Passive ability: track server cooldown (never casts)",
+            "Passive ability: status / cooldown (read only)",
             "Action bar slot",
         ] {
             SendMessageW(types, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
@@ -314,7 +324,7 @@ fn run(parent: HWND, shared: &Arc<Mutex<Shared>>) {
                     .and_then(|kind| action_from(kind, editor_text(content), source))
                 else {
                     state.feedback =
-                        "Select an inventory item for Object, or a catalogue ability for Passive"
+                        "Select an inventory item for Object, or a passive/cooldown entry for Passive"
                             .into();
                     continue;
                 };
