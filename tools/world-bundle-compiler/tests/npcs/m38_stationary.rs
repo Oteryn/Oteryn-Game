@@ -2,9 +2,16 @@ use super::*;
 
 #[test]
 fn source_stationary_swan_is_admitted_at_its_exact_water_anchor() -> TestResult {
+    exact_contact("oteryn:npc.a_swan", (33185, 31732, 7), false)
+}
+
+#[test]
+fn source_yselda_is_admitted_only_at_its_retained_page_bound_contact() -> TestResult {
+    exact_contact("oteryn:npc.yselda", (32619, 32488, 12), true)
+}
+
+fn exact_contact(key: &str, (x, y, z): (u16, u16, u8), requires_opt_in: bool) -> TestResult {
     let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
-    let (x, y, z) = (33185, 31732, 7);
-    let key = "oteryn:npc.a_swan";
     let project =
         oteryn_world_bundle_compiler::source::project_regions(root, &[(x / 256, y / 256)])?;
     let (resolver, palette) = oteryn_world_bundle_compiler::source::registry(root, &project)?;
@@ -14,7 +21,7 @@ fn source_stationary_swan_is_admitted_at_its_exact_water_anchor() -> TestResult 
             .npc_placements
             .iter()
             .any(|p| p.npc == key && p.cell == (x, y, z)),
-        "M38 Swan source placement is not published"
+        "M38 source contact is not published"
     );
     let input = Input {
         regions: &project.regions,
@@ -30,18 +37,34 @@ fn source_stationary_swan_is_admitted_at_its_exact_water_anchor() -> TestResult 
     let swan = npcs.npcs.iter().find(|npc| npc.key == key);
     assert!(
         swan.is_some(),
-        "source-stationary Swan refused: {:?}",
+        "source contact refused: {:?}",
         report
             .held
             .iter()
             .filter(|held| held.npc == key)
             .collect::<Vec<_>>()
     );
-    let placements = &swan.ok_or("admitted stationary Swan")?.placements;
+    let placements = &swan.ok_or("admitted source contact")?.placements;
     assert_eq!(placements.len(), 1);
     assert_eq!(
         (placements[0].x, placements[0].y, placements[0].floor),
         (x, y, -(z as i8))
     );
+    if requires_opt_in {
+        let mut ordinary_families = project.families.clone();
+        ordinary_families.npc_non_walkable_contacts.clear();
+        let ordinary = Input {
+            families: &ordinary_families,
+            ..input
+        };
+        let (ordinary_npcs, report) = realize_npcs(&ordinary, &resolver, &spawns)?;
+        assert!(!ordinary_npcs.npcs.iter().any(|npc| npc.key == key));
+        assert!(
+            report
+                .held
+                .iter()
+                .any(|held| held.npc == key && held.reason == HoldReason::NotWalkable)
+        );
+    }
     Ok(())
 }

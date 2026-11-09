@@ -673,6 +673,9 @@ fn npc_contact_cell_reason(mut cell: CellFacts, solid_contact: bool) -> Option<H
     cell_reason(&cell)
 }
 
+#[path = "compile/non_walkable_contact.rs"]
+mod non_walkable_contact;
+
 #[cfg(test)]
 #[path = "compile/npc_contact_tests.rs"]
 mod npc_contact_tests;
@@ -782,9 +785,10 @@ fn npcs_with(
         .map(|placement| {
             admission(families, &placement.npc)
                 .or_else(|| {
-                    npc_contact_cell_reason(
+                    non_walkable_contact::reason(
                         facts.get(&placement.cell).copied().unwrap_or_default(),
                         families.npc_block_solid_contacts.contains(&placement.key),
+                        families.npc_non_walkable_contacts.contains(&placement.key),
                     )
                 })
                 .or_else(|| {

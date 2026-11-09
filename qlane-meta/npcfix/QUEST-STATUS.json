@@ -699,5 +699,31 @@
     "qualification": "Workspace all-target check6m58s, route/policy units, paid-return PG regression, strict three-library Clippy, fmt, duplicate migrations and unchanged-input pin-check PASS",
     "migration": "none; no canonical content input changed",
     "remaining": "Other M38 presence/contact/guarded passage content bindings remain unfinished; node boot delegated to CI"
+  },
+  "yselda_contact_slice": {
+    "state": "GREEN_PUSH_READY",
+    "scope": "Source-bound Yselda NPC anchor on non-walkable ground; no player movement permission, new dialogue, quest progression or walking-profile claim",
+    "source": "BR page52101/revision353837 at32619,32488,12; existing declaration target and exact page binding required",
+    "red": "Authoring had no contact; real-map absent placement RED24.62s, then NotWalkable RED26.58s",
+    "green": "9 focused authoring cases; all10 compiler library tests; Yselda/Swan source-map pair32.46s, including opt-in removal -> NotWalkable",
+    "postgres": "No SQL or persistence change; no new PostgreSQL execution claimed",
+    "qualification_seconds": {
+      "npc-authoring-units": 51.737,
+      "placement-freshness": 0.33,
+      "compiler-release": 22.103,
+      "compiler-clippy": 3.346,
+      "pin-refresh": 54.297,
+      "quest-checks": 384.951,
+      "quest-units": 459.226,
+      "content-tree": 181.6,
+      "workspace": 416.415,
+      "client-clippy": 0.548,
+      "architecture": 8.72,
+      "fmt": 19.684,
+      "dup": 0.602,
+      "pins": 61.859
+    },
+    "deployment_handoff": "Protected topology unchanged; coordinator must refresh World digest at integration",
+    "remaining": "M38 other contacts, conditional bindings and native ticket/return wiring remain PARTIAL"
   }
 }

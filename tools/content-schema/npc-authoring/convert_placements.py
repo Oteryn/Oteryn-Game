@@ -131,6 +131,9 @@ def convert() -> dict[str, str]:
     contacts = scope.get("block_solid_contacts", [])
     if not isinstance(contacts, list) or not set(contacts) <= set(npcs):
         sys.exit("block_solid_contacts names an unscoped NPC")
+    non_walkable = scope.get("non_walkable_contacts", [])
+    if not isinstance(non_walkable, list) or len(set(non_walkable)) != len(non_walkable) or not set(non_walkable) <= set(native):
+        raise ValueError("non_walkable_contacts requires distinct explicit native contacts")
     selections = scope.get("placement_cells", {})
     if not isinstance(selections, dict) or not set(selections) <= set(npcs):
         sys.exit("placement_cells names an unscoped NPC")
@@ -202,6 +205,8 @@ def convert() -> dict[str, str]:
     for record in records.values():
         if record["declaration"]["npc"] in contacts:
             record["declaration"]["block_solid_contact"] = True
+        if record["declaration"]["npc"] in non_walkable:
+            record["declaration"]["non_walkable_contact"] = True
     placed = {r["declaration"]["npc"] for r in records.values()}
     for npc in npcs:
         if npc not in placed and not any(h["npc"] == npc for h in held):

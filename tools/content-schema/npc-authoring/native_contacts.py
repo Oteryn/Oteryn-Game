@@ -2,6 +2,8 @@
 import json
 import re
 
+import retained_contact_metadata
+
 
 def candidates(directory, requested):
     if not isinstance(requested, list) or len(set(requested)) != len(requested):
@@ -17,8 +19,11 @@ def candidates(directory, requested):
                 continue
             if key in found:
                 raise ValueError(f'{key}: duplicate native contact definition')
-            metadata = json.loads(next(f['value']['value'] for f in npc['fields']
-                                       if f['field_path'].endswith('.bulk.source_metadata')))
+            embedded = [f for f in npc['fields'] if f['field_path'].endswith('.bulk.source_metadata')]
+            if len(embedded) > 1:
+                raise ValueError(f'{key}: ambiguous embedded source metadata')
+            metadata = (json.loads(embedded[0]['value']['value']) if embedded
+                        else retained_contact_metadata.resolve(record))
             facts = metadata['wiki_facts']
             if facts['br_coordinate_frame'] != 'Tibia_reference_world_coordinates_not_Oteryn_placement':
                 raise ValueError(f'{key}: unverified coordinate frame')

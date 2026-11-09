@@ -48,6 +48,8 @@ pub struct Families {
     pub npc_placements: Vec<NpcPlacement>,
     /// Explicit source-backed contacts on solid objects; other terrain holds still apply.
     pub npc_block_solid_contacts: BTreeSet<String>,
+    /// Explicit source-backed NPC anchors on non-walkable ground; never movement permission.
+    pub npc_non_walkable_contacts: BTreeSet<String>,
     /// The family's held list (§4.3): NPC key and reason, in file order.
     pub npc_source_held: Vec<(String, String)>,
     /// `npc::catalogue_sha256` of the content tree the NPC, Dialogue and Service records were
@@ -468,6 +470,8 @@ struct RouteRecord {
 struct PlacementRecord {
     #[serde(default)]
     block_solid_contact: bool,
+    #[serde(default)]
+    non_walkable_contact: bool,
     identity: Identity,
     npc: String,
     cell: Cell,
@@ -591,6 +595,10 @@ impl Families {
                     "NPC placement floor {}",
                     record.cell.floor
                 )));
+            }
+            if record.non_walkable_contact {
+                self.npc_non_walkable_contacts
+                    .insert(record.identity.key.clone());
             }
             if record.block_solid_contact {
                 self.npc_block_solid_contacts
