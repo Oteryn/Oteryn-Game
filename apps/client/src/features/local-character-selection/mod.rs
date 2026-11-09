@@ -47,7 +47,7 @@ pub fn join(characters: Vec<OwnerCharacter>, directory: &DirectorySnapshot) -> V
                 available: character.availability == CharacterAvailability::Available
                     && world.is_some(),
                 world_name: world.map_or_else(
-                    || "World unavailable".into(),
+                    || tr!("World unavailable").into(),
                     |world| world.display_name.as_str().to_owned(),
                 ),
                 channels: world.map_or_else(Vec::new, |world| {

@@ -120,8 +120,10 @@ impl Outbox {
         mailbox.activity_reset_commands = true;
         mailbox.map = None;
         mailbox.action_feedback = Some(Some(match receipt.scope {
-            ActivityScope::Instance { .. } => "Entered activity instance. Use the exit to return.",
-            ActivityScope::Channel { .. } => "Returned to the channel.",
+            ActivityScope::Instance { .. } => {
+                tr!("Entered activity instance. Use the exit to return.")
+            }
+            ActivityScope::Channel { .. } => tr!("Returned to the channel."),
         }));
     }
 }

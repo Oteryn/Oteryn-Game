@@ -8,7 +8,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::NpcShop(command)).is_err()
         {
             mailbox.npc_shop.pending = false;
-            mailbox.npc_shop.feedback = Some("Session ended");
+            mailbox.npc_shop.feedback = Some(tr!("Session ended"));
         }
     }
 }
@@ -32,7 +32,7 @@ pub(in crate::play) fn trade_request(
         && commands.send(PlayCommand::NpcTrade(intent)).is_err()
     {
         mailbox.npc_shop.live.pending = false;
-        mailbox.npc_shop.live.feedback = "Session ended".into();
+        mailbox.npc_shop.live.feedback = tr!("Session ended").into();
     }
 }
 
@@ -63,7 +63,7 @@ pub(in crate::play) fn offer_request(
         && commands.send(PlayCommand::NpcShop(command)).is_err()
     {
         mailbox.npc_shop.pending = false;
-        mailbox.npc_shop.feedback = Some("Session ended");
+        mailbox.npc_shop.feedback = Some(tr!("Session ended"));
     }
 }
 

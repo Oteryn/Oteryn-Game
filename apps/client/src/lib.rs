@@ -1,4 +1,6 @@
 //! Native client process and component composition.
+#[macro_use]
+extern crate oteryn_client_ui;
 
 pub mod about;
 #[path = "features/local-account-services/mod.rs"]

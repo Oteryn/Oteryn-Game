@@ -8,7 +8,7 @@ impl MinimapControls {
                 control(
                     hwnd,
                     "STATIC",
-                    "Portable minimap file",
+                    tr!("Portable minimap file"),
                     0,
                     [10, 60, 710, 26],
                     0,
@@ -24,7 +24,9 @@ impl MinimapControls {
                 control(
                     hwnd,
                     "STATIC",
-                    "Import replaces this world's exploration and markers. Export first to keep a copy.\r\nFiles must match the current world and content generation. Join a world before transferring.",
+                    tr!(
+                        "Import replaces this world's exploration and markers. Export first to keep a copy.\r\nFiles must match the current world and content generation. Join a world before transferring."
+                    ),
                     0,
                     [10, 145, 710, 80],
                     0,
@@ -32,7 +34,7 @@ impl MinimapControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Import and replace",
+                    tr!("Import and replace"),
                     270,
                     [10, 245, 340, 30],
                     0,
@@ -40,7 +42,7 @@ impl MinimapControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Export new file",
+                    tr!("Export new file"),
                     271,
                     [370, 245, 350, 30],
                     0,

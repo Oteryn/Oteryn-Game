@@ -8,7 +8,7 @@ fn command(p: &mut CyclopediaCharacterPanel, page: u32) -> Option<FeatureCommand
     let Ok(page) = u8::try_from(page) else {
         p.achievements.pending = None;
         p.achievements.catalog.collecting = false;
-        p.achievements.error = Some("The achievement list exceeded its page limit");
+        p.achievements.error = Some(tr!("The achievement list exceeded its page limit"));
         return None;
     };
     p.pending = true;
@@ -68,7 +68,9 @@ pub(super) fn apply(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             &mut p.achievements,
             &oteryn_client_runtime::account_achievements::Response::Refused,
         );
-        p.feedback = Some("The server refused or returned an invalid character achievement page");
+        p.feedback = Some(tr!(
+            "The server refused or returned an invalid character achievement page"
+        ));
         return false;
     };
     p.achievement_profile = Some((page.character, page.name));

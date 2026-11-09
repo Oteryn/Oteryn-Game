@@ -1,4 +1,7 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
+#[macro_use]
+#[path = "components/localization/mod.rs"]
+pub mod localization;
 
 #[path = "components/bulletin.rs"]
 pub mod bulletin;

@@ -33,7 +33,7 @@ impl HelpControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Report a client problem",
+                    tr!("Report a client problem"),
                     260,
                     [10, 340, 340, 30],
                     0,
@@ -41,7 +41,7 @@ impl HelpControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Report player behavior",
+                    tr!("Report player behavior"),
                     261,
                     [370, 340, 350, 30],
                     0,
@@ -102,12 +102,18 @@ pub(crate) fn page_hint(page: SettingsPage) -> &'static str {
             "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
         }
         SettingsPage::BarHotkeys => {
-            "Choose a shortcut for each spell slot. Configure its screen position and grid under Interface / action bar layout."
+            tr!(
+                "Choose a shortcut for each spell slot. Configure its screen position and grid under Interface / action bar layout."
+            )
         }
         SettingsPage::Graphics => {
-            "Light and combat effect visibility apply to the live world. HUD presentation is configured under Interface."
+            tr!(
+                "Light and combat effect visibility apply to the live world. HUD presentation is configured under Interface."
+            )
         }
-        SettingsPage::Sound => "Master volume % (0–100). Changes apply to playback immediately.",
+        SettingsPage::Sound => {
+            tr!("Master volume % (0–100). Changes apply to playback immediately.")
+        }
         _ => "",
     }
 }

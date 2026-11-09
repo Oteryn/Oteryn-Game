@@ -54,18 +54,18 @@ pub(in crate::play) fn configure(
             None
         } else {
             let Ok(id) = text.trim().parse::<NonZeroU32>() else {
-                panel.feedback = "Enter positive server cast indices".into();
+                panel.feedback = tr!("Enter positive server cast indices").into();
                 return false;
             };
             Some(id)
         };
         if !next.bind(slot, spell) {
-            panel.feedback = "Cast index is out of range".into();
+            panel.feedback = tr!("Cast index is out of range").into();
             return false;
         }
     }
     panel.bar = next;
-    panel.feedback = "Bindings applied".into();
+    panel.feedback = tr!("Bindings applied").into();
     true
 }
 

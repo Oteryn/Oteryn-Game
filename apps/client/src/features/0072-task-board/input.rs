@@ -20,7 +20,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::TaskBoard(command)).is_err()
         {
             mailbox.task_board.pending = false;
-            mailbox.task_board.feedback = Some("The session has ended");
+            mailbox.task_board.feedback = Some(tr!("The session has ended"));
         }
     }
 }
@@ -33,7 +33,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.task_board.pending = false;
-            mailbox.task_board.feedback = Some("The session has ended");
+            mailbox.task_board.feedback = Some(tr!("The session has ended"));
         }
     }
 }

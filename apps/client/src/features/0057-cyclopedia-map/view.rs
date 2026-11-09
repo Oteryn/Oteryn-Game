@@ -173,7 +173,11 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
         }
         Section::Houses => oteryn_client_ui::house::panel_text(&mailbox.properties.house.model),
     };
-    format!("Cyclopedia > {}\r\n{body}", panel.section.title())
+    lfmt!(
+        "Cyclopedia > {}\r\n{body}",
+        panel.section.title(),
+        body = body
+    )
 }
 
 #[cfg(any(windows, test))]

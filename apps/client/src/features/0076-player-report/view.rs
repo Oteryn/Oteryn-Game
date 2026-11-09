@@ -57,7 +57,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         let panel = &mut mailbox.properties.player_report;
                         panel.fields[1] = (action - 3).to_string();
                         panel.violation_reviewed = None;
-                        panel.feedback = "Choose the operator's reason code, describe the evidence, then review.".into();
+                        panel.feedback = tr!(
+                            "Choose the operator's reason code, describe the evidence, then review."
+                        )
+                        .into();
                     }
                     6 | 7 => mailbox.properties.player_report.cycle_reason(action == 7),
                     _ => {}

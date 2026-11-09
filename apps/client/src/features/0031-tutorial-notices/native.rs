@@ -37,7 +37,7 @@ fn run(weak: WeakMailbox) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Compendium — Guide, updates and help").as_ptr(),
+            wide(tr!("Compendium — Guide, updates and help")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -54,12 +54,12 @@ fn run(weak: WeakMailbox) {
         }
         let mut tabs = Vec::new();
         for (index, label) in [
-            "Notices",
-            "Guide",
-            "Recommendations",
-            "Updates",
-            "Features",
-            "Help",
+            tr!("Notices"),
+            tr!("Guide"),
+            tr!("Recommendations"),
+            tr!("Updates"),
+            tr!("Features"),
+            tr!("Help"),
         ]
         .iter()
         .enumerate()
@@ -97,7 +97,7 @@ fn run(weak: WeakMailbox) {
             .map(|path| crate::bulletin::Browser::load(&path))
             .transpose()
             .map(|browser| browser.unwrap_or_default().news())
-            .unwrap_or_else(|error| format!("Updates unavailable: {error}"));
+            .unwrap_or_else(|error| lfmt!("Updates unavailable: {error}", error = error));
         let list = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -154,7 +154,7 @@ fn run(weak: WeakMailbox) {
                         _ => Page::Help,
                     });
                     if tab == 3 {
-                        format!("Updates\r\n\r\n{updates}")
+                        lfmt!("Updates\r\n\r\n{updates}", updates = updates)
                     } else {
                         guide.text()
                     }

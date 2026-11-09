@@ -13,11 +13,11 @@ pub enum Intent {
 }
 pub fn request(panel: &mut BossDifficultyPanel, intent: Intent) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("Feature unavailable in this session");
+        panel.feedback = Some(tr!("Feature unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let typed = match intent {
@@ -37,7 +37,7 @@ pub fn request(panel: &mut BossDifficultyPanel, intent: Intent) -> Option<Featur
         },
     };
     let Ok(payload) = boss_difficulty::encode_request(&typed) else {
-        panel.feedback = Some("Enter a valid boss id or open a server context first");
+        panel.feedback = Some(tr!("Enter a valid boss id or open a server context first"));
         return None;
     };
     panel.pending = true;
@@ -54,11 +54,11 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the difficulty action");
+        panel.feedback = Some(tr!("The server refused the difficulty action"));
         return false;
     }
     let Some(reply) = decode_reply(&result.payload) else {
-        panel.feedback = Some("The server returned an invalid difficulty reply");
+        panel.feedback = Some(tr!("The server returned an invalid difficulty reply"));
         return false;
     };
     panel.context = match &reply {
@@ -76,7 +76,7 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
         Reply::Refused { context, .. } => *context,
     };
     panel.feedback = if matches!(reply, Reply::Refused { .. }) {
-        Some("The server refused the difficulty choice")
+        Some(tr!("The server refused the difficulty choice"))
     } else {
         None
     };

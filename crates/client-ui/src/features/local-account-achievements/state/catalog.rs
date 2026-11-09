@@ -56,13 +56,15 @@ impl CatalogState {
             || self.building.len().saturating_add(page.rows.len()) > page.fact_count as usize
         {
             self.collecting = false;
-            return Err("The account list changed or exceeded its limit. Refresh to load it again");
+            return Err(tr!(
+                "The account list changed or exceeded its limit. Refresh to load it again"
+            ));
         }
         self.totals = Some(totals);
         for row in &page.rows {
             if !self.keys.insert(row.key.clone()) {
                 self.collecting = false;
-                return Err("The account list changed. Refresh to load it again");
+                return Err(tr!("The account list changed. Refresh to load it again"));
             }
             self.building.push(row.clone());
         }
@@ -71,7 +73,7 @@ impl CatalogState {
         if !page.has_more {
             if self.building.len() != page.fact_count as usize {
                 self.collecting = false;
-                return Err("The server returned an incomplete account list");
+                return Err(tr!("The server returned an incomplete account list"));
             }
             self.rows = std::mem::take(&mut self.building);
             self.keys.clear();

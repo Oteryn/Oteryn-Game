@@ -135,9 +135,9 @@ pub fn recover(panel: &mut Panel) {
         tool: panel.tool,
         selected: panel.selected,
         open: panel.open,
-        feedback: Some(
-            "Server state replaced; a fresh measurement interval and item settings were started",
-        ),
+        feedback: Some(tr!(
+            "Server state replaced; a fresh measurement interval and item settings were started"
+        )),
         ..Panel::default()
     };
 }
@@ -154,7 +154,9 @@ pub fn catalogue_request(
     }
     let remaining = super::state::items::MAX_ITEM_DETAILS.saturating_sub(panel.item_info.len());
     if remaining == 0 {
-        panel.feedback = Some("Item identity cache is full; unresolved values remain excluded");
+        panel.feedback = Some(tr!(
+            "Item identity cache is full; unresolved values remain excluded"
+        ));
         return None;
     }
     let mut ids = Vec::new();
@@ -172,7 +174,7 @@ pub fn catalogue_request(
         }
     }
     if ids.is_empty() {
-        panel.feedback = Some("Item identities are current");
+        panel.feedback = Some(tr!("Item identities are current"));
         return None;
     }
     let payload = encode_request(&ids).ok()?;
@@ -201,10 +203,14 @@ pub fn catalogue_result(
         for row in rows {
             panel.item_info.insert(row.item_type, row);
         }
-        panel.feedback = Some("Item identities received; resolve again if more items remain");
+        panel.feedback = Some(tr!(
+            "Item identities received; resolve again if more items remain"
+        ));
         return true;
     }
-    panel.feedback = Some("Item identities unavailable; unresolved values remain excluded");
+    panel.feedback = Some(tr!(
+        "Item identities unavailable; unresolved values remain excluded"
+    ));
     false
 }
 

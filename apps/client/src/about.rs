@@ -17,13 +17,13 @@ impl Survey {
         Self { easy_sign_in }
     }
     pub fn preview(&self) -> String {
-        format!(
+        lfmt!(
             "Oteryn client survey\nBuild: {}\nQuestion: Was browser sign-in easy?\nAnswer: {}\nNo identity, account information or credentials included.\n",
             crate::CLIENT_BUILD,
             if self.easy_sign_in {
-                "Easy"
+                tr!("Easy")
             } else {
-                "Difficult"
+                tr!("Difficult")
             }
         )
     }
@@ -34,15 +34,15 @@ impl Survey {
 #[cfg(windows)]
 pub(crate) fn run_survey() {
     use crate::crash_report::consent_dialog;
-    if !consent_dialog(
-        "Would you like to answer an optional one-question Oteryn client survey? You can decline to save your answer after reviewing it. Nothing is uploaded.",
-    ) {
+    if !consent_dialog(tr!(
+        "Would you like to answer an optional one-question Oteryn client survey? You can decline to save your answer after reviewing it. Nothing is uploaded."
+    )) {
         return;
     }
-    let survey = Survey::new(consent_dialog(
-        "Was browser sign-in easy? Yes = Easy; No = Difficult.",
-    ));
-    if !consent_dialog(&format!(
+    let survey = Survey::new(consent_dialog(tr!(
+        "Was browser sign-in easy? Yes = Easy; No = Difficult."
+    )));
+    if !consent_dialog(&lfmt!(
         "{}\nSave this response as a local file?",
         survey.preview()
     )) {
@@ -52,7 +52,7 @@ pub(crate) fn run_survey() {
         let settings = crate::native_login::settings_path().map_err(io::Error::other)?;
         let directory = settings
             .parent()
-            .ok_or_else(|| io::Error::other("No configuration directory"))?;
+            .ok_or_else(|| io::Error::other(tr!("No configuration directory")))?;
         std::fs::create_dir_all(directory)?;
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -63,11 +63,11 @@ pub(crate) fn run_survey() {
         Ok(path)
     })();
     match result {
-        Ok(path) => show_information(&format!(
+        Ok(path) => show_information(&lfmt!(
             "Survey response saved to {}. You can share or delete this file yourself.",
             path.display()
         )),
-        Err(_) => show_information("Cannot save the response. No response was sent."),
+        Err(_) => show_information(tr!("Cannot save the response. No response was sent.")),
     }
 }
 #[cfg(windows)]
@@ -85,7 +85,7 @@ pub(crate) fn show_information(message: &str) {
         MessageBoxW(
             std::ptr::null_mut(),
             wide(message).as_ptr(),
-            wide("About Oteryn").as_ptr(),
+            wide(tr!("About Oteryn")).as_ptr(),
             MB_OK | MB_ICONINFORMATION,
         );
     }

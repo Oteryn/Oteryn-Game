@@ -1232,9 +1232,10 @@
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Lokalizacja interfejsu",
-  "status": "PARTIAL",
-  "gap": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/localization.rs:5 + crates/client-ui/src/components/localization/build.rs:8 + language_selection_persists_and_localizes_real_chat_view_without_changing_messages (apps/client/src/features/local-reference-preferences/tests/localization.rs:5)"
  },
  {
   "id": "O006",

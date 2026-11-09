@@ -23,7 +23,7 @@ impl Settings {
         let mut state = lock(&self.shared);
         match state.process_screenshots(std::time::Instant::now(), link, &mut source) {
             Ok(paths) if !paths.is_empty() => {
-                state.feedback = format!(
+                state.feedback = lfmt!(
                     "Saved {} screenshot(s): {}",
                     paths.len(),
                     paths
@@ -31,7 +31,7 @@ impl Settings {
                         .map_or_else(String::new, |p| p.display().to_string())
                 )
             }
-            Err(error) => state.feedback = format!("Screenshot failed: {error}"),
+            Err(error) => state.feedback = lfmt!("Screenshot failed: {error}", error = error),
             Ok(_) => {}
         }
     }
@@ -64,7 +64,7 @@ unsafe fn window_pixels(hwnd: HWND) -> io::Result<Pixels> {
         }
         let (width, height) = (rect.right - rect.left, rect.bottom - rect.top);
         if width <= 0 || height <= 0 || width > 4096 || height > 4096 {
-            return Err(io::Error::other("Window is too large to capture"));
+            return Err(io::Error::other(tr!("Window is too large to capture")));
         }
         let dc = GetWindowDC(hwnd);
         if dc.is_null() {

@@ -71,7 +71,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Stash — Ctrl+S").as_ptr(),
+            wide(tr!("Stash — Ctrl+S")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -112,7 +112,7 @@ fn run(
         let withdraw = control(
             hwnd,
             "BUTTON",
-            "Withdraw",
+            tr!("Withdraw"),
             WITHDRAW,
             [110, 320, 120, 28],
             WS_TABSTOP,
@@ -120,7 +120,7 @@ fn run(
         let previous = control(
             hwnd,
             "BUTTON",
-            "Previous",
+            tr!("Previous"),
             PREVIOUS,
             [10, 358, 100, 28],
             WS_TABSTOP,
@@ -128,7 +128,7 @@ fn run(
         let next = control(
             hwnd,
             "BUTTON",
-            "Next",
+            tr!("Next"),
             NEXT,
             [120, 358, 100, 28],
             WS_TABSTOP,
@@ -136,7 +136,7 @@ fn run(
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             REFRESH,
             [230, 358, 100, 28],
             WS_TABSTOP,
@@ -152,7 +152,7 @@ fn run(
         control(
             hwnd,
             "BUTTON",
-            "Search",
+            tr!("Search"),
             SEARCH,
             [520, 320, 70, 28],
             WS_TABSTOP,
@@ -160,7 +160,7 @@ fn run(
         control(
             hwnd,
             "BUTTON",
-            "Sort name / stock",
+            tr!("Sort name / stock"),
             SORT,
             [340, 358, 250, 28],
             WS_TABSTOP,
@@ -176,7 +176,7 @@ fn run(
         let stow = control(
             hwnd,
             "BUTTON",
-            "Stow selected item",
+            tr!("Stow selected item"),
             STOW,
             [610, 320, 300, 28],
             WS_TABSTOP,
@@ -184,7 +184,7 @@ fn run(
         let carried_label = control(
             hwnd,
             "STATIC",
-            "Carried items (open bags in Depot)",
+            tr!("Carried items (open bags in Depot)"),
             110,
             [610, 10, 300, 20],
             0,
@@ -289,13 +289,13 @@ fn run(
                         .is_err()
                 {
                     mailbox.stash.pending = false;
-                    mailbox.stash.feedback = Some("The session has ended".into());
+                    mailbox.stash.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(&mailbox.stash) {
                 SendMessageW(item, LB_RESETCONTENT, 0, 0);
                 for entry in &mailbox.stash.carried {
-                    let label = format!("Item {} × {}", entry.item_definition_ref, entry.count);
+                    let label = lfmt!("Item {} × {}", entry.item_definition_ref, entry.count);
                     SendMessageW(item, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);

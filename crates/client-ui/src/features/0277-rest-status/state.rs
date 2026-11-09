@@ -22,7 +22,7 @@ impl RestStatusPanel {
         }
         // A refused refresh cannot keep presenting old area/food bonuses as current.
         self.snapshot = None;
-        self.error = Some("Rest status could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Rest status could not be refreshed. Try Refresh."));
         false
     }
 

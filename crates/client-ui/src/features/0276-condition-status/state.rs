@@ -15,7 +15,7 @@ impl ConditionStatusPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Conditions could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Conditions could not be refreshed. Try Refresh."));
         false
     }
 }

@@ -10,14 +10,14 @@ impl PresentationControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
             let labels = [
-                "Local speech",
-                "Private messages and channels",
-                "Guild messages",
-                "Public channel messages",
-                "Party messages",
-                "Show message mode labels",
-                "Show dropped-line notices",
-                "Show server feedback",
+                tr!("Local speech"),
+                tr!("Private messages and channels"),
+                tr!("Guild messages"),
+                tr!("Public channel messages"),
+                tr!("Party messages"),
+                tr!("Show message mode labels"),
+                tr!("Show dropped-line notices"),
+                tr!("Show server feedback"),
             ];
             let console = std::array::from_fn(|index| match index {
                 0..=7 => control(
@@ -31,7 +31,7 @@ impl PresentationControls {
                 8 => control(
                     hwnd,
                     "STATIC",
-                    "Recent received lines (1–1000)",
+                    tr!("Recent received lines (1–1000)"),
                     0,
                     [10, 310, 500, 26],
                     0,
@@ -47,19 +47,19 @@ impl PresentationControls {
                 _ => control(
                     hwnd,
                     "BUTTON",
-                    "Apply console settings",
+                    tr!("Apply console settings"),
                     280,
                     [10, 350, 710, 26],
                     0,
                 ),
             });
             let labels = [
-                "Left position (pixels)",
-                "Top position (pixels)",
-                "Columns (1–4)",
-                "Button width (24–160)",
-                "Button height (24–160)",
-                "Spacing (0–32)",
+                tr!("Left position (pixels)"),
+                tr!("Top position (pixels)"),
+                tr!("Columns (1–4)"),
+                tr!("Button width (24–160)"),
+                tr!("Button height (24–160)"),
+                tr!("Spacing (0–32)"),
             ];
             let bar = std::array::from_fn(|index| match index {
                 0..=11 if index % 2 == 0 => control(
@@ -81,7 +81,7 @@ impl PresentationControls {
                 12 => control(
                     hwnd,
                     "BUTTON",
-                    "Show spell action bar",
+                    tr!("Show spell action bar"),
                     322,
                     [10, 310, 710, 26],
                     BS_AUTOCHECKBOX as u32,
@@ -89,7 +89,7 @@ impl PresentationControls {
                 _ => control(
                     hwnd,
                     "BUTTON",
-                    "Apply action-bar layout",
+                    tr!("Apply action-bar layout"),
                     281,
                     [10, 350, 710, 26],
                     0,
@@ -156,7 +156,7 @@ impl PresentationControls {
             let mut preferences = state.preferences.clone();
             if action == 280 {
                 let Ok(limit) = text(self.console[9]).parse::<u16>() else {
-                    state.feedback = "Enter a console limit from 1 to 1000".into();
+                    state.feedback = tr!("Enter a console limit from 1 to 1000").into();
                     return true;
                 };
                 preferences.console.visible = std::array::from_fn(|index| {
@@ -172,13 +172,13 @@ impl PresentationControls {
                 let mut values = [0_u16; 6];
                 for (index, value) in values.iter_mut().enumerate() {
                     let Ok(parsed) = text(self.bar[index * 2 + 1]).parse() else {
-                        state.feedback = "Enter whole numbers for action-bar geometry".into();
+                        state.feedback = tr!("Enter whole numbers for action-bar geometry").into();
                         return true;
                     };
                     *value = parsed;
                 }
                 let Ok(columns) = u8::try_from(values[2]) else {
-                    state.feedback = "Choose 1 to 4 columns".into();
+                    state.feedback = tr!("Choose 1 to 4 columns").into();
                     return true;
                 };
                 preferences.action_bar.origin = [values[0], values[1]];

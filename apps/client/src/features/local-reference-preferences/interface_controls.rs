@@ -12,7 +12,12 @@ pub(crate) struct InterfaceControls {
 impl InterfaceControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
-            let names = ["Own name", "Other player names", "Creature / NPC names"].map(|label| {
+            let names = [
+                tr!("Own name"),
+                tr!("Other player names"),
+                tr!("Creature / NPC names"),
+            ]
+            .map(|label| {
                 control(
                     hwnd,
                     "BUTTON",
@@ -31,7 +36,7 @@ impl InterfaceControls {
             let label = control(
                 hwnd,
                 "STATIC",
-                "HUD scale % (80–200)",
+                tr!("HUD scale % (80–200)"),
                 0,
                 [10, 185, 300, 26],
                 0,
@@ -47,7 +52,7 @@ impl InterfaceControls {
             let cursor = control(
                 hwnd,
                 "BUTTON",
-                "Crosshair cursor",
+                tr!("Crosshair cursor"),
                 236,
                 [10, 225, 300, 26],
                 BS_AUTOCHECKBOX as u32,
@@ -79,7 +84,7 @@ impl InterfaceControls {
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
             preferences.interface_scale = text(self.scale)
                 .parse()
-                .map_err(|_| "Enter a HUD scale from 80 to 200%".to_owned())?;
+                .map_err(|_| tr!("Enter a HUD scale from 80 to 200%").to_owned())?;
             preferences.cursor_crosshair = SendMessageW(self.cursor, BM_GETCHECK, 0, 0) == 1;
             Ok(())
         }

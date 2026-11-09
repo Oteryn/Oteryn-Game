@@ -46,7 +46,7 @@ pub fn save_bmp(path: &Path, width: u32, height: u32, bgra: &[u8], crop: Rect) -
     let invalid = || {
         io::Error::new(
             io::ErrorKind::InvalidInput,
-            "Invalid screenshot dimensions, frame or crop",
+            tr!("Invalid screenshot dimensions, frame or crop"),
         )
     };
     let pixels = u64::from(width) * u64::from(height);

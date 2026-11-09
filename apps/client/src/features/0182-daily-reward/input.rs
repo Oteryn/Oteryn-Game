@@ -36,6 +36,6 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::DailyReward(command)).is_err()
     {
         mailbox.daily_reward.pending = false;
-        mailbox.daily_reward.feedback = Some("The session has ended");
+        mailbox.daily_reward.feedback = Some(tr!("The session has ended"));
     }
 }

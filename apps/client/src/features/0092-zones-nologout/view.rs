@@ -23,8 +23,8 @@ impl PlayView {
             .back()
             .map(|message| match &message.value {
                 ServerMessage::StatusText(text) => text.clone(),
-                ServerMessage::Warning(text) => format!("Warning: {text}"),
-                ServerMessage::Advance(text) => format!("Advance: {text}"),
+                ServerMessage::Warning(text) => lfmt!("Warning: {text}", text = text),
+                ServerMessage::Advance(text) => lfmt!("Advance: {text}", text = text),
             })
     }
 }

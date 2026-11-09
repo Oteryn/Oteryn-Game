@@ -53,7 +53,7 @@ impl Pixels {
             || height > 4096
             || rgba.len() != width as usize * height as usize * 4
         {
-            return Err(io::Error::other("Invalid screenshot dimensions"));
+            return Err(io::Error::other(tr!("Invalid screenshot dimensions")));
         }
         Ok(Self {
             width,
@@ -64,7 +64,7 @@ impl Pixels {
 
     pub fn save(&self, folder: &str) -> io::Result<PathBuf> {
         if folder.trim().is_empty() {
-            return Err(io::Error::other("Choose a screenshot folder"));
+            return Err(io::Error::other(tr!("Choose a screenshot folder")));
         }
         std::fs::create_dir_all(folder)?;
         static SEQUENCE: AtomicU64 = AtomicU64::new(0);

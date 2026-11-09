@@ -20,7 +20,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.hotkey_equip.pending = false;
-            mailbox.hotkey_equip.feedback = Some("The session has ended".into());
+            mailbox.hotkey_equip.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn hotkey_equip_input(
@@ -56,7 +56,7 @@ impl PlayLink {
                             .is_err()
                     {
                         panel.pending = false;
-                        panel.feedback = Some("The session has ended".into());
+                        panel.feedback = Some(tr!("The session has ended").into());
                     }
                 }
                 return true;

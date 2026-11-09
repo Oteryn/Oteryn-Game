@@ -26,7 +26,7 @@ impl PlayLink {
             && commands.send(PlayCommand::Stash(command)).is_err()
         {
             mailbox.stash.pending = false;
-            mailbox.stash.feedback = Some("The session has ended".into());
+            mailbox.stash.feedback = Some(tr!("The session has ended").into());
         }
     }
 
@@ -36,7 +36,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Stash(command)).is_err()
         {
             mailbox.stash.pending = false;
-            mailbox.stash.feedback = Some("The session has ended".into());
+            mailbox.stash.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn stash_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -62,7 +62,7 @@ impl PlayLink {
                 && commands.send(PlayCommand::Stash(command)).is_err()
             {
                 mailbox.stash.pending = false;
-                mailbox.stash.feedback = Some("The session has ended".into());
+                mailbox.stash.feedback = Some(tr!("The session has ended").into());
             }
         }
         #[cfg(windows)]

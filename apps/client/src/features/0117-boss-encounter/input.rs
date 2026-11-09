@@ -19,7 +19,9 @@ impl PlayLink {
             #[cfg(windows)]
             super::view::cooldown_window(self);
             #[cfg(not(windows))]
-            { lock(&self.mailbox).boss_encounter.cooldowns_open = true; }
+            {
+                lock(&self.mailbox).boss_encounter.cooldowns_open = true;
+            }
             return true;
         }
         if !oteryn_client_ui::boss_encounter::open_key(events) {
@@ -44,7 +46,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.boss_encounter.pending = false;
-        mailbox.boss_encounter.feedback = Some("The session has ended");
+        mailbox.boss_encounter.feedback = Some(tr!("The session has ended"));
     }
 }
 

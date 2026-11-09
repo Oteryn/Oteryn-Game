@@ -14,31 +14,31 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         if capability == 154 {
             mailbox.store.pending = false;
-            mailbox.store.feedback = Some("Session ended".into());
+            mailbox.store.feedback = Some(tr!("Session ended").into());
             return false;
         }
         let state = &mut mailbox.discovery;
         match capability {
             98 => {
                 state.loot.pending = None;
-                state.loot.feedback = "Session ended".into();
+                state.loot.feedback = tr!("Session ended").into();
             }
             132 => {
                 state.inspection.pending = false;
-                state.inspection.feedback = "Session ended".into();
+                state.inspection.feedback = tr!("Session ended").into();
             }
             200 => {
                 state.leader.pending = false;
                 state.leader.submitted = None;
-                state.leader.feedback = "Session ended".into();
+                state.leader.feedback = tr!("Session ended").into();
             }
             232 => {
                 state.teams.pending = None;
-                state.teams.feedback = "Session ended".into();
+                state.teams.feedback = tr!("Session ended").into();
             }
             285 => {
                 state.history.pending = false;
-                state.history.feedback = "Session ended".into();
+                state.history.feedback = tr!("Session ended").into();
             }
             _ => {}
         }

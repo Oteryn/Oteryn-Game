@@ -47,9 +47,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 #[cfg(windows)]
 fn text(panel: &oteryn_client_ui::house::Panel) -> String {
     let mut text = oteryn_client_ui::house::panel_text(panel);
-    text.push_str("\r\nSelect a row for changes:");
+    text.push_str(tr!("\r\nSelect a row for changes:"));
     for (index, row) in panel.page.rows.iter().enumerate() {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "\r\n{}: {} (owned: {})",
             index + 1,
             row.house,

@@ -1,12 +1,12 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
-    format!(
+    lfmt!(
         "Bestiary and Charms\r\n{}\r\n{}",
         panel.summary,
         if panel.pending {
-            "Waiting for the server"
+            tr!("Waiting for the server")
         } else if !panel.selected && panel.feedback.is_empty() {
-            "Unavailable in this session"
+            tr!("Unavailable in this session")
         } else {
             &panel.feedback
         }
@@ -15,15 +15,15 @@ pub fn panel_text(panel: &Panel) -> String {
 
 pub fn bestiary_text(panel: &Panel) -> String {
     use std::fmt::Write;
-    let mut out = format!("Bestiary — {:?}\r\n", panel.race_filter);
+    let mut out = lfmt!("Bestiary — {:?}\r\n", panel.race_filter);
     if !panel.selected {
-        return "Bestiary unavailable in this session".into();
+        return tr!("Bestiary unavailable in this session").into();
     }
     if panel.reply.is_none() {
-        return "Query to load Bestiary progress".into();
+        return tr!("Query to load Bestiary progress").into();
     }
     for race in panel.race_cards() {
-        let _ = write!(
+        let _ = lwrite!(
             out,
             "{}Race {}: {} kills\r\n",
             if panel.fields[1] == race.race.to_string() {
@@ -35,7 +35,7 @@ pub fn bestiary_text(panel: &Panel) -> String {
             race.kill_count
         );
         for (index, goal) in race.kill_thresholds.iter().enumerate() {
-            let _ = write!(
+            let _ = lwrite!(
                 out,
                 "  Stage {}: {}/{} {}\r\n",
                 index + 1,
@@ -44,13 +44,13 @@ pub fn bestiary_text(panel: &Panel) -> String {
                 if race.kill_count >= *goal {
                     "complete"
                 } else {
-                    "in progress"
+                    tr!("in progress")
                 }
             );
         }
     }
     out.push_str(&bestiary_detail_text(panel));
-    out.push_str("Creature names, illustrations, combat statistics, resistances and loot are not supplied by this progress snapshot.\r\n");
+    out.push_str(tr!("Creature names, illustrations, combat statistics, resistances and loot are not supplied by this progress snapshot.\r\n"));
     out
 }
 
@@ -58,21 +58,22 @@ pub fn charms_text(panel: &Panel) -> String {
     use oteryn_client_runtime::charm_progression::charm::CharmKind;
     use std::fmt::Write;
     if !panel.selected {
-        return "Charms unavailable in this session".into();
+        return tr!("Charms unavailable in this session").into();
     }
     let Some(reply) = &panel.reply else {
-        return "Query to load Charms".into();
+        return tr!("Query to load Charms").into();
     };
-    let mut out = format!(
+    let mut out = lfmt!(
         "Charms\r\n{} Charm Points | {} Minor Charm Echoes\r\n",
-        reply.charms.charm_points_available, reply.charms.minor_charm_echoes_available
+        reply.charms.charm_points_available,
+        reply.charms.minor_charm_echoes_available
     );
     for charm in &reply.charms.charms {
         let (currency, stage) = match charm.kind {
-            CharmKind::Major => ("Charm Points", 3),
-            CharmKind::Minor => ("Minor Charm Echoes", 1),
+            CharmKind::Major => (tr!("Charm Points"), 3),
+            CharmKind::Minor => (tr!("Minor Charm Echoes"), 1),
         };
-        let _ = write!(
+        let _ = lwrite!(
             out,
             "{}Charm {} — {:?}, stage {}\r\nNext stage: {} {currency} | Assign to Bestiary stage {stage} or higher\r\nAssigned race: {} | {}\r\n",
             if panel.fields[0] == charm.charm.to_string() {
@@ -86,18 +87,21 @@ pub fn charms_text(panel: &Panel) -> String {
             charm.next_stage_cost,
             charm
                 .assigned_race
-                .map_or_else(|| "none".into(), |r| r.to_string()),
+                .map_or_else(|| tr!("none").into(), |r| r.to_string()),
             if charm.effect_active {
-                "Effect active"
+                tr!("Effect active")
             } else {
-                "Effect not yet active"
-            }
+                tr!("Effect not yet active")
+            },
+            currency = currency,
+            stage = stage
         );
     }
-    let _ = write!(
+    let _ = lwrite!(
         out,
         "Selected assignment race: {}\r\n{}\r\n",
-        panel.fields[1], panel.feedback
+        panel.fields[1],
+        panel.feedback
     );
     out
 }
@@ -113,9 +117,9 @@ fn bestiary_detail_text(panel: &Panel) -> String {
         .iter()
         .find(|race| Some(race.race.get()) == selected)
     else {
-        return "Select a confirmed creature to inspect its discovery card\r\n".into();
+        return tr!("Select a confirmed creature to inspect its discovery card\r\n").into();
     };
-    let mut text = format!(
+    let mut text = lfmt!(
         "Selected creature — race {}\r\nCurrent stage: {}/3\r\n",
         race.race,
         race.unlocked_stage()
@@ -126,14 +130,14 @@ fn bestiary_detail_text(panel: &Panel) -> String {
         .enumerate()
         .find(|(_, goal)| race.kill_count < **goal)
     {
-        let _ = write!(
+        let _ = lwrite!(
             text,
             "Next discovery: stage {}, {} kills remaining\r\n",
             index + 1,
             goal.saturating_sub(race.kill_count)
         );
     } else {
-        text.push_str("All discovery stages complete\r\n");
+        text.push_str(tr!("All discovery stages complete\r\n"));
     }
     for charm in reply
         .charms
@@ -141,10 +145,12 @@ fn bestiary_detail_text(panel: &Panel) -> String {
         .iter()
         .filter(|charm| charm.assigned_race == Some(race.race))
     {
-        let _ = write!(
+        let _ = lwrite!(
             text,
             "Assigned charm {}: {:?}, stage {}\r\n",
-            charm.charm, charm.kind, charm.unlocked_stage
+            charm.charm,
+            charm.kind,
+            charm.unlocked_stage
         );
     }
     text

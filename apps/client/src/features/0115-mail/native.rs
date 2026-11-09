@@ -109,7 +109,7 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide(form.title).as_ptr(),
+            wide(oteryn_client_ui::localization::tr(form.title)).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE | WS_THICKFRAME,
             bounds[0],
             bounds[1],
@@ -131,6 +131,7 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
             let mut edits = Vec::new();
             let mut y = 10;
             for (index, label) in form.labels.iter().enumerate() {
+                let label = oteryn_client_ui::localization::tr(label);
                 control(hwnd, "STATIC", label, 0, [12, y, 640, 20], 0);
                 y += 22;
                 let multiline = (form.title == "Writing and mail" && index == 2)
@@ -172,6 +173,7 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
             }
             let mut buttons = Vec::new();
             for (index, label) in form.buttons.iter().enumerate() {
+                let label = oteryn_client_ui::localization::tr(label);
                 buttons.push(control(
                     hwnd,
                     "BUTTON",

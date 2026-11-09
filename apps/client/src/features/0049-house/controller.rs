@@ -28,6 +28,6 @@ pub fn submit(
         | (8, Some(a @ Action::Notice(_))) => request(panel, Some(&a), false),
         (7, None) => request(panel, Some(&Action::Leave), false),
         (9, None) => request(panel, Some(&Action::Cancel), false),
-        _ => Err("Invalid house action selection"),
+        _ => Err(oteryn_client_ui::tr!("Invalid house action selection")),
     }
 }

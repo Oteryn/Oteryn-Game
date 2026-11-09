@@ -73,7 +73,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     if action <= 15 {
                         mailbox.boss_encounter.select_boss(action == 14);
                     }
-                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
+                    if action == 16 {
+                        mailbox.boss_encounter.browser_category =
+                            mailbox.boss_encounter.browser_category.next();
+                    }
                     if action == 20 {
                         mailbox.boss_encounter.select_slot();
                     }

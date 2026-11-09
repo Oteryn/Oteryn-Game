@@ -1,4 +1,6 @@
 //! Settings message pump and preference application on its owning thread.
+#[path = "localization_window.rs"]
+mod localization_window;
 use super::*;
 #[path = "controls.rs"]
 mod controls;
@@ -6,20 +8,7 @@ use controls::Controls;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
-        let hwnd = CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Oteryn Settings").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            760,
-            540,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        );
+        let hwnd = localization_window::create();
         if hwnd.is_null() {
             lock(&shared).open = false;
             return;
@@ -32,6 +21,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            language,
             presentation,
             minimap,
             mut guide,
@@ -135,6 +125,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             guide.update(&state);
             minimap.show(state.page == SettingsPage::MinimapTransfer);
             presentation.show(state.page);
+            language.show(state.page == SettingsPage::Language);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -204,6 +195,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if language.action(action, &mut state) {
+                    continue;
+                }
                 if presentation.action(action, &mut state) {
                     continue;
                 }
@@ -221,9 +215,11 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     let confirmed = action == 111
                         || MessageBoxW(
                             hwnd,
-                            wide("Replace your current settings? A backup will be saved first.")
-                                .as_ptr(),
-                            wide("Oteryn Settings").as_ptr(),
+                            wide(tr!(
+                                "Replace your current settings? A backup will be saved first."
+                            ))
+                            .as_ptr(),
+                            wide(tr!("Oteryn Settings")).as_ptr(),
                             MB_YESNO | MB_ICONQUESTION,
                         ) == IDYES;
                     state = lock(&shared);
@@ -238,9 +234,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         _ => state.reset_defaults(),
                     };
                     state.feedback = match result {
-                        Ok(()) if action == 111 => "Export saved. Existing files are never overwritten.".into(),
-                        Ok(()) => "Settings replaced and saved. The previous settings are available through Restore backup.".into(),
-                        Err(error) => format!("Settings transfer failed: {error}"),
+                        Ok(()) if action == 111 => tr!("Export saved. Existing files are never overwritten.").into(),
+                        Ok(()) => tr!("Settings replaced and saved. The previous settings are available through Restore backup.").into(),
+                        Err(error) => lfmt!("Settings transfer failed: {error}",error=error),
                     };
                     continue;
                 }
@@ -263,8 +259,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     match preferences.general_hotkey_preset(action == 225) {
                         Ok(()) => state.apply(preferences),
                         Err(error) => {
-                            state.feedback =
-                                format!("Preset conflicts with a custom binding: {error}")
+                            state.feedback = lfmt!(
+                                "Preset conflicts with a custom binding: {error}",
+                                error = error
+                            )
                         }
                     }
                 } else if action == 223 {
@@ -279,7 +277,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             state.apply(preferences);
                         }
                         Err(_) => {
-                            state.feedback = "Enter a keyboard delay from 0 to 1000 ms".into()
+                            state.feedback = tr!("Enter a keyboard delay from 0 to 1000 ms").into()
                         }
                     }
                 } else if action == 103 {
@@ -287,7 +285,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         match preferences.rebind(binding.id, &text(chord)) {
                             Ok(()) => state.apply(preferences),
                             Err(error) => {
-                                state.feedback = format!("{error}. Choose a different chord.")
+                                state.feedback =
+                                    lfmt!("{error}. Choose a different chord.", error = error)
                             }
                         }
                     }
@@ -321,12 +320,13 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                                 SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
                             state.apply(preferences);
                         }
-                        _ => state.feedback = "Enter valid zoom and volume percentages".into(),
+                        _ => state.feedback = tr!("Enter valid zoom and volume percentages").into(),
                     }
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
                 presentation.refresh(&state.preferences);
+                language.refresh(&state.preferences);
                 gameplay.refresh(&state.preferences);
                 screenshots.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);

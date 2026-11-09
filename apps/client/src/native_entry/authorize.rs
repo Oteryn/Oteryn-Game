@@ -125,7 +125,7 @@ pub(super) async fn authorize(
                     }
                     Err(_) => {
                         let mut view = crate::account_services::View::default();
-                        view.feedback = "Account services sign-in was not completed. Return to character selection to try again.".into();
+                        view.feedback = tr!("Account services sign-in was not completed. Return to character selection to try again.").into();
                         let _ = crate::account_services::ask(
                             view,
                             &config.account_services,

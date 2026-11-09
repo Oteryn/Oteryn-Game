@@ -14,7 +14,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.achievements.pending = None;
-            mailbox.achievements.error = Some("Session ended");
+            mailbox.achievements.error = Some(tr!("Session ended"));
         }
     }
 

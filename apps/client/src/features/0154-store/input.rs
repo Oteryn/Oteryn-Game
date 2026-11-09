@@ -18,7 +18,7 @@ pub(in crate::play) fn gift_submit(
     if recipient.len() > 64 || amount.len() > 20 {
         panel.gift_reviewed = None;
         panel.feedback =
-            Some("Enter a recipient of at most 64 bytes and a valid coin amount".into());
+            Some(tr!("Enter a recipient of at most 64 bytes and a valid coin amount").into());
         return false;
     }
     panel.gift_fields = [recipient.clone(), amount.clone()];
@@ -42,7 +42,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.store.pending = false;
-            mailbox.store.feedback = Some("The session has ended".into());
+            mailbox.store.feedback = Some(tr!("The session has ended").into());
         }
     }
 

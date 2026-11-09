@@ -3,7 +3,7 @@ use oteryn_client_runtime::chat::ChatLine;
 use std::fmt::Write;
 #[must_use]
 pub fn panel_text(panel: &ChatPanel) -> String {
-    let mut text = String::from("Local Chat — Say / Whisper / Yell / Private\n");
+    let mut text = String::from(tr!("Local Chat — Say / Whisper / Yell / Private\n"));
     if panel.console.presentation.visible[2] {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
     }
@@ -52,7 +52,12 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 text: message,
             } => {
                 if presentation.mode_labels {
-                    let _ = writeln!(text, "[Private] {speaker_name}: {message}");
+                    let _ = lwriteln!(
+                        text,
+                        "[Private] {speaker_name}: {message}",
+                        message = message,
+                        speaker_name = speaker_name
+                    );
                 } else {
                     let _ = writeln!(text, "{speaker_name}: {message}");
                 }
@@ -71,7 +76,7 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 };
                 let _ = writeln!(text, "{label}{}: {}", line.speaker_name, line.text);
             }
-            ChatLine::Dropped => text.push_str("[Some chat lines were dropped]\n"),
+            ChatLine::Dropped => text.push_str(tr!("[Some chat lines were dropped]\n")),
             ChatLine::Party {
                 speaker_name,
                 text: message,

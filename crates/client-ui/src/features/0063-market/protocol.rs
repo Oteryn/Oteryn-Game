@@ -16,7 +16,7 @@ pub enum Intent {
 
 pub fn request(panel: &mut MarketPanel, intent: Intent) -> Option<MarketCommand> {
     if panel.pending.is_some() {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let old_page = panel.page;
@@ -43,10 +43,10 @@ pub fn request(panel: &mut MarketPanel, intent: Intent) -> Option<MarketCommand>
 
 fn prepare(panel: &MarketPanel, intent: Intent) -> Result<MarketCommand, &'static str> {
     if !panel.selected {
-        return Err("Market is unavailable in this session");
+        return Err(tr!("Market is unavailable in this session"));
     }
     if panel.pending.is_some() {
-        return Err("Waiting for the server");
+        return Err(tr!("Waiting for the server"));
     }
     let zero = [0; 16];
     let (action, definition, offer, amount, price, anonymous) = match intent {
@@ -65,7 +65,9 @@ fn prepare(panel: &MarketPanel, intent: Intent) -> Result<MarketCommand, &'stati
         Intent::CancelOffer => (
             7,
             0,
-            panel.selected_offer.ok_or("Select an offer to cancel")?,
+            panel
+                .selected_offer
+                .ok_or(tr!("Select an offer to cancel"))?,
             0,
             0,
             false,
@@ -73,7 +75,9 @@ fn prepare(panel: &MarketPanel, intent: Intent) -> Result<MarketCommand, &'stati
         Intent::AcceptOffer => (
             8,
             0,
-            panel.selected_offer.ok_or("Select an offer to accept")?,
+            panel
+                .selected_offer
+                .ok_or(tr!("Select an offer to accept"))?,
             panel.amount,
             0,
             false,
@@ -94,7 +98,7 @@ fn prepare(panel: &MarketPanel, intent: Intent) -> Result<MarketCommand, &'stati
         anonymous,
         page: if action <= 4 { panel.page } else { 0 },
     };
-    market::encode_request(request).map_err(|_| "Enter valid market offer details")?;
+    market::encode_request(request).map_err(|_| tr!("Enter valid market offer details"))?;
     Ok(MarketCommand(request))
 }
 
@@ -103,7 +107,7 @@ pub fn apply_result(panel: &mut MarketPanel, response: &MarketResponse) -> bool 
         return false;
     };
     let Some(reply) = &response.reply else {
-        panel.feedback = Some("The server refused the market request");
+        panel.feedback = Some(tr!("The server refused the market request"));
         return false;
     };
     if reply.code != 1 {
@@ -111,7 +115,7 @@ pub fn apply_result(panel: &mut MarketPanel, response: &MarketResponse) -> bool 
         return false;
     }
     if reply.action != pending.0.action {
-        panel.feedback = Some("The market response did not match the request");
+        panel.feedback = Some(tr!("The market response did not match the request"));
         return false;
     }
     panel.view = match reply.action {
@@ -127,25 +131,25 @@ pub fn apply_result(panel: &mut MarketPanel, response: &MarketResponse) -> bool 
         panel.rows.clone_from(&reply.rows);
     }
     panel.selected_offer = None;
-    panel.feedback = Some("The server confirmed the market request");
+    panel.feedback = Some(tr!("The server confirmed the market request"));
     true
 }
 
 fn refusal(code: u8) -> &'static str {
     match code {
-        2 => "Market refused: insufficient funds",
-        3 => "Market refused: insufficient items",
-        4 => "Market refused: inbox full",
-        5 => "Market refused: offer limit reached",
-        6 => "Market refused: offer is no longer available",
-        7 => "Market refused: this is your offer",
-        8 => "Market refused: touched-item limit reached",
-        10 => "Market refused: balance limit reached",
-        11 => "Market refused: no depot locker",
-        12 => "Market refused: Premium required",
-        13 => "Market refused: junior account",
-        14 => "Market refused: item is not marketable",
-        15 => "Market refused: order book busy",
-        _ => "Market request refused by the server",
+        2 => tr!("Market refused: insufficient funds"),
+        3 => tr!("Market refused: insufficient items"),
+        4 => tr!("Market refused: inbox full"),
+        5 => tr!("Market refused: offer limit reached"),
+        6 => tr!("Market refused: offer is no longer available"),
+        7 => tr!("Market refused: this is your offer"),
+        8 => tr!("Market refused: touched-item limit reached"),
+        10 => tr!("Market refused: balance limit reached"),
+        11 => tr!("Market refused: no depot locker"),
+        12 => tr!("Market refused: Premium required"),
+        13 => tr!("Market refused: junior account"),
+        14 => tr!("Market refused: item is not marketable"),
+        15 => tr!("Market refused: order book busy"),
+        _ => tr!("Market request refused by the server"),
     }
 }

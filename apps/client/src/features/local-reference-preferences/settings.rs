@@ -14,6 +14,8 @@ mod bindings;
 mod gameplay;
 #[path = "help.rs"]
 pub mod help;
+#[path = "localization.rs"]
+mod localization;
 #[path = "minimap_transfer.rs"]
 mod minimap_transfer;
 #[path = "presentation.rs"]
@@ -96,6 +98,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub language_code: Option<String>,
+    #[serde(default)]
     pub console: presentation::ConsolePreferences,
     #[serde(default)]
     pub action_bar: presentation::ActionBarPreferences,
@@ -161,6 +165,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            language_code: None,
             console: Default::default(),
             action_bar: Default::default(),
             screenshots: screenshot::ScreenshotPreferences::default(),
@@ -196,6 +201,13 @@ impl Default for ReferencePreferences {
 
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
+        if self
+            .language_code
+            .as_deref()
+            .is_some_and(|code| oteryn_client_ui::localization::Language::from_code(code).is_none())
+        {
+            return Err(PreferenceError);
+        }
         if !(1..=1000).contains(&self.console.line_limit) || !self.action_bar.valid() {
             return Err(PreferenceError);
         }
@@ -250,7 +262,7 @@ pub struct PreferenceError;
 
 impl Display for PreferenceError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str("Invalid preferences or conflicting key binding")
+        formatter.write_str(tr!("Invalid preferences or conflicting key binding"))
     }
 }
 

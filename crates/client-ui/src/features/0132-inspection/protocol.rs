@@ -10,7 +10,7 @@ pub fn request(panel: &mut Panel, request: Request) -> Option<ServerMechanicComm
     panel.last_request = Some(request);
     panel.reply = None;
     panel.pending = true;
-    panel.feedback = "Waiting for the server".into();
+    panel.feedback = tr!("Waiting for the server").into();
     Some(ServerMechanicCommand {
         capability: 132,
         command_type: 153,
@@ -36,19 +36,19 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             }
         }
         panel.feedback = match reply.status {
-            1 => "Inspection received",
-            2 => "Unavailable",
-            3 => "Not visible",
-            4 => "Too far away",
-            5 => "Please wait before inspecting again",
-            6 => "Permission denied",
-            7 => "Permission requested",
-            8 => "Permission updated",
-            _ => "Unknown inspection status",
+            1 => tr!("Inspection received"),
+            2 => tr!("Unavailable"),
+            3 => tr!("Not visible"),
+            4 => tr!("Too far away"),
+            5 => tr!("Please wait before inspecting again"),
+            6 => tr!("Permission denied"),
+            7 => tr!("Permission requested"),
+            8 => tr!("Permission updated"),
+            _ => tr!("Unknown inspection status"),
         }
         .into();
         panel.reply = Some(reply);
         return;
     }
-    panel.feedback = "Inspection refused or invalid reply; try again".into();
+    panel.feedback = tr!("Inspection refused or invalid reply; try again").into();
 }

@@ -11,7 +11,7 @@ fn request(
         return None;
     }
     panel.pending = Some(command_type);
-    panel.feedback = "Waiting for the server".into();
+    panel.feedback = tr!("Waiting for the server").into();
     Some(ServerMechanicCommand {
         capability: 232,
         command_type,
@@ -82,14 +82,14 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             {
                 panel.result = Some(result);
                 panel.selected_row = 0;
-                panel.feedback = "Page received".into();
+                panel.feedback = tr!("Page received").into();
                 return;
             }
         } else if response.payload.is_empty() {
             panel.result = None;
-            panel.feedback = "Decision confirmed; refresh to see current membership".into();
+            panel.feedback = tr!("Decision confirmed; refresh to see current membership").into();
             return;
         }
     }
-    panel.feedback = "Team Finder request refused or invalid reply; refresh".into();
+    panel.feedback = tr!("Team Finder request refused or invalid reply; refresh").into();
 }

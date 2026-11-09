@@ -58,22 +58,23 @@ pub(in crate::play) fn customization(
 
 pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     if !panel.selected {
-        return "Store unavailable in this session".into();
+        return tr!("Store unavailable in this session").into();
     }
     if panel.pending {
-        return "Pending store action…".into();
+        return tr!("Pending store action…").into();
     }
     let mut status = if let Some(feedback) = &panel.feedback {
         feedback.clone()
     } else if let Some(result) = &panel.purchase {
-        format!("Purchase: {:?}", result.code)
+        lfmt!("Purchase: {:?}", result.code)
     } else {
         panel.catalogue.as_ref().map_or_else(
-            || "Load the server catalogue".into(),
+            || tr!("Load the server catalogue").into(),
             |page| {
-                format!(
+                lfmt!(
                     "Balance: {} coins; transferable: {}",
-                    page.total_coins, page.transferable_coins
+                    page.total_coins,
+                    page.transferable_coins
                 )
             },
         )
@@ -166,7 +167,7 @@ mod windows {
                     let hwnd = CreateWindowExW(
                         0,
                         wide("STATIC").as_ptr(),
-                        wide("Store").as_ptr(),
+                        wide(tr!("Store")).as_ptr(),
                         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                         CW_USEDEFAULT,
                         CW_USEDEFAULT,
@@ -190,7 +191,7 @@ mod windows {
                             25,
                             WS_BORDER | ES_AUTOHSCROLL as u32,
                         );
-                        let refresh = control(hwnd, "BUTTON", "Load catalogue", 2, 45, 30, 0);
+                        let refresh = control(hwnd, "BUTTON", tr!("Load catalogue"), 2, 45, 30, 0);
                         let offers = control(
                             hwnd,
                             "LISTBOX",
@@ -201,17 +202,17 @@ mod windows {
                             WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
                         );
                         let buy =
-                            control(hwnd, "BUTTON", "Purchase selected offer…", 4, 235, 35, 0);
-                        let next = control(hwnd, "BUTTON", "Next catalogue page", 5, 275, 30, 0);
-                        let get_coins = control(hwnd, "BUTTON", "Get coins (sandbox)", 9, 550, 30, 0);
-                        control(hwnd, "STATIC", "Hireling name / sex (1 male, 2 female) / identity (UUID)", 0, 310, 35, 0);
+                            control(hwnd, "BUTTON", tr!("Purchase selected offer…"), 4, 235, 35, 0);
+                        let next = control(hwnd, "BUTTON", tr!("Next catalogue page"), 5, 275, 30, 0);
+                        let get_coins = control(hwnd, "BUTTON", tr!("Get coins (sandbox)"), 9, 550, 30, 0);
+                        control(hwnd, "STATIC", tr!("Hireling name / sex (1 male, 2 female) / identity (UUID)"), 0, 310, 35, 0);
                         let name = control(hwnd, "EDIT", "", 6, 350, 25, WS_BORDER);
                         let sex = control(hwnd, "EDIT", "1", 7, 380, 25, WS_BORDER);
                         let identity = control(hwnd, "EDIT", "", 8, 410, 25, WS_BORDER);
                         let search = control(hwnd, "EDIT", "", 10, 590, 25, WS_BORDER | ES_AUTOHSCROLL as u32);
-                        control(hwnd, "BUTTON", "Search this category page", 11, 620, 30, 0);
-                        control(hwnd, "BUTTON", "Sort: catalogue / title / price", 12, 655, 30, 0);
-                        control(hwnd, "BUTTON", "Gift coins (preview only)", 13, 695, 30, 0);
+                        control(hwnd, "BUTTON", tr!("Search this category page"), 11, 620, 30, 0);
+                        control(hwnd, "BUTTON", tr!("Sort: catalogue / title / price"), 12, 655, 30, 0);
+                        control(hwnd, "BUTTON", tr!("Gift coins (preview only)"), 13, 695, 30, 0);
                         let mut displayed_rows = Vec::new();
                         let mut displayed = None;
                         let status = control(hwnd, "STATIC", "", 0, 450, 100, 0);
@@ -288,13 +289,13 @@ mod windows {
                                                     .and_then(|page| page.offers.get(index))
                                             {
                                                 let question = if panel.confirmed_purchase.is_some() {
-                                                    "Retry the previously confirmed purchase with the same transaction identity?".into()
+                                                    tr!("Retry the previously confirmed purchase with the same transaction identity?").into()
                                                 } else {
-                                                    let mut question = format!("Purchase {} for {} {}?", offer.title, offer.price, offer.currency);
+                                                    let mut question = lfmt!("Purchase {} for {} {}?", offer.title, offer.price, offer.currency);
                                                     match offer.offer_key.as_str() {
-                                                        "store:hireling:25440" => question.push_str(&format!("\nName: {}; sex: {}", read(name), read(sex))),
-                                                        "store:hireling:25438" => question.push_str(&format!("\nHireling: {}; new name: {}", read(identity), read(name))),
-                                                        "store:hireling:25437" => question.push_str(&format!("\nChange sex of Hireling: {}", read(identity))),
+                                                        "store:hireling:25440" => question.push_str(&lfmt!("\nName: {}; sex: {}", read(name), read(sex))),
+                                                        "store:hireling:25438" => question.push_str(&lfmt!("\nHireling: {}; new name: {}", read(identity), read(name))),
+                                                        "store:hireling:25437" => question.push_str(&lfmt!("\nChange sex of Hireling: {}", read(identity))),
                                                         _ => {}
                                                     }
                                                     question
@@ -305,7 +306,7 @@ mod windows {
                                                 let confirmed = MessageBoxW(
                                                     hwnd,
                                                     wide(&question).as_ptr(),
-                                                    wide("Confirm purchase").as_ptr(),
+                                                    wide(tr!("Confirm purchase")).as_ptr(),
                                                     MB_YESNO | MB_DEFBUTTON2,
                                                 ) == IDYES;
                                                 mailbox = lock(&shared);
@@ -317,7 +318,7 @@ mod windows {
                                                 }
                                             } else {
                                                 panel.feedback = Some(
-                                                    "Select an offer from the server catalogue"
+                                                    tr!("Select an offer from the server catalogue")
                                                         .into(),
                                                 );
                                                 None
@@ -334,7 +335,7 @@ mod windows {
                                         .is_err()
                                 {
                                     mailbox.store.pending = false;
-                                    mailbox.store.feedback = Some("The session has ended".into());
+                                    mailbox.store.feedback = Some(tr!("The session has ended").into());
                                 }
                             }
                             let panel = &mut mailbox.store;

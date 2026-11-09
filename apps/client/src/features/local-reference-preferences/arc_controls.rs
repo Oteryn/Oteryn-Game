@@ -14,7 +14,7 @@ impl ArcControls {
             let label = control(
                 hwnd,
                 "STATIC",
-                "Arc distance px (0–80) / segment size px (1–8)",
+                tr!("Arc distance px (0–80) / segment size px (1–8)"),
                 0,
                 [10, 110, 700, 26],
                 0,
@@ -38,7 +38,7 @@ impl ArcControls {
             let enabled = control(
                 hwnd,
                 "BUTTON",
-                "Show HP / mana arcs",
+                tr!("Show HP / mana arcs"),
                 247,
                 [10, 185, 300, 26],
                 BS_AUTOCHECKBOX as u32,
@@ -65,10 +65,10 @@ impl ArcControls {
         unsafe {
             preferences.arc_distance = text(self.distance)
                 .parse()
-                .map_err(|_| "Invalid arc distance".to_owned())?;
+                .map_err(|_| tr!("Invalid arc distance").to_owned())?;
             preferences.arc_size = text(self.size)
                 .parse()
-                .map_err(|_| "Invalid arc size".to_owned())?;
+                .map_err(|_| tr!("Invalid arc size").to_owned())?;
             preferences.health_circle = SendMessageW(self.enabled, BM_GETCHECK, 0, 0) == 1;
             Ok(())
         }

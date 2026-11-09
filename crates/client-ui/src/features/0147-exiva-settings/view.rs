@@ -1,15 +1,15 @@
 use super::*;
 pub fn panel_text(panel: &ExivaPanel) -> String {
     if !panel.selected {
-        return "Exiva settings unavailable in this session".into();
+        return tr!("Exiva settings unavailable in this session").into();
     }
     if let Some(error) = panel.error {
         return error.into();
     }
     let Some(list) = &panel.list else {
-        return "Loading Exiva permissions…".into();
+        return tr!("Loading Exiva permissions…").into();
     };
-    format!(
+    lfmt!(
         "Exiva allow list ({}/100)\r\n{}",
         list.players.len(),
         list.players

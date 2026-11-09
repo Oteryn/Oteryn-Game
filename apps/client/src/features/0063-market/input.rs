@@ -38,7 +38,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Market(command)).is_err()
         {
             mailbox.market.pending = None;
-            mailbox.market.feedback = Some("The session has ended");
+            mailbox.market.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn open_market(&self) {
@@ -55,7 +55,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Market(command)).is_err()
     {
         mailbox.market.pending = None;
-        mailbox.market.feedback = Some("The session has ended");
+        mailbox.market.feedback = Some(tr!("The session has ended"));
     }
 }
 

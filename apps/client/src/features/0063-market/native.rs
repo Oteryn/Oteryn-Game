@@ -64,7 +64,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Market").as_ptr(),
+            wide(tr!("Market")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -118,13 +118,13 @@ fn run(
             [475, 10, 170, 25],
             WS_BORDER | WS_TABSTOP,
         );
-        control(hwnd, "STATIC", "Item ID", 23, [10, 10, 65, 25], 0);
-        control(hwnd, "STATIC", "Amount", 24, [195, 10, 70, 25], 0);
-        control(hwnd, "STATIC", "Unit price", 25, [390, 10, 80, 25], 0);
+        control(hwnd, "STATIC", tr!("Item ID"), 23, [10, 10, 65, 25], 0);
+        control(hwnd, "STATIC", tr!("Amount"), 24, [195, 10, 70, 25], 0);
+        control(hwnd, "STATIC", tr!("Unit price"), 25, [390, 10, 80, 25], 0);
         let buy = control(
             hwnd,
             "BUTTON",
-            "Buy (unchecked: sell)",
+            tr!("Buy (unchecked: sell)"),
             26,
             [10, 45, 240, 28],
             BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
@@ -132,19 +132,19 @@ fn run(
         let anonymous = control(
             hwnd,
             "BUTTON",
-            "Anonymous",
+            tr!("Anonymous"),
             27,
             [270, 45, 150, 28],
             BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
         );
         for (id, label) in [
-            (2, "Browse"),
-            (3, "My offers"),
-            (4, "History"),
-            (5, "Create offer"),
-            (6, "Cancel offer"),
-            (7, "Accept offer"),
-            (8, "Refresh"),
+            (2, tr!("Browse")),
+            (3, tr!("My offers")),
+            (4, tr!("History")),
+            (5, tr!("Create offer")),
+            (6, tr!("Cancel offer")),
+            (7, tr!("Accept offer")),
+            (8, tr!("Refresh")),
         ] {
             control(
                 hwnd,
@@ -158,7 +158,7 @@ fn run(
         control(
             hwnd,
             "BUTTON",
-            "Previous page",
+            tr!("Previous page"),
             10,
             [10, 415, 150, 28],
             WS_TABSTOP,
@@ -166,12 +166,19 @@ fn run(
         control(
             hwnd,
             "BUTTON",
-            "Next page",
+            tr!("Next page"),
             11,
             [170, 415, 150, 28],
             WS_TABSTOP,
         );
-        control(hwnd, "BUTTON", "Wares", 12, [330, 415, 150, 28], WS_TABSTOP);
+        control(
+            hwnd,
+            "BUTTON",
+            tr!("Wares"),
+            12,
+            [330, 415, 150, 28],
+            WS_TABSTOP,
+        );
         let status = control(hwnd, "STATIC", "", 9, [10, 455, 680, 110], 0);
         let mut held = None;
         loop {

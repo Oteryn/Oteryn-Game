@@ -55,7 +55,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Imbue(command)).is_err()
     {
         mailbox.imbue.pending = false;
-        mailbox.imbue.feedback = Some("The session has ended");
+        mailbox.imbue.feedback = Some(tr!("The session has ended"));
     }
 }
 
@@ -67,7 +67,7 @@ pub(in crate::play) fn enqueue_details(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.imbue.details_pending = None;
-        mailbox.imbue.details_feedback = Some("The session has ended");
+        mailbox.imbue.details_feedback = Some(tr!("The session has ended"));
     }
 }
 

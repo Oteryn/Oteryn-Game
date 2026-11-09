@@ -12,7 +12,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.depot_search.pending = false;
-            mailbox.depot_search.feedback = Some("The session has ended".into());
+            mailbox.depot_search.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn depot_search_input(

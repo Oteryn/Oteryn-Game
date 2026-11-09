@@ -62,7 +62,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Character cyclopedia").as_ptr(),
+            wide(tr!("Character cyclopedia")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -147,7 +147,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 ) && commands.send(PlayCommand::Feature(command)).is_err()
                 {
                     mailbox.cyclopedia_character.pending = false;
-                    mailbox.cyclopedia_character.feedback = Some("The session has ended");
+                    mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
                 }
                 SetWindowTextW(
                     edits[0],
@@ -165,7 +165,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 p.pending = false;
-                p.feedback = Some("The session has ended");
+                p.feedback = Some(tr!("The session has ended"));
             }
             let panel = &mailbox.cyclopedia_character;
             EnableWindow(
@@ -183,7 +183,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 },
             );
             let status = if panel.pending {
-                "Waiting for the server"
+                tr!("Waiting for the server")
             } else {
                 panel.feedback.unwrap_or("")
             };
@@ -288,18 +288,21 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             if table {
                 let note = if panel.pending {
-                    "Loading"
+                    tr!("Loading")
                 } else {
                     panel.feedback.unwrap_or("")
                 };
                 use oteryn_client_runtime::cyclopedia_character::KillStatus;
                 let filter = match panel.kill_filter {
-                    None => "All results",
-                    Some(KillStatus::GuildWar) => "Guild war",
-                    Some(KillStatus::Unjustified) => "Unjustified",
+                    None => tr!("All results"),
+                    Some(KillStatus::GuildWar) => tr!("Guild war"),
+                    Some(KillStatus::Unjustified) => tr!("Unjustified"),
                 };
-                let columns =
-                    format!("Time (server Unix ms)     Result     Description | {filter} | {note}");
+                let columns = lfmt!(
+                    "Time (server Unix ms)     Result     Description | {filter} | {note}",
+                    filter = filter,
+                    note = note
+                );
                 SetWindowTextW(heading, wide(&columns).as_ptr());
                 let rows: Vec<_> = oteryn_client_ui::cyclopedia_character::history_rows(panel)
                     .into_iter()
@@ -309,9 +312,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SendMessageW(history, LB_RESETCONTENT, 0, 0);
                     for row in &rows {
                         let kind = match row.status {
-                            Some(KillStatus::Unjustified) => "Unjustified",
-                            Some(KillStatus::GuildWar) => "Guild war",
-                            None => "Death",
+                            Some(KillStatus::Unjustified) => tr!("Unjustified"),
+                            Some(KillStatus::GuildWar) => tr!("Guild war"),
+                            None => tr!("Death"),
                         };
                         let label = format!("{}\t{}\t{}", row.at, kind, row.description);
                         SendMessageW(history, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
@@ -321,13 +324,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 let selected = usize::try_from(SendMessageW(history, LB_GETCURSEL, 0, 0)).ok();
                 let description = selected
                     .and_then(|i| held_history.get(i))
-                    .map_or("Select a row to read its complete description", |r| {
+                    .map_or(tr!("Select a row to read its complete description"), |r| {
                         r.description.as_str()
                     });
                 SetWindowTextW(detail, wide(description).as_ptr());
             }
             if combat {
-                SetWindowTextW(heading, wide("Statistic                    Value                    Source — select a row for details").as_ptr());
+                SetWindowTextW(heading, wide(tr!("Statistic                    Value                    Source — select a row for details")).as_ptr());
                 let rows = oteryn_client_ui::cyclopedia_character::combat_rows(panel);
                 if held_combat != rows {
                     SendMessageW(history, LB_RESETCONTENT, 0, 0);
@@ -339,7 +342,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
                 let selected = usize::try_from(SendMessageW(history, LB_GETCURSEL, 0, 0)).ok();
                 let description = selected.and_then(|i| held_combat.get(i)).map_or_else(
-                    || "Select a statistic to inspect its contributions".into(),
+                    || tr!("Select a statistic to inspect its contributions").into(),
                     |row| oteryn_client_ui::cyclopedia_character::combat_detail(panel, row.key),
                 );
                 SetWindowTextW(detail, wide(&description).as_ptr());

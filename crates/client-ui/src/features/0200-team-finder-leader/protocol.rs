@@ -12,7 +12,7 @@ pub fn request(panel: &mut Panel, listing: Option<LeaderListing>) -> Option<Serv
     };
     panel.submitted = Some(listing);
     panel.pending = true;
-    panel.feedback = "Waiting for the server".into();
+    panel.feedback = tr!("Waiting for the server").into();
     Some(ServerMechanicCommand {
         capability: 200,
         command_type,
@@ -31,8 +31,8 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
     ) && response.payload.is_empty()
     {
         panel.confirmed = submitted.flatten();
-        panel.feedback = "Advertisement confirmed".into();
+        panel.feedback = tr!("Advertisement confirmed").into();
     } else {
-        panel.feedback = "Advertisement refused or invalid reply".into();
+        panel.feedback = tr!("Advertisement refused or invalid reply").into();
     }
 }

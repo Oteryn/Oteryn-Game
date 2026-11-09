@@ -72,17 +72,20 @@ impl super::Application {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let audio = self.audio.status(&mut play.view);
             let movement = play.link.item_movement_status();
-            let status = format!(
+            let status = lfmt!(
                 "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
                 play.view.hud_status(),
-                play.link.movement_feedback().unwrap_or("")
+                play.link.movement_feedback().unwrap_or(""),
+                audio = audio,
+                movement = movement
             );
             if let Some(hud) = &self.hud {
                 hud.update(Some(&status), play.view.preferences().scaled_hud_bounds());
             }
             if status != play.status {
-                window.set_title(&format!(
-                    "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"
+                window.set_title(&lfmt!(
+                    "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements",
+                    status = status
                 ));
                 play.status = status;
             }

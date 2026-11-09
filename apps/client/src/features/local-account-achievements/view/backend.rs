@@ -58,17 +58,17 @@ impl Backend {
         let p = self.panel(m);
         p.pending = None;
         p.catalog.collecting = false;
-        p.error = Some("Session ended");
+        p.error = Some(tr!("Session ended"));
     }
     pub(super) fn title(self, m: &Mailbox) -> String {
         match self {
-            Self::Account => "Account achievements — Ctrl+Shift+A".into(),
-            Self::Character(_) => format!(
+            Self::Account => tr!("Account achievements — Ctrl+Shift+A").into(),
+            Self::Character(_) => lfmt!(
                 "Character achievements — {}",
                 m.cyclopedia_character
                     .achievement_profile
                     .as_ref()
-                    .map_or("Loading profile", |(_, name)| name)
+                    .map_or(tr!("Loading profile"), |(_, name)| name)
             ),
         }
     }

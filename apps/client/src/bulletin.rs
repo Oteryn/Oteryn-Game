@@ -9,7 +9,7 @@ pub struct Browser {
 impl Browser {
     pub fn new(year: u16, month: u8, json: &str) -> Result<Self, String> {
         if !(1..=9999).contains(&year) || !(1..=12).contains(&month) {
-            return Err("Invalid calendar month".into());
+            return Err(tr!("Invalid calendar month").into());
         }
         Ok(Self {
             feed: Bulletin::parse(json)?,
@@ -81,7 +81,7 @@ impl Default for Browser {
             }
         }
         Self { year, month, feed: Bulletin {
-            news: vec![Article { title: format!("Oteryn {}", crate::RELEASE_ID), body: "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.".into() }],
+            news: vec![Article { title: lfmt!("Oteryn {}", crate::RELEASE_ID), body: tr!("Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.").into() }],
             events: Vec::new(),
         } }
     }

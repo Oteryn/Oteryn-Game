@@ -15,22 +15,25 @@ pub fn panel_text(panel: &Panel) -> String {
                 "2" => "south",
                 _ => "west",
             };
-            format!(
+            lfmt!(
                 "Preview: {kind} {} facing {direction} (unsaved)",
-                panel.fields[3].trim()
+                panel.fields[3].trim(),
+                direction = direction,
+                kind = kind
             )
         }
-        _ => "Preview: choose a display, direction and content key".into(),
+        _ => tr!("Preview: choose a display, direction and content key").into(),
     };
-    format!(
+    lfmt!(
         "House podium\r\n{preview}\r\n{}\r\n{}",
         panel.summary,
         if panel.pending {
-            "Waiting for the server"
+            tr!("Waiting for the server")
         } else if !panel.selected && panel.feedback.is_empty() {
-            "Unavailable in this session"
+            tr!("Unavailable in this session")
         } else {
             &panel.feedback
-        }
+        },
+        preview = preview
     )
 }

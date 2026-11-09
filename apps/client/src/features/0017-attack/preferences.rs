@@ -32,7 +32,7 @@ pub struct BattleListPreferences {
 impl Default for BattleListPreferences {
     fn default() -> Self {
         Self {
-            name: "Nearby".into(),
+            name: tr!("Nearby").into(),
             players: true,
             creatures: true,
             search: String::new(),

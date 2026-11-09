@@ -86,6 +86,8 @@ impl Outbox {
     ) {
         let mut mailbox = lock(&self.0);
         mailbox.item_movement.pending = false;
-        mailbox.item_movement.feedback = Some(oteryn_client_runtime::inventory::feedback(response));
+        mailbox.item_movement.feedback = Some(oteryn_client_ui::localization::tr(
+            oteryn_client_runtime::inventory::feedback(response),
+        ));
     }
 }

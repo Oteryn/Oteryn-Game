@@ -71,19 +71,24 @@ impl Settings {
         unsafe {
             let menu = CreateMenu();
             if !menu.is_null() {
-                AppendMenuW(menu, MF_STRING, 25001, wide("Settings...").as_ptr());
+                AppendMenuW(menu, MF_STRING, 25001, wide(tr!("Settings...")).as_ptr());
                 let windows = CreatePopupMenu();
                 if !windows.is_null() {
                     for (index, (_, label)) in
                         oteryn_client::play::WINDOW_ACTIONS.iter().enumerate()
                     {
-                        AppendMenuW(windows, MF_STRING, 25100 + index, wide(label).as_ptr());
+                        AppendMenuW(
+                            windows,
+                            MF_STRING,
+                            25100 + index,
+                            wide(oteryn_client_ui::localization::tr(label)).as_ptr(),
+                        );
                     }
                     AppendMenuW(
                         menu,
                         MF_POPUP,
                         windows as usize,
-                        wide("Game windows").as_ptr(),
+                        wide(tr!("Game windows")).as_ptr(),
                     );
                 }
                 if SetMenu(self.parent, menu) == 0 {
@@ -91,12 +96,20 @@ impl Settings {
                 }
                 DrawMenuBar(self.parent);
             }
-            self.collapse = control(self.parent, "BUTTON", "▼ Game", 25200, [8, 64, 150, 26], 0);
+            self.collapse = control(
+                self.parent,
+                "BUTTON",
+                tr!("▼ Game"),
+                25200,
+                [8, 64, 150, 26],
+                0,
+            );
             self.action_bar = action_bar::Buttons::new(self.parent);
             self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
                 .iter()
                 .enumerate()
                 .map(|(index, (_, label))| {
+                    let label = oteryn_client_ui::localization::tr(label);
                     control(
                         self.parent,
                         "BUTTON",
@@ -136,9 +149,9 @@ impl Settings {
             SetWindowTextW(
                 self.collapse,
                 wide(if state.preferences.shortcuts_collapsed {
-                    "▶ Game"
+                    tr!("▶ Game")
                 } else {
-                    "▼ Game"
+                    tr!("▼ Game")
                 })
                 .as_ptr(),
             );
@@ -184,9 +197,10 @@ impl Settings {
         }
         let mut state = lock(&self.shared);
         state.open_help_report(link);
+        oteryn_client_ui::localization::set_default(state.preferences.language());
         match state.apply_minimap_transfer(view) {
-            Ok(true) => state.feedback = "Minimap transfer saved".into(),
-            Err(error) => state.feedback = format!("Minimap transfer failed: {error}"),
+            Ok(true) => state.feedback = tr!("Minimap transfer saved").into(),
+            Err(error) => state.feedback = lfmt!("Minimap transfer failed: {error}", error = error),
             Ok(false) => {}
         }
         state.sync_battle_lists(link);
@@ -275,7 +289,7 @@ fn spawn_window(shared: Arc<Mutex<Shared>>) {
     {
         let mut state = lock(&fallback);
         state.open = false;
-        state.feedback = "Could not create settings window".into();
+        state.feedback = tr!("Could not create settings window").into();
     }
 }
 #[derive(Default)]
@@ -287,7 +301,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261 | 270..=271 | 280..=281)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261 | 270..=271 | 280..=282)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

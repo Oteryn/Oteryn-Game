@@ -61,21 +61,25 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
         wire::hazard::COMMAND_TYPE_HAZARD => match bytes {
             [unlocked @ 1..=12, selected @ 1..=12] if selected <= unlocked => {
                 panel.hazard = Some((*unlocked, *selected));
-                Some(format!("Hazard: {selected} | Unlocked: {unlocked}"))
+                Some(lfmt!(
+                    "Hazard: {selected} | Unlocked: {unlocked}",
+                    selected = selected,
+                    unlocked = unlocked
+                ))
             }
             _ => None,
         },
         wire::bosstiary_slots::COMMAND_TYPE_BOSSTIARY_SLOTS => {
             let reply = BossSlotReply::decode(bytes)?;
             let status = match reply.status {
-                0 => "Updated",
-                1 => "Locked or ineligible",
-                2 => "Occupied or duplicate",
-                3 => "Cooldown",
-                4 => "Insufficient money",
-                _ => "Change cannot fit",
+                0 => tr!("Updated"),
+                1 => tr!("Locked or ineligible"),
+                2 => tr!("Occupied or duplicate"),
+                3 => tr!("Cooldown"),
+                4 => tr!("Insufficient money"),
+                _ => tr!("Change cannot fit"),
             };
-            let text = format!(
+            let text = lfmt!(
                 "Boss slots: {status}\r\n1: {} | 2: {}\r\nUnlocked mask: {} | Bonus: {} | Points: {}\r\nRemoval fee: {} | Ready at: {}",
                 reply.bosses[0],
                 reply.bosses[1],
@@ -83,7 +87,8 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
                 reply.bonus,
                 reply.points,
                 reply.remove_fee,
-                reply.ready_at_ms
+                reply.ready_at_ms,
+                status = status
             );
             panel.slots = Some(reply);
             Some(text)
@@ -91,20 +96,25 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
         wire::COMMAND_TYPE_BOSS_REWARD_OPEN => {
             use std::fmt::Write;
             let chest = wire::decode_rewards(bytes)?;
-            let mut text = format!(
+            let mut text = lfmt!(
                 "Reward groups: {} | Server time: {}\r\n",
                 chest.entries.len(),
                 chest.now
             );
             for entry in &chest.entries {
                 let death: String = entry.death.iter().map(|b| format!("{b:02x}")).collect();
-                let _ = writeln!(
+                let _ = lwriteln!(
                     text,
                     "{} | Death: {death} | Items: {} | Expires: {}",
-                    entry.boss_key, entry.item_count, entry.expires_at_unix_ms
+                    entry.boss_key,
+                    entry.item_count,
+                    entry.expires_at_unix_ms,
+                    death = death
                 );
             }
-            text.push_str("Use Boss rewards (Ctrl+Shift+1) with a death id to collect.");
+            text.push_str(tr!(
+                "Use Boss rewards (Ctrl+Shift+1) with a death id to collect."
+            ));
             panel.rewards = Some(chest);
             Some(text)
         }

@@ -73,7 +73,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("NPC shop").as_ptr(),
+            wide(tr!("NPC shop")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -103,7 +103,14 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             (10, 10, 720, 280),
             WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
         );
-        control(hwnd, "STATIC", "Offers (1–100):", 0, (10, 300, 130, 25), 0);
+        control(
+            hwnd,
+            "STATIC",
+            tr!("Offers (1–100):"),
+            0,
+            (10, 300, 130, 25),
+            0,
+        );
         let amount = control(
             hwnd,
             "EDIT",
@@ -113,9 +120,16 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             WS_BORDER | ES_NUMBER as u32,
         );
         SendMessageW(amount, EM_SETLIMITTEXT, 10, 0);
-        let look = control(hwnd, "BUTTON", "Look", 103, (270, 335, 130, 28), 0);
-        let sell_all = control(hwnd, "BUTTON", "Sell all", 104, (410, 335, 130, 28), 0);
-        let trade = control(hwnd, "BUTTON", "Buy / Sell", 102, (270, 300, 130, 30), 0);
+        let look = control(hwnd, "BUTTON", tr!("Look"), 103, (270, 335, 130, 28), 0);
+        let sell_all = control(hwnd, "BUTTON", tr!("Sell all"), 104, (410, 335, 130, 28), 0);
+        let trade = control(
+            hwnd,
+            "BUTTON",
+            tr!("Buy / Sell"),
+            102,
+            (270, 300, 130, 30),
+            0,
+        );
         let total = control(hwnd, "STATIC", "", 0, (410, 300, 320, 35), 0);
         let status = control(
             hwnd,
@@ -138,7 +152,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         let side = control(
             hwnd,
             "BUTTON",
-            "All / Buy / Sell",
+            tr!("All / Buy / Sell"),
             106,
             (155, 335, 110, 28),
             0,
@@ -211,7 +225,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 total,
                 wide(&match (valid, quantity) {
                     (Some(key), Some(n)) => shop.total(key, n),
-                    _ => "Select a quote and positive amount".into(),
+                    _ => tr!("Select a quote and positive amount").into(),
                 })
                 .as_ptr(),
             );

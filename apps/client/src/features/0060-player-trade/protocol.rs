@@ -33,11 +33,11 @@ impl Outbox {
         let panel = &mut mailbox.player_trade;
         panel.items.pending = false;
         panel.feedback = Some(match decode_container_view_result(&response.payload) {
-            Ok(O::Opened | O::Closed) => "Container updated",
-            Ok(O::TooFar) => "Move closer to the container",
-            Ok(O::NotAContainer) => "This item is not a container",
-            Ok(O::TooManyViews) => "Close a container first",
-            _ => "That container is no longer available",
+            Ok(O::Opened | O::Closed) => tr!("Container updated"),
+            Ok(O::TooFar) => tr!("Move closer to the container"),
+            Ok(O::NotAContainer) => tr!("This item is not a container"),
+            Ok(O::TooManyViews) => tr!("Close a container first"),
+            _ => tr!("That container is no longer available"),
         });
     }
 }

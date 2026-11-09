@@ -12,6 +12,9 @@ mod gameplay;
 #[path = "help.rs"]
 mod help;
 
+#[path = "localization.rs"]
+mod localization;
+
 #[path = "screenshots.rs"]
 mod screenshots;
 

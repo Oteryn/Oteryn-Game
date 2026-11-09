@@ -1,14 +1,14 @@
 use super::*;
 pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
-        return "Team discovery is unavailable in this session".into();
+        return tr!("Team discovery is unavailable in this session").into();
     }
-    let mut text = format!("Team Finder\r\n{}", panel.feedback);
+    let mut text = lfmt!("Team Finder\r\n{}", panel.feedback);
     match &panel.result {
         Some(TeamFinderResult::Browse { listings, .. }) => {
             for index in panel.visible_indices() {
                 let row = &listings[index];
-                text.push_str(&format!(
+                text.push_str(&lfmt!(
                     "\r\n{}: level {}–{}, {} free, {:?}",
                     row.name,
                     row.listing.min_level,
@@ -23,11 +23,17 @@ pub fn panel_text(panel: &Panel) -> String {
             occupied_slots,
             ..
         }) => {
-            text.push_str(&format!("\r\nOccupied: {occupied_slots}"));
+            text.push_str(&lfmt!(
+                "\r\nOccupied: {occupied_slots}",
+                occupied_slots = occupied_slots
+            ));
             for row in members {
-                text.push_str(&format!(
+                text.push_str(&lfmt!(
                     "\r\n{}: level {}, vocation {}, {:?}",
-                    row.name, row.level, row.vocation, row.status
+                    row.name,
+                    row.level,
+                    row.vocation,
+                    row.status
                 ));
             }
         }

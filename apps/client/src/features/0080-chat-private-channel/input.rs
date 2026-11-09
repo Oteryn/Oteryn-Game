@@ -42,6 +42,6 @@ pub(in crate::play) fn enqueue(
     {
         mailbox.chat_private.pending = false;
         mailbox.chat_private.pending_intent = None;
-        mailbox.chat_private.feedback = Some("The session has ended".into());
+        mailbox.chat_private.feedback = Some(tr!("The session has ended").into());
     }
 }

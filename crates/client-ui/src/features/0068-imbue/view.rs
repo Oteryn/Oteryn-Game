@@ -13,9 +13,9 @@ pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
         .iter()
         .find(|applied| applied.slot == slot)
         .map_or_else(
-            || format!("Slot {}: empty", slot + 1),
+            || lfmt!("Slot {}: empty", slot + 1),
             |applied| {
-                format!(
+                lfmt!(
                     "Slot {}: family {}, tier {}, {} seconds left{}",
                     slot + 1,
                     applied.family,
@@ -30,15 +30,15 @@ pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
 #[must_use]
 pub fn selected_detail_text(panel: &ImbuePanel) -> String {
     let Some(window) = &panel.window else {
-        return "Select an item and refresh its shrine state".into();
+        return tr!("Select an item and refresh its shrine state").into();
     };
-    let mut text = format!(
+    let mut text = lfmt!(
         "Selected {}\nClear cost: {} gold\n",
         slot_label(panel, panel.slot),
         window.clear_gold
     );
     if let Some(offer) = window.offers.get(panel.offer) {
-        text.push_str(&format!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", offer.family, offer.tier, offer.gold, if offer.requires_premium { " (premium required)" } else { "" }));
+        text.push_str(&lfmt!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", offer.family, offer.tier, offer.gold, if offer.requires_premium { tr!(" (premium required)") } else { "" }));
         if let Some(quote) = panel
             .details
             .as_ref()
@@ -51,7 +51,7 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
             })
         {
             if quote.recipe_available {
-                text.push_str("Required materials (main backpack):\n");
+                text.push_str(tr!("Required materials (main backpack):\n"));
                 for material in &quote.materials {
                     text.push_str(&format!(
                         "  {} × {}\n",
@@ -59,15 +59,15 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
                     ));
                 }
             } else {
-                text.push_str("No admitted recipe is available for this offer.\n");
+                text.push_str(tr!("No admitted recipe is available for this offer.\n"));
             }
         } else if panel.details_pending.is_some() {
-            text.push_str("Loading material requirements…\n");
+            text.push_str(tr!("Loading material requirements…\n"));
         } else if let Some(message) = panel.details_feedback {
             text.push_str(message);
             text.push('\n');
         } else {
-            text.push_str("Material details are unavailable in this session.\n");
+            text.push_str(tr!("Material details are unavailable in this session.\n"));
         }
     }
     text
@@ -76,16 +76,17 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
 #[must_use]
 pub fn panel_text(panel: &ImbuePanel) -> String {
     let mut text = if let Some(window) = &panel.window {
-        format!(
+        lfmt!(
             "{} slots; clear cost: {} gold\n",
-            window.slot_count, window.clear_gold
+            window.slot_count,
+            window.clear_gold
         )
     } else {
-        "No imbuement state loaded\n".to_owned()
+        tr!("No imbuement state loaded\n").to_owned()
     };
     if let Some(window) = &panel.window {
         for applied in &window.applied {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "Slot {}: family {}, tier {}, {} ms remaining{}\n",
                 applied.slot + 1,
                 applied.family,
@@ -95,7 +96,7 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
             ));
         }
         for (index, offer) in window.offers.iter().enumerate() {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "Offer {index}: family {}, tier {}, {} gold{}\n",
                 offer.family,
                 offer.tier,
@@ -104,13 +105,14 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
                     " (premium)"
                 } else {
                     ""
-                }
+                },
+                index = index
             ));
         }
     }
     text.push_str(&selected_detail_text(panel));
     if panel.pending {
-        text.push_str("Request pending\n");
+        text.push_str(tr!("Request pending\n"));
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);
@@ -120,25 +122,25 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
 
 fn time_alert(remaining_ms: u32) -> &'static str {
     match remaining_ms {
-        0 => " — EXPIRED",
-        1..=300_000 => " — LOW TIME (5 minutes or less)",
+        0 => tr!(" — EXPIRED"),
+        1..=300_000 => tr!(" — LOW TIME (5 minutes or less)"),
         _ => "",
     }
 }
 
 /// The shrine protocol currently confirms one item, so label that scope explicitly.
 pub fn tracker_text(panel: &ImbuePanel) -> String {
-    let mut text = String::from("Imbuement time tracker — selected item snapshot\r\n");
+    let mut text = String::from(tr!("Imbuement time tracker — selected item snapshot\r\n"));
     let limit = if panel.tracker_minutes.trim().is_empty() {
         0
     } else {
         let Ok(minutes) = panel.tracker_minutes.trim().parse::<u32>() else {
-            return format!("{text}Enter minutes (0 shows all times)");
+            return lfmt!("{text}Enter minutes (0 shows all times)", text = text);
         };
         minutes.saturating_mul(60_000)
     };
     let Some(window) = &panel.window else {
-        text.push_str("Select an item and refresh its server state");
+        text.push_str(tr!("Select an item and refresh its server state"));
         return text;
     };
     let mut found = false;
@@ -150,7 +152,7 @@ pub fn tracker_text(panel: &ImbuePanel) -> String {
         }
     }
     if !found {
-        text.push_str("No confirmed imbuements match this time filter");
+        text.push_str(tr!("No confirmed imbuements match this time filter"));
     }
     text
 }

@@ -6,15 +6,15 @@ pub enum Intent {
 }
 pub fn request(panel: &mut DailyRewardPanel, intent: Intent) -> Option<DailyRewardCommand> {
     if !panel.selected {
-        panel.feedback = Some("Daily rewards are unavailable in this session");
+        panel.feedback = Some(tr!("Daily rewards are unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     if intent == Intent::Claim && panel.wall.is_none_or(|wall| !wall.claim_enabled) {
-        panel.feedback = Some("The daily reward cannot be claimed now");
+        panel.feedback = Some(tr!("The daily reward cannot be claimed now"));
         return None;
     }
     panel.pending = true;
@@ -31,7 +31,7 @@ pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && !matches!(response.reply, Some(DailyRewardReply::Result(_)))
     {
-        panel.feedback = Some("The server refused the daily reward action");
+        panel.feedback = Some(tr!("The server refused the daily reward action"));
         return false;
     }
     match response.reply {
@@ -53,18 +53,18 @@ pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse
                 wall.claim_enabled = false;
             }
             panel.feedback = Some(match result.disposition {
-                1 => "Daily reward claimed",
-                2 => "Daily reward already claimed",
-                3 => "Daily reward request was invalid",
-                4 => "Open the daily reward shrine within reach, then refresh",
-                5 => "Daily reward content is unavailable",
-                6 => "Daily reward content changed; refresh before claiming",
-                _ => "Daily reward claim was refused",
+                1 => tr!("Daily reward claimed"),
+                2 => tr!("Daily reward already claimed"),
+                3 => tr!("Daily reward request was invalid"),
+                4 => tr!("Open the daily reward shrine within reach, then refresh"),
+                5 => tr!("Daily reward content is unavailable"),
+                6 => tr!("Daily reward content changed; refresh before claiming"),
+                _ => tr!("Daily reward claim was refused"),
             });
             result.disposition == 1
         }
         None => {
-            panel.feedback = Some("The server returned no daily reward state");
+            panel.feedback = Some(tr!("The server returned no daily reward state"));
             false
         }
     }

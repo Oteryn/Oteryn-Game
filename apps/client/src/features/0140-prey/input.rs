@@ -1,5 +1,8 @@
 use crate::combat_input::PlayCommand;
-use crate::play::{PlayLink, mailbox::{Mailbox, lock}};
+use crate::play::{
+    PlayLink,
+    mailbox::{Mailbox, lock},
+};
 use oteryn_client_ui::prey::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
@@ -17,16 +20,22 @@ impl PlayLink {
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]
-        { lock(&self.mailbox).prey.open = true; }
+        {
+            lock(&self.mailbox).prey.open = true;
+        }
         true
     }
 }
 
-pub(in crate::play) fn enqueue(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>, intent: Intent) {
+pub(in crate::play) fn enqueue(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    intent: Intent,
+) {
     if let Some(request) = request(&mut mailbox.prey, intent)
         && commands.send(PlayCommand::Prey(request)).is_err()
     {
         mailbox.prey.pending = None;
-        mailbox.prey.feedback = Some("The session has ended.");
+        mailbox.prey.feedback = Some(tr!("The session has ended."));
     }
 }

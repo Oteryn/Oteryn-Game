@@ -8,9 +8,9 @@ pub fn panel_text(
     catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
 ) -> String {
     use std::fmt::Write;
-    let mut text = String::from(
-        "Assign server cast indices (empty clears a slot). Ctrl+Shift+U: catalogue\r\n",
-    );
+    let mut text = String::from(tr!(
+        "Assign server cast indices (empty clears a slot). Ctrl+Shift+U: catalogue\r\n"
+    ));
     for (slot, field) in panel.bar.fields().iter().enumerate() {
         let entry = field.parse::<u32>().ok().and_then(|id| {
             catalog
@@ -24,7 +24,7 @@ pub fn panel_text(
                 entry.map_or(&[], |entry| entry.cooldown_groups.as_slice()),
             )
         });
-        let _ = write!(
+        let _ = lwrite!(
             text,
             "{}: {} {} | Server cooldown: {} ms\r\n",
             slot + 1,
@@ -33,7 +33,7 @@ pub fn panel_text(
             if panel.bar.cooldowns.is_some() {
                 remaining.to_string()
             } else {
-                "unknown".into()
+                tr!("unknown").into()
             }
         );
     }
@@ -100,7 +100,7 @@ mod tests;
 #[must_use]
 pub fn vitals_text(vitals: Option<&ActorVitals>) -> String {
     let Some(vitals) = vitals else {
-        return "HP —   MP —".to_owned();
+        return tr!("HP —   MP —").to_owned();
     };
     fn bar(value: u32, max: u32) -> String {
         let filled = if max == 0 {
@@ -112,7 +112,7 @@ pub fn vitals_text(vitals: Option<&ActorVitals>) -> String {
             .map(|i| if i < filled { '█' } else { '░' })
             .collect()
     }
-    format!(
+    lfmt!(
         "HP [{}] {}/{}   MP [{}] {}/{}   Soul: {}   Harmony: {}/5   Serene: {}",
         bar(vitals.health, vitals.max_health),
         vitals.health,
@@ -122,6 +122,10 @@ pub fn vitals_text(vitals: Option<&ActorVitals>) -> String {
         vitals.max_mana,
         vitals.soul,
         vitals.harmony,
-        if vitals.serene { "active" } else { "inactive" }
+        if vitals.serene {
+            tr!("active")
+        } else {
+            tr!("inactive")
+        }
     )
 }

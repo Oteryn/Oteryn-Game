@@ -20,7 +20,7 @@ pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
         Intent::Next if panel.has_more => (panel.page + 1, stash::StashAction::Browse),
         Intent::Stow(handle) => {
             if !panel.carried.iter().any(|item| item.handle == handle) {
-                panel.feedback = Some("The item changed; select a carried item again".into());
+                panel.feedback = Some(tr!("The item changed; select a carried item again").into());
                 return None;
             }
             (panel.page, stash::StashAction::Stow(handle))

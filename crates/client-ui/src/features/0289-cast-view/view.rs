@@ -3,9 +3,9 @@ use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
     let mut text = panel.picture.status();
     text.push_str(if panel.picture.chat_enabled {
-        "\nRead-only cast · Enter: send cast chat · Escape: leave\n"
+        tr!("\nRead-only cast · Enter: send cast chat · Escape: leave\n")
     } else {
-        "\nRead-only cast · Cast chat disabled · Escape: leave\n"
+        tr!("\nRead-only cast · Cast chat disabled · Escape: leave\n")
     });
     for line in panel.picture.speech.iter().rev().take(2).rev() {
         text.push_str(line);

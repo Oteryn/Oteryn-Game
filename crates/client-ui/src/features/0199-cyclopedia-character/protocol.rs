@@ -18,11 +18,11 @@ pub enum Intent {
 }
 pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<FeatureCommand> {
     if !p.selected {
-        p.feedback = Some("Feature unavailable in this session");
+        p.feedback = Some(tr!("Feature unavailable in this session"));
         return None;
     }
     if p.pending {
-        p.feedback = Some("Waiting for the server");
+        p.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     if matches!(intent, Intent::Achievements) {
@@ -76,7 +76,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
                     target: p.target,
                 })
             {
-                p.feedback = Some("Enter a valid page and target");
+                p.feedback = Some(tr!("Enter a valid page and target"));
                 return None;
             }
             (388, v)
@@ -115,12 +115,12 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        p.feedback = Some("The server refused the character query");
+        p.feedback = Some(tr!("The server refused the character query"));
         return false;
     }
     if auxiliary {
         let Some(stats) = decode_general(&r.payload) else {
-            p.feedback = Some("The server returned invalid resource statistics");
+            p.feedback = Some(tr!("The server returned invalid resource statistics"));
             return false;
         };
         p.misc_general = Some(stats);
@@ -140,7 +140,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         Some(v) => {
             let general = if tab == Some(cyclopedia_character::CharacterTab::GeneralStats) {
                 let Some(stats) = decode_general(&r.payload) else {
-                    p.feedback = Some("The server returned invalid general statistics");
+                    p.feedback = Some(tr!("The server returned invalid general statistics"));
                     return false;
                 };
                 Some(stats)
@@ -175,7 +175,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
                 )
             }) {
                 let Some(rows) = decode_history(&r.payload, tab, p.limit) else {
-                    p.feedback = Some("The server returned invalid character history");
+                    p.feedback = Some(tr!("The server returned invalid character history"));
                     return false;
                 };
                 p.history = rows;
@@ -189,7 +189,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             true
         }
         None => {
-            p.feedback = Some("The server returned an invalid character view");
+            p.feedback = Some(tr!("The server returned an invalid character view"));
             false
         }
     }
@@ -201,7 +201,7 @@ fn decode_badges(b: &[u8]) -> Option<String> {
             .iter()
             .all(|id| cyclopedia_character::Badge::from_id(*id).is_some()))
     .then(|| {
-        format!(
+        lfmt!(
             "Badges: {}",
             ids.iter()
                 .filter_map(|id| cyclopedia_character::Badge::from_id(*id))
@@ -213,143 +213,10 @@ fn decode_badges(b: &[u8]) -> Option<String> {
 }
 // Crystal 201189f protocolgame.cpp:4341-5265 supplies the tab facts. The accepted
 // native layout/unknown-field differences are recorded in cyclopedia-character-v1.md.
-fn decode_tab(
-    b: &[u8],
-    requested: cyclopedia_character::CharacterTab,
-    limit: u8,
-) -> Option<String> {
-    use cyclopedia_character::{
-        CharacterTab as Tab,
-        combat::{CombatStat, CombatStatUnit, CombatStats},
-    };
-    if b.len() > cyclopedia_character::MAX_TAB_RESULT_BYTES || b.first() != Some(&(requested as u8))
-    {
-        return None;
-    }
-    let mut r = Reader(&b[1..]);
-    let mut rows = vec![format!("{requested:?}")];
-    match requested {
-        Tab::GeneralStats => {
-            rows.push(format!(
-                "Experience: {}\nLevel: {}\nMagic level: {}",
-                r.u64()?,
-                r.u32()?,
-                r.u16()?
-            ));
-            for label in [
-                "Fist",
-                "Club",
-                "Sword",
-                "Axe",
-                "Distance",
-                "Shielding",
-                "Fishing",
-            ] {
-                rows.push(format!("{label}: {}", r.u16()?));
-            }
-            rows.push(format!(
-                "{}\nOffline training: {} minutes",
-                stamina::display(r.u16()?),
-                r.u16()?
-            ));
-            let known = r.u8()?;
-            let (health, mana) = (r.u32()?, r.u32()?);
-            rows.push(match known {
-                0 if health == 0 && mana == 0 => "Health: unavailable\nMana: unavailable".into(),
-                1 => format!("Health: {health} (last saved)\nMana: {mana} (last saved)"),
-                _ => return None,
-            });
-        }
-        Tab::RecentDeaths | Tab::RecentPvpKills => {
-            let count = r.count(limit)?;
-            for _ in 0..count {
-                let at = i64::from_le_bytes(r.bytes()?);
-                let status = if requested == Tab::RecentPvpKills {
-                    match r.u8()? {
-                        1 => "Unjustified: ",
-                        2 => "Guild war: ",
-                        _ => return None,
-                    }
-                } else {
-                    ""
-                };
-                rows.push(format!("{at}: {status}{}", r.text()?));
-            }
-        }
-        Tab::Achievements | Tab::Appearances => {
-            let total = r.u16()?;
-            let count = r.count(limit)?;
-            if count > total {
-                return None;
-            }
-            rows.push(format!("Total: {total}"));
-            for _ in 0..count {
-                rows.push(r.text()?.into());
-            }
-        }
-        Tab::StoreSummary => {
-            let count = r.u8()?;
-            rows.push("Blessings / death protection".into());
-            rows.push(format!("Owned blessings: {count}"));
-            if count == 0 {
-                rows.push("No blessings owned".into());
-            }
-            rows.push(
-                "Loss percentages are unavailable; ownership does not imply full protection."
-                    .into(),
-            );
-            for _ in 0..count {
-                rows.push(format!("Blessing: {}", r.text()?));
-            }
-            rows.push(format!(
-                "Permanent prey slots: {}\nPrey wildcards: {}\nHirelings: {}",
-                r.u8()?,
-                r.u8()?,
-                r.u8()?
-            ));
-        }
-        Tab::Inspection => {
-            let count = r.u8()?;
-            for _ in 0..count {
-                let slot = r.u8()?;
-                let len = usize::from(r.u16()?);
-                if len > 512 {
-                    return None;
-                }
-                let definition = r.string(len)?;
-                rows.push(format!("Slot {slot}: {definition} × {}", r.u32()?));
-            }
-        }
-        Tab::Offence | Tab::Defence | Tab::Misc => {
-            let stats = CombatStats::decode(b).ok()?;
-            rows.push(format!(
-                "Observed at: {} ms\nCharacter revision: {}\nEquipment revision: {}",
-                stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
-            ));
-            for key in CombatStat::for_tab(requested) {
-                let value = match stats.get(*key) {
-                    None => "unavailable".into(),
-                    Some(v) => match key.unit() {
-                        CombatStatUnit::PartsPerMillion => {
-                            let magnitude = v.unsigned_abs();
-                            format!(
-                                "{}{}.{:04}%",
-                                if v < 0 { "-" } else { "" },
-                                magnitude / 10_000,
-                                magnitude % 10_000
-                            )
-                        }
-                        CombatStatUnit::Seconds => format!("{v} seconds"),
-                        _ => v.to_string(),
-                    },
-                };
-                rows.push(format!("{key:?}: {value}"));
-            }
-            return Some(rows.join("\n"));
-        }
-    }
-    r.0.is_empty().then(|| rows.join("\n"))
-}
+#[path = "protocol/protocol_localized_1.rs"]
+mod protocol_localized_1;
+
+use protocol_localized_1::decode_tab;
 
 struct Reader<'a>(&'a [u8]);
 impl<'a> Reader<'a> {

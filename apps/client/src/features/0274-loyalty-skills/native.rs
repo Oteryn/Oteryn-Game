@@ -69,7 +69,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Skills — Ctrl+K").as_ptr(),
+            wide(tr!("Skills — Ctrl+K")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -108,7 +108,7 @@ fn run(
         let refresh = CreateWindowExW(
             0,
             wide("BUTTON").as_ptr(),
-            wide("Refresh").as_ptr(),
+            wide(tr!("Refresh")).as_ptr(),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP,
             16,
             355,
@@ -146,7 +146,7 @@ fn run(
                 && commands.send(PlayCommand::LoyaltySkills(payload)).is_err()
             {
                 mailbox.loyalty_skills.pending = false;
-                mailbox.loyalty_skills.error = Some("Session ended");
+                mailbox.loyalty_skills.error = Some(tr!("Session ended"));
             }
             let panel = &mailbox.loyalty_skills;
             if held.as_ref() != Some(panel) {

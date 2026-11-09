@@ -13,10 +13,10 @@ impl Topic {
     pub const ALL: [Self; 4] = [Self::Faq, Self::Manual, Self::Controls, Self::Support];
     pub fn label(self) -> &'static str {
         match self {
-            Self::Faq => "Frequently asked questions",
-            Self::Manual => "Player manual",
-            Self::Controls => "Client controls",
-            Self::Support => "Help and reports",
+            Self::Faq => tr!("Frequently asked questions"),
+            Self::Manual => tr!("Player manual"),
+            Self::Controls => tr!("Client controls"),
+            Self::Support => tr!("Help and reports"),
         }
     }
 }
@@ -29,17 +29,18 @@ pub enum Report {
 impl SettingsState {
     pub fn help_text(&self, topic: Topic) -> String {
         match topic {
-            Topic::Faq => "Frequently asked questions\r\n\r\nWhy was my action refused?\r\nThe server decides movement, combat and inventory results. Read its feedback and try a reachable target or a different item.\r\n\r\nWhere are my settings saved?\r\nSettings are local to this computer. Help / settings transfer lets you export them, import a saved file, restore a backup or restore defaults. A replacement saves the previous settings first.\r\n\r\nHow do I change shortcuts?\r\nOpen Controls, select an action and enter a new key combination. Conflicting bindings must be resolved before saving.\r\n\r\nWhy is a feature unavailable?\r\nSome panels require support from the current server session. Settings cannot enable an unavailable server feature.\r\n\r\nHow do I recover from a connection loss?\r\nReturn to sign-in and retry. Do not assume an item transfer or logout completed until the server confirms it.".into(),
+            Topic::Faq => tr!("Frequently asked questions\r\n\r\nWhy was my action refused?\r\nThe server decides movement, combat and inventory results. Read its feedback and try a reachable target or a different item.\r\n\r\nWhere are my settings saved?\r\nSettings are local to this computer. Help / settings transfer lets you export them, import a saved file, restore a backup or restore defaults. A replacement saves the previous settings first.\r\n\r\nHow do I change shortcuts?\r\nOpen Controls, select an action and enter a new key combination. Conflicting bindings must be resolved before saving.\r\n\r\nWhy is a feature unavailable?\r\nSome panels require support from the current server session. Settings cannot enable an unavailable server feature.\r\n\r\nHow do I recover from a connection loss?\r\nReturn to sign-in and retry. Do not assume an item transfer or logout completed until the server confirms it.").into(),
             Topic::Controls => {
-                let mut text = String::from("Current window shortcuts\r\n\r\n");
+                let mut text = String::from(tr!("Current window shortcuts\r\n\r\n"));
                 if let Ok(bindings) = preference_bindings() {
                     for (id, label) in WINDOW_ACTIONS {
+            let label = oteryn_client_ui::localization::tr(label);
                         if let Some(binding) = bindings.iter().find(|binding| binding.id == *id) {
                             text.push_str(&format!("{label}: {}\r\n", self.preferences.binding_chord(binding)));
                         }
                     }
                 }
-                text.push_str("\r\nUse the Controls settings pages to edit shortcuts. Gameplay settings choose mouse behavior and chase cancellation. Screenshots chooses the destination, capture scope and automatic events.");
+                text.push_str(tr!("\r\nUse the Controls settings pages to edit shortcuts. Gameplay settings choose mouse behavior and chase cancellation. Screenshots chooses the destination, capture scope and automatic events."));
                 text
             }
             Topic::Manual | Topic::Support => {
@@ -58,7 +59,7 @@ impl SettingsState {
             return false;
         };
         if !link.player_report_panel().selected {
-            self.feedback = "Reports are unavailable in this server session".into();
+            self.feedback = tr!("Reports are unavailable in this server session").into();
             return false;
         }
         match report {

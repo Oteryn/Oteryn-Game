@@ -27,7 +27,8 @@ impl PlayLink {
                 285 => &mut mailbox.discovery.history.feedback,
                 _ => return false,
             };
-            *feedback = "Action unavailable: check selection, details, or pending request".into();
+            *feedback =
+                tr!("Action unavailable: check selection, details, or pending request").into();
         }
         accepted
     }

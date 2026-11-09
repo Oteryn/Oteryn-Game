@@ -23,12 +23,12 @@ pub fn request(panel: &mut Panel) -> Option<FeatureCommand> {
         })
         .collect();
     let Ok(payload) = party::encode_request(&prices) else {
-        panel.party_feedback = Some("Party accounting supports up to 2048 item prices");
+        panel.party_feedback = Some(tr!("Party accounting supports up to 2048 item prices"));
         return None;
     };
     panel.party_pending = true;
     panel.party_pending_revision = panel.party_revision;
-    panel.party_feedback = Some("Reading confirmed current-party measurements");
+    panel.party_feedback = Some(tr!("Reading confirmed current-party measurements"));
     Some(FeatureCommand {
         capability: 10,
         kind: party::COMMAND_TYPE_ANALYSER_PARTY_QUERY,
@@ -41,12 +41,13 @@ pub fn result(panel: &mut Panel, reply: &GatedCommandResult) {
     }
     panel.party_pending = false;
     if panel.party_pending_revision != panel.party_revision {
-        panel.party_feedback = Some("Prices changed; refresh party accounting");
+        panel.party_feedback = Some(tr!("Prices changed; refresh party accounting"));
         return;
     }
     if reply.status != oteryn_client_runtime::CommandStatus::Accepted {
-        panel.party_feedback =
-            Some("Party accounting was refused; refresh after reconnecting or changing party");
+        panel.party_feedback = Some(tr!(
+            "Party accounting was refused; refresh after reconnecting or changing party"
+        ));
         return;
     }
     match party::decode_reply(&reply.payload) {
@@ -55,7 +56,9 @@ pub fn result(panel: &mut Panel, reply: &GatedCommandResult) {
             panel.party_feedback = None;
         }
         Err(_) => {
-            panel.party_feedback = Some("Invalid party accounting; previous measurements retained")
+            panel.party_feedback = Some(tr!(
+                "Invalid party accounting; previous measurements retained"
+            ))
         }
     }
 }
@@ -123,10 +126,10 @@ pub fn text(panel: &Panel) -> String {
         }
         return text;
     }
-    let mut text = "Party Hunt\r\nConfirmed current-party members · each current connection interval\r\nName | seconds | kills | XP | loot items/value | supplies/cost | damage/healing\r\n".to_owned();
+    let mut text = tr!("Party Hunt\r\nConfirmed current-party members · each current connection interval\r\nName | seconds | kills | XP | loot items/value | supplies/cost | damage/healing\r\n").to_owned();
     for row in &panel.party {
         if !row.available {
-            let _ = writeln!(text, "{} | measurements unavailable", row.name);
+            let _ = lwriteln!(text, "{} | measurements unavailable", row.name);
             continue;
         }
         let _ = write!(
@@ -144,14 +147,16 @@ pub fn text(panel: &Panel) -> String {
             row.healing
         );
         if row.incomplete || row.unpriced_loot != 0 || row.unpriced_supplies != 0 {
-            let _ = write!(
+            let _ = lwrite!(
                 text,
                 "  Incomplete: {} | unpriced loot {} / supplies {}\r\n",
-                row.incomplete, row.unpriced_loot, row.unpriced_supplies
+                row.incomplete,
+                row.unpriced_loot,
+                row.unpriced_supplies
             );
         }
         for needed in &row.needed_prices {
-            let _ = write!(
+            let _ = lwrite!(
                 text,
                 "  Price needed for item #{}: {}{}\r\n",
                 needed.item,
@@ -161,7 +166,9 @@ pub fn text(panel: &Panel) -> String {
         }
     }
     if panel.party.is_empty() {
-        text.push_str("No party accounting received. Refresh to read the server.\r\n");
+        text.push_str(tr!(
+            "No party accounting received. Refresh to read the server.\r\n"
+        ));
     }
     let transfers = if panel.party_pending || panel.party_feedback.is_some() {
         None
@@ -169,9 +176,11 @@ pub fn text(panel: &Panel) -> String {
         split(&panel.party)
     };
     if let Some(transfers) = transfers {
-        text.push_str("Equal balance split · suggestions only; no currency is moved\r\n");
+        text.push_str(tr!(
+            "Equal balance split · suggestions only; no currency is moved\r\n"
+        ));
         if transfers.is_empty() {
-            text.push_str("Already balanced\r\n");
+            text.push_str(tr!("Already balanced\r\n"));
         }
         for transfer in transfers {
             let name = |handle| {
@@ -181,7 +190,7 @@ pub fn text(panel: &Panel) -> String {
                     .find(|r| r.handle == handle)
                     .map_or("?", |r| r.name.as_str())
             };
-            let _ = write!(
+            let _ = lwrite!(
                 text,
                 "{} pays {}: {} gold\r\n",
                 name(transfer.from),
@@ -190,11 +199,11 @@ pub fn text(panel: &Panel) -> String {
             );
         }
     } else {
-        text.push_str(
-            "Split unavailable until every member has complete, priced measurements.\r\n",
-        );
+        text.push_str(tr!(
+            "Split unavailable until every member has complete, priced measurements.\r\n"
+        ));
     }
-    text.push_str("Apply item price sets loot value; Party supply price sets consumption cost. Refresh after pricing.\r\n");
+    text.push_str(tr!("Apply item price sets loot value; Party supply price sets consumption cost. Refresh after pricing.\r\n"));
     if let Some(feedback) = panel.party_feedback {
         text.push_str(feedback);
     }

@@ -82,7 +82,7 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            self.feedback = "Invalid minimap world binding; local saving is disabled".into();
+            self.feedback = tr!("Invalid minimap world binding; local saving is disabled").into();
             self.world = None;
         } else if self.world.as_deref() != Some(world) {
             if let Err(error) = self.save() {
@@ -120,7 +120,7 @@ impl Minimap {
             self.dirty = false;
             self.binding = Some(binding);
             if let Err(error) = self.load() {
-                self.feedback = format!("Could not load minimap: {error}");
+                self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
         // The snapshot is authoritative only within its visible window. Retain distant
@@ -165,7 +165,7 @@ impl Minimap {
         for key in observed {
             if self.cells.len() >= MAX_CELLS && !self.cells.contains_key(&key) {
                 self.feedback =
-                    "Local exploration limit reached; existing exploration is retained".into();
+                    tr!("Local exploration limit reached; existing exploration is retained").into();
                 continue;
             }
             if self.cells.insert(key, 55) != Some(55) {
@@ -175,7 +175,7 @@ impl Minimap {
         if self.saved_at.elapsed() >= Duration::from_secs(5)
             && let Err(error) = self.save()
         {
-            self.feedback = format!("Could not save minimap: {error}");
+            self.feedback = lfmt!("Could not save minimap: {error}", error = error);
         }
     }
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
@@ -218,9 +218,9 @@ impl Minimap {
             || label.len() > 128
             || label.chars().any(char::is_control)
         {
-            return Err(io::Error::other(
-                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes",
-            ));
+            return Err(io::Error::other(tr!(
+                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+            )));
         }
         if let Some(marker) = self
             .markers
@@ -231,7 +231,9 @@ impl Minimap {
             marker.color = color;
         } else {
             if self.markers.len() >= MAX_MARKERS {
-                return Err(io::Error::other("The minimap supports up to 512 markers"));
+                return Err(io::Error::other(tr!(
+                    "The minimap supports up to 512 markers"
+                )));
             }
             self.markers.push(Marker {
                 x,
@@ -286,12 +288,12 @@ impl Minimap {
             Err(e) => return Err(e),
         };
         if file.metadata()?.len() > MAX_BYTES {
-            return Err(io::Error::other("Minimap file is too large"));
+            return Err(io::Error::other(tr!("Minimap file is too large")));
         }
         let mut bytes = Vec::new();
         file.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
         if bytes.len() as u64 > MAX_BYTES {
-            return Err(io::Error::other("Minimap file is too large"));
+            return Err(io::Error::other(tr!("Minimap file is too large")));
         }
         let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         saved.validate()?;

@@ -62,7 +62,7 @@ pub(super) fn select(
         let hwnd = CreateWindowExW(
             WS_EX_CONTROLPARENT,
             wide("STATIC").as_ptr(),
-            wide("Oteryn — Select character").as_ptr(),
+            wide(tr!("Oteryn — Select character")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -81,9 +81,11 @@ pub(super) fn select(
             hwnd,
             "STATIC",
             if rows.is_empty() {
-                "No characters on this account. Create a character in your browser, then refresh."
+                tr!(
+                    "No characters on this account. Create a character in your browser, then refresh."
+                )
             } else {
-                "Choose a character (name — world — availability) and optional channel."
+                tr!("Choose a character (name — world — availability) and optional channel.")
             },
             0,
             [15, 15, 650, 40],
@@ -97,7 +99,7 @@ pub(super) fn select(
             [15, 60, 650, 180],
             WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32,
         );
-        let channel_label = control(hwnd, "STATIC", "Channel", 0, [15, 250, 80, 25], 0);
+        let channel_label = control(hwnd, "STATIC", tr!("Channel"), 0, [15, 250, 80, 25], 0);
         let channels = control(
             hwnd,
             "COMBOBOX",
@@ -109,7 +111,7 @@ pub(super) fn select(
         let play = control(
             hwnd,
             "BUTTON",
-            "Play",
+            tr!("Play"),
             1,
             [15, 295, 100, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
@@ -117,7 +119,7 @@ pub(super) fn select(
         let create = control(
             hwnd,
             "BUTTON",
-            "Create character",
+            tr!("Create character"),
             2,
             [130, 295, 160, 32],
             WS_TABSTOP,
@@ -125,16 +127,23 @@ pub(super) fn select(
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             3,
             [305, 295, 100, 32],
             WS_TABSTOP,
         );
-        let cancel = control(hwnd, "BUTTON", "Cancel", 4, [420, 295, 100, 32], WS_TABSTOP);
+        let cancel = control(
+            hwnd,
+            "BUTTON",
+            tr!("Cancel"),
+            4,
+            [420, 295, 100, 32],
+            WS_TABSTOP,
+        );
         let services = control(
             hwnd,
             "BUTTON",
-            "Bazaar / account services",
+            tr!("Bazaar / account services"),
             5,
             [15, 345, 280, 32],
             WS_TABSTOP,
@@ -142,7 +151,7 @@ pub(super) fn select(
         let train = control(
             hwnd,
             "BUTTON",
-            "Train selected character",
+            tr!("Train selected character"),
             6,
             [310, 345, 280, 32],
             WS_TABSTOP,
@@ -206,7 +215,7 @@ pub(super) fn select(
                     channels,
                     CB_ADDSTRING,
                     0,
-                    wide("Automatic").as_ptr() as LPARAM,
+                    wide(tr!("Automatic")).as_ptr() as LPARAM,
                 );
                 if let Some(row) = row {
                     for (_, name) in &row.channels {

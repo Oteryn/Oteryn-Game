@@ -10,7 +10,7 @@ impl ScreenshotControls {
                 control(
                     hwnd,
                     "STATIC",
-                    "Screenshot folder (BMP images)",
+                    tr!("Screenshot folder (BMP images)"),
                     0,
                     [10, 60, 710, 26],
                     0,
@@ -26,7 +26,7 @@ impl ScreenshotControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Game only (off: entire game window)",
+                    tr!("Game only (off: entire game window)"),
                     253,
                     [10, 135, 710, 26],
                     BS_AUTOCHECKBOX as u32,
@@ -34,16 +34,23 @@ impl ScreenshotControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Save screenshot settings",
+                    tr!("Save screenshot settings"),
                     250,
                     [10, 180, 300, 30],
                     0,
                 ),
-                control(hwnd, "BUTTON", "Capture now", 251, [330, 180, 300, 30], 0),
+                control(
+                    hwnd,
+                    "BUTTON",
+                    tr!("Capture now"),
+                    251,
+                    [330, 180, 300, 30],
+                    0,
+                ),
                 control(
                     hwnd,
                     "STATIC",
-                    "Pre-event frames (0–10 seconds, max 64 MiB)",
+                    tr!("Pre-event frames (0–10 seconds, max 64 MiB)"),
                     0,
                     [10, 225, 530, 26],
                     0,
@@ -59,7 +66,7 @@ impl ScreenshotControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Capture on death",
+                    tr!("Capture on death"),
                     255,
                     [10, 265, 700, 26],
                     BS_AUTOCHECKBOX as u32,
@@ -67,7 +74,7 @@ impl ScreenshotControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Capture on level advance",
+                    tr!("Capture on level advance"),
                     256,
                     [10, 300, 700, 26],
                     BS_AUTOCHECKBOX as u32,
@@ -75,7 +82,7 @@ impl ScreenshotControls {
                 control(
                     hwnd,
                     "BUTTON",
-                    "Capture on trained skill advance",
+                    tr!("Capture on trained skill advance"),
                     257,
                     [10, 335, 700, 26],
                     BS_AUTOCHECKBOX as u32,
@@ -121,11 +128,11 @@ impl ScreenshotControls {
         unsafe {
             let mut preferences = state.preferences.clone();
             let Ok(frames) = text(self.0[6]).parse::<u8>() else {
-                state.feedback = "Enter 0 to 10 backlog frames".into();
+                state.feedback = tr!("Enter 0 to 10 backlog frames").into();
                 return true;
             };
             if frames > 10 {
-                state.feedback = "Enter 0 to 10 backlog frames".into();
+                state.feedback = tr!("Enter 0 to 10 backlog frames").into();
                 return true;
             }
             preferences.screenshots.backlog_frames = frames;

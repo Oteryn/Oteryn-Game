@@ -1,6 +1,8 @@
 //! Windows system controls provide a readable panel without a new rendering dependency.
 //! Handles and the window-procedure context stay on this thread. The context outlives HWND.
 #![allow(unsafe_code)]
+#[path = "native_widgets.rs"]
+mod native_widgets;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::quest_log::{
@@ -84,7 +86,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Quest Log — select a quest, then a mission").as_ptr(),
+            wide(tr!("Quest Log — select a quest, then a mission")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -106,109 +108,7 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let quests = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            QUESTS,
-            10,
-            94,
-            220,
-            136,
-            LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Find number, status or known mission",
-            112,
-            10,
-            10,
-            220,
-            20,
-            0,
-        );
-        let list_search = control(
-            hwnd,
-            "EDIT",
-            "",
-            113,
-            10,
-            32,
-            220,
-            24,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
-            list_search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let list_sort = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            114,
-            10,
-            62,
-            220,
-            200,
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
-        );
-        for label in QUEST_SORT_LABELS {
-            SendMessageW(list_sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-        }
-        let missions = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            MISSIONS,
-            240,
-            10,
-            490,
-            220,
-            LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
-        );
-        let description = control(
-            hwnd,
-            "EDIT",
-            "",
-            105,
-            10,
-            270,
-            720,
-            260,
-            ES_MULTILINE as u32
-                | ES_READONLY as u32
-                | ES_AUTOVSCROLL as u32
-                | WS_VSCROLL
-                | WS_BORDER
-                | WS_TABSTOP,
-        );
-        let refresh = control(
-            hwnd,
-            "BUTTON",
-            "Quest list / Refresh",
-            REFRESH,
-            10,
-            235,
-            220,
-            28,
-            WS_TABSTOP,
-        );
-        let track = control(
-            hwnd,
-            "BUTTON",
-            "Track quest",
-            TRACK,
-            240,
-            235,
-            220,
-            28,
-            WS_TABSTOP,
-        );
-        if [
+        let Some(native_widgets::Widgets {
             quests,
             missions,
             description,
@@ -216,86 +116,17 @@ fn run(
             track,
             list_search,
             list_sort,
-        ]
-        .iter()
-        .any(|h| h.is_null())
-        {
+            auto_add,
+            auto_remove,
+            filter,
+            search,
+            tracker,
+        }) = native_widgets::Widgets::new(hwnd)
+        else {
             DestroyWindow(hwnd);
             close(&weak);
             return;
-        }
-        let auto_add = control(
-            hwnd,
-            "BUTTON",
-            "Auto-add: off",
-            AUTO_ADD,
-            750,
-            10,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let auto_remove = control(
-            hwnd,
-            "BUTTON",
-            "Auto-remove: off",
-            AUTO_REMOVE,
-            750,
-            45,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let filter = control(
-            hwnd,
-            "BUTTON",
-            "Tracker: all quests",
-            FILTER,
-            750,
-            80,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Search tracked missions",
-            109,
-            750,
-            115,
-            290,
-            22,
-            0,
-        );
-        let search = control(
-            hwnd,
-            "EDIT",
-            "",
-            110,
-            750,
-            140,
-            290,
-            28,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
-            search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let tracker = control(
-            hwnd,
-            "EDIT",
-            "",
-            111,
-            750,
-            180,
-            290,
-            350,
-            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
-        );
+        };
         let mut held = None;
         let mut last_search = None;
         let mut shown_quests = Vec::new();
@@ -404,30 +235,30 @@ fn run(
             SetWindowTextW(
                 auto_add,
                 wide(if panel.tracker.auto_add {
-                    "Auto-add: on"
+                    tr!("Auto-add: on")
                 } else {
-                    "Auto-add: off"
+                    tr!("Auto-add: off")
                 })
                 .as_ptr(),
             );
             SetWindowTextW(
                 auto_remove,
                 wide(if panel.tracker.auto_remove {
-                    "Auto-remove: on"
+                    tr!("Auto-remove: on")
                 } else {
-                    "Auto-remove: off"
+                    tr!("Auto-remove: off")
                 })
                 .as_ptr(),
             );
             SetWindowTextW(
                 filter,
-                wide(&format!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
+                wide(&lfmt!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
             );
             if held.as_ref() != Some(panel) {
                 let text = oteryn_client_ui::quest_log::tracker_lines(panel)
                     .iter()
                     .map(|line| {
-                        format!(
+                        lfmt!(
                             "Quest {}{}\r\n{}",
                             line.quest_index,
                             if line.completed { " (completed)" } else { "" },
@@ -459,7 +290,7 @@ fn run(
                     let rows = quest_rows(panel);
                     shown_quests = rows.iter().map(|q| q.quest_index).collect();
                     for q in rows {
-                        let label = format!(
+                        let label = lfmt!(
                             "Quest {}{}",
                             q.quest_index,
                             if q.completed { " (completed)" } else { "" }
@@ -505,9 +336,9 @@ fn run(
                 SetWindowTextW(
                     track,
                     wide(if tracked {
-                        "Stop tracking quest"
+                        tr!("Stop tracking quest")
                     } else {
-                        "Track quest"
+                        tr!("Track quest")
                     })
                     .as_ptr(),
                 );

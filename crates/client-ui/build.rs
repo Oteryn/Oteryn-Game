@@ -1,6 +1,8 @@
 //! Step 1 composition seam: validate additive sources and generate private descriptors.
 #[path = "../../tools/architecture-check/src/client_fragments.rs"]
 mod client_fragments;
+#[path = "src/components/localization/build.rs"]
+mod localization_build;
 
 use std::path::Path;
 
@@ -8,6 +10,7 @@ fn run() -> Result<(), String> {
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;
     let root = Path::new(&manifest).join("../..");
     let out = std::env::var("OUT_DIR").map_err(|e| e.to_string())?;
+    localization_build::generate(Path::new(&manifest), Path::new(&out))?;
     for path in [
         "crates/client-ui/src/features",
         "crates/protocol-oteryn/capabilities",

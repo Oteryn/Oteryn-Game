@@ -20,7 +20,7 @@ impl Outbox {
             m.containers.house_capacity_v2,
         ) {
             Ok(views) => replace_views(&mut m.browse_field, views),
-            Err(_) => m.browse_field.feedback = Some("Invalid container view".into()),
+            Err(_) => m.browse_field.feedback = Some(tr!("Invalid container view").into()),
         }
     }
     pub(in crate::play) fn browse_field_inventory(

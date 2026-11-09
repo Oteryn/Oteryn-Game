@@ -5,10 +5,13 @@ pub fn panel_text(panel: &PotionDurationsPanel) -> String {
 }
 pub fn panel_text_at(panel: &PotionDurationsPanel, now: Instant) -> String {
     if !panel.selected {
-        return "Potion durations unavailable in this session".into();
+        return tr!("Potion durations unavailable in this session").into();
     }
     let Some(snapshot) = &panel.snapshot else {
-        return panel.error.unwrap_or("Loading potion durations…").into();
+        return panel
+            .error
+            .unwrap_or(tr!("Loading potion durations…"))
+            .into();
     };
     let elapsed_ms = panel.received_at.map_or(0, |received| {
         u64::try_from(now.saturating_duration_since(received).as_millis()).unwrap_or(u64::MAX)
@@ -25,8 +28,8 @@ pub fn panel_text_at(panel: &PotionDurationsPanel, now: Instant) -> String {
             continue;
         }
         let label = match entry.source {
-            3 => format!("Store XP boost +{}%", entry.percent),
-            4 => format!("Daily XP boost +{}%", entry.percent),
+            3 => lfmt!("Store XP boost +{}%", entry.percent),
+            4 => lfmt!("Daily XP boost +{}%", entry.percent),
             _ => potion_name(entry.item_id).to_owned(),
         };
         let seconds = remaining.div_ceil(1000);
@@ -38,37 +41,37 @@ pub fn panel_text_at(panel: &PotionDurationsPanel, now: Instant) -> String {
         shown += 1;
     }
     if shown == 0 {
-        text.push_str("No active potion effects");
+        text.push_str(tr!("No active potion effects"));
     }
     text
 }
 fn potion_name(item: u32) -> &'static str {
     match item {
-        36723 => "Kooldown Aid",
-        36724 => "Strike Enhancement",
-        36725 => "Stamina Extension",
-        36726 => "Charm Upgrade",
-        36727 => "Wealth Duplex",
-        36728 => "Bestiary Betterment",
-        36729 => "Fire Resilience",
-        36730 => "Ice Resilience",
-        36731 => "Earth Resilience",
-        36732 => "Energy Resilience",
-        36733 => "Holy Resilience",
-        36734 => "Death Resilience",
-        36735 => "Physical Resilience",
-        36736 => "Fire Amplification",
-        36737 => "Ice Amplification",
-        36738 => "Earth Amplification",
-        36739 => "Energy Amplification",
-        36740 => "Holy Amplification",
-        36741 => "Death Amplification",
-        36742 => "Physical Amplification",
-        7439 => "Berserk potion",
-        7440 => "Mastermind potion",
-        7443 => "Bullseye potion",
-        49271 => "Transcendence potion",
-        35563 => "Magic shield potion",
-        _ => "Unknown potion",
+        36723 => tr!("Kooldown Aid"),
+        36724 => tr!("Strike Enhancement"),
+        36725 => tr!("Stamina Extension"),
+        36726 => tr!("Charm Upgrade"),
+        36727 => tr!("Wealth Duplex"),
+        36728 => tr!("Bestiary Betterment"),
+        36729 => tr!("Fire Resilience"),
+        36730 => tr!("Ice Resilience"),
+        36731 => tr!("Earth Resilience"),
+        36732 => tr!("Energy Resilience"),
+        36733 => tr!("Holy Resilience"),
+        36734 => tr!("Death Resilience"),
+        36735 => tr!("Physical Resilience"),
+        36736 => tr!("Fire Amplification"),
+        36737 => tr!("Ice Amplification"),
+        36738 => tr!("Earth Amplification"),
+        36739 => tr!("Energy Amplification"),
+        36740 => tr!("Holy Amplification"),
+        36741 => tr!("Death Amplification"),
+        36742 => tr!("Physical Amplification"),
+        7439 => tr!("Berserk potion"),
+        7440 => tr!("Mastermind potion"),
+        7443 => tr!("Bullseye potion"),
+        49271 => tr!("Transcendence potion"),
+        35563 => tr!("Magic shield potion"),
+        _ => tr!("Unknown potion"),
     }
 }

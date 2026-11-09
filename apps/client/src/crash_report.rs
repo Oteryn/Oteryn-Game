@@ -25,7 +25,7 @@ impl CrashReport {
         }
     }
     pub fn preview(&self) -> String {
-        format!(
+        lfmt!(
             "Oteryn crash report\nBuild: {}\nOS: {}\nArchitecture: {}\nSource: {}:{}\nNo panic text, account data, memory or environment values collected.\n",
             crate::CLIENT_BUILD,
             std::env::consts::OS,
@@ -90,8 +90,9 @@ pub fn review_pending() {
     if file.take(4097).read_to_string(&mut preview).is_err() || preview.len() > 4096 {
         return;
     }
-    if consent_dialog(&format!(
-        "{preview}\nSave a local report to share manually? Nothing is uploaded."
+    if consent_dialog(&lfmt!(
+        "{preview}\nSave a local report to share manually? Nothing is uploaded.",
+        preview = preview
     )) {
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -99,12 +100,12 @@ pub fn review_pending() {
             .as_nanos();
         let destination = path.with_file_name(format!("crash-report-{stamp}.txt"));
         if save(&preview, &destination, true).is_err() {
-            crate::win_mutex::show_error(
-                "Cannot save the crash report. The pending report was retained.",
-            );
+            crate::win_mutex::show_error(tr!(
+                "Cannot save the crash report. The pending report was retained."
+            ));
             return;
         }
-        crate::win_mutex::show_error(&format!("Crash report saved to {}", destination.display()));
+        crate::win_mutex::show_error(&lfmt!("Crash report saved to {}", destination.display()));
     }
     let _ = std::fs::remove_file(path);
 }
@@ -125,7 +126,7 @@ pub(crate) fn consent_dialog(message: &str) -> bool {
         MessageBoxW(
             std::ptr::null_mut(),
             wide(message).as_ptr(),
-            wide("Oteryn — local report consent").as_ptr(),
+            wide(tr!("Oteryn — local report consent")).as_ptr(),
             MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
         ) == IDYES
     }

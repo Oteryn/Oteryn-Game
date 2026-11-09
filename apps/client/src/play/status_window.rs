@@ -95,7 +95,7 @@ impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {
     }
     fn ended(&mut self) {
         self.pending = false;
-        self.error = Some("Session ended");
+        self.error = Some(tr!("Session ended"));
     }
 }
 panel!(party_effects, PartyEffectsPanel, 280, 496);
@@ -220,7 +220,7 @@ fn run<P: StatusPanel>(
         let refresh = CreateWindowExW(
             0,
             wide("BUTTON").as_ptr(),
-            wide("Refresh").as_ptr(),
+            wide(tr!("Refresh")).as_ptr(),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP,
             16,
             530,

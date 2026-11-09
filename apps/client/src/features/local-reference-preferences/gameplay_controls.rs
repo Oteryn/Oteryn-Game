@@ -7,9 +7,9 @@ pub(crate) struct GameplayControls([HWND; 3]);
 impl GameplayControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         let handles = [
-            "Show inspection actions in the context menu",
-            "Switch chase off when walking manually",
-            "Secondary click: loot nearby (off: context menu)",
+            tr!("Show inspection actions in the context menu"),
+            tr!("Switch chase off when walking manually"),
+            tr!("Secondary click: loot nearby (off: context menu)"),
         ]
         .into_iter()
         .enumerate()

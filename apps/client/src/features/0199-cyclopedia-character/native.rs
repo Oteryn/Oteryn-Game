@@ -7,11 +7,11 @@ pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     format!(
         "{}\r\n{}\r\n{}",
         if p.pending {
-            "Waiting for the server"
+            tr!("Waiting for the server")
         } else if !p.selected {
-            "Feature unavailable in this session"
+            tr!("Feature unavailable in this session")
         } else {
-            "Ready"
+            tr!("Ready")
         },
         p.feedback.unwrap_or(""),
         if p.command_kind == 387 && p.badges.is_some() {
@@ -71,7 +71,7 @@ pub(in crate::play) fn submit(
         Some((offset, limit, target))
     })();
     let Some((offset, limit, target)) = parsed else {
-        p.feedback = Some("Enter a valid offset, page size 1-50 and target UUID");
+        p.feedback = Some(tr!("Enter a valid offset, page size 1-50 and target UUID"));
         return None;
     };
     p.tab = tab;

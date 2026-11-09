@@ -11,7 +11,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.highscores.pending = false;
-            mailbox.highscores.feedback = Some("The session has ended".into());
+            mailbox.highscores.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn highscores_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {

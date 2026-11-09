@@ -20,13 +20,15 @@ pub(super) fn action(
         return;
     }
     if !mailbox.boss_rewards.selected || mailbox.boss_rewards.pending {
-        mailbox.analyser.feedback =
-            Some("Boss rewards unavailable or already waiting for the server");
+        mailbox.analyser.feedback = Some(tr!(
+            "Boss rewards unavailable or already waiting for the server"
+        ));
         return;
     }
     let Some(death) = death.and_then(parse_death) else {
-        mailbox.analyser.feedback =
-            Some("Enter a 32-digit hexadecimal death id from the drop list");
+        mailbox.analyser.feedback = Some(tr!(
+            "Enter a 32-digit hexadecimal death id from the drop list"
+        ));
         return;
     };
     let cursor = mailbox

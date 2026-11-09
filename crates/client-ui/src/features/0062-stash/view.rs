@@ -7,7 +7,7 @@ pub fn row_label(row: &stash::StashRow) -> String {
         row.definition_revision,
         row.quantity,
         if row.migration_required {
-            " · migration required"
+            tr!(" · migration required")
         } else {
             ""
         }
@@ -17,31 +17,31 @@ pub fn row_label(row: &stash::StashRow) -> String {
 pub fn panel_text(panel: &StashPanel) -> String {
     let mut lines = Vec::new();
     if !panel.selected {
-        lines.push("Stash is unavailable in this session".to_owned());
+        lines.push(tr!("Stash is unavailable in this session").to_owned());
     }
     if panel.pending {
-        lines.push("Waiting for the server…".to_owned());
+        lines.push(tr!("Waiting for the server…").to_owned());
     }
     if let Some(feedback) = &panel.feedback {
         lines.push(feedback.clone());
     }
-    lines.push(format!(
+    lines.push(lfmt!(
         "Page {}{}",
         panel.page + 1,
         if panel.has_more {
-            " · more available"
+            tr!(" · more available")
         } else {
             ""
         }
     ));
-    lines.push("Select a carried item to stow its stack. Open carried bags in Depot to list their items. Retrieve depot items there before stowing. The server accepts eligible items in the main backpack.".into());
-    lines.push(format!(
+    lines.push(tr!("Select a carried item to stow its stack. Open carried bags in Depot to list their items. Retrieve depot items there before stowing. The server accepts eligible items in the main backpack.").into());
+    lines.push(lfmt!(
         "Search/sort apply to this page only. Sort: {:?}",
         panel.sort
     ));
     let visible = visible_rows(panel);
     if visible.is_empty() {
-        lines.push("No matching items on this page".into());
+        lines.push(tr!("No matching items on this page").into());
     }
     lines.extend(
         visible

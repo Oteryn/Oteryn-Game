@@ -27,20 +27,20 @@ impl WatchConfig {
     pub fn from_env(mut read: impl FnMut(&str) -> Option<String>) -> Result<Self, &'static str> {
         let address = read("OTERYN_WATCH_ADDRESS")
             .filter(|s| !s.is_empty() && s.len() <= 256)
-            .ok_or("Missing Watch endpoint")?;
+            .ok_or(tr!("Missing Watch endpoint"))?;
         let tls_name = read("OTERYN_WATCH_TLS_NAME")
             .filter(|s| !s.is_empty() && s.len() <= 253)
-            .ok_or("Missing Watch TLS name")?;
+            .ok_or(tr!("Missing Watch TLS name"))?;
         let root = read("OTERYN_WATCH_ROOT_CERT")
             .filter(|s| !s.is_empty())
             .map(PathBuf::from)
-            .ok_or("Missing Watch trust root")?;
-        let ticket = read("OTERYN_WATCH_TICKET").ok_or("Missing account observer ticket")?;
+            .ok_or(tr!("Missing Watch trust root"))?;
+        let ticket = read("OTERYN_WATCH_TICKET").ok_or(tr!("Missing account observer ticket"))?;
         if ticket.len() != 69
             || !ticket.starts_with("ocv1.")
             || !ticket.as_bytes()[5..].iter().all(u8::is_ascii_hexdigit)
         {
-            return Err("Invalid account observer ticket");
+            return Err(tr!("Invalid account observer ticket"));
         }
         Ok(Self {
             address,
@@ -68,7 +68,7 @@ impl WatchLink {
         if let Ok(mut state) = self.state.lock()
             && !state.1.picture.chat_enabled
         {
-            state.1.feedback = "Cast chat is disabled".into();
+            state.1.feedback = tr!("Cast chat is disabled").into();
             state.0 = state.0.wrapping_add(1);
             return;
         }
@@ -78,7 +78,10 @@ impl WatchLink {
         let _ = self.commands.send(Input::Leave);
     }
     fn apply(&self, message: Message) -> Result<(), &'static str> {
-        let mut state = self.state.lock().map_err(|_| "Watch state unavailable")?;
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| tr!("Watch state unavailable"))?;
         oteryn_client_ui::cast_view::protocol::apply(&mut state.1, message, Instant::now())?;
         state.0 = state.0.wrapping_add(1);
         Ok(())
@@ -88,7 +91,8 @@ impl WatchLink {
             state.1.picture.clear();
             state.1.picture.ended = true;
             state.1.feedback =
-                "Cast unavailable. Obtain a new account observer ticket to watch again.".into();
+                tr!("Cast unavailable. Obtain a new account observer ticket to watch again.")
+                    .into();
             state.0 = state.0.wrapping_add(1);
         }
     }
@@ -122,22 +126,22 @@ async fn watch(
     mut inputs: UnboundedReceiver<Input>,
 ) -> Result<(), &'static str> {
     let root = oteryn_session_tcp::load_root_certificate(&config.root)
-        .map_err(|_| "Watch trust root unavailable")?;
+        .map_err(|_| tr!("Watch trust root unavailable"))?;
     let addresses: Vec<_> = tokio::time::timeout(
         Duration::from_secs(10),
         tokio::net::lookup_host(config.address.as_str()),
     )
     .await
-    .map_err(|_| "Watch lookup timed out")?
-    .map_err(|_| "Watch endpoint unavailable")?
+    .map_err(|_| tr!("Watch lookup timed out"))?
+    .map_err(|_| tr!("Watch endpoint unavailable"))?
     .take(16)
     .collect();
     let stream = oteryn_session_tcp::connection::connect_any(&addresses, &config.tls_name, &root)
         .await
-        .ok_or("Watch connection unavailable")?;
+        .ok_or(tr!("Watch connection unavailable"))?;
     let mut session = CastViewerSession::join(stream, &config.ticket, Duration::from_secs(10))
         .await
-        .map_err(|_| "Watch admission unavailable")?;
+        .map_err(|_| tr!("Watch admission unavailable"))?;
     link.apply(Message::Ready {
         epoch: session.epoch(),
         chat: session.chat_allowed(),

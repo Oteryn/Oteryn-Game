@@ -38,10 +38,10 @@ impl Minimap {
         let world = self
             .world
             .clone()
-            .ok_or_else(|| io::Error::other("Join a world before exporting its minimap"))?;
+            .ok_or_else(|| io::Error::other(tr!("Join a world before exporting its minimap")))?;
         let binding = self
             .binding
-            .ok_or_else(|| io::Error::other("Wait for the server map before exporting"))?;
+            .ok_or_else(|| io::Error::other(tr!("Wait for the server map before exporting")))?;
         let saved = Saved {
             version: 1,
             cells: self
@@ -78,20 +78,20 @@ impl Minimap {
 
     pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
         let active = self.path().ok_or_else(|| {
-            io::Error::other("Join a world with minimap storage before importing")
+            io::Error::other(tr!("Join a world with minimap storage before importing"))
         })?;
         let mut bytes = Vec::new();
         std::fs::File::open(path)?
             .take(MAX_BYTES + 1)
             .read_to_end(&mut bytes)?;
         if bytes.len() as u64 > MAX_BYTES {
-            return Err(io::Error::other("Minimap file is too large"));
+            return Err(io::Error::other(tr!("Minimap file is too large")));
         }
         let portable: Portable = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         if self.world.as_ref() != Some(&portable.world) || self.binding != Some(portable.binding) {
-            return Err(io::Error::other(
-                "This minimap belongs to a different world or content generation",
-            ));
+            return Err(io::Error::other(tr!(
+                "This minimap belongs to a different world or content generation"
+            )));
         }
         portable.saved.validate()?;
         portable.saved.write_to(&active)?;
@@ -130,7 +130,7 @@ impl Saved {
                     || m.label.chars().any(char::is_control)
             })
         {
-            return Err(io::Error::other("Invalid minimap file"));
+            return Err(io::Error::other(tr!("Invalid minimap file")));
         }
         Ok(())
     }

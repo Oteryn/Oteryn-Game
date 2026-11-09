@@ -2,9 +2,9 @@ use super::ChatPartyRoomPanel;
 #[must_use]
 pub fn panel_text(panel: &ChatPartyRoomPanel) -> String {
     if !panel.selected {
-        return "Party chat unavailable in this session".into();
+        return tr!("Party chat unavailable in this session").into();
     }
-    let mut text = String::from("Party chat");
+    let mut text = String::from(tr!("Party chat"));
     for line in &panel.lines {
         if !panel.communication.visible(line) {
             continue;

@@ -55,7 +55,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Hireling management").as_ptr(),
+            wide(tr!("Hireling management")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -82,7 +82,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "STATIC",
-            "Colors: head / body / legs / feet (0-255)",
+            tr!("Colors: head / body / legs / feet (0-255)"),
             103,
             [10, 45, 400, 24],
         );
@@ -95,9 +95,15 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 [10 + i * 80, 75, 70, 26],
             )
         });
-        control(hwnd, "BUTTON", "Save outfit", 120, [10, 110, 140, 30]);
-        control(hwnd, "BUTTON", "Return to lamp", 121, [160, 110, 140, 30]);
-        control(hwnd, "BUTTON", "Refresh", 122, [310, 110, 140, 30]);
+        control(hwnd, "BUTTON", tr!("Save outfit"), 120, [10, 110, 140, 30]);
+        control(
+            hwnd,
+            "BUTTON",
+            tr!("Return to lamp"),
+            121,
+            [160, 110, 140, 30],
+        );
+        control(hwnd, "BUTTON", tr!("Refresh"), 122, [310, 110, 140, 30]);
         let state = control(hwnd, "EDIT", "", 123, [10, 150, 580, 300]);
         let mut held_entries = Vec::new();
         let mut held_identity = None;
@@ -146,9 +152,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                                 })
                             }
                             _ => {
-                                p.feedback = Some(
-                                    "Select a hireling and outfit; enter four colors from 0 to 255",
-                                );
+                                p.feedback = Some(tr!(
+                                    "Select a hireling and outfit; enter four colors from 0 to 255"
+                                ));
                                 None
                             }
                         }
@@ -162,7 +168,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(PlayCommand::Feature(command)).is_err()
                 {
                     p.pending = None;
-                    p.feedback = Some("The session has ended");
+                    p.feedback = Some(tr!("The session has ended"));
                 }
             }
             let p = &mailbox.hireling_management;

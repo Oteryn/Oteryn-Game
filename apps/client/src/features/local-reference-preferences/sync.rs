@@ -24,10 +24,11 @@ pub enum SettingsPage {
     MinimapTransfer,
     Console,
     ActionBarLayout,
+    Language,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 14] = [
+    pub const ALL: [Self; 15] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -42,6 +43,7 @@ impl SettingsPage {
         Self::MinimapTransfer,
         Self::Console,
         Self::ActionBarLayout,
+        Self::Language,
     ];
 
     pub const fn label(self) -> &'static str {
@@ -60,6 +62,7 @@ impl SettingsPage {
             Self::MinimapTransfer => "Help / minimap transfer",
             Self::Console => "Console",
             Self::ActionBarLayout => "Interface / action bar layout",
+            Self::Language => "Interface / language",
         }
     }
 }
@@ -128,7 +131,7 @@ impl SettingsState {
         let path = self
             .store
             .as_ref()
-            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?
+            .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?
             .backup_path();
         self.import_from(&path)
     }
@@ -137,7 +140,7 @@ impl SettingsState {
         let store = self
             .store
             .as_mut()
-            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
+            .ok_or_else(|| io::Error::other(tr!("Preference storage is unavailable")))?;
         store.replace_with_backup(preferences.clone())?;
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
@@ -150,12 +153,12 @@ impl SettingsState {
                 Ok(store) => (Some(store), String::new()),
                 Err(error) => (
                     Some(PreferenceStore::defaults(path)),
-                    format!("Could not load preferences: {error}"),
+                    lfmt!("Could not load preferences: {error}", error = error),
                 ),
             },
             None => (
                 None,
-                "LOCALAPPDATA is unavailable; preferences cannot be saved".into(),
+                tr!("LOCALAPPDATA is unavailable; preferences cannot be saved").into(),
             ),
         };
         let preferences = store
@@ -249,7 +252,7 @@ impl SettingsState {
         let result = self
             .store
             .as_mut()
-            .ok_or_else(|| "Preference storage is unavailable".to_owned())
+            .ok_or_else(|| tr!("Preference storage is unavailable").to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
         if self.preferences.battle_lists != preferences.battle_lists {
@@ -257,8 +260,11 @@ impl SettingsState {
         }
         self.preferences = preferences;
         self.feedback = match result {
-            Ok(()) => "Applied and saved".into(),
-            Err(error) => format!("Applied for this session; could not save: {error}"),
+            Ok(()) => tr!("Applied and saved").into(),
+            Err(error) => lfmt!(
+                "Applied for this session; could not save: {error}",
+                error = error
+            ),
         };
     }
 

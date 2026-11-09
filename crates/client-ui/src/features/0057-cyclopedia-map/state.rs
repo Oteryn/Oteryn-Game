@@ -23,11 +23,11 @@ pub struct Panel {
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;
@@ -65,16 +65,16 @@ impl Section {
         Self::Houses,
         Self::Analytics,
     ];
-    pub const fn title(self) -> &'static str {
+    pub fn title(self) -> &'static str {
         match self {
-            Self::Character => "Character",
-            Self::Items => "Items",
-            Self::Map => "Map",
-            Self::Bestiary => "Bestiary",
-            Self::Charms => "Charms",
-            Self::Bosses => "Bosses",
-            Self::Houses => "Houses",
-            Self::Analytics => "Analytics",
+            Self::Character => tr!("Character"),
+            Self::Items => tr!("Items"),
+            Self::Map => tr!("Map"),
+            Self::Bestiary => tr!("Bestiary"),
+            Self::Charms => tr!("Charms"),
+            Self::Bosses => tr!("Bosses"),
+            Self::Houses => tr!("Houses"),
+            Self::Analytics => tr!("Analytics"),
         }
     }
 }
