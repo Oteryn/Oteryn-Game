@@ -1494,9 +1494,10 @@
   "src": "OTCAUD1108",
   "area": "Mobile",
   "feature": "Mobilny joystick ruchu",
-  "status": "MISSING",
-  "gap": "Brakuje ekranowego joysticka dotykowego do sterowania ruchem.",
-  "lane": "OWNER"
+  "status": "DONE",
+  "gap": "Joystick dotykowy w istniejącym kliencie Windows: osiem sektorów, martwa strefa, powtarzanie w kolejce paced-movement i zatrzymanie po puszczeniu/anulowaniu lub utracie fokusu. Sektory ukośne naprzemiennie wysyłają istniejące kroki kardynalne; protokół obsługuje cztery kierunki. Bez portu Android/iOS.",
+  "lane": "cg_mobile",
+  "evidence": "apps/client/src/features/0233-touch-controls/input.rs:91 + touch_joystick_uses_paced_keyboard_steps_and_release_stops; apps/client/src/features/0233-touch-controls/native.rs:7 + touch_default_tap_dead_zone_and_contact_ownership"
  },
  {
   "id": "O036",
@@ -1573,9 +1574,10 @@
   "src": "OTCAUD1108",
   "area": "Mobile",
   "feature": "Mobilny pasek skrótów",
-  "status": "MISSING",
-  "gap": "Brakuje ekranowego paska mobilnych skrótów dotykowych wybierających tryb attack/look/follow/use.",
-  "lane": "OWNER"
+  "status": "DONE",
+  "gap": "Dotykowy pasek attack/look/follow/use z widocznym wyborem i powrotem do domyślnego walk-to/use po ponownym dotknięciu. Korzysta z istniejących ścieżek myszy/klawiatury, pokazuje się po pierwszym dotyku i nie przechwytuje myszy; napisy we wszystkich sześciu lokalizacjach.",
+  "lane": "cg_mobile",
+  "evidence": "apps/client/src/features/0233-touch-controls/input.rs:110 + touch_hotbar_world_taps_equal_mouse_context_and_follow_keys; apps/client/src/features/0233-touch-controls/view.rs:6 + touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode"
  },
  {
   "id": "O059",

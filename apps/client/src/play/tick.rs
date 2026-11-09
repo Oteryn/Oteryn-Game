@@ -74,6 +74,7 @@ impl PlayView {
         }
 
         self.target_walk_feedback = link.target_walk_feedback();
+        self.pump_touch_step(link);
         // One chronological queue: each input goes out in the order it was given. A step still
         // in flight holds back the arrow and what was given after it.
         while let Some(&input) = self.inputs.front() {

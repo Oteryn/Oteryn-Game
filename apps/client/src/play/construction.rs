@@ -14,6 +14,7 @@ impl PlayView {
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
             game_notifications: Default::default(),
+            touch: Default::default(),
             creature_drag: Default::default(),
             world_context_feedback: None,
             death: Default::default(),

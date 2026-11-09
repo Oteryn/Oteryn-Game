@@ -78,7 +78,7 @@ fn rgb(color: PresentationColor) -> [u8; 3] {
     }
 }
 
-fn pixel(
+pub(in crate::play) fn pixel(
     batch: &mut SpriteBatch,
     view: &TileView,
     atlas: &AtlasImage,
