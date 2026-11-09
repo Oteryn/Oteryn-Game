@@ -2283,3 +2283,19 @@ RED m51_commit_clock_refuses_late_victory_and_portal_progress: actual assertion
 failure (112.106s including cold build). GREEN8 M51 tests:27.090s; real PG native
 origin5.965053611s, custody5.954610372s, runtime-role5.960392139s. Durability
 clippy --all-targets -D warnings PASS98.231s. M51 still PARTIAL for reset closure.
+
+## M51: terminal session releases pit custody atomically
+
+The existing fenced terminal-release writer clears that exact session's shared
+arena lease in the same transaction as session_state=3, guard successors and its
+lifecycle receipt. Cleanup rechecks the durable terminal row, world/Channel,
+Character, connection/Character-lease/scope generations and session. Historical
+proofs cannot clear active custody or a newer session/run. No migration added.
+Source: Crystal201189f svargrond_arena.lua:259-313 (kick/reset owner).
+RED real PG4.77s: a Character-only deletion incorrectly clears an active run.
+GREEN9 M51 tests29.950s; own terminal PG6.567428569s proves active refusal,
+terminal release, rollback conservation and stale-session replay isolation.
+Other own PG: runtime role6.566619958s, native origin6.569492612s, pit custody
+6.572658424s. M51 remains PARTIAL for nonterminal departure/reset closure.
+Durability clippy --all-targets -D warnings PASS77.968s; cargo fmt --all --check
+PASS15.234s; engine-only pin identity equals the committed identity.

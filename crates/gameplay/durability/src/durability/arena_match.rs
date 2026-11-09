@@ -26,6 +26,7 @@ pub use native_death::NativeArenaDeath;
 pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 mod pit_lease;
+pub(in crate::durability) mod terminal;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MatchState {
