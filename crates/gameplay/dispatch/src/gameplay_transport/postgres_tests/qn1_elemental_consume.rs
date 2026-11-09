@@ -61,6 +61,9 @@ use crate::durability::spell_owner_commit::SpellLanePermit;
 use fixture as f;
 use oteryn_gameplay_quests::quest::elemental_arrival as rules;
 
+#[path = "qn1_elemental_consume/projection.rs"]
+mod projection;
+
 struct Content;
 impl ItemWeightLookup for Content {
     fn generation_digest(&self) -> [u8; 32] {
@@ -525,6 +528,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     assert_eq!(claimed.intent, pending[0]);
     assert_eq!(claimed.cycle, 0);
     assert_eq!(claimed.owner_generation.get(), 1);
+    let mut scene = projection::start(h, &claimed)?;
     let owner = crate::durability::item_decay_retire::CorpseDecayFence {
         runtime_scope: f::scope()?,
         scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1)
@@ -656,6 +660,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     assert!(
         matches!(refused, Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("23514"))
     );
+    scene.die()?;
     let mut death = h
         .root
         .freeze_item_mint(
@@ -711,13 +716,13 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(terminal, (3, "1".into()));
-    assert!(
-        h.root
-            .recover_elemental_summons(&permit, &authority, &h.node, owner, background)
-            .await
-            .map_err(f::debug)?
-            .is_empty()
-    );
+    let finished = h
+        .root
+        .recover_elemental_summons(&permit, &authority, &h.node, owner, background)
+        .await
+        .map_err(f::debug)?;
+    assert!(finished.is_empty());
+    scene.finish(&finished)?;
     assert!(
         h.root
             .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &Content, claim,)

@@ -21,6 +21,13 @@ fn valid_key(key: &str) -> bool {
     })
 }
 
+impl BossSpawn {
+    /// These clocks are admitted by item arrival, never by the ordinary reset scheduler.
+    pub fn is_elemental_arrival(&self) -> bool {
+        self.key.starts_with(PREFIX)
+    }
+}
+
 impl ChannelRuntimeV1 {
     /// The caller has committed this arrival clock under its independently current
     /// Channel owner. Replaying it preserves the exact actor, including its movement.
