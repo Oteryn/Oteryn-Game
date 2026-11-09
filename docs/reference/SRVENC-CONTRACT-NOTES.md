@@ -2431,3 +2431,22 @@ timeout57.891032298s, ten-pit combat/STEP/reward60.115019485s. Four tests PASS
 398.240s with cold build. Dispatch clippy --lib -D warnings PASS108.408s;
 fmt PASS15.750s; engine-only pin identity unchanged. No SQL/id allocation.
 M51 remains PARTIAL for physical top-Item reset and missing-pillar recreation.
+
+## M51: missing pillar has a bound native map representation (World SDK)
+
+Source: Crystal201189f lib/quests/svargrond_arena.lua:235-245. A reset can now
+recreate a missing pillar on an existing non-House tile, through the existing
+Channel-local movement-item view. Both pillar and portal remain bound and
+nonpickupable; no portable Item or MINT is invented. Native definitions1841/5022
+are resolved even when the base palette has no placement of those states.
+Only Fighting creates missing scenery; Victory alone still cannot invent a
+portal. An appearance change replaces the old Thing identity, exact-run release
+cannot close another run, replay does not duplicate items, and collision follows
+the actual recreated entry. Existing qualified base occurrences retain their
+original checked owner/API. No migration or command/capability id allocation.
+Focused World tests PASS94.320s including retry compilation; all World unit
+cases PASS22.527s (237 passed, one pre-existing ignored case). World clippy
+--all-targets -D warnings PASS93.414s. Initial build ran out of disk; stale own
+artifacts were removed and the same tests rerun. Engine-only pin identity matches.
+M51 remains PARTIAL: server composition of recreation and physical top-Item reset.
+Fmt corrected one array wrap; cargo fmt --all --check PASS15.293s.

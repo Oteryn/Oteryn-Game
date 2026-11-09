@@ -44,6 +44,7 @@ pub(super) struct CallbackStates {
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
     arena_pillars: BTreeMap<u64, [u8; 16]>,
+    arena_recreated: BTreeMap<TilePos, arena_pillars::RecreatedPillar>,
     pub(super) movement_items: BTreeMap<TilePos, Vec<view::ComposedEntry>>,
     movement_sequence: u64,
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
@@ -213,6 +214,7 @@ impl CallbackStates {
     }
     fn has_capacity(&self, additional: usize) -> bool {
         let used = self.arena_pillars.len()
+            + self.arena_recreated.len()
             + self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
@@ -991,7 +993,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos) {
+        if states.solid_items.contains(&pos) || states.arena_pillar_closed_at(pos) {
             return true;
         }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {

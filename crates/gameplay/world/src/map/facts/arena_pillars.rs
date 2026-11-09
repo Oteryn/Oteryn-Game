@@ -11,12 +11,21 @@ pub enum ArenaPillarProjection {
     Release,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct RecreatedPillar {
+    pub(super) owner: Option<[u8; 16]>,
+    pub(super) entry: super::super::super::overlay::EntryId,
+    pub(super) open: bool,
+}
+#[path = "arena_pillars/recreate.rs"]
+mod recreate;
+
 impl BundleFacts {
     /// Source action25200 is usable only while this exact run owns the opened
     /// immutable pillar occurrence; an appearance alone is not an admission.
     pub fn svargrond_portal_open(&self, pos: TilePos, run: [u8; 16]) -> bool {
         self.callbacks.lock().is_ok_and(|states| {
-            states.arena_pillars.iter().any(|(key, owner)| {
+            let base_open = states.arena_pillars.iter().any(|(key, owner)| {
                 *owner == run
                     && view::placement_of(*key).is_some_and(|(at, _)| at == pos)
                     && !states.hidden.contains(key)
@@ -24,7 +33,20 @@ impl BundleFacts {
                     && states.changed.get(key).is_some_and(|(_, facts)| {
                         facts.appearance_id == 5022 && facts.bound && !facts.pickupable
                     })
-            })
+            });
+            base_open
+                || states.arena_recreated.get(&pos).is_some_and(|pillar| {
+                    pillar.owner == Some(run)
+                        && pillar.open
+                        && states.movement_items.get(&pos).is_some_and(|items| {
+                            items.iter().any(|item| {
+                                item.source == view::EntrySource::Added(pillar.entry)
+                                    && item.facts.appearance_id == 5022
+                                    && item.facts.bound
+                                    && !item.facts.pickupable
+                            })
+                        })
+                })
         })
     }
 
