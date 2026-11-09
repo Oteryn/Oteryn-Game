@@ -16,3 +16,14 @@ Source route: `https://api.github.com/repos/zimbadev/crystalserver/git/trees/<re
 The existing displayed name already matches Crystal internalNpcName. No artificial display-name correction was authored. The separate PostgreSQL test verifies both retained retail anchors, (32043,32931,7) and (32347,32859,7), through the real physical actor helper. Both emitted successful POSTGRES_CASE_COMPLETED markers: 87.880023878s and 84.270316296s. The test passed in 172.15s; formatting and strict all-target/all-feature dispatch Clippy passed. This is verification of existing behavior, so no failing baseline or new repair is claimed. Travel and mission semantics remain outside this physical identity proof.
 
 No main or qmech merge and no node-boot run were performed in this continuation.
+
+## Current-head regression
+
+Code head: 091dd870bfce5dcb919ab0f0e2ae434a5dbd1f03. The four repaired physical actor identity cases ran sequentially together against real PostgreSQL on this head; four passed, zero failed or ignored, in 342.94 seconds. Each emitted POSTGRES_CASE_COMPLETED with success=true:
+
+- ferryman_kamil_meluna: 89.135376991s.
+- harlow_vengoth: 81.948038243s.
+- junkar_mines: 86.405537331s.
+- maris_mistrock: 85.44926148s.
+
+The Captain Waverider test separately passed both existing anchors in 172.15 seconds. A fresh dispatch all-target/all-feature cargo check passed after the complete batch. Formatting and strict dispatch Clippy passed; full content, quest and integration validations are recorded in the individual repair proofs. No pending local code commit is being withheld. Full travel and mission behavior is not promoted by these physical identity proofs.
