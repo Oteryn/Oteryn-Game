@@ -6,6 +6,7 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    atlas_native::open(link);
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,
@@ -257,3 +258,11 @@ mod analytics;
 #[cfg(windows)]
 #[path = "view/atlas.rs"]
 pub(in crate::play) mod atlas;
+
+#[cfg(windows)]
+#[path = "view/atlas_native.rs"]
+mod atlas_native;
+
+#[cfg(test)]
+#[path = "view/atlas_tests.rs"]
+mod atlas_tests;

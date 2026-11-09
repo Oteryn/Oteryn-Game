@@ -94,15 +94,39 @@ fn dispatch_panel(
 pub(in crate::play) fn activate(link: &PlayLink, inputs: &Inputs, action: usize) {
     activate_shared(&link.mailbox, &link.commands, inputs, action);
 }
+#[cfg(test)]
 pub(in crate::play) fn activate_shared(
     shared: &SharedMailbox,
     commands: &UnboundedSender<PlayCommand>,
     inputs: &Inputs,
     action: usize,
 ) {
-    use oteryn_client_runtime::cui3::depot_search::{self as wire, Outcome, Request};
+    activate_panel(&mut lock(shared).depot_search, commands, inputs, action);
+}
+
+pub(in crate::play) fn activate_displayed(
+    shared: &SharedMailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    inputs: &Inputs,
+    action: usize,
+    displayed: Option<&oteryn_client_runtime::cui3::depot_search::Reply>,
+) {
     let mut mailbox = lock(shared);
     let panel = &mut mailbox.depot_search;
+    if matches!(action, 4 | 7 | 8) && panel.reply.as_ref() != displayed {
+        panel.feedback = Some("Results changed; select from the refreshed list".into());
+        return;
+    }
+    activate_panel(panel, commands, inputs, action);
+}
+
+fn activate_panel(
+    panel: &mut DepotSearchPanel,
+    commands: &UnboundedSender<PlayCommand>,
+    inputs: &Inputs,
+    action: usize,
+) {
+    use oteryn_client_runtime::cui3::depot_search::{self as wire, Outcome, Request};
     if action == 1 {
         dispatch_panel(panel, commands, inputs, false);
         return;

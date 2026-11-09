@@ -7,7 +7,7 @@ mod view;
 pub use input::{edit_details, open_key};
 pub use protocol::{Intent, apply_result, request};
 pub use state::{MarketPanel, MarketView};
-pub use view::{panel_text, row_text};
+pub use view::{panel_text, row_text, visible_rows};
 
 #[cfg(test)]
 mod tests;

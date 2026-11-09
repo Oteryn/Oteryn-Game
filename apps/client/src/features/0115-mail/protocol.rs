@@ -133,7 +133,7 @@ impl Outbox {
             return;
         }
         match command.capability {
-            49 => shared.properties.house.model.apply(command, result),
+            49 => shared.properties.house.apply(command, result),
             51 | 330 => super::super::feature_0051_staff::protocol::apply(
                 &mut shared.properties.staff,
                 command,

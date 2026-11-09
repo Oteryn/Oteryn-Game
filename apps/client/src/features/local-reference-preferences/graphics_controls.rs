@@ -1,97 +1,90 @@
-//! Percent controls share the durable preference owner used by scene restoration.
+//! Controls expose only renderer modes implemented by this native build.
 use super::*;
-
-pub(super) struct GraphicsControls([HWND; 9]);
+use oteryn_client::play::ReferencePreferences;
+pub(crate) struct GraphicsControls {
+    labels: [HWND; 3],
+    checks: [HWND; 3],
+}
 impl GraphicsControls {
-    pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
+    pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
             let labels = [
-                tr!("Minimum ambient brightness %"),
-                tr!("Lower-floor dimming %"),
-                tr!("Indoor dimming %"),
-                tr!("Cloud dimming %"),
-            ];
-            let handles = std::array::from_fn(|index| match index {
-                8 => control(
-                    hwnd,
-                    "BUTTON",
-                    tr!("Apply lighting"),
-                    283,
-                    [10, 245, 700, 26],
-                    0,
-                ),
-                index if index % 2 == 0 => control(
+                control(
                     hwnd,
                     "STATIC",
-                    labels[index / 2],
+                    &format!(
+                        "Graphics engine: {}",
+                        oteryn_renderer::GRAPHICS_ENGINE.label()
+                    ),
                     0,
-                    [10, 65 + index as i32 / 2 * 40, 490, 26],
+                    [10, 50, 710, 26],
                     0,
                 ),
-                index => control(
+                control(
                     hwnd,
-                    "EDIT",
-                    "0",
-                    330 + index,
-                    [510, 65 + index as i32 / 2 * 40, 100, 26],
-                    WS_BORDER | ES_NUMBER as u32,
+                    "STATIC",
+                    &format!(
+                        "Antialiasing: {} (only supported mode)",
+                        oteryn_renderer::ANTIALIASING.label()
+                    ),
+                    0,
+                    [10, 80, 710, 26],
+                    0,
                 ),
+                control(
+                    hwnd,
+                    "STATIC",
+                    "VSync uses the driver's supported presentation modes. Integral scaling keeps whole sprite pixels; small windows may crop the map.",
+                    0,
+                    [10, 230, 300, 60],
+                    0,
+                ),
+            ];
+            let checks = [
+                ("Borderless fullscreen", 110),
+                ("VSync", 150),
+                ("Integral world scaling", 190),
+            ]
+            .map(|(label, y)| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    label,
+                    0,
+                    [10, y, 300, 28],
+                    BS_AUTOCHECKBOX as u32,
+                )
             });
-            (!handles.iter().any(|h| h.is_null())).then_some(Self(handles))
+            if labels.iter().chain(checks.iter()).any(|h| h.is_null()) {
+                return None;
+            }
+            Some(Self { labels, checks })
         }
     }
-    pub(super) unsafe fn show(&self, page: SettingsPage) {
-        for handle in self.0 {
-            unsafe {
-                ShowWindow(
-                    handle,
-                    if page == SettingsPage::Graphics {
-                        SW_SHOW
-                    } else {
-                        SW_HIDE
-                    },
-                );
+    pub(crate) unsafe fn show(&self, show: bool) {
+        unsafe {
+            for h in self.labels.iter().chain(self.checks.iter()) {
+                ShowWindow(*h, if show { SW_SHOW } else { SW_HIDE });
             }
         }
     }
-    pub(super) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
-        let graphics = preferences.graphics;
-        for (index, value) in [
-            graphics.ambient,
-            graphics.separator,
-            graphics.indoor,
-            graphics.cloud,
-        ]
-        .into_iter()
-        .enumerate()
-        {
-            unsafe {
-                SetWindowTextW(self.0[index * 2 + 1], wide(&value.to_string()).as_ptr());
-            }
+    pub(crate) unsafe fn read(&self, p: &mut ReferencePreferences) {
+        unsafe {
+            let values = self.checks.map(|h| SendMessageW(h, BM_GETCHECK, 0, 0) == 1);
+            p.graphics.fullscreen = values[0];
+            p.graphics.vsync = values[1];
+            p.graphics.integer_scaling = values[2];
         }
     }
-    pub(super) unsafe fn action(&self, action: usize, state: &mut SettingsState) -> bool {
-        if action != 283 {
-            return false;
-        }
-        let mut values = [0_u8; 4];
-        for (index, value) in values.iter_mut().enumerate() {
-            let Ok(parsed) = unsafe { text(self.0[index * 2 + 1]) }.parse::<u8>() else {
-                state.feedback = tr!("Enter lighting percentages from 0 to 100").into();
-                return true;
-            };
-            if parsed > 100 {
-                state.feedback = tr!("Enter lighting percentages from 0 to 100").into();
-                return true;
+    pub(crate) unsafe fn refresh(&self, p: &ReferencePreferences) {
+        unsafe {
+            for (h, value) in self.checks.iter().zip([
+                p.graphics.fullscreen,
+                p.graphics.vsync,
+                p.graphics.integer_scaling,
+            ]) {
+                SendMessageW(*h, BM_SETCHECK, usize::from(value), 0);
             }
-            *value = parsed;
         }
-        let mut preferences = state.preferences.clone();
-        preferences.graphics.ambient = values[0];
-        preferences.graphics.separator = values[1];
-        preferences.graphics.indoor = values[2];
-        preferences.graphics.cloud = values[3];
-        state.apply(preferences);
-        true
     }
 }

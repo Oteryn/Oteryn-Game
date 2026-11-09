@@ -207,6 +207,12 @@ impl Settings {
             .borrow_mut()
             .refresh(self.parent, view, enabled, delay, font);
     }
+    pub(in super::super) fn graphics_settings(
+        &self,
+    ) -> (oteryn_client::play::GraphicsPreferences, u16) {
+        let state = lock(&self.shared);
+        (state.preferences.graphics, state.preferences.ui_scale)
+    }
     pub(in super::super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);
         if let Err(error) = state.capture(view) {

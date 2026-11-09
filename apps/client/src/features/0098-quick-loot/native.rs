@@ -19,6 +19,8 @@ use windows_sys::Win32::{
 };
 #[derive(Default)]
 struct Actions(Vec<usize>);
+#[path = "native/projection.rs"]
+mod projection;
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
@@ -85,7 +87,7 @@ fn run(
         let title = match panel {
             98 => tr!("Quick loot — Ctrl+Alt+Q"),
             132 => tr!("Inspection — Ctrl+Alt+I"),
-            232 => tr!("Team Finder — Ctrl+Alt+T"),
+            232 => "Social — Team Finder — Ctrl+Alt+T",
             _ => tr!("Store — Ctrl+Alt+H"),
         };
         let hwnd = CreateWindowExW(
@@ -151,6 +153,7 @@ fn specs(panel: u32) -> (Vec<&'static str>, Vec<(&'static str, &'static str)>) {
                 tr!("Set destination"),
                 tr!("Lists / Managed containers"),
                 tr!("Reset selected to main"),
+                "Open selected inventory container",
             ],
             vec![
                 (tr!("Item type"), ""),
@@ -184,8 +187,8 @@ fn specs(panel: u32) -> (Vec<&'static str>, Vec<(&'static str, &'static str)>) {
         ),
         232 => (
             vec![
-                tr!("Browse teams"),
-                tr!("Your applicants"),
+                "Join team — Browse",
+                "Assemble team — Applicants",
                 tr!("Next page"),
                 tr!("Request to join"),
                 tr!("Cancel request"),
@@ -221,16 +224,18 @@ fn specs(panel: u32) -> (Vec<&'static str>, Vec<(&'static str, &'static str)>) {
                 tr!("Next page in current tab"),
                 tr!("Catalogue"),
                 tr!("Purchase history"),
-                tr!("Apply purchase history filters"),
+                "Apply history filters",
+                "Coin ledger",
             ],
             vec![
-                (tr!("Offer text (this page)"), ""),
+                ("Offer / ledger kind (this page)", ""),
                 (tr!("From Unix milliseconds"), ""),
                 (tr!("Through Unix milliseconds"), ""),
             ],
         ),
     }
 }
+
 #[path = "native/paint.rs"]
 mod paint;
 use paint::window;

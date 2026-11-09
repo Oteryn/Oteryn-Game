@@ -12,8 +12,15 @@ impl PlayLink {
             132 => self.inspection_control(action, fields, row),
             232 => self.team_finder_control(action, fields, row),
             285 => match action {
+                1 | 2
+                    if self.store_panel().page
+                        == oteryn_client_ui::store::StorePage::CoinHistory =>
+                {
+                    self.coin_history(action == 2)
+                }
                 1 => self.purchase_history(false),
                 2 => self.purchase_history(true),
+                6 => self.coin_history(false),
                 _ => false,
             },
             _ => false,

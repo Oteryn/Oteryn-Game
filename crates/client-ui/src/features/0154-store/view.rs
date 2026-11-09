@@ -28,6 +28,7 @@ pub fn panel_text(panel: &StorePanel) -> String {
                 }
             }
         }
+        StorePage::CoinHistory => text.push_str(&super::coin_history_text(&panel.coin_history)),
         StorePage::Inbox => {
             if let Some(receipt) = &panel.claim {
                 let _ = write!(

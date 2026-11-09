@@ -2,6 +2,8 @@ use super::*;
 impl Controls {
     pub(in super::super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let graphics = GraphicsControls::new(hwnd)?;
+            let shortcuts = ShortcutControls::new(hwnd)?;
             let actor_hud = HudControls::new(hwnd)?;
             let console = ConsoleControls::new(hwnd)?;
             let layout = LayoutControls::new(hwnd)?;
@@ -313,6 +315,8 @@ impl Controls {
                 guide,
                 screenshots,
                 gameplay,
+                graphics,
+                shortcuts,
                 actor_hud,
                 manual,
                 console,

@@ -27,6 +27,14 @@ pub fn panel_text(panel: &MarketPanel) -> String {
         }
         .to_owned(),
     ];
+    lines.push(format!(
+        "Loaded page side: {}",
+        match panel.side_filter {
+            1 => "buy",
+            2 => "sell",
+            _ => "all",
+        }
+    ));
     lines.push(lfmt!(
         "Page {} · Total: {}",
         panel.page + 1,
@@ -67,4 +75,15 @@ pub fn panel_text(panel: &MarketPanel) -> String {
         }
     }
     lines.join("\r\n")
+}
+
+/// Original server indices keep selection bound to the offer after filtering.
+pub fn visible_rows(panel: &MarketPanel) -> Vec<usize> {
+    panel
+        .rows
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| panel.side_filter == 0 || row.side == 0 || row.side == panel.side_filter)
+        .map(|(index, _)| index)
+        .collect()
 }

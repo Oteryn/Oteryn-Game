@@ -180,6 +180,15 @@ fn run(
             WS_TABSTOP,
         );
         let status = control(hwnd, "STATIC", "", 9, [10, 455, 680, 110], 0);
+        control(
+            hwnd,
+            "BUTTON",
+            "Side: all / buy / sell",
+            13,
+            [490, 415, 190, 28],
+            WS_TABSTOP,
+        );
+        let mut displayed_rows: Vec<usize> = Vec::new();
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
@@ -223,6 +232,11 @@ fn run(
                     8 => Some(Intent::Refresh),
                     10 => Some(Intent::PreviousPage),
                     11 => Some(Intent::NextPage),
+                    13 => {
+                        m.market.side_filter = (m.market.side_filter + 1) % 3;
+                        m.market.selected_offer = None;
+                        None
+                    }
                     12 => {
                         SetWindowTextW(item, wide("").as_ptr());
                         Some(Intent::Wares)
@@ -231,11 +245,13 @@ fn run(
                         m.market.selected_offer =
                             usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
                                 .ok()
-                                .and_then(|i| m.market.rows.get(i))
+                                .and_then(|i| displayed_rows.get(i))
+                                .and_then(|i| m.market.rows.get(*i))
                                 .map(|r| r.offer);
                         if let Some(row) = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
                             .ok()
-                            .and_then(|i| m.market.rows.get(i))
+                            .and_then(|i| displayed_rows.get(i))
+                            .and_then(|i| m.market.rows.get(*i))
                         {
                             SetWindowTextW(item, wide(&row.definition.to_string()).as_ptr());
                             if row.price > 0 {
@@ -252,7 +268,9 @@ fn run(
             }
             if held.as_ref() != Some(&m.market) {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                for row in &m.market.rows {
+                displayed_rows = oteryn_client_ui::market::visible_rows(&m.market);
+                for index in &displayed_rows {
+                    let row = &m.market.rows[*index];
                     SendMessageW(
                         list,
                         LB_ADDSTRING,
@@ -260,11 +278,9 @@ fn run(
                         wide(&row_text(row)).as_ptr() as isize,
                     );
                 }
-                if let Some(index) = m
-                    .market
-                    .rows
+                if let Some(index) = displayed_rows
                     .iter()
-                    .position(|r| Some(r.offer) == m.market.selected_offer)
+                    .position(|index| Some(m.market.rows[*index].offer) == m.market.selected_offer)
                 {
                     SendMessageW(list, LB_SETCURSEL, index, 0);
                 }

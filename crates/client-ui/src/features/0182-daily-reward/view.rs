@@ -46,6 +46,7 @@ pub fn panel_text(panel: &DailyRewardPanel) -> String {
     } else {
         text.push_str(tr!("No server state loaded\n"));
     }
+    text.push_str(&super::details_text(panel));
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);
         text.push('\n');

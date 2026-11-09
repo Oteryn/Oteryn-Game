@@ -1,9 +1,9 @@
 //! Settings message pump and preference application on its owning thread.
-#[path = "localization_window.rs"]
-mod localization_window;
 use super::*;
 #[path = "controls.rs"]
 mod controls;
+#[path = "resource_checks.rs"]
+mod resource_checks;
 use controls::Controls;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
@@ -21,6 +21,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            graphics,
+            mut shortcuts,
             language,
             presentation,
             minimap,
@@ -94,7 +96,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 state.select_page(index);
             }
             if binding_page != state.page {
-                layout.place_apply(apply, state.page == SettingsPage::Status);
+                layout.place_apply(apply, state.page);
                 binding_page = state.page;
                 bindings = preference_bindings()
                     .unwrap_or_default()
@@ -122,6 +124,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            shortcuts.show(state.page == SettingsPage::Shortcuts);
+            graphics.show(state.page == SettingsPage::Graphics);
             for handle in &navigation {
                 ShowWindow(*handle, SW_SHOW);
             }
@@ -206,6 +210,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if shortcuts.handle(action, &mut state) {
+                    continue;
+                }
                 if language.action(action, &mut state) {
                     continue;
                 }
@@ -298,21 +305,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
-                            preferences.hud_bars =
-                                SendMessageW(hud_checks[0], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_harmony =
-                                SendMessageW(hud_checks[1], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_serene =
-                                SendMessageW(hud_checks[2], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_lights =
-                                SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_effects =
-                                SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
-                            preferences.creature_bars =
-                                SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
-                            preferences.health_circle =
-                                SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
+                            resource_checks::read(&hud_checks, &mut preferences);
                             let result = match state.page {
+                                SettingsPage::Graphics => {
+                                    graphics.read(&mut preferences);
+                                    Ok(())
+                                }
                                 SettingsPage::Interface => interface.read(&mut preferences),
                                 SettingsPage::Arcs => arcs.read(&mut preferences),
                                 SettingsPage::Status => layout.read(&mut preferences),
@@ -334,6 +332,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                shortcuts.refresh(&state);
+                graphics.refresh(&state.preferences);
                 presentation.refresh(&state.preferences);
                 language.refresh(&state.preferences);
                 gameplay.refresh(&state.preferences);

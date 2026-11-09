@@ -24,6 +24,12 @@ use presentation_controls::PresentationControls;
 mod localization_controls;
 use localization_controls::LanguageControls;
 
+#[path = "shortcut_controls.rs"]
+mod shortcut_controls;
+use shortcut_controls::ShortcutControls;
+#[path = "graphics_controls.rs"]
+mod graphics_controls;
+use graphics_controls::GraphicsControls;
 #[path = "layout_controls.rs"]
 mod layout_controls;
 use layout_controls::LayoutControls;
@@ -41,6 +47,8 @@ pub(super) struct Controls {
     pub(super) guide: HelpControls,
     pub(super) screenshots: ScreenshotControls,
     pub(super) gameplay: GameplayControls,
+    pub(super) graphics: GraphicsControls,
+    pub(super) shortcuts: ShortcutControls,
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,

@@ -137,6 +137,11 @@ pub(in crate::play) fn apply(
         panel.feedback = "Invalid creature catalogue cursor or category".into();
         return true;
     }
+    let confirmed_names: Vec<_> = page
+        .cards
+        .iter()
+        .map(|card| (card.race, card.name.clone()))
+        .collect();
     if request.race == 0 {
         if page
             .next
@@ -172,6 +177,7 @@ pub(in crate::play) fn apply(
         panel.catalogue.detail = format!("{} [{}]\r\n{}", card.name, card.category, card.detail);
         panel.catalogue.next_loot = page.next;
     }
+    panel.catalogue.names.extend(confirmed_names);
     panel.feedback = "Creature catalogue updated".into();
     true
 }

@@ -382,7 +382,7 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 18);
+    assert_eq!(SettingsPage::ALL.len(), 19);
     for added in [
         SettingsPage::Screenshots,
         SettingsPage::HelpGuide,
@@ -393,4 +393,6 @@ fn basic_options_navigate_without_changing_preferences() {
     ] {
         assert!(SettingsPage::ALL.contains(&added));
     }
+    assert_eq!(SettingsPage::ALL[9], SettingsPage::Shortcuts);
+    assert_eq!(SettingsPage::ALL[10], SettingsPage::Graphics);
 }

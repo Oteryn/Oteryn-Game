@@ -14,11 +14,11 @@ Command 183 response: exact catalog revision, up to 32 offer rows (offer key, di
 
 ## StoreHistoryRequestV1
 
-Command 184 request: optional opaque page cursor. An empty request starts the Platform-owned history.
+Command 184 legacy request: optional opaque page cursor. An empty request starts the Platform-owned purchase history. The explicit field-2 marker described under StoreCoinHistoryRequestV1 selects the full coin ledger instead.
 
 ## StoreHistoryPageV1
 
-Command 184 response: up to 32 Platform purchase rows (order UUIDv7, offer key, catalog revision, positive price, currency, and purchase time) and an optional next cursor.
+For a legacy request, command 184 response: up to 32 Platform purchase rows (order UUIDv7, offer key, catalog revision, positive price, currency, and purchase time) and an optional next cursor.
 
 ## StorePurchaseHistoryRequestV1
 
@@ -69,3 +69,39 @@ Command 186 request: one pending Store fulfilment-unit key. It neither represent
 Command 186 response: immutable Platform operation UUIDv7, fulfilment-unit key, closed result (`COMMITTED`, `REVOKED`, `NOT_CLAIMABLE`, or `REJECTED`), positive recovery generation, and decision time. A repeated operation republishes its stored receipt.
 
 Display names follow Crystal `schema.sql:697–713` and `gamestore/init.lua:1475–1528`: they are validated text, not unique identities. Two purchases, including overlapping uncertain requests, may use the same canonical display name and receive distinct durable Hireling/lamp UUIDs.
+
+## StoreCoinHistoryRequestV1
+
+Command 184 additionally accepts an opt-in ledger request: optional length-delimited
+field 1 is a canonical positive decimal ledger cursor, and required varint field 2
+is exactly 1. Omit field 1 for the newest page. The marker distinguishes this view
+from legacy purchase-history payloads; neither decoder accepts the other shape.
+The existing STORE_V1 selection and request/result limits apply. No capability or
+command is added. Game supplies the admitted Account to Platform's existing
+ReadStoreHistoryPageV1 operation; a client cannot supply an Account.
+
+## StoreCoinHistoryPageV1
+
+For this opt-in request only, response field 1 repeats ledger-entry messages and
+optional field 2 is the continuation cursor. A page contains at most 32 entries,
+strictly descending by entry ID. A nonempty cursor equals the final entry ID;
+omit it when no older entries exist. All entry fields are length-delimited:
+
+| Field | Value |
+| --- | --- |
+| 1 | Canonical positive decimal Platform ledger entry ID |
+| 2 | Platform transaction kind, including its OTHER mapping |
+| 3 | Platform currency |
+| 4 | Canonical signed decimal available-balance delta |
+| 5 | Canonical signed decimal reserved-balance delta |
+| 6 | Canonical unsigned decimal Platform creation timestamp, unchanged |
+| 7 | Optional 16-byte order UUIDv7 |
+| 8 | Optional offer key |
+| 9 | Optional canonical decimal quantity, 1–100 |
+
+Fields 1–6 are required. Fields 7–9 occur together exactly for STORE_PURCHASE and
+STORE_REVERSAL. Delta magnitude is at most 9223372036854775807, matching Platform. Unknown, duplicate,
+malformed and oversized data are rejected. No provider reference, payment data,
+operator identity, other-account identity or Wallet mutation crosses this view.
+Filtering and totals in the client describe the loaded page; pagination preserves
+the opaque Platform boundary instead of synthesizing ledger rows from purchases.

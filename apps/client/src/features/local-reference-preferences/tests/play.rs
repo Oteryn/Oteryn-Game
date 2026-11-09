@@ -380,6 +380,8 @@ fn rebound_spell_releases_after_modifier_and_preference_changes()
 mod options_lane;
 #[path = "presentation.rs"]
 mod presentation;
+#[path = "shortcuts.rs"]
+mod shortcuts;
 
 #[path = "reserved.rs"]
 mod reserved;

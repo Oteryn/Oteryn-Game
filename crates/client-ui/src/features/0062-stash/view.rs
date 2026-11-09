@@ -35,13 +35,13 @@ pub fn panel_text(panel: &StashPanel) -> String {
         }
     ));
     lines.push(tr!("Select a carried item to stow its stack. Open carried bags in Depot to list their items. Retrieve depot items there before stowing. The server accepts eligible items in the main backpack.").into());
-    lines.push(lfmt!(
-        "Search/sort apply to this page only. Sort: {:?}",
+    lines.push(format!(
+        "Search/category/trader apply across the stash. Sort: {:?}",
         panel.sort
     ));
     let visible = visible_rows(panel);
     if visible.is_empty() {
-        lines.push(tr!("No matching items on this page").into());
+        lines.push("No matching items".into());
     }
     lines.extend(
         visible
@@ -53,6 +53,9 @@ pub fn panel_text(panel: &StashPanel) -> String {
 
 /// Keep display order separate from the authoritative server row order.
 pub fn visible_rows(panel: &StashPanel) -> Vec<usize> {
+    if panel.server_filtered {
+        return (0..panel.rows.len()).collect();
+    }
     let query = panel.query.trim().to_lowercase();
     let mut rows: Vec<_> = panel
         .rows

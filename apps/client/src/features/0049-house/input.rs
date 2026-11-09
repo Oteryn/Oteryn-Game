@@ -8,12 +8,28 @@ use tokio::sync::mpsc::UnboundedSender;
 #[path = "controller.rs"]
 pub(super) mod controller;
 use super::state::Panel;
+pub(in crate::play) const BUTTONS: &[&str] = &[
+    controller::BUTTONS[0],
+    controller::BUTTONS[1],
+    controller::BUTTONS[2],
+    controller::BUTTONS[3],
+    controller::BUTTONS[4],
+    controller::BUTTONS[5],
+    controller::BUTTONS[6],
+    controller::BUTTONS[7],
+    controller::BUTTONS[8],
+    controller::BUTTONS[9],
+    "Show entrance map",
+    "Load guests",
+    "Load subowners",
+    "Load door",
+];
 
 pub(in crate::play) fn prepare(
     panel: &mut Panel,
     selection: usize,
 ) -> Result<oteryn_client_runtime::raw_feature::FeatureCommand, String> {
-    if selection >= controller::BUTTONS.len() {
+    if selection >= BUTTONS.len() {
         return Err(tr!("Invalid action").into());
     }
     if !panel.model.selected {
@@ -38,6 +54,27 @@ pub(in crate::play) fn prepare(
             .ok()
             .and_then(|n| n.checked_sub(1))
             .ok_or(tr!("Select a house row (starting at 1)"))?;
+    }
+    if selection >= 11 {
+        use oteryn_client_runtime::house::HouseAclSelector;
+        let selector = match selection {
+            11 => HouseAclSelector::Guest,
+            12 => HouseAclSelector::Subowner,
+            13 => {
+                let fields = panel.fields[5].split_whitespace().collect::<Vec<_>>();
+                let [x, y, floor] = fields.as_slice() else {
+                    return Err(tr!("Enter door x y floor").into());
+                };
+                HouseAclSelector::Door {
+                    x: x.parse().map_err(|_| tr!("Invalid door x"))?,
+                    y: y.parse().map_err(|_| tr!("Invalid door y"))?,
+                    floor: floor.parse().map_err(|_| tr!("Invalid door floor"))?,
+                }
+            }
+            _ => return Err("Invalid access list".into()),
+        };
+        return oteryn_client_ui::house::read_acl(&mut panel.model, selector)
+            .map_err(str::to_owned);
     }
     let members = || {
         panel.fields[4]

@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Query,
+    Atlas,
     Start,
     Shuffle,
     Find,
@@ -8,7 +9,12 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
-    pub atlas: super::atlas::Atlas,
+    pub geometry: super::geometry::Atlas,
+    pub atlas: Option<oteryn_client_runtime::cyclopedia_map::atlas::Atlas>,
+    pub atlas_query: oteryn_client_runtime::cyclopedia_map::atlas::Query,
+    pub atlas_open: bool,
+    pub atlas_layers: u8,
+    pub atlas_cell: usize,
     pub section: Section,
     pub map: Option<oteryn_client_runtime::cyclopedia_map::MapResult>,
     pub floor: i8,
@@ -115,7 +121,7 @@ impl Panel {
 
 impl Panel {
     pub fn invalidate_atlas(&mut self) {
-        self.atlas = Default::default();
+        self.geometry = Default::default();
         self.map = None;
         self.summary.clear();
     }

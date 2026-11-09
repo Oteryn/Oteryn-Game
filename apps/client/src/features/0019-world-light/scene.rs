@@ -25,7 +25,7 @@ impl Scene {
         let (atlas, origin) = (self.atlas(), self.view.origin());
         let mut sprites = SpriteBatch::new();
         let mut dimmed = Vec::new();
-        let limit = MAX_BATCH_QUADS - usize::from(self.target.is_some());
+        let limit = MAX_BATCH_QUADS - usize::from(self.target.is_some() && self.target_frame);
         for floor in self.world.draw_floors() {
             let own_floor = floor == self.world.center().2;
             let start = sprites.len();
@@ -92,7 +92,7 @@ impl Scene {
                 dimmed.push((start..sprites.len(), self.floor_separator));
             }
         }
-        if let Some(target) = self.target {
+        if let Some(target) = self.target.filter(|_| self.target_frame) {
             sprites.push(&self.view, atlas, target.tile, crate::map::TARGET_CELL)?;
         }
         Ok((sprites, dimmed))

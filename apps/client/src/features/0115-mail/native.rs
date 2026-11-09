@@ -136,7 +136,8 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 let label = oteryn_client_ui::localization::tr(label);
                 control(hwnd, "STATIC", label, 0, [12, y, 640, 20], 0);
                 y += 22;
-                let multiline = (form.title == "Writing and mail" && index == 2)
+                let multiline = (form.title == "Houses" && index == 4)
+                    || (form.title == "Writing and mail" && index == 2)
                     || (form.title == "Player reports" && index == 4)
                     || (form.title == "Bug report" && index == 1)
                     || (form.title == "Staff authorized actions" && index > 0);

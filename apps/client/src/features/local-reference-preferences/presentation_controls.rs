@@ -1,11 +1,11 @@
 //! Console filters and action-bar geometry apply through the persisted settings owner.
 use super::*;
 use oteryn_client::play::ReferencePreferences;
-#[path = "graphics_controls.rs"]
-mod graphics_controls;
+#[path = "lighting_controls.rs"]
+mod lighting_controls;
 
 pub(crate) struct PresentationControls {
-    graphics: graphics_controls::GraphicsControls,
+    graphics: lighting_controls::LightingControls,
     console: [HWND; 11],
     bar: [HWND; 14],
 }
@@ -102,7 +102,7 @@ impl PresentationControls {
                 return None;
             }
             Some(Self {
-                graphics: graphics_controls::GraphicsControls::new(hwnd)?,
+                graphics: lighting_controls::LightingControls::new(hwnd)?,
                 console,
                 bar,
             })

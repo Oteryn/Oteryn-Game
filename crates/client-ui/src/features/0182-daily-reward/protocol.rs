@@ -69,3 +69,9 @@ pub fn apply_result(panel: &mut DailyRewardPanel, response: &DailyRewardResponse
         }
     }
 }
+
+pub fn request_details(
+    panel: &mut DailyRewardPanel,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::details::request_details(panel)
+}

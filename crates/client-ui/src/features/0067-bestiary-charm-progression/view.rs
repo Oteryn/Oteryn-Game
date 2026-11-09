@@ -57,6 +57,18 @@ pub fn bestiary_text(panel: &Panel) -> String {
 }
 
 pub fn charms_text(panel: &Panel) -> String {
+    if !panel.selected {
+        return "Charms unavailable in this session".into();
+    }
+    if !panel.charm_browser.cards.is_empty() {
+        return super::charm_browser::text(panel);
+    }
+    format!(
+        "{}\r\nLoad charm names to select by name and read effect previews",
+        legacy_charms_text(panel)
+    )
+}
+fn legacy_charms_text(panel: &Panel) -> String {
     use oteryn_client_runtime::charm_progression::charm::CharmKind;
     use std::fmt::Write;
     if !panel.selected {

@@ -9,6 +9,8 @@ pub struct Panel {
     pub open: bool,
     pub pending: Option<FeatureCommand>,
     pub pending_acl: bool,
+    pub pending_acl_read: bool,
+    pub acl_snapshot: Option<house::HouseAclSnapshot>,
     pub pending_index: usize,
     pub world: [u8; 16],
     pub town: String,
@@ -22,6 +24,7 @@ impl Panel {
             return;
         }
         self.pending = None;
+        let acl_read = std::mem::take(&mut self.pending_acl_read);
         if !matches!(
             reply.status,
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -29,7 +32,16 @@ impl Panel {
             self.feedback = tr!("The server refused the request").into();
             return;
         }
-        let result = if command.kind == 57 {
+        let result = if acl_read {
+            house::decode_house_acl_snapshot(&reply.payload)
+                .map_err(|_| "Invalid house ACL reply")
+                .map(|snapshot| {
+                    if let Some(row) = self.page.rows.get_mut(self.pending_index) {
+                        row.acl_revision = snapshot.revision;
+                    }
+                    self.acl_snapshot = Some(snapshot);
+                })
+        } else if command.kind == 57 {
             house::page(&reply.payload).map(|page| {
                 self.page = page;
                 self.index = 0;
@@ -53,7 +65,13 @@ impl Panel {
                 Ok(())
             })
         };
-        self.feedback = result.map_or_else(str::to_owned, |()| tr!("House updated").into());
+        self.feedback = result.map_or_else(str::to_owned, |()| {
+            if acl_read {
+                "Access list loaded; edit members and confirm the matching action".into()
+            } else {
+                tr!("House updated").into()
+            }
+        });
     }
     pub fn admitted(&mut self, world: [u8; 16], capabilities: &[u32]) {
         self.ended();

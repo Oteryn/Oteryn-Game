@@ -184,13 +184,15 @@ mod windows {
                         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
                         let category = control(
                             hwnd,
-                            "EDIT",
-                            "featured",
+                            "COMBOBOX",
+                            "",
                             1,
                             10,
-                            25,
-                            WS_BORDER | ES_AUTOHSCROLL as u32,
+                            250,
+                            WS_BORDER | WS_VSCROLL | CBS_DROPDOWNLIST as u32,
                         );
+                        for key in store::categories() { SendMessageW(category, CB_ADDSTRING, 0, wide(&key).as_ptr() as isize); }
+                        SendMessageW(category, CB_SETCURSEL, 0, 0);
                         let refresh = control(hwnd, "BUTTON", tr!("Load catalogue"), 2, 45, 30, 0);
                         let offers = control(
                             hwnd,
@@ -259,14 +261,9 @@ mod windows {
                                         }
                                         9 => { if let Some(launcher) = &coin_shop { launcher.start(); } None }
                                         2 | 5 if !panel.pending => {
-                                            let mut text = [0u16; 256];
-                                            let len = GetWindowTextW(
-                                                category,
-                                                text.as_mut_ptr(),
-                                                text.len() as i32,
-                                            );
-                                            panel.category =
-                                                String::from_utf16_lossy(&text[..len as usize]);
+                                            let keys = store::categories();
+                                            let index = usize::try_from(SendMessageW(category, CB_GETCURSEL, 0, 0)).ok();
+                                            if let Some(key) = index.and_then(|index| keys.get(index)) { panel.category.clone_from(key); }
                                             if action == 2 {
                                                 panel.catalogue = None;
                                             }

@@ -152,6 +152,15 @@ pub fn combat_rows(p: &CyclopediaCharacterPanel) -> Vec<CombatRow> {
                 tr!("Wheel")
             } else if name.contains("Concoction") {
                 tr!("Consumable")
+            } else if name.contains("FightMode") {
+                "Combat stance"
+            } else if name == "FlatDamageHealing" {
+                tr!("Level")
+            } else if name.starts_with("PerfectShot") || name == "Cleave" || name == "AttackElement"
+            {
+                tr!("Equipment")
+            } else if name.starts_with("Converted") {
+                "Conversion"
             } else if name.contains("Skill") {
                 tr!("Skill")
             } else if name.contains("Base") {
@@ -176,7 +185,7 @@ pub fn combat_detail(
         return tr!("No confirmed statistics").into();
     };
     let name = format!("{key:?}");
-    let family = [
+    let contribution_family = [
         tr!("Equipment"),
         tr!("Imbuement"),
         tr!("Wheel"),
@@ -188,9 +197,20 @@ pub fn combat_detail(
     .iter()
     .find_map(|suffix| name.strip_suffix(suffix))
     .unwrap_or(&name);
-    let mut out = lfmt!(
-        "Observed at: {} (server Unix ms)\r\n",
-        stats.observed_at_unix_ms
+    let family = if name.starts_with("Attack") {
+        "Attack"
+    } else if name.starts_with("PerfectShot") {
+        "PerfectShot"
+    } else if name.starts_with("Accuracy") {
+        "Accuracy"
+    } else if name.starts_with("Converted") {
+        "Converted"
+    } else {
+        contribution_family
+    };
+    let mut out = format!(
+        "Observed at: {} (server Unix ms)\r\nCharacter revision: {} | Equipment revision: {}\r\n",
+        stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
     );
     if name.starts_with("Absorb") {
         out.push_str(tr!(
@@ -199,7 +219,7 @@ pub fn combat_detail(
     }
     for row in combat_rows(p)
         .into_iter()
-        .filter(|r| format!("{:?}", r.key).starts_with(family))
+        .filter(|r| format!("{:?}", r.key).starts_with(family) || (family=="Attack" && r.key==oteryn_client_runtime::cyclopedia_character::combat::CombatStat::FlatDamageHealing))
     {
         out.push_str(&format!(
             "{}: {} — {}\r\n",

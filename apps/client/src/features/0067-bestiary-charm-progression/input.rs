@@ -1,5 +1,7 @@
 #[path = "input/catalogue.rs"]
 pub(in crate::play) mod catalogue;
+#[path = "input/charm_browser.rs"]
+pub(in crate::play) mod charm_browser;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
@@ -70,6 +72,8 @@ pub(in crate::play) fn edit(
     if panel.pending || value.len() > 7996 || value.contains('\0') {
         return;
     }
+    let value = oteryn_client_ui::charm_progression::charm_browser::resolve(panel, field, &value)
+        .unwrap_or(value);
     if let Some(slot) = panel.fields.get_mut(field) {
         if *slot == value {
             return;
