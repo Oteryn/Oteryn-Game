@@ -2,7 +2,7 @@
 //! neither world locks nor native actors are retained across storage/network IO.
 use super::*;
 use oteryn_gameplay_durability::durability::{
-    DurabilityRoot, runtime_scope_assignment::NodeIncarnationProof,
+    DurabilityError, DurabilityRoot, runtime_scope_assignment::NodeIncarnationProof,
 };
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot};
@@ -529,10 +529,8 @@ pub async fn apply_durable(
                 .map(|(t, _)| t)
                 .ok_or(Error::Unavailable)?;
             let account = accounts.get(target).ok_or(Error::Unavailable)?;
-            if root
-                .cast_account_banned(node, *account, a.account)
-                .await
-                .map_err(|_| Error::Unavailable)?
+            if retry_busy_holder(root, || root.cast_account_banned(node, *account, a.account))
+                .await?
             {
                 return Err(Error::Unavailable);
             }
@@ -552,9 +550,10 @@ pub async fn apply_durable(
                 subject_account: Some(subject.to_vec()),
                 ..Default::default()
             };
-            root.ban_cast_account(node, account, subject, record)
-                .await
-                .map_err(|_| Error::Unavailable)?;
+            retry_busy_holder(root, || {
+                root.ban_cast_account(node, account, subject, record.clone())
+            })
+            .await?;
             for held in accounts
                 .iter()
                 .filter_map(|(held, held_account)| (*held_account == account).then_some(*held))
@@ -566,4 +565,28 @@ pub async fn apply_durable(
         _ => {}
     }
     apply(owner, op, now, privacy_version)
+}
+
+// Retry only acquisition refusal: a storage/receipt failure must never replay
+// the operation. Join, renewal and moderation use the same window as cast audit.
+async fn retry_busy_holder<T, F: std::future::Future<Output = Result<T, DurabilityError>>>(
+    root: &DurabilityRoot,
+    mut operation: impl FnMut() -> F,
+) -> Result<T, Error> {
+    use tokio::time::Instant;
+    let deadline = Instant::now() + std::time::Duration::from_secs(1);
+    loop {
+        match operation().await {
+            Ok(value) => return Ok(value),
+            Err(DurabilityError::RootUnavailable) if Instant::now() < deadline => {
+                let now = Instant::now();
+                root.wait_holder_retry(
+                    now + std::time::Duration::from_millis(2),
+                    (now + std::time::Duration::from_millis(50)).min(deadline),
+                )
+                .await;
+            }
+            Err(_) => return Err(Error::Unavailable),
+        }
+    }
 }
