@@ -294,6 +294,10 @@ impl Bindings {
     }
     fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
+        // Preserve an already-admitted immutable binding set on an empty attachment.
+        if self.quests.is_empty() {
+            return Ok(base.clone());
+        }
         if let Some(evidence) = &base.native_recipe_evidence {
             evidence.verify(self)?;
         }
