@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "recipe_sha256": "776f2c3bea5e0acff57660c71f78dca0eae3bc1d36d9bc5990b477e5b6cacd4f",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/m03/25-years/time-machine",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32430,
+                  "y": 32166,
+                  "floor": -8
+                },
+                "appearance": 25098,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 32430,
+                    "y": 32166,
+                    "floor": -8
+                  },
+                  "appearance": 25098,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "world_requirements": [],
+              "return_on_failure": false,
+              "minimum_level": 20,
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "failure_message": "The machine requires level 20, Premium, promotion and the five regular blessings.",
+              "success_message": "The time machine carries you into Temporal Tides.",
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json: chosen recipe s1",
+                "https://www.tibiawiki.com.br/index.php?title=25_Years_of_Tibia_Quest&action=raw:30-38",
+                "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml:48329-48332",
+                "content/world/placements/region-z08-x126-y125.b3:32430,32166,8/ordinal1",
+                "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa09caaf3b5227d8571e6d406bf159d881dd67b8:1-12,25-36",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:48329-48332"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/m03/25-years/time-machine-return",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33453,
+                  "y": 31029,
+                  "floor": -8
+                },
+                "appearance": 25098,
+                "unique": null,
+                "action": null,
+                "native": {
+                  "position": {
+                    "x": 33453,
+                    "y": 31029,
+                    "floor": -8
+                  },
+                  "appearance": 25098,
+                  "ordinal": 1
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 0,
+                  "preserve": true
+                }
+              ],
+              "offerings": [],
+              "item_on_target": null,
+              "world_requirements": [],
+              "return_on_failure": false,
+              "failure_message": "The mechanism cannot transport you right now.",
+              "success_message": "The time machine returns you to Thais.",
+              "sources": [
+                "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa09caaf3b5227d8571e6d406bf159d881dd67b8:1-12,25-36",
+                "content/world/placements/region-z08-x130-y121.b3:33453,31029,8/ordinal1",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:48329-48332"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json: chosen recipe s1",
+        "https://www.tibiawiki.com.br/index.php?title=25_Years_of_Tibia_Quest&action=raw:30-38",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml:48329-48332",
+        "content/world/placements/region-z08-x126-y125.b3:32430,32167,8/ordinal1",
+        "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa09caaf3b5227d8571e6d406bf159d881dd67b8:1-12,25-36",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:48329-48332"
+      ]
+    }
+  ]
+}

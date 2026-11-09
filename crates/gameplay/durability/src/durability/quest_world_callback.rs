@@ -398,6 +398,7 @@ pub(super) async fn consume(
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             if !catalogue
                 .regular_blessings()
+                .regular()
                 .all(|blessing| held.contains(&blessing.storage_key))
             {
                 return Ok(false);

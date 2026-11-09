@@ -73,6 +73,15 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
             ("oteryn:quest.adventures_of_galthen_quest", "s5"),
             ("oteryn:quest.adventures_of_galthen_quest", "s8"),
         })
+    def test_only_registered_native_talk_stage_is_enabled(self):
+        bound = [(row["quest"], stage) for row in self.plan["records"]
+                 for stage in row["stages"] if stage["native_dispatch_binding"] is not None]
+        self.assertEqual(1, len(bound))
+        quest, stage = bound[0]
+        self.assertEqual("oteryn:quest.authored.a_pirate_s_death_to_me", quest)
+        self.assertEqual("s1", stage["stage_key"])
+        self.assertTrue(stage["runtime_enabled"])
+        self.assertEqual("npc_dialogue", stage["native_dispatch_binding"]["kind"])
         self.assertEqual(
             0,
             sum(row["native_reward_delivery_binding"] is not None for row in self.plan["records"]),

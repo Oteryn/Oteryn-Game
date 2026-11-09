@@ -107,6 +107,27 @@ fn talk_stage_callback_group_is_closed_and_part_of_the_catalogue() -> Result<(),
             .transition("oteryn:quest-reward/authored-talk-alternative")
             .is_some()
     );
+    for callback in bindings.reward_callbacks() {
+        let transition = attached
+            .transition(&callback.key)
+            .ok_or("registered TALK operation")?;
+        crate::quest::admission_binding::validate_for_catalogue(&attached, transition, false)?;
+        assert!(
+            crate::quest::admission_binding::validate_for_catalogue(&attached, transition, true)
+                .is_err()
+        );
+        let mut forged = transition.clone();
+        forged.effects[0].effect = crate::quest::QuestEffectKind::Set(0);
+        assert!(
+            crate::quest::admission_binding::validate_for_catalogue(&attached, &forged, false)
+                .is_err()
+        );
+        forged.key.push_str("-alias");
+        assert!(
+            crate::quest::admission_binding::validate_for_catalogue(&attached, &forged, false)
+                .is_err()
+        );
+    }
     let before = Bindings::parse(original.to_string().as_bytes())?.attach(&base)?;
     assert_ne!(
         attached.definition_hash(&bindings.quests[0].quest),

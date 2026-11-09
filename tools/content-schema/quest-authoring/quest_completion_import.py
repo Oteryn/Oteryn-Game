@@ -13,6 +13,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+from native_talk_binding_evidence import apply_native_talk_bindings, canonical_definitions
+
 TOOL = 'tools/content-schema/quest-authoring/'
 MAIN = 'ad7a08f96caa4e7bd0e7fa90c67b39229d637277'
 BASE = TOOL + 'samples/state-effect-refinements/main-state.json'
@@ -196,6 +198,7 @@ def expected(root):
         source_choices,
         pinned(root, SOURCE_EVENTS, SOURCE_EVENTS_SHA),
     )
+    native_paths = apply_native_talk_bindings(root, plan, canonical_definitions(root))
     refined, proof = refine.apply(root, source['quests'])
     base = dict(source, quests=refined)
     candidate = stages.merge(base, choices)
@@ -204,6 +207,7 @@ def expected(root):
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
               EVENTS, event_followup['path'], SOURCE_EVENTS, NPC,
               TOOL + 'quest_completion_import.py', TOOL + 'galthen_native_kills.py']
+              TOOL + 'quest_completion_import.py', TOOL + 'native_talk_binding_evidence.py', *native_paths]
     sources = [{'path': path, 'sha256': sha((root / path).read_bytes())} for path in inputs]
     sources += choices['authoring_sources']
     candidate['classification'] = 'LOCAL_SOURCE_AND_CHOSEN_IMPORT_CANDIDATE_NOT_ACTIVATED'
@@ -234,6 +238,8 @@ def expected(root):
         'runtime_activated': False,
         'native_event_dispatch_bindings': sum(stage['native_dispatch_binding'] is not None for row in plan['records'] for stage in row['stages']),
         'native_NPC_dialogue_bindings': 0,
+        'native_event_dispatch_bindings': sum(stage['runtime_enabled'] for row in plan['records'] for stage in row['stages']),
+        'native_NPC_dialogue_bindings': sum(stage['runtime_enabled'] for row in plan['records'] for stage in row['stages'] if stage['event_identity_associations']['kind'] == 'talk'),
         'native_reward_delivery_bindings': 0,
         'binding_plan': {'path': PLAN, 'sha256': sha(encode(plan)), 'counts': plan['counts']},
         'limits': [

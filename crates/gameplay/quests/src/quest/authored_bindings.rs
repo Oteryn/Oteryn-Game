@@ -10,6 +10,8 @@ pub mod hits;
 mod imported_recipe;
 mod occurrence;
 pub use occurrence::Occurrence;
+mod npc_keys;
+pub use npc_keys::native_dialogue_npcs;
 pub mod kills;
 mod progress_storage;
 mod state_operations;
@@ -344,6 +346,7 @@ impl Bindings {
             // An empty addition must retain the existing immutable binding witnesses.
         // Preserve an already-admitted immutable binding set on an empty attachment.
         if self.quests.is_empty() {
+            // The neutral set must retain already registered consumers and hashes.
             return Ok(base.clone());
         }
         if let Some(evidence) = &base.native_recipe_evidence {
@@ -384,6 +387,7 @@ impl Bindings {
                         transitions.push(transition);
                     }
                 }
+                transitions.extend(stage.transitions(&quest.quest)?);
             }
         }
         let mut catalogue =
@@ -461,6 +465,22 @@ impl Stage {
             if !self.completes && callback.storage.is_empty() && callback.state_ops.is_empty()
                 && callback.effects.encounter.as_ref().is_some_and(|encounter| encounter.timing.is_none()))
     }
+    /// All exact operations registered for this stage share one ownership boundary.
+    pub(in crate::quest) fn transitions(
+        &self,
+        quest: &str,
+    ) -> Result<Vec<QuestTransition>, String> {
+        let mut transitions = vec![self.transition(quest)?];
+        if let Trigger::NpcDialogue { alternatives, .. } = &self.trigger {
+            for callback in alternatives {
+                let mut transition = super::reward_callbacks::primary_transition(callback)?;
+                transition.completes = self.completes;
+                transitions.push(transition);
+            }
+        }
+        Ok(transitions)
+    }
+
     pub(in crate::quest) fn transition(&self, quest: &str) -> Result<QuestTransition, String> {
         let mut transition = match &self.trigger {
             Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {

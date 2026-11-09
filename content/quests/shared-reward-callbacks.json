@@ -3953,7 +3953,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
-      ]
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l4-royal-costume-shield",

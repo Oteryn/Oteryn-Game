@@ -291,6 +291,7 @@ struct CandidatePlacement {
     reward_callback: Option<String>,
     item: TypedDefinitionRef,
     count: u32,
+    additional_items: Vec<RewardClaimItem>,
     quest_transition: Option<String>,
     key_number: Option<u16>,
     achievement: Option<String>,
@@ -393,6 +394,10 @@ fn candidate(
     }
     if parsed.iter().any(|placement| {
         !admitted(&placement.item)
+            || placement
+                .additional_items
+                .iter()
+                .any(|item| !admitted(&item.item))
             || placement
                 .contents
                 .iter()
@@ -793,8 +798,34 @@ fn authored_text_matches(
         && written.get("text_ref") == Some(&expected_ref)
 }
 
-/// `None` for a placement with a field or shape the server artifact does not encode. A key
-/// variant's placement must carry a key binding of one item; no other placement may.
+/// Decode one plain reward leaf without discarding its source identity or quantity.
+fn candidate_reward_item(entry: &Value) -> Result<Option<RewardClaimItem>, ClaimsError> {
+    let bad = ClaimsError("reward item is not in the shard shape");
+    if !only(entry, &["count", "item"]) {
+        return Ok(None);
+    }
+    let count = entry
+        .get("count")
+        .and_then(Value::as_u64)
+        .and_then(|count| u32::try_from(count).ok())
+        .filter(|count| *count > 0)
+        .ok_or(bad.clone())?;
+    let item = entry.get("item").ok_or(bad.clone())?;
+    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
+    if text("family")? != "Item" {
+        return Ok(None);
+    }
+    Ok(Some(RewardClaimItem {
+        count,
+        item: TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new(text("key")?)?,
+            DefinitionRevisionRef::new(text("revision")?)?,
+        ),
+    }))
+}
+
+/// A key variant remains a single key; plain rewards admit a bounded item vector.
 fn candidate_placement(
     placement: &Value,
     key_variant: bool,
@@ -832,32 +863,27 @@ fn candidate_placement(
         .get("items")
         .and_then(Value::as_array)
         .ok_or(bad.clone())?;
-    let [entry] = items.as_slice() else {
+    let Some((entry, rest)) = items.split_first() else {
         return Ok(None);
     };
-    if !only(entry, &["count", "item"]) {
+    if items.len() > 20 || (key_variant && !rest.is_empty()) {
         return Ok(None);
     }
-    let count = entry
-        .get("count")
-        .and_then(Value::as_u64)
-        .and_then(|count| u32::try_from(count).ok())
-        .filter(|count| *count > 0)
-        .ok_or(bad.clone())?;
-    // A key is one non-stackable item.
+    let Some(first) = candidate_reward_item(entry)? else {
+        return Ok(None);
+    };
+    let item = first.item;
+    let count = first.count;
     if key_number.is_some() && count != 1 {
         return Ok(None);
     }
-    let item = entry.get("item").ok_or(bad.clone())?;
-    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
-    if text("family")? != "Item" {
-        return Ok(None);
+    let mut additional_items = Vec::with_capacity(rest.len());
+    for entry in rest {
+        let Some(item) = candidate_reward_item(entry)? else {
+            return Ok(None);
+        };
+        additional_items.push(item);
     }
-    let item = TypedDefinitionRef::new(
-        DefinitionFamily::Item,
-        ProductionKey::new(text("key")?)?,
-        DefinitionRevisionRef::new(text("revision")?)?,
-    );
     let crystal_unique_id = binding
         .get("legacy_unique_ids")
         .and_then(Value::as_array)
@@ -891,6 +917,7 @@ fn candidate_placement(
         reward_callback: None,
         item,
         count,
+        additional_items,
         quest_transition,
         key_number,
         achievement: None,
@@ -933,6 +960,7 @@ fn bind_candidate(
                         count: placement.count,
                     })
                     .chain(placement.extra_items.iter().cloned())
+                    .chain(placement.additional_items.iter().cloned())
                     .collect(),
                     achievement: placement.achievement.clone(),
                     quest_transition: placement.quest_transition.clone(),
@@ -1032,6 +1060,51 @@ mod container_tests {
             }
         }
         None
+    }
+
+    #[test]
+    fn multiple_top_level_rewards_retain_every_source_item() {
+        let source = authored("kv.bear_chest1").expect("source fixture");
+        let mut placement = source["placements"][0].clone();
+        // Exercise the plain, top-level reward shape rather than a container.
+        placement["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("container");
+        let parsed = candidate_placement(&placement, false)
+            .expect("valid reward shape")
+            .expect("both top-level items must be encoded");
+        assert_eq!(parsed.item.key().as_str(), "oteryn:item.tibia.i3447");
+        assert_eq!(parsed.count, 12);
+        assert_eq!(parsed.additional_items.len(), 1);
+        assert_eq!(
+            parsed.additional_items[0].item.key().as_str(),
+            "oteryn:item.tibia.i3031"
+        );
+        assert_eq!(parsed.additional_items[0].count, 40);
+        placement["reward"]["items"][1]["count"] = serde_json::json!(0);
+        assert!(candidate_placement(&placement, false).is_err());
+    }
+
+    #[test]
+    fn top_level_reward_vectors_are_nonempty_and_bounded() {
+        let source = authored("kv.bear_chest1").expect("source fixture");
+        let mut placement = source["placements"][0].clone();
+        placement["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("container");
+        let item = placement["reward"]["items"][0].clone();
+        for count in [0, 1, 20, 21] {
+            placement["reward"]["items"] = Value::Array(vec![item.clone(); count]);
+            assert_eq!(
+                candidate_placement(&placement, false)
+                    .expect("valid shape")
+                    .is_some(),
+                (1..=20).contains(&count),
+                "{count} reward items"
+            );
+        }
     }
 
     #[test]

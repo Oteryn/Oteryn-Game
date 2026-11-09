@@ -7,6 +7,15 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_royal_costume_completes_only_after_crown_exchange(self):
+        rows = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
+        for name, before, after in [('base', -1, 1), ('shield', 1, 2), ('crown', 2, 3)]:
+            row = rows['l4-royal-costume-' + name]
+            with self.subTest(exchange=name):
+                self.assertEqual(row.get('completes', False), name == 'crown')
+                self.assertEqual(row['storage'][0]['minimum'], before)
+                self.assertEqual(row['storage'][0]['set'], after)
+
     def test_literal_reward_text_is_bounded_and_leaf_only(self):
         document=copy.deepcopy(self.callbacks)
         reward={'item':'oteryn:item.tibia.i2814','count':1,'contents':[],
