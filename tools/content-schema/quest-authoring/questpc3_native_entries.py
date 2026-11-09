@@ -233,6 +233,38 @@ def build_task_board(slug, root=ROOT):
         'sources':evidence}]}
 
 
+def build_ancient_aucar(root=ROOT):
+    quest = 'oteryn:quest.ancient_aucar_outfits_quest'
+    requirement = 'Galthen and the City of Gold'
+    parent = 'oteryn:quest.adventures_of_galthen_quest'
+    path, recipe = chosen(root, quest, ('s1', 'kill', 1, ['Ahau', 'The Living Idol of Tukh']),
+                          premium=True, prerequisites=[requirement])
+    parents = [p.relative_to(root).as_posix()
+               for p in sorted((root / 'content/quests/definitions').glob('quests-*.json'))
+               for record in json.loads(p.read_bytes())['records']
+               if record['definition']['identity']['key'] == parent]
+    bosses = [(p.relative_to(root).as_posix(), record['definition']['identity']['key'])
+              for p in sorted((root / 'content/creatures/definitions').glob('creatures-*.json'))
+              for record in json.loads(p.read_bytes())['records']
+              if record.get('authoring', {}).get('profile', {}).get('details', {}).get('display_name') == 'Ahau']
+    if len(parents) != 1 or bosses != [('content/creatures/definitions/creatures-00000-00499.json', 'oteryn:creature.ahau')]:
+        raise ValueError('M01C_AUCAR_NATIVE_IDENTITIES')
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    route = 'oteryn:quest-progress/m01c-ancient-aucar-route'
+    kills = 'oteryn:quest-progress/m01c-ancient-aucar-kills'
+    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'admission':{'minimum_level':0, 'premium':True,
+            'prerequisites':[{'requirement':requirement, 'quest':parent}]},
+        'tracks':[{'key':route, 'initial':0, 'minimum':0, 'maximum':len(recipe['stages'])},
+                  {'key':kills, 'initial':0, 'minimum':0, 'maximum':1}],
+        'stages':[{'key':'s1-ahau', 'completes':False, 'trigger':{'kind':'kill', 'counter':{
+            'key':'oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau',
+            'creature':bosses[0][1], 'track':kills, 'gate':route, 'gate_value':0,
+            'minimum':0, 'maximum':1, 'advance_gate_to':1}}}],
+        'sources':[path+':s1', bosses[0][0]+':Ahau', parents[0]+':City of Gold',
+                   'docs/reference/content-prep/questpc3-m01c/CONTRACT-NOTES.md:Ancient Aucar parent gate']}]}
+
+
 def build_draconia(root=ROOT):
     quest = 'oteryn:quest.draconia_quest'
     path, recipe = chosen(root, quest, ('s1', 'use', 1, ['Key 3012', 'Hellgate', 'Draconia']), 25)
@@ -274,6 +306,7 @@ def content(check=False):
     documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender()), (Path('content/quests/authored-bindings/qmech-m01c-illuminator.json'), build_illuminator())]
     documents.extend((Path(f'content/quests/authored-bindings/qmech-m01c-{slug}.json'), build_task_board(slug)) for slug in ('falconer', 'feral-trappers'))
     documents.append((Path('content/quests/authored-bindings/qmech-m01c-draconia.json'), build_draconia()))
+    documents.append((Path('content/quests/authored-bindings/qmech-m01c-ancient-aucar.json'), build_ancient_aucar()))
     for output, value in documents:
         path = ROOT / output
         if check:

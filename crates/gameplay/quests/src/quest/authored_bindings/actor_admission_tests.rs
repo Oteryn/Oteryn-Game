@@ -92,6 +92,52 @@ fn production_grimvale_collection_requires_its_premium_blossom_count() -> Result
 }
 
 #[test]
+fn production_ancient_aucar_counts_only_ahau_after_its_premium_parent_gate() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("aucar-fixture")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let key = "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau";
+    let transition = catalogue.transition(key).ok_or("Aucar entry")?;
+    let quest = catalogue
+        .authored_bindings()
+        .and_then(|bindings| {
+            bindings
+                .quests
+                .iter()
+                .find(|quest| quest.quest == transition.quest)
+        })
+        .ok_or("Aucar binding")?;
+    let admission = quest.admission.as_ref().ok_or("Aucar admission")?;
+    assert_eq!(admission.minimum_level, 0);
+    assert!(admission.premium);
+    assert_eq!(
+        admission.prerequisites[0].requirement,
+        "Galthen and the City of Gold"
+    );
+    assert_eq!(
+        admission.prerequisites[0].quest,
+        "oteryn:quest.adventures_of_galthen_quest"
+    );
+    let counter = crate::quest::native_kills::counter_for(catalogue, key).ok_or("Ahau counter")?;
+    assert_eq!(counter.creature, "oteryn:creature.ahau");
+    let mut state = std::collections::BTreeMap::new();
+    let changes = catalogue
+        .evaluate(transition, &state, 0)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(!catalogue.completes_after(transition, &changes));
+    for change in changes {
+        state.insert(change.track, change.after);
+    }
+    assert_eq!(state[counter.gate], 1);
+    assert_eq!(state[counter.track], 1);
+    assert_eq!(
+        catalogue.evaluate(transition, &state, 0),
+        Err(crate::quest::QuestRefusal::StageMismatch)
+    );
+    Ok(())
+}
+
+#[test]
 fn production_decaying_defender_boss_entry_preserves_requirements_and_cannot_complete()
 -> Result<(), String> {
     let loaded = crate::quest::loader::load_embedded_quest_state("decaying-defender-fixture")

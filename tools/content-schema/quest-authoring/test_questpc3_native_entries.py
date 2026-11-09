@@ -4,6 +4,18 @@ import questpc3_native_entries as source
 
 
 class NativeEntries(unittest.TestCase):
+    def test_ancient_aucar_requires_ahau_premium_and_completed_parent(self):
+        quest = source.build_ancient_aucar()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.ancient_aucar_outfits_quest')
+        self.assertEqual(quest['admission'], {'minimum_level':0, 'premium':True,
+            'prerequisites':[{'requirement':'Galthen and the City of Gold',
+                              'quest':'oteryn:quest.adventures_of_galthen_quest'}]})
+        self.assertFalse(quest['stages'][0]['completes'])
+        counter = quest['stages'][0]['trigger']['counter']
+        self.assertEqual(counter['creature'], 'oteryn:creature.ahau')
+        self.assertEqual((counter['gate_value'], counter['minimum'], counter['maximum'],
+                          counter['advance_gate_to']), (0, 0, 1, 1))
+
     def test_draconia_requires_its_two_real_numbered_doors_and_level_25(self):
         quest = source.build_draconia()['quests'][0]
         self.assertEqual(quest['quest'], 'oteryn:quest.draconia_quest')
