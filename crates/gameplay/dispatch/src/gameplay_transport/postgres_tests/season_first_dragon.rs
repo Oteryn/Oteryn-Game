@@ -487,6 +487,16 @@ fn scenario(victory: bool) -> TestResult {
             .activity_lifecycle_pass()
             .await
             .map_err(|_| "retire selected activity")?;
+        if victory {
+            // The durable owner retires one Ground root per bounded pass
+            // (item_decay_retire/activity_retirement.rs). The real native
+            // death leaves one empty corpse; the next cadence proves Ground
+            // is empty before unregistering the private runtime.
+            owner
+                .activity_lifecycle_pass()
+                .await
+                .map_err(|_| "finish selected corpse retirement")?;
+        }
         assert!(
             owner
                 .activity_runtimes
