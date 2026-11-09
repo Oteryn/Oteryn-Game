@@ -5,7 +5,9 @@ use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::movement::monster_map::{CurrentMonsterMap, MonsterMap};
 use oteryn_gameplay_encounters::bosses::rotten_blood::{
     RoomPosition,
+    elder_bloodjaw_think::ELDER_BLOODJAW_KEY,
     mushroom_think::MUSHROOM_KEY,
+    native_bloodjaw::remove_orphan as remove_orphan_bloodjaw,
     native_mushroom::remove_orphan,
     native_wave_spawn::{NativeWaveSpawnMap, NativeWaveSpawnOwner},
     summon_wave::{
@@ -205,8 +207,14 @@ impl RoomWaveStates {
         }
         // An attack-schedule refusal does not cancel a committed source onThink.
         // The map and spawn owners independently prove this callback's current work.
-        if key == MUSHROOM_KEY && !report.over_budget {
-            if remove_orphan(runtime, actor, native.source_digest()).map_err(|_| ())? {
+        if matches!(key, MUSHROOM_KEY | ELDER_BLOODJAW_KEY) && !report.over_budget {
+            let removed = if key == MUSHROOM_KEY {
+                remove_orphan(runtime, actor, native.source_digest())
+            } else {
+                remove_orphan_bloodjaw(runtime, actor, native.source_digest())
+            }
+            .map_err(|_| ())?;
+            if removed {
                 table.remove(actor);
             }
             return Ok(());

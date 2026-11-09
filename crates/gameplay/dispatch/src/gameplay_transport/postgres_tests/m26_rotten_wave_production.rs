@@ -248,6 +248,23 @@ pub(super) async fn check(
         !mushrooms.is_empty(),
         "live source population before boss departure"
     );
+    let bloodjaws = runtime
+        .positioned_melee_census()
+        .map_err(debug)?
+        .into_iter()
+        .filter_map(|(actor, _, _)| {
+            runtime
+                .companion_snapshot(actor)
+                .ok()
+                .filter(|row| row.state.policy.definition_key == "oteryn:creature.elder_bloodjaw")
+                .map(|_| actor)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        bloodjaws.len(),
+        2,
+        "untainted source population has two native Bloodjaws"
+    );
     runtime.remove_test_actor(boss).map_err(debug)?;
     states.monster_melee.creature_ai.remove(boss);
     let tick_now = now + 11_000_000;
@@ -275,18 +292,18 @@ pub(super) async fn check(
         )
         .await
         .map_err(|_| "production orphan cleanup drive")?;
-    for mushroom in mushrooms {
+    for minion in mushrooms.into_iter().chain(bloodjaws) {
         assert!(
-            runtime.read_actor_position(mushroom).is_err(),
-            "current native Mushroom disappears when its source boss leaves"
+            runtime.read_actor_position(minion).is_err(),
+            "current native source minion disappears when its source boss leaves"
         );
         assert!(
-            states.monster_melee.creature_ai.state(mushroom).is_none(),
+            states.monster_melee.creature_ai.state(minion).is_none(),
             "administrative despawn also retires native AI"
         );
     }
     eprintln!(
-        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true"
+        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true bloodjaw_cleanup=true"
     );
     Ok(())
 }

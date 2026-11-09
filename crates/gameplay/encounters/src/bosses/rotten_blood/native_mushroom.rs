@@ -10,12 +10,30 @@ pub fn remove_orphan(
     actor: ExactActorRef,
     content: [u8; 32],
 ) -> Result<bool, CarrierError> {
+    remove_orphan_with_presence(
+        runtime,
+        actor,
+        content,
+        MUSHROOM_KEY,
+        is_mushroom_boss,
+        BOSS_PRESENCE_RANGE_TILES,
+    )
+}
+
+pub(super) fn remove_orphan_with_presence(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    content: [u8; 32],
+    expected_key: &str,
+    is_boss: fn(&str) -> bool,
+    range: u16,
+) -> Result<bool, CarrierError> {
     let stamp = runtime.issue_owner_work()?;
     if content == [0; 32] || content != runtime.content_pin().server_artifact_digest() {
         return Err(CarrierError::CreatureTargetMismatch);
     }
     let mushroom = runtime.companion_snapshot(actor)?;
-    if mushroom.state.policy.definition_key != MUSHROOM_KEY
+    if mushroom.state.policy.definition_key != expected_key
         || mushroom.state.master.is_some()
         || runtime.native_summon_master(actor).is_some()
     {
@@ -34,16 +52,16 @@ pub fn remove_orphan(
                 y: position.y,
                 floor: position.floor,
             },
-            BOSS_PRESENCE_RANGE_TILES,
+            range,
         ) {
             continue;
         }
         if runtime.companion_snapshot(candidate).is_ok_and(|snapshot| {
-            snapshot.health > 0 && is_mushroom_boss(&snapshot.state.policy.definition_key)
+            snapshot.health > 0 && is_boss(&snapshot.state.policy.definition_key)
         }) {
             return Ok(false);
         }
     }
-    runtime.remove_current_native_encounter_subject(stamp, actor, MUSHROOM_KEY, content)?;
+    runtime.remove_current_native_encounter_subject(stamp, actor, expected_key, content)?;
     Ok(true)
 }
