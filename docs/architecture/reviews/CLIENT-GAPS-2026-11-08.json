@@ -1077,7 +1077,7 @@
   "status": "DONE",
   "gap": "Server-authoritative offers, escrow/refunds, move-out and empty-house handover; depot inbox routing, furniture wrapping and bound client confirmations.",
   "lane": "cg_ui",
-  "evidence": "crates/gameplay/durability/src/durability/house_sale.rs:62 + t135_house_transfer_catalogue_real_dispatch; apps/client/src/features/0049-house/input/ownership.rs:97 + house_ownership_menu_and_confirmations_reach_the_real_play_queue; apps/game-server/migrations/2602_house_disposition_wrapping.sql:85 + t135_house_transfer_catalogue_real_dispatch; apps/game-server/migrations/2702_house_charged_furniture_wrapping.sql:5 + srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres; apps/game-server/migrations/2601_house_disposition_recipients.sql:1 + t135_unbound_contents_go_to_seller_not_depositor"
+  "evidence": "crates/gameplay/durability/src/durability/house_sale.rs:62 + t135_house_transfer_catalogue_real_dispatch; apps/client/src/features/0049-house/input/ownership.rs:97 + house_ownership_menu_and_confirmations_reach_the_real_play_queue; apps/game-server/migrations/2602_house_disposition_wrapping.sql:85 + t135_house_transfer_catalogue_real_dispatch; apps/game-server/migrations/2704_house_charged_furniture_wrapping.sql:5 + srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres; apps/game-server/migrations/2601_house_disposition_recipients.sql:1 + t135_unbound_contents_go_to_seller_not_depositor"
  },
  {
   "id": "T136",

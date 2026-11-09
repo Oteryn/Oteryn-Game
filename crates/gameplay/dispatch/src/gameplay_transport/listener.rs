@@ -160,6 +160,7 @@ fn connection_end_kind(end: &connection::ConnectionEnd) -> &'static str {
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::Rejected) => "refused_rejected",
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::Unavailable) => "refused_unavailable",
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::Classified(_)) => "refused_classified",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::Queued(_)) => "refused_queued",
         ConnectionEnd::AdmissionRefused(AdmissionRefusal::RecoveryCapabilityRequired) => {
             "refused_recovery_capability"
         }
