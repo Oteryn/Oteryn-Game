@@ -39,7 +39,20 @@ use console_controls::ConsoleControls;
 #[path = "hud_controls.rs"]
 mod hud_controls;
 use hud_controls::HudControls;
+#[path = "frame_controls.rs"]
+mod frame_controls;
+use frame_controls::FrameControls;
+#[path = "battle_sound_controls.rs"]
+mod battle_sound_controls;
+use battle_sound_controls::BattleSoundControls;
 
+#[path = "mixer_controls.rs"]
+mod mixer_controls;
+use mixer_controls::MixerControls;
+
+#[path = "battle_filter_controls.rs"]
+mod battle_filter_controls;
+use battle_filter_controls::BattleFilterControls;
 pub(super) struct Controls {
     pub(super) language: LanguageControls,
     pub(super) presentation: PresentationControls,
@@ -49,9 +62,14 @@ pub(super) struct Controls {
     pub(super) gameplay: GameplayControls,
     pub(super) graphics: GraphicsControls,
     pub(super) shortcuts: ShortcutControls,
+    pub(super) battle_filters: BattleFilterControls,
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,
+    pub(super) mixer: MixerControls,
+    pub(super) stability: HWND,
+    pub(super) battle_sounds: BattleSoundControls,
+    pub(super) frames: FrameControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -101,5 +119,25 @@ pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState) {
             handle,
             wide(&format!("{hint}\r\n{}", state.feedback)).as_ptr(),
         );
+    }
+}
+impl Controls {
+    pub(super) unsafe fn read_page(
+        mixer: &MixerControls,
+        frames: &FrameControls,
+        battle: &BattleSoundControls,
+        battle_filters: &BattleFilterControls,
+        page: SettingsPage,
+        preferences: &mut oteryn_client::play::ReferencePreferences,
+    ) -> Result<(), String> {
+        unsafe {
+            match page {
+                SettingsPage::Battle => battle_filters.read(preferences),
+                SettingsPage::Mixer => mixer.read(preferences),
+                SettingsPage::Effects => frames.read(preferences),
+                SettingsPage::Sound => battle.read(preferences),
+                _ => Ok(()),
+            }
+        }
     }
 }

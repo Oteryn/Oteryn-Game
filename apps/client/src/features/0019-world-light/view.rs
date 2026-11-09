@@ -18,7 +18,7 @@ impl PlayView {
                     .map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb),
                 self.floor < -7 || self.scene.has_roof(),
                 self.world_weather,
-            ),
+            ).map(|channel| channel.max((u16::from(self.preferences().ambient_brightness) * 255 / 100) as u8)),
         )?;
         self.scene.set_floor_separator(graphics.separator)?;
         let view = self.scene.view();

@@ -29,6 +29,21 @@ impl ReferencePreferences {
         }
         if self.active_battle_list >= self.battle_lists.len() || !self.bar_actions.valid() || !self.bar_layout.valid() || !self.action_keys.valid(self) { return Err(PreferenceError); }
         self.validate_bindings()?;
+        if self.boss_area_opacity > 100 {
+            return Err(PreferenceError);
+        }
+        if self.audio_device.len() > 256 || self.audio_device.chars().any(char::is_control) {
+            return Err(PreferenceError);
+        }
+        if self.effect_opacity.iter().any(|opacity| *opacity > 100) {
+            return Err(PreferenceError);
+        }
+        if self.ambient_brightness > 100 {
+            return Err(PreferenceError);
+        }
+        if !(1..=500).contains(&self.foreground_fps) || !(1..=500).contains(&self.background_fps) {
+            return Err(PreferenceError);
+        }
         self.validate_profiles()?;
         self.validate_status_order()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
@@ -60,6 +75,9 @@ impl ReferencePreferences {
             || self.hud_bounds[2] < 120
             || self.hud_bounds[3] < 24
             || self.hud_bounds.iter().any(|value| *value > 4096)
+            || self.audio.battle_volumes.iter().any(|v| *v > 100)
+            || self.audio.channel_volumes.iter().any(|v| *v > 100)
+            || self.audio.ambient_volume > 100
             || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()

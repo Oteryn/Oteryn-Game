@@ -32,6 +32,11 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             manual,
             console,
             layout,
+            battle_filters,
+            mixer,
+            stability,
+            battle_sounds,
+            frames,
             arcs,
             interface,
             profile_name,
@@ -131,6 +136,11 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             actor_hud.show(state.page == SettingsPage::ActorHud);
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
+            battle_sounds.show(state.page == SettingsPage::Sound);
+            battle_filters.show(state.page == SettingsPage::Battle);
+            mixer.show(state.page == SettingsPage::Mixer);
+            mixer.position_apply(apply, state.page);
+            frames.show(state.page == SettingsPage::Effects);
             arcs.show(state.page == SettingsPage::Arcs);
             gameplay.show(state.page == SettingsPage::Gameplay);
             screenshots.show(state.page == SettingsPage::Screenshots);
@@ -147,6 +157,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 (&[chat_on, chat_off, manual][..], SettingsPage::Hotkeys),
                 (
                     &[
+                        stability,
                         mouse_preset,
                         delay_label,
                         delay,
@@ -189,6 +200,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     SettingsPage::Interface
                         | SettingsPage::Status
                         | SettingsPage::Sound
+                        | SettingsPage::Mixer
+                        | SettingsPage::Effects
+                        | SettingsPage::Battle
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
                         | SettingsPage::ActorHud
@@ -264,6 +278,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     gameplay.read(&mut preferences);
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
+                            preferences.optimise_connection =
+                                SendMessageW(stability, BM_GETCHECK, 0, 0) == 1;
                             preferences.rotation_modifier =
                                 text(rotation).trim().to_ascii_uppercase();
                             preferences.keyboard_delay_ms = value;
@@ -299,6 +315,17 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = Controls::read_page(
+                        &mixer,
+                        &frames,
+                        &battle_sounds,
+                        &battle_filters,
+                        state.page,
+                        &mut preferences,
+                    ) {
+                        state.feedback = error;
+                        continue;
+                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
@@ -340,6 +367,11 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 actor_hud.refresh(&state.preferences);
                 console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);
+                set_checked(stability, state.preferences.optimise_connection);
+                battle_sounds.refresh(&state.preferences);
+                battle_filters.refresh(&state.preferences);
+                mixer.refresh(&state.preferences);
+                frames.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 navigation_controls::refresh_bindings(list, &bindings, selected, &state);
@@ -357,17 +389,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     usize::from(state.preferences.audio.muted),
                     0,
                 );
-                for (control, checked) in hud_checks.iter().zip([
-                    state.preferences.hud_bars,
-                    state.preferences.show_harmony,
-                    state.preferences.show_serene,
-                    state.preferences.show_lights,
-                    state.preferences.show_effects,
-                    state.preferences.creature_bars,
-                    state.preferences.health_circle,
-                ]) {
-                    SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
-                }
+                refresh_hud_checks(&hud_checks, &state.preferences);
                 SendMessageW(
                     mouse_preset,
                     CB_SETCURSEL,

@@ -412,36 +412,40 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: own/other/creature/boss-area opacity",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawień opacity według źródła efektu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/view.rs:120 + apps/client/src/features/local-reference-preferences/frame_controls.rs:20 + crates/client-assets/src/effects.rs:22; pinned_boss_area_category_reaches_wire_caller_and_gpu_alpha (apps/client/src/features/0023-presentation/tests/boss_area.rs:9), source_opacity_reaches_confirmed_effect_gpu_upload, pinned_manifest_owns_boss_area_classification and boss_area_metadata_rejects_invalid_and_duplicate_ids (crates/client-assets/tests/boss_area_metadata.rs). Four persisted opacity groups consume existing MagicEffect IDs; pinned asset metadata marks the boss-area appearance category independently of caster/source. Both offline and live world loading carry the catalog. Legacy packs without categories retain source-group rendering; no wire or capability extension."
  },
  {
   "id": "T064",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound: master/mute/device/music/ambient/items/events/UI",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "Existing implementation reverified after cgmech sync on 692b8b9da: apps/client/src/features/0023-presentation/native.rs:25 (device), native.rs:69 (active/new voice gains), native.rs:211 (UI); apps/client/src/features/local-reference-preferences/mixer_controls.rs:50 (settings caller). Tests: confirmed_sound_cues_use_pinned_mixer_routes (apps/client/tests/audio_mixer.rs:28), mixer_channels_are_independent_and_master_mute_wins (:4), requested_audio_device_is_exact_and_never_silently_falls_back (apps/client/tests/audio_device.rs:3), missing_device_choice_survives_preference_reload (:11), ambient_channel_gain_is_independent_and_honours_master_mute (apps/client/tests/ambient_sound_mix.rs:3). Main checked; full implementation is already on this lane."
  },
  {
   "id": "T065",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / Battle Sounds: own/others/creatures, attack/heal/support",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Playback istnieje; brak suwaków i filtrów walki.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/mixer.rs:37 + apps/client/src/features/0023-presentation/native.rs:72 + apps/client/src/features/local-reference-preferences/battle_filter_controls.rs:1; confirmed_battle_cues_respect_each_source_and_class (apps/client/tests/battle_filters.rs:34), battle_filters_separate_source_and_spell_class, battle_sound_source_gain_multiplies_master_and_mute. Nine persisted filters and three source gains consume confirmed sound cues and pinned battle_classes metadata; active voices reapply filters. Main and own branch checked first; legacy unclassified cues retain existing behaviour."
  },
  {
   "id": "T066",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / UI Sounds: interactions/party/VIP/chat channels",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak filtrów dźwięków UI, party, VIP i kanałów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/battle_sound_controls.rs:12 + apps/client/src/features/0023-presentation/ui_sound.rs:1 + apps/client/src/features/0023-presentation/native.rs:143; confirmed_ui_events_reach_filtered_native_audio_queue (apps/client/tests/ui_sound_filters.rs:13). Persisted interaction/party/VIP/chat filters drive native notification tones from confirmed events; queue bounded and VIP refreshes deduplicated. Checked origin/main and own branch before implementation."
  },
  {
   "id": "T067",
@@ -457,9 +461,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous: optimise connection stability",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/controls.rs:57 + apps/client/src/native_entry.rs:146 + crates/session-tcp/src/lib.rs:96; connection_optimisation_configures_real_tls_socket (crates/session-tcp/src/tests.rs:101), connection_optimisation_survives_the_admission_store_read. Settings disables TCP small-packet buffering at next login; existing TLS, admission and retries preserved. Checked origin/main 2033ddc54 and own branch first."
  },
  {
   "id": "T069",

@@ -28,10 +28,11 @@ mod controls;
 #[path = "frames.rs"]
 mod frames;
 pub use frames::{FramePacer, FramePreferences};
-#[path = "gameplay.rs"]
-mod gameplay;
 #[path = "graphics.rs"]
 mod graphics;
+#[path = "gameplay.rs"]
+mod gameplay;
+
 #[path = "help.rs"]
 pub mod help;
 #[path = "localization.rs"]
@@ -44,10 +45,11 @@ mod presentation;
 mod profile_contexts;
 #[path = "profiles.rs"]
 mod profiles;
-#[path = "screenshot.rs"]
-pub mod screenshot;
 #[path = "shortcuts.rs"]
 mod shortcuts;
+#[path = "screenshot.rs"]
+pub mod screenshot;
+
 #[path = "status_order.rs"]
 mod status_order;
 #[path = "store.rs"]
@@ -92,10 +94,13 @@ const PANEL_IDS: &[&str] = &[
 #[path = "defaults.rs"]
 mod defaults;
 use defaults::*;
+
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_boss_opacity")]
+    pub boss_area_opacity: u8,
     #[serde(default)]
     pub action_bar: ActionBarPreferences,
     #[serde(default)]
@@ -132,6 +137,19 @@ pub struct ReferencePreferences {
     pub skill_order: Vec<u8>,
     #[serde(default)]
     pub condition_order: Vec<u8>,
+    #[serde(default)]
+    pub audio_device: String,
+    #[serde(default = "default_opacity")]
+    pub effect_opacity: [u8; 3],
+    /// Disable TCP small-packet buffering on the next gameplay connection.
+    #[serde(default)]
+    pub optimise_connection: bool,
+    #[serde(default)]
+    pub ambient_brightness: u8,
+    #[serde(default = "default_foreground_fps")]
+    pub foreground_fps: u16,
+    #[serde(default = "default_background_fps")]
+    pub background_fps: u16,
     #[serde(default)]
     pub language_code: Option<String>,
     #[serde(default)]
@@ -227,6 +245,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),
             tooltips_enabled: true,
             tooltip_delay_ms: 500,
@@ -243,6 +262,12 @@ impl Default for ReferencePreferences {
             status_panel_visible: true,
             skill_order: Vec::new(),
             condition_order: Vec::new(),
+            audio_device: String::new(),
+            effect_opacity: default_opacity(),
+            optimise_connection: false,
+            ambient_brightness: 0,
+            foreground_fps: default_foreground_fps(),
+            background_fps: default_background_fps(),
             language_code: None,
             console: Default::default(),
             action_bar: Default::default(),
@@ -380,3 +405,6 @@ impl PlayView {
         Ok(())
     }
 }
+
+
+

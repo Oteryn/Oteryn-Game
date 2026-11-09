@@ -4,6 +4,18 @@ impl Controls {
         unsafe {
             let graphics = GraphicsControls::new(hwnd)?;
             let shortcuts = ShortcutControls::new(hwnd)?;
+            let battle_filters = BattleFilterControls::new(hwnd)?;
+            let mixer = MixerControls::new(hwnd)?;
+            let stability = control(
+                hwnd,
+                "BUTTON",
+                "Optimise connection stability (next login): disable TCP buffering",
+                0,
+                [10, 265, 710, 26],
+                BS_AUTOCHECKBOX as u32,
+            );
+            let battle_sounds = BattleSoundControls::new(hwnd)?;
+            let frames = FrameControls::new(hwnd)?;
             let actor_hud = HudControls::new(hwnd)?;
             let console = ConsoleControls::new(hwnd)?;
             let layout = LayoutControls::new(hwnd)?;
@@ -309,6 +321,11 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                battle_filters,
+                mixer,
+                stability,
+                battle_sounds,
+                frames,
                 language,
                 presentation,
                 minimap,

@@ -8,7 +8,6 @@ mod input;
 mod native_login_shell;
 #[path = "features/local-reference-preferences/native.rs"]
 mod settings;
-
 use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
 use oteryn_client::native_login::{LoginWindow, error_text};
@@ -28,7 +27,6 @@ use winit::dpi::LogicalSize;
 use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShellError {
     EventLoopCreation,
@@ -44,7 +42,6 @@ pub enum ShellError {
     RendererClose,
     RendererConfiguration,
 }
-
 impl Display for ShellError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
@@ -63,7 +60,6 @@ impl Display for ShellError {
         })
     }
 }
-
 impl std::error::Error for ShellError {}
 
 mod graphics;
@@ -94,7 +90,6 @@ struct Application {
     hotkeys: SpellHotkeys,
     fatal_error: Option<ShellError>,
 }
-
 /// The view of an admitted session and the link to its task on the client runtime.
 struct Play {
     view: PlayView,
@@ -102,7 +97,6 @@ struct Play {
     /// The spell bar and combat line last shown in the title.
     status: String,
 }
-
 impl Application {
     fn new(smoke: bool, client: Option<ClientBootstrap>) -> Result<Self, ShellError> {
         let entry = client.map(Reentry::new);
@@ -136,7 +130,6 @@ impl Application {
             fatal_error: None,
         })
     }
-
     /// The offline scene around `offline_own`, over the loaded world.
     fn rebuild_offline(&mut self) -> Result<(), oteryn_renderer::BatchError> {
         if let Some(world) = &self.world {

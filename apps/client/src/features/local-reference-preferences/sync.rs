@@ -21,7 +21,10 @@ pub enum SettingsPage {
     Interface,
     Shortcuts,
     Graphics,
+    Effects,
     Sound,
+    Mixer,
+    Battle,
     Screenshots,
     Help,
     HelpGuide,
@@ -32,7 +35,7 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 22] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -44,7 +47,10 @@ impl SettingsPage {
         Self::Interface,
         Self::Shortcuts,
         Self::Graphics,
+        Self::Effects,
         Self::Sound,
+        Self::Mixer,
+        Self::Battle,
         Self::Screenshots,
         Self::Help,
         Self::HelpGuide,
@@ -67,7 +73,10 @@ impl SettingsPage {
             Self::Interface => "Interface",
             Self::Shortcuts => "Interface / Shortcuts",
             Self::Graphics => "Graphics",
+            Self::Effects => "Graphics / Effects",
             Self::Sound => "Sound",
+            Self::Mixer => "Sound / Mixer",
+            Self::Battle => "Sound / Battle filters",
             Self::Screenshots => "Screenshots",
             Self::Help => "Help / settings transfer",
             Self::HelpGuide => "Help / guide and support",

@@ -382,7 +382,7 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 19);
+    assert_eq!(SettingsPage::ALL.len(), 22);
     for added in [
         SettingsPage::Screenshots,
         SettingsPage::HelpGuide,
@@ -395,4 +395,7 @@ fn basic_options_navigate_without_changing_preferences() {
     }
     assert_eq!(SettingsPage::ALL[9], SettingsPage::Shortcuts);
     assert_eq!(SettingsPage::ALL[10], SettingsPage::Graphics);
+    assert_eq!(SettingsPage::ALL[11], SettingsPage::Effects);
+    assert_eq!(SettingsPage::ALL[13], SettingsPage::Mixer);
+    assert_eq!(SettingsPage::ALL[14], SettingsPage::Battle);
 }

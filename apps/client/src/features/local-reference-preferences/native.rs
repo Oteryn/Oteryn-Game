@@ -208,6 +208,10 @@ unsafe fn text(hwnd: HWND) -> String {
 #[path = "dialog.rs"]
 mod dialog;
 
+#[path = "native_helpers.rs"]
+mod helpers;
+use helpers::*;
+
 #[path = "transfer.rs"]
 mod transfer;
 

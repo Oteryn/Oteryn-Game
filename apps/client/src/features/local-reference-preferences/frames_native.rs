@@ -21,7 +21,13 @@ impl Settings {
     pub(in crate::windows_shell) fn frame_preferences(
         &self,
     ) -> oteryn_client::play::FramePreferences {
-        lock(&self.shared).preferences.frames
+        let state = lock(&self.shared);
+        let mut frames = state.preferences.frames;
+        if frames == oteryn_client::play::FramePreferences::default() {
+            frames.foreground = state.preferences.foreground_fps;
+            frames.background = state.preferences.background_fps;
+        }
+        frames
     }
 }
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -46,7 +52,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             660,
-            360,
+            500,
             parent,
             null_mut(),
             null_mut(),
@@ -62,7 +68,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let labels = control(
             hwnd,
             "STATIC",
-            "Foreground limit (1–360 FPS)\r\n\r\nBackground limit (1–360 FPS)",
+            "Foreground limit (1–500 FPS)\r\n\r\nBackground limit (1–500 FPS)",
             0,
             [16, 20, 340, 85],
             0,
@@ -154,12 +160,14 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                                 == BST_CHECKED as isize,
                         };
                         if prefs.frames.valid() {
+                            prefs.foreground_fps = prefs.frames.foreground;
+                            prefs.background_fps = prefs.frames.background;
                             state.apply(prefs);
                         } else {
-                            state.feedback = "Choose frame limits from 1 to 360".into();
+                            state.feedback = "Choose frame limits from 1 to 500".into();
                         }
                     }
-                    _ => state.feedback = "Enter whole-number frame limits from 1 to 360".into(),
+                    _ => state.feedback = "Enter whole-number frame limits from 1 to 500".into(),
                 }
             }
             let snapshot = (state.character_scope(), state.preferences.frames);
