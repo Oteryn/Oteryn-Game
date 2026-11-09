@@ -1597,7 +1597,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0134-party-skull/pvp_status.rs:3 + frag_limits_and_open_situations_cross_caller_and_clear_on_refusal; crates/client-ui/src/features/0134-party-skull/view.rs:25 + own_pvp_status_crosses_session_caller_and_rejects_bad_replies"
+  "evidence": "apps/client/src/features/0134-party-skull/input.rs:43; apps/client/src/features/0134-party-skull/input.rs:10; apps/client/src/features/0134-party-skull/protocol.rs:18; apps/client/src/features/0134-party-skull/view.rs:8; crates/gameplay/dispatch/src/gameplay_transport/party_skull/status.rs:5; crates/protocol-oteryn/src/party_skull/status.rs:18; apps/client/src/features/0134-party-skull/pvp_status.rs:3; crates/gameplay/dispatch/src/gameplay_transport/party_skull/status.rs:60"
  },
  {
   "id": "O071",
