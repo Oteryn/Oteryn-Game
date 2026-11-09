@@ -184,6 +184,22 @@ pub(super) async fn exercise(
     assert!(visible.creature_field_origin.is_none());
     assert!(!visible.blocks_movement);
     assert!(!visible.blocks_projectile);
+    eprintln!("QN1_ELEMENTAL_ENERGY_FIELD_COUNT_PG_READY");
+    let active: i64 = sqlx::query_scalar("SELECT game_live_channel_field_count(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::bytea[])")
+        .bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice())
+        .bind(Vec::<Vec<u8>>::new()).fetch_one(&mut *tx).await?;
+    assert_eq!(
+        active, 1,
+        "the shared field budget must count the actual scripted field"
+    );
+    let removed: i64 = sqlx::query_scalar("SELECT game_live_channel_field_count(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::bytea[])")
+        .bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice())
+        .bind(vec![field.item.item_instance_id.to_vec()]).fetch_one(&mut *tx).await?;
+    assert_eq!(
+        removed, 0,
+        "a planned removal uses the same actual field identity"
+    );
+    eprintln!("QN1_ELEMENTAL_ENERGY_FIELD_COUNT_PG_EXECUTED");
     tx.rollback().await?;
     eprintln!("QN1_ELEMENTAL_ENERGY_SOIL_PG_EXECUTED");
     Ok(())

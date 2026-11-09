@@ -380,6 +380,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let Some(conversion) = conversion else {
         return Ok(UseDisposition::NothingToUse);
     };
+    if conversion.recipe == "oteryn:elemental_energy_soil.crystal"
+        && !elemental_energy::has_room(tx, fence).await?
+    {
+        return Ok(UseDisposition::NotPossible);
+    }
     let before: Value = source.try_get("before_item")?;
     let quantity: i64 = source.try_get("quantity")?;
     let consumed_quantity = if !consumes_source {

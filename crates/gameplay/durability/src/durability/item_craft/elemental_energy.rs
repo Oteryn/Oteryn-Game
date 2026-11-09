@@ -1,6 +1,28 @@
 //! Energy soil's Ground mint shares the carried craft's physical transaction.
 use super::*;
 
+/// Resource admission only. The craft owner has already checked the actual
+/// recovery, Node, scope and current equipment fence in this transaction.
+pub(super) async fn has_room(
+    tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+) -> Result<bool, DurabilityError> {
+    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    // Use the same channel Item lock as spell fields and the receipt's final guard.
+    // The count is a separate statement so its snapshot follows lock acquisition.
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
+    .execute(&mut ***tx)
+    .await?;
+    let active: i64 = sqlx::query_scalar("SELECT game_live_channel_field_count(encode($1,'hex')::uuid,encode($2,'hex')::uuid,ARRAY[]::bytea[])")
+        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+        .fetch_one(&mut ***tx).await?;
+    Ok(active < super::super::field_removal::CHANNEL_FIELDS_MAX)
+}
+
 pub(super) async fn create(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
