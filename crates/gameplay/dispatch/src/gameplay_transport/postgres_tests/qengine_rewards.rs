@@ -34,6 +34,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::l6_paradox_native::trigger(name)
             } else if name == "qengine-rewards-m56-wax" {
                 Position { x: 31942, y: 32936, floor: -10 }
+            } else if matches!(name, "qengine-rewards-m56-wax-corner" | "qengine-rewards-m56-wax-edge-outside") {
+                super::m56_cursed_crystal_wax::trigger(name)
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission::trigger(name)
             } else {

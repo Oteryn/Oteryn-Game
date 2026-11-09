@@ -18,6 +18,26 @@ fn m56_cursed_crystal_wax_outside_crystal_area_is_preserved_postgres() -> TestRe
     super::qengine_rewards::scenario("qengine-rewards-m56-wax-outside")
 }
 
+#[test]
+fn m56_cursed_crystal_wax_at_area_corner_postgres() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-m56-wax-corner")
+}
+
+#[test]
+fn m56_cursed_crystal_wax_one_tile_beyond_area_is_preserved_postgres() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-m56-wax-edge-outside")
+}
+
+pub(super) fn trigger(name: &str) -> Position {
+    // Crystal uses abs(delta) < 5 on each axis, including the diagonal corner.
+    // The shared scenario places the player one tile west of this trigger.
+    Position {
+        x: if name == "qengine-rewards-m56-wax-edge-outside" { 31948 } else { 31947 },
+        y: 32940,
+        floor: -10,
+    }
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
