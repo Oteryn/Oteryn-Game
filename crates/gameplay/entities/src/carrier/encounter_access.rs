@@ -211,6 +211,40 @@ impl ChannelRuntimeV1 {
         result
     }
 
+    /// Publish a bounded group relocation and its source map projection together.
+    /// Failed current proofs or projection restore every player's original position.
+    pub fn commit_quest_relocation<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.owner_fence()?;
+        if players.len() > self.actor_slot_capacity() {
+            return Err(CarrierError::PlanConflict);
+        }
+        for proof in &players {
+            proof.validate_current(self)?;
+        }
+        let mut snapshots = Vec::new();
+        snapshots
+            .try_reserve(players.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let before = self.carrier.clone();
+        let result = (|| {
+            for proof in players {
+                snapshots.push(self.commit_source_step(proof)?);
+            }
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(snapshots)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     /// A source switch may spawn native creatures without moving any player.
     /// All admission/policy changes roll back together if any slot cannot commit.
     /// This does not relax the player proofs required by party encounter entry.

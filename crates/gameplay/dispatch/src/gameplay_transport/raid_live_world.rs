@@ -70,7 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(())?;
         let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
         let mut context = (self, &mut *runtime, &permit, room, native, step, selected);
-        pass.run_with_context(&mut context, move |holder, deadline, context| {
+        let (outcomes, moves) = pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
                 use crate::durability::spell_item_transaction::{
                     assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
@@ -148,15 +148,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Every live consumer finished while the physical Item lock
                 // was held. This transaction only read current world facts.
                 drop(map);
+                let mut moves = Vec::new();
                 if grimvale && final_wave_placed(selected, match &step.action { CommittedRaidAction::Wave { wave, .. } => *wave, _ => return Err(DurabilityError::InvalidStoredState) }, &outcomes)
-                    && !project_grimvale_portal(index.map(), true)
+                    && !grimvale_portal_is_open(index.map())
                 {
-                    return Err(DurabilityError::Unavailable);
+                    // Crystal grimvale.lua final(): current players within the
+                    // same-floor 18-tile spectator square leave before entry opens.
+                    let players: Vec<_> = runtime.positioned_melee_census()
+                        .map_err(|_| DurabilityError::Unavailable)?.into_iter()
+                        .filter_map(|(actor, position, session)| {
+                            let at = position.position();
+                            session.filter(|_| at.floor == 11
+                                && (33412..=33448).contains(&at.x)
+                                && (31519..=31555).contains(&at.y))
+                                .map(|session| (actor, position, session))
+                        }).collect();
+                    let closed = crate::map::floor::BundleDoors(index.map().facts.doors());
+                    let destination = MovementLocalPosition { x: 33419, y: 31539, floor: 10 };
+                    let proofs = players.iter().map(|(actor, position, session)|
+                        crate::map::floor::prepare_quest_encounter_ejection(
+                            runtime, owner.movement_cells(), *actor, *session, *position,
+                            destination, &closed,
+                        ).map_err(|_| DurabilityError::Unavailable)
+                    ).collect::<Result<Vec<_>, _>>()?;
+                    let snapshots = runtime.commit_quest_relocation(proofs, ||
+                        project_grimvale_portal(index.map(), true)
+                    ).map_err(|_| DurabilityError::Unavailable)?;
+                    moves.extend(players.into_iter().zip(snapshots).map(|((actor, position, session), to)|
+                        (actor, session, position.position(), to.position())));
                 }
                 tx.rollback().await.map_err(|_| DurabilityError::Unavailable)?;
-                Ok(outcomes)
+                Ok((outcomes, moves))
             })
-        }).await.map_err(|_| ())
+        }).await.map_err(|_| ())?;
+        if !moves.is_empty() {
+            let map = self.bundle_map().ok_or(())?;
+            let mut states = self.states.spell_states.lock().await;
+            for (actor, session, from, to) in moves {
+                states.stage_special_movement_step(
+                    &runtime,
+                    map,
+                    actor,
+                    session,
+                    self.owner_now().get(),
+                    Some(from),
+                    to,
+                    None,
+                );
+                states.stage_underwater_step(
+                    &runtime,
+                    actor,
+                    session,
+                    self.owner_now().get(),
+                    super::paced_movement::underwater_drown::underwater(map, from),
+                    super::paced_movement::underwater_drown::underwater(map, to),
+                );
+            }
+        }
+        Ok(outcomes)
     }
 }
 
@@ -171,6 +220,21 @@ fn final_wave_placed(
     usize::from(wave).checked_add(1) == Some(selected.definition.waves.len())
         && !outcomes.is_empty()
         && outcomes.iter().all(|outcome| outcome.placed)
+}
+
+fn grimvale_portal_is_open(bundle: &crate::map::boot::BundleMap) -> bool {
+    bundle
+        .facts
+        .base_entry(
+            crate::map::overlay::TilePos {
+                x: 33430,
+                y: 31537,
+                floor: -11,
+            },
+            1,
+            1949,
+        )
+        .is_some_and(|entry| entry.appearance_id == 22761)
 }
 
 pub(super) fn project_grimvale_portal(bundle: &crate::map::boot::BundleMap, open: bool) -> bool {

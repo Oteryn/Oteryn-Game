@@ -310,3 +310,32 @@ fn engenc_defender_completion_is_exact_participant_fenced_and_idempotent() -> Te
     assert!(EncounterDefenders::new(&[step.actor], &[foreign]).is_err());
     Ok(())
 }
+
+#[test]
+fn qn5_group_relocation_rolls_back_late_proof_or_projection_failure() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let mut projected = false;
+    assert!(
+        runtime
+            .commit_quest_relocation(vec![step, step], || {
+                projected = true;
+                true
+            })
+            .is_err(),
+        "the second proof is stale after the first move"
+    );
+    assert!(!projected);
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    assert!(
+        runtime
+            .commit_quest_relocation(vec![step], || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let moved = checked(runtime.commit_quest_relocation(vec![step], || true))?;
+    assert_eq!(moved.len(), 1);
+    assert_eq!(moved[0].position(), step.destination);
+    Ok(())
+}

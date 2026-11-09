@@ -710,7 +710,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         1,
         1,
         "runtime-scope-assignment:1",
-        expected + 2, // one transient source create-before-remove body
+        expected + 5, // four players plus one transient source create-before-remove body
         pin,
     )
     .map_err(debug)?;
@@ -724,6 +724,18 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     runtime
         .initialize_first_entry_position(deps.actor)
         .map_err(debug)?;
+    let mut extra_players = Vec::new();
+    for (n, at) in [
+        (81, Position { x: TRIGGER.x - 2, ..TRIGGER }),
+        (82, Position { x: 33457, y: 31531, floor: -11 }),
+        (83, DESTINATION),
+    ] {
+        let session = crate::foundation::GameSessionId::decode(&id(n)).map_err(debug)?;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime.initialize_pinned_test_position(actor, super::quest_world_callbacks::local(at)).map_err(debug)?;
+        extra_players.push((actor, at));
+    }
     deps.runtime = tokio::sync::Mutex::new(runtime);
     deps.combat_room = Some(room);
     let mut owner = deps.owner(harness, &authority);
@@ -795,12 +807,38 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     assert_eq!(outcomes.len(), expected);
     assert!(outcomes.iter().all(|outcome| outcome.placed));
     assert_eq!(
+        deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(DESTINATION),
+        "source final() ejects current contenders before opening the portal"
+    );
+    {
+        let mut runtime = deps.runtime.lock().await;
+        for (index, (actor, original)) in extra_players.iter().enumerate() {
+            let expected = if index == 1 { *original } else { DESTINATION };
+            assert_eq!(runtime.read_actor_position(*actor).map_err(debug)?.position(),
+                super::quest_world_callbacks::local(expected),
+                "only current in-range players move; existing landing occupants remain");
+        }
+        // A later arrival must not be ejected by replay of the same final wave.
+        let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        let closed = crate::map::floor::BundleDoors(owner.bundle_map().ok_or("map")?.facts.doors());
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime, &cells, deps.actor, deps.admitted.game_session_id, before,
+            super::quest_world_callbacks::local(Position { x: TRIGGER.x - 1, ..TRIGGER }),
+            false, &closed,
+        ).map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
+    assert_eq!(
         owner
             .apply_raid_wave(&wave, &selected, bundle_digest)
             .await
             .map_err(|_| "physical raid replay")?,
         outcomes
     );
+    assert_eq!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(Position { x: TRIGGER.x - 1, ..TRIGGER }),
+        "final-wave replay does not eject later arrivals");
     let map = owner.bundle_map().ok_or("bundle map")?;
     let at = crate::map::overlay::TilePos {
         x: TRIGGER.x,
