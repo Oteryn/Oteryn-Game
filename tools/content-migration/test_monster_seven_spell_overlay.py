@@ -44,6 +44,7 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
         self.assertIn(qengine.PROOF,actual)
         # Independently rebuild the complete pinned63-identity packet; a count
+        # Independently rebuild the complete pinned64-identity packet (M12 root, QN4 ingredients, QN3 jar); a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
@@ -53,6 +54,8 @@ class AcceptedOverlayTests(unittest.TestCase):
         # M12 adds Juicy Roots; QN4 adds the two source Medusa Oil ingredients.
         self.assertEqual(len(keys),63)
         self.assertEqual(len(set(keys)),63)
+        self.assertEqual(len(keys),64)
+        self.assertEqual(len(set(keys)),64)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         self.assertTrue({'oteryn:item.tibia.i21291', 'oteryn:item.tibia.i21504',
                          'oteryn:item.tibia.i21505'}.issubset(keys))

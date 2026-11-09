@@ -39,7 +39,7 @@
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
-    "item_conversion": 130
+    "item_conversion": 129
   },
   "item_authoring_counts": {
     "authoring": 700,
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "1215b52a5bcf267b99e022732effb95debbd17b313284c82439f884984c2c7d8"
+          "sha256": "82040e65589f1df2f51c795aa4772ec3553904d57391455dd7f9a54b1cd27dbc"
         },
         {
           "creates_canonical_identities": false,

@@ -18,19 +18,24 @@ const TRACK: &str = "oteryn:quest-progress/clock_fixture/stage";
 const POINT: &str = "oteryn:quest-progress/clock_fixture/points";
 const RULE: &str = "oteryn:quest-npc/clock_fixture/accept";
 
-struct Content(bool);
-impl ItemWeightLookup for Content {
+struct Content<'a>(
+    bool,
+    &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+);
+impl ItemWeightLookup for Content<'_> {
     fn wheel_premium_current(&self, account: [u8; 16]) -> bool {
         self.0 && account == fixture::id(40)
     }
     fn generation_digest(&self) -> [u8; 32] {
         [1; 32]
     }
-    fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
-        Ok(1)
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        self.loop_facts(definition)
+            .and_then(|facts| facts.weight)
+            .ok_or(ItemWeightRefused::Unknown)
     }
 }
-impl ItemLoopContent for Content {
+impl ItemLoopContent for Content<'_> {
     fn loop_content_digest(&self) -> [u8; 32] {
         [1; 32]
     }
@@ -38,10 +43,8 @@ impl ItemLoopContent for Content {
         if definition.production_key == "fixture:b3.backpack" {
             Some(crate::item_transfer_postgres_cases::backpack_facts())
         } else {
-            Some(crate::item_transfer_postgres_cases::facts(
-                &definition.production_key,
-                crate::durability::item_transfer::ItemStackClass::NonStackable,
-            ))
+            oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.1, definition)
+                .ok()
         }
     }
 }
@@ -81,6 +84,30 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .fetch_one(&h.pool)
         .await?;
     eprintln!("M05_POSTGRES_VERSION={version}");
+    let (controller, _) =
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+            fixture::fence(1)?.runtime_scope.world_id(),
+            None,
+        );
+    let native = controller
+        .active()
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native generation")?;
+    let gift = oteryn_gameplay_items::item_ref_admission::generation_item_facts(
+        native,
+        &TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i27654".into(),
+            revision_ref: "definition-r1".into(),
+        },
+    )
+    .map_err(|error| format!("M05 real native gift: {error:?}"))?;
+    assert_eq!(
+        gift.stack,
+        crate::durability::item_transfer::ItemStackClass::NonStackable
+    );
+    assert_eq!(gift.weight, Some(1000));
+    assert_eq!(gift.container_capacity, None);
     let reference = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13";
     let text = serde_json::json!({"schema":1,"quest":QUEST,
         "tracks":[{"key":TRACK,"quest":QUEST,"initial":0,"min":0,"max":4102444800_i64,"sources":[reference]},{"key":POINT,"quest":QUEST,"initial":0,"min":0,"max":100,"sources":[reference]}],
@@ -165,7 +192,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fence,
             request(9500)?,
             catalog.clone(),
-            &Content(true),
+            &Content(true, native),
             &source,
         )
         .await
@@ -203,7 +230,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 stale,
                 request(9501)?,
                 catalog.clone(),
-                &Content(true),
+                &Content(true, native),
                 &source
             )
             .await
@@ -218,7 +245,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fence,
             request(9502)?,
             catalog.clone(),
-            &Content(true),
+            &Content(true, native),
             &source,
         )
         .await
@@ -266,7 +293,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fixture::fence(2)?,
             request(9503)?,
             catalog.clone(),
-            &Content(true),
+            &Content(true, native),
             &source,
         )
         .await
@@ -285,7 +312,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fence,
             request(9502)?,
             catalog,
-            &Content(false),
+            &Content(false, native),
             &source,
         )
         .await

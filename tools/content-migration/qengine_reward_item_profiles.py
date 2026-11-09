@@ -26,6 +26,8 @@ IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 IDS |= {21504, 21505}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
 IDS |= {9106}
+# QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
+IDS |= {27654}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
