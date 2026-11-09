@@ -67,6 +67,66 @@ fn collection_composition_does_not_migrate_an_old_npc_route_into_a_new_binding()
 }
 
 #[test]
+fn authored_counter_reuses_only_an_identical_owned_source_declaration() -> Result<(), String> {
+    let bindings = Bindings::parse(include_bytes!("fixtures/collection.json"))?;
+    let quest = &bindings.quests[0];
+    let t = &quest.tracks[0];
+    let track = QuestTrack {
+        key: t.key.clone(),
+        quest: quest.quest.clone(),
+        initial: t.initial,
+        min: t.minimum,
+        max: t.maximum,
+    };
+    let base = |track| {
+        QuestStateCatalogue::new("shared-counter", vec![track], vec![])
+            .map_err(|e| format!("{e:?}"))
+    };
+    let original = base(track.clone())?;
+    let attached = bindings.attach(&original)?;
+    assert_eq!(
+        attached.tracks.len(),
+        1,
+        "one durable track declaration, not two copies"
+    );
+    assert_eq!(attached.track(&t.key), Some(&track));
+    assert_ne!(
+        attached.definition_hash(&quest.quest),
+        original.definition_hash(&quest.quest),
+        "the new native consumer still changes the quest witness"
+    );
+    for conflicting in [
+        QuestTrack {
+            quest: "oteryn:quest.foreign".into(),
+            ..track.clone()
+        },
+        QuestTrack {
+            initial: 1,
+            ..track.clone()
+        },
+        QuestTrack {
+            min: -1,
+            ..track.clone()
+        },
+        QuestTrack {
+            max: 2,
+            ..track.clone()
+        },
+    ] {
+        assert!(
+            bindings.attach(&base(conflicting)?).is_err(),
+            "ownership, default and bounds must all match"
+        );
+    }
+    assert_eq!(
+        original.track(&t.key),
+        Some(&track),
+        "composition cannot mutate its source"
+    );
+    Ok(())
+}
+
+#[test]
 fn authored_composition_reuses_only_identical_owned_track_declarations() -> Result<(), String> {
     let (bindings, _) = fixture()?;
     let declared = &bindings.quests[0].tracks[0];

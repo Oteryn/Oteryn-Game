@@ -59,6 +59,8 @@ mod per_use_reward;
 pub mod personal_trial;
 pub mod phase;
 #[cfg(test)]
+mod scripted_teleport_tests;
+#[cfg(test)]
 mod selected_tool_tests;
 #[cfg(test)]
 mod solid_repair_tests;

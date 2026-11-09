@@ -350,8 +350,9 @@ class ExploreBindingsTests(unittest.TestCase):
     def test_dragon_corpse_cave_entry_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT)
                      if c['quest'] == 'oteryn:quest.dragon_corpse_quest']
-        self.assertEqual(len(callbacks), 1, 'Dragon Corpse cave entry is activated')
+        self.assertEqual(len(callbacks), 2, 'First cave and later corpse approaches are bound')
         self.assertEqual(callbacks[0]['key'], 'oteryn:quest-callback/m01b/dragon-corpse/s1/entry')
+        self.assertEqual(callbacks[1]['key'], 'oteryn:quest-callback/m01b/dragon-corpse/s3/dragoncorpse')
 
     def test_dragon_corpse_entry_precedes_the_lower_shovel_route(self):
         binding = (('oteryn:quest.dragon_corpse_quest', 's1',
@@ -739,7 +740,16 @@ class ExploreBindingsTests(unittest.TestCase):
         owners = world.catalogue(ROOT)
         self.assertEqual([(row['key'], row['status']) for row in owners[quest]],
                          [('chakoya_iceberg', 'HELD')])
-        self.assertFalse(any(c['quest'] == quest for c in explore.callbacks(ROOT)))
+        # The global event stays HELD; the accepted personal expedition has
+        # exactly two premium-only native visits and grants no World authority.
+        personal = [c for c in explore.callbacks(ROOT) if c['quest'] == quest]
+        self.assertEqual({c['key'] for c in personal}, {
+            'oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry',
+            'oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s3/entry',
+        })
+        for callback in personal:
+            self.assertIsNone(callback.get('world_change'))
+            self.assertEqual(callback['admission'], {'premium': True})
         with self.assertRaisesRegex(ValueError, 'needs one admitted World owner'):
             world.requirement(quest, owners)
         recipe = canonical_recipe(quest)

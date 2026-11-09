@@ -5,6 +5,8 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.authored.chakoya_iceberg_mini_world_change', 's1', 'iceberg-approach:port-hope', 'authored/chakoya_iceberg_mini_world_change'),
+    ('oteryn:quest.authored.bewitched', 's1', 'cauldron-approach:green-claw-swamp', 'authored/bewitched'),
     ('oteryn:quest.horse_station_world_change', 's1', 'station-approach:palomino-pasture', 'chosen-source/horse_station_world_change'),
     ('oteryn:quest.hero_of_rathleton_quest', 's3', 'source-approach:hero-into-the-fire', 'chosen-source/hero_of_rathleton_quest'),
     ('oteryn:quest.grave_danger_quest', 's4', 'area-approach:oteryn:area.hunting_place.cobra_bastion', 'chosen-source/grave_danger_quest'),
@@ -63,10 +65,14 @@ BINDINGS = (
      'oteryn:area.hunting_place.dusalk_s_troll_clan_cave', 'chosen-source/longsword_quest'),
     ('oteryn:quest.geomancer_quest', 's1',
      'oteryn:area.hunting_place.mount_sternum_undead_cave', 'chosen-source/geomancer_quest'),
-    # M31: Chakoya EXPLORE remains unbound while chakoya_iceberg is HELD.
-    # Geometry, creature membership and activation need World-owner admission.
+    # M31: The global chakoya_iceberg World owner remains HELD.
+    # The scoped personal expedition bindings below do not activate that owner.
     ('oteryn:quest.authored.asura_palace_quest', 's1',
      'oteryn:area.hunting_place.asura_palace', 'authored/asura_palace_quest'),
+    ('oteryn:quest.dragon_corpse_quest', 's3', 'claim:canary:reward-claim/kv/dragoncorpse', 'chosen-source/dragon_corpse_quest'),
+    ('oteryn:quest.dragon_tower_quest', 's3', 'claim:canary:reward-claim/quest/u7_1/dragon_tower/rewards/backpack1', 'chosen-source/dragon_tower_quest'),
+    ('oteryn:quest.edron_goblin_quest', 's3', 'claim:canary:reward-claim/kv/edrongoblin1', 'chosen-source/edron_goblin_quest'),
+    ('oteryn:quest.authored.chakoya_iceberg_mini_world_change', 's3', 'iceberg-chamber:northern-alcove', 'authored/chakoya_iceberg_mini_world_change'),
 )
 ANCHORS = {
     'oteryn:area.hunting_place.edron_goblin_cave': (33108, 31850, -7, 355),
@@ -136,10 +142,27 @@ def callbacks(root):
         storage = stage_storage(quest, stage, recipe, track_tail, visit)
         fury_approach = None
         station_approach = None
+        cauldron_approach = None
+        iceberg_approach = None
         if area.startswith('station-approach:'):
             import questpc_station_approaches
             station_approach = questpc_station_approaches.resolve(
                 quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('cauldron-approach:'):
+            import questpc_cauldron_approaches
+            cauldron_approach = questpc_cauldron_approaches.resolve(
+                root, quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('iceberg-chamber:'):
+            import questpc_iceberg_chamber
+            iceberg_approach = questpc_iceberg_chamber.resolve(
+                root, quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('iceberg-approach:'):
+            import questpc_iceberg_approaches
+            iceberg_approach = questpc_iceberg_approaches.resolve(
+                root, quest, stage, area, definition=definition)
             world_change = None
         elif area.startswith('fury-approach:'):
             import questpc_fury_approaches
@@ -158,6 +181,10 @@ def callbacks(root):
             [d for group in by_quest.values() for d in group])
         if station_approach is not None:
             at, appearance, sources = station_approach
+        elif cauldron_approach is not None:
+            at, appearance, sources = cauldron_approach
+        elif iceberg_approach is not None:
+            at, appearance, sources = iceberg_approach
         elif fury_approach is not None:
             at, appearance, sources = fury_approach[:3]
         elif area.startswith('door-approach:'):

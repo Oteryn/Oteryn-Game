@@ -65,6 +65,7 @@ def callbacks(root):
                 appearance=appearance, native=dict(position=position, ordinal=ordinal,
                                                     appearance=appearance)),
             admission=admission, minimum_level=level,
+            effects=dict(scripted_teleport=True) if destination else [],
             lever=None, reversible=False, passages=[],
             teleport=dict(zip(('x', 'y', 'floor'), destination)) if destination else None,
             storage=[dict(track='oteryn:quest-progress/chosen-source/' + quest + '/s1',
@@ -77,3 +78,85 @@ def callbacks(root):
                      'OTERYN_CHOSEN_ENTRANCE:retained-source-destination' if name == 'pits'
                      else 'OTERYN_SOURCE_USE:retained-time-machine-counterpart']))
     return rows
+
+
+def machine_returns(root):
+    """Bind retained source return pieces; no live entrance requirements on egress."""
+    import sys
+    sys.path.insert(0, str(Path(root) / 'tools/content-schema/world-authoring'))
+    import world_region_codec
+    import copy
+    palette = json.loads((Path(root) / 'content/world/placements/index.json').read_text())['palette']
+    tiles = {(tile[0], tile[1]): tile for _, sector in world_region_codec.decode_region(
+        (Path(root) / 'content/world/placements/region-z08-x130-y121.b3').read_bytes())[3]
+        for tile in sector}
+    rows = []
+    for entrance in callbacks(root):
+        appearance = entrance['selector']['appearance']
+        if not 25091 <= appearance <= 25099 or appearance == 25098:
+            continue
+        position = {'x':33452 + (appearance - 25091) % 3,
+                    'y':31027 + (appearance - 25091) // 3, 'floor':-8}
+        tile = tiles[position['x'], position['y']]
+        matches = [ordinal for ordinal, (p, depth, attrs) in enumerate(tile[5])
+                   if palette[p]['source_item_id'] == appearance and depth == 0 and attrs is None]
+        if tile[3] or len(matches) != 1:
+            raise ValueError('ambiguous retained machine return: ' + str(appearance))
+        row = copy.deepcopy(entrance)
+        row['key'] = 'oteryn:quest-callback/qm03/anniversary-return-' + str(appearance)
+        row['selector'] = dict(position=position, unique=None, action=None, appearance=appearance,
+                               native=dict(position=position, ordinal=matches[0], appearance=appearance))
+        # A read-only return does not request a personal progress-write permit.
+        row['requires_world_admission'] = False
+        row['admission'] = None
+        row['minimum_level'] = None
+        row['teleport'] = dict(x=32430, y=32167, floor=-8)
+        row['storage'][0].update(minimum=0, preserve=True)
+        row['storage'][0].pop('at_least')
+        row['failure_message'] = None
+        row['sources'] = [source for source in row['sources'] if not source.startswith('OTERYN_CHOSEN_ADMISSION:')]
+        row['sources'].append('OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart')
+        rows.append(row)
+    return rows
+
+
+def machine_document(root):
+    """Keep all counterparts under the same catalogue-scoped counter owner.
+
+    The two authored central routes are inputs; the other retained parts are
+    derived aliases. Re-running the generator replaces only those aliases.
+    """
+    path = Path(root) / 'content/quests/authored-bindings/m03-25-years-time-machine.json'
+    document = json.loads(path.read_text())
+    quest, = document['quests']
+    central = [stage for stage in quest['stages'] if stage['key'] in ('s1','s1-return')]
+    if [stage['key'] for stage in central] != ['s1','s1-return']:
+        raise ValueError('missing authored central machine routes')
+    quest['stages'] = central
+    entrances = [row for row in callbacks(root)
+                 if row['quest'] == quest['quest'] and row['selector']['appearance'] != 25098]
+    for row in entrances + machine_returns(root):
+        appearance = row['selector']['appearance']
+        row['storage'][0]['minimum'] = 0
+        returning = row['storage'][0].get('preserve',False)
+        if not returning:
+            row['track_initials'] = {row['storage'][0]['track']:0}
+        quest['stages'].append(dict(key=('s1-return-part-' if returning else 's1-part-') + str(appearance),
+                                   completes=False,trigger=dict(kind='map_use',callback=row)))
+    import qmech_m03_entry_bindings
+    guards = {row['selector']['appearance']: row
+              for row in qmech_m03_entry_bindings.callbacks(root)
+              if row['quest'] == quest['quest'] and row.get('character_requirements')}
+    for stage in quest['stages']:
+        callback = stage['trigger']['callback']
+        if not callback.get('admission'):
+            continue
+        source = guards[callback['selector']['appearance']]
+        if any(callback[field] != source[field]
+               for field in ('quest', 'trigger', 'selector', 'teleport', 'minimum_level')):
+            raise ValueError('M03 authored/source entrance owners disagree')
+        callback.update(requires_world_admission=True,
+                        character_requirements=source['character_requirements'],
+                        storage=source['storage'], return_on_failure=source['return_on_failure'])
+        callback['sources'] = sorted(set(callback['sources'] + source['sources']))
+    return document

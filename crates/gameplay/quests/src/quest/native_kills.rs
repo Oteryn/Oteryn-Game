@@ -309,9 +309,8 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             transitions.push(exact);
         }
     }
-    let mut extended =
-        QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-            .map_err(|error| format!("{error:?}"))?;
+    let mut extended = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|error| format!("{error:?}"))?;
     for (quest, hash) in &catalogue.hashes {
         let unchanged_tracks = extended
             .tracks
