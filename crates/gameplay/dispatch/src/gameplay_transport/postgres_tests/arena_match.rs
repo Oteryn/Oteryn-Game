@@ -285,10 +285,9 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                     .actor
             };
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
-            {
-                let mut runtime = deps.runtime.lock().await;
-                crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
-            }
+            // Exercise the production cadence, including its spell-lane and runtime fencing.
+            // A direct arena tick would miss a disconnected scheduler registration.
+            owner.drain_monster_melee().await;
             assert!(
                 crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id),
                 "credited death opens the source pit without another client command"
@@ -303,9 +302,9 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 1841), "credited death removes the source pillar");
             if expire {
                 crate::gameplay_transport::arena_match::expire_pit(&owner, admitted.game_session_id);
+                owner.drain_monster_melee().await;
                 {
-                    let mut runtime = deps.runtime.lock().await;
-                    crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
+                    let runtime = deps.runtime.lock().await;
                     let at = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
                     assert_eq!((at.x, at.y, at.floor), crate::durability::arena_match::donor::KICK);
                     assert!(runtime.companion_snapshot_including_dead(target).is_err());
