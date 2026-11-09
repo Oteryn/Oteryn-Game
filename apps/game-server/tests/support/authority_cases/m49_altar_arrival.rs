@@ -86,7 +86,7 @@ async fn mint_corpse(
     let mut candidate = h
         .root
         .freeze_item_mint(
-            &authority,
+            authority,
             &h.node,
             ItemMintRequest {
                 cause: ItemMintCause::for_test(
@@ -118,7 +118,7 @@ async fn mint_corpse(
     let permit = candidate.fresh_death_lane_permit().await;
     let ItemMintOutcome::Committed(corpse) = h
         .root
-        .commit_corpse_mint(&permit, &authority, &h.node, &mut candidate, id(CHARACTER))
+        .commit_corpse_mint(&permit, authority, &h.node, &mut candidate, id(CHARACTER))
         .await
         .map_err(debug)?
     else {
