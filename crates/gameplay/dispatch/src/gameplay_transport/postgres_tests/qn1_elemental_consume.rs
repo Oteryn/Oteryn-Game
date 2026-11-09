@@ -64,7 +64,9 @@ use oteryn_gameplay_quests::quest::elemental_arrival as rules;
 #[path = "qn1_elemental_consume/projection.rs"]
 mod projection;
 
-struct Content;
+struct Content {
+    ground_only: bool,
+}
 impl ItemWeightLookup for Content {
     fn generation_digest(&self) -> [u8; 32] {
         [0xD1; 32]
@@ -92,7 +94,20 @@ impl ItemLoopContent for Content {
             definition.production_key.as_str(),
             f::BACKPACK | "oteryn:item.tibia.i8139"
         )
-        .then(|| facts(&definition.production_key))
+        .then(|| {
+            let mut facts = facts(&definition.production_key);
+            if self.ground_only && definition.production_key == "oteryn:item.tibia.i8139" {
+                facts.stack = ItemStackClass::Unknown;
+            }
+            facts
+        })
+    }
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        (definition.production_key == "oteryn:item.tibia.i8139")
+            .then(|| facts(&definition.production_key))
     }
 }
 fn facts(key: &str) -> ItemDefinitionFacts {
@@ -160,6 +175,9 @@ fn run(native: bool) -> f::TestResult {
         .map_err(Into::into)
 }
 async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
+    let content = Content {
+        ground_only: native,
+    };
     use crate::durability::character_equipment::{
         assert_equipment_authority_in_transaction, initialize_equipment_in_transaction,
     };
@@ -188,7 +206,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         };
         let mut candidate = h
             .root
-            .freeze_item_transfer(&authority, &h.node, f::fence()?, request, &Content)
+            .freeze_item_transfer(&authority, &h.node, f::fence()?, request, &content)
             .await
             .map_err(f::debug)?;
         let outcome = h
@@ -201,7 +219,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
                 &h.node,
                 f::fence()?,
                 &mut candidate,
-                &Content,
+                &content,
             )
             .await
             .map_err(f::debug)?;
@@ -340,7 +358,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
                 &h.node,
                 &f::fence()?,
                 f::command(99)?,
-                &Content,
+                &content,
                 LoopMoveRequest {
                     destination: LoopDestination::MainBackpack,
                     ..request.clone()
@@ -369,7 +387,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
                 &authority,
                 &h.node,
                 stale_fence,
-                &Content,
+                &content,
                 crate::durability::item_loop_move::ElementalArrivalProbe {
                     command: f::command(100)?,
                     item,
@@ -387,7 +405,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             &authority,
             &h.node,
             f::fence()?,
-            &Content,
+            &content,
             crate::durability::item_loop_move::ElementalArrivalProbe {
                 command: f::command(100)?,
                 item,
@@ -417,7 +435,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             &h.node,
             f::fence()?,
             f::command(100)?,
-            &Content,
+            &content,
             request.clone(),
             ElementalArrivalTarget::new(stale_plan),
         )
@@ -443,7 +461,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             &h.node,
             f::fence()?,
             f::command(100)?,
-            &Content,
+            &content,
             request.clone(),
             ElementalArrivalTarget::new(plan.clone()),
         )
@@ -465,7 +483,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             &h.node,
             f::fence()?,
             f::command(100)?,
-            &Content,
+            &content,
             request,
             ElementalArrivalTarget::new(plan),
         )
@@ -485,7 +503,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             &authority,
             &h.node,
             f::fence()?,
-            &Content,
+            &content,
             crate::durability::item_loop_move::ElementalArrivalProbe {
                 command: f::command(101)?,
                 item,
@@ -506,7 +524,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             &authority,
             &h.node,
             f::fence()?,
-            &Content,
+            &content,
             projection,
         )
         .await
@@ -521,7 +539,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     };
     let claimed = h
         .root
-        .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &Content, claim)
+        .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &content, claim)
         .await
         .map_err(f::debug)?
         .ok_or("live arrival clock claim")?;
@@ -621,7 +639,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
                     &authority,
                     &h.node,
                     f::fence()?,
-                    &Content,
+                    &content,
                     mismatched,
                 )
                 .await
@@ -633,7 +651,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         assert!(
             h.root
                 .read_elemental_summons(
-                    &permit, &authority, &h.node, replaced, &Content, projection
+                    &permit, &authority, &h.node, replaced, &content, projection
                 )
                 .await
                 .map_err(f::debug)?
@@ -641,7 +659,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         );
         assert!(
             h.root
-                .claim_elemental_summon(&permit, &authority, &h.node, replaced, &Content, claim,)
+                .claim_elemental_summon(&permit, &authority, &h.node, replaced, &content, claim,)
                 .await
                 .map_err(f::debug)?
                 .is_none()
@@ -703,7 +721,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
                 &authority,
                 &h.node,
                 f::fence()?,
-                &Content,
+                &content,
                 projection,
             )
             .await
@@ -725,7 +743,7 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     scene.finish(&finished)?;
     assert!(
         h.root
-            .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &Content, claim,)
+            .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &content, claim,)
             .await
             .map_err(f::debug)?
             .is_none(),

@@ -57,6 +57,41 @@ impl ItemLoopContent for NativeItemWeights<'_> {
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         generation_item_facts(self.0, definition).ok()
     }
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        use crate::content::ReferenceItemField;
+        use crate::content::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+        if !matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i8139"
+                | "oteryn:item.tibia.i8140"
+                | "oteryn:item.tibia.i8141"
+                | "oteryn:item.tibia.i8106"
+        ) {
+            return None;
+        }
+        let mut facts = generation_item_facts(self.0, definition).ok()?;
+        let policy = self
+            .0
+            .item_policy(&definition.production_key, &definition.revision_ref)?;
+        let record = policy.record();
+        if record.admission.stack_class != NativeItemStackClass::NonStackable
+            || !record
+                .admission
+                .legal_destinations
+                .contains(&NativeItemDestination::Ground)
+            || !matches!(&record.semantics.physical, ReferenceItemField::Known(physical)
+                if physical.movable==ReferenceItemField::Known(true) && physical.pickupable==ReferenceItemField::Known(false))
+        {
+            return None;
+        }
+        // The native corpse receipt, not portable admission, proves this whole
+        // Ground body. Unknown physical facts never acquire a stack class.
+        facts.stack = crate::durability::item_transfer::ItemStackClass::NonStackable;
+        Some(facts)
+    }
     fn loop_definition(&self, reference: u32) -> Option<TypedDefinitionRef> {
         let (key, revision) = self
             .0

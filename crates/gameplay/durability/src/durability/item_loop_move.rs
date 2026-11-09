@@ -23,7 +23,9 @@ pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
 mod elemental_recovery;
 pub use elemental_recovery::ElementalSummonProjection;
 mod elemental_summons;
-pub use elemental_summons::{ElementalSummonClaim, ElementalSummonClock, ElementalSummonIntent, ElementalSummonScope};
+pub use elemental_summons::{
+    ElementalSummonClaim, ElementalSummonClock, ElementalSummonIntent, ElementalSummonScope,
+};
 
 mod floor_assembly;
 pub(in crate::durability) mod floor_transform;
@@ -192,6 +194,14 @@ pub struct LoopGroundItem {
 pub trait ItemLoopContent: ItemWeightLookup {
     fn loop_content_digest(&self) -> [u8; 32];
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts>;
+    /// Called only after the durable native corpse source proof and Ground-only
+    /// destination gate. It grants no inventory or trade admission.
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {
         None
     }
@@ -1174,7 +1184,12 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let Some(facts) = content.loop_facts(&definition) else {
+    let facts = if row.try_get::<bool, _>("native_corpse")? {
+        content.loop_native_corpse_facts(&definition)
+    } else {
+        content.loop_facts(&definition)
+    };
+    let Some(facts) = facts else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
     if facts.definition != definition {
