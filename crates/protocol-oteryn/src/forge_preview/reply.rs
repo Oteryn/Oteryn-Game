@@ -101,6 +101,17 @@ impl Reply {
         }
         match &self.payload {
             Payload::Refused => true,
+            Payload::Effects(e) => {
+                item_valid(&e.item)
+                    && !e.item.container
+                    && e.tiers.len() == usize::from(e.item.maximum_tier) + 1
+                    && e.tiers.iter().all(|s| {
+                        !s.is_empty()
+                            && s.len() <= MAX_NAME_BYTES
+                            && !s.chars().any(char::is_control)
+                    })
+            }
+            Payload::Resource(q) => q.valid(),
             Payload::Page(p) => {
                 resources_valid(&p.resources)
                     && p.items.len() <= PAGE_SIZE
@@ -133,6 +144,23 @@ impl Reply {
         let mut out = self.nonce.to_le_bytes().to_vec();
         match &self.payload {
             Payload::Refused => out.push(0),
+            Payload::Effects(e) => {
+                out.push(4);
+                write_item(&mut out, &e.item);
+                out.push(e.tiers.len() as u8);
+                for text in &e.tiers {
+                    out.extend((text.len() as u16).to_le_bytes());
+                    out.extend(text.as_bytes());
+                }
+            }
+            Payload::Resource(q) => {
+                out.extend([3, q.operation as u8, u8::from(q.full_resources)]);
+                write_resources(&mut out, q.before);
+                out.extend(q.after_dust.to_le_bytes());
+                out.extend(q.after_limit.to_le_bytes());
+                out.extend(q.after_slivers.to_le_bytes());
+                out.extend(q.after_cores.to_le_bytes());
+            }
             Payload::Page(p) => {
                 out.push(1);
                 out.extend(p.after.to_le_bytes());
@@ -174,6 +202,35 @@ impl Reply {
         let nonce = r.u64()?;
         let payload = match r.byte()? {
             0 => Payload::Refused,
+            4 => {
+                let item = r.item()?;
+                let count = r.byte()?;
+                if count > 11 {
+                    return None;
+                }
+                let mut tiers = Vec::with_capacity(usize::from(count));
+                for _ in 0..count {
+                    tiers.push(r.text()?);
+                }
+                Payload::Effects(Effects { item, tiers })
+            }
+            3 => {
+                let operation = match r.byte()? {
+                    5 => Operation::DustToSlivers,
+                    6 => Operation::SliversToCores,
+                    7 => Operation::DustLimit,
+                    _ => return None,
+                };
+                Payload::Resource(ResourceQuote {
+                    operation,
+                    full_resources: r.boolean()?,
+                    before: r.resources()?,
+                    after_dust: r.u32()?,
+                    after_limit: r.u32()?,
+                    after_slivers: r.u64()?,
+                    after_cores: r.u64()?,
+                })
+            }
             1 => {
                 let after = r.u64()?;
                 let next = match r.u64()? {

@@ -320,11 +320,16 @@ pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
 
+#[path = "features/0148-wheel-allocation/protocol/gem_presentation.rs"]
+pub mod gem_presentation;
+
 #[path = "components/modal_dialogs.rs"]
 pub mod modal_dialogs;
 
 #[path = "components/notifications.rs"]
 pub mod notifications;
+#[path = "features/0148-wheel-allocation/protocol/wheel_presentation.rs"]
+pub mod wheel_presentation;
 
 #[path = "features/0450-server-modal/mod.rs"]
 pub mod server_modal;

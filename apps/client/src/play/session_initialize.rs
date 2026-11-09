@@ -31,6 +31,8 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
+    outbox.gem_presentation_initialize(session.feature_selected(148));
+    outbox.wheel_presentation_initialize(session.feature_selected(148));
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
     outbox.spellbook_details_initialize(session.feature_selected(449));

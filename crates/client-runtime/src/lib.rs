@@ -335,5 +335,10 @@ pub mod cui3 {
     };
 }
 
+/// Optional server-executed Gem modifier presentation.
+pub use oteryn_session::gem_presentation;
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_session::wheel_presentation;
 #[path = "features/0450-server-modal/protocol.rs"]
 pub mod server_modal;

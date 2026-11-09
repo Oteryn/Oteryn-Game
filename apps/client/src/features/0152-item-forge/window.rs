@@ -103,6 +103,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         },
                         mut icons,
                     ) = layout::create(hwnd);
+                    let effects = effects_button::create(hwnd);
                     let mut held = None;
                     let mut items = Vec::new();
                     let mut containers = Vec::new();
@@ -176,6 +177,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                     (117, n) if n == BN_CLICKED as usize => {
                                         Some(Action::Legacy(Operation::DustLimit))
                                     }
+                                    (118, n) if n == BN_CLICKED as usize => Some(Action::Effects),
                                     _ => None,
                                 };
                                 if let Some(action) = action {
@@ -240,9 +242,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                     editable && (!panel.preview.selected || panel.verified_quote()),
                                 ),
                             );
-                            for handle in secondary {
-                                EnableWindow(handle, i32::from(!panel.pending));
+                            for (index, handle) in secondary.into_iter().enumerate() {
+                                EnableWindow(
+                                    handle,
+                                    i32::from(
+                                        !panel.pending
+                                            && !panel.resource_dialog.confirming()
+                                            && (index < 2 || panel.retry.is_none()),
+                                    ),
+                                );
                             }
+                            effects_button::enable(effects, &panel, editable);
                             EnableWindow(retry, i32::from(!panel.pending && panel.retry.is_some()));
                             let mut text = oteryn_client_ui::item_forge::selected_pair_text(&panel);
                             text.push_str("\n");
@@ -282,3 +292,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         lock(&shared).item_forge.open = false;
     }
 }
+
+#[path = "effects_button.rs"]
+mod effects_button;

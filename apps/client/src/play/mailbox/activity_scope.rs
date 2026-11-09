@@ -35,6 +35,8 @@ impl Mailbox {
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();
+        self.wheel.gems.invalidate();
+        self.wheel.diagram.invalidate();
         self.exiva.pending = Default::default();
         self.mechanics_status.pending = Default::default();
         self.condition_status.pending = Default::default();

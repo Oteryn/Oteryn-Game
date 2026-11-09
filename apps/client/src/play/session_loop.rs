@@ -59,6 +59,8 @@ pub async fn run_session<T: Stepper>(
                         182 => outbox.daily_reward_details_result(&result),
                         170 => outbox.arena_result(&result),
                         195 | 448 => outbox.weapon_proficiency_result(&result),
+                        148 if command.kind == 6121 => outbox.gem_presentation_result(&command, &result),
+                        148 => outbox.wheel_presentation_result(&command, &result),
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),

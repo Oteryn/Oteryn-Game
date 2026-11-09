@@ -51,6 +51,13 @@ pub(in crate::play) fn enqueue(
         mailbox.wheel.feedback = Some(tr!("A request identity could not be created; try again"));
         return;
     };
+    if matches!(
+        intent,
+        Intent::Reveal | Intent::Dismantle | Intent::SwitchDomain | Intent::GradeUp
+    ) {
+        oteryn_client_ui::wheel_allocation::gems::stage(&mut mailbox.wheel, intent, occurrence);
+        return;
+    }
     if let Some(command) = request(&mut mailbox.wheel, intent, occurrence)
         && commands.send(PlayCommand::Wheel(command)).is_err()
     {
@@ -77,3 +84,9 @@ fn occurrence() -> Option<[u8; 16]> {
     id[8] = 0x80 | (id[8] & 0x3f);
     Some(id)
 }
+
+#[path = "gem_presentation.rs"]
+pub(in crate::play) mod gem_presentation;
+
+#[path = "wheel_presentation.rs"]
+pub(in crate::play) mod wheel_presentation;

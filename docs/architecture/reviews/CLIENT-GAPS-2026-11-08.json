@@ -933,27 +933,30 @@
   "src": "TIBAUD-1",
   "area": "Forge",
   "feature": "Dust/slivers/cores/limit i historia",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt/mutacje/historia są; brak pełnego confirmation/result dialog.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0152-item-forge/resource_native.rs:88 + forge_resource_actual_session_requires_confirm_and_displays_receipt_history; forge_resource_confirmation_postgres_quotes_are_real_and_readonly (50.85s)"
  },
  {
   "id": "T118",
   "src": "TIBAUD-1",
   "area": "Exaltation",
   "feature": "Tier effects i rezultat exaltation",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0152-item-forge/controller.rs:59 + exaltation_actual_session_effects_and_receipt_reach_native_dialog; exaltation_postgres_real_effect_descriptions_are_readonly_and_handle_fenced (51.08s)"
  },
  {
   "id": "T119",
   "src": "TIBAUD-1",
   "area": "Wheel",
   "feature": "Punkty, slots/perks i reset",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/wheel_presentation.rs:32 + wheel_presentation_actual_session_graph_selection_exact_save_and_reset; wheel_presentation_postgres_real_budget_topology_draft_and_session_fences (59.42s), wheel_allocation_postgres_real_dispatch_refusal_reset_and_relogin_allocation (91.48s)"
  },
  {
   "id": "T120",
@@ -970,9 +973,10 @@
   "src": "TIBAUD-1",
   "area": "Gems",
   "feature": "Reveal/socket/unsocket/dismantle/enhance",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/gem_presentation.rs:47 + gem_presentation_actual_session_stats_selection_review_confirm_and_old_mutation; gem_presentation_postgres_real_catalogue_revision_and_readonly_fences (61.55s)"
  },
  {
   "id": "T123",

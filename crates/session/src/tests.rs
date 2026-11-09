@@ -203,3 +203,9 @@ include!("session_tests_refusal_details.rs");
 include!("session_tests_browse_field.rs");
 
 include!("session_tests_player_trade.rs");
+
+#[path = "tests/gem_presentation_gated.rs"]
+mod gem_presentation_gated;
+
+#[path = "tests/wheel_presentation_gated.rs"]
+mod wheel_presentation_gated;

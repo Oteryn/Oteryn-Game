@@ -81,14 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Oteryn owner decision (2026-11-05), diverging from Crystal
         // player_wheel.cpp:2151: removal/reset is allowed anywhere logout's combat
         // lock does not hold the actor, including a current protection-zone tile.
-        let in_protection_zone = self.logout_zones(actor).await.and_then(|zones| zones.protection_zone);
-        let fact = self.combat_lock_fact(actor, session).await;
-        let removal_permitted = super::logout::in_fight_logout_retry(
-            fact.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked,
-            fact.pve_in_fight_until.map(|until| until.get()),
-            fact.sampled_at().get(),
-            in_protection_zone,
-        ).is_none();
+        let removal_permitted = removal_permitted(self, actor, session).await;
         let change = if request.action != 0 {
             let Ok(occurrence) =
                 crate::durability::character_wheel::WheelOccurrence::from_bytes(request.occurrence)
@@ -215,3 +208,22 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+pub(super) async fn removal_permitted(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> bool {
+    let in_protection_zone = owner
+        .logout_zones(actor)
+        .await
+        .and_then(|zones| zones.protection_zone);
+    let fact = owner.combat_lock_fact(actor, session).await;
+    super::logout::in_fight_logout_retry(
+        fact.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked,
+        fact.pve_in_fight_until.map(|until| until.get()),
+        fact.sampled_at().get(),
+        in_protection_zone,
+    )
+    .is_none()
+}

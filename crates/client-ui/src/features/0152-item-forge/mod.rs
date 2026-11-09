@@ -1,8 +1,12 @@
 //! Native controls for Item Forge.
+#[path = "state/exaltation.rs"]
+pub mod exaltation;
 mod input;
 #[path = "protocol/preview.rs"]
 pub mod preview;
 mod protocol;
+#[path = "state/resource_dialog.rs"]
+pub mod resource_dialog;
 #[path = "state/selection.rs"]
 mod selection;
 mod state;
