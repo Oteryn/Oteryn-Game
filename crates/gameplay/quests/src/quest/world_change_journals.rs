@@ -240,9 +240,10 @@ fn parse(source: &'static str) -> Result<Document, String> {
                     } else {
                         program.minimum_level
                     }
-                || !callback
-                    .key
-                    .starts_with("oteryn:quest-callback/worldchg-m31/")
+                || !callback.key.starts_with(&format!(
+                    "oteryn:quest-callback/worldchg-m31/{}/",
+                    program.key
+                ))
                 || callback
                     .storage
                     .iter()
@@ -269,9 +270,10 @@ fn parse(source: &'static str) -> Result<Document, String> {
                 || y0 > y1
                 || z0 > z1
                 || z1 > 15
-                || !counter
-                    .transition
-                    .starts_with("oteryn:quest-transition/native-kills/m31/")
+                || !counter.transition.starts_with(&format!(
+                    "oteryn:quest-transition/native-kills/m31/{}/",
+                    program.key
+                ))
                 || !super::valid_quest_key(counter.creature)
                 || !program
                     .tracks
@@ -355,9 +357,10 @@ fn lower_npc_callbacks(
         let callback: super::reward_callbacks::RewardCallback =
             serde_json::from_value(value).map_err(|error| error.to_string())?;
         if callback.quest != program.quest
-            || !callback
-                .key
-                .starts_with("oteryn:quest-reward/worldchg-m31/")
+            || !callback.key.starts_with(&format!(
+                "oteryn:quest-reward/worldchg-m31/{}/",
+                program.key
+            ))
             || callback.carried_item.is_some()
             || callback.completes != program.completion.callbacks.contains(&callback.key)
             || callback.achievement.as_ref().is_some_and(|achievement| {
@@ -940,6 +943,63 @@ mod tests {
                 after: counter.maximum,
             }]
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn personal_programmes_reject_other_programmes_event_namespaces() -> Result<(), String> {
+        let mut rejected = Vec::new();
+        for (programme, family, field, prefix, foreign) in [
+            (
+                "grimvale",
+                "world_callbacks",
+                "key",
+                "oteryn:quest-callback/worldchg-m31/",
+                "fury_gates",
+            ),
+            (
+                "grimvale",
+                "counters",
+                "transition",
+                "oteryn:quest-transition/native-kills/m31/",
+                "fury_gates",
+            ),
+            (
+                "lumberjack",
+                "npc_callbacks",
+                "key",
+                "oteryn:quest-reward/worldchg-m31/",
+                "kingsday",
+            ),
+        ] {
+            let mut value: serde_json::Value = serde_json::from_str(include_str!(
+                "../../../../../content/quests/world-change-journals.json"
+            ))
+            .map_err(|error| error.to_string())?;
+            let mut old_key = None;
+            for program in value["programs"].as_array_mut().ok_or("programmes")? {
+                let selected = program["key"] == programme;
+                program["runtime_enabled"] = selected.into();
+                if selected {
+                    old_key = program[family][0][field].as_str().map(str::to_owned);
+                }
+            }
+            let source = value.to_string();
+            super::parse(Box::leak(source.clone().into_boxed_str()))?;
+            let old_key = old_key.ok_or("event")?;
+            let tail = old_key
+                .strip_prefix(&format!("{prefix}{programme}/"))
+                .ok_or("programme prefix")?;
+            // Rewrite its stage/completion references too: rejection must come
+            // from ownership, not an accidentally dangling event reference.
+            let source = source.replace(&old_key, &format!("{prefix}{foreign}/{tail}"));
+            rejected.push(
+                super::parse(Box::leak(source.into_boxed_str()))
+                    .err()
+                    .is_some_and(|error| error.contains("ownership")),
+            );
+        }
+        assert_eq!(rejected, [true, true, true]);
         Ok(())
     }
 
