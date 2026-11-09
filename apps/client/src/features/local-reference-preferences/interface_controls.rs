@@ -3,7 +3,7 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 
 pub(crate) struct InterfaceControls {
-    game_window: [HWND; 3],
+    game_window: [HWND; 4],
     label: HWND,
     scale: HWND,
     cursor: HWND,
@@ -35,6 +35,7 @@ impl InterfaceControls {
                 "Own spell effects",
                 "Other spell effects",
                 "Combat value text",
+                "Loot result messages",
             ]
             .map(|label| {
                 control(
@@ -47,7 +48,7 @@ impl InterfaceControls {
                 )
             });
             for (index, handle) in game_window.iter().enumerate() {
-                MoveWindow(*handle, 10 + index as i32 * 230, 305, 220, 26, 1);
+                MoveWindow(*handle, 10 + (index % 3) as i32 * 230, 305 + (index / 3) as i32 * 35, 220, 26, 1);
             }
             if game_window.iter().any(|handle| handle.is_null()) {
                 return None;
@@ -131,12 +132,13 @@ impl InterfaceControls {
             preferences.tooltip_delay_ms = text(self.delay)
                 .parse()
                 .map_err(|_| "Invalid tooltip delay".to_owned())?;
-            let [own_spells, other_spells, value_text] = self
+            let [own_spells, other_spells, value_text, loot_messages] = self
                 .game_window
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
             preferences.game_window.own_spells = own_spells;
             preferences.game_window.other_spells = other_spells;
             preferences.game_window.value_text = value_text;
+            preferences.game_window.loot_messages = loot_messages;
             preferences.hud_names = self
                 .names
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -165,6 +167,7 @@ impl InterfaceControls {
                 options.own_spells,
                 options.other_spells,
                 options.value_text,
+                options.loot_messages,
             ]) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
             }

@@ -341,9 +341,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Game Window: own/other spells, text, loot messages",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Zdarzenia są; brak przełączników według źródła i klasy tekstu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/game_window.rs:19 + t056_own_spell_filter_changes_live_projection; apps/client/src/features/0098-quick-loot/view.rs:3 + t056_loot_notice_filter_preserves_received_result"
  },
  {
   "id": "T057",
