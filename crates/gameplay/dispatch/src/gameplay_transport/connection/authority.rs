@@ -595,6 +595,18 @@ pub trait FreshAdmissionAuthority {
         async { false }
     }
 
+    /// Explicit quest owner for a carried tool and a resolved map-item handle.
+    fn use_quest_tool(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn use_event_item(
         &self,
         _actor: ExactActorRef,

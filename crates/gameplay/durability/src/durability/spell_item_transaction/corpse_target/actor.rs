@@ -82,7 +82,8 @@ impl<'runtime> CorpseActorSnapshot<'runtime> {
         let cell =
             crate::durability::spell_items_abi::decode_ground_cell(&target.ground.spatial_position)
                 .map_err(SpellItemError::Rejected)?;
-        if i32::from(self.position.floor) != cell.z
+        // Native corpse custody stores -z; runtime actor positions use z.
+        if i32::from(self.position.floor) != -cell.z
             || self.position.x.abs_diff(cell.x) > 1
             || self.position.y.abs_diff(cell.y) > 1
         {

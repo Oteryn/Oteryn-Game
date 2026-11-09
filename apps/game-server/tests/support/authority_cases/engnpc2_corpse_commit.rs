@@ -418,6 +418,6 @@ async fn mint_corpse(
                 placement_context: context,
             },
         },
-        (at.x, at.y, at.floor),
+        (at.x, at.y, at.floor.checked_neg().ok_or("runtime floor")?),
     ))
 }

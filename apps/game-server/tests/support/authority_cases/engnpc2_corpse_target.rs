@@ -129,6 +129,21 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         placement_context: context,
     };
     let permit = SpellLanePermit::of_fresh_scope(scope).await?;
+    let observed = h
+        .root
+        .read_ground_action_source(&recovery, f::item_fence()?, item)
+        .await?
+        .ok_or("current Ground source")?;
+    let operand = observed.quest_corpse_operand();
+    assert_eq!(operand.item, item);
+    assert_eq!(
+        operand.ground, target,
+        "client operand retains the Item owner's original custody context"
+    );
+    assert_eq!(
+        observed.position().floor,
+        at.floor.checked_neg().ok_or("runtime floor")?
+    );
     let mut tx = h.pool.begin().await?;
     let character_authority = assert_spell_item_authority_in_transaction(
         &mut tx,
@@ -151,6 +166,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     .await
     .map_err(f::debug)?;
     let age = NonZeroU32::new(60_000).ok_or("age")?;
+    let actor_floor = at.floor.checked_neg().ok_or("runtime floor")?;
     assert_eq!(
         read_current_fresh(
             &mut tx,
@@ -176,7 +192,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         (
             at.x.checked_add(1).ok_or("near x")?,
             at.y.checked_add(1).ok_or("near y")?,
-            at.floor,
+            actor_floor,
         ),
         1,
     )?;
@@ -194,8 +210,8 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .is_some()
     );
     for entry in [
-        (at.x.checked_add(2).ok_or("far x")?, at.y, at.floor),
-        (at.x, at.y, at.floor.checked_add(1).ok_or("other floor")?),
+        (at.x.checked_add(2).ok_or("far x")?, at.y, actor_floor),
+        (at.x, at.y, actor_floor.checked_add(1).ok_or("other floor")?),
     ] {
         let (runtime, actor) = runtime_at(entry, 1)?;
         if read_for_actor(
@@ -213,7 +229,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             return Err("nonadjacent or other-floor actor reached the corpse".into());
         }
     }
-    let (stale_runtime, stale_actor) = runtime_at((at.x, at.y, at.floor), 2)?;
+    let (stale_runtime, stale_actor) = runtime_at((at.x, at.y, actor_floor), 2)?;
     assert!(
         read_for_actor(
             &mut tx,

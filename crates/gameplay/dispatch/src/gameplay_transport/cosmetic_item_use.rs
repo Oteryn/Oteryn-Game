@@ -1,4 +1,6 @@
 //! USE cosmetic items through the shared item-action transaction and existing Premium owner.
+mod quest_targets;
+
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
@@ -346,6 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -418,8 +421,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if bound.is_empty() {
             return Ok(None);
         }
-        if intent.use_with_map_item.is_some()
-            || intent.use_with_position.is_some()
+        if intent.use_with_map_item.is_some() && !bound.iter().any(|c| c.fresh_corpse) {
+            // A legacy carried callback does not take ownership of unrelated
+            // map-item actions such as crafting or taming.
+            return Ok(None);
+        }
+        if intent.use_with_position.is_some()
             || !self
                 .states
                 .player_trades
@@ -456,8 +463,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 };
             let mut selected = bound.into_iter().filter(|c| {
-                ((c.peer_requires.is_some() || c.creature_target.is_some())
-                    == intent.use_with.is_some())
+                quest_targets::accepts(c, intent)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
@@ -497,6 +503,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let corpse_operand = if callback.fresh_corpse {
+            let Some(ItemKey::Instance(item)) = target else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let Some(ground) = self
+                .root
+                .read_ground_action_source(self.character, item_fence, item)
+                .await
+                .map_err(|_| ())?
+            else {
+                return Ok(Some(outcome(UseDisposition::StaleState)));
+            };
+            Some(ground.quest_corpse_operand())
+        } else {
+            None
+        };
         // Lane -> Character sequence -> runtime is retained through COMMIT.
         // The proof's borrow prevents detaching a live target snapshot.
         let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
@@ -506,8 +528,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let creature = if let Some(runtime) = creature_runtime.as_ref() {
-            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
-                runtime, actor, fence, command_ref, &callback, intent);
+            use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
+            let proof = if let Some(operand) = corpse_operand {
+                QuestCreatureUseProof::read_corpse(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    operand,
+                    &permit,
+                )
+            } else {
+                QuestCreatureUseProof::read_current(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                )
+            };
             let Some(proof) = proof else {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };

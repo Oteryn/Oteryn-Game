@@ -3,7 +3,8 @@
 The Goblin Merchant perfume task calls for a recently dead Slug, not any Item
 with the same corpse appearance. Public description:
 https://www.tibiawiki.com.br/wiki/Task:Rafzan (perfume task, first ingredient).
-This slice supplies the read primitive; it does not claim the Slug stage is wired.
+These slices supply the read and atomic quest participant; they do not claim
+the canonical Slug stage is wired.
 
 `spell_item_transaction::corpse_target::read_current_fresh` reuses the existing
 scope owner's physical transaction, tile ordering and Item row locks. It checks
@@ -34,8 +35,8 @@ admission in 5.09 s, then passed after implementation with
 with the Character lock before the Ground owner lock. It checks that authority
 against the acting fence, including Character, session, connection, lease and
 scope generation. It also checks the actual runtime generation, the selected
-actor's bound lease and the actor's current position. Reach is one native tile
-in each horizontal axis, on the same signed native floor. The adapter reuses
+actor's bound lease and the actor's current position. Reach is one tile in each horizontal axis. Stored corpse `-z` is converted
+to runtime actor `z` before comparing floors. The adapter reuses
 the same physical transaction; it does not acquire a new Character lock after
 Ground or issue a mutation permit. The runtime guard must remain held by the
 calling quest participant.
@@ -46,7 +47,8 @@ The actor adapter first failed by admitting a distant actor (PG run 5.32 s).
 After implementation the expanded case passed in 7.404706899 s, including
 adjacent diagonal use, distant/other-floor refusal, a foreign player actor,
 another runtime generation and Character/session/connection/lease mismatches.
-The tool transformation and personal-progress participant remain to be wired.
+Tool/progress mutation now uses the atomic participant below; canonical data
+remain unwired.
 
 ## Atomic quest participant
 
@@ -66,8 +68,8 @@ changed tool intent refuses without a quest receipt/revision. Correct intent
 burns the selected carried fixture input, mints one qualified native output and
 advances private progress in the same transaction. Releasing the runtime then
 replaying returns the existing receipt without another MINT. This is an engine
-recipe fixture, not the canonical Slug stage. Client map-handle routing and the
-canonical perfume input/output data still need wiring.
+recipe fixture, not the canonical Slug stage. Client map-handle routing is described below; canonical perfume input/output
+data still need wiring.
 
 The callback mode/binding test was red before the field existed. All 27 reward
 callback tests pass after the addition. This check also caught the stale Ice
@@ -75,3 +77,20 @@ Islands golden from the earlier seal/counter wiring: HEAD and the working code
 produced the same current catalogue hash, which was used to refresh that golden.
 The native Rotworm exchange and actor-bound corpse-reader regressions also ran
 against the new binary (50.33251178 s and the duration in the execution log).
+
+
+## Client map-item routing
+
+The ordinary USE router now offers resolved map-item handles to the explicit
+quest-tool owner before unrelated item owners. Its receipt probe runs before
+fresh handle admission, so committed uses remain replayable after handles go
+stale. Legacy carried callbacks do not claim unrelated map actions. Fresh
+callbacks require a map ItemInstance; live-actor and self-use target arms remain
+exclusive. The Item owner supplies the operand's UUID and complete original
+custody context; the Root participant rereads them before mutation.
+
+This wiring exposed the earlier fixture's floor-convention error: native corpse
+custody and runtime actor coordinates have opposite floor signs. The corrected
+fixture was red in 4.85 s, then the reader/operand case passed in 4.886560483 s;
+the full atomic sample regression passed in 56.270184471 s. No new timeout or
+migration was introduced. Canonical perfume item/quest data remain to be wired.
