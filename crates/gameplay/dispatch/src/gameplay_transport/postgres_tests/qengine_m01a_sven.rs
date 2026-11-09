@@ -4,7 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
-use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 
 #[test]
 fn m01a_sven_premium_production_talk_postgres() -> TestResult {
@@ -17,11 +17,30 @@ pub(super) async fn exercise(
     h: &Harness,
     _authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
+    exercise_route(
+        owner,
+        admitted,
+        h,
+        "oteryn:quest.barbarian_test",
+        "oteryn:npc.sven",
+    )
+    .await
+}
+
+pub(super) async fn exercise_route(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    key: &str,
+    npc: &str,
+) -> TestResult {
     let version: String = sqlx::query_scalar("SELECT version()")
         .fetch_one(&h.pool)
         .await?;
-    eprintln!("M01A_SVEN_POSTGRES {version}");
-    let key = "oteryn:quest.barbarian_test";
+    eprintln!("M01A_PREMIUM_TALK_POSTGRES quest={key} npc={npc} {version}");
+    if key == "oteryn:quest.barbarian_test" {
+        eprintln!("M01A_SVEN_POSTGRES {version}");
+    }
     let callback = {
         let bindings = owner
             .quest_catalogue
@@ -33,7 +52,7 @@ pub(super) async fn exercise(
             .quests
             .iter()
             .find(|quest| quest.quest == key)
-            .ok_or("Sven production route is missing")?;
+            .ok_or_else(|| format!("production TALK route is missing: {key}"))?;
         let stage = quest
             .stages
             .iter()
@@ -43,7 +62,7 @@ pub(super) async fn exercise(
         let Trigger::NpcDialogue { callback, .. } = &stage.trigger else {
             return Err("TALK route".into());
         };
-        assert_eq!(callback.npc, "oteryn:npc.sven");
+        assert_eq!(callback.npc, npc);
         assert!(callback.requires_premium);
         callback.as_ref().clone()
     };
@@ -68,9 +87,8 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("capabilities")?;
-    let [sven, other] =
-        super::classic_quests::install(owner, admitted, ["oteryn:npc.sven", "oteryn:npc.baxter"])
-            .await?;
+    let [target, other] =
+        super::classic_quests::install(owner, admitted, [npc, "oteryn:npc.baxter"]).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -84,7 +102,8 @@ pub(super) async fn exercise(
         "another NPC never advances this quest"
     );
     let premium = owner.premium_coordinator.take();
-    let denied = super::qengine_rewards::wire_reward(owner, admitted, sven, &callback, false).await;
+    let denied =
+        super::qengine_rewards::wire_reward(owner, admitted, target, &callback, false).await;
     owner.premium_coordinator = premium;
     assert_eq!(
         denied?.0,
@@ -103,16 +122,30 @@ pub(super) async fn exercise(
             .await
             .premium_current()
     );
-    let accepted = super::qengine_rewards::wire_reward(owner, admitted, sven, &callback, true)
-        .await?
-        .0;
+    let (accepted, _, command) =
+        super::qengine_rewards::wire_reward(owner, admitted, target, &callback, false).await?;
     assert_eq!(accepted, NpcIntentDisposition::Ok);
+    assert_eq!(footprint(h, key).await?, (1, 1));
+    let replay_payload =
+        oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
+            npc_actor: target,
+            text: callback.keywords[0].clone(),
+        })
+        .map_err(|error| format!("{error:?}"))?;
+    let replay =
+        super::quest_world_callbacks::wire(owner, admitted, command, 7, replay_payload).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&replay)
+            .map_err(|error| format!("{error:?}"))?,
+        NpcIntentDisposition::Ok,
+        "the identical command returns its cached successful result"
+    );
     assert_eq!(
         footprint(h, key).await?,
         (1, 1),
         "one nonterminal receipt, including literal replay"
     );
-    let repeated = super::qengine_rewards::wire_reward(owner, admitted, sven, &callback, false)
+    let repeated = super::qengine_rewards::wire_reward(owner, admitted, target, &callback, false)
         .await?
         .0;
     assert_eq!(repeated, NpcIntentDisposition::Rejected);
@@ -134,10 +167,7 @@ pub(super) async fn exercise(
     .bind(key)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(
-        completed, 0,
-        "starting the test does not complete the quest"
-    );
+    assert_eq!(completed, 0, "a briefing does not complete its quest");
     Ok(())
 }
 

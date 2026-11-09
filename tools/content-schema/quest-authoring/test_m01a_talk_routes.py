@@ -25,7 +25,9 @@ class StarterTalkRoutes(unittest.TestCase):
         for slug, npc, minimum in [('goblin_merchant_quest', 'rafzan', None),
                                    ('machinery_of_war_quest', 'baxter', 50),
                                    ('authored.annual_autumn_vintage', 'emilie', None),
-                                   ('barbarian_test', 'sven', None)]:
+                                   ('barbarian_test', 'sven', None),
+                                   ('forgotten_knowledge_quest', 'ivalisse', None),
+                                   ('kilmaresh_quest', 'eshaya', None)]:
             with self.subTest(quest=slug):
                 row = rows['oteryn:quest.' + slug]
                 stage = row['stages'][0]
@@ -34,6 +36,8 @@ class StarterTalkRoutes(unittest.TestCase):
                 callback = stage['trigger']['callback']
                 self.assertEqual(callback['npc'], 'oteryn:npc.' + npc)
                 self.assertEqual(callback.get('minimum_level'), minimum)
+                self.assertEqual(callback.get('requires_premium', False),
+                                 slug in {'barbarian_test', 'forgotten_knowledge_quest', 'kilmaresh_quest'})
                 self.assertEqual([(s['minimum'], s['maximum'], s['set']) for s in callback['storage']], [(0, 0, 1)])
                 self.assertTrue(callback['keywords'])
                 self.assertEqual(callback['quest'], row['quest'])

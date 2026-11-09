@@ -218,6 +218,116 @@
         "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
         "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
       ]
+    },
+    {
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "recipe_sha256": "e3485057149af6f810dd07b6e1ad2be2552f309aab9077e2ab06146647584752",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/forgotten_knowledge_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/forgotten_knowledge_quest/s1",
+              "quest": "oteryn:quest.forgotten_knowledge_quest",
+              "npc": "oteryn:npc.ivalisse",
+              "keywords": [
+                "lost paths briefing"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/forgotten_knowledge_quest/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Recover one Heavy Old Tome to restore the temple record."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ],
+              "requires_premium": true
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "recipe_sha256": "ded5c3beb0fda08dac297e5f8071a40db4e2c6bc4588cf4b2ecc1ba5502bf345",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/kilmaresh_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/kilmaresh_quest/s1",
+              "quest": "oteryn:quest.kilmaresh_quest",
+              "npc": "oteryn:npc.eshaya",
+              "keywords": [
+                "ambassador investigation"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/kilmaresh_quest/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Investigate the ambassador's house for evidence."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ],
+              "requires_premium": true
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
     }
   ]
 }

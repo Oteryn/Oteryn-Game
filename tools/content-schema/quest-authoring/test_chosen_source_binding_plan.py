@@ -15,6 +15,8 @@ REGISTERED_TALK_QUESTS = {
     "oteryn:quest.machinery_of_war_quest",
     "oteryn:quest.authored.annual_autumn_vintage",
     "oteryn:quest.barbarian_test",
+    "oteryn:quest.forgotten_knowledge_quest",
+    "oteryn:quest.kilmaresh_quest",
 }
 
 

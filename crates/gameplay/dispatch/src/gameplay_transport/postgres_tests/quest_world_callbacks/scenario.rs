@@ -553,6 +553,7 @@ fn scenario_case(
         let premium = if m03_use
             || m03_pits
             || name == "qengine-rewards-m01a-sven"
+            || name.starts_with(super::super::qengine_m01a_premium_starters::PREFIX)
             || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")

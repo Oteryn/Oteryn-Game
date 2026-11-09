@@ -781,6 +781,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-authored-imported-talk-group" {
         return super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h).await;
     }
+    if name.starts_with(super::qengine_m01a_premium_starters::PREFIX) {
+        return super::qengine_m01a_premium_starters::exercise(owner, admitted, h, name).await;
+    }
     if name == "qengine-rewards-m01a-sven" {
         return super::qengine_m01a_sven::exercise(owner, admitted, h, authority).await;
     }

@@ -15,6 +15,8 @@ ROUTES = [
     ('machinery_of_war_quest', 'baxter', 'orc-war commission'),
     ('authored.annual_autumn_vintage', 'emilie', 'cellar assignment'),
     ('barbarian_test', 'sven', 'barbarian test'),
+    ('forgotten_knowledge_quest', 'ivalisse', 'lost paths briefing'),
+    ('kilmaresh_quest', 'eshaya', 'ambassador investigation'),
 ]
 
 def build():
