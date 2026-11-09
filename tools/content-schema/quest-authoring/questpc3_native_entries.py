@@ -13,7 +13,7 @@ WIKI = 'https://www.tibiawiki.com.br/index.php?curid=53187&oldid=433964'
 BODY_SHA = 'baa2bccd9eb87e55245e538350a84a44db3c2696bb567ff5117d3d8dd25a5b06'
 
 
-def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave']), minimum_level=0):
+def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave']), minimum_level=0, premium=False):
     matches = []
     for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
         for record in json.loads(path.read_bytes())['records']:
@@ -29,7 +29,7 @@ def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais t
     recipe = selected['payload']['recipe']
     req = recipe['requirements']
     first = recipe['stages'][0]
-    if (req['min_level'], req['premium'], req['prerequisites']) != (minimum_level, False, []):
+    if (req['min_level'], req['premium'], req['prerequisites']) != (minimum_level, premium, []):
         raise ValueError('M01C_DEAD_ARCHER_ACTOR_ADMISSION')
     if (first['key'], first['kind'], first['count'], first['targets']) != expected:
         raise ValueError('M01C_DEAD_ARCHER_FIRST_STEP')
@@ -107,8 +107,30 @@ def build_black_knight(root=ROOT):
     return collection_entry(root, 'oteryn:quest.black_knight_quest', ['Key 5010', 'dead trees'], 2969, 5010, 'black-knight', 50)
 
 
+def build_grimvale(root=ROOT):
+    quest = 'oteryn:quest.grimvale_quest'
+    path, recipe = chosen(root, quest, ('s1','collect',5,['Purple Nightshade Blossom']), premium=True)
+    items_path = Path('content/items/definitions/items-11000-11499.json')
+    matches = [r['definition'] for r in json.loads((root/items_path).read_bytes())['records']
+               if r['definition']['identity']['key'] == 'oteryn:item.tibia.i22082']
+    if len(matches) != 1 or matches[0]['semantics']['presentation']['value']['name']['value'] != 'purple nightshade blossoms':
+        raise ValueError('M01C_GRIMVALE_HARVESTED_ITEM')
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    track = 'oteryn:quest-progress/m01c-grimvale-route'
+    evidence = ['content/items/definitions/items-11000-11499.json:oteryn:item.tibia.i22082',
+                'imports/canary/items-xml/items.xml:43886']
+    return {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'admission':{'minimum_level':0,'premium':True},
+        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
+        'stages':[{'key':'s1-blossoms','completes':False,'trigger':{'kind':'collect','collection':{
+            'key':'oteryn:quest-collection/m01c-grimvale-blossoms',
+            'items':[{'item':'oteryn:item.tibia.i22082','count':5}],
+            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
+        'sources':[path+':s1',*evidence]}]}
+
+
 def content(check=False):
-    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight())]
+    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale())]
     for output, value in documents:
         path = ROOT / output
         if check:
@@ -117,7 +139,7 @@ def content(check=False):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
-    print('PASS M01c native entry bindings=3; completion/rewards remain held')
+    print('PASS M01c native entry bindings=4; completion/rewards remain held')
 
 
 

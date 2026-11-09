@@ -35,6 +35,14 @@ class NativeEntries(unittest.TestCase):
         self.assertFalse(stage['completes'])
         self.assertEqual(stage['trigger']['collection']['items'], [{'item':'oteryn:item.tibia.i2969','count':1,'key_number':5010}])
 
+    def test_grimvale_requires_five_harvested_blossoms_and_premium(self):
+        quest = source.build_grimvale()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.grimvale_quest')
+        self.assertEqual(quest['admission'], {'minimum_level':0,'premium':True})
+        stage = quest['stages'][0]
+        self.assertFalse(stage['completes'])
+        self.assertEqual(stage['trigger']['collection']['items'], [{'item':'oteryn:item.tibia.i22082','count':5}])
+
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()
         changed = copy.deepcopy(recipe)

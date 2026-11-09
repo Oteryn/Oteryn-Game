@@ -59,3 +59,34 @@ fn adding_premium_support_preserves_the_published_level_only_shape() -> Result<(
     );
     Ok(())
 }
+
+#[test]
+fn production_grimvale_collection_requires_its_premium_blossom_count() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("grimvale-fixture")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue
+        .transition("oteryn:quest-collection/m01c-grimvale-blossoms")
+        .ok_or("missing production Grimvale collection")?;
+    assert!(!transition.completes);
+    let quest = catalogue
+        .authored_bindings()
+        .and_then(|b| {
+            b.quests
+                .iter()
+                .find(|q| q.quest == "oteryn:quest.grimvale_quest")
+        })
+        .ok_or("Grimvale binding")?;
+    assert!(
+        quest
+            .admission
+            .as_ref()
+            .is_some_and(|a| a.premium && a.minimum_level == 0)
+    );
+    let super::Trigger::Collect { collection } = &quest.stages[0].trigger else {
+        return Err("collection".into());
+    };
+    assert_eq!(collection.items[0].item, "oteryn:item.tibia.i22082");
+    assert_eq!(collection.items[0].count, 5);
+    Ok(())
+}
