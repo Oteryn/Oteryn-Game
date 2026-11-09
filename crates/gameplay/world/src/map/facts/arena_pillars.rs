@@ -109,7 +109,9 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if states.hidden.contains(&key)
+        let recreate =
+            states.hidden.contains(&key) && projection == ArenaPillarProjection::Fighting;
+        if (states.hidden.contains(&key) && !recreate)
             || (projection == ArenaPillarProjection::Release
                 && states.arena_pillars.get(&key) != Some(&run))
         {
@@ -123,7 +125,7 @@ impl BundleFacts {
         if !matches!(current.appearance_id, 1841 | 5022) {
             return false;
         }
-        let changed = current != after || states.passable.get(&key) != Some(&open);
+        let changed = recreate || current != after || states.passable.get(&key) != Some(&open);
         let next = if changed {
             let Some(next) = revision.checked_add(1) else {
                 return false;
@@ -136,6 +138,14 @@ impl BundleFacts {
             return false;
         }
         let states = Arc::make_mut(&mut states);
+        // Source lib:235-245 recreates an absent pillar at reset, before combat.
+        // Its old occurrence/timer cannot restore a portal into the new run.
+        if recreate {
+            states.hidden.remove(&key);
+        }
+        if projection == ArenaPillarProjection::Fighting {
+            states.movement_decays.retain(|(_, entry), _| *entry != key);
+        }
         if changed {
             states.changed.insert(key, (next, after));
         }

@@ -2485,3 +2485,18 @@ not a completed reset: original native stack capture and physical one-item
 retirement with current pit custody remain to be composed.
 Quests clippy --all-targets -D warnings PASS5.991s; workspace fmt check
 PASS17.438s. No PostgreSQL writer was added or changed by this rules slice.
+
+### M51 hidden base pillar recreation and old timer retirement
+The source reset recreates a missing pillar (Crystal201189f
+lib/quests/svargrond_arena.lua:235-245). The production World API already recreated
+an absent blueprint but refused a hidden base pillar. Fighting reset now restores
+that qualified immutable base occurrence, advances its revision, and clears its
+old movement decay; Victory/Release still cannot resurrect a hidden pillar.
+The existing real-view/collision test retains its original refusal and adds
+recreation, exactly one visible pillar, stale timer absence and exact-run release
+checks. RED122.858s including cold dependency compilation, then all World library
+cases GREEN23.685s (237 passed, one pre-existing ignored case, unchanged).
+No SQL, migration or numeric allocation. Engine-only bundle identity matches.
+Physical portable top-Item retirement remains the unfinished M51 composition.
+World clippy --all-targets -D warnings PASS72.302s, workspace fmt check
+PASS15.378s; direct rustfmt check of both changed Rust files also passed.

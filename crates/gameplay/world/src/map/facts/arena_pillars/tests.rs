@@ -88,6 +88,8 @@ fn m51_pillar_portal_view_and_collision_reset_together() -> TestResult {
         5022
     );
     assert!(facts.set_svargrond_pillar(&base, pos, 1, 10, [2; 16], ArenaPillarProjection::Release));
+    assert!(facts.start_movement_decay(key, portal, 1841, 0, 10));
+    assert_eq!(facts.next_movement_decay_time(), Some(10));
     {
         let mut state = facts.callbacks.lock().map_err(|_| "callback lock")?;
         Arc::make_mut(&mut state).hidden.insert(key);
@@ -100,6 +102,25 @@ fn m51_pillar_portal_view_and_collision_reset_together() -> TestResult {
         [1; 16],
         ArenaPillarProjection::Victory
     ));
+    let revision = facts.object_revision(key);
+    assert!(facts.project_svargrond_pillar(&base, pos, [3; 16], ArenaPillarProjection::Fighting));
+    assert!(facts.object_revision(key) > revision);
+    assert_eq!(facts.next_movement_decay_time(), None);
+    assert_eq!(facts.expire_movement_items(10), 0);
+    let mut visible = Vec::new();
+    view::compose_into(&base, None, &facts, pos, &mut visible).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        visible
+            .iter()
+            .filter(|e| e.facts.appearance_id == 1841)
+            .count(),
+        1
+    );
+    assert!(facts.quest_callback_blocked(&base, pos, true));
+    assert!(!facts.svargrond_portal_open(pos, [3; 16]));
+    assert!(!facts.project_svargrond_pillar(&base, pos, [2; 16], ArenaPillarProjection::Release));
+    assert!(facts.project_svargrond_pillar(&base, pos, [3; 16], ArenaPillarProjection::Victory));
+    assert!(facts.svargrond_portal_open(pos, [3; 16]));
     Ok(())
 }
 
