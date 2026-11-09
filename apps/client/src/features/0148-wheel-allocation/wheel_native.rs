@@ -238,7 +238,7 @@ fn run(
                         .as_ptr(),
                     );
                     let editing =
-                        p.ready() && p.diagram.pending.is_none();
+                        p.ready() && p.diagram.pending.is_none() && p.gems.review.is_none() && p.gems.pending.is_none();
                     for button in [slot, points, set, reset] {
                         EnableWindow(
                             button,

@@ -445,5 +445,8 @@ use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;
 
+/// Optional server-executed Gem modifier presentation.
+pub use oteryn_protocol_oteryn::gem_presentation;
+
 /// Optional authoritative Wheel graph and advisory draft preview.
 pub use oteryn_protocol_oteryn::wheel_presentation;

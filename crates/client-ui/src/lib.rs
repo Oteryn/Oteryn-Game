@@ -315,6 +315,9 @@ pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
 
+#[path = "features/0148-wheel-allocation/protocol/gem_presentation.rs"]
+pub mod gem_presentation;
+
 #[path = "components/modal_dialogs.rs"]
 pub mod modal_dialogs;
 

@@ -14,6 +14,7 @@ pub const SLOT_DOMAINS: [u8; 36] = [
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WheelPanel {
+    pub gems: super::gems::Presentation,
     pub diagram: super::diagram::Presentation,
     pub presets_open: bool,
     pub preset_fields: [String; 2],
@@ -41,6 +42,7 @@ pub struct WheelPanel {
 impl Default for WheelPanel {
     fn default() -> Self {
         Self {
+            gems: Default::default(),
             diagram: Default::default(),
             presets_open: false,
             preset_fields: Default::default(),

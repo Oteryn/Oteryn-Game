@@ -18,9 +18,9 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
         let title = control(
             hwnd,
             "STATIC",
-            "Edit points and vessels, then Save Wheel. Atelier operations apply immediately.",
+            "Wheel points, perks and Gem Atelier",
             120,
-            [10, 10, 760, 22],
+            [10, 10, 380, 22],
             0,
         );
         control(
@@ -28,9 +28,10 @@ pub(super) unsafe fn create(hwnd: HWND) -> Option<Controls> {
             "BUTTON",
             "Wheel diagram",
             WHEEL_DIAGRAM,
-            [600, 6, 180, 28],
+            [410, 6, 180, 28],
             WS_TABSTOP,
         );
+        control(hwnd, "BUTTON", "Visual Gem Atelier", VISUAL_ATELIER, [600, 6, 180, 28], WS_TABSTOP);
         let presets = control(
             hwnd,
             "BUTTON",

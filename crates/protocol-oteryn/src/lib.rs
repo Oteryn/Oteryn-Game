@@ -67,6 +67,7 @@ pub mod entity_names;
 pub mod exiva;
 pub mod fishing;
 pub mod forge_preview;
+pub mod gem_presentation;
 pub mod guild;
 pub mod guild_bank;
 pub mod guild_war;

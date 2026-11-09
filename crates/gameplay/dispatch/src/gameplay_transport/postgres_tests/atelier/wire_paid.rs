@@ -14,6 +14,8 @@ mod audit;
 mod custody;
 #[path = "wire_paid/outputs.rs"]
 mod outputs;
+#[path = "wire_paid/presentation.rs"]
+mod presentation;
 #[path = "wire_paid/resources.rs"]
 mod resources;
 #[path = "wire_paid/wheel_presentation.rs"]
@@ -648,15 +650,23 @@ fn scenario(case: Case) -> TestResult {
         } else {
             &[wire::CAPABILITY_WHEEL_ALLOCATION_V1]
         };
-        admitted.continuity.selected_capabilities =
+        admitted.continuity.selected_capabilities = if matches!(case, Case::Resources) {
+            crate::gameplay_transport::connection::fresh_capability_selection(&owner, capabilities)
+        } else {
             SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
-                .ok_or("Atelier capabilities")?;
+        }
+        .ok_or("Atelier capabilities")?;
+        if matches!(case, Case::Resources) {
+            assert!(admitted.continuity.selected_capabilities.contains(148));
+            assert!(admitted.continuity.selected_capabilities.contains(272));
+        }
         let mut before = query(&owner, &mut admitted).await?;
         assert_eq!(before.gems.len(), 8);
         assert_eq!(before.quality_quotes.len(), 3);
         assert_eq!(before.grade_quotes.len(), 6);
         if matches!(case, Case::Resources | Case::ResourcesUnselected) {
             if matches!(case, Case::Resources) {
+                presentation::check_read(&h, &owner, &mut admitted, &before).await?;
                 assert!(admitted.continuity.selected_capabilities.contains(148));
                 assert!(admitted.continuity.selected_capabilities.contains(272));
                 wheel_presentation::check_read(&h, &owner, &mut admitted, &before).await?;

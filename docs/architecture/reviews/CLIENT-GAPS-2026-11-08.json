@@ -886,9 +886,10 @@
   "src": "TIBAUD-1",
   "area": "Gems",
   "feature": "Reveal/socket/unsocket/dismantle/enhance",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komendy/selektory są; brak kompletnej wizualnej prezentacji gem/mod i atelier.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/gem_presentation.rs:47 + gem_presentation_actual_session_stats_selection_review_confirm_and_old_mutation; gem_presentation_postgres_real_catalogue_revision_and_readonly_fences (61.55s)"
  },
  {
   "id": "T123",

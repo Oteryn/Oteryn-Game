@@ -31,6 +31,7 @@ const DISMANTLE: usize = 116;
 const GRADE: usize = 117;
 const RETRY: usize = 118;
 const PRESETS: usize = 121;
+const VISUAL_ATELIER: usize = 122;
 const WHEEL_DIAGRAM: usize = 123;
 
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
@@ -121,6 +122,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == VISUAL_ATELIER {
+                    drop(mailbox);
+                    super::gem_native::open(&shared, &commands);
+                    mailbox = lock(&shared);
+                    continue;
+                }
                 if action == WHEEL_DIAGRAM {
                     drop(mailbox);
                     super::wheel_native::open(&shared, &commands);

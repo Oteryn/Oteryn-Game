@@ -383,8 +383,8 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
-        mailbox.wheel.diagram.invalidate();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -432,8 +432,8 @@ impl Outbox {
         }
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
-        mailbox.wheel.diagram.invalidate();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -504,6 +504,8 @@ impl PlayLink {
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
         #[cfg(windows)]
+        super::feature_0148_wheel_allocation::view::poll_gems(&self.mailbox, &self.commands);
+        #[cfg(windows)]
         super::feature_0152_item_forge::view::poll_resource_dialog(&self.mailbox, &self.commands);
         #[cfg(windows)]
         super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
@@ -555,8 +557,8 @@ impl Drop for PlayLink {
             launcher.end();
         }
         mailbox.properties.end();
+        mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
-        mailbox.wheel.diagram.invalidate();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();

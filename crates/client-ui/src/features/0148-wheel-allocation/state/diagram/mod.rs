@@ -59,7 +59,12 @@ pub fn needs_query(p: &WheelPanel) -> bool {
     })
 }
 pub fn query(p: &mut WheelPanel) -> Option<FeatureCommand> {
-    if !p.ready() || !p.diagram.selected || p.diagram.pending.is_some() {
+    if !p.ready()
+        || !p.diagram.selected
+        || p.diagram.pending.is_some()
+        || p.gems.review.is_some()
+        || p.gems.pending.is_some()
+    {
         return None;
     }
     let nonce = p.diagram.nonce.checked_add(1)?;
@@ -115,6 +120,8 @@ pub fn slot(p: &mut WheelPanel, nonce: u64, index: usize) -> bool {
 pub fn points(p: &mut WheelPanel, value: u16) -> bool {
     if !p.ready()
         || p.diagram.pending.is_some()
+        || p.gems.review.is_some()
+        || p.gems.pending.is_some()
         || metadata(p)
             .and_then(|r| r.nodes.get(p.slot))
             .is_none_or(|n| value > n.capacity)
@@ -126,7 +133,12 @@ pub fn points(p: &mut WheelPanel, value: u16) -> bool {
     true
 }
 pub fn reset_draft(p: &mut WheelPanel) -> bool {
-    if !p.ready() || p.diagram.pending.is_some() || metadata(p).is_none() {
+    if !p.ready()
+        || p.diagram.pending.is_some()
+        || p.gems.review.is_some()
+        || p.gems.pending.is_some()
+        || metadata(p).is_none()
+    {
         return false;
     }
     p.vessels = p.confirmed_vessels().unwrap_or([None; 4]);
@@ -135,7 +147,12 @@ pub fn reset_draft(p: &mut WheelPanel) -> bool {
     true
 }
 pub fn submit(p: &mut WheelPanel, occurrence: [u8; 16]) -> Option<WheelCommand> {
-    if current(p).is_none_or(|r| !r.draft_valid) || !p.dirty() || p.diagram.pending.is_some() {
+    if current(p).is_none_or(|r| !r.draft_valid)
+        || !p.dirty()
+        || p.diagram.pending.is_some()
+        || p.gems.review.is_some()
+        || p.gems.pending.is_some()
+    {
         return None;
     }
     let intent = if p.diagram.reset_requested {
