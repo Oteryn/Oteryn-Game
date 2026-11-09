@@ -185,6 +185,8 @@ mod item_summary;
 mod misc;
 #[path = "navigation.rs"]
 mod navigation;
+#[path = "protection.rs"]
+mod protection;
 
 #[test]
 fn blessings_dialog_requests_self_and_reduces_the_real_server_reply()
@@ -257,5 +259,13 @@ fn blessings_shortcut_opens_dedicated_state_and_rejects_repeat()
     assert!(!link.blessings_panel().pending);
     Ok(())
 }
-#[path = "protection.rs"]
-mod protection;
+#[path = "profile.rs"]
+mod profile;
+
+#[path = "history.rs"]
+mod history;
+
+#[path = "augments.rs"]
+mod augments;
+#[path = "offence.rs"]
+mod offence;

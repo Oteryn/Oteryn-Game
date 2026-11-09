@@ -4,7 +4,7 @@ use oteryn_client_ui::cyclopedia_character::{
     CyclopediaCharacterPanel, Intent, apply_result, request,
 };
 #[test]
-fn native_character_navigation_and_input_gates() {
+fn native_character_navigation_and_input_gates() -> Result<(), &'static str> {
     let mut p = CyclopediaCharacterPanel {
         selected: true,
         ..Default::default()
@@ -14,6 +14,8 @@ fn native_character_navigation_and_input_gates() {
         let c = native_controls::submit(&mut p, 100 + tab, ["258", "20", ""]);
         let expected = if tab == 4 {
             vec![128, 0]
+        } else if tab == 7 {
+            vec![132]
         } else {
             vec![tab as u8, 2, 1, 20]
         };
@@ -24,16 +26,16 @@ fn native_character_navigation_and_input_gates() {
     assert!(native_controls::submit(&mut p, 101, ["0", "0", ""]).is_none());
     assert!(!p.pending);
     assert!(p.feedback.is_some());
-    assert_eq!(
-        native_controls::submit(&mut p, 111, ["bad", "bad", "bad"]).map(|c| c.kind),
-        Some(387)
-    );
+    assert!(native_controls::submit(&mut p, 111, ["bad", "bad", "bad"]).is_none());
+    let command = native_controls::submit(&mut p, 111, ["bad", "bad", ""]);
+    assert_eq!(command.map(|c| (c.kind, c.payload)), Some((388, vec![132])));
     p.result = Some("Badges: Hero".into());
     assert!(native_controls::display(&p).contains("Badges: Hero"));
+    Ok(())
 }
 
 #[test]
-fn native_character_target_and_page_validation() {
+fn native_character_target_and_page_validation() -> Result<(), &'static str> {
     let mut p = CyclopediaCharacterPanel {
         selected: true,
         ..Default::default()
@@ -55,12 +57,13 @@ fn native_character_target_and_page_validation() {
     assert_eq!(
         command.map(|c| c.payload),
         Some(vec![
-            7, 0, 0, 1, 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255
+            132, 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255
         ])
     );
     p.pending = false;
     p.selected = false;
     assert!(native_controls::submit(&mut p, 111, ["0", "20", ""]).is_none());
+    Ok(())
 }
 
 #[test]

@@ -18,13 +18,13 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
             panel.fields[1]
                 .trim()
                 .parse()
-                .map_err(|_| "Enter a positive Unix time in milliseconds")?
+                .map_err(|_| tr!("Enter a positive Unix time in milliseconds"))?
         } else {
             0
         },
     };
     let payload = wire::encode_house_move_out_request(&request)
-        .map_err(|_| "Enter a valid house key and notice time")?;
+        .map_err(|_| tr!("Enter a valid house key and notice time"))?;
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_HOUSE_MOVE_OUT_V1,
         kind: if action == 0 {
@@ -45,23 +45,26 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
-        panel.feedback = "The server refused the request".into();
+        panel.feedback = tr!("The server refused the request").into();
         return;
     }
     let Ok(reply) = wire::decode_house_move_out_reply(&result.payload) else {
-        panel.feedback = "Invalid move-out reply".into();
+        panel.feedback = tr!("Invalid move-out reply").into();
         return;
     };
     let state = match reply.state {
-        0 => "No notice",
-        1 => "Notice",
-        2 => "Frozen",
-        3 => "Drained (owner retained)",
-        _ => "Cancelled",
+        0 => tr!("No notice"),
+        1 => tr!("Notice"),
+        2 => tr!("Frozen"),
+        3 => tr!("Drained (owner retained)"),
+        _ => tr!("Cancelled"),
     };
-    panel.summary = format!(
+    panel.summary = lfmt!(
         "{}: due {} ms; delivered {}/{}",
-        state, reply.due_at_unix_ms, reply.delivered, reply.census_count
+        state,
+        reply.due_at_unix_ms,
+        reply.delivered,
+        reply.census_count
     );
-    panel.feedback = "Move-out status updated".into();
+    panel.feedback = tr!("Move-out status updated").into();
 }

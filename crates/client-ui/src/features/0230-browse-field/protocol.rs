@@ -24,7 +24,7 @@ pub fn open(p: &mut BrowseFieldPanel) -> Option<ServerMechanicCommand> {
     let bytes = browse_field::encode_browse_field_intent(&i)
         .ok()
         .or_else(|| {
-            p.feedback = Some("Select a valid tile".into());
+            p.feedback = Some(tr!("Select a valid tile").into());
             None
         })?;
     request(p, command(bytes))
@@ -55,9 +55,9 @@ pub fn apply_result(p: &mut BrowseFieldPanel, r: &ServerMechanicResponse) {
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
         p.response.clone_from(&r.payload);
-        p.feedback = Some("Field contents updated by the server".into())
+        p.feedback = Some(tr!("Field contents updated by the server").into())
     } else {
-        p.feedback = Some(format!("Server refused field action: {:?}", r.status))
+        p.feedback = Some(lfmt!("Server refused field action: {:?}", r.status))
     }
 }
 #[cfg(test)]

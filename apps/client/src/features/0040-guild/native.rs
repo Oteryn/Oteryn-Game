@@ -50,7 +50,7 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Guild").as_ptr(),
+            wide(tr!("Guild")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -89,18 +89,18 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
             WS_BORDER | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
         for (id, label, x, y) in [
-            (10, "Refresh", 10, 415),
-            (11, "Invitations", 120, 415),
-            (12, "Roster", 250, 415),
-            (13, "More", 360, 415),
-            (14, "Join selected", 10, 455),
-            (15, "Leave", 140, 455),
-            (16, "Kick selected", 250, 455),
-            (17, "Revoke selected", 390, 455),
-            (18, "Found", 200, 495),
-            (19, "Invite", 330, 495),
-            (20, "Set rank", 540, 455),
-            (21, "Guild chat", 490, 415),
+            (10, tr!("Refresh"), 10, 415),
+            (11, tr!("Invitations"), 120, 415),
+            (12, tr!("Roster"), 250, 415),
+            (13, tr!("More"), 360, 415),
+            (14, tr!("Join selected"), 10, 455),
+            (15, tr!("Leave"), 140, 455),
+            (16, tr!("Kick selected"), 250, 455),
+            (17, tr!("Revoke selected"), 390, 455),
+            (18, tr!("Found"), 200, 495),
+            (19, tr!("Invite"), 330, 495),
+            (20, tr!("Set rank"), 540, 455),
+            (21, tr!("Guild chat"), 490, 415),
         ] {
             control(hwnd, "BUTTON", label, id, [x, y, 120, 30], WS_TABSTOP);
         }
@@ -174,7 +174,7 @@ fn run(weak: WeakMailbox, commands: tokio::sync::mpsc::UnboundedSender<PlayComma
                     && commands.send(PlayCommand::Guild(command)).is_err()
                 {
                     mailbox.guild.pending = false;
-                    mailbox.guild.feedback = Some("The session has ended".into());
+                    mailbox.guild.feedback = Some(tr!("The session has ended").into());
                 }
             }
             EnableWindow(

@@ -1,4 +1,3 @@
-use super::super::HistoryRow;
 use super::stamina;
 use oteryn_client_runtime::cyclopedia_character;
 pub(super) fn decode_badges(b: &[u8]) -> Option<String> {
@@ -8,7 +7,7 @@ pub(super) fn decode_badges(b: &[u8]) -> Option<String> {
             .iter()
             .all(|id| cyclopedia_character::Badge::from_id(*id).is_some()))
     .then(|| {
-        format!(
+        lfmt!(
             "Badges: {}",
             ids.iter()
                 .filter_map(|id| cyclopedia_character::Badge::from_id(*id))
@@ -37,24 +36,24 @@ pub(super) fn decode_tab(
     let mut rows = vec![format!("{requested:?}")];
     match requested {
         Tab::GeneralStats => {
-            rows.push(format!(
+            rows.push(lfmt!(
                 "Experience: {}\nLevel: {}\nMagic level: {}",
                 r.u64()?,
                 r.u32()?,
                 r.u16()?
             ));
             for label in [
-                "Fist",
-                "Club",
-                "Sword",
-                "Axe",
-                "Distance",
-                "Shielding",
-                "Fishing",
+                tr!("Fist"),
+                tr!("Club"),
+                tr!("Sword"),
+                tr!("Axe"),
+                tr!("Distance"),
+                tr!("Shielding"),
+                tr!("Fishing"),
             ] {
                 rows.push(format!("{label}: {}", r.u16()?));
             }
-            rows.push(format!(
+            rows.push(lfmt!(
                 "{}\nOffline training: {} minutes",
                 stamina::display(r.u16()?),
                 r.u16()?
@@ -62,8 +61,14 @@ pub(super) fn decode_tab(
             let known = r.u8()?;
             let (health, mana) = (r.u32()?, r.u32()?);
             rows.push(match known {
-                0 if health == 0 && mana == 0 => "Health: unavailable\nMana: unavailable".into(),
-                1 => format!("Health: {health} (last saved)\nMana: {mana} (last saved)"),
+                0 if health == 0 && mana == 0 => {
+                    tr!("Health: unavailable\nMana: unavailable").into()
+                }
+                1 => lfmt!(
+                    "Health: {health} (last saved)\nMana: {mana} (last saved)",
+                    health = health,
+                    mana = mana
+                ),
                 _ => return None,
             });
         }
@@ -73,8 +78,8 @@ pub(super) fn decode_tab(
                 let at = i64::from_le_bytes(r.bytes()?);
                 let status = if requested == Tab::RecentPvpKills {
                     match r.u8()? {
-                        1 => "Unjustified: ",
-                        2 => "Guild war: ",
+                        1 => tr!("Unjustified: "),
+                        2 => tr!("Guild war: "),
                         _ => return None,
                     }
                 } else {
@@ -89,26 +94,26 @@ pub(super) fn decode_tab(
             if count > total {
                 return None;
             }
-            rows.push(format!("Total: {total}"));
+            rows.push(lfmt!("Total: {total}", total = total));
             for _ in 0..count {
                 rows.push(r.text()?.into());
             }
         }
         Tab::StoreSummary => {
             let count = r.u8()?;
-            rows.push("Blessings / death protection".into());
-            rows.push(format!("Owned blessings: {count}"));
+            rows.push(tr!("Blessings / death protection").into());
+            rows.push(lfmt!("Owned blessings: {count}", count = count));
             if count == 0 {
-                rows.push("No blessings owned".into());
+                rows.push(tr!("No blessings owned").into());
             }
             rows.push(
-                "Loss percentages are unavailable; ownership does not imply full protection."
+                tr!("Loss percentages are unavailable; ownership does not imply full protection.")
                     .into(),
             );
             for _ in 0..count {
-                rows.push(format!("Blessing: {}", r.text()?));
+                rows.push(lfmt!("Blessing: {}", r.text()?));
             }
-            rows.push(format!(
+            rows.push(lfmt!(
                 "Permanent prey slots: {}\nPrey wildcards: {}\nHirelings: {}",
                 r.u8()?,
                 r.u8()?,
@@ -124,18 +129,25 @@ pub(super) fn decode_tab(
                     return None;
                 }
                 let definition = r.string(len)?;
-                rows.push(format!("Slot {slot}: {definition} × {}", r.u32()?));
+                rows.push(lfmt!(
+                    "Slot {slot}: {definition} × {}",
+                    r.u32()?,
+                    definition = definition,
+                    slot = slot
+                ));
             }
         }
         Tab::Offence | Tab::Defence | Tab::Misc => {
             let stats = CombatStats::decode(b).ok()?;
-            rows.push(format!(
+            rows.push(lfmt!(
                 "Observed at: {} ms\nCharacter revision: {}\nEquipment revision: {}",
-                stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
+                stats.observed_at_unix_ms,
+                stats.character_revision,
+                stats.equipment_revision
             ));
             for key in CombatStat::for_tab(requested) {
                 let value = match stats.get(*key) {
-                    None => "unavailable".into(),
+                    None => tr!("unavailable").into(),
                     Some(v) => match key.unit() {
                         CombatStatUnit::PartsPerMillion => {
                             let magnitude = v.unsigned_abs();
@@ -196,7 +208,7 @@ pub(super) fn decode_history(
     b: &[u8],
     tab: cyclopedia_character::CharacterTab,
     limit: u8,
-) -> Option<Vec<HistoryRow>> {
+) -> Option<Vec<super::super::HistoryRow>> {
     use cyclopedia_character::{CharacterTab, KillStatus};
     if b.first() != Some(&(tab as u8)) {
         return None;
@@ -215,7 +227,7 @@ pub(super) fn decode_history(
         } else {
             None
         };
-        rows.push(HistoryRow {
+        rows.push(super::super::HistoryRow {
             at,
             status,
             description: r.text()?.into(),

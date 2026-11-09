@@ -7,6 +7,7 @@ pub struct CyclopediaCharacterPanel {
     pub badges: Option<Vec<u8>>,
     pub badge_filter: BadgeFilter,
     pub hidden_badges: std::collections::BTreeSet<u8>,
+    pub augments: super::AugmentPanel,
     pub selected: bool,
     pub blessings: super::protocol::BlessingsPanel,
     pub open: bool,
@@ -21,6 +22,9 @@ pub struct CyclopediaCharacterPanel {
     pub achievement_profile: Option<([u8; 16], String)>,
     pub achievement_pending: bool,
     pub profile_generation: u64,
+    pub profile: Option<oteryn_client_runtime::cyclopedia_character::profile::Profile>,
+    pub profile_pending: bool,
+    pub badges_open: bool,
     pub offset: u16,
     pub limit: u8,
     pub target: Option<[u8; 16]>,
@@ -42,6 +46,7 @@ impl Default for CyclopediaCharacterPanel {
             badges: None,
             badge_filter: Default::default(),
             hidden_badges: Default::default(),
+            augments: Default::default(),
             selected: false,
             blessings: Default::default(),
             open: false,
@@ -56,6 +61,9 @@ impl Default for CyclopediaCharacterPanel {
             achievement_profile: None,
             achievement_pending: false,
             profile_generation: 0,
+            profile: None,
+            profile_pending: false,
+            badges_open: false,
             offset: 0,
             limit: 20,
             target: None,
@@ -91,6 +99,9 @@ impl CyclopediaCharacterPanel {
             self.profile_generation = self.profile_generation.saturating_add(1);
             self.achievements = Default::default();
             self.achievement_profile = None;
+            self.profile = None;
+            self.augments = Default::default();
+            self.profile_pending = false;
             self.achievement_pending = false;
             self.result = None;
             self.general = None;

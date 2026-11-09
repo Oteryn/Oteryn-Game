@@ -60,7 +60,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Weapon proficiency").as_ptr(),
+            wide(tr!("Weapon proficiency")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -83,12 +83,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
         let fields = [
-            ("Weapon", ""),
-            ("Perk group", ""),
-            ("Perk", ""),
-            ("Modification slot", ""),
-            ("Committed shaping state", "Refresh needed"),
-            ("Reshape offer", ""),
+            (tr!("Weapon"), ""),
+            (tr!("Perk group"), ""),
+            (tr!("Perk"), ""),
+            (tr!("Modification slot"), ""),
+            (tr!("Committed shaping state"), tr!("Refresh needed")),
+            (tr!("Reshape offer"), ""),
         ];
         let mut edits = [null_mut(); 6];
         for (i, (label, value)) in fields.iter().enumerate() {
@@ -112,23 +112,23 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let clear = control(
             hwnd,
             "BUTTON",
-            "Clear selected perk",
+            tr!("Clear selected perk"),
             210,
             [10, 205, 250, 25],
             BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
         );
         for (i, label) in [
-            "Select perk",
-            "Modify",
-            "Rank up",
-            "Orb rank",
-            "Reshape offer",
-            "Choose reshape",
-            "Decline offer",
-            "Clear modification",
-            "Refresh catalogue",
-            "Next catalogue",
-            "Previous catalogue",
+            tr!("Select perk"),
+            tr!("Modify"),
+            tr!("Rank up"),
+            tr!("Orb rank"),
+            tr!("Reshape offer"),
+            tr!("Choose reshape"),
+            tr!("Decline offer"),
+            tr!("Clear modification"),
+            tr!("Refresh catalogue"),
+            tr!("Next catalogue"),
+            tr!("Previous catalogue"),
         ]
         .iter()
         .enumerate()
@@ -148,10 +148,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             );
         }
         for (id, label) in [
-            (112, "Refresh weapons"),
-            (113, "Previous page"),
-            (114, "Next page"),
-            (116, "Refresh shaping"),
+            (112, tr!("Refresh weapons")),
+            (113, tr!("Previous page")),
+            (114, tr!("Next page")),
+            (116, tr!("Refresh shaping")),
         ] {
             control(
                 hwnd,
@@ -207,7 +207,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(PlayCommand::Feature(command)).is_err()
                 {
                     panel.pending = false;
-                    panel.feedback = Some("The session has ended");
+                    panel.feedback = Some(tr!("The session has ended"));
                 }
             }
             if !panel.pending
@@ -225,7 +225,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 panel.pending = false;
-                panel.feedback = Some("The session has ended");
+                panel.feedback = Some(tr!("The session has ended"));
             }
             if held.as_ref() != Some(panel) {
                 let weapons = panel
@@ -234,7 +234,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     .map(|page| {
                         page.entries
                             .iter()
-                            .map(|entry| format!("{} — {} XP", entry.name, entry.experience))
+                            .map(|entry| lfmt!("{} — {} XP", entry.name, entry.experience))
                             .collect::<Vec<_>>()
                     })
                     .unwrap_or_default();
@@ -252,7 +252,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     .weapon_entry()
                     .map(|entry| {
                         (0..entry.levels.len())
-                            .map(|i| format!("Perk group {}", i + 1))
+                            .map(|i| lfmt!("Perk group {}", i + 1))
                             .collect::<Vec<_>>()
                     })
                     .unwrap_or_default();
@@ -270,14 +270,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             .as_ref()
                             .and_then(|state| state.slots[i].as_ref())
                             .map_or_else(
-                                || format!("Slot {} — empty", i + 1),
+                                || lfmt!("Slot {} — empty", i + 1),
                                 |slot| {
-                                    format!(
-                                        "Slot {} — rank {} — {}",
-                                        i + 1,
-                                        slot.rank,
-                                        slot.current
-                                    )
+                                    lfmt!("Slot {} — rank {} — {}", i + 1, slot.rank, slot.current)
                                 },
                             )
                     })
@@ -286,9 +281,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 SetWindowTextW(
                     edits[4],
                     wide(if panel.shaping.is_some() {
-                        "Current server observation"
+                        tr!("Current server observation")
                     } else {
-                        "Refresh needed / unavailable"
+                        tr!("Refresh needed / unavailable")
                     })
                     .as_ptr(),
                 );

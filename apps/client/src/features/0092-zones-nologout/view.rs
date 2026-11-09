@@ -27,12 +27,15 @@ impl PlayView {
     /// The existing native status surface displays the latest notice without erasing combat.
     #[must_use]
     pub fn server_message_status(&self) -> Option<String> {
+        if !self.preferences().game_window.banner {
+            return None;
+        }
         self.server_messages
             .back()
             .map(|message| match &message.value {
                 ServerMessage::StatusText(text) => text.clone(),
-                ServerMessage::Warning(text) => format!("Warning: {text}"),
-                ServerMessage::Advance(text) => format!("Advance: {text}"),
+                ServerMessage::Warning(text) => lfmt!("Warning: {text}", text = text),
+                ServerMessage::Advance(text) => lfmt!("Advance: {text}", text = text),
             })
     }
 }

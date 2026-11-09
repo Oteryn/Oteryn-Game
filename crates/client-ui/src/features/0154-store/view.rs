@@ -1,12 +1,12 @@
 use super::{StorePage, StorePanel, StoreSort};
 use std::fmt::Write;
 pub fn panel_text(panel: &StorePanel) -> String {
-    let mut text = format!("Store - {:?}", panel.page);
+    let mut text = lfmt!("Store - {:?}", panel.page);
     match panel.page {
         StorePage::Catalogue => {
             if let Some(page) = &panel.catalogue {
-                let _ = write!(text, "\nBalance: {} Oteryn Coins", page.total_coins);
-                let _ = write!(
+                let _ = lwrite!(text, "\nBalance: {} Oteryn Coins", page.total_coins);
+                let _ = lwrite!(
                     text,
                     "\nSearch/sort cover the loaded category page. Sort: {:?}",
                     panel.sort
@@ -24,10 +24,11 @@ pub fn panel_text(panel: &StorePanel) -> String {
         StorePage::History => {
             if let Some(page) = &panel.history {
                 for entry in &page.entries {
-                    let _ = write!(text, "\n{}: {} Oteryn Coins", entry.offer_key, entry.price);
+                    let _ = lwrite!(text, "\n{}: {} Oteryn Coins", entry.offer_key, entry.price);
                 }
             }
         }
+        StorePage::CoinHistory => text.push_str(&super::coin_history_text(&panel.coin_history)),
         StorePage::Inbox => {
             if let Some(receipt) = &panel.claim {
                 let _ = write!(
@@ -44,7 +45,7 @@ pub fn panel_text(panel: &StorePanel) -> String {
         let _ = write!(text, "\n{preview}");
     }
     if let Some(result) = &panel.purchase {
-        let _ = write!(text, "\nPurchase: {:?}", result.code);
+        let _ = lwrite!(text, "\nPurchase: {:?}", result.code);
     }
     if let Some(feedback) = &panel.feedback {
         let _ = write!(text, "\n{feedback}");
@@ -88,8 +89,12 @@ pub fn offer_preview(panel: &StorePanel) -> Option<String> {
     }
     let page = panel.catalogue.as_ref()?;
     let offer = page.offers.get(panel.selected_offer)?;
-    Some(format!(
+    Some(lfmt!(
         "Preview: {} — {} {}\r\nOffer: {}; catalogue revision: {}",
-        offer.title, offer.price, offer.currency, offer.offer_key, page.catalog_revision
+        offer.title,
+        offer.price,
+        offer.currency,
+        offer.offer_key,
+        page.catalog_revision
     ))
 }

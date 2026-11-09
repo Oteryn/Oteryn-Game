@@ -17,9 +17,9 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
                 .as_ref()
                 .is_some_and(|catalogue| catalogue.more)
             {
-                return Err("No more furniture".into());
+                return Err(tr!("No more furniture").into());
             }
-            wire::Request::Query(page.checked_add(1).ok_or("Invalid furniture page")?)
+            wire::Request::Query(page.checked_add(1).ok_or(tr!("Invalid furniture page"))?)
         }
         Intent::Rotate => {
             let index = panel
@@ -28,18 +28,18 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
                 .parse::<usize>()
                 .ok()
                 .and_then(|value| value.checked_sub(1))
-                .ok_or("Choose a furniture number from the list")?;
+                .ok_or(tr!("Choose a furniture number from the list"))?;
             panel
                 .catalogue
                 .as_ref()
                 .and_then(|catalogue| catalogue.rotate(index))
-                .ok_or("Refresh and choose furniture from the list")?
+                .ok_or(tr!("Refresh and choose furniture from the list"))?
         }
     };
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
         kind: wire::COMMAND,
-        payload: request.encode().ok_or("Invalid furniture request")?,
+        payload: request.encode().ok_or(tr!("Invalid furniture request"))?,
     })
 }
 pub(in crate::play) fn apply(
@@ -65,7 +65,7 @@ pub(in crate::play) fn apply(
         {
             panel.catalogue = Some(catalogue);
             panel.choice.clear();
-            panel.feedback = "Choose furniture from the list".into();
+            panel.feedback = tr!("Choose furniture from the list").into();
         }
         (Some(wire::Request::Rotate(_)), Some(wire::Reply::Applied(disposition))) => {
             // Crystal src/game/game.cpp:3054-3057: missing transform targets can leave the item unchanged.
@@ -74,15 +74,15 @@ pub(in crate::play) fn apply(
             panel.choice.clear();
             panel.feedback = match disposition {
                 wire::UseDisposition::Committed if accepted => {
-                    "Furniture rotated. Refresh the list"
+                    tr!("Furniture rotated. Refresh the list")
                 }
-                _ => "Furniture or house access changed. Refresh the list",
+                _ => tr!("Furniture or house access changed. Refresh the list"),
             }
             .into();
         }
         _ => {
             panel.catalogue = None;
-            panel.feedback = "Invalid furniture response. Refresh the list".into();
+            panel.feedback = tr!("Invalid furniture response. Refresh the list").into();
         }
     }
 }

@@ -14,11 +14,11 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.house_furniture_rotation;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
     if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+        panel.feedback = tr!("Waiting for the server").into();
         return;
     }
     match super::protocol::command(panel, intent) {
@@ -27,7 +27,7 @@ pub(in crate::play) fn submit(
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 panel.pending = false;
-                panel.feedback = "The session has ended".into();
+                panel.feedback = tr!("The session has ended").into();
             }
         }
         Err(message) => panel.feedback = message,

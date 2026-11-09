@@ -105,7 +105,7 @@ pub(in crate::play) fn submit(
         .is_err()
     {
         panel.catalogue.pending = None;
-        panel.failed("The session has ended");
+        panel.failed(tr!("The session has ended"));
     }
 }
 pub(in crate::play) fn apply(
@@ -138,6 +138,11 @@ pub(in crate::play) fn apply(
         panel.feedback = "Invalid creature catalogue cursor or category".into();
         return true;
     }
+    let confirmed_names: Vec<_> = page
+        .cards
+        .iter()
+        .map(|card| (card.race, card.name.clone()))
+        .collect();
     if request.race == 0 {
         if page
             .next
@@ -175,6 +180,7 @@ pub(in crate::play) fn apply(
         panel.catalogue.detail_card = Some(card.clone());
         panel.catalogue.next_loot = page.next;
     }
+    panel.catalogue.names.extend(confirmed_names);
     panel.feedback = "Creature catalogue updated".into();
     true
 }

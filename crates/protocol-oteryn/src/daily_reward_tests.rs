@@ -26,6 +26,7 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
             &[
                 COMMAND_TYPE_DAILY_REWARD_CLAIM,
                 COMMAND_TYPE_DAILY_REWARD_QUERY,
+                details::COMMAND_TYPE,
             ][..],
             &[][..],
             MAX_DAILY_REWARD_CLAIM_BYTES,
@@ -53,6 +54,10 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
                 && *registered_domains == domains
         ));
     }
+    let details = only("command_types", details::COMMAND_TYPE)?;
+    assert_eq!(details["capability"], CAPABILITY_DAILY_REWARD_V2);
+    assert_eq!(details["max_payload_bytes"], 0);
+    assert_eq!(details["max_result_payload_bytes"], details::MAX_BYTES);
     let domain = only("state_domains", STATE_DOMAIN_DAILY_REWARD)?;
     assert_eq!(domain["capability"], CAPABILITY_DAILY_REWARD_V1);
     for kind in ["delta_types", "snapshot_types"] {

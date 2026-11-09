@@ -14,7 +14,7 @@ pub(super) fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             820,
-            690,
+            720,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -68,6 +68,7 @@ pub(super) fn run(
             ] {
                 control(h, "BUTTON", label, id, [x, 520, 130, 30], WS_TABSTOP);
             }
+            control(h, "BUTTON", "Classic tools", 6, [570, 640, 130, 25], WS_TABSTOP);
             let mut charm_rows = Vec::new();
             let mut race_rows = Vec::new();
             let mut initialized = false;
@@ -83,6 +84,12 @@ pub(super) fn run(
                 let selected_charm = SendMessageW(charms, CB_GETCURSEL, 0, 0);
                 let selected_race = SendMessageW(races, CB_GETCURSEL, 0, 0);
                 let mut requested = actions.0.drain(..).collect::<Vec<_>>();
+                if requested.contains(&6) {
+                    if let Some(mailbox) = weak.upgrade() {
+                        super::super::open_classic_window(&PlayLink { mailbox, commands: commands.clone() });
+                    }
+                    requested.retain(|id| *id != 6);
+                }
                 requested.retain(|id| !matches!(id,4|5) || MessageBoxW(h,wide(if *id==5 {"Remove all charm assignments? The server charges the applicable gold fees."} else {"Remove this charm assignment? The server charges the applicable gold fee."}).as_ptr(),wide("Confirm charm removal").as_ptr(),MB_YESNO|MB_ICONQUESTION)==IDYES);
                 let Some(shared) = weak.upgrade() else {
                     break;

@@ -61,12 +61,12 @@ fn t081_named_selector_uses_confirmed_descriptions_and_routes_all_operations()
         &query,
         w::encode_charm_progression_reply(&reply).map_err(|e| format!("{e:?}"))?,
     );
-    link.charm_catalogue_request(0);
+    link.charm_selector_catalogue_request(0);
     let PlayCommand::Feature(query) = receiver.try_recv()? else {
         return Err("metadata".into());
     };
     assert_eq!(query.payload, vec![255, 2, 0]);
-    link.charm_catalogue_request(0);
+    link.charm_selector_catalogue_request(0);
     assert!(receiver.try_recv().is_err());
     assert!(!link.charm_selector_select(31, None));
     let metadata = w::catalogue::Page {
@@ -202,7 +202,7 @@ fn t081_named_selector_uses_confirmed_descriptions_and_routes_all_operations()
         assert!(!link.charm_progression_panel().pending);
     }
     outbox.logged_out();
-    link.charm_catalogue_request(0);
+    link.charm_selector_catalogue_request(0);
     assert!(receiver.try_recv().is_err());
     assert!(link.charm_progression_panel().charm_choices().is_empty());
     Ok(())

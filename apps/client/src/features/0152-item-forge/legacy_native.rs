@@ -32,12 +32,12 @@ pub(in crate::play) fn enabled(panel: &ItemForgePanel) -> bool {
 pub(in crate::play) fn presentation(panel: &ItemForgePanel) -> String {
     let mut text = oteryn_client_ui::item_forge::panel_text(panel);
     if panel.pending {
-        text.push_str("\nWaiting for server…");
+        text.push_str(tr!("\nWaiting for server…"));
     }
     if panel.decoded.is_none() && !panel.response.is_empty() {
         match serde_json::from_slice::<serde_json::Value>(&panel.response) {
-            Ok(value) => text.push_str(&format!("\nResult: {value:#}")),
-            Err(_) => text.push_str("\nThe server returned invalid forge results"),
+            Ok(value) => text.push_str(&lfmt!("\nResult: {value:#}", value = value)),
+            Err(_) => text.push_str(tr!("\nThe server returned invalid forge results")),
         }
     }
     text
@@ -98,7 +98,7 @@ pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) 
         Some(())
     })();
     if parsed.is_none() {
-        panel.feedback = Some("Enter valid values for the labelled controls".into());
+        panel.feedback = Some(tr!("Enter valid values for the labelled controls").into());
         return;
     }
     let command = oteryn_client_ui::item_forge::control_request(panel);
@@ -109,6 +109,6 @@ pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) 
             .is_err()
     {
         panel.pending = false;
-        panel.feedback = Some("The session has ended".into());
+        panel.feedback = Some(tr!("The session has ended").into());
     }
 }

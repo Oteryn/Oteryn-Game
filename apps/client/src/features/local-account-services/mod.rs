@@ -61,7 +61,7 @@ impl Default for View {
             page: None,
             quote: None,
             receipt: None,
-            feedback: "Browse Oteryn auctions, sell an offline character, or transfer worlds."
+            feedback: tr!("Browse Oteryn auctions, sell an offline character, or transfer worlds.")
                 .into(),
             selected_view: AuctionView::All,
             pending: None,
@@ -113,22 +113,25 @@ impl View {
             .as_ref()
             .and_then(|p| p.worlds.iter().find(|w| w.id == quote.destination_world_id))
             .map_or(quote.destination_world_id.as_str(), |w| w.name.as_str());
-        format!(
+        lfmt!(
             "Transfer {character} → {world}: {} coins; cooldown {} seconds. {}",
             quote.price_coins,
             quote.cooldown_seconds,
-            quote.blockers.join("; ")
+            quote.blockers.join("; "),
+            character = character,
+            world = world
         )
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
         if let Some(id) = self.pending_id() {
-            text.push_str(&format!(
-                "\nUnresolved operation {id}: check status before another action."
+            text.push_str(&lfmt!(
+                "\nUnresolved operation {id}: check status before another action.",
+                id = id
             ));
         }
         if let Some(page) = &self.page {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\nLast refreshed balance: {} Oteryn coins",
                 page.balance
             ));
@@ -137,7 +140,7 @@ impl View {
             text.push_str(&format!("\n{}", self.transfer_description(quote)));
         }
         if let Some(receipt) = &self.receipt {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\n{:?}: {} — operation {}; charged {} coins; balance after operation {}",
                 receipt.state,
                 receipt.code,
@@ -146,7 +149,7 @@ impl View {
                 receipt.balance
             ));
             if let Some(id) = &receipt.receipt_id {
-                text.push_str(&format!("; receipt {id}"));
+                text.push_str(&lfmt!("; receipt {id}", id = id));
             }
         }
         text

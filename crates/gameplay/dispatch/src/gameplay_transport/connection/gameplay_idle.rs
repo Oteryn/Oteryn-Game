@@ -118,8 +118,8 @@ pub(super) fn meaningful(
             .is_ok_and(|intent| intent != loop_training::ExerciseIntent::Status),
         76 => house_move_out::decode_house_move_out_request(command.payload)
             .is_ok_and(|request| request.action != 0),
-        79 => stash::decode_stash_intent(command.payload)
-            .is_ok_and(|intent| intent.action != stash::StashAction::Browse),
+        79 => stash::decode_stash_query(command.payload)
+            .is_ok_and(|(intent, _)| intent.action != stash::StashAction::Browse),
         80 => market::decode_request(command.payload).is_ok_and(|request| request.action >= 5),
         81 => target_move::decode_target_move_intent(command.payload).is_ok(),
         84 => charm_progression::decode_charm_progression_request(command.payload)

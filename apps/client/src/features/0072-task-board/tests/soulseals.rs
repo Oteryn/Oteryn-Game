@@ -1,4 +1,6 @@
+#[cfg(not(windows))]
 use super::*;
+#[cfg(not(windows))]
 use crate::combat_input::PlayCommand;
 use oteryn_client_runtime::task_board::task_board::soulpit as wire;
 #[test]

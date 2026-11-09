@@ -18,7 +18,7 @@ impl PlayLink {
     pub fn charm_race_names_request(&self) {
         request_races(&mut lock(&self.mailbox), &self.commands);
     }
-    pub fn charm_catalogue_request(&self, after: u8) {
+    pub fn charm_selector_catalogue_request(&self, after: u8) {
         request(&mut lock(&self.mailbox), &self.commands, after);
     }
     pub fn charm_selector_select(&self, charm: u32, race: Option<u32>) -> bool {

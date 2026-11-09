@@ -80,7 +80,7 @@ impl Panel {
                 .into_iter()
                 .filter_map(|index| listings.get(index))
                 .map(|row| {
-                    format!(
+                    lfmt!(
                         "{} — {}–{}; {} free; {:?}; {:?}",
                         row.name,
                         row.listing.min_level,
@@ -93,7 +93,7 @@ impl Panel {
                 .collect(),
             Some(TeamFinderResult::Applicants { members, .. }) => members
                 .iter()
-                .map(|row| format!("{} — level {}; {:?}", row.name, row.level, row.status))
+                .map(|row| lfmt!("{} — level {}; {:?}", row.name, row.level, row.status))
                 .collect(),
             None => Vec::new(),
         }

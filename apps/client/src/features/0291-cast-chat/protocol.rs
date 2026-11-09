@@ -26,10 +26,10 @@ impl Outbox {
             if let Ok(message) = message {
                 let _ = shared.cast_control.apply(message);
             }
-            shared.cast_chat.feedback = "Cast action applied".into();
+            shared.cast_chat.feedback = tr!("Cast action applied").into();
         } else {
             shared.cast_chat.feedback =
-                "Cast action refused; the viewer or cast may have changed".into();
+                tr!("Cast action refused; the viewer or cast may have changed").into();
         }
     }
 }

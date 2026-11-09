@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) struct Widgets {
+    pub(super) badge_id: HWND,
     pub(super) edits: [HWND; 3],
     pub(super) output: HWND,
     pub(super) heading: HWND,
@@ -12,15 +13,14 @@ pub(super) struct Widgets {
     pub(super) cards: Vec<HWND>,
     pub(super) stamina_bar: HWND,
     pub(super) training_bar: HWND,
-    pub(super) badge_id: HWND,
 }
 
 pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
     unsafe {
         let fields = [
-            ("Page offset", "0"),
-            ("Page size (1-50)", "20"),
-            ("Target UUID (blank = self)", ""),
+            (tr!("Page offset"), "0"),
+            (tr!("Page size (1-50)"), "20"),
+            (tr!("Target UUID (blank = self)"), ""),
         ];
         let mut edits = [null_mut(); 3];
         for (i, (label, value)) in fields.iter().enumerate() {
@@ -36,17 +36,17 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             );
         }
         for (i, label) in [
-            "General stats",
-            "Recent deaths",
-            "Recent PvP kills",
-            "Achievements",
-            "Appearances",
-            "Store summary",
-            "Inspection",
-            "Offence",
-            "Defence",
-            "Misc",
-            "Badges",
+            tr!("General stats"),
+            tr!("Recent deaths"),
+            tr!("Recent PvP kills"),
+            tr!("Achievements"),
+            tr!("Appearances"),
+            tr!("Store summary"),
+            tr!("Inspection"),
+            tr!("Offence"),
+            tr!("Defence"),
+            tr!("Misc"),
+            tr!("Badges"),
         ]
         .iter()
         .enumerate()
@@ -66,9 +66,9 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             );
         }
         for (id, label, x) in [
-            (112, "Previous page", 10),
-            (113, "Next page", 190),
-            (117, "Analytics", 370),
+            (112, tr!("Previous page"), 10),
+            (113, tr!("Next page"), 190),
+            (117, tr!("Analytics"), 370),
             (118, "Item summary", 545),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
@@ -82,9 +82,9 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         for (id, label, x) in [
-            (114, "All PvP results", 10),
-            (115, "Unjustified", 190),
-            (116, "Guild war", 370),
+            (114, tr!("All PvP results"), 10),
+            (115, tr!("Unjustified"), 190),
+            (116, tr!("Guild war"), 370),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
         }
@@ -99,7 +99,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
         let achievement_browser = control(
             hwnd,
             "BUTTON",
-            "Browse achievements",
+            tr!("Browse achievements"),
             140,
             [545, 155, 165, 28],
             WS_TABSTOP,
@@ -149,32 +149,10 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             .collect();
         let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
         let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
-        for (id, label, x) in [
-            (145, "All badges", 10),
-            (146, "Earned badges", 185),
-            (147, "Locked badges", 360),
-            (148, "Hidden locally", 535),
-        ] {
-            control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
-        }
-        control(hwnd, "STATIC", "Badge ID", 151, [10, 655, 90, 25], 0);
-        let badge_id = control(
-            hwnd,
-            "EDIT",
-            "",
-            149,
-            [105, 655, 90, 25],
-            WS_BORDER | WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "BUTTON",
-            "Hide / show locally",
-            150,
-            [210, 655, 200, 25],
-            WS_TABSTOP,
-        );
+        let badge_id = super::super::profile_table::badge_controls(hwnd);
+        super::super::offence_table::controls(hwnd);
         Widgets {
+            badge_id,
             edits,
             output,
             heading,
@@ -185,7 +163,6 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             cards,
             stamina_bar,
             training_bar,
-            badge_id,
         }
     }
 }

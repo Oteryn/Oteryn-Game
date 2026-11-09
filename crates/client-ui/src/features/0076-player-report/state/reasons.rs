@@ -111,8 +111,13 @@ impl Panel {
     pub fn reason_help(&self) -> String {
         let reason = self.fields[0].trim().parse::<usize>().ok();
         match reason.and_then(|n| REASONS.get(n).map(|value| (n, value))) {
-            Some((n, (label, example))) => format!("Reason {n}: {label}\r\nEvidence: {example}"),
-            None => "Choose a report reason using Previous reason / Next reason.".into(),
+            Some((n, (label, example))) => lfmt!(
+                "Reason {n}: {label}\r\nEvidence: {example}",
+                example = crate::localization::tr(example),
+                label = crate::localization::tr(label),
+                n = n
+            ),
+            None => tr!("Choose a report reason using Previous reason / Next reason.").into(),
         }
     }
 }

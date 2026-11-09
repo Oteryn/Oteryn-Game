@@ -42,7 +42,7 @@ pub fn control_request(p: &mut ItemForgePanel) -> Option<ServerMechanicCommand> 
         },
     };
     let Some(bytes) = r.encode() else {
-        p.feedback = Some("Select valid items and forge options".into());
+        p.feedback = Some(tr!("Select valid items and forge options").into());
         return None;
     };
     request(p, command(bytes.to_vec()))
@@ -95,7 +95,7 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
             p.decoded = Some(reply);
             p.feedback = None;
         } else {
-            p.feedback = Some("Invalid forge reply; refresh to retry".into());
+            p.feedback = Some(tr!("Invalid forge reply; refresh to retry").into());
         }
     } else {
         if r.status == CommandStatus::Rejected
@@ -107,7 +107,7 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
             p.retry = None;
             p.preview.invalidate();
         }
-        p.feedback = Some(format!("Server refused forge action: {:?}", r.status))
+        p.feedback = Some(lfmt!("Server refused forge action: {:?}", r.status))
     }
 }
 /// Read-only projection through the existing Forge capability.

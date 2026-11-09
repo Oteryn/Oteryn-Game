@@ -149,3 +149,5 @@ fn cp02_team_finder_native_session_scenario() -> Result<(), Box<dyn std::error::
         Ok(())
     })
 }
+
+include!("social.rs");

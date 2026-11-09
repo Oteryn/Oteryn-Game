@@ -84,7 +84,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Quest Log — select a quest, then a mission").as_ptr(),
+            wide(tr!("Quest Log — select a quest, then a mission")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -121,8 +121,18 @@ fn run(
             tracker,
         } = controls::create(hwnd);
         if [
-            quests, missions, description, refresh, track, list_search, list_sort,
-            auto_add, auto_remove, filter, search, tracker,
+            quests,
+            missions,
+            description,
+            refresh,
+            track,
+            list_search,
+            list_sort,
+            auto_add,
+            auto_remove,
+            filter,
+            search,
+            tracker,
         ]
         .iter()
         .any(|h| h.is_null())
@@ -240,30 +250,30 @@ fn run(
             SetWindowTextW(
                 auto_add,
                 wide(if panel.tracker.auto_add {
-                    "Auto-add: on"
+                    tr!("Auto-add: on")
                 } else {
-                    "Auto-add: off"
+                    tr!("Auto-add: off")
                 })
                 .as_ptr(),
             );
             SetWindowTextW(
                 auto_remove,
                 wide(if panel.tracker.auto_remove {
-                    "Auto-remove: on"
+                    tr!("Auto-remove: on")
                 } else {
-                    "Auto-remove: off"
+                    tr!("Auto-remove: off")
                 })
                 .as_ptr(),
             );
             SetWindowTextW(
                 filter,
-                wide(&format!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
+                wide(&lfmt!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
             );
             if held.as_ref() != Some(panel) {
                 let text = oteryn_client_ui::quest_log::tracker_lines(panel)
                     .iter()
                     .map(|line| {
-                        format!(
+                        lfmt!(
                             "Quest {}{}\r\n{}",
                             line.quest_index,
                             if line.completed { " (completed)" } else { "" },
@@ -295,7 +305,7 @@ fn run(
                     let rows = quest_rows(panel);
                     shown_quests = rows.iter().map(|q| q.quest_index).collect();
                     for q in rows {
-                        let label = format!(
+                        let label = lfmt!(
                             "Quest {}{}",
                             q.quest_index,
                             if q.completed { " (completed)" } else { "" }
@@ -336,9 +346,9 @@ fn run(
                 SetWindowTextW(
                     track,
                     wide(if tracked {
-                        "Stop tracking quest"
+                        tr!("Stop tracking quest")
                     } else {
-                        "Track quest"
+                        tr!("Track quest")
                     })
                     .as_ptr(),
                 );

@@ -138,7 +138,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     // SAFETY: windows, controls, userdata and message dispatch remain on this thread.
     unsafe {
         let mut actions = Box::<Actions>::default();
-        let hwnd = window(null_mut(), "Prey", 936, 446, &mut actions);
+        let hwnd = window(null_mut(), tr!("Prey"), 936, 446, &mut actions);
         if hwnd.is_null() {
             close(&weak);
             return;
@@ -147,7 +147,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             REFRESH,
             [796, 10, 110, 28],
             WS_TABSTOP,
@@ -271,7 +271,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         DestroyWindow(created.window);
                     }
                     mailbox.prey.offered_slot = None;
-                    mailbox.prey.feedback = Some("Could not open the offered-creature list.");
+                    mailbox.prey.feedback = Some(tr!("Could not open the offered-creature list."));
                 } else {
                     offers = Some(created);
                 }
@@ -298,14 +298,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if let Some(confirmation) = confirmation {
                 let answer = MessageBoxW(
                     hwnd,
-                    wide(&format!(
+                    wide(&lfmt!(
                         "Select {} again in slot {} for {} gold?",
                         creature_label(&confirmation.creature),
                         confirmation.slot,
                         confirmation.price_gold
                     ))
                     .as_ptr(),
-                    wide("Confirm Prey purchase").as_ptr(),
+                    wide(tr!("Confirm Prey purchase")).as_ptr(),
                     MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
                 );
                 if answer == IDYES {

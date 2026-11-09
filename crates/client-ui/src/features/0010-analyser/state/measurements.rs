@@ -57,7 +57,11 @@ pub fn chart_values(values: &[u64]) -> String {
             ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'][index]
         })
         .collect();
-    format!("{bars}\r\nPer minute · oldest → newest · peak {max} · up to 60 minutes")
+    lfmt!(
+        "{bars}\r\nPer minute · oldest → newest · peak {max} · up to 60 minutes",
+        bars = bars,
+        max = max
+    )
 }
 
 pub fn per_hour(value: u64, seconds: u64) -> u64 {

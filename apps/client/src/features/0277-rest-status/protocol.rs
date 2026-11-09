@@ -17,7 +17,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.rest_status.pending = false;
-            mailbox.rest_status.error = Some("Session ended");
+            mailbox.rest_status.error = Some(tr!("Session ended"));
         }
     }
     pub fn rest_status_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -26,9 +26,11 @@ impl PlayLink {
         }
         self.rest_status_request();
         #[cfg(windows)]
-        crate::play::status_window::open_window(self, "Rest and food — Ctrl+Alt+Shift+R", |mailbox| {
-            &mut mailbox.rest_status
-        });
+        crate::play::status_window::open_window(
+            self,
+            tr!("Rest and food — Ctrl+Alt+Shift+R"),
+            |mailbox| &mut mailbox.rest_status,
+        );
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).rest_status.open = true;

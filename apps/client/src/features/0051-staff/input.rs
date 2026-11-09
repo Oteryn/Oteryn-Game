@@ -12,7 +12,7 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.staff;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
     if panel.pending {
@@ -22,10 +22,10 @@ pub(in crate::play) fn submit(
         Ok(command) => {
             panel.pending = true;
             panel.pending_kind = command.kind;
-            panel.feedback = "Waiting for server authorization".into();
+            panel.feedback = tr!("Waiting for server authorization").into();
             if commands.send(PlayCommand::Feature(command)).is_err() {
                 *panel = super::state::Panel {
-                    feedback: "The session has ended".into(),
+                    feedback: tr!("The session has ended").into(),
                     ..Default::default()
                 };
             }

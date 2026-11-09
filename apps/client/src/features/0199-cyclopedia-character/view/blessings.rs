@@ -14,7 +14,7 @@ impl PlayLink {
         {
             let panel = &mut mailbox.cyclopedia_character.blessings;
             panel.pending = false;
-            panel.feedback = Some("The session has ended");
+            panel.feedback = Some(tr!("The session has ended"));
         }
     }
 }
@@ -56,7 +56,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 {
                     let panel = &mut mailbox.cyclopedia_character.blessings;
                     panel.pending = false;
-                    panel.feedback = Some("The session has ended");
+                    panel.feedback = Some(tr!("The session has ended"));
                 }
             },
         },

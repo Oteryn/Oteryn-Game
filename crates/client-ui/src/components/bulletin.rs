@@ -21,9 +21,9 @@ pub struct Bulletin {
 fn text(value: &Value, key: &str) -> Result<String, String> {
     let s = value[key]
         .as_str()
-        .ok_or_else(|| format!("Missing {key}"))?;
+        .ok_or_else(|| lfmt!("Missing {key}", key = key))?;
     if s.trim().is_empty() || s.len() > 4096 || s.contains('\0') {
-        return Err(format!("Invalid {key}"));
+        return Err(lfmt!("Invalid {key}", key = key));
     }
     Ok(s.to_owned())
 }
@@ -31,7 +31,7 @@ fn number(value: &Value, key: &str) -> Result<u16, String> {
     value[key]
         .as_u64()
         .and_then(|n| u16::try_from(n).ok())
-        .ok_or_else(|| format!("Invalid {key}"))
+        .ok_or_else(|| lfmt!("Invalid {key}", key = key))
 }
 pub fn days_in_month(year: u16, month: u8) -> u8 {
     match month {
@@ -47,14 +47,14 @@ pub fn days_in_month(year: u16, month: u8) -> u8 {
 impl Bulletin {
     pub fn parse(json: &str) -> Result<Self, String> {
         if json.len() > 256 * 1024 {
-            return Err("Bulletin exceeds 256 KiB".into());
+            return Err(tr!("Bulletin exceeds 256 KiB").into());
         }
-        let root: Value = serde_json::from_str(json).map_err(|_| "Invalid bulletin JSON")?;
+        let root: Value = serde_json::from_str(json).map_err(|_| tr!("Invalid bulletin JSON"))?;
         let list = |key: &str| -> Result<&Vec<Value>, String> {
             root[key]
                 .as_array()
                 .filter(|items| items.len() <= 64)
-                .ok_or_else(|| format!("Invalid {key} list"))
+                .ok_or_else(|| lfmt!("Invalid {key} list", key = key))
         };
         let mut feed = Self::default();
         for item in list("news")? {
@@ -65,10 +65,10 @@ impl Bulletin {
         }
         for item in list("events")? {
             let year = number(item, "year")?;
-            let month = u8::try_from(number(item, "month")?).map_err(|_| "Invalid month")?;
-            let day = u8::try_from(number(item, "day")?).map_err(|_| "Invalid day")?;
+            let month = u8::try_from(number(item, "month")?).map_err(|_| tr!("Invalid month"))?;
+            let day = u8::try_from(number(item, "day")?).map_err(|_| tr!("Invalid day"))?;
             if year == 0 || year > 9999 || day == 0 || day > days_in_month(year, month) {
-                return Err("Invalid event date".into());
+                return Err(tr!("Invalid event date").into());
             }
             feed.events.push(Event {
                 year,
@@ -85,7 +85,7 @@ impl Bulletin {
     }
     pub fn news_text(&self) -> String {
         if self.news.is_empty() {
-            return "No news published.".into();
+            return tr!("No news published.").into();
         }
         self.news
             .iter()
@@ -94,7 +94,11 @@ impl Bulletin {
             .join("\r\n\r\n")
     }
     pub fn month_text(&self, year: u16, month: u8) -> String {
-        let mut result = format!("Events {year:04}-{month:02}\r\n");
+        let mut result = lfmt!(
+            "Events {year:04}-{month:02}\r\n",
+            month = month,
+            year = year
+        );
         let mut found = false;
         for event in &self.events {
             if event.year == year && event.month == month {
@@ -106,7 +110,7 @@ impl Bulletin {
             }
         }
         if !found {
-            result.push_str("No events published for this month.");
+            result.push_str(tr!("No events published for this month."));
         }
         result
     }

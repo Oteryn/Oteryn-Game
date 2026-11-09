@@ -1,6 +1,8 @@
 use super::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DailyRewardPanel {
+    pub details: Option<daily_reward::details::Details>,
+    pub details_pending: bool,
     pub selected: bool,
     pub open: bool,
     pub wall: Option<daily_reward::DailyRewardWall>,

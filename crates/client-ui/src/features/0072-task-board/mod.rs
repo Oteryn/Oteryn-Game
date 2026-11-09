@@ -70,11 +70,11 @@ pub fn apply_weekly(panel: &mut TaskBoardPanel, reply: task_board::full::Reply) 
 
 pub fn request(panel: &mut TaskBoardPanel, intent: Intent) -> Option<TaskBoardCommand> {
     if !panel.selected {
-        panel.feedback = Some("Task Board is unavailable in this session");
+        panel.feedback = Some(tr!("Task Board is unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let (action, task) = match intent {
@@ -94,9 +94,9 @@ pub fn apply_result(panel: &mut TaskBoardPanel, response: &TaskBoardResponse) {
     panel.pending = false;
     panel.weekly = None;
     panel.feedback = Some(if response.reply.refused {
-        "The server refused the Task Board action"
+        tr!("The server refused the Task Board action")
     } else {
-        "The server confirmed the Task Board action"
+        tr!("The server confirmed the Task Board action")
     });
     panel.state = Some(response.reply.clone());
 }
@@ -106,11 +106,12 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
     if let Some(reply) = &panel.weekly {
         return view::panel_text(reply, panel.feedback);
     }
-    let mut text = String::from("Task Board\n");
+    let mut text = String::from(tr!("Task Board\n"));
     if let Some(state) = &panel.state {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "Points: {}  Bounty points: {}\n",
-            state.points, state.bounty_points
+            state.points,
+            state.bounty_points
         ));
         for (index, task) in state.tasks.iter().enumerate() {
             let progress = if state.selected == (index + 1) as u8 {
@@ -118,7 +119,7 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
             } else {
                 0
             };
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "{}. {}: {}/{}  last claim: {}\n",
                 index + 1,
                 task.race,
@@ -128,7 +129,7 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
             ));
         }
         for path in 0..task_board::TALISMAN_PATHS {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "Talisman {}: level {}, bonus {}, next cost {}\n",
                 path + 1,
                 state.talisman_levels[path],
@@ -137,7 +138,7 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
             ));
         }
     } else {
-        text.push_str("Refresh to load the board\n");
+        text.push_str(tr!("Refresh to load the board\n"));
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);

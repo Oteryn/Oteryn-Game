@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate oteryn_client_ui;
 #[cfg(windows)]
 mod windows_shell;
 
@@ -6,7 +8,7 @@ fn native_client() -> Option<oteryn_client::ClientBootstrap> {
     match oteryn_client::ClientBootstrap::new() {
         Ok(client) => Some(client),
         Err(error) => {
-            println!("Oteryn: {error}");
+            lprintln!("Oteryn: {error}", error = error);
             None
         }
     }
@@ -20,7 +22,7 @@ fn main() -> std::process::ExitCode {
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
         Ok(instance) => instance,
         Err(error) => {
-            eprintln!("Oteryn: {error}");
+            leprintln!("Oteryn: {error}", error = error);
             return std::process::ExitCode::from(3);
         }
     };
@@ -28,7 +30,7 @@ fn main() -> std::process::ExitCode {
         return match oteryn_client::cast_watch::run() {
             Ok(()) => std::process::ExitCode::SUCCESS,
             Err(error) => {
-                eprintln!("Oteryn Watch: {error}");
+                leprintln!("Oteryn Watch: {error}", error = error);
                 std::process::ExitCode::FAILURE
             }
         };
@@ -37,7 +39,7 @@ fn main() -> std::process::ExitCode {
     match windows_shell::run(native_client()) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("Error: {error:?}");
+            leprintln!("Error: {error:?}", error = error);
             std::process::ExitCode::FAILURE
         }
     }
@@ -47,7 +49,7 @@ fn main() -> std::process::ExitCode {
 fn main() {
     oteryn_client::crash_report::install_hook();
     if std::env::args().any(|arg| arg == "--watch") {
-        eprintln!("Oteryn Watch uses the native Windows desktop shell");
+        leprintln!("Oteryn Watch uses the native Windows desktop shell");
         return;
     }
 
@@ -62,5 +64,5 @@ fn main() {
         }
         entry.shutdown();
     }
-    println!("Oteryn pre-native client: Windows desktop target only");
+    lprintln!("Oteryn pre-native client: Windows desktop target only");
 }

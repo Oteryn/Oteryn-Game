@@ -43,7 +43,7 @@ pub(in crate::play) fn review(
         .entries
         .iter()
         .find(|e| Some(e.hireling) == m.hireling_management.identity)
-        .ok_or("Select an owned hireling")?;
+        .ok_or(tr!("Select an owned hireling"))?;
     let key = match action {
         131 => {
             if name == entry.name
@@ -116,7 +116,7 @@ pub(in crate::play) fn submit(
     };
     if commands.send(PlayCommand::ServerMechanic(command)).is_err() {
         m.store.pending = false;
-        m.hireling_management.feedback = Some("The session has ended");
+        m.hireling_management.feedback = Some(tr!("The session has ended"));
         return false;
     }
     m.hireling_management.feedback =
@@ -134,6 +134,6 @@ pub(in crate::play) fn prices(m: &mut Mailbox, commands: &UnboundedSender<PlayCo
         && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         m.store.pending = false;
-        m.hireling_management.feedback = Some("The session has ended");
+        m.hireling_management.feedback = Some(tr!("The session has ended"));
     }
 }

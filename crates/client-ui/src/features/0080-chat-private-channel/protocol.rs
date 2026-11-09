@@ -51,29 +51,31 @@ pub fn apply_result(panel: &mut ChatPanel, outcome: &ChatOutcome) {
         ChatDisposition::Ok => None,
         ChatDisposition::NotAllowed => Some(
             match intent {
-                Some(Intent::Create) => "Premium is required to create a private channel",
-                Some(Intent::Invite | Intent::Exclude) => "You have no own private channel",
-                _ => "You are not allowed in this channel",
+                Some(Intent::Create) => tr!("Premium is required to create a private channel"),
+                Some(Intent::Invite | Intent::Exclude) => tr!("You have no own private channel"),
+                _ => tr!("You are not allowed in this channel"),
             }
             .into(),
         ),
         ChatDisposition::RoomNotOpen => Some(
             if intent == Some(Intent::Send) {
-                "Join the channel first"
+                tr!("Join the channel first")
             } else {
-                "This channel is not open"
+                tr!("This channel is not open")
             }
             .into(),
         ),
-        ChatDisposition::NotInvited => Some("You are not invited to this channel".into()),
-        ChatDisposition::NotOnline => Some("The named player is not online".into()),
-        ChatDisposition::Muted | ChatDisposition::Exhausted => Some(format!(
+        ChatDisposition::NotInvited => Some(tr!("You are not invited to this channel").into()),
+        ChatDisposition::NotOnline => Some(tr!("The named player is not online").into()),
+        ChatDisposition::Muted | ChatDisposition::Exhausted => Some(lfmt!(
             "Wait {} seconds before speaking",
             outcome.wait_seconds
         )),
-        ChatDisposition::LevelTooLow => Some("Your level is too low".into()),
-        ChatDisposition::NoVocation => Some("This action requires a vocation".into()),
-        ChatDisposition::ChatUnavailable => Some("Private channels are unavailable".into()),
-        ChatDisposition::Rejected => Some("The server rejected the private-channel command".into()),
+        ChatDisposition::LevelTooLow => Some(tr!("Your level is too low").into()),
+        ChatDisposition::NoVocation => Some(tr!("This action requires a vocation").into()),
+        ChatDisposition::ChatUnavailable => Some(tr!("Private channels are unavailable").into()),
+        ChatDisposition::Rejected => {
+            Some(tr!("The server rejected the private-channel command").into())
+        }
     };
 }

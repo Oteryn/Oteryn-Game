@@ -260,3 +260,24 @@ settlement. Promotion includes the current Premium gate. A player-death scenario
 is displayed only with a published compatible World policy. XP is the baseline
 before attacker-specific Bless reductions; final death settlement re-reads its
 facts and determines actual item loss. A lost backpack includes its contents.
+
+## Coherent profile (opt-in selector 132, command 388)
+
+Request: `132:u8` plus optional `target:16 bytes`; absent target selects self.
+Reply: `132:u8, character:16 bytes, name_len:u8, name:utf8, badge_count:u8, badge_ids:u8[], equipment_count:u8`, followed by each `slot:u8, definition_len:u16le, definition:utf8, quantity:u32le`. Name is 2–29 bytes, definitions 1–512 bytes, equipment at most 32 unique slots, quantity positive; badges use the admitted catalogue in ascending order without duplicates. Reply is bounded to 17000 bytes.
+
+Identity, permanent account badges and equipped items are read together under the current viewer item/session, node and recovery fences and existing accepted VIP consent rule. Self queries refresh eligible badges first; foreign reads never grant awards. Refusal discloses no profile. Legacy empty command 387 and tab 7 remain unchanged. Native Badges and Inspection use this opt-in snapshot and discard cached facts on target changes or refused refreshes.
+
+## Named spell modifiers (selector 133, command 388)
+
+Request: `133:u8, page:u8, filter:u8`, optionally followed by the target Character's 16 bytes. The low three filter bits select equipment (1), weapon proficiency (2) and Wheel (4); at least one source is required. Bit 3 selects source ordering; its absence selects spell ordering. Other bits are rejected. Filtering and ordering precede pagination; each page contains at most 64 of at most 1024 observed modifiers.
+
+Reply: `133:u8, page:u8, filter:u8, character:16 bytes, total:u16le, stats_len:u16le, stats:bytes, available:u8`, then the modifier snapshot when available. `stats` is the unchanged Offence combat codec, including the observation time and Character/equipment revisions. The reply is bounded to 32000 bytes. The target is identified by `character`; the query target is not echoed separately.
+
+The snapshot has `schema=1:u8, known_sources:u8, source_count:u8`, followed by sources (`kind:u8, equipment_slot:u8, key_len:u16le, key:utf8`), then `row_count:u16le` and rows (`source_index:u8, effect:u8, spell_len:u16le, spell:utf8, value:i64le`). There are at most 32 sources; keys are 1–512 bytes and spell names 1–128 bytes, without control characters. Values are non-negative. Source kinds are equipment (1), proficiency (2), Wheel (3); known-source bits use the request's source masks. An unavailable source is distinct from an observed source with no modifiers. An absent snapshot identifies an observation made without named modifier facts.
+
+Effects 1–6 are base damage, base healing, critical chance, critical extra damage, life leech and mana leech, in hundredths of a percentage point. Effect 7 is an individual cooldown reduction in milliseconds, effect 8 a Wheel spell-augment stage (1–3), and effect 9 a secondary Focus-group cooldown reduction in milliseconds. Individual reductions remain subject to the cast owner's half-base floor. Modifiers describe the observed equipment/allocation; cast, vocation and target conditions still apply.
+
+Production samples read native item declarations, the actual selected weapon-proficiency cast rewards, and the current Wheel projection/stages. Named facts and scalar combat facts are committed together after the existing current session/node/recovery, content and exact-equipment checks; named facts participate in the replay fingerprint. Legacy writers leave the optional column NULL. Reads preserve the existing accepted VIP consent and current viewer fence, including for offline targets. The read model grants no combat, item or cast authority.
+
+Stored modifiers also carry their sample revision. Reads accept them only when that revision matches the scalar sample, so older writers that leave optional columns untouched make prior modifiers unavailable instead of attaching them to a newer observation.

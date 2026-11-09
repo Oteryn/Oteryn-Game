@@ -1,7 +1,8 @@
 use super::*;
 
 #[test]
-fn chat_hotkey_presets_follow_the_live_composer_context() -> Result<(), Box<dyn std::error::Error>> {
+fn chat_hotkey_presets_follow_the_live_composer_context() -> Result<(), Box<dyn std::error::Error>>
+{
     use crate::play::SettingsState;
     use oteryn_client_ui::chat::ComposerMode;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
@@ -11,20 +12,56 @@ fn chat_hotkey_presets_follow_the_live_composer_context() -> Result<(), Box<dyn 
     settings.apply_chat_preset(false)?;
     settings.sync_chat_context(&link);
     let saved = std::fs::read(&path)?;
-    assert_eq!(crate::play::mailbox::lock(&link.mailbox).chat.console.mode, ComposerMode::Off);
-    let press = NormalizedInputEvent::Key { code: KeyCode::new(26)?, modifiers: Modifiers::NONE, state: ButtonState::Pressed, repeat: false };
-    assert!(matches!(settings.input(&[press]).0.as_slice(), [NormalizedInputEvent::Key {code: KeyCode::ARROW_UP, ..}]));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.console.mode,
+        ComposerMode::Off
+    );
+    let press = NormalizedInputEvent::Key {
+        code: KeyCode::new(26)?,
+        modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed,
+        repeat: false,
+    };
+    assert!(matches!(
+        settings.input(&[press]).0.as_slice(),
+        [NormalizedInputEvent::Key {
+            code: KeyCode::ARROW_UP,
+            ..
+        }]
+    ));
     crate::play::mailbox::lock(&link.mailbox).chat.console.mode = ComposerMode::Temporary;
     settings.sync_chat_context(&link);
-    assert!(!settings.preferences.keybindings.contains_key("0013-paced-movement-move-north"));
+    assert!(
+        !settings
+            .preferences
+            .keybindings
+            .contains_key("0013-paced-movement-move-north")
+    );
     assert_eq!(std::fs::read(&path)?, saved);
-    crate::play::mailbox::lock(&link.mailbox).chat.console.sent();
+    crate::play::mailbox::lock(&link.mailbox)
+        .chat
+        .console
+        .sent();
     settings.sync_chat_context(&link);
-    assert_eq!(settings.preferences.keybindings.get("0013-paced-movement-move-north").map(String::as_str), Some("W"));
+    assert_eq!(
+        settings
+            .preferences
+            .keybindings
+            .get("0013-paced-movement-move-north")
+            .map(String::as_str),
+        Some("W")
+    );
     settings.manual_hotkeys();
     crate::play::mailbox::lock(&link.mailbox).chat.console.mode = ComposerMode::On;
     settings.sync_chat_context(&link);
-    assert_eq!(settings.preferences.keybindings.get("0013-paced-movement-move-north").map(String::as_str), Some("W"));
+    assert_eq!(
+        settings
+            .preferences
+            .keybindings
+            .get("0013-paced-movement-move-north")
+            .map(String::as_str),
+        Some("W")
+    );
     std::fs::remove_file(path)?;
     Ok(())
 }
@@ -68,6 +105,23 @@ fn loaded_hotkey_profile_preserves_manual_routes_in_live_chat_context()
             });
         assert!(matches!(
             settings.input(&gesture).0.first(),
+            Some(NormalizedInputEvent::Key {
+                code: KeyCode::ARROW_UP,
+                ..
+            })
+        ));
+    }
+    for open in [false, true] {
+        crate::play::mailbox::lock(&link.mailbox).chat.open = open;
+        let gesture =
+            [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+                code: forward,
+                modifiers: Modifiers::NONE,
+                state,
+                repeat: false,
+            });
+        assert!(matches!(
+            settings.input_from_play(&gesture, &link).0.first(),
             Some(NormalizedInputEvent::Key {
                 code: KeyCode::ARROW_UP,
                 ..

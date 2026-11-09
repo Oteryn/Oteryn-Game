@@ -75,6 +75,10 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
     assert_eq!(link.charm_progression_panel().catalogue.page.cards[1].object_look_type, Some(3058));
     link.bestiary_catalogue_request(7);
     assert_eq!(link.charm_progression_panel().fields[1], "9");
+    assert!(
+        oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel())
+            .contains("Moss keeper — category illustration")
+    );
     link.bestiary_catalogue_request(6);
     assert_eq!(link.charm_progression_panel().fields[1], "7");
     assert!(receiver.try_recv().is_err());
@@ -104,6 +108,8 @@ fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
     );
     assert_eq!(link.charm_progression_panel().catalogue.detail_card.as_ref().ok_or("detail art")?.outfit_look_type, 128);
     let text = oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel());
+    assert!(text.contains("Grove watcher — category illustration"));
+    assert!(text.contains("███████"));
     assert!(text.contains("Health: 90"));
     assert!(text.contains("Resistance fire: 20/1%"));
     assert!(text.contains("Twig: 1-2"));

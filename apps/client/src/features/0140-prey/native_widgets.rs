@@ -40,14 +40,14 @@ pub(super) unsafe fn slot_controls(parent: HWND, index: usize) -> SlotControls {
                 parent,
                 "BUTTON",
                 [
-                    "List reroll",
-                    "Bonus reroll",
-                    "Select",
-                    "Pick again…",
-                    "Manual",
-                    "Auto reroll",
-                    "Lock bonus",
-                    "Select any (5 cards)",
+                    tr!("List reroll"),
+                    tr!("Bonus reroll"),
+                    tr!("Select"),
+                    tr!("Pick again…"),
+                    tr!("Manual"),
+                    tr!("Auto reroll"),
+                    tr!("Lock bonus"),
+                    tr!("Select any (5 cards)"),
                 ][button],
                 base + 80 + button,
                 [x, 324, 92, 28],
@@ -76,7 +76,7 @@ pub(super) unsafe fn slot_controls(parent: HWND, index: usize) -> SlotControls {
 pub(super) unsafe fn offered_window(parent: HWND, actions: &mut Actions) -> Offers {
     // SAFETY: all HWNDs and the shared action pointer remain on this thread.
     unsafe {
-        let hwnd = window(parent, "Creatures offered today", 640, 590, actions);
+        let hwnd = window(parent, tr!("Creatures offered today"), 640, 590, actions);
         let rows = (0..prey::MAX_OFFERED_PAGE)
             .map(|row| {
                 control(
@@ -92,7 +92,7 @@ pub(super) unsafe fn offered_window(parent: HWND, actions: &mut Actions) -> Offe
         let first = control(
             hwnd,
             "BUTTON",
-            "First page",
+            tr!("First page"),
             FIRST,
             [10, 506, 294, 28],
             WS_TABSTOP,
@@ -100,7 +100,7 @@ pub(super) unsafe fn offered_window(parent: HWND, actions: &mut Actions) -> Offe
         let next = control(
             hwnd,
             "BUTTON",
-            "Next page",
+            tr!("Next page"),
             NEXT,
             [320, 506, 294, 28],
             WS_TABSTOP,
@@ -134,8 +134,11 @@ pub(super) unsafe fn render_slots(window: HWND, controls: &[SlotControls], panel
             let x = 12 + index as i32 * 302;
             SetWindowTextW(
                 controls.title,
-                wide(&state.map_or_else(|| format!("Slot {slot_id} · Loading…"), slot_text))
-                    .as_ptr(),
+                wide(&state.map_or_else(
+                    || lfmt!("Slot {slot_id} · Loading…", slot_id = slot_id),
+                    slot_text,
+                ))
+                .as_ptr(),
             );
             for (cell, &hwnd) in controls.creatures.iter().enumerate() {
                 if let Some(key) = state.and_then(|state| state.creatures.get(cell)) {
@@ -204,13 +207,13 @@ pub(super) unsafe fn render_offers(offers: &Offers, panel: &PreyPanel) {
                 let occupied =
                     row.occupied_slot != 0 && Some(row.occupied_slot) != panel.offered_slot;
                 let suffix = if occupied {
-                    format!(" · in slot {}", row.occupied_slot)
+                    lfmt!(" · in slot {}", row.occupied_slot)
                 } else {
                     String::new()
                 };
                 SetWindowTextW(
                     hwnd,
-                    wide(&format!(
+                    wide(&lfmt!(
                         "{} · {} gold{}",
                         creature_label(&row.creature),
                         row.price_gold,

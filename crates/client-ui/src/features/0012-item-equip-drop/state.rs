@@ -16,14 +16,14 @@ impl Slot {
     #[must_use]
     pub fn text(self) -> String {
         if !self.available {
-            return format!("{}: unavailable", self.label);
+            return lfmt!("{}: unavailable", self.label);
         }
         match self.item {
             Some(item) => format!(
                 "{}: {} ×{}",
                 self.label, item.item_definition_ref, item.count
             ),
-            None => format!("{}: empty", self.label),
+            None => lfmt!("{}: empty", self.label),
         }
     }
     #[must_use]
@@ -43,16 +43,16 @@ impl Slot {
 pub fn rows(inventory: Option<&CharacterInventory>, selected: bool) -> Vec<Slot> {
     use EquipmentSlot as E;
     [
-        ("Head", Some(E::Head)),
-        ("Neck", Some(E::Necklace)),
-        ("Backpack", None),
-        ("Armor", Some(E::Armor)),
-        ("Right", Some(E::RightHand)),
-        ("Left", Some(E::LeftHand)),
-        ("Legs", Some(E::Legs)),
-        ("Feet", Some(E::Feet)),
-        ("Ring", Some(E::Ring)),
-        ("Ammo", Some(E::Ammo)),
+        (tr!("Head"), Some(E::Head)),
+        (tr!("Neck"), Some(E::Necklace)),
+        (tr!("Backpack"), None),
+        (tr!("Armor"), Some(E::Armor)),
+        (tr!("Right"), Some(E::RightHand)),
+        (tr!("Left"), Some(E::LeftHand)),
+        (tr!("Legs"), Some(E::Legs)),
+        (tr!("Feet"), Some(E::Feet)),
+        (tr!("Ring"), Some(E::Ring)),
+        (tr!("Ammo"), Some(E::Ammo)),
     ]
     .into_iter()
     .map(|(label, slot)| Slot {

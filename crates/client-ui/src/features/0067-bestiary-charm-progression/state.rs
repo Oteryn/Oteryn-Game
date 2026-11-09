@@ -9,10 +9,12 @@ pub enum Intent {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub selector: super::Selector,
+    pub charm_browser: super::charm_browser::CharmBrowser,
     pub catalogue: super::catalogue::Catalogue,
     pub race_filter: RaceFilter,
     pub selected: bool,
     pub open: bool,
+    pub classic_open: bool,
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 2],
@@ -23,11 +25,11 @@ pub struct Panel {
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;

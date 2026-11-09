@@ -41,7 +41,7 @@ fn run(weak: WeakMailbox) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Achievement Notices — Ctrl+Shift+M").as_ptr(),
+            wide(tr!("Achievement Notices — Ctrl+Shift+M")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,

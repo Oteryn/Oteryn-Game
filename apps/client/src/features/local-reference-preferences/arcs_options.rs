@@ -103,7 +103,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         for field in [distance, size, opacity] {
             SendMessageW(field, EM_SETLIMITTEXT, 3, 0);
         }
-        let apply = control(hwnd, "BUTTON", "Apply", 956, [430, 208, 180, 30], 0);
+        let apply = control(hwnd, "BUTTON", tr!("Apply"), 956, [430, 208, 180, 30], 0);
         let help = control(
             hwnd,
             "STATIC",

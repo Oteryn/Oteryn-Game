@@ -31,7 +31,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         control(
             hwnd,
             "STATIC",
-            "Find number, status or known mission",
+            tr!("Find number, status or known mission"),
             112,
             10,
             10,
@@ -100,7 +100,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Quest list / Refresh",
+            tr!("Quest list / Refresh"),
             REFRESH,
             10,
             235,
@@ -111,7 +111,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         let track = control(
             hwnd,
             "BUTTON",
-            "Track quest",
+            tr!("Track quest"),
             TRACK,
             240,
             235,
@@ -122,7 +122,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         let auto_add = control(
             hwnd,
             "BUTTON",
-            "Auto-add: off",
+            tr!("Auto-add: off"),
             AUTO_ADD,
             750,
             10,
@@ -133,7 +133,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         let auto_remove = control(
             hwnd,
             "BUTTON",
-            "Auto-remove: off",
+            tr!("Auto-remove: off"),
             AUTO_REMOVE,
             750,
             45,
@@ -144,7 +144,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         let filter = control(
             hwnd,
             "BUTTON",
-            "Tracker: all quests",
+            tr!("Tracker: all quests"),
             FILTER,
             750,
             80,
@@ -155,7 +155,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Controls {
         control(
             hwnd,
             "STATIC",
-            "Search tracked missions",
+            tr!("Search tracked missions"),
             109,
             750,
             115,

@@ -102,3 +102,22 @@ fn clock_and_light_survive_scene_rebuilds() -> Result<(), oteryn_renderer::Batch
     assert_eq!(view.scene().sprites().lighting, lit);
     Ok(())
 }
+
+#[test]
+fn ambient_preference_changes_confirmed_clock_lighting() -> Result<(), Box<dyn std::error::Error>> {
+    let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
+    view.apply_pushed(&Pushed {
+        world_clock: Some(WorldClock { tibian_minute: 0, light_level: 0, light_color: 215 }),
+        ..Pushed::default()
+    })?;
+    assert_eq!(view.scene().sprites().lighting.ambient, [0; 3]);
+    let mut preferences = view.preferences().clone();
+    preferences.ambient_brightness = 40;
+    view.set_preferences(preferences.clone())?;
+    assert_eq!(view.scene().sprites().lighting.ambient, [102; 3]);
+    view.apply_pushed(&Pushed::default())?;
+    assert_eq!(view.scene().sprites().lighting.ambient, [102; 3]);
+    preferences.ambient_brightness = 101;
+    assert!(view.set_preferences(preferences).is_err());
+    Ok(())
+}

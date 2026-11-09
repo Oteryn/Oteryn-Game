@@ -1,11 +1,15 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Preview,
     Refresh,
     Projection,
     Set,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub artwork: Option<oteryn_client_runtime::cui3::house_podium::preview::Artwork>,
+    pub graphic_worker: bool,
+    pub preview_requested: bool,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -20,11 +24,11 @@ pub struct Panel {
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;

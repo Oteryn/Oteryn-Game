@@ -39,7 +39,7 @@ pub(in crate::play) fn enqueue(
         super::super::feature_0233_player_typing::input::composer(mailbox, commands, false);
         if commands.send(PlayCommand::ChatPublic(intent)).is_err() {
             mailbox.chat.pending = false;
-            mailbox.chat.feedback = Some("The session has ended".into());
+            mailbox.chat.feedback = Some(tr!("The session has ended").into());
         } else {
             mailbox.chat.console.sent();
         }

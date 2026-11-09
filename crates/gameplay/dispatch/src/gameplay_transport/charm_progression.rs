@@ -7,6 +7,8 @@
 mod charm_details;
 #[path = "charm_progression/catalogue.rs"]
 mod catalogue;
+#[path = "charm_progression/metadata.rs"]
+mod metadata;
 use std::sync::LazyLock;
 
 use super::charm::CharmProgressionPort;
@@ -153,8 +155,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return GuildReply::Rejected;
         };
-        if payload.first() == Some(&255) {
-            if CommandId::new(id).is_err() { return GuildReply::Rejected; }
+        if matches!(payload.first().copied(), Some(254 | 255)) {
+            if CommandId::new(id).is_err() {
+                return GuildReply::Rejected;
+            }
             return catalogue::dispatch(self, admitted, payload).await;
         }
         let Ok(action) = wire::decode_charm_progression_request(payload) else {

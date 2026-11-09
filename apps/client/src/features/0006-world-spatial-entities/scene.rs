@@ -131,7 +131,7 @@ impl Scene {
                     .display_name
                     .as_ref()
                     .and_then(|name| name.as_str().ok());
-                if let Some(name) = name.or_else(|| marker.map(|_| "Creature")) {
+                if let Some(name) = name.or_else(|| marker.map(|_| tr!("Creature"))) {
                     let label = oteryn_client_ui::forge_creature::label(name, marker);
                     self.names.push((tile, self.cache.name(&label)));
                 }
