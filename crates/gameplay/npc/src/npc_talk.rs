@@ -782,6 +782,38 @@ mod tests {
     use super::*;
 
     #[test]
+    fn m04_native_terminal_npcs_have_talk_entries_without_static_keyword_authority()
+    -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let keys = [
+            "oteryn:npc.tereban",
+            "oteryn:npc.malor",
+            "oteryn:npc.gabel",
+            "oteryn:npc.pemaret",
+            "oteryn:npc.costello",
+        ];
+        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+        for key in keys {
+            let entry = book
+                .get(key)
+                .ok_or_else(|| format!("missing native terminal NPC: {key}"))?;
+            assert!(
+                entry.dialogue_keywords.is_empty(),
+                "native terminal rules own {key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),

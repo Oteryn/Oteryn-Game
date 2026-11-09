@@ -29,3 +29,28 @@ The exact activation roster includes the two Djinn factions and White Raven:
 defaults of -1 and 52 of 0. The added
 seven -1 defaults are three tracks per faction and the monastery diary. The
 roster, default counts and legacy hash assertions remain exact.
+
+## Real-caller blocker (M04 remains PARTIAL)
+
+A local, uncommitted extension of the dispatch PostgreSQL case
+`engnpc_m04_completion_is_atomic_canonical_and_replay_safe` sends production
+`NpcTalkIntent` commands. On the native generation it completed Tereban, Malor
+and Gabel, then failed with `DefinitionNotFound` while preparing the carried
+marlin (`oteryn:item.tibia.i901`). This is not an all-five-route success.
+
+The accepted D289 hold in
+`tools/content-schema/item-authoring/d289_holds.py` says i901 retains its native
+core state and that "no market, movable, physical or description enrichment is
+applied to it by these packets." Its stack-source conflict is explicitly held;
+`test_lower_client_physical_packet.py` excludes i901 from promotions and
+`test_quest_reward_item_semantics.py` preserves its whole accepted definition.
+The current native Item policy packet has no i901 profile. Do not bypass the
+hold with fixture facts or loosen those tests to certify a successful real hand-in.
+
+The retained unit test
+`m04_native_terminal_npcs_have_talk_entries_without_static_keyword_authority`
+checks the five NPC entries using the production service model and native talk
+book constructor. Production boot registers their programmes in
+`apps/game-server/src/node/serve/bundle_npcs.rs`. Completion still requires a
+resolved native i901 admission and a passing real-command PG extension covering
+all five finales, including White Raven (not reached in this failed run).
