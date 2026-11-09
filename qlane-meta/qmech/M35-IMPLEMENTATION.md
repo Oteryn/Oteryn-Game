@@ -93,3 +93,17 @@ The slice with 22 claim sets remains PARTIAL for the full M35 row: four quests a
   `M35_ALAWAR_POSTGRES_CASE_COMPLETED` confirms the database scenarios executed.
   The reconstructed caller must retain the Channel's command-ingress state while
   clearing its quest cache; a fresh ingress correctly refuses continuation at command 3.
+
+## Dreamer alternative caller qualification in progress
+
+A new live wine-alternative case found that the existing four wine placements
+are not yet admitted by the committed runtime: the binder serves zero claims.
+The canonical vial (`oteryn:item.tibia.i2874`) remains non-materializable with
+unknown fluid semantics, and the reward has four `ITEM_SEMANTICS_MISSING` holds.
+The source-only fluid packet proves raw subtype 1 = WATER; the quest name must
+not be used to infer wine. The existing native vial profile is materializable,
+and the reward MINT owner already persists child fluid subtypes atomically.
+The missing connection is scoped native authoring -> content child decoder ->
+bundle-chest caller. The declaration count of 22 is not proof that every
+cohort's complete physical reward route is admitted. A bridge and live subtype
+assertion are being implemented; no assertion or admission guard is removed.
