@@ -3,6 +3,8 @@ pub mod cake;
 mod effects;
 mod end;
 mod feroxa;
+mod feroxa_ground;
+pub use feroxa_ground::clear_feroxa_ground_batch;
 mod feroxa_map_clock;
 pub use feroxa_map_clock::feroxa_map_elapsed_in_transaction;
 mod live_guard;
