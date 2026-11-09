@@ -164,6 +164,91 @@ fn m56_self_target_is_explicit_and_bounded() -> Result<(), String> {
 }
 
 #[test]
+fn m56_wax_uses_source_protection_track_and_exact_crystal_bounds() -> Result<(), String> {
+    let callbacks = load()?;
+    let callback = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/cursed-crystal/protect-ears")
+        .ok_or("wax")?;
+    let area = callback.self_target.as_ref().ok_or("self target")?;
+    assert!(area.contains(31938, 32932, 10));
+    assert!(area.contains(31946, 32940, 10));
+    for (x, y, z) in [
+        (31937, 32936, 10),
+        (31947, 32936, 10),
+        (31942, 32931, 10),
+        (31942, 32941, 10),
+        (31942, 32936, 9),
+    ] {
+        assert!(!area.contains(x, y, z));
+    }
+    assert_eq!(
+        callback.carried_item.as_deref(),
+        Some("oteryn:item.tibia.i9106")
+    );
+    assert_eq!(callback.storage[0].set, 2);
+    assert_eq!(callback.storage[0].maximum, 1);
+    let binding = gated_binding(callback)?.ok_or("bound self target")?;
+    let mut changed = callback.clone();
+    changed.self_target.as_mut().ok_or("self target")?.maximum.x += 1;
+    assert_ne!(gated_binding(&changed)?, Some(binding));
+    let loaded = crate::quest::loader::load_embedded_quest_state("m56-wax").map_err(fail)?;
+    assert!(loaded.catalogue().transition(&callback.key).is_some());
+    assert_eq!(
+        loaded
+            .catalogue()
+            .track(&callback.storage[0].track)
+            .ok_or("protection track")?
+            .quest,
+        "oteryn:quest.tibia_tales"
+    );
+    Ok(())
+}
+
+#[test]
+fn m56_self_target_cannot_also_select_a_carried_recipe_target() -> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| c.carried_target.is_some())
+        .ok_or("M20 recipe")?;
+    callback.self_target = Some(SelfTarget {
+        minimum: crate::quest::world_callbacks::Position {
+            x: 31938,
+            y: 32932,
+            floor: -10,
+        },
+        maximum: crate::quest::world_callbacks::Position {
+            x: 31946,
+            y: 32940,
+            floor: -10,
+        },
+    });
+    assert!(parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()).is_err());
+    Ok(())
+}
+
+#[test]
+fn m56_self_target_is_explicit_and_bounded() -> Result<(), String> {
+    let mut document: serde_json::Value = serde_json::from_str(DOCUMENTS[2]).map_err(fail)?;
+    let row = &mut document["callbacks"][0];
+    row.as_object_mut()
+        .ok_or("callback")?
+        .remove("creature_target");
+    row["give"] = serde_json::Value::Null;
+    row["self_target"] = serde_json::json!({
+        "minimum": {"x":31938,"y":32932,"floor":-3},
+        "maximum": {"x":31946,"y":32940,"floor":-3}
+    });
+    assert!(
+        parse(&document.to_string()).is_ok(),
+        "self-target carried quest tool must parse"
+    );
+    document["callbacks"][0]["self_target"]["maximum"]["x"] = 31937.into();
+    assert!(parse(&document.to_string()).is_err());
+    Ok(())
+}
+
+#[test]
 fn m56_self_target_cannot_also_select_a_carried_recipe_target() -> Result<(), String> {
     let mut callback = load()?
         .into_iter()

@@ -47,6 +47,23 @@ impl QuestCreatureUseProof {
                 return None;
             }
             return Some(Self {
+                fence, command, callback: callback.key.clone(), key: None,
+                self_target: Some(area.clone()), target,
+            });
+        }
+        let key = key?;
+        let own = runtime.read_actor_position(actor).ok()?.position();
+        if let Some(area) = &callback.self_target {
+            let visible = runtime.visible_entities();
+            let player = visible.players.iter().find(|p| p.actor == actor)?;
+            if player.actor.placement_identity() != target.identity
+                || player.generation != target.generation
+                || !area.contains(own.x, own.y, own.floor)
+                || key.is_some()
+            {
+                return None;
+            }
+            return Some(Self {
                 fence,
                 command,
                 callback: callback.key.clone(),
@@ -65,7 +82,6 @@ impl QuestCreatureUseProof {
             })?
             .actor;
         runtime.check_mount_taming_subject(creature, key).ok()?;
-        let own = runtime.read_actor_position(actor).ok()?.position();
         let at = runtime.read_actor_position(creature).ok()?.position();
         if at.floor != own.floor || at.x.abs_diff(own.x) > 1 || at.y.abs_diff(own.y) > 1 {
             return None;
