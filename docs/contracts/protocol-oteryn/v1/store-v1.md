@@ -105,3 +105,7 @@ malformed and oversized data are rejected. No provider reference, payment data,
 operator identity, other-account identity or Wallet mutation crosses this view.
 Filtering and totals in the client describe the loaded page; pagination preserves
 the opaque Platform boundary instead of synthesizing ledger rows from purchases.
+
+## Store browser
+
+Read-only command 6117 extends the existing capability with hierarchical categories, full-catalogue search/sorts and server-resolved artwork. See [store-browser-v1.md](store-browser-v1.md). Existing purchase and commercial authority rules above remain unchanged.

@@ -1006,10 +1006,10 @@
   "src": "TIBAUD-1",
   "area": "Store",
   "feature": "Katalog/search/buy/confirmation/result",
-  "status": "PARTIAL",
-  "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0154-store/input.rs:33 + store_category_navigation_sends_server_key_with_fresh_cursor (category navigation; graphical preview remains)"
+  "evidence": "apps/client/src/features/0154-store/native/browser.rs:1 + store_browser_caller_preserves_selected_quote_through_native_confirmation; apps/client/src/features/0154-store/native/assets.rs:76 + store_preview_renders_real_item_outfit_and_mount_sprites; crates/gameplay/dispatch/src/gameplay_transport/store/browse.rs:6 + store_real_dispatch_pages_purchases_mints_once_and_replays"
  },
  {
   "id": "T131",

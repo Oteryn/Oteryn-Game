@@ -414,12 +414,61 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
             assert_eq!((ledger.purchases, ledger.balance, ledger.receipts), (1, 35, 1));
         }
 
+        // T130: full browse crosses the real route and ranks the durable accepted purchase.
+        let browse = wire::browse::Query {
+            category: "featured".into(),
+            search: "".into(),
+            sort: 0,
+            cursor: String::new(),
+        };
+        let rows = serve(
+            &owner,
+            &mut admitted,
+            &[(wire::browse::COMMAND_TYPE, browse.encode().map_err(debug)?)],
+        )
+        .await?;
+        assert_eq!(rows[0].0, CommandStatus::Accepted, "{rows:?}");
+        let browser = wire::browse::Page::decode(&rows[0].1).map_err(debug)?;
+        assert_eq!(browser.total, 35);
+        assert!(!browser.transferable_known);
+        assert!(
+            browser
+                .categories
+                .iter()
+                .any(|c| c.key == "consumables.exercise-weapons")
+        );
+        assert_eq!(browser.products[0].offer.offer_key, SWORD);
+        assert_eq!(browser.products[0].offer.price, 25);
+        assert_eq!(browser.products[0].revision, page.catalog_revision);
+        assert_eq!(browser.products[0].artwork.kind, 1);
+        assert!(
+            browser.products[0]
+                .artwork
+                .looks
+                .iter()
+                .all(|look| *look > 0)
+        );
+        assert_eq!(swords(&harness).await?, 1);
+        assert_eq!(ledger.lock().expect("ledger").purchases, 1);
         // A retry of the same request id replays the saved answer: no second debit or mint.
         let replay = purchase(&owner, &mut admitted, purchase_request(62, SWORD, 25)?).await?;
         assert_eq!(replay, accepted);
         assert_eq!(swords(&harness).await?, 1);
         assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 1);
         assert_eq!(ledger.lock().expect("ledger").purchases, 1);
+
+        let ranks = owner
+            .root
+            .store_popularity(vec![SWORD.into()])
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            ranks.get(SWORD),
+            Some(&1),
+            "replay must not inflate popularity"
+        );
+        let permissions:(bool,bool)=sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime','game_store_offer_popularity','SELECT'),has_table_privilege('oteryn_game_runtime','game_store_offer_popularity','UPDATE,INSERT,DELETE')").fetch_one(&harness.pool).await?;
+        assert_eq!(permissions, (true, false));
 
         // The same request id bound to another offer is refused before Platform.
         let values = serve(
