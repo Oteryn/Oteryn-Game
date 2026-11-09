@@ -71,6 +71,7 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    # All anniversary counterparts share one immutable authored owner.
     import qm03_world_admission
     for entrance in qm03_world_admission.callbacks(ROOT):
         if entrance['quest'] == 'oteryn:quest.the_pits_of_inferno_quest':
@@ -111,6 +112,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    import qm03_world_admission
+    machine = ROOT / 'content/quests/authored-bindings/m03-25-years-time-machine.json'
+    machine_text = json.dumps(qm03_world_admission.machine_document(ROOT), ensure_ascii=False, indent=2) + '\n'
+    if args.check:
+        if machine.read_text() != machine_text:
+            raise ValueError('stale authored time-machine counterparts')
+    else:
+        machine.write_text(machine_text)
     text = json.dumps(document(), ensure_ascii=False, indent=2) + '\n'
     if args.check:
         if OUTPUT.read_text() != text:

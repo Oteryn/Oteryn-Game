@@ -51,6 +51,8 @@ mod guarded_routes;
 #[cfg(test)]
 mod ice_islands_tests;
 mod imported_explore;
+#[cfg(test)]
+mod scripted_teleport_tests;
 mod live_admission;
 mod native_trials;
 mod per_use_reward;

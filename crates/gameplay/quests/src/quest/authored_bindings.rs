@@ -13,6 +13,7 @@ pub use occurrence::Occurrence;
 mod npc_keys;
 pub use npc_keys::native_dialogue_npcs;
 pub mod kills;
+mod shared_tracks;
 mod progress_storage;
 mod state_operations;
 pub mod task_board_use;
@@ -370,35 +371,16 @@ impl Bindings {
         let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
         for quest in &self.quests {
             for t in &quest.tracks {
-                let declared = QuestTrack {
-                    key: t.key.clone(),
-                    quest: quest.quest.clone(),
-                    initial: t.initial,
-                    min: t.minimum,
-                    max: t.maximum,
-                };
-                if let Some(existing) = tracks.iter().find(|track| track.key == declared.key) {
-                    if existing.quest != declared.quest
-                        || existing.initial != declared.initial
-                        || existing.min != declared.min
-                        || existing.max != declared.max
-                    {
-                        return Err(format!(
-                            "conflicting authored track {}: existing=({},{},{},{}), declared=({},{},{},{})",
-                            declared.key,
-                            existing.quest,
-                            existing.initial,
-                            existing.min,
-                            existing.max,
-                            declared.quest,
-                            declared.initial,
-                            declared.min,
-                            declared.max
-                        ));
-                    }
-                } else {
-                    tracks.push(declared);
-                }
+                shared_tracks::insert(
+                    &mut tracks,
+                    QuestTrack {
+                        key: t.key.clone(),
+                        quest: quest.quest.clone(),
+                        initial: t.initial,
+                        min: t.minimum,
+                        max: t.maximum,
+                    },
+                )?;
             }
             if let Some(occurrence) = &quest.occurrence {
                 transitions.push(occurrence.transition()?);
