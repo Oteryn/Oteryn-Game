@@ -145,6 +145,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    daily_reward::CAPABILITY_DAILY_REWARD_V2,
     oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
     oteryn_protocol_oteryn::staff::CAPABILITY_STAFF_V1,
     // CLIENT-E2E-1 adapters use gated_command for their typed exchanges too.
