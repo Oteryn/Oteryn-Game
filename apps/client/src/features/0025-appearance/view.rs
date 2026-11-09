@@ -6,7 +6,7 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
+    use self::native::{Form, open};
     open(
         link,
         Form {
@@ -18,7 +18,20 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Colours: head,body,legs,feet",
                 "Content revision",
             ],
-            buttons: &["Apply"],
+            buttons: &[
+                "Apply",
+                "Previous outfit",
+                "Next outfit",
+                "Head colour",
+                "Body colour",
+                "Legs colour",
+                "Feet colour",
+                "Addon 1",
+                "Addon 2",
+                "Previous mount",
+                "Next mount",
+                "Outfit Memorial",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.appearance;
                 (
@@ -30,12 +43,33 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.appearance.open = value,
             submit: |mailbox, commands, action, values| {
+                if action == 11 {
+                    // Open from the appearance UI; the worker is started after releasing the mailbox.
+                    mailbox.properties.appearance.memorial.requested = true;
+                    return;
+                }
                 let panel = &mut mailbox.properties.appearance;
                 if panel.pending {
                     return;
                 }
                 for (index, value) in values.into_iter().enumerate() {
                     super::input::edit(panel, index, value);
+                }
+                if matches!(action, 1 | 2) {
+                    panel.cycle_outfit(action == 2);
+                    return;
+                }
+                if matches!(action, 3..=6) {
+                    panel.cycle_colour(action - 3);
+                    return;
+                }
+                if matches!(action, 7 | 8) {
+                    panel.toggle_addon(if action == 7 { 1 } else { 2 });
+                    return;
+                }
+                if matches!(action, 9 | 10) {
+                    panel.cycle_mount(action == 10);
+                    return;
                 }
                 let intent = match action {
                     0 => oteryn_client_ui::appearance::Intent::Apply,
@@ -45,4 +79,24 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
         },
     );
+    preview_window::open(link);
+    memorial::watch(link);
 }
+
+#[cfg(any(windows, test))]
+#[path = "view/preview.rs"]
+pub(in crate::play) mod gallery_preview;
+
+#[cfg(windows)]
+#[path = "view/preview_window.rs"]
+mod preview_window;
+
+#[path = "view/memorial.rs"]
+pub(in crate::play) mod memorial;
+
+#[cfg(windows)]
+#[path = "native.rs"]
+mod native;
+#[cfg(any(windows, test))]
+#[path = "preview.rs"]
+pub(in crate::play) mod preview;

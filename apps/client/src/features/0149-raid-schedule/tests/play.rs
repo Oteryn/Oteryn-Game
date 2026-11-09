@@ -238,8 +238,16 @@ fn pc03_raid_schedule_scenario() -> Result<(), Error> {
                     .checked()?;
                     assert_eq!(link.raid_schedule_panel().summary, summary);
                     // An unexpected transport end while a request is in flight resets every session field.
+                    // The scripted exchange holds the request at the peer until the assertion has run,
+                    // then closing the release gate fails it as an unusable transport.
+                    exchanges
+                        .entries
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .push_back((171, vec![], CommandStatus::Accepted, vec![]));
                     link.raid_schedule_request(intent);
                     assert!(link.raid_schedule_panel().pending);
+                    exchanges.release.close();
                     task.await.checked()?;
                     let ended = link.raid_schedule_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);
@@ -248,8 +256,13 @@ fn pc03_raid_schedule_scenario() -> Result<(), Error> {
                     assert!(ended.feedback.contains("ended"));
                     link.raid_schedule_request(intent);
                     assert!(!link.raid_schedule_panel().pending);
+                    let exchanges = Arc::new(Script {
+                        entries: Mutex::new(VecDeque::new()),
+                        release: tokio::sync::Semaphore::new(0),
+                    });
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };

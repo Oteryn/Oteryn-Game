@@ -51,9 +51,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return SemanticTimeMicros::from_micros(fixed - 1);
             }
         }
-        SemanticTimeMicros::from_micros(
-            u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX),
-        )
+        let elapsed = self.clock_origin.elapsed();
+        #[cfg(feature = "qualification-clock")]
+        let elapsed = elapsed.saturating_add(std::time::Duration::from_millis(
+            crate::world_clock::qualification_offset_ms(),
+        ));
+        SemanticTimeMicros::from_micros(u64::try_from(elapsed.as_micros()).unwrap_or(u64::MAX))
     }
 
     /// The durable monk values a new runtime actor of `character_id` loads (§8.2). `None` when

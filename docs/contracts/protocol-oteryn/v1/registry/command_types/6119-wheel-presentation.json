@@ -1,0 +1,10 @@
+{
+  "id": 6119,
+  "name": "WHEEL_PRESENTATION",
+  "owner_decision": "CLIENTGAP-SYSTEMS T119 owner authorization 2026-11-08",
+  "capability": 148,
+  "payload_schema": "wheel-presentation-v1.md",
+  "result_schema": "wheel-presentation-v1.md",
+  "max_payload_bytes": 164,
+  "max_result_payload_bytes": 131072
+}

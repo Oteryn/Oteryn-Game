@@ -13,6 +13,10 @@ use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::cyclopedia as wire;
 use sha2::{Digest, Sha256};
 
+#[path = "cyclopedia/atlas.rs"]
+mod atlas;
+#[path = "cyclopedia/overview.rs"]
+mod overview;
 #[path = "cyclopedia/content.rs"]
 mod content;
 #[path = "cyclopedia/respawn.rs"]
@@ -63,6 +67,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&128) {
+            return self.cyclopedia_atlas_wire(admitted, id, payload).await;
+        }
+        self.cyclopedia_basic_wire(admitted, id, kind, payload)
+            .await
+    }
+    pub(super) async fn cyclopedia_basic_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> GuildReply {
         if !admitted
             .continuity
             .selected_capabilities
@@ -73,6 +90,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return GuildReply::Rejected;
         };
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&255) {
+            if CommandId::new(id).is_err() {
+                return GuildReply::Rejected;
+            }
+            return atlas::dispatch(self, admitted, payload).await;
+        }
         let Ok(intent) = wire::decode_request(kind, payload) else {
             return GuildReply::Rejected;
         };
@@ -145,6 +168,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: position.at.y,
             floor: position.at.floor,
         };
+        if intent.operation == 5 {
+            return self
+                .bundle_map()
+                .and_then(|map| atlas::page(&map.overlay.base().subareas, intent.amount))
+                .map(GuildReply::Payload)
+                .unwrap_or(GuildReply::Rejected);
+        }
         // Membership is resolved from the server-owned position, never the legacy wire alias.
         let Some(area) = content::admit_at(self, at) else {
             return GuildReply::Rejected;
@@ -250,13 +280,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || !runtime
                     .player_control_facts(actor, admitted.game_session_id)
                     .is_ok_and(|facts| facts.control_loss.is_none())
-                || super::bundle_map_position(&mut runtime, self.movement_cells(), actor).is_none_or(
-                    |position| {
+                || super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                    .is_none_or(|position| {
                         position.at.x != at.x
                             || position.at.y != at.y
                             || position.at.floor != at.floor
-                    },
-                )
+                    })
             {
                 return GuildReply::Rejected;
             }

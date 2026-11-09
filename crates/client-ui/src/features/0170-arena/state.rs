@@ -21,7 +21,7 @@ impl ArenaPanel {
         self.hazards = Default::default();
         self.hazards_received_at = None;
         if self.pending.take().is_some() {
-            self.feedback = Some("The session has ended");
+            self.feedback = Some(tr!("The session has ended"));
         }
     }
 }

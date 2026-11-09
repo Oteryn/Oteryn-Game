@@ -15,9 +15,9 @@ pub fn request(panel: &mut ChatPanel, spell: MovementSpell) -> Option<&'static s
     panel.pending = true;
     panel.feedback = None;
     Some(match spell {
-        MovementSpell::LevitateUp => "exani hur \"up",
-        MovementSpell::LevitateDown => "exani hur \"down",
-        MovementSpell::MagicRope => "exani tera",
+        MovementSpell::LevitateUp => tr!("exani hur \"up"),
+        MovementSpell::LevitateDown => tr!("exani hur \"down"),
+        MovementSpell::MagicRope => tr!("exani tera"),
     })
 }
 

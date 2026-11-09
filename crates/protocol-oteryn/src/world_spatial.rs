@@ -17,7 +17,7 @@ pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 /// (STEP-PACE-WIRE-0), and owns no command type or domain.
 pub const CAPABILITY_PACED_MOVEMENT_V1: u32 = 13;
 /// M40: eight-way steps and the corresponding three-times pacing receipt.
-pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 449;
+pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 452;
 pub const MAX_DIAGONAL_STEP_WAIT_MS: u32 = MAX_STEP_WAIT_MS * 3;
 
 /// First-child semantic bounds (#642 packet 5853255180).

@@ -34,7 +34,7 @@ pub(in crate::play) fn submit(
 ) {
     let mut key = [0; 16];
     if action != 0 && oteryn_platform_client::native_login::secure_random(&mut key).is_err() {
-        mailbox.cast_chat.feedback = "Cast action identifier unavailable".into();
+        mailbox.cast_chat.feedback = tr!("Cast action identifier unavailable").into();
         return;
     }
     let result = if action == 0 {
@@ -61,7 +61,7 @@ pub(in crate::play) fn submit(
                 .send(crate::combat_input::PlayCommand::ServerMechanic(command))
                 .is_ok();
             if !mailbox.cast_chat.pending {
-                mailbox.cast_chat.feedback = "The session has ended".into();
+                mailbox.cast_chat.feedback = tr!("The session has ended").into();
             }
         }
         Err(error) => mailbox.cast_chat.feedback = error.into(),

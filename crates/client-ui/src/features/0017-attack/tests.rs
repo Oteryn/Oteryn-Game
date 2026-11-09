@@ -162,3 +162,6 @@ fn battle_rows_follow_the_own_actors_floor() {
     panel.replace_entities(&[creature, upstairs], None);
     assert!(panel.rows.is_empty());
 }
+
+#[path = "tests/metadata.rs"]
+mod metadata;

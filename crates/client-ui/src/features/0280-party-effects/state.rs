@@ -15,7 +15,7 @@ impl PartyEffectsPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Party effects could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Party effects could not be refreshed. Try Refresh."));
         false
     }
 }

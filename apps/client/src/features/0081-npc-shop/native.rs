@@ -73,12 +73,12 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("NPC shop").as_ptr(),
+            wide(tr!("NPC shop")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            560,
+            610,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -103,7 +103,14 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             (10, 10, 720, 280),
             WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
         );
-        control(hwnd, "STATIC", "Offers (1–100):", 0, (10, 300, 130, 25), 0);
+        control(
+            hwnd,
+            "STATIC",
+            tr!("Offers (1–100):"),
+            0,
+            (10, 300, 130, 25),
+            0,
+        );
         let amount = control(
             hwnd,
             "EDIT",
@@ -113,16 +120,23 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             WS_BORDER | ES_NUMBER as u32,
         );
         SendMessageW(amount, EM_SETLIMITTEXT, 10, 0);
-        let look = control(hwnd, "BUTTON", "Look", 103, (270, 335, 130, 28), 0);
-        let sell_all = control(hwnd, "BUTTON", "Sell all", 104, (410, 335, 130, 28), 0);
-        let trade = control(hwnd, "BUTTON", "Buy / Sell", 102, (270, 300, 130, 30), 0);
+        let look = control(hwnd, "BUTTON", tr!("Look"), 103, (270, 335, 130, 28), 0);
+        let sell_all = control(hwnd, "BUTTON", tr!("Sell all"), 104, (410, 335, 130, 28), 0);
+        let trade = control(
+            hwnd,
+            "BUTTON",
+            tr!("Buy / Sell"),
+            102,
+            (270, 300, 130, 30),
+            0,
+        );
         let total = control(hwnd, "STATIC", "", 0, (410, 300, 320, 35), 0);
         let status = control(
             hwnd,
             "EDIT",
             "",
             0,
-            (10, 370, 720, 130),
+            (10, 415, 720, 140),
             WS_BORDER | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
         if [list, amount, look, sell_all, trade, total, status]
@@ -133,6 +147,44 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             close(&weak);
             return;
         }
+        let filter = control(hwnd, "EDIT", "", 105, (10, 335, 140, 28), WS_BORDER);
+        SendMessageW(filter, EM_SETLIMITTEXT, 80, 0);
+        let side = control(
+            hwnd,
+            "BUTTON",
+            tr!("All / Buy / Sell"),
+            106,
+            (155, 335, 110, 28),
+            0,
+        );
+        let option_controls = [
+            control(
+                hwnd,
+                "BUTTON",
+                "Ignore capacity preview",
+                107,
+                (10, 375, 190, 28),
+                BS_AUTOCHECKBOX as u32,
+            ),
+            control(
+                hwnd,
+                "BUTTON",
+                "Exclude equipped counts",
+                108,
+                (205, 375, 190, 28),
+                BS_AUTOCHECKBOX as u32,
+            ),
+            control(
+                hwnd,
+                "BUTTON",
+                "Owned sell offers",
+                109,
+                (400, 375, 160, 28),
+                BS_AUTOCHECKBOX as u32,
+            ),
+        ];
+        control(hwnd, "BUTTON", "Open backpack", 110, (565, 375, 165, 28), 0);
+        let mut side_filter = None;
         let mut rows: Vec<Quote> = Vec::new();
         let mut labels = Vec::new();
         let mut message: MSG = std::mem::zeroed();
@@ -149,11 +201,11 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             let Some(shared) = weak.upgrade() else {
                 break;
             };
-            let mailbox = lock(&shared);
+            let mut mailbox = lock(&shared);
             if mailbox.dialogue_shutdown || !mailbox.npc_shop.open {
                 break;
             }
-            let shop = &mailbox.npc_shop.live;
+
             let selected = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
                 .ok()
                 .and_then(|i| rows.get(i))
@@ -168,7 +220,43 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             let clicked = actions.contains(&102);
             let looked = actions.contains(&103);
             let sold_all = actions.contains(&104);
-            let live_rows = shop.quotes();
+            if !mailbox.npc_shop.pending && !mailbox.npc_shop.live.pending {
+                let options = &mut mailbox.npc_shop.live.options;
+                if actions.contains(&107) {
+                    options.ignore_capacity = !options.ignore_capacity;
+                }
+                if actions.contains(&108) {
+                    options.ignore_equipped = !options.ignore_equipped;
+                }
+                if actions.contains(&109) {
+                    options.only_owned = !options.only_owned;
+                }
+            }
+            let shop = &mailbox.npc_shop.live;
+            for (control, checked) in option_controls.iter().zip([
+                shop.options.ignore_capacity,
+                shop.options.ignore_equipped,
+                shop.options.only_owned,
+            ]) {
+                SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
+            }
+            let backpack = shop
+                .inventory
+                .as_ref()
+                .and_then(|inventory| inventory.main_backpack);
+            if actions.contains(&106) {
+                use oteryn_client_ui::npc_shop::NpcTradeSide;
+                side_filter = match side_filter {
+                    None => Some(NpcTradeSide::Buy),
+                    Some(NpcTradeSide::Buy) => Some(NpcTradeSide::Sell),
+                    Some(NpcTradeSide::Sell) => None,
+                };
+                SetWindowTextW(side, wide(&format!("{:?}", side_filter)).as_ptr());
+            }
+            let mut query = [0u16; 81];
+            let query_len = GetWindowTextW(filter, query.as_mut_ptr(), 81).max(0) as usize;
+            let live_rows =
+                shop.filtered_quotes(side_filter, &String::from_utf16_lossy(&query[..query_len]));
             let live_labels: Vec<String> = live_rows.iter().map(|q| shop.quote_text(*q)).collect();
             if live_rows != rows || live_labels != labels {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
@@ -188,7 +276,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 total,
                 wide(&match (valid, quantity) {
                     (Some(key), Some(n)) => shop.total(key, n),
-                    _ => "Select a quote and positive amount".into(),
+                    _ => tr!("Select a quote and positive amount").into(),
                 })
                 .as_ptr(),
             );
@@ -213,7 +301,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                         && valid.is_some()
                         && valid
                             .zip(quantity)
-                            .is_some_and(|(key, n)| shop.valid_amount(key, n)),
+                            .is_some_and(|(key, n)| shop.can_trade(key, n)),
                 ),
             );
             windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
@@ -238,6 +326,22 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 ),
             );
             drop(mailbox);
+            if actions.contains(&110)
+                && let Some(backpack) = backpack
+            {
+                let mut mailbox = lock(&shared);
+                if super::super::super::feature_0014_container_tree::input::inventory_native_open(
+                    &mut mailbox,
+                    &commands,
+                    backpack.handle,
+                ) {
+                    drop(mailbox);
+                    super::super::super::feature_0014_container_tree::view::open_shared(
+                        Arc::downgrade(&shared),
+                        commands.clone(),
+                    );
+                }
+            }
             if sold_all && let Some(key) = valid {
                 super::super::input::offer_request(&shared, &commands, key, true);
             }

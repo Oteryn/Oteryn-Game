@@ -30,6 +30,37 @@ impl Outbox {
     pub(in crate::play) fn quest_result(&self, result: &oteryn_session::GatedCommandResult) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
         mailbox.quest_pending = false;
+        if result.status != oteryn_client_runtime::CommandStatus::Accepted {
+            mailbox.quest.tracker.command_failed();
+        }
+        if mailbox.quest.pending_query.take()
+            == Some(oteryn_client_runtime::quest_log::QuestLogQuery::ListOnly)
+        {
+            if result.status == oteryn_client_runtime::CommandStatus::Accepted {
+                match oteryn_client_runtime::quest_log::decode_quest_log(&result.payload) {
+                    Ok(QuestLog { map_marks, view: Some(oteryn_client_runtime::quest_log::QuestLogView::List(list)),
+                        tracked,
+                    }) if tracked.is_empty() && map_marks.is_empty() => {
+                        let panel = &mut mailbox.quest;
+                        panel.tracker.observe(&list);
+                        panel.state.list = list;
+                        panel.tracker.confirm(&panel.state.log.tracked);
+                        panel.state.refusal = None;
+                    }
+                    _ => {
+                        mailbox.quest.state.refusal =
+                            Some(oteryn_client_runtime::quest_log::QuestRefusal::Malformed)
+                    }
+                }
+            } else if let Err(refusal) = mailbox
+                .quest
+                .state
+                .record_result(result.status, &result.payload)
+            {
+                mailbox.quest.state.refusal = Some(refusal);
+            }
+            return;
+        }
         if let Err(refusal) = mailbox
             .quest
             .state
@@ -47,7 +78,18 @@ pub(in crate::play) fn reduce(
     for delta in deltas {
         if let Err(refusal) = panel.state.apply_update(&delta) {
             panel.state.refusal = Some(refusal);
+            continue;
         }
+        if matches!(&delta, QuestUpdate::Snapshot(_)) {
+            panel.tracker.reconcile();
+        }
+        if matches!(
+            &panel.state.log.view,
+            Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
+        ) {
+            panel.tracker.observe(&panel.state.list);
+        }
+        panel.tracker.confirm(&panel.state.log.tracked);
         let missions = match &panel.state.log.view {
             Some(oteryn_client_runtime::quest_log::QuestLogView::Line(line)) => &line.missions[..],
             _ => &[],

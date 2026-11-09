@@ -13,17 +13,22 @@ pub enum Intent {
 }
 pub fn request(panel: &mut BossDifficultyPanel, intent: Intent) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("Feature unavailable in this session");
+        panel.feedback = Some(tr!("Feature unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let typed = match intent {
-        Intent::Open => Request::Open {
-            boss_key: panel.boss_key.clone(),
-        },
+        Intent::Open => {
+            // Opening another draft must never reuse a previous boss context.
+            panel.context = None;
+            panel.reply = None;
+            Request::Open {
+                boss_key: panel.boss_key.clone(),
+            }
+        }
         Intent::Preview => Request::Preview {
             context: panel.context?,
             difficulty: panel.difficulty,
@@ -37,7 +42,7 @@ pub fn request(panel: &mut BossDifficultyPanel, intent: Intent) -> Option<Featur
         },
     };
     let Ok(payload) = boss_difficulty::encode_request(&typed) else {
-        panel.feedback = Some("Enter a valid boss id or open a server context first");
+        panel.feedback = Some(tr!("Enter a valid boss id or open a server context first"));
         return None;
     };
     panel.pending = true;
@@ -54,19 +59,29 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the difficulty action");
+        panel.feedback = Some(tr!("The server refused the difficulty action"));
         return false;
     }
     let Some(reply) = decode_reply(&result.payload) else {
-        panel.feedback = Some("The server returned an invalid difficulty reply");
+        panel.feedback = Some(tr!("The server returned an invalid difficulty reply"));
         return false;
     };
     panel.context = match &reply {
-        Reply::Window { context, .. } | Reply::Closed { context } => Some(*context),
-        Reply::Refused { context, .. } => *context,
+        Reply::Window {
+            context,
+            boss_key,
+            selected_difficulty,
+            ..
+        } => {
+            panel.boss_key.clone_from(boss_key);
+            panel.difficulty = *selected_difficulty;
+            Some(*context)
+        }
+        Reply::Closed { .. } => None,
+        Reply::Refused { .. } => None,
     };
     panel.feedback = if matches!(reply, Reply::Refused { .. }) {
-        Some("The server refused the difficulty choice")
+        Some(tr!("The server refused the difficulty choice"))
     } else {
         None
     };

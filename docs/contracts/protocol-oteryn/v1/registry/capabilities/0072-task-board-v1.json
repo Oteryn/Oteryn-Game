@@ -5,7 +5,8 @@
   "owner": "Weekly and bounty Task Board, delivery, calendar reset, shop, soulseals and Bounty Talisman; one fenced durable owner.",
   "requires": [],
   "command_types": [
-    89
+    89,
+    6120
   ],
   "state_domains": [],
   "offered": false,

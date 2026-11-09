@@ -3,10 +3,28 @@ use crate::play::{
     PlayLink,
     mailbox::{Mailbox, lock},
 };
-use oteryn_client_ui::boss_encounter::{Intent, request};
+use oteryn_client_ui::boss_encounter::{BossCategory, BossEncounterPanel, Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {
+        browse(
+            &mut lock(&self.mailbox).boss_encounter,
+            search,
+            category,
+            previous,
+        );
+    }
+
+    pub fn boss_slot_select_boss(&self, previous: bool) {
+        lock(&self.mailbox)
+            .boss_encounter
+            .select_slot_boss(previous);
+    }
+    pub fn boss_slot_select_slot(&self) {
+        lock(&self.mailbox).boss_encounter.select_slot();
+    }
+
     pub fn boss_encounter_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).boss_encounter, field, value);
     }
@@ -19,7 +37,9 @@ impl PlayLink {
             #[cfg(windows)]
             super::view::cooldown_window(self);
             #[cfg(not(windows))]
-            { lock(&self.mailbox).boss_encounter.cooldowns_open = true; }
+            {
+                lock(&self.mailbox).boss_encounter.cooldowns_open = true;
+            }
             return true;
         }
         if !oteryn_client_ui::boss_encounter::open_key(events) {
@@ -44,7 +64,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.boss_encounter.pending = false;
-        mailbox.boss_encounter.feedback = Some("The session has ended");
+        mailbox.boss_encounter.feedback = Some(tr!("The session has ended"));
     }
 }
 
@@ -60,4 +80,19 @@ pub(in crate::play) fn edit(
     {
         *slot = value;
     }
+}
+
+pub(in crate::play) fn browse(
+    panel: &mut BossEncounterPanel,
+    search: &str,
+    category: BossCategory,
+    previous: bool,
+) {
+    if !panel.selected || panel.pending || search.len() > 512 || search.contains('\0') {
+        return;
+    }
+    panel.boss_search = search.to_owned();
+    panel.browser_search = search.to_owned();
+    panel.browser_category = category;
+    panel.select_boss(previous);
 }

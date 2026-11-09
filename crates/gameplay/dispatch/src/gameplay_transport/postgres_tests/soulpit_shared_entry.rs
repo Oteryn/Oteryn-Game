@@ -21,7 +21,7 @@ use crate::foundation::{
 use crate::gameplay_transport::item_fence_of;
 
 #[path = "soulpit_shared_entry/native.rs"]
-mod native;
+pub(super) mod native;
 #[path = "soulpit_shared_entry/staff.rs"]
 mod staff;
 
@@ -336,14 +336,13 @@ async fn admit_inner(
         }],
     };
     let entry = SoulpitEntryRequest {
-        source_definition: crate::durability::item_mint::TypedDefinitionRef {
+        funding: crate::durability::soulpit::SoulpitFunding::Core { source: id(71), definition: crate::durability::item_mint::TypedDefinitionRef {
             family: "Item".into(),
             production_key: core.clone(),
             revision_ref: "definition-r1".into(),
-        },
+        } },
         handoff_id: group.handoff_id,
         command: CommandRef::new(source.game_session_id, CommandId::new(1).map_err(debug)?),
-        source: id(71),
         intent: vec![1, 2, 3],
         started_at_micros: 0,
         participants: vec![SoulpitParticipantFact {
@@ -385,7 +384,7 @@ async fn admit_inner(
         "generic entry must not bypass the Soul Core debit"
     );
     let mut stale_definition = entry.clone();
-    stale_definition.source_definition.revision_ref = "definition-r2".into();
+    if let crate::durability::soulpit::SoulpitFunding::Core { definition, .. } = &mut stale_definition.funding { definition.revision_ref="definition-r2".into(); } else { return Err("core fixture".into()); }
     assert_eq!(
         owner
             .enter_soulpit(
@@ -481,7 +480,7 @@ async fn admit_inner(
         ActivityEnterOutcome::Replayed(_)
     ));
     let mut rebound = entry.clone();
-    rebound.source = id(72);
+    if let crate::durability::soulpit::SoulpitFunding::Core {source,..}=&mut rebound.funding { *source=id(72); } else {return Err("core fixture".into());}
     assert!(matches!(
         owner
             .enter_soulpit(
@@ -515,7 +514,7 @@ async fn admit_inner(
         )
     ));
     rebound = entry.clone();
-    rebound.source_definition.revision_ref = "definition-r2".into();
+    if let crate::durability::soulpit::SoulpitFunding::Core { definition, .. } = &mut rebound.funding { definition.revision_ref="definition-r2".into(); } else { return Err("core fixture".into()); }
     assert!(matches!(
         owner
             .enter_soulpit(

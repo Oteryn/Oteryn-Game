@@ -1,6 +1,6 @@
 //! Personal map display facts. No client command can create or alter a marker.
 pub const CAPABILITY_PERSONAL_MAP_MARKS_V1: u32 = 451;
-pub const COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY: u32 = 733;
+pub const COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY: u32 = 741;
 pub const MAX_MARKS: usize = 256;
 pub const MAX_PAYLOAD_BYTES: usize = 2 + MAX_MARKS * (2 + 128 + 2 + 256 + 6);
 #[derive(Clone, Debug, PartialEq, Eq)]

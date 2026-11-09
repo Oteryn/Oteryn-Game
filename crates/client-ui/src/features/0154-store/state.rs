@@ -6,12 +6,22 @@ pub enum StorePage {
     #[default]
     Catalogue,
     History,
+    CoinHistory,
     Inbox,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StorePanel {
+    pub gift: super::GiftPanel,
+    pub browser: super::Browser,
+    pub coin_history: super::CoinHistory,
+    pub gift_open: bool,
+    pub gift_fields: [String; 2],
+    pub gift_reviewed: Option<GiftDraft>,
+    pub search: String,
+    pub sort: StoreSort,
     pub selected: bool,
     pub open: bool,
+    pub classic_open: bool,
     pub pending: bool,
     pub pending_action: u32,
     pub page: StorePage,
@@ -31,4 +41,18 @@ pub struct StorePanel {
     pub purchase: Option<StorePurchaseResult>,
     pub claim: Option<StoreClaimReceipt>,
     pub feedback: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum StoreSort {
+    #[default]
+    Catalogue,
+    Title,
+    Price,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GiftDraft {
+    pub recipient: String,
+    pub amount: u64,
 }

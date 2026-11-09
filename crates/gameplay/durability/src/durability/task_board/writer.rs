@@ -189,7 +189,7 @@ impl DurabilityRoot {
                 .and_then(|value| value.checked_add(u64::from(effects.reroll_tokens_granted)))
                 .ok_or(DurabilityError::InvalidStoredState)?;
             let transition = if let Some(changes) = changes {
-                Some(super::state::advance(&mut tx, fence, &request, &binding, &view, changes, effects.experience).await?)
+                Some(super::state::advance(&mut tx, fence, request.cause, &binding, &view, changes, effects.experience).await?)
             } else { None };
             // Client and expansion replies take one post-command item snapshot.
             // Kill settlement consumes no full reply, so its internal receipt can

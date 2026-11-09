@@ -6,15 +6,20 @@ use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, 
 
 #[test]
 fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResult {
-    pass_cost(false)
+    pass_cost(false, false)
 }
 
 #[test]
 fn monster_pass_cost_spread_channel_batches_exact_empty_tiles() -> TestResult {
-    pass_cost(true)
+    pass_cost(true, false)
 }
 
-fn pass_cost(spread: bool) -> TestResult {
+#[test]
+fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
+    pass_cost(true, true)
+}
+
+fn pass_cost(spread: bool, passive: bool) -> TestResult {
     run_case(async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -39,7 +44,13 @@ fn pass_cost(spread: bool) -> TestResult {
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
         let mut runtime = deps.runtime.lock().await;
         let objects = deps.door.lock().await;
-        let policy = runtime.companion_snapshot(rat).map_err(debug)?.state.policy;
+        let policy = if passive {
+            runtime
+                .companion_policy("oteryn:creature.deer")
+                .map_err(debug)?
+        } else {
+            runtime.companion_snapshot(rat).map_err(debug)?.state.policy
+        };
         let spec = NativeRaidSpawnSpec::qualified(
             &policy.definition_key,
             &policy.definition_revision,
@@ -107,17 +118,28 @@ fn pass_cost(spread: bool) -> TestResult {
         );
         drop(objects);
         let mut states = owner.states.spell_states.lock().await;
-        let creature = crate::content::ProjectV2DefinitionRef {
-            family: crate::content::ProjectV2Family::Creature,
-            key: policy.definition_key.clone(),
-            revision: policy.definition_revision.clone(),
-        };
         for actor in &actors {
-            states
+            let policy = runtime.companion_snapshot(*actor).map_err(debug)?.state.policy;
+            let creature = crate::content::ProjectV2DefinitionRef {
+                family: crate::content::ProjectV2Family::Creature,
+                key: policy.definition_key.clone(),
+                revision: policy.definition_revision.clone(),
+            };
+            let admission = states
                 .monster_melee
                 .creature_ai
-                .admit_native_creature(&runtime, native, *actor, &creature, 0)
-                .map_err(debug)?;
+                .admit_native_creature(&runtime, native, *actor, &creature, 0);
+            if passive && *actor != rat {
+                assert_eq!(creature.key, "oteryn:creature.deer");
+                assert_eq!(
+                    admission,
+                    Err(crate::ai_think::behaviour_profile::ProfileRefusal::Invalid)
+                );
+                assert!(states.monster_melee.creature_ai.state(*actor).is_none());
+            } else {
+                admission.map_err(debug)?;
+                assert!(states.monster_melee.creature_ai.state(*actor).is_some());
+            }
         }
         let mut attack = owner.states.attack.lock().await;
         let revisions = crate::ability::RevisionSet::new(
@@ -156,7 +178,7 @@ fn pass_cost(spread: bool) -> TestResult {
             let elapsed = started.elapsed();
             let scans = ground_scans(owner.root).await? - before;
             eprintln!(
-                "MONSTER-PASS-COST spread={spread} creatures={} now={now} elapsed_ms={} ground_scans={scans}",
+                "MONSTER-PASS-COST spread={spread} passive={passive} creatures={} now={now} elapsed_ms={} ground_scans={scans}",
                 actors.len(),
                 elapsed.as_millis()
             );

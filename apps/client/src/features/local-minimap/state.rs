@@ -1,9 +1,11 @@
 //! Locally explored cells and user markers; geometry comes only from validated server tiles.
 use oteryn_session::world_map::WorldMapViewSnapshot;
 use serde::{Deserialize, Serialize};
+#[path = "transfer.rs"]
+mod transfer;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    io::{self, Read, Write},
+    io::{self, Read},
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -119,8 +121,20 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            self.feedback = "Invalid minimap world binding; local saving is disabled".into();
+            if let Err(error) = self.save() {
+                self.feedback =
+                    format!("Could not save minimap before refusing world binding: {error}");
+            } else {
+                self.feedback =
+                    tr!("Invalid minimap world binding; local saving is disabled").into();
+            }
             self.world = None;
+            self.binding = None;
+            self.cells.clear();
+            self.markers.clear();
+            self.dirty = false;
+            self.tracking = true;
+            self.zoom = 1;
             self.quest_marks = Default::default();
         } else if self.world.as_deref() != Some(world) {
             if let Err(error) = self.save() {
@@ -128,6 +142,8 @@ impl Minimap {
             }
             self.quest_markers.clear();
             self.world = Some(world.into());
+            self.tracking = true;
+            self.zoom = 1;
             self.quest_marks = Default::default();
             self.binding = None;
             self.cells.clear();
@@ -168,7 +184,7 @@ impl Minimap {
             self.dirty = false;
             self.binding = Some(binding);
             if let Err(error) = self.load() {
-                self.feedback = format!("Could not load minimap: {error}");
+                self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
         // The snapshot is authoritative only within its visible window. Retain distant
@@ -213,7 +229,7 @@ impl Minimap {
         for key in observed {
             if self.cells.len() >= MAX_CELLS && !self.cells.contains_key(&key) {
                 self.feedback =
-                    "Local exploration limit reached; existing exploration is retained".into();
+                    tr!("Local exploration limit reached; existing exploration is retained").into();
                 continue;
             }
             if self.cells.insert(key, 55) != Some(55) {
@@ -223,7 +239,7 @@ impl Minimap {
         if self.saved_at.elapsed() >= Duration::from_secs(5)
             && let Err(error) = self.save()
         {
-            self.feedback = format!("Could not save minimap: {error}");
+            self.feedback = lfmt!("Could not save minimap: {error}", error = error);
         }
     }
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
@@ -238,15 +254,26 @@ impl Minimap {
     #[cfg_attr(not(windows), allow(dead_code))]
     pub fn pan(&mut self, dx: i32, dy: i32) {
         self.tracking = false;
-        self.x = self.x.saturating_add(dx.saturating_mul(self.zoom));
-        self.y = self.y.saturating_add(dy.saturating_mul(self.zoom));
+        self.x = self
+            .x
+            .saturating_add(dx.saturating_mul(self.zoom))
+            .clamp(0, 65_535);
+        self.y = self
+            .y
+            .saturating_add(dy.saturating_mul(self.zoom))
+            .clamp(0, 65_535);
     }
     pub fn position(&self, x: i32, y: i32) -> Option<(i32, i32, i16)> {
-        Some((
+        if !(0..31).contains(&x) || !(0..25).contains(&y) {
+            return None;
+        }
+        let position = (
             self.x.checked_add((x - 15).checked_mul(self.zoom)?)?,
             self.y.checked_add((y - 12).checked_mul(self.zoom)?)?,
             self.floor,
-        ))
+        );
+        ((0..=65_535).contains(&position.0) && (0..=65_535).contains(&position.1))
+            .then_some(position)
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
     #[cfg_attr(not(windows), allow(dead_code))]
@@ -274,9 +301,9 @@ impl Minimap {
             || label.len() > 128
             || label.chars().any(char::is_control)
         {
-            return Err(io::Error::other(
-                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes",
-            ));
+            return Err(io::Error::other(tr!(
+                "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
+            )));
         }
         if let Some(marker) = self
             .markers
@@ -287,7 +314,9 @@ impl Minimap {
             marker.color = color;
         } else {
             if self.markers.len() >= MAX_MARKERS {
-                return Err(io::Error::other("The minimap supports up to 512 markers"));
+                return Err(io::Error::other(tr!(
+                    "The minimap supports up to 512 markers"
+                )));
             }
             self.markers.push(Marker {
                 x,
@@ -334,13 +363,7 @@ impl Minimap {
                 .collect(),
             markers: self.markers.clone(),
         };
-        let temporary = path.with_extension("tmp");
-        let mut file = std::fs::File::create(&temporary)?;
-        serde_json::to_writer(&mut file, &saved).map_err(io::Error::other)?;
-        file.flush()?;
-        file.sync_all()?;
-        drop(file);
-        std::fs::rename(temporary, path)?;
+        saved.write_to(&path)?;
         self.dirty = false;
         self.saved_at = Instant::now();
         Ok(())
@@ -355,35 +378,15 @@ impl Minimap {
             Err(e) => return Err(e),
         };
         if file.metadata()?.len() > MAX_BYTES {
-            return Err(io::Error::other("Minimap file is too large"));
+            return Err(io::Error::other(tr!("Minimap file is too large")));
         }
         let mut bytes = Vec::new();
         file.take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
         if bytes.len() as u64 > MAX_BYTES {
-            return Err(io::Error::other("Minimap file is too large"));
+            return Err(io::Error::other(tr!("Minimap file is too large")));
         }
         let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
-        if saved.version != 1
-            || saved.cells.len() > MAX_CELLS
-            || saved.markers.len() > MAX_MARKERS
-            || saved.cells.iter().any(|[f, x, y, c]| {
-                !(-15..=0).contains(f)
-                    || !(0..=65535).contains(x)
-                    || !(0..=65535).contains(y)
-                    || ![55, 86].contains(c)
-            })
-            || saved.markers.iter().any(|m| {
-                !(0..=65535).contains(&m.x)
-                    || !(0..=65535).contains(&m.y)
-                    || !(-15..=0).contains(&m.floor)
-                    || m.color > 3
-                    || m.label.trim().is_empty()
-                    || m.label.len() > 128
-                    || m.label.chars().any(char::is_control)
-            })
-        {
-            return Err(io::Error::other("Invalid minimap file"));
-        }
+        saved.validate()?;
         // Older caches recorded gray item-only cells. They are not persistent terrain.
         self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
         self.cells = saved
@@ -402,125 +405,15 @@ impl Drop for Minimap {
     }
 }
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let root = std::env::temp_dir().join(format!("minimap-{}", std::process::id()));
-        let mut map = Minimap::default();
-        map.root = Some(root.clone());
-        map.bind_world("11111111-1111-4111-8111-111111111111");
-        use oteryn_session::{
-            ActorPosition,
-            world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
-        };
-        let position = ActorPosition {
-            x: 100,
-            y: 200,
-            floor: -7,
-        };
-        let mut snapshot = WorldMapViewSnapshot {
-            header: MapViewHeader {
-                content_generation: [1; 32],
-                bundle_digest: [2; 32],
-                reset_epoch: 1,
-                origin: position,
-                first_visible_floor: -7,
-            },
-            tiles: vec![MapTile {
-                position,
-                ground_speed: 100,
-                more: false,
-                items: vec![],
-            }],
-        };
-        map.observe(&snapshot);
-        map.edit_marker(100, 200, -7, "Home".into(), 1)?;
-        // Legacy item-only cells must not return as terrain when an older cache is reopened.
-        map.cells.insert((-7, 999, 999), 86);
-        map.dirty = true;
-        map.save()?;
-        let binding = map.binding;
-        let mut restored = Minimap::default();
-        restored.root = Some(root.clone());
-        restored.bind_world("11111111-1111-4111-8111-111111111111");
-        restored.observe(&snapshot);
-        assert_eq!(restored.markers[0].label, "Home");
-        assert!(restored.cells.contains_key(&(-7, 100, 200)));
-        assert!(!restored.cells.contains_key(&(-7, 999, 999)));
-        snapshot.header.reset_epoch += 1;
-        restored.observe(&snapshot);
-        assert!(restored.markers.is_empty());
-        assert_ne!(restored.binding, binding);
-        drop(restored);
-        drop(map);
-        std::fs::remove_dir_all(root)?;
-        Ok(())
-    }
-    #[test]
-    fn camera_and_marker_validation_do_not_change_gameplay_positions()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let mut map = Minimap::default();
-        map.follow(100, 200, -7);
-        assert_eq!(map.position(15, 12), Some((100, 200, -7)));
-        map.pan(5, -5);
-        map.zoom = 4;
-        assert_eq!(map.position(16, 12), Some((109, 195, -7)));
-        map.floor = -6;
-        assert_eq!(map.position(15, 12), Some((105, 195, -6)));
-        assert!(map.edit_marker(0, 0, 2, "x".into(), 0).is_err());
-        assert!(map.edit_marker(0, 0, -7, "\0".into(), 0).is_err());
-        map.edit_marker(100, 200, -7, "Gate".into(), 2)?;
-        map.edit_marker(100, 200, -7, "Exit".into(), 3)?;
-        assert_eq!(map.markers.len(), 1);
-        assert_eq!(map.markers[0].label, "Exit");
-        map.remove_marker(100, 200, -7)?;
-        assert!(map.markers.is_empty());
-        Ok(())
-    }
-    #[test]
-    fn authoritative_window_clears_ground_but_preserves_distant_exploration() {
-        use oteryn_session::{
-            ActorPosition,
-            world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
-        };
-        let snapshot = |x, ground_speed| {
-            let position = ActorPosition {
-                x,
-                y: 200,
-                floor: -7,
-            };
-            WorldMapViewSnapshot {
-                header: MapViewHeader {
-                    content_generation: [1; 32],
-                    bundle_digest: [2; 32],
-                    reset_epoch: 1,
-                    origin: position,
-                    first_visible_floor: -7,
-                },
-                tiles: vec![MapTile {
-                    position,
-                    ground_speed,
-                    more: false,
-                    items: vec![],
-                }],
-            }
-        };
-        let mut map = Minimap::default();
-        map.observe(&snapshot(100, 100));
-        map.observe(&snapshot(1000, 100));
-        assert!(map.cells.contains_key(&(-7, 100, 200)));
-        assert!(map.cells.contains_key(&(-7, 1000, 200)));
-        let mut cleared = snapshot(1000, 100);
-        cleared.tiles.clear();
-        map.observe(&cleared);
-        assert!(map.cells.contains_key(&(-7, 100, 200)));
-        assert!(!map.cells.contains_key(&(-7, 1000, 200)));
-        map.observe(&snapshot(100, 0));
-        assert!(!map.cells.contains_key(&(-7, 100, 200)));
-    }
-}
+#[path = "tests/state.rs"]
+mod tests;
+#[cfg(test)]
+#[path = "tests/transfer.rs"]
+mod transfer_tests;
+
+#[cfg(test)]
+#[path = "tests/play_persistence.rs"]
+mod play_persistence;
 
 #[cfg(test)]
 mod quest_mark_tests {

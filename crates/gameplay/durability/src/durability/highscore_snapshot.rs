@@ -243,6 +243,7 @@ pub struct SnapshotRow {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SnapshotPage {
+    pub own_page: Option<u32>,
     pub snapshot: SnapshotInfo,
     pub page: u32,
     pub has_more: bool,
@@ -992,10 +993,22 @@ async fn read_in_transaction(
         .into_iter().map(stored_row).collect::<Result<Vec<_>>>()?;
     let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND position>$3)")
         .bind(id).bind(filter).bind(end).bind(drome).fetch_one(&mut **tx).await?;
-    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND character_id=encode($3,'hex')::uuid")
+    let own = sqlx::query("SELECT position,uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND character_id=encode($3,'hex')::uuid")
         .bind(id).bind(filter).bind(character.as_bytes().as_slice()).bind(drome).fetch_optional(&mut **tx).await?
-        .map(stored_row).transpose()?;
+        ;
+    let own_page = own
+        .as_ref()
+        .map(|row| {
+            let position: i32 = row.try_get("position")?;
+            if !(1..=1000).contains(&position) {
+                return Err(corrupt());
+            }
+            Ok((position as u32 - 1) / PAGE_ROWS as u32 + 1)
+        })
+        .transpose()?;
+    let own_row = own.map(stored_row).transpose()?;
     Ok(SnapshotPage {
+        own_page,
         snapshot,
         page,
         has_more,

@@ -2,29 +2,29 @@ use super::LoyaltySkillsPanel;
 
 pub fn panel_text(panel: &LoyaltySkillsPanel) -> String {
     if !panel.selected {
-        return "Skills unavailable in this session".into();
+        return tr!("Skills unavailable in this session").into();
     }
     if let Some(error) = panel.error {
         return error.into();
     }
     let Some(snapshot) = &panel.snapshot else {
-        return "Loading skills…".into();
+        return tr!("Loading skills…").into();
     };
-    let mut text = format!(
+    let mut text = lfmt!(
         "Loyalty: {} points · {}% skill-point bonus\r\n{}\r\n\r\nSkills: base / with Loyalty\r\n",
         snapshot.points,
         snapshot.bonus_percent,
-        snapshot.title.as_deref().unwrap_or("No loyalty title"),
+        snapshot.title.as_deref().unwrap_or(tr!("No loyalty title")),
     );
     for (label, skill) in [
-        "Magic",
-        "Fist",
-        "Club",
-        "Sword",
-        "Axe",
-        "Distance",
-        "Shielding",
-        "Fishing",
+        tr!("Magic"),
+        tr!("Fist"),
+        tr!("Club"),
+        tr!("Sword"),
+        tr!("Axe"),
+        tr!("Distance"),
+        tr!("Shielding"),
+        tr!("Fishing"),
     ]
     .into_iter()
     .zip(snapshot.skills)

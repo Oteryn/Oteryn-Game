@@ -1,6 +1,6 @@
 # Personal map marks V1 (M16)
 
-Capability 451 requires NPC service 3 and World map 18. Command 733 is a read-only query; it creates no marker, quest progress, item, receipt or gameplay input. The server offers it only when native map-mark content is installed. The Character Quest writer is the sole durable producer.
+Capability 451 requires NPC service 3 and World map 18. Command 741 is a read-only query; it creates no marker, quest progress, item, receipt or gameplay input. The server offers it only when native map-mark content is installed. The Character Quest writer is the sole durable producer.
 
 ## Request
 

@@ -12,14 +12,22 @@ category = "platform-client"
 release-role = "production"
 
 [dependencies]
+async-trait = "=0.1.89"
+base64 = "=0.22.1"
+bytes = "=1.12.1"
+futures = "=0.3.32"
 oteryn-diagnostics = { version = "=0.1.0", path = "../diagnostics" }
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-platform-contracts = { version = "=0.1.0", path = "../platform-contracts" }
 reqwest.workspace = true
+sha2.workspace = true
+ed25519-dalek = { workspace = true, features = ["std"] }
 rustls.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio.workspace = true
+tough = { version = "=0.24.0", default-features = false }
+url = "=2.5.8"
 
 [lints]
 workspace = true

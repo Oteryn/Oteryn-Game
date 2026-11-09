@@ -1,6 +1,7 @@
 use super::ConditionStatus;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ConditionStatusPanel {
+    pub order: Vec<u8>,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -15,7 +16,7 @@ impl ConditionStatusPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Conditions could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Conditions could not be refreshed. Try Refresh."));
         false
     }
 }

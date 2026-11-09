@@ -39,6 +39,6 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::ChatPublic(command)).is_err()
     {
         mailbox.chat_public.pending = false;
-        mailbox.chat_public.feedback = Some("The session has ended".into());
+        mailbox.chat_public.feedback = Some(tr!("The session has ended").into());
     }
 }

@@ -42,7 +42,7 @@ pub fn control_request(p: &mut ItemForgePanel) -> Option<ServerMechanicCommand> 
         },
     };
     let Some(bytes) = r.encode() else {
-        p.feedback = Some("Select valid items and forge options".into());
+        p.feedback = Some(tr!("Select valid items and forge options").into());
         return None;
     };
     request(p, command(bytes.to_vec()))
@@ -51,27 +51,104 @@ pub fn request(p: &mut ItemForgePanel, c: ServerMechanicCommand) -> Option<Serve
     if !p.selected || p.pending {
         return None;
     }
+    let submitted = (c.command_type == COMMAND_TYPE_ITEM_FORGE)
+        .then(|| Request::decode(&c.payload))
+        .flatten();
+    if let Some(submitted) = submitted.filter(|request| {
+        request.operation != oteryn_client_runtime::cui3::item_forge::Operation::QueryHistory
+    }) {
+        if p.retry.is_some_and(|retry| retry != submitted) {
+            p.feedback = Some(
+                "Resolve or retry the same existing attempt before another paid action".into(),
+            );
+            return None;
+        }
+        p.retry = Some(submitted);
+    }
+    p.submitted = submitted;
     p.pending = true;
     p.feedback = None;
     Some(c)
 }
 pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
+    let was_pending = p.pending;
     p.pending = false;
+    let submitted = p.submitted.take();
     if matches!(
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
         p.response.clone_from(&r.payload);
         if let Some(reply) = super::reply::decode(&r.payload) {
+            if let Some(attempt) = submitted.filter(|request| {
+                request.operation
+                    != oteryn_client_runtime::cui3::item_forge::Operation::QueryHistory
+            }) {
+                if !matches!(&reply, super::reply::Reply::Result(receipt) if receipt.operation == attempt.operation)
+                {
+                    p.feedback =
+                        Some("Outcome did not match the attempt; retry the same occurrence".into());
+                    if oteryn_client_runtime::forge_preview::resource_operation(attempt.operation) {
+                        p.resource_dialog.message("The reply did not match this operation. Check Forge history before retrying the same unresolved attempt.");
+                    }
+                    return;
+                }
+                if let super::reply::Reply::Result(receipt) = &reply
+                    && attempt.operation.requires_pair()
+                {
+                    super::exaltation::show_result(p, attempt, receipt.clone());
+                }
+                p.retry = None;
+                p.preview.invalidate();
+            }
+            if was_pending
+                && (submitted.is_some_and(|r| {
+                    r.operation == oteryn_client_runtime::cui3::item_forge::Operation::QueryHistory
+                        || oteryn_client_runtime::forge_preview::resource_operation(r.operation)
+                }) || matches!(reply, super::reply::Reply::CurrentDust { .. }))
+            {
+                p.resource_dialog.result(reply.clone());
+            }
             p.decoded = Some(reply);
             p.feedback = None;
         } else {
-            p.feedback = Some("Invalid forge reply; refresh to retry".into());
+            p.feedback = Some(tr!("Invalid forge reply; refresh to retry").into());
+            if was_pending
+                && submitted.is_some_and(|r| {
+                    oteryn_client_runtime::forge_preview::resource_operation(r.operation)
+                })
+            {
+                p.resource_dialog.message("The operation result could not be confirmed. Check Forge history; no new operation was submitted.");
+            }
         }
     } else {
-        p.feedback = Some(format!("Server refused forge action: {:?}", r.status))
+        if r.status == CommandStatus::Rejected
+            && submitted.is_some_and(|request| {
+                request.operation
+                    != oteryn_client_runtime::cui3::item_forge::Operation::QueryHistory
+            })
+        {
+            p.retry = None;
+            p.preview.invalidate();
+        }
+        p.feedback = Some(lfmt!("Server refused forge action: {:?}", r.status));
+        if was_pending
+            && submitted.is_some_and(|r| {
+                oteryn_client_runtime::forge_preview::resource_operation(r.operation)
+            })
+        {
+            p.resource_dialog.message("The server refused the resource operation. Refresh your resources before another attempt.");
+        }
     }
 }
+/// Read-only projection through the existing Forge capability.
+pub fn preview_request(
+    panel: &mut ItemForgePanel,
+    selection: oteryn_client_runtime::forge_preview::Selection,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::preview::request(panel, selection)
+}
+
 #[cfg(test)]
 // Direct fixture construction keeps the wire assertions readable.
 #[allow(clippy::unwrap_used)]

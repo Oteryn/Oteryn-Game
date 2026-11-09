@@ -33,6 +33,7 @@ pub async fn run_session<T: Stepper>(
     commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.performance_reset();
     let personal_marks_selected = session.feature_selected(451);
     if personal_marks_selected {
         outbox.personal_map_marks_initialize();
@@ -45,10 +46,21 @@ pub async fn run_session<T: Stepper>(
         outbox.end(public_class(&error));
         return;
     }
-    outbox.diagonal_initialize(session.feature_selected(449));
+    if let Some(command) = outbox.returner_initial_request() {
+        match session.feature(&command).await {
+            Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+            Err(_) => outbox.returner_unavailable(),
+        }
+    }
+    let mut modal =
+        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     let mut personal_marks_refresh = std::time::Instant::now();
     loop {
+        if let Err(error) = modal.poll(&mut session).await {
+            outbox.end(public_class(&error));
+            return;
+        }
         if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
             let command = oteryn_client_ui::personal_map_marks::request();
             match session.feature(&command).await {
@@ -77,22 +89,45 @@ pub async fn run_session<T: Stepper>(
         }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.scope_command(&commands), session, outbox, held, publish;
-            Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
+            Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {
                 Ok(result) => {
+                    outbox.hud_stamina_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Feature(command)) => {
+                let started = std::time::Instant::now();
+                match session.feature(&command).await {
+                Ok(result) => {
+                    outbox.performance_command_result(started.elapsed());
                     match command.capability {
+                        7 => outbox.console_result(&result),
+                        10 => outbox.analyser_result(&command, &result),
+                        63 => outbox.market_details_result(&command, &result),
+                        72 if command.kind==oteryn_client_runtime::task_board::task_board::soulpit::COMMAND_TYPE => outbox.soulseal_result(&command,&result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
                         54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
+                        97 if command.kind == 113 && command.payload == [5] => outbox.premium_game_result(&command,&result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
-                        76 | 103 | 146 => outbox.properties_result(&command, &result),
+                        76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
+                        182 => match command.kind {
+                            738=>outbox.daily_reward_details_result(&result),
+                            oteryn_session::daily_reward::returner::QUERY | oteryn_session::daily_reward::returner::CLAIM =>outbox.daily_reward_returner_result(command.kind,&result),
+                            _=>outbox.daily_reward_picker_result(command.kind,&result),
+                        },
                         170 => outbox.arena_result(&result),
-                        195 => outbox.weapon_proficiency_result(&result),
+                        195 | 448 => outbox.weapon_proficiency_result(&result),
+                        148 if command.kind == 6121 => outbox.gem_presentation_result(&command, &result),
+                        148 => outbox.wheel_presentation_result(&command, &result),
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
@@ -105,13 +140,14 @@ pub async fn run_session<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
+                        449 => outbox.spellbook_details_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
                 Err(error) => error,
-            },
+            }},
             Ok(PlayCommand::BrowseFieldMove(intent)) => {
                 match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
                     Ok(response) => {
@@ -130,13 +166,16 @@ pub async fn run_session<T: Stepper>(
                             290 => outbox.cast_control_result(&response),
                             291 => outbox.cast_chat_result(&response),
                             292 => outbox.cast_consent_result(&response),
+                            63 if request.command_type==oteryn_client_runtime::coin_market::COMMAND => outbox.coin_market_result(&response),
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
+                            17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
                             14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
+                            154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
                             154 => outbox.store_result(&response),
                             179 => outbox.hotkey_equip_result(&response),
                             230 => outbox.browse_field_result(&response),
@@ -207,8 +246,10 @@ pub async fn run_session<T: Stepper>(
                 }
             }
             Ok(PlayCommand::Step(direction)) => {
+                let started = std::time::Instant::now();
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
+                        outbox.performance_command_result(started.elapsed());
                         outbox.action_feedback(session.refusal_detail().map(|detail| detail.reference_message()));
                         outbox.stepped(outcome);
                         publish(&mut session, &outbox, &mut held);

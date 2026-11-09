@@ -11,7 +11,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Writing and mail",
-            labels: &["Selected item", "Selected mailbox (for posting)", "Text (include recipient address for mail)"],
+            labels: &[
+                "Selected item",
+                "Selected mailbox (for posting)",
+                "Text (include recipient address for mail)",
+            ],
             buttons: &["Write", "Post"],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.mail;
@@ -45,3 +49,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 #[cfg(windows)]
 #[path = "native.rs"]
 pub(in crate::play) mod native;
+
+#[cfg(any(windows, test))]
+#[path = "view/dialog_preferences.rs"]
+pub(in crate::play) mod dialog_preferences;

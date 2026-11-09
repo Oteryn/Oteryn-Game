@@ -122,3 +122,14 @@ fn nx8_native_current_dust_control_uses_query_without_mutation_fields() {
     assert_eq!(command.command_type, 668);
     assert!(command.payload.is_empty());
 }
+
+#[path = "preview_play.rs"]
+mod preview_play;
+#[path = "preview_session.rs"]
+mod preview_session;
+
+#[path = "resource_session.rs"]
+mod resource_session;
+
+#[path = "exaltation_session.rs"]
+mod exaltation_session;

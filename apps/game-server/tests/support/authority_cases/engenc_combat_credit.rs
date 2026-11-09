@@ -473,6 +473,16 @@ fn native_hit_runtime(lease_generation: u64) -> fixture::TestResult<NativeHitRun
         .commit_fresh_session(reservation)
         .map_err(fixture::debug)?;
     runtime
+        .initialize_movement_test_position(
+            player,
+            foundation::MovementLocalPosition {
+                x: 1,
+                y: 1,
+                floor: 7,
+            },
+        )
+        .map_err(fixture::debug)?;
+    runtime
         .bind_attacker_lease(
             player,
             fence.game_session_id,

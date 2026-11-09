@@ -17,6 +17,25 @@
   },
   {
     "mechanic": "0049-house",
+    "kind": "handlers",
+    "id": "0049-house-ownership",
+    "status": "supported",
+    "commands": [
+      6129
+    ],
+    "direction": "client_to_server",
+    "capability": 49,
+    "entry": "protocol.rs::ownership_request"
+  },
+  {
+    "mechanic": "0049-house",
+    "kind": "panels",
+    "id": "0049-house-ownership-panel",
+    "status": "supported",
+    "entry": "view.rs::ownership_text"
+  },
+  {
+    "mechanic": "0049-house",
     "kind": "panels",
     "id": "0049-house-panel",
     "status": "supported",

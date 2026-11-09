@@ -30,6 +30,30 @@ impl PlayLink {
         use oteryn_client_ui::quick_loot::{
             Action, QuickLootCategory as Category, QuickLootFilterMode as Mode, QuickLootRecipient,
         };
+        if action == 9 {
+            return self.discovery_panel().loot.managed && self.inventory_open_container();
+        }
+        if action == 7 {
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.discovery.loot.managed = !mailbox.discovery.loot.managed;
+            return true;
+        }
+        if action == 8 {
+            let panel = self.discovery_panel().loot;
+            if !panel.managed {
+                return false;
+            }
+            let Some(Action::Destination { category, .. }) = panel.destinations.get(row) else {
+                return false;
+            };
+            return self.quick_loot_action(Action::Destination {
+                category: *category, recipient: QuickLootRecipient::MainContainer,
+                id: None, fallback: true,
+            });
+        }
+        if (2..=5).contains(&action) && self.discovery_panel().loot.managed {
+            return false;
+        }
         let mut mode = match fields.get(1).map(String::as_str) {
             Some("1") => Mode::Skip,
             Some("2") => Mode::Accept,

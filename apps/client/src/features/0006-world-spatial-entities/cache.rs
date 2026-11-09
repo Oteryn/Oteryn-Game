@@ -23,6 +23,7 @@ pub(super) struct PresentationCache {
     outfits: BTreeMap<(u32, u32), Vec<Draw>>,
     items: ItemDrawCache,
     image: Option<Arc<AtlasImage>>,
+    visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
     #[cfg(test)]
     counts: [usize; 3], // asset loads, base unpacks, atlas packs
@@ -30,7 +31,7 @@ pub(super) struct PresentationCache {
 
 impl std::fmt::Debug for PresentationCache {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PresentationCache")
+        f.debug_struct(tr!("PresentationCache"))
             .field("glyphs", &self.glyphs.len())
             .field("outfits", &self.outfits.len())
             .finish_non_exhaustive()
@@ -43,6 +44,7 @@ impl PresentationCache {
         self.pixels.clear();
         self.glyphs.clear();
         self.outfits.clear();
+        self.visuals.clear();
         self.items.clear();
         self.image = None;
         self.packed_cells = 0;
@@ -260,3 +262,5 @@ fn unpack(atlas: &AtlasImage) -> Vec<u8> {
     }
     cells
 }
+
+include!("cache_visuals.rs");

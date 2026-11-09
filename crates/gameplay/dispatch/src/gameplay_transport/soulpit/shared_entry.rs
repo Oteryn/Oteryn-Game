@@ -164,7 +164,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 intent.command.game_session_id,
                 CommandId::new(intent.command.command_id).map_err(|_| ())?,
             ),
-            source: core.item_instance_id,
+            funding: crate::durability::soulpit::SoulpitFunding::Core {
+                source: core.item_instance_id,
+                definition: core.definition,
+            },
             intent: intent.encoded_intent,
             started_at_micros: self.owner_now().get(),
             participants: facts,

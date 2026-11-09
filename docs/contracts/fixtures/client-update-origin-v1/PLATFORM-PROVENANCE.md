@@ -1,0 +1,1 @@
+Public synthetic fixtures copied byte-for-byte from Oteryn/Oteryn-Platform merged main commit a1858bc0a78d4aaf57133ae355c098ea897d165b. Contract: docs/contracts/OTERYN_V2_CLIENT_UPDATE_ORIGIN_CONTRACT.md. Verified every Git blob against that commit. No production trust keys or credentials.

@@ -1,0 +1,7 @@
+name=gem_presentation
+commands=6121
+transport=gem_presentation
+composed=gem_presentation
+authority=gem_presentation
+[route]
+routing::gem_presentation::route(authority, &session.admitted, command).await

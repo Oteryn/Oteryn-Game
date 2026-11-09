@@ -169,6 +169,7 @@ impl<S: SessionStream> Session<S> {
             });
         }
         Ok(Self {
+            bulletin: None,
             stream,
             deadline,
             last_received: tokio::time::Instant::now(),

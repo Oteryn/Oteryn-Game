@@ -1,0 +1,7 @@
+{
+  "mechanic": "0452-diagonal-movement",
+  "kind": "panels",
+  "id": "0452-diagonal-movement-world-view",
+  "status": "supported",
+  "entry": "view.rs::facing"
+}

@@ -284,3 +284,13 @@ fn nx8_proficiency_catalogue_displays_experience_full_perks_and_pages() {
     ));
     assert!(panel.feedback.is_some());
 }
+
+mod live_state {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/features/0195-weapon-proficiency/tests/live_state.rs"
+    ));
+}
+
+#[path = "play_additional.rs"]
+mod additional;

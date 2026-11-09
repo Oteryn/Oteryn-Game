@@ -319,6 +319,7 @@ fn queries_round_trip_within_62_bytes_and_fail_closed() {
     };
     for query in [
         QuestLogQuery::List,
+        QuestLogQuery::ListOnly,
         QuestLogQuery::Quest { quest_index: 0 },
         QuestLogQuery::Quest {
             quest_index: u32::MAX,
@@ -369,7 +370,8 @@ fn queries_round_trip_within_62_bytes_and_fail_closed() {
         vec![0x1a, 0x03, 0x0a, 0x01, 0x05],
         vec![0x0a, 0x02, 0x08, 0x01],
         vec![0x12, 0x02, 0x10, 0x01],
-        vec![0x22, 0x00],
+        vec![0x2a, 0x00],
+        vec![0x22, 0x02, 0x08, 0x01],
     ] {
         assert_eq!(
             decode_quest_log_query(&payload),

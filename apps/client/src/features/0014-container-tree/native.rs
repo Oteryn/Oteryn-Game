@@ -28,7 +28,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             let id = (w & 0xffff) as u16;
             let notification = (w >> 16) & 0xffff;
             if ((101..=102).contains(&id) && notification == LBN_SELCHANGE as usize)
-                || ((103..=105).contains(&id) && notification == BN_CLICKED as usize)
+                || ((103..=109).contains(&id) && notification == BN_CLICKED as usize)
             {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<u16>;
                 if !actions.is_null() {
@@ -68,12 +68,12 @@ pub(in crate::play) fn open_shared(
                 let hwnd = CreateWindowExW(
                     0,
                     wide("STATIC").as_ptr(),
-                    wide("Containers — carried and ground").as_ptr(),
+                    wide(tr!("Containers — carried and ground")).as_ptr(),
                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
                     520,
-                    480,
+                    570,
                     null_mut(),
                     null_mut(),
                     null_mut(),
@@ -111,9 +111,9 @@ pub(in crate::play) fn open_shared(
                     let views = list(101, 10, 80);
                     let entries = list(102, 100, 220);
                     for (id, label, x) in [
-                        (103_usize, "Open selected", 10),
-                        (104, "Up", 175),
-                        (105, "Close view", 340),
+                        (103_usize, tr!("Open selected"), 10),
+                        (104, tr!("Up"), 175),
+                        (105, tr!("Close view"), 340),
                     ] {
                         CreateWindowExW(
                             0,
@@ -130,15 +130,63 @@ pub(in crate::play) fn open_shared(
                             null(),
                         );
                     }
+                    for (id, label, x) in [
+                        (108_usize, "Use as destination", 10),
+                        (109, "Move all to destination", 255),
+                    ] {
+                        CreateWindowExW(
+                            0,
+                            wide("BUTTON").as_ptr(),
+                            wide(label).as_ptr(),
+                            WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+                            x,
+                            410,
+                            235,
+                            30,
+                            hwnd,
+                            id as _,
+                            null_mut(),
+                            null(),
+                        );
+                    }
+                    let mut chosen_destination = None;
+                    let destination = CreateWindowExW(
+                        0,
+                        wide("EDIT").as_ptr(),
+                        wide("Target view ID").as_ptr(),
+                        WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP,
+                        10,
+                        370,
+                        235,
+                        28,
+                        hwnd,
+                        null_mut(),
+                        null_mut(),
+                        null(),
+                    );
+                    CreateWindowExW(
+                        0,
+                        wide("BUTTON").as_ptr(),
+                        wide("Move all to view").as_ptr(),
+                        WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+                        255,
+                        370,
+                        235,
+                        28,
+                        hwnd,
+                        106 as _,
+                        null_mut(),
+                        null(),
+                    );
                     let status = CreateWindowExW(
                         0,
                         wide("STATIC").as_ptr(),
                         wide("").as_ptr(),
                         WS_CHILD | WS_VISIBLE,
                         10,
-                        370,
+                        450,
                         480,
-                        60,
+                        65,
                         hwnd,
                         null_mut(),
                         null_mut(),
@@ -167,8 +215,44 @@ pub(in crate::play) fn open_shared(
                         if mailbox.inventory_shutdown {
                             break;
                         }
-                        let panel = &mut mailbox.containers;
+                        let mut destination_changed = false;
                         for action in actions.drain(..) {
+                            match action {
+                                108 => {
+                                    chosen_destination = mailbox
+                                        .containers
+                                        .current()
+                                        .filter(|v| v.browse.is_none())
+                                        .map(|v| (v.view_id, v.container_handle));
+                                    destination_changed = true;
+                                    continue;
+                                }
+                                109 => {
+                                    if let Some((id, handle)) = chosen_destination
+                                        && mailbox.containers.views.as_ref().is_some_and(|v| {
+                                            v.views.iter().any(|v| {
+                                                v.view_id == id && v.container_handle == handle
+                                            })
+                                        })
+                                    {
+                                        super::super::state::move_all(&mut mailbox, &commands, id);
+                                    }
+                                    continue;
+                                }
+                                _ => {}
+                            }
+                            if action == 106 {
+                                let mut text = [0u16; 20];
+                                let len = GetWindowTextW(destination, text.as_mut_ptr(), 20).max(0)
+                                    as usize;
+                                if let Ok(id) =
+                                    String::from_utf16_lossy(&text[..len]).trim().parse::<u8>()
+                                {
+                                    super::super::input::bulk::begin(&mut mailbox, &commands, id);
+                                }
+                                continue;
+                            }
+                            let panel = &mut mailbox.containers;
                             let intent = match action {
                                 101 => {
                                     let row = SendMessageW(views, LB_GETCURSEL, 0, 0);
@@ -206,7 +290,8 @@ pub(in crate::play) fn open_shared(
                                 panel.end();
                             }
                         }
-                        if held.as_ref() != Some(panel) {
+                        let panel = &mut mailbox.containers;
+                        if held.as_ref() != Some(panel) || destination_changed {
                             SendMessageW(views, LB_RESETCONTENT, 0, 0);
                             if let Some(state) = &panel.views {
                                 for (i, view) in state.views.iter().enumerate() {
@@ -214,9 +299,10 @@ pub(in crate::play) fn open_shared(
                                         views,
                                         LB_ADDSTRING,
                                         0,
-                                        wide(&format!(
+                                        wide(&lfmt!(
                                             "View {}: container {}",
-                                            view.view_id, view.container_handle
+                                            view.view_id,
+                                            view.container_handle
                                         ))
                                         .as_ptr() as isize,
                                     );
@@ -231,9 +317,10 @@ pub(in crate::play) fn open_shared(
                                     entries,
                                     LB_ADDSTRING,
                                     0,
-                                    wide(&format!(
+                                    wide(&lfmt!(
                                         "Item {} ×{}",
-                                        item.item_definition_ref, item.count
+                                        item.item_definition_ref,
+                                        item.count
                                     ))
                                     .as_ptr() as isize,
                                 );
@@ -244,17 +331,23 @@ pub(in crate::play) fn open_shared(
                                     SendMessageW(entries, LB_SETCURSEL, i, 0);
                                 }
                             }
-                            SetWindowTextW(
-                                status,
-                                wide(
-                                    &oteryn_client_ui::house_container_capacity::view::panel_text(
-                                        panel,
-                                    ),
-                                )
-                                .as_ptr(),
-                            );
                             held = Some(panel.clone());
                         }
+                        SetWindowTextW(
+                            status,
+                            wide(&format!(
+                                "{}\n{}\nDestination: {}",
+                                oteryn_client_ui::house_container_capacity::view::panel_text(
+                                    &mailbox.containers
+                                ),
+                                mailbox.item_movement.feedback.unwrap_or_default(),
+                                chosen_destination.map_or_else(
+                                    || "choose an open container".into(),
+                                    |(id, handle)| format!("view {id}, container {handle}")
+                                )
+                            ))
+                            .as_ptr(),
+                        );
                         if let Some(panel) = &held
                             && let Some(view) = panel.current()
                         {

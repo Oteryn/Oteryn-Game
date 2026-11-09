@@ -37,6 +37,7 @@ impl World {
             MANIFEST_SHA256,
         )
         .map_err(|error| error.to_string())?;
+        let effects = store.effects().clone();
         let catalog = Catalog::load(&store).map_err(|error| error.to_string())?;
         let index = AppearanceIndex::load(&store, &catalog).map_err(|error| error.to_string())?;
         let mut sheets = SpriteSheets::new(store, catalog);
@@ -136,6 +137,7 @@ impl World {
                 .collect()
         });
         let mut world = Self {
+            effects: Default::default(),
             #[cfg(test)]
             native_resolved_items,
             center: (origin.x, origin.y, origin.floor),
@@ -143,7 +145,8 @@ impl World {
             layers: BTreeMap::new(),
             player,
             atlas: atlas.into_image(),
-        };
+        }
+        .with_effect_catalog(effects);
         for (position, tile) in tiles {
             world.insert_floor_tile(position, tile);
         }

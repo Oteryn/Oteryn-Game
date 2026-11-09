@@ -1,0 +1,10 @@
+{
+  "id": 740,
+  "name": "BATTLE_METADATA_QUERY",
+  "owner_decision": "CLIENTGAP-OPTIONS O014 existing ATTACK_V1 read-only battle filters",
+  "capability": 17,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/battle-metadata-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/battle-metadata-v1.md#reply",
+  "max_payload_bytes": 385,
+  "max_result_payload_bytes": 417
+}

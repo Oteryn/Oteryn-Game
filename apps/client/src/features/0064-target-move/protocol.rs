@@ -33,11 +33,11 @@ impl Outbox {
         }
         mailbox.movement_feedback = Some(match (response.status, response.payload.as_slice()) {
             (CommandStatus::Accepted | CommandStatus::DuplicateReplay, [8, 1]) => {
-                "Movement accepted"
+                tr!("Movement accepted")
             }
-            (CommandStatus::Accepted | CommandStatus::DuplicateReplay, [8, 2]) => "No route",
-            (_, [8, 3]) | (CommandStatus::Rejected, _) => "Movement refused",
-            _ => "Invalid movement result",
+            (CommandStatus::Accepted | CommandStatus::DuplicateReplay, [8, 2]) => tr!("No route"),
+            (_, [8, 3]) | (CommandStatus::Rejected, _) => tr!("Movement refused"),
+            _ => tr!("Invalid movement result"),
         });
     }
 }

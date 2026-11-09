@@ -12,7 +12,7 @@
     "id": "0451-personal-map-marks-query",
     "status": "supported",
     "commands": [
-      733
+      741
     ],
     "direction": "client_to_server",
     "capability": 451,

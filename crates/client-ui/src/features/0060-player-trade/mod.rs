@@ -3,7 +3,7 @@ use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
 /// Ctrl+T opens the direct-player-trade panel.
 pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
-    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 20 && modifiers.contains(Modifier::Control) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 23 && modifiers.contains(Modifier::Control) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +40,7 @@ pub fn request(panel: &mut PlayerTradePanel, intent: Intent) -> Option<PlayerTra
         Intent::Accept | Intent::LookOwn | Intent::LookCounter => {
             let trade_id = panel.state.as_ref().and_then(|state| state.trade_id);
             let Some(trade_id) = trade_id else {
-                panel.feedback = Some("No active trade");
+                panel.feedback = Some(tr!("No active trade"));
                 return None;
             };
             match intent {
@@ -73,7 +73,7 @@ pub fn apply_result(panel: &mut PlayerTradePanel, response: &PlayerTradeResponse
         }
         _ => Some(response.result.message())
             .filter(|message| !message.is_empty())
-            .or(Some("Sorry, not possible.")),
+            .or(Some(tr!("Sorry, not possible."))),
     };
 }
 

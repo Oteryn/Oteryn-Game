@@ -1188,6 +1188,8 @@ async fn client_reply(
     snapshot_id: u64,
 ) -> TestResult<HighscoresReply> {
     let payload = encode_highscores_query(HighscoresQuery {
+        world: None,
+        details: false,
         category,
         vocation,
         page,
@@ -1211,6 +1213,8 @@ fn session_resolution_rejects_another_world_an_unknown_session_and_an_unadmitted
         let snapshots = h.count("game_world_highscore_snapshots").await?;
         assert_eq!(snapshots, 14);
         let payload = encode_highscores_query(HighscoresQuery {
+            world: None,
+            details: false,
             category: 1,
             vocation: 0,
             page: 1,

@@ -19,6 +19,8 @@ use oteryn_protocol_oteryn::task_board as wire;
 pub(super) mod bounty_talisman;
 #[path = "task_board_projection.rs"]
 mod projection;
+#[path = "task_board/soulseals.rs"]
+pub(crate) mod soulseals;
 #[path = "task_board_quest_entries.rs"]
 mod quest_entries;
 
@@ -92,7 +94,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Some(catalogue)
     }
 
-    pub(super) async fn task_board_wire(
+    pub(super) async fn task_board_wire(&self,admitted:AdmittedSession,id:u64,kind:u32,payload:&[u8])->TaskBoardReply {
+        if kind==wire::soulpit::COMMAND_TYPE {self.soulseal_wire(admitted,id,payload).await}
+        else {self.normal_task_board_wire(admitted,id,kind,payload).await}
+    }
+    pub(super) async fn normal_task_board_wire(
         &self,
         admitted: AdmittedSession,
         id: u64,

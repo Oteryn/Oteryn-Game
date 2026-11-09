@@ -17,7 +17,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.party_effects.pending = false;
-            mailbox.party_effects.error = Some("Session ended");
+            mailbox.party_effects.error = Some(tr!("Session ended"));
         }
     }
     pub fn party_effects_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -26,9 +26,11 @@ impl PlayLink {
         }
         self.party_effects_request();
         #[cfg(windows)]
-        crate::play::status_window::open_window(self, "Party effects — Ctrl+Alt+Shift+P", |mailbox| {
-            &mut mailbox.party_effects
-        });
+        crate::play::status_window::open_window(
+            self,
+            tr!("Party effects — Ctrl+Alt+Shift+P"),
+            |mailbox| &mut mailbox.party_effects,
+        );
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).party_effects.open = true;

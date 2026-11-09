@@ -88,17 +88,17 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
             assert_eq!(production_key, core_key);
             assert!(native.item_policy(&production_key, &revision_ref).is_some());
             let core = SoulpitEntryRequest {
-                source_definition: crate::durability::item_mint::TypedDefinitionRef {
-                    family,
-                    production_key,
-                    revision_ref,
+                funding: crate::durability::soulpit::SoulpitFunding::Core {
+                    source: id(71),
+                    definition: crate::durability::item_mint::TypedDefinitionRef {
+                        family, production_key, revision_ref,
+                    },
                 },
                 handoff_id: activity.handoff_id,
                 command: CommandRef::new(
                     source.game_session_id,
                     CommandId::new(activity.command_id).map_err(debug)?,
                 ),
-                source: id(71),
                 intent: vec![8, 1],
                 started_at_micros: 1,
                 participants: vec![SoulpitParticipantFact {
@@ -138,7 +138,8 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                 ActivityEnterOutcome::Refused(_)
             ));
             let mut missing_core = core.clone();
-            missing_core.source = id(72);
+            let crate::durability::soulpit::SoulpitFunding::Core { source: funding_source, .. } = &mut missing_core.funding else { return Err("expected core funding".into()); };
+            *funding_source = id(72);
             assert!(matches!(
                 owner
                     .enter_soulpit(
@@ -217,7 +218,8 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                 ActivityEnterOutcome::Replayed(_)
             ));
             let mut rebound = core;
-            rebound.source = id(72);
+            let crate::durability::soulpit::SoulpitFunding::Core { source: funding_source, .. } = &mut rebound.funding else { return Err("expected core funding".into()); };
+            *funding_source = id(72);
             assert!(matches!(
                 owner
                     .enter_soulpit(&authority, &h.node, &permit, activity, &rebound, native)

@@ -75,7 +75,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Arenas — Ctrl+Shift+Z").as_ptr(),
+            wide(tr!("Arenas — Ctrl+Shift+Z")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -113,7 +113,11 @@ fn run(
             [10, 335, 220, 150],
             CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
         );
-        for label in ["Greenhorn rewards", "Scrapper rewards", "Warlord rewards"] {
+        for label in [
+            tr!("Greenhorn rewards"),
+            tr!("Scrapper rewards"),
+            tr!("Warlord rewards"),
+        ] {
             SendMessageW(rank, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
         SendMessageW(rank, CB_SETCURSEL, 0, 0);
@@ -121,6 +125,7 @@ fn run(
             .iter()
             .enumerate()
             .map(|(i, label)| {
+                let label = oteryn_client_ui::localization::tr(label);
                 let (x, y) = if i < 5 {
                     (10 + i as i32 * 128, 300)
                 } else {
@@ -137,11 +142,11 @@ fn run(
             })
             .collect();
         for (index, label) in [
-            "Drome status",
-            "Drome enter",
-            "Drome leave",
-            "Lower start -5",
-            "Claim potion",
+            tr!("Drome status"),
+            tr!("Drome enter"),
+            tr!("Drome leave"),
+            tr!("Lower start -5"),
+            tr!("Claim potion"),
         ]
         .iter()
         .enumerate()
@@ -170,7 +175,7 @@ fn run(
         buttons.push(control(
             hwnd,
             "BUTTON",
-            "Buy Drome reward",
+            tr!("Buy Drome reward"),
             205,
             [460, 515, 190, 30],
             WS_TABSTOP,
@@ -233,7 +238,7 @@ fn run(
                         .is_err()
                 {
                     mailbox.arena.pending = None;
-                    mailbox.arena.feedback = Some("The session has ended");
+                    mailbox.arena.feedback = Some(tr!("The session has ended"));
                 }
             }
             let text = panel_text(&mailbox.arena);

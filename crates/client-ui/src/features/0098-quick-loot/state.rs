@@ -15,6 +15,9 @@ pub struct Panel {
     pub feedback: String,
     /// Only confirmed edits from this session; the existing wire has no settings query.
     pub confirmed: Vec<Action>,
+    /// Current destinations confirmed in this session, at most one per category.
+    pub destinations: Vec<Action>,
+    pub managed: bool,
     pub skipped: std::collections::BTreeSet<u32>,
     pub accepted: std::collections::BTreeSet<u32>,
     pub result: Option<QuickLootResult>,
@@ -23,10 +26,10 @@ pub struct Panel {
 impl Discovery {
     pub fn end(&mut self) {
         *self = Self::default();
-        self.loot.feedback = "Session ended".into();
-        self.inspection.feedback = "Session ended".into();
-        self.leader.feedback = "Session ended".into();
-        self.teams.feedback = "Session ended".into();
-        self.history.feedback = "Session ended".into();
+        self.loot.feedback = tr!("Session ended").into();
+        self.inspection.feedback = tr!("Session ended").into();
+        self.leader.feedback = tr!("Session ended").into();
+        self.teams.feedback = tr!("Session ended").into();
+        self.history.feedback = tr!("Session ended").into();
     }
 }

@@ -645,6 +645,11 @@ impl NpcTalkBook {
         self
     }
 
+    /// Admitted trader entries from this pinned book.
+    pub fn entries(&self) -> impl Iterator<Item = &NpcTalkEntry> {
+        self.npcs.values()
+    }
+
     pub fn get(&self, key: &str) -> Option<&NpcTalkEntry> {
         self.npcs.get(key)
     }

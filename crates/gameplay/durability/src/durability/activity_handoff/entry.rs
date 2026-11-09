@@ -78,19 +78,15 @@ fn binding(
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-enter-v1");
     if let Some(context) = soulpit {
-        hash_field(&mut hash, &context.request.source);
-        hash_field(
-            &mut hash,
-            context.request.source_definition.family.as_bytes(),
-        );
-        hash_field(
-            &mut hash,
-            context.request.source_definition.production_key.as_bytes(),
-        );
-        hash_field(
-            &mut hash,
-            context.request.source_definition.revision_ref.as_bytes(),
-        );
+        match &context.request.funding {
+            crate::durability::soulpit::SoulpitFunding::Core { source, definition } => {
+                hash_field(&mut hash, source);
+                for text in [&definition.family,&definition.production_key,&definition.revision_ref] { hash_field(&mut hash,text.as_bytes()); }
+            }
+            crate::durability::soulpit::SoulpitFunding::Soulseals { species } => {
+                hash_field(&mut hash,b"soulseals-v1");hash_field(&mut hash,species.as_bytes());
+            }
+        }
         hash_field(&mut hash, &context.request.intent);
     }
     for text in [&r.activity_key, &r.template_revision, &r.content_revision] {
@@ -147,8 +143,19 @@ fn binding(
         }
     }
     if let Some(admission) = soulpit {
-        hash_field(&mut hash, b"soulpit-core-v1");
-        hash_field(&mut hash, &admission.request.source);
+        match &admission.request.funding {
+            super::super::soulpit::SoulpitFunding::Core { source, definition } => {
+                hash_field(&mut hash, b"soulpit-core-v2");
+                hash_field(&mut hash, source);
+                hash_field(&mut hash, definition.family.as_bytes());
+                hash_field(&mut hash, definition.production_key.as_bytes());
+                hash_field(&mut hash, definition.revision_ref.as_bytes());
+            }
+            super::super::soulpit::SoulpitFunding::Soulseals { species } => {
+                hash_field(&mut hash, b"soulpit-soulseals-v1");
+                hash_field(&mut hash, species.as_bytes());
+            }
+        }
         hash_field(&mut hash, &admission.request.intent);
         hash_field(
             &mut hash,

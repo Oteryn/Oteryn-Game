@@ -16,6 +16,8 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
 pub(crate) mod audit;
+mod browse;
+pub use browse::StashCatalogueEntry;
 
 #[derive(Debug, Clone)]
 pub struct StashRequest {

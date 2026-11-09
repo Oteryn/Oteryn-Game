@@ -15,12 +15,17 @@ pub struct SoulpitCoreSelection {
 }
 
 #[derive(Debug, Clone)]
+pub enum SoulpitSelection {
+    Core(SoulpitCoreSelection),
+    Soulseals { species: String },
+}
+#[derive(Debug, Clone)]
 pub struct SoulpitEntryIntent {
     pub actor: ExactActorRef,
     pub command: UseCommand,
     pub encoded_intent: Vec<u8>,
     /// `None` probes only: return the exact recorded result or `None`, without a write.
-    pub selected: Option<SoulpitCoreSelection>,
+    pub selected: Option<SoulpitSelection>,
 }
 
 /// The one concrete shared activity owner, backed by the existing native handoff.

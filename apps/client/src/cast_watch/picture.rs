@@ -78,7 +78,7 @@ impl Assets {
                 }
             }
             for &(_, x, y, look, _) in &picture.actors {
-                let floor = i16::try_from(y / 32).map_err(|_| "Invalid display floor")? - 15;
+                let floor = i16::try_from(y / 32).map_err(|_| tr!("Invalid display floor"))? - 15;
                 let at = projected(i32::from(x), i32::from(y % 32), floor);
                 let look = if look == 1 { 128 } else { u32::from(look) };
                 let cells = self

@@ -15,6 +15,7 @@
 
 use std::num::NonZeroU64;
 
+pub mod console;
 pub mod guild_room;
 pub mod party_room;
 pub mod private_channel;

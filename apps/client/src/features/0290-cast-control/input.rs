@@ -48,7 +48,7 @@ pub(in crate::play) fn submit(
     } else {
         oteryn_client_ui::cast_control::command(panel, action)
     };
-    match message.and_then(|m| m.encode().map_err(|_| "Invalid settings")) {
+    match message.and_then(|m| m.encode().map_err(|_| tr!("Invalid settings"))) {
         Ok(payload) => {
             let command = oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
                 capability: if (2..=4).contains(&action) { 292 } else { 290 },
@@ -59,7 +59,7 @@ pub(in crate::play) fn submit(
                 .send(crate::combat_input::PlayCommand::ServerMechanic(command))
                 .is_ok();
             if !panel.pending {
-                panel.feedback = "The session has ended".into();
+                panel.feedback = tr!("The session has ended").into();
             }
         }
         Err(message) => panel.feedback = message.into(),

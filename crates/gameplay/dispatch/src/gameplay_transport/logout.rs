@@ -195,7 +195,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.logout_zones_for_cell(&runtime, cell)
     }
 
-    fn logout_zones_for_cell(
+    pub(super) fn logout_zones_for_cell(
         &self,
         runtime: &crate::foundation::ChannelRuntimeV1,
         cell: crate::content::LogicalCell,

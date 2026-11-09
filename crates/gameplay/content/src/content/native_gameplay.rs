@@ -551,6 +551,10 @@ impl NativeGameplayState {
             .collect();
         &actual == expected
     }
+    /// Immutable public-template metadata of the active native generation.
+    pub fn item_profiles(&self) -> impl Iterator<Item = &ItemProfileRecord> {
+        self.items.iter().flat_map(|items| &items.records)
+    }
     pub fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
     }
@@ -594,6 +598,7 @@ impl NativeGameplayState {
                     F::Known(trade) if trade.marketable == F::Known(true))
             })
     }
+
     pub fn item_policy(&self, key: &str, revision: &str) -> Option<QualifiedItemPolicy<'_>> {
         let record = self.items.as_ref()?.records.iter().find(|p| {
             (p.authoring.item.key == key && p.authoring.item.revision == revision)

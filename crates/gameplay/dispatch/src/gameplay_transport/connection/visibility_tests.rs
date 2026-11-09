@@ -256,11 +256,12 @@ async fn join_and_step(selected: &[u32]) -> Result<Vec<Vec<u8>>, Box<dyn Error>>
     Ok(frames)
 }
 
+// The scenario future is large; keep it on the heap so the default test stack holds it.
 fn run(test: impl Future<Output = TestResult>) -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()?
-        .block_on(test)
+        .block_on(Box::pin(test))
 }
 
 include!("visibility_tests/interest_set.rs");

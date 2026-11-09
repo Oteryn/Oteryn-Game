@@ -362,12 +362,14 @@ pub(super) async fn scenario(
         delivered,
         vec![
             (id(71).to_vec(), id(101).to_vec()),
-            (id(72).to_vec(), id(41).to_vec())
+            (id(72).to_vec(), id(101).to_vec())
         ],
-        "disposition detaches the guest's bag from the other owner's cupboard"
+        "T135 wraps the cupboard and sends the unbound bag to the seller's depot inbox"
     );
+    let wrapped:String=sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(wrapped,"oteryn:item.tibia.i23398","T135 cupboard becomes a kit after collecting its contents");
     let retained_parent:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(n.parent_item_instance_id) FROM game_item_nested_entries n JOIN game_item_character_inbox_locations root ON root.item_instance_id=n.parent_item_instance_id WHERE n.item_instance_id=encode($1,'hex')::uuid AND root.character_id=encode($2,'hex')::uuid")
-        .bind(id(73).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        .bind(id(73).as_slice()).bind(id(101).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         retained_parent,
         id(72),

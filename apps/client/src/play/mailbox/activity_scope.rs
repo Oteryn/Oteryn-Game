@@ -9,11 +9,20 @@ impl Mailbox {
         self.animus.pending = Default::default();
         self.arena.pending = Default::default();
         self.boss_encounter.pending = Default::default();
+        self.boss_encounter.pending_catalogue = None;
+        self.boss_encounter.catalogue_query = None;
+        self.boss_encounter.catalogue = None;
+        self.boss_encounter.boss_names.clear();
+        self.boss_encounter.slots = None;
+        self.boss_encounter.pending_kind = 0;
         self.chat_public.pending = Default::default();
         self.daily_reward.pending = Default::default();
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
+        self.cyclopedia_character.augments = Default::default();
+        self.properties.cyclopedia_map.atlas = None;
+        self.properties.cyclopedia_map.atlas_query = Default::default();
         self.cyclopedia_tracker.pending = Default::default();
         self.world_event.pending = Default::default();
         self.daily_boost.pending = Default::default();
@@ -21,11 +30,13 @@ impl Mailbox {
         self.depot_search.pending = Default::default();
         self.hotkey_equip.pending = Default::default();
         self.potion_durations.pending = Default::default();
-        self.item_forge.pending = Default::default();
+        self.item_forge.scope_changed();
         self.store.pending = Default::default();
-        self.weapon_proficiency.pending = Default::default();
+        self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();
+        self.wheel.gems.invalidate();
+        self.wheel.diagram.invalidate();
         self.exiva.pending = Default::default();
         self.mechanics_status.pending = Default::default();
         self.condition_status.pending = Default::default();
@@ -37,11 +48,13 @@ impl Mailbox {
         self.stash.pending = Default::default();
         self.guild.pending = Default::default();
         self.task_board.pending = Default::default();
+        self.task_board.fights = Default::default();
+        self.task_board.soulseals_open = false;
         self.npc_shop.pending = Default::default();
         self.npc_shop.live.pending = false;
         self.dialogue.pending = false;
         self.prey.pending = Default::default();
-        self.imbue.pending = Default::default();
+        self.imbue.invalidate_item_scope();
         self.player_trade.pending = Default::default();
         self.player_trade.items.pending = false;
         self.vip.pending = Default::default();
@@ -49,22 +62,36 @@ impl Mailbox {
         self.hireling.pending = Default::default();
         self.hireling_management.pending = Default::default();
         self.market.pending = Default::default();
+        self.market.details = Default::default();
         self.chat_private.pending = Default::default();
         self.boss_rewards.pending = Default::default();
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
+        self.discovery.inspection.invalidate_catalogue();
+        self.discovery.inspection.invalidate_catalogue();
+        self.properties.cyclopedia_map.region_atlas = None;
+        self.properties.cyclopedia_map.atlas_after = 0;
+        self.properties.cyclopedia_map.map = None;
+        self.properties.cyclopedia_map.summary.clear();
         self.discovery.leader.pending = Default::default();
         self.discovery.teams.pending = Default::default();
         self.discovery.history.pending = Default::default();
         self.properties.appearance.pending = Default::default();
         self.properties.charm_progression.pending = Default::default();
+        self.properties.charm_progression.catalogue = Default::default();
+        self.properties.charm_progression.charm_browser = Default::default();
+        self.properties.charm_progression.reply = None;
+        self.properties.charm_progression.summary.clear();
+        self.properties.charm_progression.feedback.clear();
         self.properties.character_info.pending = Default::default();
         self.properties.raid_schedule.pending = Default::default();
         self.properties.container_sort.pending = Default::default();
         self.properties.cyclopedia_map.pending = Default::default();
+        self.properties.cyclopedia_map.invalidate_atlas();
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();
+        self.properties.house.invalidate();
         self.properties.house_move_out.pending = Default::default();
         self.properties.house_transfer.pending = Default::default();
         self.properties.staff.pending = Default::default();
@@ -120,8 +147,10 @@ impl Outbox {
         mailbox.activity_reset_commands = true;
         mailbox.map = None;
         mailbox.action_feedback = Some(Some(match receipt.scope {
-            ActivityScope::Instance { .. } => "Entered activity instance. Use the exit to return.",
-            ActivityScope::Channel { .. } => "Returned to the channel.",
+            ActivityScope::Instance { .. } => {
+                tr!("Entered activity instance. Use the exit to return.")
+            }
+            ActivityScope::Channel { .. } => tr!("Returned to the channel."),
         }));
     }
 }

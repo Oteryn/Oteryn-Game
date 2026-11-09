@@ -25,6 +25,10 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Informational operator publication, read only after authoritative admission.
+    fn client_bulletin(&self) -> impl Future<Output = Option<String>> {
+        async { None }
+    }
     /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
     fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
@@ -948,6 +952,23 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn stash_filtered(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        filter: Option<oteryn_protocol_oteryn::stash::StashFilter>,
+        item: Option<ItemKey>,
+        row_open: bool,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::stash::StashReply>> {
+        async move {
+            if filter.is_some() {
+                return None;
+            }
+            self.stash(actor, command, intent, item, row_open).await
+        }
+    }
+
     /// Depot requests are resolved by the live Channel and fenced native item owner.
     fn depot(
         &self,
@@ -1092,6 +1113,14 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(None)
     }
 
+    /// Own current-placement PvP observation; this never observes another character's totals.
+    fn observe_pvp_status(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::party_skull::PvpStatus>> {
+        std::future::ready(None)
+    }
+
     /// PARTY-1: basic session-fenced membership commands and own-state query.
     fn party_command(
         &self,
@@ -1136,6 +1165,15 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// CHAT-WIRE-1: one `CHAT_INTENT` (command 13) of the admitted actor.
+    /// Older authority implementations may refuse the optional read-only console query.
+    fn console_levels(
+        &self,
+        _admitted: AdmittedSession,
+        _names: Vec<String>,
+    ) -> impl Future<Output = Option<Vec<Option<u32>>>> {
+        std::future::ready(None)
+    }
+
     fn chat_intent(
         &self,
         _actor: ExactActorRef,

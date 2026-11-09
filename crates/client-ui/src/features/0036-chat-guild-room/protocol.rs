@@ -7,11 +7,11 @@ pub fn available(panel: &ChatPanel) -> bool {
 }
 pub fn request(panel: &mut ChatPanel) -> Option<ChatIntent> {
     if !available(panel) || panel.pending {
-        panel.feedback = Some("Guild chat unavailable or waiting for the server".into());
+        panel.feedback = Some(tr!("Guild chat unavailable or waiting for the server").into());
         return None;
     }
     if panel.text.trim().is_empty() || panel.text.len() > 1_020 || panel.text.contains('\0') {
-        panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
+        panel.feedback = Some(tr!("Enter a message of at most 1,020 bytes").into());
         return None;
     }
     panel.pending = true;

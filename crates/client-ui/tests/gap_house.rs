@@ -80,3 +80,45 @@ fn gap_house_adjacent_capabilities_do_not_admit_house() {
     panel.admitted([0; 16], &[49]);
     assert!(panel.selected);
 }
+
+#[test]
+fn house_bid_reports_insufficient_funds() -> Result<(), &'static str> {
+    let mut world = [1; 16];
+    world[6] = 0x70;
+    world[8] = 0x80;
+    let mut panel = Panel {
+        selected: true,
+        world,
+        ..Panel::default()
+    };
+    panel.page.rows.push(Row {
+        house: "a".into(),
+        ..Row::default()
+    });
+    let command = request(&mut panel, Some(&Action::Bid(20)), false)?;
+    panel.apply(&command, &reply(vec![8, 8, 16, 0]));
+    assert_eq!(
+        panel.feedback,
+        "The server refused the action: insufficient funds"
+    );
+    assert!(panel.pending.is_none());
+    Ok(())
+}
+
+#[test]
+fn house_catalogue_shows_auction_identity_and_navigation() {
+    let mut panel = Panel::default();
+    panel.page.rows.push(Row {
+        house: "a".into(),
+        kind: 2,
+        owned: true,
+        ends: Some(123),
+        maximum: Some(456),
+        ..Row::default()
+    });
+    panel.page.cursor = Some("a".into());
+    let text = oteryn_client_ui::house::panel_text(&panel);
+    assert!(text.contains("1. a [shop; owned by you]"));
+    assert!(text.contains("Auction ends (Unix ms): 123; your maximum bid: 456"));
+    assert!(text.contains("Next page available"));
+}

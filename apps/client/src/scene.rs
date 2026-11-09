@@ -31,8 +31,11 @@ const _: () = assert!(
 pub struct Scene {
     drome_hazards: Vec<drome_hazards::GroundWarning>,
     minimap: bool,
+    floor_separator: u8,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
-    minimap_floor: i16,
+    pub(crate) minimap_memory: crate::play::MinimapMemory,
+    pub(crate) minimap_floor: i16,
+    pub(crate) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -43,6 +46,7 @@ pub struct Scene {
     tiles: TileBatch,
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
+    pub(crate) target_frame: bool,
     target: Option<Targetable>,
     presentation_atlas: Option<Arc<AtlasImage>>,
     cache: appearance_cache::PresentationCache,
@@ -51,6 +55,10 @@ pub struct Scene {
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     object_draws: Vec<(oteryn_session::ActorPosition, u32, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
+    name_visibility: [bool; 3],
+    name_marks: bool,
+    npc_names: bool,
+    label_scale: u16,
 }
 
 impl Scene {
@@ -102,8 +110,11 @@ impl Scene {
         let mut scene = Self {
             drome_hazards: Vec::new(),
             minimap: false,
+            floor_separator: 0,
             minimap_state: None,
             minimap_floor: -7,
+            minimap_memory: Default::default(),
+            minimap_origin: None,
             world,
             lit_atlas: None,
             anchor,
@@ -113,6 +124,7 @@ impl Scene {
             tiles,
             sprites: SpriteBatch::new(),
             visible,
+            target_frame: true,
             target: None,
             presentation_atlas: None,
             cache: appearance_cache::PresentationCache::default(),
@@ -121,6 +133,10 @@ impl Scene {
             actor_draws: Vec::new(),
             object_draws: Vec::new(),
             names: Vec::new(),
+            name_visibility: [true; 3],
+            name_marks: true,
+            npc_names: true,
+            label_scale: 100,
         };
         scene.rebuild_sprites()?;
         Ok(scene)
@@ -159,9 +175,15 @@ impl Scene {
     /// Rebuilds base sprites before appending this frame's transient visual quads.
     pub(crate) fn presentation_base(
         &mut self,
-    ) -> Result<(&TileView, &mut SpriteBatch), BatchError> {
+    ) -> Result<(&TileView, &AtlasImage, &mut SpriteBatch), BatchError> {
         self.rebuild_sprites()?;
-        Ok((&self.view, &mut self.sprites))
+        self.sprites.lighting.emissive_from = Some(self.sprites.len());
+        let atlas = self
+            .lit_atlas
+            .as_ref()
+            .or(self.presentation_atlas.as_deref())
+            .unwrap_or_else(|| self.world.atlas());
+        Ok((&self.view, atlas, &mut self.sprites))
     }
 
     /// Current target, if any.
@@ -216,92 +238,30 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let (atlas, origin) = (self.atlas(), self.view.origin());
-        let mut sprites = oteryn_renderer::world::sprite_batch(
-            &self.view,
-            atlas,
-            |emit| {
-                for floor in self.world.draw_floors() {
-                    let own_floor = floor == self.world.center().2;
-                    visit_scene_entities(
-                        (origin.x, origin.y),
-                        self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                        (
-                            (self.own.x, self.own.y),
-                            if own_floor {
-                                self.own_draws
-                                    .as_deref()
-                                    .unwrap_or_else(|| self.world.player(self.facing))
-                            } else {
-                                &[]
-                            },
-                        ),
-                        |x, y| self.world.floor_tile(floor, x, y),
-                        |x, y| {
-                            let tile = TileCoord::new(x, y);
-                            if !own_floor {
-                                return Vec::new();
-                            }
-                            let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
-                            // Object markers remain below actors. Entity fallback glyphs are replaced.
-                            let marker = self.visible.iter().any(|v| {
-                                v.tile == tile
-                                    && ((v.kind == TargetKind::Object
-                                        && !v.item.is_some_and(|item| {
-                                            self.object_draws.iter().any(
-                                                |(position, reference, _)| {
-                                                    position.x == tile.x
-                                                        && position.y == tile.y
-                                                        && *reference == item.definition()
-                                                },
-                                            )
-                                        })
-                                        && (v.glyph || v.item.is_none()))
-                                        || (v.glyph && v.kind != TargetKind::Object && !has_actor))
-                            });
-                            marker
-                                .then_some(Draw {
-                                    cell: MARKER_CELL,
-                                    offset: [0, 0],
-                                })
-                                .into_iter()
-                                .chain(
-                                    self.object_draws
-                                        .iter()
-                                        .filter(|(position, _, _)| {
-                                            position.x == tile.x && position.y == tile.y
-                                        })
-                                        .flat_map(|(_, _, draws)| draws.iter().copied()),
-                                )
-                                .chain(
-                                    self.actor_draws
-                                        .iter()
-                                        .filter(|(at, _)| *at == tile)
-                                        .flat_map(|(_, draws)| draws.iter().copied()),
-                                )
-                                .collect()
-                        },
-                        &mut *emit,
-                    )?;
-                }
-                Ok(())
-            },
-            self.target.map(|target| target.tile),
-        )?;
+        let atlas = self.atlas();
+        let (mut sprites, dimmed) = self.world_sprites()?;
         self.draw_drome_hazards(&mut sprites, atlas)?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
-            let left = (x + 24.0 - cells.len() as f32 * 4.0).max(0.0);
+            let scale = f32::from(self.label_scale) / 100.0;
+            let left =
+                (x + self.view.tile_px() as f32 / 2.0 - cells.len() as f32 * 4.0 * scale).max(0.0);
             for (index, cell) in cells.iter().enumerate() {
-                oteryn_renderer::name_text::label_quad(
+                oteryn_renderer::name_text::label_quad_scaled(
                     &mut sprites,
                     atlas,
                     *cell,
-                    [left + index as f32 * 8.0, (y - 14.0).max(0.0)],
+                    [
+                        left + index as f32 * 8.0 * scale,
+                        (y - 14.0 * scale).max(0.0),
+                    ],
+                    self.label_scale,
                 )?;
             }
         }
         sprites.lighting.clone_from(&self.sprites.lighting);
+        sprites.lighting.opacity.clear();
+        sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
         if self.minimap {
             self.draw_minimap()?;
@@ -350,9 +310,17 @@ mod tests;
 mod live_entities;
 #[path = "features/local-minimap/scene.rs"]
 mod minimap;
+#[path = "features/local-reference-preferences/scene_hud.rs"]
+mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+
+#[path = "features/0023-presentation/scene.rs"]
+mod visual_scene;
+
+#[path = "features/0019-world-light/scene.rs"]
+mod floor_lighting;
 
 #[path = "features/0170-arena/scene.rs"]
 mod drome_hazards;

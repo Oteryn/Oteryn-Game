@@ -457,8 +457,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 || attempt
                     .soulpit
                     .as_ref()
-                    .map(|core| (&core.source, &core.intent))
-                    != soulpit.as_ref().map(|core| (&core.source, &core.intent))
+                    .map(|core| (&core.funding, &core.intent))
+                    != soulpit.as_ref().map(|core| (&core.funding, &core.intent))
             {
                 return refuse(ActivityRefusal::ReplayConflict);
             }

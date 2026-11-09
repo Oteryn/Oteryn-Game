@@ -32,6 +32,9 @@ pub fn edit_details(
     {
         if panel.definition != definition {
             panel.page = 0;
+            panel.selected_offer = None;
+            panel.rows.clear();
+            panel.details.statistics = None;
         }
         panel.definition = definition;
         panel.amount = amount;
@@ -40,7 +43,14 @@ pub fn edit_details(
         panel.anonymous = anonymous;
         true
     } else {
-        panel.feedback = Some("Enter a positive item ID, amount (1–64000) and valid unit price");
+        panel.feedback = Some(tr!(
+            "Enter a positive item ID, amount (1–64000) and valid unit price"
+        ));
         false
     }
+}
+
+pub fn coin_open_key(events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
+    events.iter().any(|e|matches!(e,NormalizedInputEvent::Key{code,state:ButtonState::Pressed,modifiers,repeat:false} if code.get()==65 && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
 }

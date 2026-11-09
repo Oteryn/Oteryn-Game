@@ -30,6 +30,7 @@ mod scene;
 mod source_owner_compat;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
+    SoulpitSelection,
 };
 
 #[cfg_attr(test, track_caller)]

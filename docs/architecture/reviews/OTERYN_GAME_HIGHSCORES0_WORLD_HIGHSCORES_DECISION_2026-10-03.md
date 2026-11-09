@@ -29,6 +29,8 @@
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
+> T143 amendment (owner decision B 2026-11-09): [cross-World reads and Show Me](../../contracts/OTERYN_GAME_HIGHSCORES_T143_V1.md) supersedes the own-World-only §6/§9 R5 restriction.
+
 ## Implementation brief
 
 | Child | Worker | Builds | Depends on |

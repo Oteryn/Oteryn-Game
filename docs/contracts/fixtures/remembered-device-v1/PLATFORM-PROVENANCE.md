@@ -1,0 +1,1 @@
+Public synthetic fixtures copied byte-for-byte from Oteryn/Oteryn-Platform merged main commit 45d3413619f85a5289a221ee47412350761a56a9. Contract: docs/contracts/OTERYN_V2_NATIVE_REMEMBERED_DEVICE_SESSION_CONTRACT.md. Verified every Git blob against that commit. No production trust keys or credentials.

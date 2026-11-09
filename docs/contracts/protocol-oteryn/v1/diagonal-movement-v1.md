@@ -1,4 +1,4 @@
-# DIAGONAL_MOVEMENT_V1 (449)
+# DIAGONAL_MOVEMENT_V1 (452)
 
 Extends core command 1 and requires PACED_MOVEMENT_V1 (13). Existing cardinal
 codes remain North=1, East=2, South=3, West=4. New STEP codes are NorthEast=5,

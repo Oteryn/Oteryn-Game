@@ -3286,6 +3286,11 @@ async fn boot_and_serve(
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
+        bulletin_source: std::env::var_os("OTERYN_BULLETIN_FILE").map(|path| {
+            std::sync::Arc::new(crate::gameplay_transport::bulletin::BulletinSource::new(
+                path.into(),
+            ))
+        }),
         server_motd: config.server_motd.clone(),
         certificates: material.gameplay_chain.clone(),
         private_key: material.gameplay_key.clone_key(),
@@ -3314,14 +3319,20 @@ async fn boot_and_serve(
         soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
         store_purchases: config.store_purchases,
-        store: Some(crate::native_admission_source::store::StoreClient::new(
-            Box::new(
-                crate::native_admission_source::store::MtlsStoreTransport::new(
-                    material.store.clone(),
+        store: Some(
+            crate::native_admission_source::store::StoreClient::new(
+                Box::new(
+                    crate::native_admission_source::store::MtlsStoreTransport::new(
+                        material.store.clone(),
+                    ),
                 ),
+                material.store.source_authority().to_owned(),
+            )
+            .with_coins(
+                crate::native_admission_source::coins::CoinClient::configured()
+                    .map_err(|_| BootError::Serve)?,
             ),
-            material.store.source_authority().to_owned(),
-        )),
+        ),
         emit,
         root,
         character: &authority,

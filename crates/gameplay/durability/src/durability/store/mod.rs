@@ -25,3 +25,4 @@ pub use purchase_history::{StorePurchaseHistoryEntry, StorePurchaseHistoryRow};
 pub use storage::{PurchaseRequestState, StoreDurabilityError};
 #[cfg(test)]
 mod tests;
+mod popularity;

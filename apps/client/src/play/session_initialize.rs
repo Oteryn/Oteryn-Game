@@ -1,15 +1,22 @@
-//! Initialize projections from one validated fresh session, including an activity successor.
-use super::{Outbox, Stepper};
+use super::*;
 
 pub(super) fn initialize<T: Stepper>(
     session: &T,
     outbox: &Outbox,
 ) -> Result<(), oteryn_session::SessionError> {
+    outbox.diagonal_initialize(
+        session.feature_selected(oteryn_session::CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    );
+    if session.feature_selected(451) {
+        outbox.personal_map_marks_initialize();
+    }
     outbox.discovery_initialize(session);
+    outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
     outbox
         .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))?;
+    outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.appearance_initialize(session);
     outbox.equipment_initialize(session.equipment_selected());
@@ -29,8 +36,11 @@ pub(super) fn initialize<T: Stepper>(
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
+    outbox.gem_presentation_initialize(session.feature_selected(148));
+    outbox.wheel_presentation_initialize(session.feature_selected(148));
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.spellbook_details_initialize(session.feature_selected(449));
     outbox.mechanics_status_initialize(session.feature_selected(384));
     outbox.condition_status_initialize(session.feature_selected(276));
     outbox.rest_status_initialize(session.feature_selected(277));
@@ -68,6 +78,11 @@ pub(super) fn initialize<T: Stepper>(
     outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
     outbox.boss_difficulty_initialize(session.feature_selected(225));
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     if let Some(payload) = session.feature_snapshot(14) {
         outbox.browse_field_views(&payload);
@@ -87,11 +102,15 @@ pub(super) fn initialize<T: Stepper>(
     outbox.target_move_initialize(session.feature_selected(64));
     outbox.creature_push_initialize(session.feature_selected(82));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
+    outbox.hotkey_equip_smart_mode(session.server_mechanic_selected(180));
     outbox.hotkey_equip_items(session.hotkey_equip_items());
+    outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
+    outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
     outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());

@@ -43,23 +43,26 @@ pub fn entries(
     if let Some(handle) = handle.filter(|handle| *handle != 0) {
         if mail {
             entries.extend([
-                ("Write or post this item…", Action::Letter(handle)),
-                ("Select as mailbox…", Action::Mailbox(handle)),
+                (tr!("Write or post this item…"), Action::Letter(handle)),
+                (tr!("Select as mailbox…"), Action::Mailbox(handle)),
             ]);
         }
         if training {
             entries.extend([
-                ("Select offline training statue…", Action::Offline(handle)),
-                ("Select exercise weapon…", Action::Weapon(handle)),
-                ("Select exercise dummy…", Action::Dummy(handle)),
+                (
+                    tr!("Select offline training statue…"),
+                    Action::Offline(handle),
+                ),
+                (tr!("Select exercise weapon…"), Action::Weapon(handle)),
+                (tr!("Select exercise dummy…"), Action::Dummy(handle)),
             ]);
         }
     }
     if podium {
-        entries.push(("House podium editor…", Action::Podium));
+        entries.push((tr!("House podium editor…"), Action::Podium));
     }
     if bank {
-        entries.push(("Guild bank…", Action::GuildBank));
+        entries.push((tr!("Guild bank…"), Action::GuildBank));
     }
     entries
 }

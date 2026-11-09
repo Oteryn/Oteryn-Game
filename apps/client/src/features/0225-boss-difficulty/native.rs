@@ -31,12 +31,12 @@ pub(super) fn submit(
             (id != [0; 16]).then_some(id)
         })();
         let Some(id) = parsed else {
-            panel.feedback = Some("Enter a nonzero context as 32 hex digits");
+            panel.feedback = Some(tr!("Enter a nonzero context as 32 hex digits"));
             return None;
         };
         if !matches!(intent, Intent::Cancel) {
             let Some(value) = difficulty.trim().parse::<u16>().ok().filter(|d| *d <= 25) else {
-                panel.feedback = Some("Enter a difficulty from 0 to 25");
+                panel.feedback = Some(tr!("Enter a difficulty from 0 to 25"));
                 return None;
             };
             panel.difficulty = value;
@@ -120,7 +120,7 @@ mod platform {
             let hwnd = CreateWindowExW(
                 0,
                 wide("STATIC").as_ptr(),
-                wide("Boss difficulty").as_ptr(),
+                wide(tr!("Boss difficulty")).as_ptr(),
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -142,7 +142,7 @@ mod platform {
                 (&mut *actions as *mut Actions) as isize,
             );
             SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
-            control(hwnd, "STATIC", "Boss id", 110, [10, 10, 190, 24], 0);
+            control(hwnd, "STATIC", tr!("Boss id"), 110, [10, 10, 190, 24], 0);
             let boss = control(
                 hwnd,
                 "EDIT",
@@ -154,7 +154,7 @@ mod platform {
             control(
                 hwnd,
                 "STATIC",
-                "Context (32 hex digits)",
+                tr!("Server context (automatic)"),
                 111,
                 [10, 45, 190, 24],
                 0,
@@ -165,29 +165,38 @@ mod platform {
                 "",
                 CONTEXT,
                 [205, 45, 400, 24],
-                WS_BORDER | WS_TABSTOP,
+                WS_BORDER | ES_READONLY as u32,
             );
             control(
                 hwnd,
                 "STATIC",
-                "Difficulty (0–25)",
+                tr!("Difficulty (0–25)"),
                 113,
                 [10, 80, 190, 24],
                 0,
             );
             let difficulty = control(
                 hwnd,
-                "EDIT",
-                "0",
+                "COMBOBOX",
+                "",
                 DIFFICULTY,
-                [205, 80, 80, 24],
-                ES_NUMBER as u32 | WS_BORDER | WS_TABSTOP,
+                [205, 80, 160, 240],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
             );
+            for level in 0..=25 {
+                SendMessageW(
+                    difficulty,
+                    CB_ADDSTRING,
+                    0,
+                    wide(&level.to_string()).as_ptr() as isize,
+                );
+            }
+            SendMessageW(difficulty, CB_SETCURSEL, 0, 0);
             let buttons = [
-                ("Open", OPEN, Intent::Open),
-                ("Preview", PREVIEW, Intent::Preview),
-                ("Start", START, Intent::Start),
-                ("Cancel", CANCEL, Intent::Cancel),
+                (tr!("Open"), OPEN, Intent::Open),
+                (tr!("Preview"), PREVIEW, Intent::Preview),
+                (tr!("Start"), START, Intent::Start),
+                (tr!("Cancel"), CANCEL, Intent::Cancel),
             ]
             .map(|(label, id, intent)| {
                 (
@@ -242,7 +251,7 @@ mod platform {
                     ) && commands.send(PlayCommand::Feature(command)).is_err()
                     {
                         mailbox.boss_difficulty.pending = false;
-                        mailbox.boss_difficulty.feedback = Some("The session has ended");
+                        mailbox.boss_difficulty.feedback = Some(tr!("The session has ended"));
                     }
                 }
                 if held.as_ref() != Some(&mailbox.boss_difficulty) {
@@ -260,7 +269,7 @@ mod platform {
                     }
                     if held.is_none() {
                         SetWindowTextW(boss, wide(&panel.boss_key).as_ptr());
-                        SetWindowTextW(difficulty, wide(&panel.difficulty.to_string()).as_ptr());
+                        SendMessageW(difficulty, CB_SETCURSEL, usize::from(panel.difficulty), 0);
                     }
                     if let Some(oteryn_client_runtime::boss_difficulty::Reply::Window {
                         selected_difficulty,
@@ -268,12 +277,20 @@ mod platform {
                     }) = &panel.reply
                         && held.as_ref().and_then(|p| p.reply.as_ref()) != panel.reply.as_ref()
                     {
-                        SetWindowTextW(difficulty, wide(&selected_difficulty.to_string()).as_ptr());
+                        SendMessageW(
+                            difficulty,
+                            CB_SETCURSEL,
+                            usize::from(*selected_difficulty),
+                            0,
+                        );
                     }
-                    for (button, _) in &buttons {
+                    for (button, intent) in &buttons {
                         windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                             *button,
-                            i32::from(enabled(panel)),
+                            i32::from(
+                                enabled(panel)
+                                    && (matches!(intent, Intent::Open) || panel.context.is_some()),
+                            ),
                         );
                     }
                     for edit in [boss, context, difficulty] {
@@ -288,7 +305,7 @@ mod platform {
                             "{}\r\n{}",
                             panel_text(&mailbox.boss_difficulty).replace('\n', "\r\n"),
                             if mailbox.boss_difficulty.pending {
-                                "Waiting for the server"
+                                tr!("Waiting for the server")
                             } else {
                                 ""
                             }

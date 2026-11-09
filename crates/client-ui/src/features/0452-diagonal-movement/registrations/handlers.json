@@ -1,0 +1,21 @@
+{
+  "mechanic": "0452-diagonal-movement",
+  "kind": "handlers",
+  "id": "0452-diagonal-movement-position",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 452,
+  "entry": "view.rs::facing",
+  "reducer": "view.rs::facing",
+  "push_messages": [
+    "ActorPosition"
+  ],
+  "test": "tests/state.rs::m40_keypad_diagonals_require_selected_capability",
+  "not_applicable": {
+    "state": "Existing paced movement and authoritative actor positions retain the eight-way destination.",
+    "view": "The existing scene uses the four source facings.",
+    "settings": "No new movement settings are required.",
+    "protocol": "Uses the existing Session adapter for baseline command 1; command 1 has no capability owner."
+  }
+}

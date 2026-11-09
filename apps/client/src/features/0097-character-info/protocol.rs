@@ -14,7 +14,7 @@ fn operation(panel: &Panel, intent: Intent) -> Result<wire::CharacterInfoOperati
             panel.fields[0]
                 .trim()
                 .parse()
-                .map_err(|_| "Enter a valid page offset")?
+                .map_err(|_| tr!("Enter a valid page offset"))?
         };
         let limit = if panel.fields[1].trim().is_empty() {
             50
@@ -22,21 +22,22 @@ fn operation(panel: &Panel, intent: Intent) -> Result<wire::CharacterInfoOperati
             panel.fields[1]
                 .trim()
                 .parse()
-                .map_err(|_| "Enter a valid page size")?
+                .map_err(|_| tr!("Enter a valid page size"))?
         };
-        wire::PageRequest::new(offset, limit).ok_or_else(|| "Page size must be 1-50".to_owned())
+        wire::PageRequest::new(offset, limit)
+            .ok_or_else(|| tr!("Page size must be 1-50").to_owned())
     };
     let title = || {
         let id = panel.fields[3]
             .trim()
             .parse::<u8>()
-            .map_err(|_| "Enter a valid title ID")?;
+            .map_err(|_| tr!("Enter a valid title ID"))?;
         if id == 0 {
             Ok(None)
         } else {
             wire::CharacterTitle::from_id(id)
                 .map(Some)
-                .ok_or_else(|| "Unknown title ID".to_owned())
+                .ok_or_else(|| tr!("Unknown title ID").to_owned())
         }
     };
     Ok(match intent {
@@ -48,7 +49,7 @@ fn operation(panel: &Panel, intent: Intent) -> Result<wire::CharacterInfoOperati
         Intent::Look => Op::LookVisible {
             character: uuid(&panel.fields[2])?,
         },
-        Intent::Unlock => Op::Unlock(title()?.ok_or("Choose a title to unlock")?),
+        Intent::Unlock => Op::Unlock(title()?.ok_or(tr!("Choose a title to unlock"))?),
         Intent::Select => Op::Select(title()?),
     })
 }
@@ -69,7 +70,7 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
-        panel.feedback = "The server refused the request".into();
+        panel.feedback = tr!("The server refused the request").into();
         return;
     }
     // Draft fields cannot change while pending. Match the sent operation tag.
@@ -80,7 +81,7 @@ pub(in crate::play) fn apply(
         Some(3) => Intent::Select,
         Some(4) => Intent::Look,
         _ => {
-            panel.feedback = "Invalid request".into();
+            panel.feedback = tr!("Invalid request").into();
             return;
         }
     };
@@ -91,8 +92,8 @@ pub(in crate::play) fn apply(
             oteryn_client_ui::character_info::apply_title_reply(panel, operation, &result.payload);
         }
         panel.summary = text;
-        panel.feedback = "Character information updated".into();
+        panel.feedback = tr!("Character information updated").into();
     } else {
-        panel.feedback = "Invalid character information reply".into();
+        panel.feedback = tr!("Invalid character information reply").into();
     }
 }

@@ -67,7 +67,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Animus Mastery — Ctrl+A").as_ptr(),
+            wide(tr!("Animus Mastery — Ctrl+A")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -96,15 +96,27 @@ fn run(
             (1, 10, 10, 600, 480),
             WS_BORDER | WS_VSCROLL | WS_TABSTOP | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
-        let refresh = control(hwnd, "BUTTON", "Refresh", (2, 10, 505, 180, 32), WS_TABSTOP);
+        let refresh = control(
+            hwnd,
+            "BUTTON",
+            tr!("Refresh"),
+            (2, 10, 505, 180, 32),
+            WS_TABSTOP,
+        );
         let previous = control(
             hwnd,
             "BUTTON",
-            "Previous",
+            tr!("Previous"),
             (3, 220, 505, 180, 32),
             WS_TABSTOP,
         );
-        let next = control(hwnd, "BUTTON", "Next", (4, 430, 505, 180, 32), WS_TABSTOP);
+        let next = control(
+            hwnd,
+            "BUTTON",
+            tr!("Next"),
+            (4, 430, 505, 180, 32),
+            WS_TABSTOP,
+        );
         if [list, refresh, previous, next]
             .iter()
             .any(|handle| handle.is_null())
@@ -142,7 +154,7 @@ fn run(
                     && commands.send(PlayCommand::Animus(payload)).is_err()
                 {
                     mailbox.animus.pending = None;
-                    mailbox.animus.error = Some("Session ended");
+                    mailbox.animus.error = Some(tr!("Session ended"));
                 }
             }
             let panel = &mailbox.animus;

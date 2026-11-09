@@ -12,8 +12,12 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::inspection::{InspectedItem, Reply, Request};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::{collections::HashMap, sync::Mutex};
+#[path = "inspection/catalogue.rs"]
+mod catalogue;
 #[path = "inspection_imbuements.rs"]
 mod imbuement_text;
+#[path = "inspection/sources.rs"]
+mod sources;
 
 macro_rules! authority_methods {
     () => {
@@ -68,6 +72,7 @@ pub(super) async fn inspect(
         pinned_index(&runtime, owner.active_generation)?;
     }
     match request {
+        Request::CatalogueQuery(query) => catalogue::inspect(owner, admitted, query).await,
         Request::Item(handle) => {
             let _permit = owner.spell_lane_permit().await?;
             let views = views?;
@@ -118,8 +123,13 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![item],
             })
+        }
+        Request::CataloguePage(query) => catalogue::query(owner, query).await,
+        Request::CatalogueSources { definition, after } => {
+            sources::query(owner, definition, after).await
         }
         Request::Catalogue(reference) => {
             let definition = {
@@ -132,6 +142,7 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![project(owner, 0, &definition, 1, None).await?],
             })
         }
@@ -157,6 +168,7 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![project(owner, 0, &definition, count, Some(&metadata)).await?],
             })
         }
@@ -244,6 +256,7 @@ pub(super) async fn inspect(
                 status: 1,
                 items,
                 requests: Vec::new(),
+                catalogue: None,
             })
         }
     }
@@ -358,6 +371,9 @@ fn details(
             attributes.push((label.to_owned(), value));
         }
     };
+    if let Some(category) = catalogue::category(record) {
+        add("category", category);
+    }
     if let Known(value) = &presentation.description {
         add("Description", value.clone());
     }
@@ -865,7 +881,7 @@ fn details(
 }
 /// Canary 47dfd51 item.cpp/config.lua.dist defaults; owner decision 22:
 /// not verified against Global. These are display values, never combat authority.
-fn tier_description(record: &ItemProfileRecord, tier: u8) -> String {
+pub(super) fn tier_description(record: &ItemProfileRecord, tier: u8) -> String {
     use crate::content::{ReferenceEquipmentSlot as Slot, ReferenceItemField::Known};
     if tier == 0 {
         return "0".into();
@@ -1282,3 +1298,11 @@ async fn permission(
         _ => None,
     }
 }
+
+#[cfg(test)]
+#[path = "inspection/catalogue_tests.rs"]
+mod catalogue_tests;
+
+#[cfg(test)]
+#[path = "inspection/sources_tests.rs"]
+mod sources_tests;

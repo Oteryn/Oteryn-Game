@@ -9,7 +9,6 @@ use oteryn_gameplay_foundation::foundation::condition::{
 use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(clippy::too_many_arguments)]
     pub(super) async fn tick_creature_fields(
         &self,
         map: &mut crate::movement::monster_map::CurrentMonsterMap<'_, '_>,
@@ -25,7 +24,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| DurabilityError::Unavailable)?;
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
-        for visible in runtime.visible_entities().creatures {
+
+        let creatures = runtime.visible_entities().creatures;
+        // Passive source creatures are outside the AI table, but still own field conditions.
+        let positions = creatures
+            .iter()
+            .map(|visible| visible.position)
+            .collect::<Vec<_>>();
+        map.prefetch_empty_tiles(runtime, &positions)
+            .await
+            .map_err(|_| DurabilityError::Unavailable)?;
+        for visible in creatures {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
             };
@@ -33,18 +42,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_items(runtime, visible.position)
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-            let tile = room
-                .movement_cells()
-                .spell_tiles()
-                .lookup(
-                    room.movement_cells().scope(),
-                    crate::content::LogicalCell {
-                        x: visible.position.x,
-                        y: visible.position.y,
-                        z: i32::from(visible.position.floor),
-                    },
-                )
-                .map_err(|_| DurabilityError::Unavailable)?;
+            let protection_zone = map
+                .protection_zone(runtime, visible.position)
+                .ok_or(DurabilityError::Unavailable)?;
             let mut entry = None;
             let mut standing = None;
             for item in &read.items {
@@ -61,7 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(values) = recipe
                     .condition_values()
                     .map_err(|_| DurabilityError::Unavailable)?
-                    && !tile.flags().protection_zone
+                    && !protection_zone
                 {
                     let definition = ConditionDefinition::new(
                         &format!(
@@ -120,7 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             let facts = TickFacts {
-                in_protection_zone: tile.flags().protection_zone,
+                in_protection_zone: protection_zone,
                 standing_on_field: standing,
             };
             // Preview only a cloned condition store. Actual due work is consumed

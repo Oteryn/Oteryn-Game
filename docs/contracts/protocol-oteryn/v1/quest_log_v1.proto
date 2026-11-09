@@ -62,7 +62,7 @@ message QuestLineV1 {
 // StateDomainSnapshot.payload of domain 16, snapshot type 1, and StateDelta.payload of domain 16,
 // delta type 1: the whole domain. At most 249,900 bytes (QUESTGATE0-RL-08-DOMAIN-BYTES). Every
 // admission, reconnect, resume and transfer sends a snapshot with no view and the tracked quests;
-// a delta follows each accepted query, and each committed receipt that changes the view or a
+// a delta follows each accepted view/tracking query, and each committed receipt that changes the view or a
 // tracked quest or personal map marker.
 message QuestLogV1 {
   // The last requested list or quest line; absent when none was requested on this connection or
@@ -94,13 +94,16 @@ message QuestLogTrackV1 {
 
 // ClientCommand.payload of command type 22. At most 62 bytes. An empty oneof, an unknown or
 // unlisted quest index and a query over QUESTGATE0-RL-09 (2 per second per GameSession) are
-// REJECTED and change nothing. An accepted query has no result payload; the domain 16 delta
-// follows its result.
+// REJECTED and change nothing. Original queries have empty results followed by domain 16.
+// list_only returns the bounded list in its result without a delta.
 message QuestLogQueryV1 {
   oneof query {
     QuestLogListV1 list = 1;
     QuestLogQuestV1 quest = 2;
     QuestLogTrackV1 track = 3;
+    // Read-only tracker discovery: result is a list-only QuestLogV1 (<=10244 bytes).
+    // Does not change the connection view, tracked set or domain revision.
+    QuestLogListV1 list_only = 4;
   }
 }
 

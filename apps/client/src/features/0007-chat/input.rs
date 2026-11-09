@@ -21,6 +21,11 @@ impl PlayLink {
         true
     }
     pub fn open_chat(&self) {
+        // Reopening the console refreshes opt-in current levels immediately.
+        let display = lock(&self.mailbox).chat.console.display;
+        if let Err(message) = self.console_display(display) {
+            lock(&self.mailbox).chat.feedback = Some(message.into());
+        }
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]
@@ -39,7 +44,9 @@ pub(in crate::play) fn enqueue(
         super::super::feature_0233_player_typing::input::composer(mailbox, commands, false);
         if commands.send(PlayCommand::ChatPublic(intent)).is_err() {
             mailbox.chat.pending = false;
-            mailbox.chat.feedback = Some("The session has ended".into());
+            mailbox.chat.feedback = Some(tr!("The session has ended").into());
+        } else {
+            mailbox.chat.console.sent();
         }
     }
 }
