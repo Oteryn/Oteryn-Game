@@ -415,3 +415,6 @@ fn qmech_m21_postgres_shared_ruby_real_reset() -> TestResult {
     result?;
     Ok(())
 }
+
+#[path = "qmech_m22_captured_stack/postgres.rs"]
+mod captured_stack;

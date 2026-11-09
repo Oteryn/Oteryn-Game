@@ -15,10 +15,12 @@ Independent item evidence:
 craft catalogue. `qmech_npcfix2_item_profiles.py` admits the output's retained
 XML/client custody policy. Both source packets retain their input hashes.
 
-The pending focused PostgreSQL case locks an actual carried stack of 37 antlers and
+The focused PostgreSQL case locks an actual carried stack of 37 antlers and
 passes its quantity to qm22's `carried_cooking_conversion_with_quantity` API.
 It checks a target debit of 37 and one talisman. Before registration it failed
 with `source-qualified carried recipe` after 55.382473 seconds.
+After regeneration and rebuilding the embedded craft catalogue, it passed in
+56.797752 seconds; the final-source rerun passed in 55.858795 seconds.
 
 The durable command's consumption of this quantity witness is owned by qm22.
 This case checks recipe admission and the quantity-aware resolver; it does not
