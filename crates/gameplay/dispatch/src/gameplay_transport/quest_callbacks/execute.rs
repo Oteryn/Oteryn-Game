@@ -70,6 +70,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
+        if goblin_elevator::owns(&callback.key) {
+            if callback.selector.appearance != Some(after.appearance_id) {
+                return UseDisposition::NothingToUse;
+            }
+            return self.execute_goblin_elevator(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                optional_pvp,
+            );
+        }
         if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
             callback,
             after.appearance_id,

@@ -12,6 +12,7 @@ mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
+mod goblin_elevator;
 mod ground_stack;
 pub(super) mod monsters;
 mod rewards;

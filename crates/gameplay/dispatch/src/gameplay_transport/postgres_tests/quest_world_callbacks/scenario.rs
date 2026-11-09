@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let qm48 = name == "qm48/mammoth";
+    let qm50 = name == "goblin-merchant-elevator-upper";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
@@ -41,7 +42,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = qm50
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -57,7 +59,13 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if qm48 {
+    let start = if qm50 {
+        Position {
+            x: 33051,
+            y: 32098,
+            floor: -6,
+        }
+    } else if qm48 {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
@@ -337,7 +345,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if qm50 {
+            super::super::qm50_elevator::world(
+                generation.native_gameplay().ok_or("elevator policies")?,
+            )?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -479,7 +491,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if name.starts_with("qengine-rewards-l12-") {
+            if qm50 {
+                8
+            } else if name.starts_with("qengine-rewards-l12-") {
                 128
             } else if native_story || (native_upper && name.ends_with("-complete")) {
                 6
@@ -651,6 +665,8 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if name == "barbarian-test-mead" {
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
+        } else if qm50 {
+            super::super::qm50_elevator::exercise(&owner, &mut admitted).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if mead {

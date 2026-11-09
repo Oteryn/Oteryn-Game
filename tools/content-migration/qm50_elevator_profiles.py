@@ -7,7 +7,7 @@ import qengine_reward_item_profiles as shared
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/qm50-elevator-item-profiles.json'
-IDS = {17938, 17939, 17940, 17942, 17943, 17944, 17947, 17970}
+IDS = {6218, 17938, 17939, 17940, 17942, 17943, 17944, 17947, 17970}
 SCHEMA = 'OTERYN_QM50_ELEVATOR_ITEM_PROFILES/v1'
 
 

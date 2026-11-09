@@ -5,6 +5,9 @@ import qm50_elevator_profiles as elevator
 
 
 class ElevatorProfilesTest(unittest.TestCase):
+    def test_qm50_evacuation_decoration_is_qualified(self):
+        self.assertIn(6218, elevator.IDS)
+
     def test_qm50_source_profiles_keep_winch_and_empty_frame_solid(self):
         packet = elevator.capture()
         self.assertEqual(packet, json.loads((elevator.ROOT / elevator.PATH).read_bytes()))

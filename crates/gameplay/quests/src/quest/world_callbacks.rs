@@ -331,6 +331,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.extend(super::fire_feathered_native::callbacks());
+    callbacks.extend(super::goblin_merchant::callbacks()?);
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
