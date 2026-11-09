@@ -77,10 +77,11 @@
       "Ghoul Room Quest",
       "Hero of Rathleton Quest",
       "Lion Trophy Quest",
-      "Deeplings World Change"
+      "Deeplings World Change",
+      "Fire from the Earth Mini World Change"
     ],
     "wired_native_visit_anchors": 49,
-    "pg_proven_explore_stages": 34
+    "pg_proven_explore_stages": 35
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -225,7 +226,9 @@
     "fire_earth_clippy": "GREEN quests+dispatch all-targets strict5m15s",
     "fire_earth_profile": "GREEN6profiletests0.06s",
     "fire_earth_authoring": "GREEN115modules1206tests;65route tests77.297s including bounded distance regression;activation/checks/tree PASS",
-    "fire_earth_publication": "WIP cadence:real nativePG building,notyetqualified;Deeplings64.396295735s GREEN onpublished0be5e5924"
+    "fire_earth_publication": "WIP cadence:real nativePG building,notyetqualified;Deeplings64.396295735s GREEN onpublished0be5e5924",
+    "fire_earth_postgres": "GREEN m01b_fire_earth_native_survey_requires_current_eruption_and_premium, PostgreSQL18.6,71.863157833s on22f06bc007d1;real selected eruption days,Premium,current-reset/replay/freshonce;whole completion0",
+    "fury_exact_layer": "RED selected-city assertion -> GREEN23World-change library tests0.03s;strictall-targetsClippy2.25s;exact compiled entry owner only,exit-only andepoch0refuse. No SQL change. Fury content wiring still pending."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
