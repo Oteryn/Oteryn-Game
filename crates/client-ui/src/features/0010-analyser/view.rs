@@ -6,7 +6,12 @@ pub fn panel_text(panel: &Panel) -> String {
     }
     let mut text = match panel.tool {
         super::Tool::Overview => format!("Overview\r\n{}", overview(panel)),
-        super::Tool::Hunting => format!("Hunting analyser\r\nKills: {}", panel.kills),
+        super::Tool::Hunting => format!(
+            "Hunting analyser\r\nKills: {}\r\nKills/h: {}\r\n{}",
+            panel.kills,
+            super::state::per_hour(panel.kills, panel.clock.seconds()),
+            panel.kill_chart.chart(panel.clock.seconds())
+        ),
         tool @ (super::Tool::Damage | super::Tool::Healing) => {
             outgoing_text(panel, panel.clock.seconds(), tool)
         }
@@ -323,9 +328,11 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     }
     let _ = write!(
         text,
-        "\r\n\r\n{}\r\n\r\n{}",
+        "\r\n\r\n{}\r\n\r\n{}\r\nSession gained XP per minute\r\n{}\r\nSession raw XP per minute\r\n{}",
         loot_text(panel, seconds),
-        supply_text(panel, seconds)
+        supply_text(panel, seconds),
+        panel.xp_chart.chart(seconds),
+        panel.raw_xp_chart.chart(seconds)
     );
     text
 }

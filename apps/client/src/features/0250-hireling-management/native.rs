@@ -60,7 +60,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             620,
-            510,
+            680,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -98,7 +98,26 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(hwnd, "BUTTON", "Save outfit", 120, [10, 110, 140, 30]);
         control(hwnd, "BUTTON", "Return to lamp", 121, [160, 110, 140, 30]);
         control(hwnd, "BUTTON", "Refresh", 122, [310, 110, 140, 30]);
-        let state = control(hwnd, "EDIT", "", 123, [10, 150, 580, 300]);
+        control(
+            hwnd,
+            "STATIC",
+            "New hireling name (3–18 letters/spaces)",
+            125,
+            [10, 150, 380, 24],
+        );
+        let name = control(hwnd, "EDIT", "", 124, [10, 180, 250, 26]);
+        for (id, label, x, y) in [
+            (130, "Load prices", 10, 220),
+            (131, "Rename", 160, 220),
+            (132, "Change sex", 310, 220),
+            (133, "Unlock Banker", 10, 260),
+            (134, "Unlock Cook", 160, 260),
+            (135, "Unlock Steward", 310, 260),
+            (136, "Unlock Trader", 460, 260),
+        ] {
+            control(hwnd, "BUTTON", label, id, [x, y, 140, 30]);
+        }
+        let state = control(hwnd, "EDIT", "", 123, [10, 310, 580, 300]);
         let mut held_entries = Vec::new();
         let mut held_identity = None;
         let mut held = String::new();
@@ -117,6 +136,40 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 130 {
+                    super::super::input::configuration::prices(&mut mailbox, &commands);
+                    continue;
+                }
+                if (131..=136).contains(&action) {
+                    let mut text = [0u16; 64];
+                    let n = GetWindowTextW(name, text.as_mut_ptr(), 64);
+                    let name = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                    let review =
+                        super::super::input::configuration::review(&mailbox, action, &name);
+                    match review {
+                        Ok(review) => {
+                            drop(mailbox);
+                            let confirmed = MessageBoxW(
+                                hwnd,
+                                wide(&review.text()).as_ptr(),
+                                wide("Confirm hireling configuration").as_ptr(),
+                                MB_YESNO | MB_DEFBUTTON2,
+                            ) == IDYES;
+                            mailbox = lock(&shared);
+                            super::super::input::configuration::submit(
+                                &mut mailbox,
+                                &commands,
+                                &review,
+                                confirmed,
+                            );
+                        }
+                        Err(message) => mailbox.hireling_management.feedback = Some(message),
+                    }
+                    continue;
+                }
+                if mailbox.store.pending {
+                    continue;
+                }
                 let p = &mut mailbox.hireling_management;
                 let intent = match action {
                     101 if p.pending.is_none() => {
@@ -196,8 +249,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
                 held_identity = p.identity;
             }
-            let text =
-                oteryn_client_ui::hireling_management::panel_text(&mailbox.hireling_management);
+            let text = format!(
+                "{}\r\n{}",
+                oteryn_client_ui::hireling_management::panel_text(&mailbox.hireling_management),
+                oteryn_client_ui::store::panel_text(&mailbox.store)
+            );
             if text != held {
                 SetWindowTextW(state, wide(&text).as_ptr());
                 held = text;

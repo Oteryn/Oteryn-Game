@@ -21,7 +21,7 @@ impl Default for PerformanceSettings {
 }
 impl PerformanceSettings {
     pub fn valid(self) -> bool {
-        self.foreground_fps <= 360 && (1..=120).contains(&self.background_fps)
+        self.foreground_fps <= 360 && (1..=360).contains(&self.background_fps)
     }
     pub fn interval(self, active: bool) -> Duration {
         let fps = if active {
@@ -129,7 +129,7 @@ impl FramePacer {
     }
 }
 impl crate::play::PlayLink {
-    pub fn performance_latency(&self) -> Option<(Instant, Duration)> {
+    pub fn performance_command_latency(&self) -> Option<(Instant, Duration)> {
         crate::play::mailbox::lock(&self.mailbox).command_latency
     }
 }
@@ -139,5 +139,38 @@ impl crate::play::Outbox {
     }
     pub(in crate::play) fn performance_command_result(&self, elapsed: Duration) {
         crate::play::mailbox::lock(&self.0).command_latency = Some((Instant::now(), elapsed));
+    }
+}
+
+impl From<super::FramePreferences> for PerformanceSettings {
+    fn from(value: super::FramePreferences) -> Self {
+        Self {
+            foreground_fps: value.foreground,
+            background_fps: value.background,
+            show_fps: value.show_fps,
+            show_latency: value.show_latency,
+        }
+    }
+}
+impl super::ReferencePreferences {
+    pub fn render_performance(&self) -> PerformanceSettings {
+        if self.frames == super::FramePreferences::default()
+            && self.performance != PerformanceSettings::default()
+        {
+            self.performance
+        } else {
+            self.frames.into()
+        }
+    }
+}
+
+impl From<PerformanceSettings> for super::FramePreferences {
+    fn from(value: PerformanceSettings) -> Self {
+        Self {
+            foreground: value.foreground_fps,
+            background: value.background_fps,
+            show_fps: value.show_fps,
+            show_latency: value.show_latency,
+        }
     }
 }

@@ -1,7 +1,10 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
+#[path = "components/bulletin.rs"]
 pub mod bulletin;
+#[path = "components/guide.rs"]
 pub mod guide;
+#[path = "components/login_queue.rs"]
 pub mod login_queue;
 
 #[path = "features/0025-appearance/mod.rs"]
@@ -196,6 +199,8 @@ pub mod analyser;
 pub mod spell_action_bar;
 #[path = "features/0287-actor-spell-catalog/mod.rs"]
 pub mod spell_catalog;
+#[path = "features/0449-spellbook-details/mod.rs"]
+pub mod spellbook_details;
 
 /// Bestiary and Charms page state, protocol mapping, views, and settings.
 #[path = "features/0001-bestiary-charms/mod.rs"]
@@ -312,6 +317,11 @@ pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
 
+#[path = "components/modal_dialogs.rs"]
 pub mod modal_dialogs;
 
+#[path = "components/notifications.rs"]
 pub mod notifications;
+
+#[path = "features/0450-server-modal/mod.rs"]
+pub mod server_modal;

@@ -25,7 +25,7 @@ fn t061_graphics_performance_preferences_survive_real_settings_apply_and_reload(
 #[test]
 fn t061_scheduler_tracks_focus_occlusion_successful_frames_and_stale_samples()
 -> Result<(), Box<dyn std::error::Error>> {
-    use crate::play::{FramePacer, PerformanceSettings};
+    use crate::play::{PerformancePacer as FramePacer, PerformanceSettings};
     use std::time::{Duration, Instant};
     let now = Instant::now();
     let settings = PerformanceSettings {
@@ -159,7 +159,7 @@ fn t061_latency_comes_from_real_session_command_caller_and_clears_on_logout() ->
                 use std::time::Duration;
                 let (link, incoming, outbox) = crate::play::play_channel();
                 let observer = outbox.clone();
-                assert!(link.performance_latency().is_none());
+                assert!(link.performance_command_latency().is_none());
                 let ready = Arc::new(AtomicBool::new(false));
                 let task = tokio::spawn(crate::play::run_session(
                     MeasuredPeer(ready.clone()),
@@ -181,15 +181,18 @@ fn t061_latency_comes_from_real_session_command_caller_and_clears_on_logout() ->
                     },
                 )).map_err(|_| "command queue")?;
                 tokio::time::timeout(Duration::from_secs(3), async {
-                    while link.performance_latency().is_none() {
+                    while link.performance_command_latency().is_none() {
                         tokio::task::yield_now().await;
                     }
                 })
                 .await
                 .map_err(|_| format!("no latency sample; task finished: {}", task.is_finished()))?;
-                assert!(link.performance_latency().ok_or("sample")?.1 >= Duration::from_millis(3));
+                assert!(
+                    link.performance_command_latency().ok_or("sample")?.1
+                        >= Duration::from_millis(3)
+                );
                 observer.logged_out();
-                assert!(link.performance_latency().is_none());
+                assert!(link.performance_command_latency().is_none());
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())
@@ -197,5 +200,49 @@ fn t061_latency_comes_from_real_session_command_caller_and_clears_on_logout() ->
         })?
         .join()
         .map_err(|_| "latency caller thread")??;
+    Ok(())
+}
+
+#[test]
+fn t061_merged_graphics_controls_preserve_legacy_preferences_and_unlimited_frames()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{FramePreferences, PerformanceSettings};
+    let mut settings = SettingsState::new(None);
+    let mut legacy = settings.preferences.clone();
+    legacy.performance.foreground_fps = 0;
+    legacy.performance.show_latency = true;
+    settings.apply(legacy.clone());
+    assert_eq!(
+        settings.preferences.render_performance(),
+        legacy.performance
+    );
+    let mut merged = legacy;
+    merged.frames = FramePreferences {
+        foreground: 144,
+        background: 360,
+        show_fps: true,
+        show_latency: true,
+    };
+    settings.apply(merged);
+    assert_eq!(
+        settings.preferences.render_performance().foreground_fps,
+        144
+    );
+    assert_eq!(
+        settings.preferences.render_performance().background_fps,
+        360
+    );
+    let unlimited = FramePreferences {
+        foreground: 0,
+        ..Default::default()
+    };
+    assert!(unlimited.valid());
+    let mut clock = crate::play::FramePacer::default();
+    assert!(clock.request(0, unlimited, true).0);
+    assert!(clock.request(0, unlimited, true).0);
+    assert_eq!(
+        PerformanceSettings::from(unlimited).interval(true),
+        std::time::Duration::ZERO
+    );
     Ok(())
 }

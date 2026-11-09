@@ -1,5 +1,6 @@
-#[path = "features/local-reference-preferences/frame_shell.rs"]
-mod frame_performance;
+mod capture;
+#[path = "features/local-reference-preferences/frame_native.rs"]
+mod frame_native;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -64,7 +65,8 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
-    frame_pacer: oteryn_client::play::FramePacer,
+    frame_timing: frame_native::FrameTiming,
+    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -105,7 +107,8 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
-            frame_pacer: oteryn_client::play::FramePacer::default(),
+            frame_timing: frame_native::FrameTiming::default(),
+            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -161,6 +164,10 @@ impl Application {
     }
 
     fn leave_play(&mut self, message: &str) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.cancel_capture();
+        }
+        self.captures = Default::default();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {
@@ -200,147 +207,8 @@ const fn redraw_eligible(phase: Option<SurfacePhase>) -> bool {
     matches!(phase, Some(SurfacePhase::Configured))
 }
 
-impl ApplicationHandler for Application {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if let (Some(window), Some(renderer)) = (&self.window, &mut self.renderer) {
-            let size = window.inner_size();
-            if renderer
-                .resume(self.generation, size.width, size.height)
-                .is_err()
-            {
-                self.fail(event_loop, ShellError::RendererResume);
-            }
-            return;
-        }
-        if self.window.is_some() {
-            return;
-        }
-        let attributes = WindowAttributes::default()
-            .with_title("Oteryn — Enter: connection and sign-in")
-            .with_active(self.smoke)
-            .with_inner_size(LogicalSize::new(960.0, 540.0));
-        let Ok(window) = event_loop.create_window(attributes) else {
-            self.fail(event_loop, ShellError::WindowCreation);
-            return;
-        };
-        let window = Arc::new(window);
-        if self.smoke {
-            self.window = Some(window);
-            event_loop.exit();
-            return;
-        }
-        self.hud = hud::Hud::new(&window);
-        self.settings.attach(&window);
-        if self.hud.is_none() {
-            self.fail(event_loop, ShellError::WindowCreation);
-            return;
-        }
-        let size = window.inner_size();
-        // The map is loaded on the first resume and kept across suspends.
-        let center = self
-            .play
-            .as_ref()
-            .map_or((START.0, START.1, 7), |play| play.view.map_center());
-        let world = if let Some(world) = &self.world
-            && world.center() == center
-        {
-            Arc::clone(world)
-        } else {
-            let (world, reason) = World::from_env(center);
-            if let Some(reason) = reason {
-                println!("Oteryn: drawing without map sprites: {reason}");
-            }
-            let Ok(world) = world.map(Arc::new) else {
-                self.fail(event_loop, ShellError::RendererInitialization);
-                return;
-            };
-            self.world = Some(Arc::clone(&world));
-            world
-        };
-        let shown = match &mut self.play {
-            Some(_) => Ok(()),
-            None => self.rebuild_offline(),
-        };
-        if shown.is_err() {
-            self.fail(event_loop, ShellError::RendererInitialization);
-            return;
-        }
-        let Ok(mut renderer) = WindowsRenderer::new(
-            Arc::clone(&window),
-            self.generation,
-            size.width,
-            size.height,
-        ) else {
-            self.fail(event_loop, ShellError::RendererInitialization);
-            return;
-        };
-        renderer.set_atlas(world.atlas().clone());
-        self.atlas = Some(world.atlas().clone());
-        window.request_redraw();
-        self.window = Some(window);
-        self.renderer = Some(renderer);
-    }
-
-    fn suspended(&mut self, event_loop: &ActiveEventLoop) {
-        if let Some(renderer) = &mut self.renderer
-            && renderer.suspend(self.generation).is_err()
-        {
-            self.fail(event_loop, ShellError::RendererSuspend);
-        }
-    }
-
-    fn device_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _device_id: DeviceId,
-        event: DeviceEvent,
-    ) {
-        if let Ok(events) = self.input.process_device_event(&event) {
-            self.handle_input(event_loop, &events);
-        }
-    }
-
-    fn window_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        event: WindowEvent,
-    ) {
-        // Every window event goes through the adapter and router first; select or walk is
-        // triggered only by the routed gameplay action.
-        if let Ok(events) = self.input.process_window_event(&event) {
-            self.handle_input(event_loop, &events);
-        }
-        match event {
-            WindowEvent::CloseRequested => {
-                if let Some(renderer) = &mut self.renderer
-                    && renderer.close(self.generation).is_err()
-                {
-                    self.fail(event_loop, ShellError::RendererClose);
-                    return;
-                }
-                event_loop.exit();
-            }
-            WindowEvent::Resized(size) => {
-                if let Some(renderer) = &mut self.renderer
-                    && renderer
-                        .resize(self.generation, size.width, size.height)
-                        .is_err()
-                {
-                    self.fail(event_loop, ShellError::RendererResize);
-                }
-            }
-            WindowEvent::Focused(focused) => self.frame_pacer.focus(focused),
-            WindowEvent::Occluded(occluded) => self.frame_pacer.occluded(occluded),
-            WindowEvent::RedrawRequested => frame_performance::redraw(self, event_loop),
-            _ => {}
-        }
-    }
-
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        frame_performance::wait(self, event_loop);
-    }
-}
+#[path = "windows_shell/application_handler.rs"]
+mod application_handler;
 
 pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
@@ -360,24 +228,4 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fatal_retention_keeps_the_first_error() {
-        let mut error = None;
-        retain_first_error(&mut error, ShellError::RendererResize);
-        retain_first_error(&mut error, ShellError::RendererRender);
-        assert_eq!(error, Some(ShellError::RendererResize));
-    }
-
-    #[test]
-    fn redraw_requires_a_configured_renderer() {
-        assert!(redraw_eligible(Some(SurfacePhase::Configured)));
-        assert!(!redraw_eligible(None));
-        assert!(!redraw_eligible(Some(SurfacePhase::Unconfigured)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
-    }
-}
+mod tests;

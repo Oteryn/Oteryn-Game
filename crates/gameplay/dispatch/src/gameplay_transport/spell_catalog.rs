@@ -11,6 +11,15 @@ pub(super) fn catalog(
     state: &PlayerSpellState,
     now_micros: u64,
 ) -> Option<Vec<SpellCatalogEntry>> {
+    catalog_with_visibility(book, state, now_micros, false)
+}
+
+pub(super) fn catalog_with_visibility(
+    book: &SpellBook,
+    state: &PlayerSpellState,
+    now_micros: u64,
+    include_other_vocations: bool,
+) -> Option<Vec<SpellCatalogEntry>> {
     let groups: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../tools/content-schema/spell-authoring/cooldown-groups.json"
     ))
@@ -21,7 +30,9 @@ pub(super) fn catalog(
     for (index, spell) in book.spells.iter().enumerate() {
         let learned = state.learned_spells().contains(&spell.key);
         let vocation = spell.vocations.contains(&facts.vocation);
-        if book.inactive_aliases.contains(&index) || (!vocation && !learned) {
+        if book.inactive_aliases.contains(&index)
+            || (!include_other_vocations && !vocation && !learned)
+        {
             continue;
         }
         let (words, rune_item, magic_level) = match &spell.carrier {
@@ -71,6 +82,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+    ) -> Option<Vec<SpellCatalogEntry>> {
+        self.actor_spell_catalog_with_visibility(actor, session, false)
+            .await
+    }
+
+    pub(super) async fn actor_spell_catalog_with_visibility(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        include_other_vocations: bool,
     ) -> Option<Vec<SpellCatalogEntry>> {
         // This is a required join domain. Share one bounded retry budget across
         // its durable reads; only a busy holder is transient, never a bad fence.
@@ -135,7 +156,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.get_mut(&runtime, actor, session)?
         };
         state.install_learned_spells(learned);
-        catalog(self.spells, state, self.owner_now().get())
+        if include_other_vocations {
+            catalog_with_visibility(self.spells, state, self.owner_now().get(), true)
+        } else {
+            catalog(self.spells, state, self.owner_now().get())
+        }
     }
 }
 

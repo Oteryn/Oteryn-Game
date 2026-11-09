@@ -25,34 +25,55 @@ pub fn panel_text(panel: &Panel) -> String {
 /// Only public catalogue replies enter this browser; inspected players remain private.
 pub fn catalogue_text(panel: &Panel) -> String {
     use std::fmt::Write;
-    let mut text = String::from("Items — confirmed catalogue templates\r\n");
+    let mut text = String::from(
+        "Items — confirmed catalogue templates\r\nBrowse and search: Ctrl+Alt+Shift+I\r\n",
+    );
     if !panel.selected {
         return "Item catalogue unavailable in this session".into();
     }
+    let _ = write!(
+        text,
+        "Categories: All, {}\r\n{}\r\n",
+        panel.categories().join(", "),
+        panel.feedback
+    );
     let search = panel.search.to_lowercase();
+    let mut matched = 0;
     for item in panel.catalogue.values().filter(|item| {
         item.name.to_lowercase().contains(&search)
             && (panel.category.is_empty()
-                || item.attributes.iter().any(|(k, v)| {
-                    (k.eq_ignore_ascii_case("category")
-                        || k == "Weapon Type"
-                        || k == "Body Position")
-                        && v.split(',')
-                            .next()
-                            .is_some_and(|value| value.trim().eq_ignore_ascii_case(&panel.category))
-                }))
+                || super::state::item_categories(item)
+                    .any(|category| category.eq_ignore_ascii_case(&panel.category)))
     }) {
+        matched += 1;
         let _ = write!(
             text,
             "{}: {} (tier {})\r\n",
             item.definition_ref, item.name, item.tier
         );
-        for (key, value) in &item.attributes {
-            let _ = write!(text, "  {key}: {value}\r\n");
+        if panel.catalogue_definition == item.definition_ref.to_string() {
+            text.push_str("Selected item details:\r\n");
+            for (key, value) in &item.attributes {
+                let _ = write!(text, "  {key}: {value}\r\n");
+            }
         }
     }
-    if panel.catalogue.is_empty() {
-        text.push_str("Inspect a catalogue definition to load its statistics and sources.\r\n");
+    if matched == 0 && !panel.catalogue.is_empty() {
+        text.push_str("No items match the selected name and category.\r\n");
+    }
+    if panel.catalogue_next.is_some() {
+        text.push_str("Next catalogue page available\r\n");
+    }
+    if panel.catalogue_drop_next.is_some() {
+        text.push_str("More drop sources available\r\n");
+    }
+    if panel.catalogue.is_empty() && panel.catalogue_loaded {
+        text.push_str("No items match the selected name and category.\r\n");
+    }
+    if panel.catalogue.is_empty() && !panel.catalogue_loaded {
+        text.push_str(
+            "Browse the server catalogue to load item names, categories and sources.\r\n",
+        );
     }
     text
 }
