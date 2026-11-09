@@ -29,7 +29,22 @@ def callback(key, keywords, topic, next_topic, state, reply):
                 outfit=None, achievement=None, reply=[reply], sources=SOURCES)
 
 
+def validate_recovery_loot(loot):
+    bags = [entry for entry in loot['entries']
+            if entry['item']['key'] == 'oteryn:item.tibia.i13429']
+    if (len(bags) != 1 or bags[0]['probability_ppm'] != 1000000
+            or bags[0]['min_count'] != 1 or bags[0]['max_count'] != 1):
+        raise ValueError('Bank recovery requires one guaranteed stolen-gold bag')
+
+
 def generate(root: Path):
+    loot = [record['definition']
+            for path in (root / 'content/loot').glob('loot-*.json')
+            for record in json.loads(path.read_text())['records']
+            if record['definition']['identity']['key'] == 'oteryn:loot.creature.jesse_the_wicked']
+    if len(loot) != 1:
+        raise ValueError('Bank recovery requires one canonical Jesse loot profile')
+    validate_recovery_loot(loot[0])
     definition = json.loads((root / INPUT).read_text())['records'][88]['definition']
     if definition['identity']['key'] != QUEST:
         raise ValueError('Bank recipe source moved')

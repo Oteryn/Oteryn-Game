@@ -9,16 +9,31 @@ class DailyBank(unittest.TestCase):
     def test_recipe_reward_change_requires_requalification(self):
         source = json.loads((bank.ROOT / bank.INPUT).read_text())
         source['records'][88]['definition']['recipe']['reward_intents'][0]['count'] = 20
-        with patch.object(bank.json, 'loads', return_value=source):
+        parse = json.loads
+        with patch.object(bank.json, 'loads', side_effect=lambda raw:
+                          source if 'OTERYN_QUEST_TREE_SHARD/v1' in raw else parse(raw)):
             with self.assertRaises(ValueError):
                 bank.generate(bank.ROOT)
 
     def test_recipe_graph_change_requires_requalification(self):
         source = json.loads((bank.ROOT / bank.INPUT).read_text())
         source['records'][88]['definition']['recipe']['stages'][0]['next'] = ['s4']
-        with patch.object(bank.json, 'loads', return_value=source):
+        parse = json.loads
+        with patch.object(bank.json, 'loads', side_effect=lambda raw:
+                          source if 'OTERYN_QUEST_TREE_SHARD/v1' in raw else parse(raw)):
             with self.assertRaises(ValueError):
                 bank.generate(bank.ROOT)
+
+    def test_recovery_requires_guaranteed_single_bag(self):
+        loot = {'entries': [{'item': {'key': 'oteryn:item.tibia.i13429'},
+                             'min_count': 1, 'max_count': 1, 'probability_ppm': 999999}]}
+        with self.assertRaises(ValueError):
+            bank.validate_recovery_loot(loot)
+        loot['entries'][0]['probability_ppm'] = 1000000
+        bank.validate_recovery_loot(loot)
+        loot['entries'][0]['min_count'] = 0
+        with self.assertRaises(ValueError):
+            bank.validate_recovery_loot(loot)
 
     def test_recipe_bound_daily_route(self):
         quest = bank.generate(bank.ROOT)['quests'][0]
