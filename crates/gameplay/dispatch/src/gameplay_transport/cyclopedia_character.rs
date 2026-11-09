@@ -63,6 +63,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::encode_badges(&badges).map_err(|_| ())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                if payload.first() == Some(&wire::offence::SELECTOR) {
+                    let query = wire::offence::Query::decode(payload).map_err(|_| ())?;
+                    let target = match query.target {
+                        Some(bytes) => {
+                            crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?
+                        }
+                        None => fence.character_id,
+                    };
+                    if target == fence.character_id {
+                        self.refresh_cyclopedia_combat(
+                            admitted.runtime_actor.ok_or(())?,
+                            admitted.game_session_id,
+                            Some(fence),
+                        )
+                        .await?;
+                    }
+                    return self
+                        .root
+                        .read_cyclopedia_offence(self.character, self.holder, fence, target, query)
+                        .await
+                        .map_err(|_| ())?
+                        .encode()
+                        .map_err(|_| ());
+                }
+                if payload.first() == Some(&wire::profile::SELECTOR) {
+                    let target = match wire::profile::decode_request(payload).map_err(|_| ())? {
+                        Some(bytes) => {
+                            crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?
+                        }
+                        None => fence.character_id,
+                    };
+                    if target == fence.character_id {
+                        self.root
+                            .refresh_account_badges(self.character, self.holder, fence, now)
+                            .await
+                            .map_err(|_| ())?;
+                    }
+                    return self
+                        .root
+                        .read_cyclopedia_profile(self.character, self.holder, fence, target)
+                        .await
+                        .map_err(|_| ())?
+                        .encode()
+                        .map_err(|_| ());
+                }
                 if payload.first() == Some(&wire::achievements::SELECTOR) {
                     let request = wire::achievements::decode_request(payload).map_err(|_| ())?;
                     let target = match request.target {

@@ -140,31 +140,8 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             .collect();
         let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
         let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
-        for (id, label, x) in [
-            (145, "All badges", 10),
-            (146, "Earned badges", 185),
-            (147, "Locked badges", 360),
-            (148, "Hidden locally", 535),
-        ] {
-            control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
-        }
-        control(hwnd, "STATIC", "Badge ID", 151, [10, 655, 90, 25], 0);
-        let badge_id = control(
-            hwnd,
-            "EDIT",
-            "",
-            149,
-            [105, 655, 90, 25],
-            WS_BORDER | WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "BUTTON",
-            "Hide / show locally",
-            150,
-            [210, 655, 200, 25],
-            WS_TABSTOP,
-        );
+        let badge_id = super::super::profile_table::badge_controls(hwnd);
+        super::super::offence_table::controls(hwnd);
         Widgets {
             edits,
             output,

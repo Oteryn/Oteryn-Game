@@ -3,9 +3,13 @@
 
 #[path = "cyclopedia_character/achievements.rs"]
 pub mod achievements;
+#[path = "cyclopedia_character/profile.rs"]
+pub mod profile;
 
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
+#[path = "cyclopedia_character/offence.rs"]
+pub mod offence;
 
 use super::DurabilityRoot;
 use super::character_authority::{

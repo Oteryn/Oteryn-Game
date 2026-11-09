@@ -14,6 +14,7 @@ impl Mailbox {
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
+        self.cyclopedia_character.augments = Default::default();
         self.cyclopedia_tracker.pending = Default::default();
         self.world_event.pending = Default::default();
         self.daily_boost.pending = Default::default();

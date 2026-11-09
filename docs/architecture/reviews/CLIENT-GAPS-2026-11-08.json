@@ -606,54 +606,60 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Overview / General Stats",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego wizualnego overview i układu statystyk.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:31 + character_statistics_decode_real_general_and_combat_results + overview_cards_and_resource_bars_project_the_confirmed_general_stats"
  },
  {
   "id": "T087",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Offence / źródła i spell augments",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tekstowy odczyt; brak pełnego układu i interaktywnych opisów źródeł.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/cyclopedia_augments.rs:114 + t087_offence_augments_postgres_real_capture_privacy_replay_and_fences + spell_augments_reach_the_native_view_through_real_playlink_and_outbox + offence_sources_reach_the_native_table_through_the_real_adapter"
  },
  {
   "id": "T088",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Defence / mitigation/resistance",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej tabeli/układu i interaktywnych szczegółów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:136 + character_statistics_decode_real_general_and_combat_results"
  },
  {
   "id": "T089",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Misc Stats / skills/stamina",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Dane tekstowe; brak pełnej prezentacji i pasków.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:232 + misc_resource_read_uses_the_real_command_adapter_without_navigating_away"
  },
  {
   "id": "T090",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Recent Deaths",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Stronicowanie jest; brak pełnej tabeli szczegółów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:19 + character_histories_use_real_requests_results_and_local_status_filters"
  },
  {
   "id": "T091",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Recent PvP Kills / Battle Results",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej tabeli i filtrów rodzajów zabójstw.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:19 + character_histories_use_real_requests_results_and_local_status_filters"
  },
  {
   "id": "T092",
@@ -710,9 +716,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Badges / cudza postać / inspection",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/durability/src/durability/cyclopedia_character/profile.rs:5 + character_profile_postgres_real_dispatch_and_privacy + native_badge_target_and_refresh_do_not_query_viewer_badges"
  },
  {
   "id": "T098",
