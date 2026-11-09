@@ -196,3 +196,72 @@ fn m04_all_five_terminal_bindings_are_unique_and_native_admitted() -> Result<(),
     }
     Ok(())
 }
+
+#[test]
+fn m04_father_finale_requires_all_eight_deliveries_and_keeps_cape_and_xp() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    let source = NpcRuleCatalog::runtime()
+        .map_err(|e| e.to_string())?
+        .admitted_for_npc("oteryn:npc.tereban", loaded.catalogue())
+        .map_err(|e| e.to_string())?
+        .ok_or("Tereban not admitted")?;
+    let base = "oteryn:quest-progress/quest/u8_6/afathers_burden/";
+    let inventory = NpcInventorySnapshot::default();
+    let outfits = BTreeMap::new();
+    for progress in 0..=8 {
+        let tracks = BTreeMap::from([
+            (format!("{base}status"), 1),
+            (format!("{base}progress"), progress),
+        ]);
+        let plan = source
+            .plan_father_items(&NpcRuleInput {
+                npc: "oteryn:npc.tereban",
+                trigger: NpcRuleTrigger::Say,
+                message: "mission",
+                player_name: None,
+                topic: 0,
+                tracks: &tracks,
+                inventory: &inventory,
+                now_epoch_seconds: 1_799_999_999,
+                calendar_month: 11,
+                premium_current: false,
+                level: 1,
+                vocation: "oteryn:vocation.none",
+                sex: 0,
+                outfits: &outfits,
+            })
+            .map_err(|e| e.to_string())?;
+        if progress < 8 {
+            assert!(
+                !plan.is_some_and(|p| p.completes),
+                "premature completion at {progress}"
+            );
+            continue;
+        }
+        let plan = plan.ok_or("missing Father finale")?;
+        assert!(plan.completes);
+        assert_eq!(plan.track_changes.len(), 1);
+        assert_eq!(plan.track_changes[0].key, format!("{base}status"));
+        assert_eq!(
+            (plan.track_changes[0].before, plan.track_changes[0].after),
+            (1, 2)
+        );
+        assert!(plan.effects.contains(&NpcRuleEffect::GiveItem {
+            item: "oteryn:item.tibia.i11701".into(),
+            count: 1,
+            subtype: None,
+        }));
+        assert!(
+            plan.effects
+                .contains(&NpcRuleEffect::Experience { amount: 8000 })
+        );
+        assert!(
+            !plan
+                .effects
+                .iter()
+                .any(|e| matches!(e, NpcRuleEffect::TakeItem { .. }))
+        );
+    }
+    Ok(())
+}
