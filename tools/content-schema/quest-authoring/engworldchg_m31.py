@@ -168,7 +168,12 @@ def expected(root=ROOT):
     dungeon["storage"][0]["at_least"] = True
     world(p, "seal", position(33290, 31785, 13), 776, (2, 2), 5, ["s4", "s5"],
           guards=[state(progress, 10, 10, 10, preserve=True)],
-          writes=[state(active, 1, 1, 0)], completes=True)
+          writes=[state(active, 1, 1, 0)], completes=True, teleport=position(32265, 32164, 7))
+    egress = world(p, "egress", position(33290, 31786, 13), 10549, (1, 7), 1, [],
+                   teleport=position(32265, 32164, 7))
+    egress["minimum_level"] = None
+    egress["storage"][0]["at_least"] = True
+    p["egress_callbacks"] = [egress["key"]]
 
     p = programs["grimvale"]
     progress, active = kills(p, ["werewolf"], 10, ["s2"], [33300, 33360, 31665, 31730, 0, 15])

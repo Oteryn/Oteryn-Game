@@ -627,6 +627,10 @@ mod tests {
             programme["runtime_enabled"] = selected.into();
             if selected {
                 let key = "oteryn:quest-callback/worldchg-m31/fury_gates/egress";
+                programme["world_callbacks"]
+                    .as_array_mut()
+                    .ok_or("callbacks")?
+                    .retain(|c| c["key"].as_str() != Some(key));
                 let mut exit = programme["world_callbacks"][0].clone();
                 exit["key"] = key.into();
                 exit["minimum_level"] = serde_json::Value::Null;
