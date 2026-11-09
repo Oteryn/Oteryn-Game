@@ -44,6 +44,15 @@ class TaintedSouls(unittest.TestCase):
         self.assertEqual(operands[1]['output_item_id'], craft.item(22008))
         self.assertTrue(operands[1].get('capture_target_stack', False))
 
+    def test_canonical_catalogue_registers_the_captured_target_recipe(self):
+        rows = [row for row in craft.build() if row['identity']['key'] == source.KEY]
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]['recipe']['operands'][1]['capture_target_stack'])
+
+    def test_canonical_outputs_validate_the_quantity_capture_schema(self):
+        outputs = craft.outputs()
+        self.assertTrue(outputs)
+
 
 if __name__ == '__main__':
     unittest.main()

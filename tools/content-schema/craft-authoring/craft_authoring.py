@@ -194,6 +194,8 @@ def build():
         "M22 captures the whole antlers object; admitted 15.30 appearances prove the output is one nonstacking talisman. "
         "Canary game.cpp transformItem lines 3401-3538 transforms one target object; no per-unit crafting loop is substituted.")
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
+    import tainted_souls
+    recipes.append(tainted_souls.row(item, operand, fixed, MESSAGES))
     return sorted(recipes, key=lambda r: r["identity"]["key"])
 
 
