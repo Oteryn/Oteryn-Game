@@ -419,6 +419,7 @@ fn scenario_in_world(
             let fixture = Callback {
                 admission: None,
                 requires_premium: false,
+                admission: None, requires_premium: false,
                 world_change: None,
 admission: None, world_change: None,
 admission: None,

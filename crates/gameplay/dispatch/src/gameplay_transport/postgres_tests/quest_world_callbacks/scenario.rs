@@ -313,6 +313,7 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
+    if name.starts_with("qengine-rewards-qworld-phase-") { callback = super::super::qworld_phase_steps::geometry(callback, name)?; }
     if name.starts_with("qengine-rewards-qworld-phase-") {
         callback = super::super::qworld_phase_steps::geometry(callback, name)?;
     }
@@ -617,6 +618,9 @@ fn scenario_case(
                 owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,
                 &callback,
             )?));
+        }
+        if name.starts_with("qengine-rewards-qworld-phase-") {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::qworld_phase_steps::catalogue(owner.quest_catalogue.as_ref().ok_or("catalogue")?)?));
         }
         if name.starts_with("qengine-rewards-qworld-phase-") {
             owner.quest_catalogue = Some(std::sync::Arc::new(

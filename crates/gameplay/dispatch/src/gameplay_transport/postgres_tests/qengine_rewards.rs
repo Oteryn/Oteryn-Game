@@ -798,6 +798,9 @@ pub(super) async fn exercise(
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
+    }
     if name == "qengine-rewards-questpc5-personal-map-query" {
         return super::questpc5_personal_map_marks::exercise(owner, admitted, h).await;
     }

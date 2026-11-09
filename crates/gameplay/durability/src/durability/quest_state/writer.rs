@@ -597,6 +597,20 @@ impl DurabilityRoot {
                             || c.effects.requires_item_disguise.is_some()
                             || c.effects.restore_disguise)
                 }))
+                || world_callbacks
+                    .iter()
+                    .any(|c| {
+                        c.key == request.transition_key
+                            && (!c.state_ops.is_empty()
+                                || !c.offerings.is_empty()
+                                || c.item_on_target.is_some()
+                                || c.world_change.is_some()
+                                || c.minimum_level.is_some() || c.requires_live_premium() || c.admission.is_some()
+                                || c.experience.is_some()
+                                || c.monk_reward.is_some()
+                                || c.native_rule.is_some()
+                                || c.effects.item_reward.is_some())
+                    }))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }

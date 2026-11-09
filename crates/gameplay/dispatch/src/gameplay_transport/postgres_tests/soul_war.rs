@@ -672,6 +672,7 @@ fn scenario() -> TestResult {
             &Callback {
                 admission: None,
                 requires_premium: false,
+                admission: None, requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
