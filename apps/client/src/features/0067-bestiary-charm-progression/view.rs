@@ -1,3 +1,6 @@
+#[cfg(windows)]
+#[path = "catalogue_window.rs"]
+mod catalogue_window;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn charm_progression_panel(&self) -> oteryn_client_ui::charm_progression::Panel {
@@ -6,6 +9,7 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    catalogue_window::open(link);
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,

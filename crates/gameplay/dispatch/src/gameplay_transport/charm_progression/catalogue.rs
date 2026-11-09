@@ -59,6 +59,8 @@ fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Opti
         .iter()
         .find(|p| p.definition_key == race.key())?;
     Some(Card {
+        outfit_look_type: policy.outfit_look_type,
+        object_look_type: policy.object_look_type,
         race: ordinal,
         name: policy.display_name.clone(),
         category: category(native, race.key())?.into(),
@@ -277,6 +279,10 @@ mod tests {
                 assert!(detail.cards[0].detail.contains("Health:"));
                 assert!(detail.cards[0].detail.contains("Loot"));
                 assert!(!page.categories.is_empty());
+                let race_key = super::canonical_races().ok_or("races")?[usize::from(first.race - 1)].key();
+                let policy = native.policies().policies().iter().find(|p| p.definition_key == race_key).ok_or("policy")?;
+                assert_eq!(detail.cards[0].outfit_look_type, policy.outfit_look_type);
+                assert_eq!(detail.cards[0].object_look_type, policy.object_look_type);
                 let filtered = project(
                     native,
                     Request {

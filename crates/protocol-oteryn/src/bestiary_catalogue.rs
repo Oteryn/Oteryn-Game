@@ -15,6 +15,8 @@ pub struct Request {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Card {
+    pub outfit_look_type: u32,
+    pub object_look_type: Option<u32>,
     pub race: u16,
     pub name: String,
     pub category: String,
@@ -93,11 +95,22 @@ pub fn encode_page(page: &Page) -> Result<Vec<u8>> {
         text(card.name.as_bytes(), 128, false)?;
         text(card.category.as_bytes(), 128, false)?;
         text(card.detail.as_bytes(), 16000, true)?;
+        if card.object_look_type == Some(0)
+            || (card.object_look_type.is_some() && card.outfit_look_type != 0)
+        {
+            return Err(Error::Malformed);
+        }
         let mut row = Vec::new();
         scalar(&mut row, 1, card.race.into());
         bytes(&mut row, 2, card.name.as_bytes());
         bytes(&mut row, 3, card.category.as_bytes());
         bytes(&mut row, 4, card.detail.as_bytes());
+        if card.outfit_look_type != 0 {
+            scalar(&mut row, 5, card.outfit_look_type.into());
+        }
+        if let Some(object) = card.object_look_type {
+            scalar(&mut row, 6, object.into());
+        }
         bytes(&mut out, 2, &row);
     }
     for category in &page.categories {
@@ -115,7 +128,7 @@ fn card(body: &[u8]) -> Result<Card> {
     while cursor < body.len() {
         let key = read_varint(body, &mut cursor)?;
         let tag = key >> 3;
-        if !(1..=4).contains(&tag) || seen & (1 << tag) != 0 {
+        if !(1..=6).contains(&tag) || seen & (1 << tag) != 0 {
             return Err(Error::Malformed);
         }
         seen |= 1 << tag;
@@ -128,10 +141,22 @@ fn card(body: &[u8]) -> Result<Card> {
             18 => card.name = text(read_bytes(body, &mut cursor)?, 128, false)?,
             26 => card.category = text(read_bytes(body, &mut cursor)?, 128, false)?,
             34 => card.detail = text(read_bytes(body, &mut cursor)?, 16000, true)?,
+            40 => {
+                card.outfit_look_type = read_varint(body, &mut cursor)?
+                    .try_into()
+                    .map_err(|_| Error::Malformed)?
+            }
+            48 => {
+                card.object_look_type = Some(
+                    read_varint(body, &mut cursor)?
+                        .try_into()
+                        .map_err(|_| Error::Malformed)?,
+                )
+            }
             _ => return Err(Error::Malformed),
         }
     }
-    if seen != 30 {
+    if seen & 30 != 30 {
         return Err(Error::Malformed);
     }
     Ok(card)
@@ -192,6 +217,8 @@ mod tests {
             next: Some(20),
             categories: vec!["Forest dwellers".into()],
             cards: vec![Card {
+                outfit_look_type: 128,
+                object_look_type: None,
                 race: 7,
                 name: "Grove watcher".into(),
                 category: "Forest dwellers".into(),

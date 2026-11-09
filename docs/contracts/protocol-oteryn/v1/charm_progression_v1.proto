@@ -43,6 +43,8 @@ message BestiaryCataloguePageV1 {
   repeated string categories = 3; // <=64 unique ascending names, <=128 UTF-8 bytes each
 }
 message BestiaryCatalogueCardV1 {
+  uint32 outfit_look_type = 5; // 0 if unavailable or object appearance
+  optional uint32 object_look_type = 6; // nonzero; mutually exclusive with outfit
   uint32 race = 1; // 1..1024, the same canonical ordinal used for charm assignment
   string name = 2; // 1..128 UTF-8 bytes
   string category = 3; // an exact member of the page categories

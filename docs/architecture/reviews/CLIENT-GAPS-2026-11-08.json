@@ -552,9 +552,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bestiary: katalog/filter/combat/loot",
-  "status": "PARTIAL",
-  "gap": "Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "Katalog aktywnej generacji z filtrem kategorii, ilustracjami z przypiętych assets, danymi combat/resistance i stronicowanym loot; postęp discovery pozostaje serwerowy.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0067-bestiary-charm-progression/catalogue_window.rs:47 + apps/client/src/features/0067-bestiary-charm-progression/tests/catalogue.rs:8 t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot; crates/gameplay/dispatch/src/gameplay_transport/charm_progression/catalogue.rs:62 + bestiary_catalogue_projects_active_creature_categories_stats_and_loot"
  },
  {
   "id": "T081",

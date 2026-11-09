@@ -5,7 +5,7 @@ use oteryn_client_runtime::{
 };
 
 #[test]
-fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
+fn t080_bestiary_catalogue_caller_keeps_confirmed_art_combat_and_loot()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut receiver, outbox) = play_channel();
     crate::play::mailbox::lock(&link.mailbox)
@@ -45,13 +45,13 @@ fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
         categories: vec!["Forest dwellers".into()],
         cards: vec![
             wire::Card {
-                race: 7,
+                race: 7, outfit_look_type: 128, object_look_type: None,
                 name: "Grove watcher".into(),
                 category: "Forest dwellers".into(),
                 detail: String::new(),
             },
             wire::Card {
-                race: 9,
+                race: 9, outfit_look_type: 0, object_look_type: Some(3058),
                 name: "Moss keeper".into(),
                 category: "Forest dwellers".into(),
                 detail: String::new(),
@@ -71,6 +71,8 @@ fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
         oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel())
             .contains("Grove watcher")
     );
+    assert_eq!(link.charm_progression_panel().catalogue.page.cards[0].outfit_look_type, 128);
+    assert_eq!(link.charm_progression_panel().catalogue.page.cards[1].object_look_type, Some(3058));
     link.bestiary_catalogue_request(7);
     assert_eq!(link.charm_progression_panel().fields[1], "9");
     link.bestiary_catalogue_request(6);
@@ -88,7 +90,7 @@ fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
         7
     );
     let page = wire::Page { next: None, categories: page.categories, cards: vec![wire::Card {
-        race: 7, name: "Grove watcher".into(), category: "Forest dwellers".into(),
+        race: 7, outfit_look_type: 128, object_look_type: None, name: "Grove watcher".into(), category: "Forest dwellers".into(),
         detail: "Health: 90\r\nExperience: 25\r\nResistance fire: 20/1%\r\nLoot:\r\nTwig: 1-2, 250000 ppm".into(),
     }] };
     outbox.properties_result(
@@ -100,6 +102,7 @@ fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
             payload: wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
         },
     );
+    assert_eq!(link.charm_progression_panel().catalogue.detail_card.as_ref().ok_or("detail art")?.outfit_look_type, 128);
     let text = oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel());
     assert!(text.contains("Health: 90"));
     assert!(text.contains("Resistance fire: 20/1%"));

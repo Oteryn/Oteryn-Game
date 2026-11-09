@@ -1,6 +1,8 @@
 use oteryn_client_runtime::charm_progression::catalogue::{Page, Request};
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Catalogue {
+    pub open: bool,
+    pub detail_card: Option<oteryn_client_runtime::charm_progression::catalogue::Card>,
     pub page: Page,
     pub detail: String,
     pub category: u8,
@@ -47,4 +49,16 @@ pub fn text(panel: &super::Panel) -> String {
         out.push_str("\r\nMore loot entries available");
     }
     out
+}
+
+impl Catalogue {
+    pub fn selected_card(
+        &self,
+        race: &str,
+    ) -> Option<&oteryn_client_runtime::charm_progression::catalogue::Card> {
+        self.detail_card
+            .as_ref()
+            .filter(|c| c.race.to_string() == race)
+            .or_else(|| self.page.cards.iter().find(|c| c.race.to_string() == race))
+    }
 }
