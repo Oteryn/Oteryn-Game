@@ -7,6 +7,7 @@
 use super::{QuestRefusal, distinct_targets};
 
 pub mod callbacks;
+pub(crate) mod catalogue;
 mod custody;
 pub use custody::consumes_paint;
 pub mod targets;

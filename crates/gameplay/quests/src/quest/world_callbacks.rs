@@ -33,6 +33,8 @@ mod clock;
 mod counterparts;
 mod effects;
 mod ground_stack;
+#[cfg(test)]
+mod ice_islands_tests;
 mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
@@ -597,6 +599,7 @@ fn extend_callbacks(
 ) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    super::ice_islands_seals::catalogue::declare(&mut tracks, callbacks)?;
     for callback in callbacks.iter().filter(|c| c.has_personal_state()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
