@@ -107,6 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             self.drain_source_item_deadlines().await;
             self.drain_quest_encounter_deadlines().await;
+            self.drain_elemental_altar_bosses().await;
             self.drain_source_party_deadlines_bounded().await;
             let _ = self.drain_native_ai_timers().await;
             if let Some(cycle) = npc_voices.as_mut() {

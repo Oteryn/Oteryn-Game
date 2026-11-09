@@ -295,6 +295,25 @@ impl BundleFacts {
         Some(result)
     }
 
+    /// Bind a protected movement-created Item to the callback which owns its
+    /// presence. Readsets fence the owner's revision, including removal/expiry,
+    /// rather than treating a volatile entry id as an immutable base placement.
+    pub fn quest_callback_presence_readset(
+        &self,
+        position: TilePos,
+        entry: EntryId,
+    ) -> Option<(u64, u64)> {
+        let states = self.callbacks.lock().ok()?;
+        let (&owner, _) = states
+            .presences
+            .iter()
+            .find(|(_, (pos, id))| *pos == position && *id == entry)?;
+        let revision = states.changed.get(&owner).map_or(0, |(rev, _)| *rev);
+        states
+            .readset_matches([(owner, revision)])
+            .then_some((owner, revision))
+    }
+
     /// A transformed/removed callback entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
     pub(crate) fn quest_callback_floor_mask(

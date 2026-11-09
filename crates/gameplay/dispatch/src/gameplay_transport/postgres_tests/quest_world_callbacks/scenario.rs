@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m49 = name.starts_with("m49-");
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -41,7 +42,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = m49
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -57,7 +59,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if qm48 {
+    let start = if m49 {
+        super::super::m49_elemental_arrival::start(name)?
+    } else if qm48 {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
@@ -162,6 +166,7 @@ fn scenario_case(
             || reusable_tool
             || floor_profiles
             || floor_assembly
+            || m49
             || room_raise
             || carried_step
             || shared_switch
@@ -337,7 +342,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if m49 {
+            super::super::m49_elemental_arrival::world(
+                generation.native_gameplay().ok_or("Elemental policies")?,
+                name,
+            )?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -750,6 +760,15 @@ fn scenario_case(
                 &h,
                 fence,
                 source_id,
+            )
+            .await?;
+        } else if m49 {
+            super::super::m49_elemental_arrival::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                name,
+                deps.actor,
             )
             .await?;
         } else if qm48 {

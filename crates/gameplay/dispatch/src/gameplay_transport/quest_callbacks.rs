@@ -67,6 +67,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:

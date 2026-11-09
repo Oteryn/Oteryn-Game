@@ -408,6 +408,14 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import elemental_ground
+
+        files[elemental_ground.SHARD] = elemental_ground.output()
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += elemental_ground.NOTE
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -462,6 +470,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08613-08613.json",
             "content/world/terrain/terrain-08614-08692.json",
             "content/world/terrain/terrain-08614-08668.json",
+            "content/world/terrain/terrain-08693-08693.json",
             "content/world/objects/objects-12917-12931.json",
         )
         if (path := ROOT / relative).exists()
