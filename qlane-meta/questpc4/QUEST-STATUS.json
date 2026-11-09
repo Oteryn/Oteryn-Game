@@ -11525,5 +11525,11 @@
     "red": "DuplicateKey chosen-source/25_years_of_tibia_quest/s1; exact reuse regression failed",
     "green": "16/16 focused composition and M07 tests7.234s; questsClippy14.095s;fmt23.801s",
     "scope": "Exact owned track declarations reuse; conflicting owner/initial/bounds reject; explicitly marked native chosen-entry s1 counters initialize0; legacy donor defaults unchanged"
+  },
+  "explicit_item_capture_subset": {
+    "status": "QUALIFIED_SLICE",
+    "red": "capture(ids={2833}) returned zero records after filtering with global IDS; test3.411s failed",
+    "green": "Exact requested parchment profile returned; regression3.242s PASS",
+    "scope": "Use selected_ids for explicit capture result filtering; default cohort and custody promotions unchanged"
   }
 }

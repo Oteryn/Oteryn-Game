@@ -122,7 +122,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
         'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
-        'records':[r for r in records if int(r['production_binding']['external_id']) in IDS],
+        'records':[r for r in records if int(r['production_binding']['external_id']) in selected_ids],
         'custody_promotions':[r for r in records if int(r['production_binding']['external_id']) in CUSTODY_PROMOTIONS]}
 
 
