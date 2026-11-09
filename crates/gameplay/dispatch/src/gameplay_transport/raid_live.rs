@@ -296,7 +296,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.binding().scope_generation() != identity.generation {
                 return Err(());
             }
-            advance_feroxa_forms(&mut runtime, identity.firing_id, seed);
+            if let Some(map) = self.bundle_map() {
+                advance_feroxa_forms(&mut runtime, identity.firing_id, seed, map);
+            }
             runtime.raid_creatures(identity.firing_id).map_err(|_| ())?
         };
         let newly_dead = statuses
@@ -704,6 +706,7 @@ pub(super) fn advance_feroxa_forms(
     runtime: &mut crate::foundation::ChannelRuntimeV1,
     firing: [u8; 16],
     seed: [u8; 32],
+    map: &crate::map::boot::BundleMap,
 ) {
     let Ok(statuses) = runtime.raid_creatures(firing) else {
         return;
@@ -735,7 +738,25 @@ pub(super) fn advance_feroxa_forms(
             }
             _ => continue,
         };
-        continue_feroxa_body(runtime, status.identity, &body, next);
+        if continue_feroxa_body(runtime, status.identity, &body, next)
+            && body.health > 0
+            && !runtime.contains_live_creature(actor)
+            && map.overlay.runtime_scope() == runtime.binding().runtime_scope()
+        {
+            // Crystal 9f5a72c creaturescripts_feroxa_transform.lua:8,16:
+            // both live handoffs emit CONST_ME_POFF (qualified effect3).
+            // Pending replacement and the death callback emit no duplicate cue.
+            if let (Ok(x), Ok(y), Some(floor)) = (
+                u16::try_from(body.position.x),
+                u16::try_from(body.position.y),
+                i8::try_from(body.position.floor)
+                    .ok()
+                    .and_then(i8::checked_neg),
+            ) {
+                map.facts
+                    .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 3);
+            }
+        }
     }
 }
 

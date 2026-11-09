@@ -910,6 +910,10 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool) -> TestResult {
         "oteryn:creature.feroxa"
     );
     let original = runtime.companion_snapshot(actor).map_err(debug)?;
+    let poffs = || map.facts.movement_effects_since(0).into_iter()
+        .filter_map(|(_, at, effect)| (effect == 3).then_some(at)).collect::<Vec<_>>();
+    let body_tile = crate::map::overlay::TilePos { x: 33380, y: 31537, floor: -11 };
+    assert!(poffs().is_empty());
     assert_eq!(
         (original.health, original.maximum_health),
         (100_000, 100_000)
@@ -917,15 +921,16 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool) -> TestResult {
     runtime
         .commit_monster_lab_damage(actor, b"qn5-feroxa-above-half", 49_999)
         .map_err(debug)?;
-    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest);
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
     assert!(
         runtime.contains_live_creature(actor),
         "above half does not replace the body"
     );
+    assert!(poffs().is_empty(), "no transformation means no source poff");
     runtime
         .commit_monster_lab_damage(actor, b"qn5-feroxa-at-half", 1)
         .map_err(debug)?;
-    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest);
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
     let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(second) =
         runtime.raid_creatures(firing).map_err(debug)?[0].outcome
     else {
@@ -942,10 +947,13 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool) -> TestResult {
         (50_000, 50_000)
     );
     assert_eq!(second_body.position, original.position);
+    assert_eq!(poffs(), vec![body_tile], "first source handoff emits poff at its original cell");
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
+    assert_eq!(poffs(), vec![body_tile], "replay cannot repeat a handoff's effect");
     runtime
         .commit_monster_lab_damage(second, b"qn5-feroxa-at-quarter", 25_000)
         .map_err(debug)?;
-    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest);
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
     let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(third) =
         runtime.raid_creatures(firing).map_err(debug)?[0].outcome
     else {
@@ -961,6 +969,7 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool) -> TestResult {
         (third_body.health, third_body.maximum_health),
         (130_000, 130_000)
     );
+    assert_eq!(poffs(), vec![body_tile, body_tile], "second source handoff emits exactly one poff");
     runtime
         .commit_monster_lab_damage(third, b"qn5-feroxa-intermediate-lethal", 130_000)
         .map_err(debug)?;
@@ -984,6 +993,7 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool) -> TestResult {
         (150_000, 150_000)
     );
     assert_eq!(final_body.position, original.position);
+    assert_eq!(poffs(), vec![body_tile, body_tile], "the source death callback emits no poff");
     assert!(runtime.raid_creatures(firing).map_err(debug)?[0].alive);
     drop(runtime);
     // Placement acknowledgement opens the durable runner's lifetime boundary.
