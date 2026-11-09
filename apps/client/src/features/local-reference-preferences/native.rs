@@ -310,3 +310,22 @@ unsafe fn set_checked(handle: HWND, checked: bool) {
         SendMessageW(handle, BM_SETCHECK, usize::from(checked), 0);
     }
 }
+
+unsafe fn settings_window() -> HWND {
+    unsafe {
+        CreateWindowExW(
+            0,
+            wide("STATIC").as_ptr(),
+            wide("Oteryn Settings").as_ptr(),
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            760,
+            540,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null(),
+        )
+    }
+}

@@ -1,5 +1,5 @@
 //! Windows playback through upstream Rodio. No device is opened by headless tests.
-use super::{AudioSettings, SoundCatalog, SoundCue, select_audio_device};
+use super::{AudioSettings, SoundCatalog, SoundChannel, SoundCue, select_audio_device};
 use oteryn_session::PresentationSource;
 use rodio::cpal::traits::{DeviceTrait, HostTrait};
 use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
@@ -10,7 +10,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 pub struct AudioOutput {
     stream: OutputStream,
     catalog: SoundCatalog,
-    voices: Vec<(PresentationSource, Sink)>,
+    voices: Vec<(PresentationSource, SoundChannel, Sink)>,
     ambient: Option<(u32, Sink)>,
     error: Option<String>,
 }
@@ -55,7 +55,7 @@ impl AudioOutput {
         if let Some((_, voice)) = self.ambient.take() {
             voice.stop();
         }
-        for (_, voice) in self.voices.drain(..) {
+        for (_, _, voice) in self.voices.drain(..) {
             voice.stop();
         }
     }
@@ -65,15 +65,17 @@ impl AudioOutput {
     }
 
     pub fn update(&mut self, settings: AudioSettings, cues: Vec<SoundCue>) {
-        self.voices.retain(|(_, voice)| !voice.empty());
-        for (source, voice) in &self.voices {
-            voice.set_volume(settings.source_gain(*source));
+        self.voices.retain(|(_, _, voice)| !voice.empty());
+        for (source, channel, voice) in &self.voices {
+            voice.set_volume(settings.channel_gain(*source, *channel));
         }
         if let Some((_, voice)) = &self.ambient {
             voice.set_volume(settings.ambient_gain());
         }
         for cue in cues {
-            if !cue.ambient && settings.source_gain(cue.source) == 0.0 {
+            if !cue.ambient
+                && settings.channel_gain(cue.source, self.catalog.channel(cue.id)) == 0.0
+            {
                 continue;
             }
             if let Err(error) = self.play(
@@ -81,7 +83,7 @@ impl AudioOutput {
                 if cue.ambient {
                     settings.ambient_gain()
                 } else {
-                    settings.source_gain(cue.source)
+                    settings.channel_gain(cue.source, self.catalog.channel(cue.id))
                 },
             ) {
                 self.error = Some(error);
@@ -118,13 +120,14 @@ impl AudioOutput {
         };
         let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
         if self.voices.len() == 32 {
-            self.voices.remove(0).1.stop();
+            self.voices.remove(0).2.stop();
         }
         let voice = Sink::connect_new(self.stream.mixer());
         voice.set_volume(gain);
         // Numeric cues are one-shots. Bound voice lifetime even for malformed/stream assets.
         voice.append(source.take_duration(Duration::from_secs(30)));
-        self.voices.push((cue.source, voice));
+        self.voices
+            .push((cue.source, self.catalog.channel(cue.id), voice));
         Ok(())
     }
 }
@@ -189,7 +192,11 @@ impl NativeAudio {
                 audio.update(self.settings, cues);
                 for cue in ui {
                     let voice = Sink::connect_new(audio.stream.mixer());
-                    voice.set_volume(self.settings.gain() * 0.15);
+                    voice.set_volume(
+                        self.settings
+                            .channel_gain(PresentationSource::Global, SoundChannel::Ui)
+                            * 0.15,
+                    );
                     voice.append(
                         rodio::source::SineWave::new(cue.frequency())
                             .take_duration(Duration::from_millis(70)),

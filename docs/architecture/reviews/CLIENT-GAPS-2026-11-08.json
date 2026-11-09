@@ -394,10 +394,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound: master/mute/device/music/ambient/items/events/UI",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/native.rs:23 + requested_audio_device_is_exact_and_never_silently_falls_back (apps/client/tests/audio_device.rs:3), missing_device_choice_survives_preference_reload (apps/client/tests/audio_device.rs:11). Sound device selector persists exact name, switches native CPAL output, preserves active ambient loop, reports missing device without fallback. Ambient mixer also implemented. Checked main and own branch first. Remaining: independent music/items/events/UI channels and native device integration validation."
+  "evidence": "apps/client/src/features/0023-presentation/native.rs:23, apps/client/src/features/0023-presentation/mixer.rs:1, apps/client/src/features/local-reference-preferences/mixer_controls.rs:1; confirmed_sound_cues_use_pinned_mixer_routes (apps/client/tests/audio_mixer.rs:28), mixer_channels_are_independent_and_master_mute_wins, requested_audio_device_is_exact_and_never_silently_falls_back, missing_device_choice_survives_preference_reload, ambient_channel_gain_is_independent_and_honours_master_mute. Master/mute, exact device selection, ambient, music/items/events/UI gains wired to native playback and active voices; pinned cue routes documented in apps/client/SETTINGS.md. Checked origin/main and own branch first."
  },
  {
   "id": "T065",

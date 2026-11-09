@@ -12,6 +12,7 @@ pub const MAX_SOUND_BYTES: u64 = 16 * 1024 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct AudioSettings {
+    pub channel_volumes: [u8; 4],
     pub ui_sounds: [bool; 4],
     pub master_volume: u8,
     pub ambient_volume: u8,
@@ -23,6 +24,7 @@ impl Default for AudioSettings {
     fn default() -> Self {
         Self {
             master_volume: 100,
+            channel_volumes: [100; 4],
             ui_sounds: [true; 4],
             ambient_volume: 100,
             battle_volumes: [100; 3],
@@ -65,6 +67,8 @@ pub struct SoundCue {
 
 #[derive(Deserialize)]
 struct SoundManifest {
+    #[serde(default)]
+    sound_channels: BTreeMap<u32, SoundChannel>,
     schema: String,
     sound_data: String,
     sound_cues: BTreeMap<u32, Vec<String>>,
@@ -82,6 +86,10 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
         || !plain(&manifest.sound_data)
         || manifest.sound_cues.is_empty()
         || manifest.sound_cues.len() > 65_535
+        || manifest
+            .sound_channels
+            .keys()
+            .any(|id| !manifest.sound_cues.contains_key(id))
         || manifest
             .sound_cues
             .iter()
@@ -101,12 +109,16 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
 }
 
 pub struct SoundCatalog {
+    channels: BTreeMap<u32, SoundChannel>,
     store: AssetStore,
     cues: BTreeMap<u32, Vec<String>>,
     ambient: BTreeMap<u32, Vec<String>>,
 }
 
 impl SoundCatalog {
+    pub fn channel(&self, id: u32) -> SoundChannel {
+        self.channels.get(&id).copied().unwrap_or_default()
+    }
     /// `sha256` is the trusted pin, supplied separately from the asset directory.
     pub fn open(dir: &Path, manifest: &Path, sha256: &str) -> Result<Self, String> {
         let store = AssetStore::open_pinned(dir, manifest, sha256).map_err(|e| e.to_string())?;
@@ -127,10 +139,10 @@ impl SoundCatalog {
         store
             .read_verified(&metadata, 8 * 1024 * 1024)
             .map_err(|e| e.to_string())?;
-        let ambient = serde_json::from_slice::<SoundManifest>(&bytes)
-            .map_err(|e| e.to_string())?
-            .ambient_cues;
+        let parsed = serde_json::from_slice::<SoundManifest>(&bytes).map_err(|e| e.to_string())?;
+        let ambient = parsed.ambient_cues;
         Ok(Self {
+            channels: parsed.sound_channels,
             store,
             cues,
             ambient,
@@ -181,3 +193,7 @@ pub use ui_sound::UiSound;
 #[path = "device.rs"]
 mod device;
 pub use device::select_audio_device;
+
+#[path = "mixer.rs"]
+mod mixer;
+pub use mixer::SoundChannel;

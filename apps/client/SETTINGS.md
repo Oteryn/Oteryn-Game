@@ -167,3 +167,10 @@ repository. The sanitized field-name inventory is committed as
 [REFERENCE-PREFERENCE-KEYS.json](REFERENCE-PREFERENCE-KEYS.json); neither is a
 bundled game asset.
 Oteryn uses its own branding, textures and implementation.
+
+The Sound / Mixer page controls music, item, event and UI gains independently;
+master volume and mute apply to every channel. The pinned audio manifest can
+assign an existing cue with `"sound_channels": {"41": "music"}`. Supported
+routes are `battle`, `music`, `items`, `events` and `ui`; omitted cues use battle
+mixing. Channel entries must name a cue in `sound_cues`. Ambient loops retain
+their separate ambient gain, and local notification tones use the UI gain.

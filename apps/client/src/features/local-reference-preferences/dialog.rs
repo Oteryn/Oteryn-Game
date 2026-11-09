@@ -7,20 +7,7 @@ use controls::Controls;
 mod page_help;
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
-        let hwnd = CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Oteryn Settings").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            760,
-            540,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        );
+        let hwnd = settings_window();
         if hwnd.is_null() {
             lock(&shared).open = false;
             return;
@@ -33,6 +20,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            mixer,
             stability,
             battle_sounds,
             frames,
@@ -129,6 +117,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 );
             }
             battle_sounds.show(state.page == SettingsPage::Sound);
+            mixer.show(state.page == SettingsPage::Mixer);
+            mixer.position_apply(apply, state.page == SettingsPage::Mixer);
             frames.show(state.page == SettingsPage::Graphics);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
@@ -182,6 +172,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     state.page,
                     SettingsPage::Interface
                         | SettingsPage::Sound
+                        | SettingsPage::Mixer
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
                 ) {
@@ -278,6 +269,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if state.page == SettingsPage::Mixer {
+                        if let Err(error) = mixer.read(&mut preferences) {
+                            state.feedback = error;
+                            continue;
+                        }
+                    }
                     if state.page == SettingsPage::Graphics {
                         if let Err(error) = frames.read(&mut preferences) {
                             state.feedback = error;
@@ -326,6 +323,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             if held.as_ref() != Some(&state.preferences) {
                 set_checked(stability, state.preferences.optimise_connection);
                 battle_sounds.refresh(&state.preferences);
+                mixer.refresh(&state.preferences);
                 frames.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);

@@ -18,11 +18,12 @@ pub enum SettingsPage {
     Interface,
     Graphics,
     Sound,
+    Mixer,
     Help,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -31,6 +32,7 @@ impl SettingsPage {
         Self::Interface,
         Self::Graphics,
         Self::Sound,
+        Self::Mixer,
         Self::Help,
     ];
 
@@ -44,6 +46,7 @@ impl SettingsPage {
             Self::Interface => "Interface",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",
+            Self::Mixer => "Sound / Mixer",
             Self::Help => "Help / settings transfer",
         }
     }

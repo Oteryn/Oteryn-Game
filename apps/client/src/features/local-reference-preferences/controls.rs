@@ -13,7 +13,12 @@ use frame_controls::FrameControls;
 mod battle_sound_controls;
 use battle_sound_controls::BattleSoundControls;
 
+#[path = "mixer_controls.rs"]
+mod mixer_controls;
+use mixer_controls::MixerControls;
+
 pub(super) struct Controls {
+    pub(super) mixer: MixerControls,
     pub(super) stability: HWND,
     pub(super) battle_sounds: BattleSoundControls,
     pub(super) frames: FrameControls,
@@ -54,6 +59,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let mixer = MixerControls::new(hwnd)?;
             let stability = control(
                 hwnd,
                 "BUTTON",
@@ -327,6 +333,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                mixer,
                 stability,
                 battle_sounds,
                 frames,
