@@ -119,6 +119,73 @@ impl BundleFacts {
         Some(batch)
     }
 
+    /// Prove a rider's landing against the batch's future collision without
+    /// publishing it. The exact source revisions are rechecked by the sealed
+    /// movement proof and again by the atomic map commit.
+    pub fn quest_platform_batch_landing(
+        &self,
+        base: &super::super::super::WorldBase,
+        moves: &[QuestMapItemMove],
+        destination: TilePos,
+    ) -> bool {
+        if moves.is_empty()
+            || moves.len() > 8
+            || self.house_tile(destination)
+            || self.doors.blocks(destination)
+            || !base
+                .tile(destination.x, destination.y, destination.floor)
+                .is_some_and(|t| t.walkable())
+        {
+            return false;
+        }
+        let pinned = self.pinned();
+        let mut seen = BTreeSet::new();
+        let mut observed = Vec::new();
+        for movement in moves {
+            let Some(key) = source_key(movement.entry.source) else {
+                return false;
+            };
+            observed.clear();
+            if !seen.insert(key)
+                || movement.expected_revision == u64::MAX
+                || pinned.object_revision(key) != movement.expected_revision
+                || self.house_tile(movement.from)
+                || self.house_tile(movement.to)
+                || movement.entry.facts.pickupable
+                || base
+                    .tile(movement.to.x, movement.to.y, movement.to.floor)
+                    .is_none()
+                || view::compose_into(base, None, &pinned, movement.from, &mut observed).is_err()
+                || !observed.contains(&movement.entry)
+                || !self
+                    .movement_item_facts(movement.appearance)
+                    .is_some_and(|f| !f.pickupable && self.override_blocks(f).is_some())
+            {
+                return false;
+            }
+        }
+        observed.clear();
+        if view::compose_into(base, None, &pinned, destination, &mut observed).is_err() {
+            return false;
+        }
+        observed.retain(|entry| !moves.iter().any(|m| m.entry.source == entry.source));
+        for movement in moves.iter().filter(|m| m.to == destination) {
+            let Some(after) = self.movement_item_facts(movement.appearance) else {
+                return false;
+            };
+            observed.push(view::ComposedEntry {
+                source: movement.entry.source,
+                facts: after,
+            });
+        }
+        observed
+            .iter()
+            .any(|entry| entry.facts.terrain_kind == Some(TerrainKind::Ground))
+            && observed
+                .iter()
+                .all(|entry| self.override_blocks(entry.facts) == Some(false))
+    }
+
     /// Compare the complete bounded scenery batch before publishing any move.
     /// Moving a base object hides its exact ordinal and creates one Channel-local
     /// identity; subsequent moves retain that identity and its revision fence.
@@ -327,7 +394,7 @@ mod tests {
             };
             Some(ItemDefinition {
                 reference: NonZeroU32::new(reference)?,
-                solid: Some(false),
+                solid: Some(reference == 3),
                 blocks_projectile: false,
                 pickupable: false,
                 door: false,
@@ -383,6 +450,18 @@ mod tests {
             )
             .ok_or("up plan")?;
         assert_eq!(up.len(), 3);
+        assert!(facts.quest_callback_blocked(&base, upper, false));
+        assert!(facts.quest_platform_batch_landing(&base, &up, upper));
+        let mut stale = up.clone();
+        stale[0].expected_revision += 1;
+        assert!(!facts.quest_platform_batch_landing(&base, &stale, upper));
+        let mut blocked = up.clone();
+        for movement in &mut blocked {
+            if movement.from == upper && movement.to == upper {
+                movement.appearance = 17942;
+            }
+        }
+        assert!(!facts.quest_platform_batch_landing(&base, &blocked, upper));
         assert!(facts.apply_quest_map_item_batch(&base, &up));
         assert!(facts.movement_items(lower).is_empty());
         let landed = facts.movement_items(upper);

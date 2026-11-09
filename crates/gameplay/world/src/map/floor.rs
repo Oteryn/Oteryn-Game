@@ -29,6 +29,7 @@
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
+mod platform;
 mod quest_callback;
 mod rope;
 use super::overlay::TilePos;
@@ -40,6 +41,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
+pub use platform::prepare_quest_platform_rider;
 pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
