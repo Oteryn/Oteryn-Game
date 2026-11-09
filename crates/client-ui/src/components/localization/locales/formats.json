@@ -169,5 +169,6 @@
  "{}: unavailable", "{}: {:?}; fee: {} gold", "{}: {} (tier {})\r\n",
  "{}: {} ({})\r\nOutfit {}; colors {:?}; services {}\r\n{}", "{}: {} kills ({} / {} / {}){}", "{}: {} {} | Server cooldown: {} ms\r\n",
  "{}: {} | {} | Level {} | Mana {}{} | Soul {} | Learned {} | Available {} | Groups {:?} | Rune {:?}\r\n", "{}: {}s{}\r\n", "{}Charm {} — {:?}, stage {}\r\nNext stage: {} {currency} | Assign to Bestiary stage {stage} or higher\r\nAssigned race: {} | {}\r\n",
- "{}Race {}: {} kills\r\n"
+ "{}Race {}: {} kills\r\n",
+ "{} | extra cost {} | {}\r\n"
 ]

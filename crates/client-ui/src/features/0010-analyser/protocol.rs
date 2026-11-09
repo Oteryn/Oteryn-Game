@@ -108,6 +108,8 @@ pub fn reset(panel: &mut Panel) {
         tool: panel.tool,
         // Party counters use server connection intervals, independent of this local reset.
         party: std::mem::take(&mut panel.party),
+        party_adjustments: std::mem::take(&mut panel.party_adjustments),
+        party_import: panel.party_import.take(),
         party_pending: panel.party_pending,
         party_feedback: panel.party_feedback,
         party_revision: panel.party_revision,

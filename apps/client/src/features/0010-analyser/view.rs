@@ -61,8 +61,8 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
         title: "Analysers",
         labels: &[
             "XP still needed for your level goal (blank disables)",
-            "Item / creature race number, or boss death id",
-            "Unit item value (gold) or kill target",
+            "Item / creature race number, boss death id, or party member name",
+            "Unit item value (gold), kill target, or party extra cost",
             "Session export / party summary file path",
         ],
         buttons: &[
@@ -100,6 +100,9 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
             "Inspect / next drop items",
             "Import party summary",
             "Export party summary (replace file)",
+            "Set party extra cost",
+            "Exclude party member",
+            "Include party member",
         ],
         snapshot: |mailbox| {
             let panel = &mailbox.analyser;

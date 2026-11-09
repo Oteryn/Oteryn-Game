@@ -143,6 +143,15 @@ pub(in crate::play) fn submit(
             action - tools - 13,
             values.get(1).map(String::as_str),
         );
+    } else if (tools + 20..=tools + 22).contains(&action)
+        && let [_, name, cost, ..] = values.as_slice()
+    {
+        oteryn_client_ui::analyser::party::edit(
+            &mut mailbox.analyser,
+            name,
+            (action == tools + 20).then_some(cost.as_str()),
+            (action != tools + 20).then_some(action == tools + 21),
+        );
     } else if (tools + 18..=tools + 19).contains(&action) {
         party_import::submit(
             mailbox,

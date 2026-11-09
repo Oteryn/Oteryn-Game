@@ -299,5 +299,15 @@
  "Welcome back!": "Bem-vindo de volta!",
  "Refresh reward": "Atualizar recompensa",
  "Claim gift": "Resgatar presente",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo.",
+ "Enter a member name from the displayed party session": "Digite o nome de um membro da sessão de grupo exibida",
+ "Extra costs must be whole nonnegative gold amounts": "Os custos extras devem ser quantidades inteiras não negativas de ouro",
+ "excluded": "excluído",
+ "included": "incluído",
+ "{} | extra cost {} | {}\r\n": "{} | custo extra {} | {}\r\n",
+ "Item / creature race number, boss death id, or party member name": "Número do item/criatura, ID da morte do chefe ou nome do membro",
+ "Unit item value (gold), kill target, or party extra cost": "Valor unitário (ouro), meta de mortes ou custo extra",
+ "Set party extra cost": "Definir custo extra",
+ "Exclude party member": "Excluir membro",
+ "Include party member": "Incluir membro"
 }
