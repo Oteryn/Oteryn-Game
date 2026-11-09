@@ -164,12 +164,20 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         let catalogue = lowered.catalogue();
-        assert_eq!(catalogue.completion_sets.len(), 22);
+        assert_eq!(catalogue.completion_sets.len(), 23);
         for (quest, rule) in &catalogue.completion_sets {
-            assert!(
-                rule.groups.len() >= 2,
-                "{quest}: independent treasure claims"
-            );
+            if quest == "oteryn:quest.fanfare_quest" {
+                // Crystal chest.lua:1680-1687: the access key is not final loot.
+                assert_eq!(
+                    rule.groups,
+                    vec![vec!["oteryn:quest-progress/kv/fanfare/claimed".to_owned()]]
+                );
+            } else {
+                assert!(
+                    rule.groups.len() >= 2,
+                    "{quest}: independent treasure claims"
+                );
+            }
             // Exercise every group as the first and the last claim. Each group is
             // independently necessary.
             for shift in 0..rule.groups.len() {

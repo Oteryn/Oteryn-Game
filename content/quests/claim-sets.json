@@ -144,6 +144,13 @@
       ]
     ]
   },
+  "oteryn:quest.fanfare_quest": {
+    "groups": [
+      [
+        "kv/fanfare"
+      ]
+    ]
+  },
   "oteryn:quest.fire_axe_quest": {
     "groups": [
       [

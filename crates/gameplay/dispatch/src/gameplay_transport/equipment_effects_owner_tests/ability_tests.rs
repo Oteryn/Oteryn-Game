@@ -331,6 +331,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // hat of the mad 3210, Dreamer bread 3602 and certificate 6498. Canonical
     // definitions and quest_callback_profiles.py qualify every identity.
     ("M35-CLAIM-SETS", 5),
+    // Crystal UID5018 Fanfare access key; exact numbered-key claim qualification.
+    ("M35-FANFARE-KEY", 1),
 ];
 
 #[test]

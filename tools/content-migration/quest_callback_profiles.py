@@ -176,6 +176,22 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             # Crystal201189f chest.lua:556: UID5024 grants the already-canonical
             # silver key3700. KEY owns its native numbered instance; the claim's
             # historical waiting_implementation flag is not an Item hold.
+            # Crystal 201189f chest.lua: UID5018 is the Fanfare access key.
+            # It grants a numbered key but never a canonical quest transition.
+            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3520':
+                placements = definition['placements']
+                key = 'oteryn:item.tibia.i2973'
+                expected = {'items': [{'count': 1, 'item': {
+                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
+                    'key_binding': 'canary:door-key/3520'}
+                if (len(placements) != 1 or placements[0]['reward'] != expected
+                        or placements[0].get('quest_transition') is not None
+                        or placements[0]['source_binding']['project_position'] !=
+                            {'x': 32376, 'y': 31802, 'z': 7}
+                        or {'server': 'crystalserver', 'unique_id': 5018} not in
+                            placements[0]['source_binding']['legacy_unique_ids']):
+                    raise ValueError('FANFARE_ACCESS_KEY_CLAIM_CHANGED')
+                keys.add(key)
             if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3700':
                 placements = definition['placements']
                 key = 'oteryn:item.tibia.i2971'
@@ -246,6 +262,24 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
                        for field in ('movable', 'pickupable'))):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
+        if key == 'oteryn:item.tibia.i2955' and key not in present:
+            # Fanfare already belongs to the retained House provider. Seed its
+            # exact source profile before this earlier callback pass can create
+            # a poorer canonical-only record that would shadow that owner.
+            import house_decoration_actions as house
+            packet = json.loads((root / house.PROFILES).read_bytes())
+            if (packet['schema'] != 'OTERYN_HOUSE_DECORATION_PROFILES/v1'
+                    or packet['crystal_commit'] != house.PIN
+                    or packet['canary_commit'] != house.CANARY
+                    or packet['catalogue_sha256'] != hashlib.sha256(
+                        (root / house.CATALOGUE).read_bytes()).hexdigest()):
+                raise ValueError('FANFARE_NATIVE_SOURCE_DRIFT')
+            candidates = [row for row in packet['records']
+                          if row['production_definition']['production_key'] == key]
+            if len(candidates) != 1:
+                raise ValueError('FANFARE_NATIVE_SOURCE_ITEM')
+            present[key] = copy.deepcopy(candidates[0])
+            document['records'].append(present[key])
         if key in present:
             complete_native_stack(root, present[key], definition, matches[0])
             continue

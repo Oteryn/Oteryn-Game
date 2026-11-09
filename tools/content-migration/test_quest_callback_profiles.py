@@ -54,6 +54,24 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_fanfare_preserves_its_established_house_profile(self):
+        key = 'oteryn:item.tibia.i2955'
+        document = json.loads(self.generated[PROFILE])
+        document['records'] = [row for row in document['records']
+                               if row['production_definition']['production_key'] != key]
+        self.generated[PROFILE] = json.dumps(document).encode()
+        self.admit()
+        row = self.generated_record(key)
+        packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/house-decoration-profiles.json').read_bytes())
+        source = next(r for r in packet['records']
+                      if r['production_definition']['production_key'] == key)
+        for group in ('classification', 'container', 'charges', 'temporal',
+                      'skill_modifiers', 'equipment', 'presentation', 'physical', 'stack'):
+            self.assertEqual(row['semantics'][group], source['semantics'][group])
+        self.assertEqual(row['attributes'], source['attributes'])
+        self.assertEqual(row['authoring'], source['authoring'])
+        self.assertEqual(row['production_binding'], source['production_binding'])
+
     def test_fish_key_is_rebuilt_with_portable_admission_and_manifest_digest(self):
         self.admit()
         rows = [r for r in json.loads(self.generated[PROFILE])['records']

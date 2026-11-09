@@ -47,15 +47,15 @@ claim is not a declared final reward. Existing source payout quantities are unch
 
 ## Remaining M35 scope
 
-Four quests are not certified by this slice: Elvenbane, Fanfare,
+Three quests remain uncertified after the Fanfare caller slice: Elvenbane,
 Ferumbras' Ascension and Forgotten Knowledge.
 Their linked claims include shared placements, access keys or mission components; the source
 claim list alone does not establish which required/alternative groups constitute the final reward set.
 Elvenbane has no canonical RewardClaim association in its current quest definition.
 These require explicit source-qualified group declarations and dispatch completion cases.
 Fanfare's recipe (the same definition shard, record 34) declares only the Fanfare as
-final loot and uses Key 3520 for access. It does not establish a second required final
-reward group; one must not be invented merely to prevent first-chest completion.
+final loot and uses Key 3520 for access. The later Fanfare slice below binds that
+single final group and proves that the access grant does not complete it.
 For example, Crystal `data-global/lib/core/quests.lua:5173-5176,5241-5247` starts
 Forgotten Knowledge on tomes but names `LastLoreKilled` for its final fight; merely
 claiming the linked tomes and mission objects does not prove that completion.
@@ -127,7 +127,7 @@ orders and completion only at the last chest.
 
 The declaration count of 22 is not proof that every cohort's complete physical
 reward route is admitted. Remaining undeclared final groups are Elvenbane,
-Fanfare, Ferumbras' Ascension and Forgotten Knowledge; their physical final
+Ferumbras' Ascension and Forgotten Knowledge; their physical final
 claim identities still require source qualification. Other declared sets
 retain source item admission holds (including Draconia, Edron Goblin, Fire Axe,
 Ghoul Room and Goblin Temple); this scoped WATER bridge does not admit them.
@@ -149,3 +149,73 @@ Bridge validation (live retained PostgreSQL 18.6, two Cargo build jobs):
   `4b6cb9bf12cf8b14b66da82168c23b53f89c45dfeb5c5d666829d5c562a4d7cb`;
   refreshed inputs digest is
   `f60dc45c615b91527b32f9c304cdc17b965d81cc85564221ecf2e37c096b2e61`.
+
+
+## Fanfare final-reward caller
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data-global/startup/tables/chest.lua:1680-1687`, declares one final Fanfare
+reward at UID 6142, (32390,31769,9), appearance 2472. Key 3520 at UID 5018,
+(32376,31802,7), appearance 2473, is a separate access grant. The catalogue
+now has 23 declarations: 22 multiple-required-group sets and this exact
+single-final-group rule. The 22 existing multi-group assertions remain intact.
+The final claim gets a generated quest transition; the key explicitly does not.
+
+The native callback generator qualifies the exact bone-key claim, preserving
+its numbered-key binding and source placement. It publishes canonical item
+2973 through the normal provider; an independently counted one-key cohort
+raises the native union to 5802. No source quantity or canonical item semantic
+is replaced. The mounted Fanfare caller case executes the real access-key
+MINT and final chest separately, checks key number 3520 and receipt linkage,
+requires zero quest receipts/obligations for the access grant, and requires
+canonical completion after the final chest. Both paths exercise duplicate
+replay and refusal of a fresh duplicate command.
+
+Further donor qualification: Ferumbras' actual final action is
+`data-global/scripts/quests/ferumbras_ascension/actions_reward.lua`, UID 1035,
+carrier 4073. It grants a brown bag containing 22731 x1 four times, 22737 x4,
+22775 x1, 3043 x10 and 22516 x5, plus Hat Hunter and both Rift Warrior outfit
+addon variants (852/846, addon mask 3). Its once marker is
+`Storage.Quest.U10_90.FerumbrasAscension.Reward`. The three existing component
+claims are not that reward. A complete source-faithful adapter must bind the
+physical UID and all item/cosmetic effects atomically rather than treating
+those three components as the final required set.
+
+Fanfare validation before push:
+
+- Formatter, quests/content/dispatch all-features check and all-target clippy
+  with `-D warnings`: passed.
+- Completion-set tests: 3 passed; focused content decoder tests: 12 passed.
+- Source chest-authoring checks: 29 passed; callback generator tests: 14 passed.
+- Native-only source generation and reproducibility: passed. This changes no
+  World placement or terrain data; the dependent native registry pins are generated.
+
+Forgotten Knowledge's exact final writer is Crystal 201189f
+`data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:11,18-29`:
+it attributes the Last Lore Keeper death to damaging players and writes
+`LastLoreKilled` with a 13-day, 20-hour deadline. Together with the final quest-log
+mission in `data-global/lib/core/quests.lua:5241-5247`, this establishes a real
+kill/time route; collecting the eight imported tome/component claims is not
+sufficient final-completion evidence. Elvenbane still has no canonical claim
+association, and its selected Spellbook reward remains an ambiguous item identity.
+These are remaining native binding requirements, not completed claim-set routes.
+
+Final profile review caught and repaired an admission-order regression: the new
+Fanfare callback closure could otherwise shadow its later House source profile
+with poorer canonical-only facts. The callback pass now seeds the exact retained,
+pin-checked House profile for item 2955. A regression test requires all established
+classification, container, charges, temporal, skill, equipment, presentation,
+physical, stack, attributes, authoring and binding facts to survive. Only the
+already-canonical known trade policy enriches its previously unknown group.
+The generated profile diff was checked against the preceding pushed commit.
+
+Live results: all three mounted M35 cases passed in 387.42 seconds, printing
+`M35_ALAWAR_POSTGRES_CASE_COMPLETED`, `M35_WINE_ALTERNATIVES_POSTGRES_CASE_COMPLETED`
+and `M35_FANFARE_POSTGRES_CASE_COMPLETED`. After restoring Fanfare's known native
+facts, the focused Fanfare case passed again in 126.20 seconds, including the
+real key MINT, final chest MINT, duplicate replay and canonical-state assertions.
+Final formatting checks passed. Local node boot remains skipped per owner.
+The earlier unrelated `quest::reward_callbacks::tests::published_ungated_quest_hash_baseline`
+failure for Ice Islands remains recorded above; its assertion is unchanged.
+The final exact production equipment/source-profile check also passed (1 test,
+71.76 seconds) against the preserved profile and 5802-item native union.

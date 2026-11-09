@@ -19,7 +19,7 @@ fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
             for reverse in [false, true] {
-                scenario(reverse, false).map_err(|e| e.to_string())?;
+                scenario(reverse, Case::Alawar).map_err(|e| e.to_string())?;
             }
             Ok(())
         })?
@@ -38,7 +38,7 @@ fn m35_dreamer_wine_alternatives_do_not_complete_other_required_groups() -> Test
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
             for reverse in [false, true] {
-                scenario(reverse, true).map_err(|e| e.to_string())?;
+                scenario(reverse, Case::Wine).map_err(|e| e.to_string())?;
             }
             Ok(())
         })?
@@ -54,24 +54,61 @@ fn definition(key: &str) -> TypedDefinitionRef {
         revision_ref: "definition-r1".into(),
     }
 }
-fn scenario(reverse: bool, wine: bool) -> TestResult {
-    let (chest, appearance, quest) = if wine {
-        (
+#[derive(Clone, Copy)]
+enum Case {
+    Alawar,
+    Wine,
+    Fanfare,
+    Key3520,
+}
+
+// Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
+#[test]
+fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for case in [Case::Key3520, Case::Fanfare] {
+                scenario(false, case).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
+    println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+fn scenario(reverse: bool, case: Case) -> TestResult {
+    let wine = matches!(case, Case::Wine);
+    let access_key = matches!(case, Case::Key3520);
+    let (chest, appearance, quest, choices): (_, _, _, &[(u16, u16)]) = match case {
+        Case::Wine => (
             (32749, 32341, -14),
             2469,
             "oteryn:quest.dreamer_s_challenge_quest",
-        )
-    } else {
-        (
+            &[(32749, 6197), (32751, 6198), (32753, 6199), (32755, 6200)],
+        ),
+        Case::Alawar => (
             (32105, 31567, -9),
             2472,
             "oteryn:quest.alawar_s_vault_quest",
-        )
-    };
-    let choices: &[(u16, u16)] = if wine {
-        &[(32749, 6197), (32751, 6198), (32753, 6199), (32755, 6200)]
-    } else {
-        &[(32105, 6045), (32109, 6046)]
+            &[(32105, 6045), (32109, 6046)],
+        ),
+        Case::Fanfare => (
+            (32390, 31769, -9),
+            2472,
+            "oteryn:quest.fanfare_quest",
+            &[(32390, 6142)],
+        ),
+        Case::Key3520 => (
+            (32376, 31802, -7),
+            2473,
+            "oteryn:quest.fanfare_quest",
+            &[(32376, 5018)],
+        ),
     };
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "m35_claim_sets", false, false).await?;
@@ -114,13 +151,13 @@ fn scenario(reverse: bool, wine: bool) -> TestResult {
                 claim
                     .placements
                     .iter()
-                    .all(|p| p.placement.quest_transition.is_some()),
+                    .all(|p| p.placement.quest_transition.is_some() != access_key),
                 "source chest must bind a claim-set transition"
             );
         }
         assert_eq!(
             bound.served.len(),
-            if wine { 1 } else { 2 },
+            if matches!(case, Case::Alawar) { 2 } else { 1 },
             "left out: {:?}; unbound: {:?}",
             bound.left_out,
             bound.unbound
@@ -290,14 +327,40 @@ fn scenario(reverse: bool, wine: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
             let claims = if wine { 1 } else { index as i64 + 1 };
-            assert_eq!(counts, (claims, claims, claims, 0));
+            let quest_claims = if access_key { 0 } else { claims };
+            assert_eq!(counts, (claims, quest_claims, quest_claims, 0));
             let snapshot = h
                 .root
                 .read_character_quest_state(&authority, fence.character_id)
                 .await
                 .map_err(debug)?;
-            let state = snapshot.states().get(quest).ok_or("quest state")?;
-            assert_eq!(state.completed, !wine && index == 1);
+            if access_key {
+                let keys: Vec<(i32, i64, bool)> = sqlx::query_as(
+                    "SELECT k.key_number,i.quantity,k.minted_transaction_id=r.transaction_id \
+                     FROM game_item_keys k JOIN game_item_instances i USING(item_instance_id) \
+                     JOIN game_reward_claim_mint_receipts r USING(item_instance_id) LIMIT 2",
+                )
+                .fetch_all(&h.pool)
+                .await?;
+                assert_eq!(keys, vec![(3520, 1, true)]);
+                assert!(
+                    !snapshot
+                        .states()
+                        .get(quest)
+                        .is_some_and(|state| state.completed)
+                );
+                assert!(
+                    !snapshot
+                        .tracks()
+                        .contains_key("oteryn:quest-progress/kv/fanfare/claimed")
+                );
+            } else {
+                let state = snapshot.states().get(quest).ok_or("quest state")?;
+                assert_eq!(
+                    state.completed,
+                    matches!(case, Case::Fanfare) || matches!(case, Case::Alawar) && index == 1
+                );
+            }
             if wine {
                 let fluids: Vec<(i64, i16, bool, bool)> = sqlx::query_as(
                     "SELECT i.quantity, f.fluid_subtype, m.root_transaction_id=r.transaction_id, \

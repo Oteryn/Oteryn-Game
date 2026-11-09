@@ -396,7 +396,7 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
              for r in records if any("quest_transition" in p for p in r["placements"])}
     expected_claim_sets = {
         "oteryn:reward-claim.kv." + marker: {"oteryn:quest-transition/kv/" + marker + "/chest"}
-        for marker in ("adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues",
+        for marker in ("fanfare", "adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues",
                        "bear_chest1", "bear_chest2", "bear_chest3",
                        "alawars_vault1", "alawars_vault2",
                        "behemothquest1", "behemothquest2", "behemothquest3", "behemothquest4",
