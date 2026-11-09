@@ -14,3 +14,14 @@ greeting's Draccoon mission statement is not evidence of current quest state.
 This is an explicit Oteryn adaptation, not canonical dialogue fidelity; travel,
 mission grants and other dialogue operations remain closed. See
 rascalio-event-contact.md for the exact retained Dialogue identity and scope.
+
+M38 guarded travel: the existing positive quest-track gate cannot express an
+outstanding fine. The new optional `quest_clear_gate` requires an absent track
+or exactly zero; positive and negative nonzero values both refuse travel. This
+is a generic native track policy, not a claim that source storage IDs or a
+Costello payment binding have been qualified. Captain Jack remains held until
+its permission/fine producers and physical route are qualified. The retained
+requirement is admission-evidence/evidence-00000-00194.json record44, sourced
+from https://tibia.fandom.com/index.php?curid=5348&oldid=1024531.
+Exact retained requirement: `docs/reference/content-prep/travel-content-1/admission-evidence/evidence-00000-00194.json:7863` (fine at7864), SHA256
+`b2be9010ecaef9616c9550571d9d40b9009d34221945032b51ee17fe7712596f`.

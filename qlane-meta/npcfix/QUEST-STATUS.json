@@ -306,5 +306,32 @@
         "duplicate migrations PASS"
       ]
     }
+  },
+  "guarded_travel_slice": {
+    "state": "GREEN_FOCUSED",
+    "mechanic": "Optional quest_clear_gate in the existing quote/commit owner",
+    "red_pg_seconds": 8.92,
+    "red": "fine=100 with permission granted quoted100 instead of UnavailableRoute",
+    "green_pg_seconds": 9.752431968,
+    "test": "npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres",
+    "unit_cases": 2,
+    "coverage": [
+      "fenced quest writer changes state",
+      "permission absent/granted",
+      "fine absent/positive/zero/negative",
+      "malformed key refusal",
+      "legacy routes unchanged",
+      "no quote fee or arrival writes",
+      "guard track bound into replay hash"
+    ],
+    "scope": "Reusable guard only. Captain Jack remains held pending native Costello permission/fine producers and physical qualification. No whole quest or M38 completion claim.",
+    "migration": "none",
+    "checks": [
+      "World pin-check PASS",
+      "duplicate migrations PASS",
+      "strict content/durability/dispatch all-target/all-feature Clippy PASS 5m54s",
+      "cargo fmt --all --check PASS"
+    ],
+    "remaining_validation": "Fresh workspace all-target compilation and full node-boot matrix remain pending; no PR-ready or whole M38 claim."
   }
 }
