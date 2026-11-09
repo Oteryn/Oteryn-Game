@@ -248,7 +248,8 @@
     "merge_correction": "Ownercorrection:qmechmergeABORTEDbeforecommit;nohardreset,noforeignmergepreserved. HeroWIPsourcekept;nativePGbuildinterruptedandwillrestartonunmergedbranch. 381questunits86.70s,strictClippy7m12s,118modules/1214authoringtestsPASS beforemerge;source/datarestoredexactly.",
     "hero_fire_native_postgres": "GREEN2cases210.95s on7d7350fc6:Hero firstsurvey94.230475462s;fire-room116.711981393s. Real firstsurveySTEP,separateevidence-ownerpreconditiononly,CurrentPremium/refusedreplay/freshonce/revisit/wholecompletion0. Noexploration/rootrevisionseeding. Qmechmergeaborted;unmergedbranchproof.",
     "area_coordinate_frame": "RED foreignframeaccepted -> GREEN2focusedtests1.312s plusfull118modules/1215tests;allAreaapproachesrequireglobal-target-2026-09-27. ActivecallbackJSONunchanged.",
-    "hero_final_validation": "HeroPG2cases210.95s:94.230475462sfirstsurvey,116.711981393sfire-room;381questunits86.70s;strictquests+dispatchClippy7m12s;currentworkspace9m52s/fmt;118authoringmodules1215tests/checks/tree/regen/pins/dupmigrationsPASS. Crystal201189f8 confirms33552,32049,z15andaction24866. Noqmech/mainmerge."
+    "hero_final_validation": "HeroPG2cases210.95s:94.230475462sfirstsurvey,116.711981393sfire-room;381questunits86.70s;strictquests+dispatchClippy7m12s;currentworkspace9m52s/fmt;118authoringmodules1215tests/checks/tree/regen/pins/dupmigrationsPASS. Crystal201189f8 confirms33552,32049,z15andaction24866. Noqmech/mainmerge.",
+    "station_scoped_resolver": "RED held-owner rejection -> GREEN3focusedtests1.140s;119modules1218authoringtests0failures/checks,workspacealltargets7m04s/fmtPASS. INACTIVE:onlyexactHorseStation s1persistentpastureobjective;defaultwholeWorldownerstillHELD,otherstages/objectivechangesreject. Crystal201189bboxverified;target32442,32229,-7ground4521,startnorth4515. GeneratedactiveJSONunchanged;noWorldactivation."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],

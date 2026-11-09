@@ -124,7 +124,13 @@ def callbacks(root):
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
         definition = definitions[0]
         fury_approach = None
-        if area.startswith('fury-approach:'):
+        station_approach = None
+        if area.startswith('station-approach:'):
+            import questpc_station_approaches
+            station_approach = questpc_station_approaches.resolve(
+                quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('fury-approach:'):
             import questpc_fury_approaches
             fury_approach = questpc_fury_approaches.resolve(root, quest, area)
             world_change = fury_approach[3]
@@ -145,7 +151,9 @@ def callbacks(root):
         requirements = recipe['requirements']
         completed_quests = questpc_completed_quests.resolve(quest, requirements['prerequisites'],
             [d for group in by_quest.values() for d in group])
-        if fury_approach is not None:
+        if station_approach is not None:
+            at, appearance, sources = station_approach
+        elif fury_approach is not None:
             at, appearance, sources = fury_approach[:3]
         elif area.startswith('door-approach:'):
             import questpc_door_approaches
