@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import m01c_key_door_equipment_pin
 import questpc4_treasure_reward_equipment_pin
 import json
 import os
@@ -87,8 +88,12 @@ def main():
         "content/items/definitions/starting-loadout-profiles.json",
     )
     original = TEST.read_text()
-    source = questpc4_treasure_reward_equipment_pin.refresh(
+    source = m01c_key_door_equipment_pin.refresh(
         original,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/key-door-item-profiles.json").read_bytes()),
+    )
+    source = questpc4_treasure_reward_equipment_pin.refresh(
+        source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
     )
     generated, count = regenerate(

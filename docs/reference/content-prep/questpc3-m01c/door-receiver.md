@@ -31,5 +31,12 @@ lines 70–75 bind key 3012 at the two Draconia positions; lines 106–112 bind
 lines 344, 350 and 368 resolve those storage symbols to the same numbers.
 The capture pins both source hashes. Table comments naming 4193 and 5009
 disagree with the executable entries; the overlay follows the entries.
-Production application, native locked Item profiles 5097/6248 and the Draconia
-binding remain pending. No World bytes or pins change in this tooling slice.
+Production application and the Draconia binding remain pending. No World
+placement bytes change in the tooling/profile slices.
+
+Locked Item profiles 5097 and 6248 use the existing native importer and pinned
+Canary XML/appearance inputs. [items.xml](https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml)
+lines 14489 and 17136 identify the locked doors; the source importer supplies
+their door classification and solid/projectile physics. Source hashes remain
+in `key-door-item-profiles.json` and `canary-ground-proof.json`; no Item
+definitions or physical flags are copied from neighbouring door identities.
