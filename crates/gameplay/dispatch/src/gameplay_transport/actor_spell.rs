@@ -615,8 +615,11 @@ impl ChannelSpellStates {
 
     /// Shared carrier-owner bookkeeping. This uses the carrier's actual Channel
     /// binding to maintain its existing timer owner; it grants no actor authority.
-    /// Each caller first proves either ordinary Channel or explicit House custody.
-    fn initialize_owner_bookkeeping(&mut self, runtime: &ChannelRuntimeV1) -> Option<()> {
+    /// Each caller first proves ordinary Channel, named House, or activity custody.
+    pub(in crate::gameplay_transport) fn initialize_owner_bookkeeping(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Option<()> {
         let binding = runtime.binding();
         if self.spell_timers.as_ref().is_some_and(|timers| {
             timers.scope() != binding.runtime_scope()

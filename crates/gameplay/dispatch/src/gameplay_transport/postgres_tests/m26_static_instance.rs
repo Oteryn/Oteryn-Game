@@ -9,7 +9,7 @@ use crate::foundation::{CharacterLease, CommandId, CommandRef, MovementLocalPosi
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::Instant;
@@ -465,6 +465,99 @@ async fn scenario(admin: String) -> TestResult {
             )
         ),
         "ordinary cast cannot borrow the origin session command: {refused:?}"
+    );
+    // Drive a real ordinary spell, using current persisted class facts and
+    // the existing fenced automatic-knowledge producer.
+    let actor = admitted.runtime_actor.ok_or("activity caster")?;
+    let index = destination
+        .spells
+        .spells
+        .iter()
+        .position(|spell| spell.name == "Light")
+        .ok_or("production Light spell")?;
+    let key = destination.spells.spells[index].key.clone();
+    let current = crate::gameplay_transport::character_gameplay_fence::current(
+        &destination,
+        admitted.game_session_id,
+        false,
+    )
+    .await
+    .ok_or("current automatic knowledge fence")?;
+    destination
+        .root
+        .acquire_automatic_spells(
+            destination.character,
+            destination.holder,
+            current,
+            &std::collections::BTreeSet::from([key]),
+        )
+        .await
+        .map_err(debug)?;
+    let crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready { facts, .. } =
+        crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
+            destination.root,
+            destination.character,
+            current.character_id,
+        )
+        .await
+    else {
+        return Err("actual classed activity cast facts".into());
+    };
+    let learned = destination
+        .root
+        .read_character_known_spells(destination.character, current.character_id)
+        .await
+        .map_err(debug)?;
+    {
+        let runtime = destination.runtime.lock().await;
+        let mut states = destination.states.spell_states.lock().await;
+        let mut state = crate::spell::cast::PlayerSpellState::new(facts, 0, 0)
+            .ok_or("native activity cast state")?;
+        state.load_owned_build(&cast.build).map_err(debug)?;
+        state
+            .enable_owned_training(
+                &cast.build,
+                native.training_formula().ok_or("production training formula")?,
+            )
+            .map_err(debug)?;
+        state
+            .make_playable(destination.owner_now())
+            .map_err(debug)?;
+        state.install_learned_spells(learned);
+        *states
+            .get_mut(&runtime, actor, admitted.game_session_id)
+            .ok_or("activity spell state")? = state;
+    }
+    let (_, before_cast) = destination
+        .observe_vitals(actor, admitted.game_session_id)
+        .await
+        .ok_or("before Light vitals")?;
+    let intent = crate::gameplay_transport::actor_spell::SpellCastIntent {
+        spell: std::num::NonZeroU32::new(u32::try_from(index)? + 1).ok_or("Light index")?,
+        target: crate::gameplay_transport::actor_spell::SpellTarget::None,
+        aim_at_target: false,
+    };
+    let outcome = destination
+        .complete_actor_spell(actor, admitted.game_session_id, 8, intent)
+        .await;
+    assert!(
+        matches!(
+            outcome,
+            Some(crate::gameplay_transport::actor_spell::SpellCastOutcome {
+                disposition: crate::gameplay_transport::actor_spell::SpellCastDisposition::Cast,
+                ..
+            })
+        ),
+        "actual source Instance Light cast: {outcome:?}"
+    );
+    let (_, after_cast) = destination
+        .observe_vitals(actor, admitted.game_session_id)
+        .await
+        .ok_or("after Light vitals")?;
+    assert_eq!(
+        before_cast.mana.checked_sub(after_cast.mana),
+        Some(20),
+        "native Light mana cost"
     );
     assert!(started.elapsed().as_secs_f64() > 0.01);
     eprintln!(
