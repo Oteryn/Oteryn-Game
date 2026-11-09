@@ -2,9 +2,51 @@
   "evidence": "OtsHypothesisOnly",
   "extracted_by": "tools/content-migration/imbuement_item_profiles.py --stage-crystal",
   "records": {
+    "10323": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "10386": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "13997": {
+      "families": {},
+      "slot_count": 1
+    },
+    "21169": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "21981": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "22086": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
     "2854": {
       "families": {
         "INCREASE_CAPACITY": "3"
+      },
+      "slot_count": 1
+    },
+    "3079": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
       },
       "slot_count": 1
     },
@@ -27,6 +69,121 @@
         "SKILL_DISTANCE": "3"
       },
       "slot_count": 3
+    },
+    "34097": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "34098": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "3551": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "3552": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "3554": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "3556": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "4033": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "43884": {
+      "families": {
+        "INCREASE_SPEED": "10",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "43887": {
+      "families": {
+        "INCREASE_SPEED": "10",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "50240": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "5461": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "7457": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "813": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "818": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "819": {
+      "families": {
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "820": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "9017": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
     }
   },
   "schema": "OTERYN_CRYSTAL_ITEM_IMBUEMENT_SLOT_FACTS/v1",

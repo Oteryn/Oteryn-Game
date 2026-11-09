@@ -95,7 +95,9 @@ pub enum ImbuementItemWrite {
         imbuement_revision: String,
         tier: u8,
     },
-    Etch { slots: Vec<u8> },
+    Etch {
+        slots: Vec<u8>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -253,80 +255,88 @@ async fn apply(
             row.try_get::<i64, _>(4)?,
         ));
     }
-    let (record_action, audit_action, slot, category, key, revision, tier, gold, needs, output) = match &command.write {
-        ImbuementWrite::Apply {
-            slot,
-            category,
-            imbuement_key,
-            imbuement_revision,
-            tier,
-            gold,
-            materials,
-        } => {
-            if stored.iter().any(|(stored_slot, stored_category, ..)| {
-                *stored_slot == i64::from(*slot) || *stored_category == i64::from(*category)
-            }) {
-                return Ok(ImbuementResult::SlotOccupied);
+    let (record_action, audit_action, slot, category, key, revision, tier, gold, needs, output) =
+        match &command.write {
+            ImbuementWrite::Apply {
+                slot,
+                category,
+                imbuement_key,
+                imbuement_revision,
+                tier,
+                gold,
+                materials,
+            } => {
+                if stored.iter().any(|(stored_slot, stored_category, ..)| {
+                    *stored_slot == i64::from(*slot)
+                        || oteryn_gameplay_items::imbuement::imbuement_category_group(
+                            u8::try_from(*stored_category).unwrap_or(u8::MAX),
+                        ) == oteryn_gameplay_items::imbuement::imbuement_category_group(
+                            *category,
+                        )
+                }) {
+                    return Ok(ImbuementResult::SlotOccupied);
+                }
+                (
+                    IMBUEMENT_ACTION_APPLY,
+                    IMBUEMENT_ACTION_APPLY,
+                    *slot,
+                    *category,
+                    imbuement_key.clone(),
+                    imbuement_revision.clone(),
+                    *tier,
+                    *gold,
+                    materials.as_slice(),
+                    None,
+                )
             }
-            (
-                IMBUEMENT_ACTION_APPLY,
-                IMBUEMENT_ACTION_APPLY,
-                *slot,
-                *category,
-                imbuement_key.clone(),
-                imbuement_revision.clone(),
-                *tier,
-                *gold,
-                materials.as_slice(),
-                None,
-            )
-        }
-        ImbuementWrite::Clear { slot, gold } => {
-            let Some((_, category, key, revision, tier)) = stored
-                .iter()
-                .find(|(stored_slot, ..)| *stored_slot == i64::from(*slot))
-            else {
-                return Ok(ImbuementResult::NotAllowed);
-            };
-            (
-                IMBUEMENT_ACTION_CLEAR,
-                IMBUEMENT_ACTION_CLEAR,
-                *slot,
-                u8::try_from(*category).map_err(|_| DurabilityError::InvalidStoredState)?,
-                key.clone(),
-                revision.clone(),
-                u8::try_from(*tier).map_err(|_| DurabilityError::InvalidStoredState)?,
-                *gold,
-                &[][..],
-                None,
-            )
-        }
-        ImbuementWrite::Inscribe {
-            category,
-            imbuement_key,
-            imbuement_revision,
-            tier,
-            gold,
-            materials,
-            output,
-        } => {
-            if !stored.is_empty() || target_definition.production_key != "oteryn:item.tibia.i51442" {
-                return Ok(ImbuementResult::NotAllowed);
+            ImbuementWrite::Clear { slot, gold } => {
+                let Some((_, category, key, revision, tier)) = stored
+                    .iter()
+                    .find(|(stored_slot, ..)| *stored_slot == i64::from(*slot))
+                else {
+                    return Ok(ImbuementResult::NotAllowed);
+                };
+                (
+                    IMBUEMENT_ACTION_CLEAR,
+                    IMBUEMENT_ACTION_CLEAR,
+                    *slot,
+                    u8::try_from(*category).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    key.clone(),
+                    revision.clone(),
+                    u8::try_from(*tier).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    *gold,
+                    &[][..],
+                    None,
+                )
             }
-            (
-                3,
-                IMBUEMENT_ACTION_APPLY,
-                0,
-                *category,
-                imbuement_key.clone(),
-                imbuement_revision.clone(),
-                *tier,
-                *gold,
-                materials.as_slice(),
-                Some(output),
-            )
-        }
-    };
+            ImbuementWrite::Inscribe {
+                category,
+                imbuement_key,
+                imbuement_revision,
+                tier,
+                gold,
+                materials,
+                output,
+            } => {
+                if !stored.is_empty()
+                    || target_definition.production_key != "oteryn:item.tibia.i51442"
+                {
+                    return Ok(ImbuementResult::NotAllowed);
+                }
+                (
+                    3,
+                    IMBUEMENT_ACTION_APPLY,
+                    0,
+                    *category,
+                    imbuement_key.clone(),
+                    imbuement_revision.clone(),
+                    *tier,
+                    *gold,
+                    materials.as_slice(),
+                    Some(output),
+                )
+            }
+        };
     // Each material from the first plain direct stack holding the whole count, in display order.
     let mut materials = Vec::with_capacity(needs.len());
     let mut lines: Vec<OneItemImbuementMaterialV1> = Vec::with_capacity(needs.len());
@@ -368,8 +378,9 @@ async fn apply(
         let before = quantity(&row)?;
         let after = before - need.count;
         let definition = definition(&row)?;
-        let before_json: serde_json::Value = serde_json::from_str(&row.try_get::<String, _>("before")?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let before_json: serde_json::Value =
+            serde_json::from_str(&row.try_get::<String, _>("before")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
         materials.push(serde_json::json!({
             "item": uuid_string(&item),
             "ordinal": ordinal.to_string(),
@@ -377,7 +388,13 @@ async fn apply(
             "before": before_json,
         }));
         lines.push(OneItemImbuementMaterialV1 {
-            before: Some(state(&item, world, &definition, before, ITEM_LIFECYCLE_LIVE)),
+            before: Some(state(
+                &item,
+                world,
+                &definition,
+                before,
+                ITEM_LIFECYCLE_LIVE,
+            )),
             after: Some(state(
                 &item,
                 world,
@@ -553,8 +570,13 @@ impl DurabilityRoot {
                     .bind(command.command_id.to_string())
                     .execute(&mut **tx)
                     .await?;
-                    match replay(&mut tx, fence.game_session_id, command.command_id, command.binding)
-                        .await
+                    match replay(
+                        &mut tx,
+                        fence.game_session_id,
+                        command.command_id,
+                        command.binding,
+                    )
+                    .await
                     {
                         Ok(Some(result)) => {
                             tx.commit(deadline).await?;
@@ -564,7 +586,10 @@ impl DurabilityRoot {
                         Err(ImbuementWriteError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     }
-                    if assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() {
+                    if assert_gameplay_fence(&mut tx, &fence, &node)
+                        .await?
+                        .is_err()
+                    {
                         return Ok(Err(ImbuementWriteError::AuthorityRejected));
                     }
                     if super::character_equipment::assert_current_equipment_in_transaction(

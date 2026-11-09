@@ -275,7 +275,7 @@ fn run(
                     for (index, offer) in window.offers.iter().enumerate() {
                         let label = lfmt!(
                             "{index}: family {} tier {} — {} gold",
-                            offer.family,
+                            oteryn_client_ui::imbue::family_name(offer.family),
                             offer.tier,
                             offer.gold,
                             index = index

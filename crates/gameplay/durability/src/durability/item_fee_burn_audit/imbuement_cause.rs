@@ -108,7 +108,7 @@ pub(in crate::durability) fn check(value: &OneItemImbuementV1) -> Result<(), Aud
         || item.lifecycle != ITEM_LIFECYCLE_LIVE
         || value.placement_ordinal == 0
         || value.slot >= 3
-        || value.category >= 20
+        || value.category >= 26
         || !(1..=3).contains(&value.tier)
         || !materials.contains(&value.materials.len())
     {
@@ -150,7 +150,12 @@ pub(super) fn usage(value: &OneItemImbuementV1) -> TransactionResourceUsage {
     let whole = value
         .materials
         .iter()
-        .filter(|material| material.after.as_ref().is_some_and(|after| after.quantity == 0))
+        .filter(|material| {
+            material
+                .after
+                .as_ref()
+                .is_some_and(|after| after.quantity == 0)
+        })
         .count() as u64;
     TransactionResourceUsage {
         touched_item_instances: 1 + count,

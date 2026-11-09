@@ -53,6 +53,7 @@ fn imbuement_live_picker_and_material_reply_reach_run_session() -> Result<(), Er
                     Peer {
                         requests: requests.clone(),
                         details: true,
+                        catalogue: false,
                     },
                     incoming,
                     outbox,
