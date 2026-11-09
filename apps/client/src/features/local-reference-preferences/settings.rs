@@ -40,6 +40,10 @@ const PANEL_IDS: &[&str] = &[
     "wheel",
 ];
 
+fn default_opacity() -> [u8; 3] {
+    [100; 3]
+}
+
 fn enabled() -> bool {
     true
 }
@@ -66,8 +70,12 @@ fn default_hud_bounds() -> [u16; 4] {
     [8, 8, 900, 40]
 }
 
-fn default_foreground_fps() -> u16 { 60 }
-fn default_background_fps() -> u16 { 15 }
+fn default_foreground_fps() -> u16 {
+    60
+}
+fn default_background_fps() -> u16 {
+    15
+}
 
 fn default_scale() -> u16 {
     100
@@ -88,6 +96,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_opacity")]
+    pub effect_opacity: [u8; 3],
     /// Disable TCP small-packet buffering on the next gameplay connection.
     #[serde(default)]
     pub optimise_connection: bool,
@@ -155,6 +165,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            effect_opacity: default_opacity(),
             optimise_connection: false,
             ambient_brightness: 0,
             foreground_fps: default_foreground_fps(),
@@ -190,14 +201,25 @@ impl Default for ReferencePreferences {
 
 impl ReferencePreferences {
     pub fn frame_interval(&self, focused: bool) -> std::time::Duration {
-        let fps = if focused { self.foreground_fps } else { self.background_fps };
+        let fps = if focused {
+            self.foreground_fps
+        } else {
+            self.background_fps
+        };
         std::time::Duration::from_nanos(1_000_000_000 / u64::from(fps.clamp(1, 500)))
     }
 
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
-        if self.ambient_brightness > 100 { return Err(PreferenceError); }
-        if !(1..=500).contains(&self.foreground_fps) || !(1..=500).contains(&self.background_fps) { return Err(PreferenceError); }
+        if self.effect_opacity.iter().any(|opacity| *opacity > 100) {
+            return Err(PreferenceError);
+        }
+        if self.ambient_brightness > 100 {
+            return Err(PreferenceError);
+        }
+        if !(1..=500).contains(&self.foreground_fps) || !(1..=500).contains(&self.background_fps) {
+            return Err(PreferenceError);
+        }
         self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {

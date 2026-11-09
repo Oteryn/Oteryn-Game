@@ -384,9 +384,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: own/other/creature/boss-area opacity",
-  "status": "MISSING",
+  "status": "PARTIAL",
   "gap": "Brak ustawień opacity według źródła efektu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/view.rs:143 + source_opacity_reaches_confirmed_effect_gpu_upload (apps/client/tests/effect_opacity.rs:8); persisted native own/other/creature controls feed per-quad GPU alpha, terrain stays opaque. Checked origin/main and own branch. Remaining: negotiated boss-area discriminator; existing v1 decoders reject new source enum values."
  },
  {
   "id": "T064",

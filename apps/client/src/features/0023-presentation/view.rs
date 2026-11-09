@@ -39,10 +39,19 @@ impl PlayView {
         let atlas = self.local.world();
         let atlas = atlas.atlas();
         let resource_options = resources::Options::from(self.preferences());
+        let opacity = self.preferences().effect_opacity;
         let effects = self.preferences().show_effects;
         let creature_bars = self.preferences().creature_bars;
         let (view, batch) = self.scene.presentation_base()?;
-        resources::draw(batch, view, atlas, self.vitals.as_ref(), self.own, resource_options)?;
+        batch.lighting.opacity.clear();
+        resources::draw(
+            batch,
+            view,
+            atlas,
+            self.vitals.as_ref(),
+            self.own,
+            resource_options,
+        )?;
         if creature_bars {
             for entity in &self.entities {
                 let oteryn_session::EntityDetail::Actor { health_percent, .. } = entity.detail
@@ -142,8 +151,14 @@ impl PlayView {
                 PresentationEventKind::MagicEffect {
                     position,
                     effect_id,
-                    ..
+                    source,
                 } if position.floor == self.floor && progress < 0.5 => {
+                    let alpha = match source {
+                        oteryn_session::PresentationSource::Own => opacity[0],
+                        oteryn_session::PresentationSource::Others => opacity[1],
+                        oteryn_session::PresentationSource::Creatures => opacity[2],
+                        oteryn_session::PresentationSource::Global => 100,
+                    };
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -173,13 +188,14 @@ impl PlayView {
                             [0.7, -0.7],
                             [0.7, 0.7],
                         ] {
-                            pixel(
+                            pixel_opacity(
                                 batch,
                                 view,
                                 atlas,
                                 [x + half + dx * radius, y + half + dy * radius],
                                 [3.0, 3.0],
                                 color,
+                                alpha,
                             )?;
                         }
                         continue;
@@ -190,13 +206,14 @@ impl PlayView {
                         [-radius, -radius, 2.0, radius * 2.0],
                         [radius, -radius, 2.0, radius * 2.0],
                     ] {
-                        pixel(
+                        pixel_opacity(
                             batch,
                             view,
                             atlas,
                             [x + half + dx, y + half + dy],
                             [w, h],
                             color,
+                            alpha,
                         )?;
                     }
                 }
@@ -350,6 +367,26 @@ fn draw_tutorial(
                 }
             }
         }
+    }
+    Ok(())
+}
+
+fn pixel_opacity(
+    batch: &mut SpriteBatch,
+    view: &TileView,
+    atlas: &AtlasImage,
+    position: [f32; 2],
+    size: [f32; 2],
+    color: PresentationColor,
+    alpha: u8,
+) -> Result<(), BatchError> {
+    if alpha == 0 {
+        return Ok(());
+    }
+    let start = batch.len();
+    pixel(batch, view, atlas, position, size, color)?;
+    if batch.len() > start {
+        batch.lighting.opacity.push((start..batch.len(), alpha));
     }
     Ok(())
 }

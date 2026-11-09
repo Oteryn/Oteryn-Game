@@ -1,7 +1,7 @@
 //! Client presentation of server-owned creature lights. No gameplay timers live here.
 use crate::{QUAD_INSTANCE_BYTES, QuadInstance};
 
-pub const LIT_INSTANCE_BYTES: usize = QUAD_INSTANCE_BYTES + 12;
+pub const LIT_INSTANCE_BYTES: usize = QUAD_INSTANCE_BYTES + 16;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PointLight {
@@ -12,6 +12,7 @@ pub struct PointLight {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SceneLighting {
+    pub opacity: Vec<(std::ops::Range<usize>, u8)>,
     pub ambient: [u8; 3],
     pub sources: Vec<PointLight>,
     /// Emissive UI palette, in atlas UV coordinates.
@@ -21,6 +22,7 @@ pub struct SceneLighting {
 impl Default for SceneLighting {
     fn default() -> Self {
         Self {
+            opacity: Vec::new(),
             ambient: [255; 3],
             sources: Vec::new(),
             palette: None,
@@ -58,8 +60,18 @@ impl SceneLighting {
     /// The shader samples an sRGB texture in linear space, so convert light here.
     #[must_use]
     pub fn instance_bytes(&self, instances: &[QuadInstance]) -> Vec<u8> {
+        self.upload_bytes(instances, true)
+    }
+
+    /// Terrain never inherits opacity ranges belonging to the separate sprite batch.
+    #[must_use]
+    pub fn opaque_instance_bytes(&self, instances: &[QuadInstance]) -> Vec<u8> {
+        self.upload_bytes(instances, false)
+    }
+
+    fn upload_bytes(&self, instances: &[QuadInstance], sprite_opacity: bool) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(instances.len() * LIT_INSTANCE_BYTES);
-        for quad in instances {
+        for (index, quad) in instances.iter().enumerate() {
             bytes.extend_from_slice(&quad.to_bytes());
             let emissive = self.palette.is_some_and(|p| {
                 quad.uv[0] >= p[0] && quad.uv[1] >= p[1] && quad.uv[2] <= p[2] && quad.uv[3] <= p[3]
@@ -80,6 +92,16 @@ impl SceneLighting {
                 };
                 bytes.extend_from_slice(&linear.to_ne_bytes());
             }
+            let alpha = if !sprite_opacity {
+                1.0
+            } else {
+                self.opacity
+                    .iter()
+                    .rev()
+                    .find(|(range, _)| range.contains(&index))
+                    .map_or(1.0, |(_, percent)| f32::from((*percent).min(100)) / 100.0)
+            };
+            bytes.extend_from_slice(&alpha.to_ne_bytes());
         }
         bytes
     }
@@ -91,6 +113,7 @@ mod tests {
     #[test]
     fn clxa_local_light_falls_off_and_leaves_ui_emissive() {
         let lighting = SceneLighting {
+            opacity: Vec::new(),
             ambient: [0; 3],
             sources: vec![PointLight {
                 position: [16.0; 2],
