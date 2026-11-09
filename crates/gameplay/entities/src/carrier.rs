@@ -154,6 +154,8 @@ pub use platform_displacement::PlatformDisplacement;
 
 mod player_control;
 pub use player_control::RuntimeSessionAbsence;
+mod forced_player_step;
+pub use forced_player_step::ForcedPlayerStepGuard;
 
 mod positions;
 mod source_tile_occupancy;
@@ -1213,6 +1215,7 @@ pub struct ScopeRuntimeV1 {
     /// so the scan runs once per Channel window, not once per drive.
     spawn_drive_window: Option<SpawnDriveWindow>,
     house_owners: std::collections::BTreeMap<String, house_custody::HouseScopeOwner>,
+    forced_player_steps: Vec<std::sync::Weak<forced_player_step::ForcedPlayerStep>>,
     /// Test only: the spawn records the respawn drives read (gone-scan points and deadline
     /// entries), to prove the work per owner window is bounded.
     #[cfg(any(test, feature = "test-support"))]
@@ -1354,6 +1357,7 @@ impl ChannelRuntimeV1 {
             spawn_activation: None,
             spawn_drive_window: None,
             house_owners: std::collections::BTreeMap::new(),
+            forced_player_steps: Vec::new(),
             #[cfg(any(test, feature = "test-support"))]
             spawn_drive_visits: 0,
         })
