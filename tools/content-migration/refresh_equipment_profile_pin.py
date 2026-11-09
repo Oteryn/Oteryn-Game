@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import questpc4_treasure_reward_equipment_pin
+import first_dragon_item_profiles
 import json
 import os
 import re
@@ -110,8 +112,9 @@ def main():
         "content/items/definitions/starting-loadout-profiles.json",
     )
     original = TEST.read_text()
+    source = first_dragon_item_profiles.cohort_receipt(original)
     source = questpc4_treasure_reward_equipment_pin.refresh(
-        original,
+        source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
     )
     import qengine_equipment_cohort

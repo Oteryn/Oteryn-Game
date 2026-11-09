@@ -211,9 +211,10 @@ impl ActivityHandoffOwner {
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let root = self.root.clone();
         self.root.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
-            let now=now_ms(&mut tx).await?;
+            let now=quest_activity_now_ms(&mut tx,&root).await?;
             if !prove_current_incarnation(&mut tx,&node).await? {return Err(DurabilityError::Unavailable);}
             let fact=node.fact();
             let rows=sqlx::query("SELECT uuid_send(a.admission) AS id,uuid_send(a.instance_id) AS instance,g.ownership_generation::text AS generation,a.state \
@@ -392,10 +393,11 @@ fn parse_entry_cells(value: &serde_json::Value) -> Option<Vec<LastPositionCell>>
     rows.iter().map(parse_cell).collect()
 }
 
-pub(super) async fn prepare_in_transaction(
+pub(super) async fn prepare_in_transaction<G: super::super::quest_state::grizzly::GrizzlyPremiumGate>(
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,
     now: i64,
+    premium: &G,
 ) -> Result<std::result::Result<BossAdmissionPlan, ActivityRefusal>> {
     let Some(initiator) = r
         .participants
@@ -431,7 +433,7 @@ pub(super) async fn prepare_in_transaction(
     }
     let mut facts = Vec::with_capacity(r.participants.len());
     for p in &r.participants {
-        if !super::quest_encounter::permits(tx, &r.activity_key, p.source.character_id).await? {
+        if !super::quest_encounter::permits_entry(tx, &r.activity_key, p.source.character_id, premium).await? {
             return Ok(Err(ActivityRefusal::AuthorityRejected));
         }
         let Some(ordinal) = definition

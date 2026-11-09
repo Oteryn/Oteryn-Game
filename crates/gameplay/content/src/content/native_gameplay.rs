@@ -2076,6 +2076,27 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn m18_exit_carpet_uses_validated_native_collision_and_ground_custody() {
+        // Crystal201189f items.xml:35502-35504 and the pinned appearance's
+        // clip/unmove flags: the source timeout exit is carpet17400, not a wall.
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().unwrap();
+        let native = generation.native_gameplay().unwrap();
+        let profile = native
+            .item_policy("oteryn:item.tibia.i17400", "definition-r1")
+            .unwrap();
+        let row = profile.record();
+        assert_eq!(row.attributes.blocks_movement, Some(false));
+        assert_eq!(row.attributes.blocks_projectile, Some(false));
+        assert_eq!(
+            row.admission.legal_destinations,
+            vec![NativeItemDestination::Ground]
+        );
+        assert_eq!(row.attributes.always_on_top_order, Some(1));
+    }
+
+    #[test]
     fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
         let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
         let mut supplied = input();

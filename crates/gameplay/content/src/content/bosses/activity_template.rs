@@ -9,6 +9,8 @@ use crate::content::{
 };
 use serde::{Deserialize, Serialize};
 
+mod first_dragon;
+
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -235,7 +237,10 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
     {
         return Err(ActivityTemplateRefusal::InvalidSourceCapture);
     }
-    Ok(document.records)
+    let mut records = document.records;
+    records.push(first_dragon::candidate()?);
+    records.sort_by(|left, right| left.path.cmp(&right.path));
+    Ok(records)
 }
 
 impl ContentActivationController {
@@ -449,12 +454,16 @@ impl ContentActivationController {
         let primal = (creature == super::primal_closure::PRIMAL_MENACE_KEY)
             .then(|| super::primal_closure::qualify(native))
             .flatten();
+        let selected = first_dragon::qualify(native, candidate);
         if !candidate.blockers.is_empty()
             || !candidate.callbacks_known
             || unavailable_source_hooks(candidate).any(|hook| {
                 primal
                     .as_ref()
                     .is_none_or(|closure| !closure.implements(hook))
+                    && selected
+                        .as_ref()
+                        .is_none_or(|closure| !closure.implements(hook))
             })
         {
             return Err(R::SourceHookUnavailable);
@@ -508,7 +517,11 @@ impl ContentActivationController {
         Ok(QualifiedActivityRoomTemplate {
             boss_key: candidate.boss_key().ok_or(R::InvalidSourceCapture)?,
             template_key: format!("oteryn:room.boss.{suffix}"),
-            template_revision: format!("crystal-{}", candidate.sha256),
+            template_revision: if candidate.path == first_dragon::PATH {
+                format!("selected-{}", candidate.sha256)
+            } else {
+                format!("crystal-{}", candidate.sha256)
+            },
             content_revision: content_revision.into(),
             creature_key: creature.into(),
             source_path: candidate.path.clone(),

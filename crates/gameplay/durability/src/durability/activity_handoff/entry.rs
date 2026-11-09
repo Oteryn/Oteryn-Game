@@ -149,13 +149,16 @@ fn binding(
     hash.finalize().into()
 }
 
-pub(super) async fn enter_in_transaction(
+pub(super) async fn enter_in_transaction<
+    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+>(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     r: &ActivityEnterRequest,
     boss_room: bool,
     soulpit: Option<super::soulpit::SoulpitEntryContext<'_>>,
+    premium: &G,
 ) -> Result<ActivityEnterOutcome> {
     if (r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some() {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
@@ -275,9 +278,9 @@ pub(super) async fn enter_in_transaction(
             ));
         }
     }
-    let now = now_ms(tx).await?;
+    let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if boss_room {
-        match super::boss_room::prepare_in_transaction(tx, r, now).await? {
+        match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
             Ok(plan) => Some(plan),
             Err(reason) => return Ok(ActivityEnterOutcome::Refused(reason)),
         }
@@ -355,7 +358,6 @@ pub(super) async fn enter_in_transaction(
                 origin: Some(*channel_id.as_bytes()),
                 transport: p.destination_transport,
             },
-            now,
         )
         .await?;
     }
@@ -428,8 +430,11 @@ pub(super) async fn issue_successor(
     tx: &mut Transaction<'_, Postgres>,
     root: &DurabilityRoot,
     successor: SuccessorSession,
-    now: i64,
 ) -> Result<()> {
+    // Session protection and authority publications use transaction wall time.
+    // Encounter test clocks can advance deadlines without backdating or
+    // future-dating the existing admission owner's claims.
+    let now = now_ms(tx).await?;
     let SuccessorSession {
         source,
         destination,

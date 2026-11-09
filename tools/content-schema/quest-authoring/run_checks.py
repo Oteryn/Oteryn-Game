@@ -113,6 +113,7 @@ def main():
     if missing:
         parser.error('required Quest check inputs missing: ' + ', '.join(missing))
     commands = [
+        ['first_dragon_activity.py', '--check'],
         ['verify_quest_schema.py'],
         ['questpc2_live_eligibility.py', '--check'],
         ['last_creep_native.py', '--check'],
