@@ -366,7 +366,15 @@ impl RewardCallback {
     }
     /// Paid exchanges and exact carried recipes repeat under distinct CommandRefs.
     pub fn is_paid_exchange(&self) -> bool {
-        ((self.storage.is_empty() && self.state_ops.is_empty()) || self.carried_target.is_some())
+        let guarded_sale = self.repeatable
+            && !self.completes
+            && self.carried_item.is_none()
+            && self.world_claim.is_none()
+            && self.state_ops.is_empty()
+            && self.storage.iter().all(|state| state.preserve);
+        ((self.storage.is_empty() && self.state_ops.is_empty())
+            || self.carried_target.is_some()
+            || guarded_sale)
             && self.participants.is_empty()
             && !self.take.is_empty()
             && self.give.is_some()
@@ -884,6 +892,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
+        && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
         && callback.self_target.is_none()
         && !callback
@@ -1042,7 +1051,13 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 /// Exact primary state operation shared by lowering and bound admission validation.
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
-    let bound_effect = callback.storage.iter().position(|state| !state.preserve);
+    // A guarded exchange may only read progress. Its first guard still binds
+    // admission/value terms without turning that read into a phase advance.
+    let bound_effect = callback
+        .storage
+        .iter()
+        .position(|state| !state.preserve)
+        .or_else(|| (!callback.storage.is_empty()).then_some(0));
     Ok(QuestTransition {
         world_change: None,
         key: callback.key.clone(),
@@ -1055,7 +1070,10 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 track: state.track.clone(),
                 from: QuestComparison::Between(state.minimum, state.maximum),
                 effect: if state.preserve {
-                    QuestEffectKind::Add(0)
+                    match binding.filter(|_| Some(index) == bound_effect) {
+                        Some(binding) => QuestEffectKind::AddWithBinding { delta: 0, binding },
+                        None => QuestEffectKind::Add(0),
+                    }
                 } else {
                     match (
                         state.at_least,
