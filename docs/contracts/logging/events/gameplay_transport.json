@@ -113,6 +113,78 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "step_rejected_dawnport",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_dead",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_drome",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_lane",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_movement",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_pending_spell",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_pvp_locks",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_source_map",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_stale_position",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     }
   ]
 }
