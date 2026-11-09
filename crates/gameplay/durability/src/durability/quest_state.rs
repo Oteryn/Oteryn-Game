@@ -235,6 +235,8 @@ pub struct QuestObligationRecord {
 pub struct CounterQuestProgress {
     /// The counter owner's lifecycle generation, independent of save epochs.
     pub occurrence_generation: u64,
+    /// A receipt completed the quest within this cycle, including trackless completion.
+    pub completed: bool,
     /// Latest mission values in this cycle; excludes persistent private balances.
     pub tracks: BTreeMap<String, i64>,
 }

@@ -154,17 +154,20 @@ impl DurabilityRoot {
                     // A current cycle spans multiple saves. Read latest values per
                     // track through the existing counter-qualified receipt view,
                     // independently matching the Character's current World.
+                    let counter_progress_limit = QUESTSTATE0_RL_08_TRACKS + QUESTSTATE0_RL_08_STATES;
                     let counter_progress = sqlx::query(
                         "SELECT DISTINCT ON (p.quest_key,t.track_key) p.quest_key, \
-                                p.occurrence_generation::text AS occurrence_generation, t.track_key,t.value \
+                                p.occurrence_generation::text AS occurrence_generation, \
+                                bool_or(p.completes) OVER (PARTITION BY p.quest_key) AS completed, \
+                                t.track_key,t.value \
                            FROM game_current_counter_quest_progress p \
                            JOIN game_character_roots c ON c.character_id=p.character_id AND c.world_id=p.world_id \
-                           CROSS JOIN LATERAL unnest(p.track_keys,p.values_after) AS t(track_key,value) \
+                           LEFT JOIN LATERAL unnest(p.track_keys,p.values_after) AS t(track_key,value) ON true \
                           WHERE p.character_id=encode($1,'hex')::uuid \
                           ORDER BY p.quest_key,t.track_key,p.committed_character_revision DESC LIMIT $2",
                     )
                     .bind(id)
-                    .bind(bound(QUESTSTATE0_RL_08_TRACKS))
+                    .bind(bound(counter_progress_limit))
                     .fetch_all(&mut *tx)
                     .await?;
                     // Keep completion-only receipts: LEFT LATERAL retains one
@@ -239,7 +242,7 @@ impl DurabilityRoot {
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
-                        || over(&counter_progress, QUESTSTATE0_RL_08_TRACKS)
+                        || over(&counter_progress, counter_progress_limit)
                         || over(&save_progress, save_progress_limit)
                         || over(&restart_profiles, QUESTSTATE0_RL_08_STATES)
                         || over(&obligations, QUESTSTATE0_RL_07)
@@ -266,19 +269,34 @@ impl DurabilityRoot {
                     }
                     for row in &counter_progress {
                         let quest: String = row.try_get("quest_key")?;
-                        let track: String = row.try_get("track_key")?;
-                        if !oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(&quest, &track) {
+                        if !matches!(quest.as_str(),
+                            oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST
+                            | oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST) {
                             continue;
                         }
                         let generation = numeric_u64(row, "occurrence_generation")?;
-                        let progress = copy.counter_quests.entry(quest).or_insert_with(|| CounterQuestProgress {
+                        let progress = copy.counter_quests.entry(quest.clone()).or_insert_with(|| CounterQuestProgress {
                             occurrence_generation: generation,
+                            completed: false,
                             tracks: BTreeMap::new(),
                         });
                         if generation == 0 || progress.occurrence_generation != generation {
                             return Err(DurabilityError::InvalidStoredState);
                         }
-                        progress.tracks.insert(track, row.try_get("value")?);
+                        progress.completed |= row.try_get::<bool,_>("completed")?;
+                        match (row.try_get::<Option<String>,_>("track_key")?,row.try_get::<Option<i64>,_>("value")?) {
+                            (Some(track),Some(value)) => {
+                                if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(&quest, &track) {
+                                    progress.tracks.insert(track,value);
+                                }
+                            },
+                            (None,None) => {},
+                            _ => return Err(DurabilityError::InvalidStoredState),
+                        }
+                    }
+                    if copy.counter_quests.len() > QUESTSTATE0_RL_08_STATES
+                        || copy.counter_quests.values().map(|progress|progress.tracks.len()).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
                     }
                     for row in &save_progress {
                         let quest: String = row.try_get("quest_key")?;
