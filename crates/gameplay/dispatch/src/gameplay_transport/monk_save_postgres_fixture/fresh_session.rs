@@ -84,7 +84,6 @@ async fn prepare_after_runtime_observation(
 #[test]
 fn quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publication() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
-        let started = std::time::Instant::now();
         let harness = Harness::create_with_admission_seed(
             admin,
             "stag_delayed_runtime_publication",
@@ -113,10 +112,6 @@ fn quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publicati
                 crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)))
             .ok_or("runtime observation")?;
         assert_eq!(runtime.source.source_observed_at, now - 6);
-        eprintln!(
-            "STAG_FRESH_SESSION POSTGRES_CASE_COMPLETED delayed_runtime_fresh_security duration={:?}",
-            started.elapsed()
-        );
         harness.cleanup().await
     })
 }
