@@ -142,8 +142,10 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
     party::CAPABILITY_PARTY_LIST_V1,
+    oteryn_protocol_oteryn::support_intake::CAPABILITY_SUPPORT_INTAKE_V1,
     oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
     imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
+    oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
     oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
 ];
 
@@ -254,6 +256,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
     oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
     party::CAPABILITY_PARTY_LIST_V1,
+    oteryn_protocol_oteryn::support_intake::CAPABILITY_SUPPORT_INTAKE_V1,
+    oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
