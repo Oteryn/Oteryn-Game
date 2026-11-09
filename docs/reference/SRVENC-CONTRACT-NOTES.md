@@ -2359,3 +2359,24 @@ one reward claim/item remain proven. M51 remains PARTIAL pending full pit reset
 and silent timeout-state persistence closure.
 Dispatch clippy --lib -D warnings PASS124.540s; cargo fmt --all --check
 PASS15.897s; engine-only pin identity unchanged.
+
+## M51: original kick timer uses the deciding durable clock (SDK)
+
+NativeArenaTimeout binds the exact active run, pit, actor, session, generation,
+epoch and original deadline. It cannot target a completed or unowned state.
+The writer checks the database clock again before a new timeout reset; historical
+native replay stays read-only. Cleanup needs the current Character/node/session
+fence and exact before-state, rather than a lease which has already expired.
+The origin only carries Status/no-victory, and the existing validator only permits
+its timeout reset; no fee, achievement or rank progress is invented.
+Source: Crystal201189f svargrond_arena.lua:259-313. No new schema/id allocated.
+RED actual PG4.48s (157.058s including cold build): an unchecked native TimedOut
+callback prematurely cancels a live run. GREEN13 M51 tests37.359s; own deciding
+clock PG12.816919598s proves early refusal/no receipt, expired reset/release,
+immutable replay and client Status replay separation. Other own PG: origin
+6.978293831s, custody7.063450628s, runtime role7.07248877s, terminal5.873239257s,
+actual Character death5.789996439s. Production remains600s; only this isolated
+fixture uses a short timer for the actual PostgreSQL boundary.
+M51 remains PARTIAL: silent timer producer and complete pit reset closure follow.
+Durability clippy --all-targets -D warnings PASS81.542s; cargo fmt --all --check
+PASS16.302s; engine-only pin identity unchanged.

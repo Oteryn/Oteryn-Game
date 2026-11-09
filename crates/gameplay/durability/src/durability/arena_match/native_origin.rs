@@ -8,6 +8,7 @@ pub enum NativeArenaOrigin {
     Step(NativeArenaStep),
     Death(NativeArenaDeath),
     Departure(NativeArenaDeparture),
+    Timeout(NativeArenaTimeout),
 }
 
 impl NativeArenaOrigin {
@@ -16,6 +17,7 @@ impl NativeArenaOrigin {
             Self::Step(step) => step.command(),
             Self::Death(death) => death.command(),
             Self::Departure(departure) => departure.command(),
+            Self::Timeout(timeout) => timeout.command(),
         }
     }
     pub(super) fn binding(&self) -> &[u8] {
@@ -23,10 +25,17 @@ impl NativeArenaOrigin {
             Self::Step(step) => step.binding(),
             Self::Death(death) => death.binding(),
             Self::Departure(departure) => departure.binding(),
+            Self::Timeout(timeout) => timeout.binding(),
         }
     }
     pub(super) fn requires_live_pit(&self) -> bool {
-        !matches!(self, Self::Departure(_))
+        !matches!(self, Self::Departure(_) | Self::Timeout(_))
+    }
+    pub(super) fn allows_commit_at(&self, now_ms: i64) -> bool {
+        match self {
+            Self::Timeout(timeout) => timeout.due_at(now_ms),
+            _ => true,
+        }
     }
     pub(super) fn payload(&self) -> Option<Vec<u8>> {
         use oteryn_protocol_oteryn::arena::ArenaAction;
@@ -34,6 +43,7 @@ impl NativeArenaOrigin {
             Self::Step(_) => ArenaAction::Advance,
             Self::Death(_) => ArenaAction::Status,
             Self::Departure(_) => ArenaAction::Leave,
+            Self::Timeout(_) => ArenaAction::Status,
         })
         .ok()
     }
@@ -52,6 +62,7 @@ impl NativeArenaOrigin {
             Self::Step(step) => victory.is_none() && step.validates(before, fence),
             Self::Death(death) => victory == Some(death.death()) && death.validates(before, fence),
             Self::Departure(departure) => victory.is_none() && departure.validates(before, fence),
+            Self::Timeout(timeout) => victory.is_none() && timeout.validates(before, fence),
         }
     }
 }
