@@ -473,7 +473,7 @@ fn producer_world(
             blocks_projectile: Some(false),
         }),
     });
-    for (floor, x, y) in [(-11, 33380, 31537), (-11, 33457, 31531)] {
+    for (floor, x, y) in [(-11, 33380, 31537), (-11, 33457, 31531), (-10, 33420, 31539)] {
         cells.entry((floor, x, y)).or_default();
     }
     cells
@@ -556,30 +556,38 @@ fn producer_world(
 
 #[test]
 fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestResult {
-    run_producer(false, false, false, false)
+    run_producer(false, false, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_final_opens_portal_when_boss_spawn_is_blocked() -> TestResult {
-    run_producer(true, false, false, false)
+    run_producer(true, false, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_timed_native_maps_ignore_pending_delivery_and_reject_stale_reset() -> TestResult {
-    run_producer(false, true, false, false)
+    run_producer(false, true, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_spectators_return_to_saved_positions_once_on_both_source_timers() -> TestResult {
-    run_producer(false, true, true, false)
+    run_producer(false, true, true, false, false)
 }
 
 #[test]
 fn qn5_feroxa_map_phase_retires_actual_ground_once_with_world_event_audit() -> TestResult {
-    run_producer(false, true, false, true)
+    run_producer(false, true, false, true, false)
 }
 
-fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool) -> TestResult {
+// Crystal201189f8 data-global/lib/quests/grimvale.lua:25-38 retains the same
+// actual 22761 ingress and 33419,31539,10 landing as the pinned9f5a72c donor.
+// The personal entry stage is the explicit chosen Oteryn recipe, not source completion.
+#[test]
+fn qn5_grimvale_authored_entry_commits_through_real_movement_once() -> TestResult {
+    run_producer(false, false, false, false, true)
+}
+
+fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -592,7 +600,7 @@ fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, p
                 false,
             )
             .await?;
-            let result = producer_scenario(&h, block_spawn, prove_phases, prove_spectators, prove_clear).await;
+            let result = producer_scenario(&h, block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -628,7 +636,7 @@ async fn producer_seed(
     Ok(())
 }
 
-async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool) -> TestResult {
+async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool) -> TestResult {
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -779,10 +787,46 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
     }
     deps.runtime = tokio::sync::Mutex::new(runtime);
     deps.combat_room = Some(room);
+    let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+    if prove_stage {
+        harness.root.latch_premium_activation(&activation.activation_id,
+            activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+    }
+    let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+        consumer, Some(clock), Some(activation), Some(harness.root.clone()));
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
     owner.reset_epoch = 1;
+    let mut admitted = deps.admitted;
+    if prove_stage {
+        owner.quest_catalogue = Some(std::sync::Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?.catalogue().clone()));
+        owner.premium_coordinator = Some(&premium);
+        owner.admit_premium(id(40), admitted.game_session_id);
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        let fence = owner.current_quest_fence(admitted.game_session_id).await
+            .map_err(|()| "stage fence")?.ok_or("stage fence")?;
+        admitted.item_fence = Some(fence.item_fence());
+        // Use the actual runtime frame, exactly as ordinary content activation does.
+        // The raid-only fixture previously never needed a personal quest write.
+        let frame = owner.runtime.lock().await.content_pin().frame_binding_digest();
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+            .bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice())
+            .execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice())
+            .bind(digest.as_slice()).bind(active.identity().client_artifact_digest().as_slice())
+            .bind(frame.as_slice()).execute(&harness.pool).await?;
+        owner.runtime.lock().await.bind_attacker_lease(deps.actor, admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                fence.character_lease_generation).map_err(debug)?).map_err(debug)?;
+        deps.initialize(&owner).await;
+        owner.admit_progression_session(&mut admitted).await;
+        owner.admit_quest_session(&admitted).await;
+    }
     producer_seed(harness, &owner, &key, &selected, firing, bundle_digest).await?;
     assert!(
         harness
@@ -954,6 +998,30 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
         super::quest_world_callbacks::local(DESTINATION),
         "source final() ejects current contenders before opening the portal"
     );
+    if prove_stage {
+        let stage = "oteryn:quest-callback/qn5/grimvale-encounter-entry";
+        let response = super::quest_world_callbacks::wire(&owner, &mut admitted, 1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent(StepDirection::East)).await?;
+        assert_eq!(oteryn_protocol_oteryn::world_spatial::decode_step_result(&response).map_err(debug)?,
+            oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
+        let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/qn5/grimvale-entry'")
+            .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(value, 1, "actual paced entry commits the authored stage");
+        let copy = harness.root.read_character_quest_state(&authority,
+            crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?).await.map_err(debug)?;
+        assert!(!copy.states().get("oteryn:quest.grimvale_mini_world_change")
+            .ok_or("persisted Grimvale state")?.completed,
+            "entry alone must not complete the authored programme");
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
+            .bind(stage).fetch_one(&harness.pool).await?;
+        assert_eq!(count, 1);
+        super::quest_world_callbacks::wire(&owner, &mut admitted, 1,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, encode_step_intent(StepDirection::East)).await?;
+        let replay_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
+            .bind(stage).fetch_one(&harness.pool).await?;
+        assert_eq!(replay_count, 1);
+        eprintln!("QN5_M52_AUTHORED_STAGE_PG_EXECUTED elapsed={:?}", start.elapsed());
+    }
     {
         let mut runtime = deps.runtime.lock().await;
         for (index, (actor, original)) in extra_players.iter().enumerate() {
