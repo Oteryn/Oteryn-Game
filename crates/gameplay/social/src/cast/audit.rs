@@ -5,6 +5,8 @@ use oteryn_gameplay_durability::durability::{
     runtime_scope_assignment::NodeIncarnationProof,
 };
 use std::collections::VecDeque;
+use std::time::Duration;
+use tokio::time::Instant;
 
 pub(super) struct Journal {
     pub incarnation: [u8; 16],
@@ -106,6 +108,9 @@ impl CastOwner {
         root: &DurabilityRoot,
         node: &NodeIncarnationProof,
     ) -> Result<(), Error> {
+        // A busy holder has not attempted storage. Give it the same one-second
+        // window as cast commands, without retrying storage/receipt failures.
+        let retry_deadline = Instant::now() + Duration::from_secs(1);
         loop {
             let batch: Vec<_> = self.audit.pending.iter().take(64).cloned().collect();
             let committed = match root
@@ -113,6 +118,17 @@ impl CastOwner {
                 .await
             {
                 Ok(receipt) => self.audit.ack(receipt),
+                Err(oteryn_gameplay_durability::durability::DurabilityError::RootUnavailable)
+                    if Instant::now() < retry_deadline =>
+                {
+                    let now = Instant::now();
+                    root.wait_holder_retry(
+                        now + Duration::from_millis(2),
+                        (now + Duration::from_millis(50)).min(retry_deadline),
+                    )
+                    .await;
+                    continue;
+                }
                 Err(_) => Err(Error::Unavailable),
             };
             if committed.is_err() {
