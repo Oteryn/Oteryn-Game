@@ -347,17 +347,18 @@ fn invalid_dependency_graphs_are_refused_before_any_native_binding() {
 }
 
 #[test]
-fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal() {
+fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal()
+-> Result<(), Box<dyn std::error::Error>> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../../content/creatures/definitions/spell-native-profiles.json");
     let document: crate::content::native_gameplay::CreatureProfilesDocument =
-        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        serde_json::from_slice(&std::fs::read(path)?)?;
     let row = document
         .records
         .iter()
         .find(|row| row.profile.target.key == "oteryn:creature.fugue")
-        .expect("production Fugue body");
-    let closure = row.attack_definitions.as_ref().expect("Fugue closure");
+        .ok_or("production Fugue body")?;
+    let closure = row.attack_definitions.as_ref().ok_or("Fugue closure")?;
     let creature = &row.profile.target;
     crate::creature_auto_attack::MeleeSource::from_native(
         creature,
@@ -366,7 +367,7 @@ fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal() {
         &closure.profiles,
         [1; 32],
     )
-    .expect("Fugue source melee");
+    .map_err(|error| format!("Fugue source melee: {error:?}"))?;
     for index in 1..3 {
         crate::creature_damage_spell::SpellSource::from_native(
             creature,
@@ -375,7 +376,7 @@ fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal() {
             &closure.profiles,
             [1; 32],
         )
-        .expect("Fugue source spell");
+        .map_err(|error| format!("Fugue source spell: {error:?}"))?;
     }
     let heal = crate::self_heal_qualification::QualifiedSelfHealRules::qualify_native_parts(
         &closure.records,
@@ -383,7 +384,7 @@ fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal() {
         &creature.key,
         "oteryn:ability.creature.fugue.defense-1",
     )
-    .expect("Fugue source healing");
+    .map_err(|error| format!("Fugue source healing: {error:?}"))?;
     assert_eq!(heal.magnitude_range(), (200, 650));
     assert_eq!(heal.source_schedule(), (2000, 200000));
     let mut detached = closure.records.clone();
@@ -402,4 +403,5 @@ fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal() {
         )
         .is_err()
     );
+    Ok(())
 }

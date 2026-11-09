@@ -159,7 +159,6 @@ fn run_compile(
 /// the World-scoped form of `cargo_inputs`; the lane still runs on any change to them.
 const INPUT_PATHS: &[&str] = &[
     "content/world/",
-    "content/encounters/source-static-definitions.json",
     "content/cyclopedia/",
     "content/encounters/world-changes/layers.json",
     "content/encounters/world-changes/runtime.json",

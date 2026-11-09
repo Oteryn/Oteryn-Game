@@ -29,7 +29,7 @@ class ActivityStaticTests(unittest.TestCase):
         anomaly=json.loads((ROOT/'content/encounters/callback-anomaly/source-room.json').read_bytes())
         self.assertTrue(any(p['server_item_id']==23049 for p in anomaly['item_policies']))
         missing.add(23049)
-        registry = json.loads((ROOT / 'content/encounters/source-static-definitions.json').read_bytes())
+        registry = json.loads((ROOT / 'content/world/source-static-definitions.json').read_bytes())
         missing.add(33276)
         self.assertEqual({row['source_item_id'] for row in registry['records']}, missing)
         self.assertEqual(len(missing), 238)
@@ -40,7 +40,7 @@ class ActivityStaticTests(unittest.TestCase):
             self.assertIsNone(row['policy']['dynamic_kind'])
 
     def test_ebb_source_decoration_keeps_one_exact_canonical_object_body(self):
-        registry=json.loads((ROOT/'content/encounters/source-static-definitions.json').read_bytes())
+        registry=json.loads((ROOT/'content/world/source-static-definitions.json').read_bytes())
         row=next((r for r in registry['records'] if r['source_item_id']==33276),None)
         self.assertIsNotNone(row,'actual three Ebb maps require pinned static33276 facts')
         self.assertEqual(row['identity']['family'],'WorldObject')
@@ -52,13 +52,13 @@ class ActivityStaticTests(unittest.TestCase):
         self.assertEqual(actual,[row['catalogue_record']],'publish exactly one canonical source body, never a duplicate')
 
     def test_anomaly_restore_has_one_exact_canonical_terrain_body(self):
-        registry=json.loads((ROOT/'content/encounters/source-static-definitions.json').read_bytes())
+        registry=json.loads((ROOT/'content/world/source-static-definitions.json').read_bytes())
         expected=next(r['catalogue_record'] for r in registry['records'] if r['source_item_id']==23049)
         actual=[r for p in (ROOT/'content/world/terrain').glob('terrain-*.json') for r in json.loads(p.read_bytes()).get('records',[]) if r['identity']['key']==expected['identity']['key']]
         self.assertEqual(actual,[expected],'source registry must have one canonical exact body, not an appended duplicate')
 
     def test_anomaly_restore_ground_is_sealed_source_surface(self):
-        registry=json.loads((ROOT/'content/encounters/source-static-definitions.json').read_bytes())
+        registry=json.loads((ROOT/'content/world/source-static-definitions.json').read_bytes())
         record=next((r for r in registry['records'] if r['source_item_id']==23049),None)
         self.assertIsNotNone(record,'actual Anomaly restore target must have pinned source terrain facts')
         self.assertEqual(record['identity']['family'],'Terrain')
@@ -71,7 +71,7 @@ class ActivityStaticTests(unittest.TestCase):
         target = next((tile for tile in capture['tiles'] if tile['source_position'] == [34001,31820,15]), None)
         self.assertIsNotNone(target, 'source34111 Teleport arrival must be a genuine captured OTBM tile')
         self.assertEqual([item['server_item_id'] for item in target['items']], [36344,42671])
-        registry = json.loads((ROOT / 'content/encounters/source-static-definitions.json').read_bytes())
+        registry = json.loads((ROOT / 'content/world/source-static-definitions.json').read_bytes())
         record = next(row for row in registry['records'] if row['source_item_id'] == 42671)
         self.assertEqual(record['identity']['family'], 'WorldObject')
         self.assertNotIn('item_pointer', record['catalogue_record']['provenance'])

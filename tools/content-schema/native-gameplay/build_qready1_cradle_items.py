@@ -55,11 +55,12 @@ def build(root=ROOT):
     evidence = []
     for item_id, (title, weight) in ITEMS.items():
         obj = objects[item_id]
-        facts = [row for row in stats[str(item_id)]["observations"] if row["wiki_title"] == title]
+        stats_key = f"oteryn:item.tibia.i{item_id}"
+        facts = [row for row in stats[stats_key]["observations"] if row["wiki_title"] == title]
         if len(facts) != 1:
             raise ValueError("CRADLE_AMBIGUOUS_WIKI_FACT")
         fact = facts[0]
-        if stats[str(item_id)]["item_id"] != item_id:
+        if stats[stats_key]["item_id"] != item_id:
             raise ValueError("CRADLE_WIKI_ITEM_ID_DRIFT")
         if obj["name"].casefold() != title.casefold() or fact["fields"]["weight"] != weight:
             raise ValueError("CRADLE_NAMED_FACT_DRIFT")

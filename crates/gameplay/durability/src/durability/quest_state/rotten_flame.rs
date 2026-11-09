@@ -532,11 +532,7 @@ pub(super) async fn admit(
         .bind(fence.character_id.as_bytes().as_slice()).bind(source.storage).fetch_optional(&mut ***tx).await?;
     if value.unwrap_or(0) < 1 {
         let _ = input.no_change.set(FlameNoChange::NoEssence);
-        #[cfg(any(test, feature = "test-support"))]
-        eprintln!(
-            "SRX3_FLAME_SOURCE_NO_ESSENCE_REACHED flavor={}",
-            input.flavor
-        );
+
         return Ok(false);
     }
     lock_global_phase(
@@ -557,13 +553,6 @@ pub(super) async fn admit(
         .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
         .bind(input.generation.get().to_string()).bind(input.context.reset_epoch.to_string()).bind(input.activation.to_string())
         .bind(i16::from(input.flavor)).fetch_one(&mut ***tx).await?;
-    #[cfg(any(test, feature = "test-support"))]
-    if active {
-        eprintln!(
-            "SRX3_FLAME_SOURCE_ALREADY_GLOBAL_REACHED flavor={}",
-            input.flavor
-        );
-    }
     if active {
         let _ = input.no_change.set(FlameNoChange::AlreadyActive);
     }

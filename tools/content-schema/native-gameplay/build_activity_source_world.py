@@ -289,7 +289,7 @@ def build(directory, name, inputs=None, extracted=None):
                  "external_id": str(item), "target": {
                      "family": "Item", "key": f"oteryn:item.tibia.i{item}",
                      "revision": "definition-r1"}} for item in sorted(ids)]
-    static_path = ROOT / "content/encounters/source-static-definitions.json"
+    static_path = ROOT / "content/world/source-static-definitions.json"
     static = {row["source_item_id"]: row for row in json.loads(static_path.read_bytes())["records"]}
     native_keys = {row[0] for row in json.loads((ROOT / "tools/content-schema/native-gameplay/item-keys.json").read_bytes())["records"]}
     missing_definitions = []

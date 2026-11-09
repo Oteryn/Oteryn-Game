@@ -9,7 +9,10 @@ pub(crate) mod embedded;
 pub mod hits;
 mod imported_recipe;
 mod occurrence;
-pub use occurrence::Occurrence;
+pub use occurrence::{
+    Occurrence, PersonalEventProfile, counter_canonical_quest, counter_helper_quest,
+    personal_event_offered, personal_event_profile,
+};
 mod npc_keys;
 pub use npc_keys::native_dialogue_npcs;
 pub mod kills;

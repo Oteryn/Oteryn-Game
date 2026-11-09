@@ -25,7 +25,6 @@ from lower_item_consumption_packet import items_xml_lines
 sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
 from reward_claim_authoring import item_ref
 from digging import append_rows, map_facts
-from tainted_souls import row as tainted_souls_row
 
 FAMILY = "item_conversion"
 DIRECTORY = "content/craft/"
@@ -187,13 +186,6 @@ def build():
     row("corpse-mechanical", "mechanical_fishing", (1, 36), 9306,
         {"kind": "map_item", "definition": item(9582)}, [operand("USED", 9306, "KEEP")],
         weighted(entries), tool="rod", target_effect={"effect": "RETIRE"})
-    target = operand("TARGET", 10297, "TRANSFORM_TO", output=22008)
-    target["capture_target_stack"] = True
-    row("tainted-antler-talisman", "tainted_star_herb", (8, 14), 3736,
-        {"kind": "carried"}, [operand("USED", 3736, "CONSUME"), target], fixed())
-    recipes[-1]["recipe"]["source"]["differences"].append(
-        "M22 captures the whole antlers object; admitted 15.30 appearances prove the output is one nonstacking talisman. "
-        "Canary game.cpp transformItem lines 3401-3538 transforms one target object; no per-unit crafting loop is substituted.")
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
     import tainted_souls
     recipes.append(tainted_souls.row(item, operand, fixed, MESSAGES))

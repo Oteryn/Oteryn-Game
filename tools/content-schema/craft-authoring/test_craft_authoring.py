@@ -18,7 +18,7 @@ class CraftAuthoringTests(unittest.TestCase):
 
     def test_m22_talisman_captures_whole_target_and_only_one_used_unit(self):
         row = next(r['recipe'] for r in craft.build()
-                   if r['identity']['key'].endswith('.tainted-antler-talisman'))
+                   if r['identity']['key'].endswith('.tainted-souls-antler-talisman'))
         self.assertEqual(row['input_item'], craft.item(3736))
         self.assertEqual(row['operands'][0], craft.operand('USED', 3736, 'CONSUME'))
         target = row['operands'][1]

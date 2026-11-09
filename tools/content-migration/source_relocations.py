@@ -17,6 +17,15 @@ from pathlib import Path
 
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
+    # QMINT3 offline re-key: 10 newly admitted Item IDs gained canonical keys.
+    # All 13,826 observations are byte-equivalent by item_id; no source facts changed.
+    (
+        "imports/tibiawiki/facts/items-stats.json",
+        "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae",
+    ): (
+        "imports/tibiawiki/facts/items-stats.json",
+        "4dd7557ba437421396835dafe7dde3eabfa64ae4d3d797fa3f0f05155f797705",
+    ),
     # ADR-0019 stage 1 carve: the Item identity module moved into the gameplay content
     # crate. Only its two include_bytes! prefixes gained one `../`; the explicit
     # APPEARANCE_ONLY_ITEM_IDS cohort the pins guard is unchanged. DUP-GUARD-1 later

@@ -344,6 +344,11 @@ pub struct CurrentMonsterMap<'a, 'db> {
     source_observed_seconds: Option<u64>,
 }
 impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
+    /// The qualified room already bound to this map and transaction.
+    pub fn room(&self) -> &'a QualifiedNativeEntryRoom {
+        self.room
+    }
+
     pub fn new(
         tx: &'a mut sqlx::Transaction<'db, sqlx::Postgres>,
         authority: &'a SpellItemScopeAuthority,

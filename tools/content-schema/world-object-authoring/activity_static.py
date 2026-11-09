@@ -18,7 +18,7 @@ OFFICIAL_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2
 PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
 SHARDS = {'Terrain': 'content/world/terrain/terrain-08669-08720.json',
           'WorldObject': 'content/world/objects/objects-12932-13108.json'}
-REGISTRY = 'content/encounters/source-static-definitions.json'
+REGISTRY = 'content/world/source-static-definitions.json'
 NOTE = ' Additionally SRX-3 pinned activity static geometry: 61 Terrain and 177 WorldObject records; no Item aliases.'
 
 def encode(value):
@@ -210,6 +210,11 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__); parser.add_argument('--check',action='store_true'); args=parser.parse_args()
     planned=outputs()
     if not args.check:
+        previous_registry = ROOT / 'content/encounters/source-static-definitions.json'
+        if previous_registry.exists():
+            if previous_registry.read_bytes() != planned[REGISTRY]:
+                raise ValueError('refusing to replace changed activity static registry')
+            previous_registry.unlink()
         previous_terrain=ROOT/'content/world/terrain/terrain-08614-08650.json'
         if not previous_terrain.exists():
             previous_terrain=ROOT/'content/world/terrain/terrain-08614-08651.json'

@@ -42,6 +42,7 @@
     "crates/gameplay/dispatch/build_mechanics.rs:138"
   ],
   "crates/gameplay/durability": [
+    "crates/gameplay/durability/build.rs:4",
     "crates/gameplay/durability/src/durability/character_equipment.rs:195",
     "crates/gameplay/durability/src/durability/character_equipment.rs:197",
     "crates/gameplay/durability/src/durability/character_equipment.rs:202",
@@ -70,6 +71,8 @@
     "crates/gameplay/native-admission-source/src/world_event_outcomes/publisher.rs:293"
   ],
   "crates/gameplay/quests": [
+    "crates/gameplay/quests/build_authored_bindings.rs:16",
+    "crates/gameplay/quests/build_authored_bindings.rs:88",
     "crates/gameplay/quests/build_batch3_a.rs:26",
     "crates/gameplay/quests/build_batch3_a.rs:27",
     "crates/gameplay/quests/build_batch3_a.rs:33",

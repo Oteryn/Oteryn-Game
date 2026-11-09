@@ -177,11 +177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
-        #[cfg(any(test, feature = "test-support"))]
-        eprintln!(
-            "SRX3_HATRED_QUALIFIED_PAD_EXTRA_REACHED ordinal={}",
-            pad.pad_ordinal()
-        );
+
         // Neutral until the actual SQL-qualified native pad/reset regression.
         Err(())
     }

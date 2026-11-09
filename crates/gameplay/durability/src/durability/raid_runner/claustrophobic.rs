@@ -95,7 +95,7 @@ impl DurabilityRoot {
             let Some((raid,state,steps))=locked_state(&mut tx,&node,firing,channel,generation).await? else{commit_semantic_transaction(tx,deadline).await?;return Ok(None)};
             let retained:Option<String>=sqlx::query_scalar("SELECT source_cue::text FROM game_world_raid_effects WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND step_ordinal=$3 AND action_kind=5 AND state=1 FOR UPDATE")
                 .bind(firing.as_slice()).bind(channel.as_bytes().as_slice()).bind(i32::try_from(steps).map_err(|_|DurabilityError::InvalidStoredState)?).fetch_optional(&mut *tx).await?;
-            let event=if let Some(body)=retained {
+            let event = if let Some(body)=retained {
                 let event:PreparedEvent=serde_json::from_str(&body).map_err(|_|DurabilityError::InvalidStoredState)?;
                 if event.raid()!=raid || !event.source_valid() || state.prepare(now)!=Some(event){return Err(DurabilityError::InvalidStoredState)}
                 event

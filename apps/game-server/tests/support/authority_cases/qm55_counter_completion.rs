@@ -64,6 +64,18 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 world_change: Some("deeplings".into()),
             }],
         )
+        .map_err(f::debug)?
+        .with_quest(
+            vec![],
+            vec![QuestTransition {
+                key: "oteryn:quest-transition/qm55/canonical-deepling-declaration".into(),
+                quest: "oteryn:quest.deeplings_worldchange".into(),
+                effects: vec![],
+                completes: true,
+                experience: None,
+                world_change: None,
+            }],
+        )
         .map_err(f::debug)?,
     );
     let seal = h.recovery.seal_current().map_err(f::debug)?;

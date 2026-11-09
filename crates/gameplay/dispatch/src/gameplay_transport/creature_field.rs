@@ -14,7 +14,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &mut crate::movement::monster_map::CurrentMonsterMap<'_, '_>,
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
-        room: &crate::content::QualifiedNativeEntryRoom,
         native: &crate::content::native_gameplay::NativeGameplayState,
         now: u64,
         native_health_names: &super::source_names::NativeHealthNamesData,
@@ -150,6 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             plans.push((visible.actor, entry, facts));
         }
         if let Some(active) = self.active_generation {
+            let room = map.room();
             let (tx, authority) = map.scope_transaction();
             super::soul_war_callbacks::player_source::publish_condition_sources(
                 tx,

@@ -562,6 +562,29 @@ pub fn extend(catalogue: super::QuestStateCatalogue) -> Result<super::QuestState
             world_change: None,
         },
     );
+    // A completion-only canonical declaration supplies the alias's real pin.
+    // Orockle's absent donor mission remains unavailable to fresh ingress.
+    let canonical = super::authored_bindings::counter_canonical_quest(HIVE_QUEST)
+        .ok_or("missing canonical Hive identity")?;
+    if !catalogue.hashes.contains_key(canonical) {
+        let key = "oteryn:quest-transition/counter-canonical/hive-born";
+        if transitions
+            .insert(
+                key.into(),
+                QuestTransition {
+                    key: key.into(),
+                    quest: canonical.into(),
+                    effects: vec![],
+                    completes: true,
+                    experience: None,
+                    world_change: Some("hive_born".into()),
+                },
+            )
+            .is_some()
+        {
+            return Err("duplicate canonical Hive completion declaration".into());
+        }
+    }
     super::QuestStateCatalogue::new(
         catalogue.content_revision,
         tracks.into_values().collect(),

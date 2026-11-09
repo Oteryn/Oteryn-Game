@@ -466,6 +466,14 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
     Ok(callbacks)
 }
 
+/// NPC offer selection excludes donor-unavailable missions. Raw callbacks remain
+/// available to immutable receipt reconciliation and catalogue validation.
+pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
+    let mut callbacks = load_for(catalogue)?;
+    callbacks.retain(super::authored_bindings::personal_event_offered);
+    Ok(callbacks)
+}
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
     embedded_document().map(|document| document.callbacks)
 }

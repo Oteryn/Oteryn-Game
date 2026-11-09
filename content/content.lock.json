@@ -23,7 +23,6 @@
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
-    "Encounter.Raid": 240,
     "Formula": 6129,
     "Item": 34121,
     "Loot": 1292,
@@ -39,7 +38,7 @@
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
-    "item_conversion": 131
+    "item_conversion": 130
   },
   "item_authoring_counts": {
     "authoring": 700,
@@ -71,7 +70,7 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
+        "sha256": "096f2d8b18dba8adeeeebb84cfc8d6caf2843114b3745edf84005c70908594f8"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
@@ -79,7 +78,7 @@
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "0719ce5030c6fe0fae69b329b3304a8c282824be9e475e01cbfccba77c96bb53"
+        "sha256": "cead4da90b7920754734861ee528db29085da9279282274949e6372ca378cdce"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",

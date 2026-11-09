@@ -34,12 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(ActivityRefusal::ContentUnavailable)?;
         active
             .qualify_outburst_activity_template(room, revision)
-            .map_err(|error| {
-                let _ = &error;
-                #[cfg(any(test, feature = "test-support"))]
-                eprintln!("SRX3_OUTBURST_SOURCE_TEMPLATE_REFUSED {error:?}");
-                ActivityRefusal::ContentUnavailable
-            })
+            .map_err(|_| ActivityRefusal::ContentUnavailable)
     }
 
     pub(super) async fn prepare_outburst_catalogue(

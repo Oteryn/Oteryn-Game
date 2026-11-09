@@ -98,7 +98,7 @@ fn records() -> Option<&'static BTreeMap<String, StaticSurfaceFacts>> {
     RECORDS
         .get_or_init(|| {
             parse_records(include_bytes!(
-                "../../../../../content/encounters/source-static-definitions.json"
+                "../../../../../content/world/source-static-definitions.json"
             ))
         })
         .as_ref()
@@ -127,7 +127,7 @@ pub fn static_surface_definition_id(key: &str) -> Option<u32> {
     static IDS: OnceLock<Option<BTreeMap<String, u32>>> = OnceLock::new();
     IDS.get_or_init(|| {
         let registry: Registry = serde_json::from_slice(include_bytes!(
-            "../../../../../content/encounters/source-static-definitions.json"
+            "../../../../../content/world/source-static-definitions.json"
         ))
         .ok()?;
         if !registry
@@ -154,8 +154,7 @@ mod tests {
     use super::*;
     #[test]
     fn m25_static_cohort_requires_exact_source_packet_without_item_aliases() -> Result<(), String> {
-        let bytes =
-            include_bytes!("../../../../../content/encounters/source-static-definitions.json");
+        let bytes = include_bytes!("../../../../../content/world/source-static-definitions.json");
         let facts = parse_records(bytes).ok_or("qualified complete static source packet")?;
         assert_eq!(facts.len(), 238);
         let cohort: Vec<_> = facts

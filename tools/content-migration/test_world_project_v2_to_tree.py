@@ -167,17 +167,18 @@ apply_reference(reference['records'], ROOT)
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1_864
-# The two accepted M22 source handlers extend the frozen129 conversion cohort.
+# One Crystal 201189f8 star-herb handler extends the frozen129 conversion cohort.
+# The alternate tainted-antler key was a duplicate of the same whole-stack transform.
 conversion_keys = {row['identity']['key'] for row in
                    json.loads((ROOT / 'content/craft/recipes.json').read_bytes())['records']}
-assert {'oteryn:item-conversion.tainted-antler-talisman',
-        'oteryn:item-conversion.tainted-souls-antler-talisman'} <= conversion_keys
+assert 'oteryn:item-conversion.tainted-souls-antler-talisman' in conversion_keys
+assert 'oteryn:item-conversion.tainted-antler-talisman' not in conversion_keys
 assert lock["family_counts"] == {
     "Item": len(expected_items), "Mount": 252,  # Exact source-qualified extensions above.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10, "Encounter": 108, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 131,
+    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 130,
     **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_864, "Encounter": 108, "NPC": 2747}

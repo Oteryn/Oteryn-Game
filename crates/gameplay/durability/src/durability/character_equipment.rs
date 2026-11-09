@@ -195,24 +195,6 @@ fn admission_equipment_unavailable(
     _stage: &'static str,
     _error: EquipmentError,
 ) -> DurabilityError {
-    #[cfg(any(test, feature = "test-support"))]
-    if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
-        match &_error {
-            EquipmentError::Rejected(reason) => {
-                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} rejected={reason}")
-            }
-            EquipmentError::Database(sqlx::Error::Database(error)) => eprintln!(
-                "SEAM_EVIDENCE equipment_owner stage={_stage} sqlstate={}",
-                error.code().as_deref().unwrap_or("unknown")
-            ),
-            EquipmentError::Durability(error) => {
-                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} durability={error:?}")
-            }
-            EquipmentError::Database(_) => {
-                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} database=non_server_error")
-            }
-        }
-    }
     DurabilityError::Unavailable
 }
 fn uuid(text: String) -> Result<[u8; 16]> {

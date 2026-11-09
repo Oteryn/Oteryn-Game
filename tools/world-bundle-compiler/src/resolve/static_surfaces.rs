@@ -17,8 +17,7 @@ fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
     static RECORDS: OnceLock<Option<BTreeMap<String, (Value, StaticSurface)>>> = OnceLock::new();
     RECORDS
         .get_or_init(|| {
-            let bytes =
-                include_bytes!("../../../../content/encounters/source-static-definitions.json");
+            let bytes = include_bytes!("../../../../content/world/source-static-definitions.json");
             if Sha256::digest(bytes)
                 .iter()
                 .map(|byte| format!("{byte:02x}"))

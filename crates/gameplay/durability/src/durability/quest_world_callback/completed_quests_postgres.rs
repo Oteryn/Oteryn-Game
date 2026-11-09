@@ -8,7 +8,6 @@ fn m01b_completed_quests_postgres_requires_own_completion_and_locks_it() -> pg::
     let Some(admin) = pg::configured_admin() else {
         return Ok(());
     };
-    let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -24,19 +23,15 @@ fn m01b_completed_quests_postgres_requires_own_completion_and_locks_it() -> pg::
         })?
         .join()
         .map_err(|_| "completion PG worker panicked")?;
-    eprintln!(
-        "POSTGRES_CASE_COMPLETED m01b_completed_quests duration={:?} success={}",
-        started.elapsed(),
-        result.is_ok()
-    );
+
     result.map_err(Into::into)
 }
 
 async fn exercise(h: &pg::Harness) -> pg::TestResult {
-    let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+    let _version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&h.pool)
         .await?;
-    eprintln!("POSTGRES_DATABASE_READY m01b_completed_quests version={version}");
+
     let fence = pg::fence(2)?;
     let keys = vec![QUEST.to_string()];
     let mut tx = h.pool.begin().await?;

@@ -413,11 +413,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .consume_report(runtime, table, native, actor, report, reader, now);
                             if wave_enabled && !report.over_budget && bloodjaw_targeting::retarget(runtime, table,
                                 actor, bloodjaw_players.as_deref(), now).is_err() {
-                                eprintln!("oteryn-game-server event=bloodjaw_target_refused current_owner=true");
+                                oteryn_error_codes::emit("oteryn-game-server", &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "gameplay_transport", "bloodjaw_target_refused").field("current_owner", oteryn_error_codes::FieldValue::Token("true")));
                             }
                             if wave_enabled && waves.consume(runtime, table, native, actor, report,
                                 reader.map.view(), room, &wave_taints, now).is_err() {
-                                eprintln!("oteryn-game-server event=rotten_wave_refused current_owner=true");
+                                oteryn_error_codes::emit("oteryn-game-server", &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "gameplay_transport", "rotten_wave_refused").field("current_owner", oteryn_error_codes::FieldValue::Token("true")));
                             }
                         },
                     )
@@ -449,7 +449,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
                 owner
-                    .tick_creature_fields(&mut map, runtime, states, room, native, now, native_health_names)
+                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
                     .await?;
                 if !map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);

@@ -26,4 +26,3 @@ BEGIN
     IF position=0 THEN RAISE EXCEPTION 'missing NPC sibling participant insertion point'; END IF;
     EXECUTE overlay(definition placing participant from position for 0);
 END $migration$;
-

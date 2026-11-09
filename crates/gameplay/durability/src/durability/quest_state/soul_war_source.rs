@@ -105,14 +105,6 @@ impl DurabilityRoot {
         )>,
     ) -> Result<QuestTransitionOutcome> {
         let request = input.request(&fence)?;
-        #[cfg(any(test, feature = "test-support"))]
-        if let SoulWarSourceAction::Use(actual) = &input {
-            eprintln!(
-                "SRX3_SOUL_WAR_PAIRED_WRITER_REACHED kind={:?} accepted={}",
-                actual.target.source_use(),
-                actual.target.target_accepted()
-            );
-        }
 
         self.commit_quest_inner::<_, 0>(
             authority,

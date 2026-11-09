@@ -5,7 +5,7 @@ Item definition. All 162 are immovable, non-pickupable static source surfaces in
 pinned Crystal map. They are published as 38 ground Terrain definitions and 123
 WorldObject definitions. No Item alias, inventory reference, MINT cause or pickup
 right is created. The closed census and exact source policies are in
-`content/encounters/source-static-definitions.json`.
+`content/world/source-static-definitions.json`.
 
 The source is Crystal `201189f871d23597b82caf88fd611454a2ddefb8`:
 `data-global/world/world.otbm`, `data/items/appearances.dat` and

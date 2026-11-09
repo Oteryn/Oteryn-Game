@@ -17,6 +17,13 @@ class TaintedSouls(unittest.TestCase):
         rows = [row for row in craft.build() if row['identity']['key'] == source.KEY]
         self.assertEqual(len(rows), 1, 'the qualified transform must be playable, not only a source packet')
         self.assertEqual(rows[0], source.row(craft.item, craft.operand, craft.fixed, craft.MESSAGES))
+        # Crystal 201189f8 registers one Star Herb -> Antlers handler. Alternate
+        # identity keys must not publish a second recipe for the same operands.
+        matching = [row for row in craft.build()
+                    if row['recipe']['input_item'] == craft.item(3736)
+                    and any(operand['item_id'] == craft.item(10297)
+                            for operand in row['recipe']['operands'])]
+        self.assertEqual(matching, rows)
 
     def test_schema_accepts_only_explicit_target_capture(self):
         schema = json.loads(Path(craft.__file__).with_name('schema.json').read_bytes())

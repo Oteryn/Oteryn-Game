@@ -169,12 +169,7 @@ pub async fn read_prepared_source_player_names_in_transaction(
     .bind(names)
     .fetch_all(&mut **tx)
     .await?;
-    #[cfg(any(test, feature = "test-support"))]
-    eprintln!(
-        "SRX3_SOURCE_NAMES_FIXED_SQL_QUERY_EXECUTED captured={} rows={}",
-        plan.entries.len(),
-        rows.len()
-    );
+
     let mut result = Vec::with_capacity(rows.len());
     for entry in &plan.entries {
         let (actor, session, character) = (entry.actor, entry.session, entry.character);

@@ -38,10 +38,6 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
-    "Encounter.Raid": {
-      "index": "content/encounters/raids/index.json",
-      "records": 240
-    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6129
@@ -104,7 +100,7 @@
     },
     "item_conversion": {
       "index": "content/craft/index.json",
-      "records": 131
+      "records": 130
     }
   },
   "managed_files": [
@@ -371,15 +367,6 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
-    },
-    {
-      "path": "content/encounters/raids/catalogue.json"
-    },
-    {
-      "path": "content/encounters/raids/evidence-00000-00121.json"
-    },
-    {
-      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/engclaim-native.json"
@@ -731,9 +718,6 @@
     },
     {
       "path": "content/quests/definitions/quests-00300-00351.json"
-    },
-    {
-      "path": "content/quests/native-reward-callbacks/engclaim.json"
     },
     {
       "path": "content/services/bank/bank-00000-00001.json"
