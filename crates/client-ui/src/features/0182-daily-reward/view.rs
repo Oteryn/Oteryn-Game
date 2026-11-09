@@ -18,6 +18,22 @@ pub fn panel_text(panel: &DailyRewardPanel) -> String {
                 tr!("not available")
             }
         ));
+        // Presentation of the existing DAILY30B rule; the server alone rolls
+        // and awards XP (gameplay/progression/src/daily_reward.rs).
+        let chance = match w.streak {
+            0..=7 => w.streak as u8,
+            8..=13 => 7,
+            14..=20 => 8,
+            21..=27 => 9,
+            _ => 10,
+        };
+        text.push_str(&lfmt!(
+            "Weapon proficiency XP: {}% chance to gain double XP\n",
+            chance
+        ));
+        text.push_str(tr!(
+            "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n"
+        ));
         text.push_str(tr!("30-day calendar\n"));
         for day in 1..=30 {
             let state = if day == w.lane_day {

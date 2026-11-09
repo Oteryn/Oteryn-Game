@@ -326,5 +326,7 @@
  "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nRevision: {content_revision}\nVald svårighetsgrad: {selected_difficulty}\nPersonligt rekord: {personal_highest}\nUpplåst svårighetsgrad: {unlocked_max} / {maximum_difficulty}",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nPersonligt rekord: {personal_highest}\nUpplåst svårighetsgrad: {unlocked_max} / {maximum_difficulty}\n",
  "Enter a difficulty from 0 to 28": "Ange en svårighetsgrad från 0 till 28",
- "Phosphorus Record": "Phosphorusrekord"
+ "Phosphorus Record": "Phosphorusrekord",
+ "Weapon proficiency XP: {}% chance to gain double XP\n": "Vapenfärdighets-XP: {}% chans att få dubbel XP\n",
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Varje giltig tilldelning av vapenfärdighets-XP kan fördubblas. Chansen följer den senast uppdaterade sviten: 1% per dag upp till 7%; 8% vid 14, 9% vid 21, 10% vid 28 (maximum). Uppdatera efter uthämtning för att se den nya bonusen.\n"
 }

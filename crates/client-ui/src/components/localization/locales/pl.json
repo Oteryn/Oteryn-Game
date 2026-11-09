@@ -326,5 +326,7 @@
  "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nWersja: {content_revision}\nWybrany poziom trudności: {selected_difficulty}\nRekord postaci: {personal_highest}\nOdblokowana trudność: {unlocked_max} / {maximum_difficulty}",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nRekord postaci: {personal_highest}\nOdblokowana trudność: {unlocked_max} / {maximum_difficulty}\n",
  "Enter a difficulty from 0 to 28": "Podaj poziom trudności od 0 do 28",
- "Phosphorus Record": "Rekord Phosphorusa"
+ "Phosphorus Record": "Rekord Phosphorusa",
+ "Weapon proficiency XP: {}% chance to gain double XP\n": "PD biegłości broni: {}% szans na podwójne PD\n",
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Każde kwalifikujące się przyznanie PD biegłości broni może zostać podwojone. Szansa zależy od ostatnio odświeżonej serii: 1% za dzień serii do 7%; 8% od 14, 9% od 21, 10% od 28 (maksimum). Odśwież po odebraniu nagrody, aby zaktualizować premię.\n"
 }

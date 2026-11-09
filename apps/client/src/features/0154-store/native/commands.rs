@@ -19,6 +19,11 @@ pub(super) unsafe fn handle(
     let [category, search, sort, offers, name, sex, identity] = fields;
     unsafe {
         for (id, note) in actions {
+            if id == 17 && note == 0 {
+                let tokens = !link.store_panel().catalogue.as_ref().and_then(|p| p.offers.first()).is_some_and(|o| o.currency == "COSMETIC_TOKEN");
+                link.store_payment(tokens);
+                continue;
+            }
             if id == 15 && note == 0 {
                 super::super::open_classic_window(link);
                 continue;

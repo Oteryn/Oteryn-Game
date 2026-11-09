@@ -107,6 +107,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
         session.server_mechanic_selected(154),
         session.feature_selected(450),
     );
+    outbox.store_tokens_initialize(session.server_mechanic_selected(479));
     outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));

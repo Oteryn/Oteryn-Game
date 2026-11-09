@@ -326,5 +326,7 @@
  "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Chefe: {boss_key}\nRevisão: {content_revision}\nDificuldade selecionada: {selected_difficulty}\nRecorde pessoal: {personal_highest}\nDificuldade desbloqueada: {unlocked_max} / {maximum_difficulty}",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nRecorde pessoal: {personal_highest}\nDificuldade desbloqueada: {unlocked_max} / {maximum_difficulty}\n",
  "Enter a difficulty from 0 to 28": "Insira uma dificuldade de 0 a 28",
- "Phosphorus Record": "Recorde de Phosphorus"
+ "Phosphorus Record": "Recorde de Phosphorus",
+ "Weapon proficiency XP: {}% chance to gain double XP\n": "XP de proficiência em armas: {}% de chance de ganhar XP em dobro\n",
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Cada recompensa elegível de XP de proficiência em armas pode ser duplicada. A chance segue a última sequência atualizada: 1% por dia até 7%; 8% aos 14, 9% aos 21, 10% aos 28 (máximo). Atualize após resgatar para ver o novo bônus.\n"
 }
