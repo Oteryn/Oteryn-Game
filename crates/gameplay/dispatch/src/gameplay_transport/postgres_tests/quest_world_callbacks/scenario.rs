@@ -40,7 +40,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = m01b_explore
+    let last_creep = name == "qengine-rewards-m23-last-creep";
+    let native_crop = last_creep || m01b_explore
         || small_ruby
         || mead
         || spirit
@@ -55,7 +56,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m01b_explore {
+    let start = if last_creep {
+        super::super::m23_last_creep::start()
+    } else if m01b_explore {
         Position {
             x: trigger.x + 1,
             ..trigger
@@ -133,7 +136,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_signs || diprath_room {
+    let mut callback = if last_creep {
+        callback("last-creep-native-start")?
+    } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
         callback("ancient-tombs-morguthis-seven-flame-gate")?
@@ -329,7 +334,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m01b_explore {
+        let world = if last_creep {
+            super::super::m23_last_creep::world(generation.native_gameplay().ok_or("Last Creep native")?)?
+        } else if m01b_explore {
             super::super::m01b_explore::world(
                 generation
                     .native_gameplay()

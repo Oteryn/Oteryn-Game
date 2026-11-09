@@ -36,7 +36,8 @@ mod ground_stack;
 mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
-    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
+    EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence, MagicEffect,
+    MountReward, Portal, PortalPair,
 };
 pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
@@ -298,6 +299,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
+    callbacks.extend(super::last_creep_native::callbacks()?);
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including native source callbacks".into());
     }

@@ -115,6 +115,7 @@ def main():
     commands = [
         ['verify_quest_schema.py'],
         ['questpc2_live_eligibility.py', '--check'],
+        ['last_creep_native.py', '--check'],
         ['srvwld_first_dragon.py', '--check'],
         ['soul_war_reconstruction.py', '--check'],
         ['../encounter-authoring/soul_war_crystal_reconstruction.py', '--check'],

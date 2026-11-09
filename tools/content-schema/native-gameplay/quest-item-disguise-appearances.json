@@ -10,5 +10,101 @@
     "canonical_definition_sha256": "07d7f8ce9025ddbf890fceab7cd73661afaf5718e18de8b7e72575a6f5fc4406",
     "appearance_object_sha256": "8f14bc3968741e4d9d2328d770fe2cb08d91cd16871f04254fe0db535bd1afbe",
     "qualification_sha256": "3e10ac21367aacbb8fd7c251a0b64e213ddbf35072b834dfaebf9dfd94368d7a"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12047",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "a46c116780594b970569802354767d1681a3781c9309fbe767243eece7724bad",
+    "appearance_object_sha256": "af5f54664b2a338fefaca54fc5455a343c5a25aaffbf76d37691817cc7ff6e42",
+    "qualification_sha256": "b7b67ddf15f88526c46aac6bcb5189d35a5ab45f74a2b0ec9997714ddd93911f"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12048",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "fff29210d508f71ab5f56961bdf4b2ededed1087cd89d952cd7efc0581d2b8c3",
+    "appearance_object_sha256": "61cac0b6d2c4a66be934e23233fbe7c9d93548eeb6d1abf17fc41f8a986493fe",
+    "qualification_sha256": "6d99b4d351a1c7506bad9fe1d33ec9deb2011122529bb371eea38a8f6c0fa38d"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12049",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "419c1809e276ae6b628211847f99073848ae6e57faca8a4c3dc4bac349747cf4",
+    "appearance_object_sha256": "c68e5e83853dcd0cde9954d96421fc4af2e27a0bd4f16220c8a9fc87d428c125",
+    "qualification_sha256": "5158f14788b9649ffdfeeefc0dcdbbc47d356b8bec2992c638beedf7e419ca26"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12050",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "e4a3e85b89406cbbac81b7063d9277c5e2d359746d44bd68012f570c5c23772f",
+    "appearance_object_sha256": "abc4d318858eb59518fc52c815bab577c590eb5a9e322c977dba444502463420",
+    "qualification_sha256": "485966c965d34f2930bab3381e8e7007d63cf8cd26fca929f83139bd46684866"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12051",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "61afab4eabd2fb84777c38ddb1f7f44db4ce5c83be3662db85a69fa9fd2c966a",
+    "appearance_object_sha256": "c894ffb569ba8f4d1e952620317aa5351710c61da64fc6fc144d3333d586ad13",
+    "qualification_sha256": "30158fc4daf59ae059bd9631c88a702d4cb5fa53581533100f51d190e5689883"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12052",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "684aeb3f966074305f1ae5a5a3f1fa4bdfeba12902cfff57de25986ed1cb1913",
+    "appearance_object_sha256": "e1116b293793e0132d9e7a4388305ad59ab90bd796665c2b2056b62846ad3f14",
+    "qualification_sha256": "b2579b2eb0c9f049b912e838d67ca0d3abc55028ab0c4a6d610e4a3ad6cc9a51"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12053",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "902e16b99ee725924d498bdccef0f83efd00bf94bbe885b87f06f827d74377ae",
+    "appearance_object_sha256": "93e570f1f48d9e8bfcb325eea1dd4bec0ef43d35a085ba8f07b056db77b892df",
+    "qualification_sha256": "33805ab115eddf3c4f8a36c37a1b9042170f31b50bf2e5a48d0690f896241d78"
+  },
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i12056",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "2e030eea291122438a9f2dc1f18fc69c9b9d8148bd5e74ee3d13d2162086ab21",
+    "appearance_object_sha256": "59331c77e9eb57bb8f67112b62adb7310843714f2b23ff39f485b5c114e09d42",
+    "qualification_sha256": "be6898bff6374c750f305c7dbef897bc9b3059b26972903e9e317595fd251550"
   }
 ]

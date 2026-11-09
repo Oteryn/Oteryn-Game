@@ -407,11 +407,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        if let Some(rule) =
-            oteryn_gameplay_quests::quest::item_disguises::rules().and_then(|rules| {
+        if let Some(rules) =
+            oteryn_gameplay_quests::quest::item_disguises::rules().filter(|rules| {
                 rules
                     .iter()
-                    .find(|rule| rule.item == item.definition.production_key)
+                    .any(|rule| rule.item == item.definition.production_key)
             })
         {
             // This source is retained. No quest transition, value grant or receipt is
@@ -459,12 +459,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(catalogue) = self.quest_catalogue.as_ref() else {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
-            let eligible = copy
-                .tracks()
-                .get(&rule.track)
-                .copied()
-                .or_else(|| catalogue.track(&rule.track).map(|track| track.initial))
-                == Some(rule.required);
+            let mut eligible = rules.iter().filter(|rule| {
+                rule.item == item.definition.production_key
+                    && copy
+                        .tracks()
+                        .get(&rule.track)
+                        .copied()
+                        .or_else(|| catalogue.track(&rule.track).map(|track| track.initial))
+                        == Some(rule.required)
+                    && rule
+                        .requires
+                        .iter()
+                        .all(|required| required.holds(catalogue, copy.tracks()))
+            });
+            let rule = eligible.next();
+            if eligible.next().is_some() {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
             if self
                 .current_quest_fence(command.game_session_id)
                 .await
@@ -504,9 +515,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
             // Crystal returns true even outside the quest stage, with no effect.
-            if !eligible {
+            let Some(rule) = rule else {
                 return Ok(Some(outcome(UseDisposition::Committed)));
-            }
+            };
             let Some(map) = self.bundle_map() else {
                 return Err(());
             };
@@ -528,13 +539,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
+            if rule.activation.is_some_and(|required| {
+                required.x != position.x
+                    || required.y != position.y
+                    || required.floor != position.floor
+            }) {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let appearance = format!("oteryn:item.tibia.i{}", rule.appearance);
             if native
                 .item_index()
-                .and_then(|index| index.definition_ref("Item", &rule.item, "definition-r1"))
+                .and_then(|index| index.definition_ref("Item", &appearance, "definition-r1"))
                 .is_none()
                 || native
                     .spell_appearances()
-                    .and_then(|appearances| appearances.for_item(&rule.item, "definition-r1"))
+                    .and_then(|appearances| appearances.for_item(&appearance, "definition-r1"))
                     .is_none()
             {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
@@ -543,7 +562,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::foundation::ConditionDefinition::new_permanent_item_outfit(&rule.key, 1)
                     .and_then(|definition| {
                         definition.with_item_appearance(
-                            &rule.item,
+                            &appearance,
                             "definition-r1",
                             native.source_digest(),
                         )

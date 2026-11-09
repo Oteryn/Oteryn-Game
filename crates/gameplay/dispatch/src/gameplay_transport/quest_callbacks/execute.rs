@@ -598,13 +598,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
                         .with_wheel(self.premium_coordinator)
                 });
-            let reward_admission = if callback.effects.item_reward.is_some() {
+            let condition_proof = if callback.effects.requires_item_disguise.is_some() {
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(current) = states.get(runtime, actor, session) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(proof) = crate::durability::reward_claim_mint::QuestActorConditionProof::read_world_current(
+                    runtime, actor, fence, cause, &callback.key, native, current.owned_conditions(), self.owner_now().get(),
+                ) else { return UseDisposition::Rejected; };
+                Some(proof)
+            } else {
+                None
+            };
+            let reward_admission = if callback.effects.item_reward.is_some()
+                || callback.effects.requires_item_disguise.is_some()
+            {
                 self.active_generation
                     .and_then(|g| g.native_gameplay())
                     .zip(reward_weights.as_ref())
                     .map(|(native, weights)| {
                         crate::durability::reward_claim_mint::QuestRewardAdmission {
-                            actor_conditions: None,
+                            actor_conditions: condition_proof.as_ref(),
                             carried_use: None,
                             creature_use: None,
                             peer_use: None,
@@ -743,6 +759,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     talk_type: 36,
                     text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
                 });
+        }
+        if callback.effects.restore_disguise {
+            let Some(current) = states.get(runtime, actor, session) else {
+                return UseDisposition::Rejected;
+            };
+            let mut next = current.clone();
+            let mut conditions = current.owned_conditions().clone();
+            if conditions.remove_type(crate::domain::condition::ConditionType::Outfit) {
+                if next
+                    .apply_batch_conditions(current.owned_conditions(), &conditions)
+                    .is_err()
+                    || next.advance_batch_revision().is_err()
+                    || !states.commit(runtime, actor, session, next)
+                {
+                    return UseDisposition::Rejected;
+                }
+                states.owner_wake.notify_one();
+            }
         }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {

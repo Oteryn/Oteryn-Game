@@ -66,7 +66,9 @@ def capture_appearances(root, appearances):
     if hashlib.sha256(raw).hexdigest() != expected:
         raise ValueError('QUEST_DISGUISE_APPEARANCE_SOURCE_DRIFT')
     objects = engine_items.load_appearance_objects(raw)
-    ids = {rule['appearance'] for rule in build(root)}
+    import last_creep_native
+    ids = ({rule['appearance'] for rule in build(root)}
+           | {form['appearance'] for form in last_creep_native.build(root=root)['forms']})
     keys = {f'oteryn:item.tibia.i{item}' for item in ids}
     definitions = {}
     for path in json.loads((root / 'content/items/index.json').read_bytes())['shards']:

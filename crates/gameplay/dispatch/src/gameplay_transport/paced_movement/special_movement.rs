@@ -386,9 +386,11 @@ impl ChannelSpellStates {
         // unconditionally, revealing the selected base without changing other families.
         if let Some(rules) = oteryn_gameplay_quests::quest::item_disguises::rules()
             && let Some(rule) = rules.iter().find(|rule| {
-                i32::from(rule.restore.x) == destination.x
-                    && i32::from(rule.restore.y) == destination.y
-                    && -i16::from(rule.restore.floor) == destination.floor
+                rule.restore.is_some_and(|restore| {
+                    i32::from(restore.x) == destination.x
+                        && i32::from(restore.y) == destination.y
+                        && -i16::from(restore.floor) == destination.floor
+                })
             })
             && next.conditions.remove_type(ConditionType::Outfit)
             && let Some(position) = tile_position(destination)

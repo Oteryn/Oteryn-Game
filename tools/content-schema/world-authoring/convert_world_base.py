@@ -1189,6 +1189,9 @@ def build(
 
         access = json.loads((ROOT / quest_access_bindings.CAPTURE).read_bytes())
         quest_startup_bindings.overlay_outputs(out, supplied_by=access["bindings"])
+        import last_creep_arena
+
+        last_creep_arena.overlay_outputs(out, ROOT)
     return out
 
 
@@ -1237,6 +1240,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     replace = summary.get("replace", {})
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
+    authored = summary.get("source", {}).get("last_creep_native", {})
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
@@ -1248,6 +1252,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(rework, "items_added")
         - count(rework, "replaced_items_added")
         - count(drafted, "items_added")
+        - count(authored, "items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")
@@ -1255,7 +1260,8 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         "tiles": totals["tiles"]
         - count(fill, "tiles_added")
         - count(rework, "tiles_added")
-        - count(drafted, "tiles_added"),
+        - count(drafted, "tiles_added")
+        - count(authored, "tiles_added"),
     }
 
 
