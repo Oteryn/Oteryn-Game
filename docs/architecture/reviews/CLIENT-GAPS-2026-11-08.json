@@ -1036,9 +1036,10 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Guest/subowner/door ACL, bid/leave/notice",
-  "status": "PARTIAL",
-  "gap": "Controller i wire są; brak play.json i produkcyjnego wywołania controller::submit (montaż tylko apps/client/tests/gap_house.rs:21).",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Produkcyjny formularz Houses i play.json montują komendy: bid, guest/subowner/door ACL, leave oraz notice/cancel. Zmiany wymagają potwierdzenia, bieżącego katalogu i rewizji ACL z odpowiedzi serwera.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0049-house/play.json:1 + mounted state/input/view; apps/client/src/features/0049-house/view.rs:11 + native form submit to production input; apps/client/src/features/0049-house/input.rs:122 + controller::submit and :136 + command queue; apps/client/src/features/0049-house/tests/play.rs:6 + house_production_queue_and_result_cleanup; apps/client/src/features/0049-house/tests/play.rs:50 + house_changes_require_confirmation_and_current_catalogue; apps/client/src/features/0049-house/tests/play.rs:117 + house_acl_editor_loads_each_server_list_and_saves_its_revision; apps/client/tests/gap_house.rs:24 + gap_house_all_action_selections"
  },
  {
   "id": "T135",
