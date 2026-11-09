@@ -21,6 +21,26 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_volcano_spawn_distance_exception_stays_bounded(self):
+        import questpc_spawn_approaches as spawns
+        key = 'oteryn:spawn.x32072_y32603_z2#0'
+        with mock.patch.dict(spawns.DISTANCES, {key:3}):
+            with self.assertRaisesRegex(ValueError,'declared distance'):
+                spawns.resolve(ROOT,'oteryn:quest.authored.fire_from_the_earth_mini_world_change',
+                               'spawn-approach:' + key)
+
+    def test_fire_earth_survey_uses_the_qualified_volcano_spawn_approach(self):
+        bindings = (('oteryn:quest.authored.fire_from_the_earth_mini_world_change','s1',
+                     'spawn-approach:oteryn:spawn.x32072_y32603_z2#0',
+                     'authored/fire_from_the_earth_mini_world_change'),)
+        with mock.patch.object(explore,'BINDINGS',bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['world_change'],'fire_from_the_earth')
+            self.assertEqual(callback['admission'],{'premium':True})
+            self.assertEqual(callback['selector']['native'], {
+                'position':{'x':32072,'y':32604,'floor':-2},'ordinal':0,'appearance':4401})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_deeplings_navigator_approach_preserves_current_world_and_premium(self):
         bindings = (('oteryn:quest.deeplings_worldchange','s1',
                      'source-approach:deeplings-navigator-hub','chosen-source/deeplings_worldchange'),)

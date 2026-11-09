@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.authored.fire_from_the_earth_mini_world_change', 's1', 'spawn-approach:oteryn:spawn.x32072_y32603_z2#0', 'authored/fire_from_the_earth_mini_world_change'),
     ('oteryn:quest.deeplings_worldchange', 's1', 'source-approach:deeplings-navigator-hub', 'chosen-source/deeplings_worldchange'),
     ('oteryn:quest.lion_trophy_quest', 's1', 'oteryn:area.hunting_place.formorgar_mines', 'chosen-source/lion_trophy_quest'),
     ('oteryn:quest.hero_of_rathleton_quest', 's1', 'npc-approach:oteryn:npc.strange_pipe', 'chosen-source/hero_of_rathleton_quest'),

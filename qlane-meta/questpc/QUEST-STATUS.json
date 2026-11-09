@@ -1114,5 +1114,5 @@
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
-  "m01b_latest_batch": "Lion PG GREEN71.099338698s on ea921c4f6. WIP Deeplings survey wiring:strictClippy5m06s,6profile0.07s,114modules/1203authoringtests/checks/tree/fmt/pins PASS;own nativePG building,NOTyetqualified.33wiredroutes/34stages,32PG-provenroutes/33stages;M01b PARTIAL."
+  "m01b_latest_batch": "Deeplings PG GREEN64.396295735s. WIP FireEarth survey:strictClippy5m15s,6profile0.06s,115modules/1206authoringtests/checks/tree/fmt/pins PASS. OwnnativePG building;NOTqualified.34wiredroutes35stages,33PG-provenroutes34stages;M01b PARTIAL."
 }

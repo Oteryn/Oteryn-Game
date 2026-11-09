@@ -72,6 +72,9 @@ mod lion_trophy;
 #[path = "m01b_explore/deeplings_entry.rs"]
 mod deeplings_entry;
 
+#[path = "m01b_explore/fire_earth_entry.rs"]
+mod fire_earth_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -311,7 +314,10 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 }
 
 pub(super) fn start(name: &str, trigger: Position) -> Position {
-    if name == "m01b/bear-room/s1/entry" {
+    if matches!(
+        name,
+        "m01b/bear-room/s1/entry" | "m01b/fire-from-the-earth-mini-world-change/s1/entry"
+    ) {
         return Position {
             y: trigger.y + 1,
             ..trigger
@@ -348,6 +354,9 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if name == "m01b/fire-from-the-earth-mini-world-change/s1/entry" {
+        return fire_earth_entry::world(native);
     }
     if name == "m01b/deeplings-worldchange/s1/entry" {
         return deeplings_entry::world(native);
@@ -569,6 +578,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/fire-from-the-earth-mini-world-change/s1/entry" {
+        return fire_earth_entry::exercise(owner, admitted, h).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/deeplings-worldchange/s1/entry" {
         return deeplings_entry::exercise(owner, admitted, h).await;
     }
