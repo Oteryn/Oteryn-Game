@@ -308,6 +308,64 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
                 [1, 0],
                 "a new real hit durably records NoOp while first-stage blood exists"
             );
+            let (origin, blood_at, health_before, maximum_health) = {
+                let mut runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let vitals = states
+                    .get(&runtime, player, admitted.game_session_id)
+                    .ok_or("actual blood-step Player HP owner")?
+                    .vitals();
+                let origin = runtime
+                    .read_actor_position(player)
+                    .map_err(debug)?
+                    .position();
+                let blood_at = runtime
+                    .read_actor_position(image)
+                    .map_err(debug)?
+                    .position();
+                // The native creator may retire while its physical blood remains.
+                runtime.remove_encounter_actor(image).map_err(debug)?;
+                (origin, blood_at, vitals.health, vitals.max_health)
+            };
+            use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+            let direction = match (blood_at.x - origin.x, blood_at.y - origin.y) {
+                (1, 0) => StepDirection::East,
+                (-1, 0) => StepDirection::West,
+                (0, 1) => StepDirection::South,
+                (0, -1) => StepDirection::North,
+                _ => return Err("actual blood must remain adjacent for the native STEP".into()),
+            };
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(1))
+                .ok_or("blood-step pacing clock")?;
+            let (step, _) = owner
+                .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
+                .await;
+            assert_eq!(
+                step.disposition,
+                StepDisposition::Moved,
+                "real native STEP enters blood"
+            );
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                assert_eq!(
+                    states
+                        .get(&runtime, player, admitted.game_session_id)
+                        .ok_or("committed blood-step Player HP owner")?
+                        .vitals()
+                        .health,
+                    health_before - maximum_health / 5,
+                    "first-stage blood applies the donor's direct 20% maximum-HP energy loss"
+                );
+            }
+            let live_blood: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i33854' AND i.lifecycle=1")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(
+                live_blood, 0,
+                "the same native STEP consumes its physical blood pool"
+            );
             drop(owner);
             drop(authority);
             drop(seal);

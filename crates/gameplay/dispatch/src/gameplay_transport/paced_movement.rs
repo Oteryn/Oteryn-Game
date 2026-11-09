@@ -196,6 +196,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
         let outcome = if self.bundle_map().is_some()
+            && !origin.is_some_and(|origin| {
+                states.cloak_blood_ingress_needed(
+                    &runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    cardinal,
+                    blocking,
+                )
+            })
             && self
                 .required_capabilities
                 .effective()
@@ -282,6 +293,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 drop(states);
                 drop(runtime);
+                let _ = self.resolve_cloak_blood_steps(&permit).await;
                 self.resolve_rotten_movement_callbacks(&permit).await;
                 super::soul_war_world::committed_step(self, actor, session, origin, snapshot, now)
                     .await;

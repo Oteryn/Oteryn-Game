@@ -42,6 +42,27 @@ the latter also closes the gap after its map-bootstrap preflight. The regression
 passed in 68.409 seconds (execution marker 68.337201316 seconds), preserving the
 entire held attack state, HP, and the one pending event across the SQL failure.
 
-This slice implements pool creation. The donor's separate pool StepIn behavior
-(lines 830–855: Player damage, Cloak healing, and pool consumption) still requires
-its own production composition; the wider W11 row remains PARTIAL.
+The Player StepIn slice uses Crystal mechanics lines 830–855 and
+[Soul War constants](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/quests/soul_war.lua):14,20–24:
+33854/34006/34007 deal 20/15/10% maximum HP. Crystal
+`src/lua/functions/creatures/creature_functions.cpp:591–610` sends the energy
+health change through `combatChangeHealth` with a null attacker. The existing
+direct Lua HP/shield/death owner handles it without another mitigation pass.
+
+Migration 2174 admits only retirement backed by the original scoped native Cloak
+MINT, preserving the source creator, body, scope generation, content, map, frame,
+and physical position. Retained delivery resolves before later lane work. The
+source Item reader supplies the actual destination pools; unrelated Item origins
+are not granted this cause. A sparse cell hint, registered only after a genuine
+MINT, routes environmental entry through that reader even without optional field
+capability 30. The hint grants no Item or HP authority and is removed on consumption
+or an authoritative empty read.
+
+The native Player STEP regression was red in 69.605 seconds (HP stayed 30065
+instead of 24052), then passed in 80.015 seconds (execution marker
+79.945571675 seconds), including physical retirement after the creator disappears.
+Both role grants and a real SQL rejection of a MINT presented as consumption were
+also exercised. No new protocol messages or capability numbers were allocated.
+
+W11 remains PARTIAL: Cloak healing, consumption by other creatures, unrelated
+pool origins, and a native-client play test of this new StepIn slice remain.

@@ -1,6 +1,7 @@
 //! Consume actual committed Cloak HP callbacks before the next native AI turn.
 use super::ComposedFreshAdmission;
 use crate::durability::creature_source_items::CloakBloodCallback;
+pub(super) mod step;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn drain_cloak_blood_events(&self) -> bool {
@@ -52,23 +53,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
             };
-            if let Err(error) = self
+            let created = match self
                 .root
                 .commit_cloak_blood(permit, self.character, self.holder, &callback)
                 .await
             {
-                #[cfg(test)]
-                eprintln!("Cloak physical callback commit: {error:?}");
-                #[cfg(not(test))]
-                let _ = error;
-                return false;
-            }
+                Ok((_, created)) => created,
+                Err(error) => {
+                    #[cfg(test)]
+                    eprintln!("Cloak physical callback commit: {error:?}");
+                    #[cfg(not(test))]
+                    let _ = error;
+                    return false;
+                }
+            };
             self.states.loop_ground.invalidate();
             let mut runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if !callback.current_for(&runtime)
                 || runtime.acknowledge_cloak_blood_event(&event).is_err()
             {
                 return false;
+            }
+            if created {
+                let p = event.position();
+                states.cloak_blood_cells.insert((p.x, p.y, p.floor));
             }
         }
         let empty = self

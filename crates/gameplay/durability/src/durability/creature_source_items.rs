@@ -6,6 +6,8 @@
 )]
 mod cloak_blood;
 pub use cloak_blood::CloakBloodCallback;
+mod cloak_blood_step;
+pub use cloak_blood_step::{CloakBloodPlayerStep, CloakBloodStepReceipt, cloak_blood_percentage};
 mod primal_pod;
 mod scoped_global;
 mod spite_global;

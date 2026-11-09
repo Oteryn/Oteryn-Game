@@ -462,8 +462,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Some(item) = removal {
                         crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,None,None,None).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     }
+                    let blood=read.items().iter().any(|item|crate::durability::creature_source_items::cloak_blood_percentage(&item.definition.production_key).is_some());
+                    if !blood { states.cloak_blood_cells.remove(&(destination.x,destination.y,destination.floor)); }
+                    if blood {
+                        if !source.qualifies_soul_war_callbacks(source.source_digest()) || states.cloak_blood_steps.len()>=32 {return Err(crate::durability::DurabilityError::Unavailable)}
+                        states.cloak_blood_steps.try_reserve(1).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
                     *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    if blood && let Some(Ok((committed,_)))=outcome.as_ref() {
+                        super::super::soul_war_cloak_blood::step::stage(runtime,states,room,source,&read,actor,session,*committed,now_us)?;
+                    }
                     if let Some(mut pending)=player.take() && outcome.as_ref().is_some_and(Result::is_ok) {
                         pending.retain_step_cooldowns(runtime,states);
                         let mut window=permit.open_commit_window(pending,super::player_field::park);

@@ -172,6 +172,9 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_summons: crate::monster_summon::NativeSummonOwner,
     pub(super) soul_war_callbacks: super::soul_war_callbacks::SoulWarCallbacks,
+    pub(super) cloak_blood_steps: Vec<std::sync::Arc<super::soul_war_cloak_blood::step::PendingBloodStep>>,
+    /// Routing hint only; SQL re-proves the actual pool and its source at entry.
+    pub(super) cloak_blood_cells: std::collections::BTreeSet<(i32,i32,i16)>,
     pub(super) spite_global: super::spite_global::SpiteGlobalState,
     pub(super) primal_callbacks: super::primal_callbacks::PrimalCallbacks,
     pub(super) rotten_blood_callbacks: super::rotten_blood_callbacks::RottenBloodCallbacks,
@@ -342,6 +345,8 @@ impl Default for ChannelSpellStates {
             monster_composed: Default::default(),
             monster_summons: Default::default(),
             soul_war_callbacks: Default::default(),
+            cloak_blood_steps: Vec::new(),
+            cloak_blood_cells: Default::default(),
             spite_global: Default::default(),
             primal_callbacks: Default::default(),
             rotten_blood_callbacks: Default::default(),
@@ -1318,6 +1323,57 @@ impl ChannelSpellStates {
             analyser_source,
             false,
             public_cause,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "routing reuses native movement preflight without granting movement or Item authority"
+    )]
+    pub(super) fn cloak_blood_ingress_needed(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: crate::foundation::MovementPositionSnapshot,
+        direction: crate::movement::CardinalStep,
+        blocking: &dyn crate::map::floor::CellBlocker,
+    ) -> bool {
+        !self.cloak_blood_cells.is_empty()
+            && field_step_ingress::destination(
+                runtime, cells, actor, session, origin, direction, blocking,
+            )
+            .is_ok_and(|p| self.cloak_blood_cells.contains(&(p.x, p.y, p.floor)))
+    }
+
+    /// Crystal's blood MoveEvent uses addHealth with ENERGY and a null attacker.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source-qualified direct Lua health loss retains the existing HP/shield/death owner"
+    )]
+    pub(super) fn apply_soul_war_blood_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        if !super::soul_war_callbacks::qualifies_source(runtime, native) {
+            return None;
+        }
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            session,
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Energy,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            true,
+            None,
         )
     }
 

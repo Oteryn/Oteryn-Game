@@ -128,7 +128,7 @@ async fn execute(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     callback: &CloakBloodCallback,
-) -> Result<CreatureGroundReceipt> {
+) -> Result<(CreatureGroundReceipt, bool)> {
     if authority.runtime_scope() != callback.cause.scope
         || authority.generation() != callback.cause.scope_generation
     {
@@ -138,7 +138,9 @@ async fn execute(
     if let Some(receipt) =
         reconcile_creature_ground_in_transaction(tx, authority, &callback.cause, || Ok(())).await?
     {
-        return Ok(receipt);
+        let created: bool = sqlx::query_scalar("SELECT operation_count=1 FROM game_spell_item_receipts WHERE transaction_id=encode($1,'hex')::uuid")
+            .bind(receipt.transaction_id.as_slice()).fetch_one(&mut **tx).await?;
+        return Ok((receipt, created));
     }
     // This hash serializes the complete scoped tile key; exact equality remains
     // with the canonical Ground reader and source receipt checks.
@@ -189,7 +191,7 @@ async fn execute(
         cast: callback.cause.cast,
         operations,
     };
-    apply_creature_ground_in_transaction(
+    let receipt = apply_creature_ground_in_transaction(
         tx,
         authority,
         &callback.cause,
@@ -198,7 +200,8 @@ async fn execute(
         &prepared,
         || Ok(()),
     )
-    .await
+    .await?;
+    Ok((receipt, !present))
 }
 
 impl DurabilityRoot {
@@ -208,7 +211,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         callback: &CloakBloodCallback,
-    ) -> Result<CreatureGroundReceipt> {
+    ) -> Result<(CreatureGroundReceipt, bool)> {
         let record = creature_item_recovery_record(recovery, self)?;
         let node = node.clone();
         let mut context = (permit, callback);
@@ -217,7 +220,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
                     let (permit, callback) = context;
-                    let outcome: Result<CreatureGroundReceipt> = async {
+                    let outcome: Result<(CreatureGroundReceipt, bool)> = async {
                         let authority = assert_spell_item_scope_with_recovery(
                             &mut tx,
                             permit,

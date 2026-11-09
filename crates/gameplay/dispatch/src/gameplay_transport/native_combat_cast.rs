@@ -327,6 +327,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             if permit.has_unresolved()
                 || !self.resolve_player_trades(&permit).await
                 || !self.resolve_primal_pod_steps(&permit).await
+                || !self.resolve_cloak_blood_steps(&permit).await
             {
                 return None;
             }
