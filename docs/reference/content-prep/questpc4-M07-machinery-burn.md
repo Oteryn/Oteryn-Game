@@ -44,5 +44,16 @@ counter, using the same chosen retained-tool/fire/reset behavior.
 The PG driver resolves appearance facts through the bundle palette and uses
 the actual callback selector and declared rear part. Both machine families run
 the same complete assertions with their own captured native crops.
-Repair sites, tower wheels, commission/report and finale wiring remain outside
-these burn slices. No completion or achievement is granted here.
+Six two-part wheels use7775 on the left and7776 on the right, matching the
+named wheel entries in `imports/canary/items-xml/items.xml:21008`.
+Their captured left positions are32964,31814;32961,31817;32964,31817;
+32964,31820;32961,31823;32964,31823, all on source floor7. The two groups
+of three match the selected two-tower/six-wheel objective. Evidence is
+`content/world/placements/region-z07-x128-y124.b3`, SHA256
+`bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66`.
+The geometry test verifies both parts and exact left ordinals, including the
+grass-decorated ordinal2 cases. A separate six-site personal counter prevents
+reusing one restored wheel to satisfy the other five.
+
+Repair sites, commission/report and finale wiring remain outside these burn
+slices. No completion or achievement is granted here.

@@ -4062,7 +4062,7 @@
       },
       "shared_world_switch_personal_expiry": {
         "status": "QUALIFIED",
-        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0→1, Diprath<=1→2, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
+        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
         "migration": "1258_quest_source_expiry.sql",
         "postgres": {
           "status": "GREEN",
@@ -9667,7 +9667,7 @@
         "requires_world_admission_unknown_field": 51.489982592,
         "renamed_stripped_binding_committed_protected_story": 89.599955017
       },
-      "shadow_actual": "Ok(Committed), story-1→1 and character revision1→2 through weaker generic API; this is the concrete gap, not a hypothetical"
+      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
     },
     "implemented": [
       "opening_only durable work only on opening, restricted value-free close",
@@ -11404,5 +11404,65 @@
     "source": "imports/canary/items-xml/items.xml:67140-67151; same pinned SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2;weight850each",
     "pending": "Native Too Hot target bindings follow; fullM07 remainsPARTIAL",
     "resource_recovery": "Pin process exit-9 during workspace build; succeeded serially after build completion"
+  },
+  "m07_machinery_wheels": {
+    "status": "QUALIFIED_SLICE",
+    "scope": "Six captured7775/7776 wheel pairs, each credited once; aggregate bounded to6; existing retained5467/level50/60second-fire engine reused",
+    "red": "Binding file absent:2geometry/contract tests failed before source authoring",
+    "green": {
+      "machine_geometry_tests": "6/6 0.596s across wheels/ballistae/catapults",
+      "model_tests": "13/13 4.372s",
+      "workspace_all_targets_seconds": 447.318,
+      "authoring_checks_seconds": 553.685,
+      "authoring_unit_modules": 120,
+      "authoring_unit_seconds": 818.44,
+      "content_tree_seconds": 227.722,
+      "postgresql_version": "18.6",
+      "postgres_level49_seconds": 71.94992161,
+      "postgres_level50_seconds": 71.156241312,
+      "focused_native_tests": "4/4 PASS 143.567s; module registration and exact source-witness coverage included",
+      "clippy_seconds": 273.724,
+      "fmt_seconds": 18.974,
+      "pin_verification_seconds": 35.27,
+      "duplicate_migrations": "PASS"
+    },
+    "source": {
+      "path": "content/world/placements/region-z07-x128-y124.b3",
+      "sha256": "bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66",
+      "lefts": [
+        [
+          32964,
+          31814,
+          1
+        ],
+        [
+          32961,
+          31817,
+          1
+        ],
+        [
+          32964,
+          31817,
+          2
+        ],
+        [
+          32964,
+          31820,
+          1
+        ],
+        [
+          32961,
+          31823,
+          1
+        ],
+        [
+          32964,
+          31823,
+          2
+        ]
+      ]
+    },
+    "pending": "RemainingM07 repair,pillow puzzle andTooHot bindings; fullM07 stillPARTIAL",
+    "sql_changed": false
   }
 }

@@ -337,6 +337,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m07-machinery-catapults.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-wheels.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m07-realm-trial.json"
     ))?);
     callbacks.extend(parse(include_str!(
