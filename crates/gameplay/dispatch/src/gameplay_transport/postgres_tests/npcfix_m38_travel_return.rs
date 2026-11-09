@@ -12,7 +12,7 @@ use crate::foundation::{CommandId, CommandRef, GameSessionId};
 const A: &str = "oteryn:service.travel.m38_origin_a/travora";
 const B: &str = "oteryn:service.travel.m38_origin_b/travora";
 
-fn requirement(expected: &str) -> TravelReturnRequirement {
+pub(super) fn requirement(expected: &str) -> TravelReturnRequirement {
     TravelReturnRequirement {
         inbound_routes: vec![A.into(), B.into()],
         return_from: expected.into(),
@@ -117,7 +117,7 @@ async fn check(
     Ok(())
 }
 
-async fn request(
+pub(super) async fn request(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
     command: u64,
@@ -175,6 +175,7 @@ async fn request(
             quest_gate: None,
             quest_clear_gate: None,
             ticket: None,
+            return_origin: None,
             world_change: None,
         },
         fee: FeeBurnRequest {
@@ -205,7 +206,7 @@ async fn request(
     })
 }
 
-async fn commit(
+pub(super) async fn commit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
     request: PaidTravelRequest,
@@ -231,7 +232,7 @@ async fn commit(
     Ok(())
 }
 
-async fn complete(
+pub(super) async fn complete(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
     occurrence: TravelOccurrence,

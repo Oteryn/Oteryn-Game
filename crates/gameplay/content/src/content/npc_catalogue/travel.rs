@@ -33,6 +33,7 @@ pub struct TravelRoute {
     /// Refuse travel unless this track is absent or exactly zero (for example an unpaid fine).
     pub quest_clear_gate: Option<String>,
     pub ticket: Option<TravelTicketRequirement>,
+    pub return_origin: Option<TravelReturnRequirement>,
     pub world_change: Option<String>,
 }
 
@@ -60,6 +61,8 @@ struct Correction {
     quest_clear_gate: Option<String>,
     #[serde(default)]
     ticket: Option<TravelTicketRequirement>,
+    #[serde(default)]
+    return_origin: Option<TravelReturnRequirement>,
     #[serde(default)]
     world_change: Option<String>,
 }
@@ -137,6 +140,7 @@ pub fn resolve(
                 quest_gate: correction.quest_gate.clone(),
                 quest_clear_gate: correction.quest_clear_gate.clone(),
                 ticket: correction.ticket.clone(),
+                return_origin: correction.return_origin.clone(),
                 world_change: correction.world_change.clone(),
             })
         })
@@ -146,6 +150,27 @@ pub fn resolve(
 #[cfg(test)]
 mod tests {
     use super::revision_material;
+
+    #[test]
+    fn m38_return_origin_correction_is_optional_and_preserves_exact_policy()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;
+        let mut row = rows.into_iter().next().ok_or("travel correction")?;
+        let legacy: super::Correction = serde_json::from_value(row.clone())?;
+        assert!(legacy.return_origin.is_none());
+        row["return_origin"] = serde_json::json!({
+            "inbound_routes": ["oteryn:service.travel.port_a/travora", "oteryn:service.travel.port_b/travora"],
+            "return_from": "oteryn:service.travel.port_b/travora"
+        });
+        let correction: super::Correction = serde_json::from_value(row.clone())?;
+        let policy = correction.return_origin.ok_or("return policy")?;
+        assert!(policy.is_valid());
+        assert_eq!(policy.inbound_routes.len(), 2);
+        assert!(policy.permits_latest_completed(Some("oteryn:service.travel.port_b/travora")));
+        row["return_origin"]["fallback"] = serde_json::json!("any_port");
+        assert!(serde_json::from_value::<super::Correction>(row).is_err());
+        Ok(())
+    }
 
     #[test]
     fn m38_travel_ticket_requirement_is_optional_and_keeps_elapsed_seconds()

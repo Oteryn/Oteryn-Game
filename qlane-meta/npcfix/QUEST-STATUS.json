@@ -489,7 +489,7 @@
     "whole_M38": "PARTIAL"
   },
   "m38_return_receipt_reader": {
-    "state": "PG_GREEN_CHECKS_RUNNING",
+    "state": "GREEN_PUSHED",
     "migration": "2140_npc_travel_completed_origin.sql",
     "sql_red_seconds": 0.288316,
     "sql_green_seconds": 0.147351,
@@ -500,8 +500,102 @@
       "fmt": "PASS",
       "pins": "PASS unchanged inputs",
       "duplicate_migrations": "PASS",
-      "workspace_all_targets": "RUNNING at owner push-now instruction",
-      "clippy": "QUEUED behind workspace; not claimed passed"
+      "workspace_all_targets": "PASS 15m42s after publication",
+      "clippy": "PASS durability/dispatch all-target/all-feature 16m09s after publication"
+    },
+    "head": "f01758270bea550745ee5662af323f8f16a6a2ff"
+  },
+  "m38_return_origin_gate": {
+    "state": "GREEN_PUSHED",
+    "migration": "none",
+    "pg_test": "npcfix_m38_return_origin_is_rechecked_at_quote_and_commit_postgres",
+    "red": {
+      "seconds": 35.6,
+      "actual": "Ok(0)",
+      "expected": "Err(UnavailableRoute)",
+      "marker": "POSTGRES_STARTED NPCFIX_M38 return-origin quote/commit gate"
+    },
+    "green_seconds": 36.559200869,
+    "regression_pg_seconds": {
+      "permission_and_fine": 13.820097114,
+      "completed_origin_reader": 25.567601634,
+      "ticket": 38.229691628
+    },
+    "scope": "Optional correction/route policy. Shared quote/commit eligibility rechecks latest completed inbound receipt under character root lock. Receipt binding includes expected origin and whole group; None preserves existing v1 receipts. Native Petros ticket/return content remains unfinished.",
+    "model_unit": "PASS 1 test, 0 failed; correction optionality/exact policy/unknown fallback",
+    "publication_checks": {
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD",
+      "workspace_all_targets": "PASS 16m32s on gate commit 6da7963b9 before redundant-dereference-only correction",
+      "clippy": "PASS strict --lib content/durability/dispatch after replacing redundant explicit transaction dereference; no suppression",
+      "fmt": "PASS cargo fmt --all --check"
+    },
+    "head": "6da7963b9381a50bf2c9128779f208a604ed67cc",
+    "lint_followup": {
+      "change": "Pass tx directly; compiler performs the same dereference coercion",
+      "sql_or_test_changes": false,
+      "sql_conformance_pg_seconds": 0.211019,
+      "full_pg_stories": "Four PASS results above precede this equivalent coercion-only change; not rerun afterward",
+      "fmt": "PASS",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD"
     }
+  },
+  "m38_ticket_clock_binding": {
+    "state": "GREEN_PUSHED",
+    "scope": "Bind timestamp-only paid callback payment terms into its primary quest hash. New bound SetNow effect uses the unchanged evaluator transaction time; no native purchase/data activation.",
+    "reused_from": "qengine2 790996f8e52fef43fe728ec3af4309078f319cd4 (inspected at 6c0bf0ccb)",
+    "encoding_integration_note": "Qengine2 currently encodes both SetNowWithBinding and SetWhenAtLeast with tag11. Preserve published SetWhenAtLeast=11 and SetNow=3; new bound-clock tag=12 on this branch. Coordinator must retain unique tags during integration.",
+    "red": "Fee1000->1001 left primary quest definition hash unchanged: 1 failed executed unit regression",
+    "green": {
+      "focused_units": 5,
+      "focused_seconds": 0.06,
+      "crate_units": 402,
+      "crate_unit_seconds": 238.86,
+      "registry_integration": 1,
+      "registry_seconds": 0.68,
+      "clippy": "PASS quests --all-targets -D warnings 1m49s",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD",
+      "fmt": "PASS cargo fmt --all --check"
+    },
+    "sql_changes": false,
+    "pg": "No new SQL/storage mutation path; pure effect encoding/lowering/evaluation change. No new PG claim.",
+    "workspace_all_targets": "PASS 17m54s after publication",
+    "head": "ebbcdddb83b1b5b4108ac7a04be22cae3ef91f75"
+  },
+  "m38_targuna_town_catalogue": {
+    "state": "GREEN_READY_TO_PUSH",
+    "scope": "Retain source town34/area526/Targuna temple31934,31925,7; preserve Newhaven default33. No Anna route activation.",
+    "red": "Source::load returns subarea admission: Targuna town is not admitted; actual failing test8.23s",
+    "green": {
+      "compiler_units": 8,
+      "unit_seconds": 11.21,
+      "real_mask_integration": 1,
+      "integration_seconds": 101.14,
+      "clippy": "PASS world-bundle-compiler all-targets12.60s",
+      "release_tool": "Rebuilt successfully59.31s",
+      "pin_refresh": "PASS repo release tool, rebuilt from current source, isolated copy",
+      "pin_check": "PASS",
+      "fmt": "PASS cargo fmt --all --check",
+      "duplicate_migrations": "PASS HEAD"
+    },
+    "source_evidence": "docs/reference/content-prep/npcfix-m38/anna-targuna.md",
+    "sql_or_migration_changes": false,
+    "world_digest": "fce3240094398fbb07d98014b56583818fa6b6b234cc77eaa580b5b05fa48399",
+    "integration_handoff": "Coordinator must refresh protected deploy/synology-game/preprod-topology.toml to generated digest; lane did not edit it.",
+    "tree_validation": "PASS 34111 items,1282 NPC records,399 services; canonical inputs unchanged",
+    "workspace_all_targets": "PENDING after publication"
+  },
+  "targuna_receipt_schema_slice": {
+    "state": "GREEN_PG_COMPILE_PENDING",
+    "migration": "2141_targuna_free_travel_receipt.sql",
+    "test": "npcfix_m38_targuna_receipt.py",
+    "red_pg_seconds": 0.148875,
+    "green_pg_seconds": 0.086338,
+    "scope": "Exact free receipt destination only; original paid route shape preserved. Anna offer remains disabled; atomic citizenship/arrival and story wiring outstanding.",
+    "fmt": "PASS",
+    "pin_check": "PASS unchanged pins",
+    "workspace_all_targets": "RUNNING; publication requested without holding tested SQL"
   }
 }
