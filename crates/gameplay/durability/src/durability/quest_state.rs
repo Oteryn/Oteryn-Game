@@ -262,6 +262,9 @@ pub struct QuestStateCopy {
     xp_obligations: Vec<QuestXpObligation>,
     counter_quests: BTreeMap<String, CounterQuestProgress>,
     save_events: BTreeMap<String, SaveEventQuestProgress>,
+    // Definition defaults, recovered only from receipts matching the pinned profile.
+    save_restart_defaults: BTreeMap<String, BTreeMap<String, i64>>,
+    save_event_snapshot_valid: bool,
 }
 
 impl QuestStateCopy {
@@ -392,6 +395,7 @@ impl QuestStateCopy {
         self.xp_obligations.extend(new_xp);
         self.counter_quests.clear();
         self.save_events.clear();
+        self.save_event_snapshot_valid = false;
         // A partial delta does not establish a coherent predecessor across a gap or
         // out-of-order replay. Reload before using such a copy as a frozen death fact.
         self.character_revision = self

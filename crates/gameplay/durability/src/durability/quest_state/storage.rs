@@ -183,6 +183,24 @@ impl DurabilityRoot {
                     .bind(bound(save_progress_limit))
                     .fetch_all(&mut *tx)
                     .await?;
+                    // Defaults describe the pinned definition, not an active
+                    // occurrence. A matching reset receipt can come from any
+                    // previous World; current progress above still matches the
+                    // Character's current World and active save independently.
+                    let restart_profiles = sqlx::query(
+                        "SELECT DISTINCT ON (p.quest_key) p.quest_key,p.transition_key,p.track_keys,p.values_after \
+                           FROM game_character_event_quest_progress p \
+                           JOIN game_character_quest_receipts r USING(character_id,committed_character_revision) \
+                           JOIN game_character_quest_states q ON q.character_id=p.character_id AND q.quest_key=p.quest_key \
+                          WHERE p.character_id=encode($1,'hex')::uuid \
+                            AND p.transition_key LIKE 'oteryn:quest-transition/save-event-restart/%' \
+                            AND r.definition_hash=q.definition_hash AND r.pinned_content_revision=q.pinned_content_revision \
+                          ORDER BY p.quest_key,p.committed_character_revision DESC LIMIT $2",
+                    )
+                    .bind(id)
+                    .bind(bound(QUESTSTATE0_RL_08_STATES))
+                    .fetch_all(&mut *tx)
+                    .await?;
                     let obligations = sqlx::query(
                         "SELECT claim_game_session_id::text, claim_command_id::text, \
                                 transition_key, state \
@@ -220,6 +238,7 @@ impl DurabilityRoot {
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
                         || over(&counter_progress, QUESTSTATE0_RL_08_TRACKS)
                         || over(&save_progress, save_progress_limit)
+                        || over(&restart_profiles, QUESTSTATE0_RL_08_STATES)
                         || over(&obligations, QUESTSTATE0_RL_07)
                         || over(&xp_obligations, QUESTGATE0_RL_10)
                     {
@@ -233,6 +252,7 @@ impl DurabilityRoot {
                                     .map_err(|_| DurabilityError::InvalidStoredState)
                             })
                             .transpose()?,
+                        save_event_snapshot_valid: true,
                         ..QuestStateCopy::default()
                     };
                     for row in &tracks {
@@ -278,6 +298,20 @@ impl DurabilityRoot {
                     }
                     if copy.save_events.len() > QUESTSTATE0_RL_08_STATES
                         || copy.save_events.values().map(|progress|progress.tracks.len()).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    for row in &restart_profiles {
+                        let quest: String = row.try_get("quest_key")?;
+                        let reset: String = row.try_get("transition_key")?;
+                        let keys: Vec<String> = row.try_get("track_keys")?;
+                        let defaults: Vec<i64> = row.try_get("values_after")?;
+                        if reset != oteryn_gameplay_quests::quest::shared_world_progress::save_event_restart_key(&quest)
+                            || keys.is_empty() || keys.len() != defaults.len() {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        copy.save_restart_defaults.insert(quest,keys.into_iter().zip(defaults).collect());
+                    }
+                    if copy.save_restart_defaults.values().map(BTreeMap::len).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
@@ -515,6 +549,17 @@ pub(super) fn decode_receipt(
 /// The production session copy (QUEST-STATE-0 §7).
 impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
     fn track_value(&self, track: &str) -> Option<i64> {
+        for (quest, defaults) in &self.save_restart_defaults {
+            if let Some(initial) = defaults.get(track) {
+                return self.save_event_snapshot_valid.then(|| {
+                    self.save_events
+                        .get(quest)
+                        .and_then(|progress| progress.tracks.get(track))
+                        .copied()
+                        .unwrap_or(*initial)
+                });
+            }
+        }
         self.tracks().get(track).copied()
     }
 
@@ -522,11 +567,20 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         &self,
         quest: &str,
     ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
-        self.states()
-            .get(quest)
-            .map(|state| oteryn_gameplay_quests::quest::log::QuestLogState {
-                pinned_content_revision: &state.pinned_content_revision,
-                completed: state.completed,
-            })
+        let state = self.states().get(quest)?;
+        let scoped = self.save_restart_defaults.contains_key(quest);
+        if scoped && !self.save_event_snapshot_valid {
+            return None;
+        }
+        Some(oteryn_gameplay_quests::quest::log::QuestLogState {
+            pinned_content_revision: &state.pinned_content_revision,
+            completed: if scoped {
+                self.save_events
+                    .get(quest)
+                    .is_some_and(|progress| progress.completed)
+            } else {
+                state.completed
+            },
+        })
     }
 }

@@ -170,6 +170,33 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .await?
             .ok_or("next day")?;
         let revision = if epoch == 2 { 4 } else { 7 };
+        use oteryn_gameplay_quests::quest::log::QuestLogFacts;
+        let before = h
+            .root
+            .read_character_quest_state(&authority, f::fence(1)?.character_id)
+            .await?;
+        assert_eq!(
+            before.track_value(TRACK),
+            Some(0),
+            "quest log must not inherit a prior save's progress"
+        );
+        assert_eq!(
+            before.track_value(BALANCE),
+            Some(49),
+            "private balances remain lifetime state"
+        );
+        assert!(
+            !before
+                .quest_state(QUEST)
+                .ok_or("quest log state")?
+                .completed
+        );
+        assert_eq!(
+            before.tracks().get(TRACK),
+            Some(&if epoch == 2 { 1 } else { 2 }),
+            "presentation must not rewrite stored history"
+        );
+
         let stale = h
             .root
             .commit_character_quest_transition(
@@ -213,6 +240,29 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .ok_or("current save missing")?;
         assert_eq!(progress.reset_epoch, epoch as u64);
         assert!(progress.completed);
+        assert!(
+            copy.quest_state(QUEST)
+                .ok_or("current quest log state")?
+                .completed
+        );
+        assert_eq!(copy.track_value(TRACK), Some(2));
+        let receipt = h
+            .root
+            .reconcile_character_quest_transition(
+                &authority,
+                f::fence(1)?.character_id,
+                request(FINISH, 100 + epoch as u64 * 10 + 2)?,
+            )
+            .await?
+            .ok_or("completion receipt")?;
+        let mut delta = copy.clone();
+        assert!(delta.apply(&receipt));
+        assert!(
+            delta.quest_state(QUEST).is_none(),
+            "a receipt delta cannot refresh current-save presentation"
+        );
+        assert_eq!(delta.track_value(TRACK), None);
+        assert_eq!(delta.track_value(BALANCE), Some(49));
     }
     Ok(())
 }
