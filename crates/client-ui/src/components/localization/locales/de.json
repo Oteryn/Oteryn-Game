@@ -309,5 +309,10 @@
  "Unit item value (gold), kill target, or party extra cost": "Stückwert (Gold), Tötungsziel oder Gruppenzusatzkosten",
  "Set party extra cost": "Gruppenzusatzkosten setzen",
  "Exclude party member": "Gruppenmitglied ausschließen",
- "Include party member": "Gruppenmitglied einbeziehen"
+ "Include party member": "Gruppenmitglied einbeziehen",
+ "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.": "Möchtest du an einer freiwilligen Oteryn-Umfrage mit einer Frage teilnehmen? Nach der Vorschau kannst du den Versand ablehnen.",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nDiese Antwort bei deiner nächsten angemeldeten Spielsitzung an den Oteryn-Spielserver senden?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nDiesen Bericht bei deiner nächsten angemeldeten Spielsitzung an den Oteryn-Spielserver senden? Ja stellt ihn zum Versand bereit; Nein verwirft ihn.",
+ "Crash report queued for delivery on your next play session.": "Absturzbericht zum Versand bei der nächsten Spielsitzung bereitgestellt.",
+ "Survey response queued for delivery on your next play session.": "Umfrageantwort zum Versand bei der nächsten Spielsitzung bereitgestellt."
 }

@@ -335,3 +335,5 @@ pub mod wheel_presentation;
 
 #[path = "features/0450-server-modal/mod.rs"]
 pub mod server_modal;
+#[path = "features/0462-support-intake/mod.rs"]
+pub mod support_intake;

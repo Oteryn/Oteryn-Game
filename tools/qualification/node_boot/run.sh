@@ -220,9 +220,17 @@ php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
 
+# The accelerated build is disposable: production binaries omit its file input.
+# Real-clock qualification deliberately builds the ordinary shipping binary.
+NODE_CLOCK_FEATURES=()
+export OTERYN_NODE_BOOT_REAL_CLOCK="${OTERYN_NODE_BOOT_REAL_CLOCK:-0}"
+case "$OTERYN_NODE_BOOT_REAL_CLOCK" in 0|1) ;; *) fail invalid_real_clock_mode ;; esac
+if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
+  NODE_CLOCK_FEATURES=(--features qualification-clock)
+fi
 # Shipped binaries and the SEAM client harness.
-cargo +1.99.1 build --locked -p oteryn-game-server --bins
-cargo +1.99.1 test --locked -p oteryn-game-server --lib --no-run
+cargo +1.99.1 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
+cargo +1.99.1 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
 TARGET="$GAME_SOURCE/target/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -428,6 +436,16 @@ PY_WORLD
   fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
+# Root/client writes an atomic offset; the service can only read it. Start at
+# zero on every disposable run, and keep it across the shutdown/restart probes.
+if (( ${#NODE_CLOCK_FEATURES[@]} )); then
+  sudo install -d -o "$(id -u)" -m 0755 "$BASE/qualification-clock"
+  export OTERYN_QUALIFICATION_CLOCK_FILE="$BASE/qualification-clock/offset-ms"
+  printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
+  chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
+  NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+fi
+
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 node_log="$WORK/node.log"
 start_node() {
@@ -828,7 +846,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.99.1 test --locked -p oteryn-game-server --lib \
+    cargo +1.99.1 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" \
     "qualification::$qualification" -- --ignored --exact --nocapture
 }
 

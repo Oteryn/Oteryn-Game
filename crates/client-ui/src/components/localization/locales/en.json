@@ -309,5 +309,10 @@
  "Unit item value (gold), kill target, or party extra cost": "Unit item value (gold), kill target, or party extra cost",
  "Set party extra cost": "Set party extra cost",
  "Exclude party member": "Exclude party member",
- "Include party member": "Include party member"
+ "Include party member": "Include party member",
+ "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.": "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.",
+ "Crash report queued for delivery on your next play session.": "Crash report queued for delivery on your next play session.",
+ "Survey response queued for delivery on your next play session.": "Survey response queued for delivery on your next play session."
 }

@@ -12,6 +12,8 @@ category = "gameplay"
 release-role = "production"
 
 [features]
+# Disposable node-boot builds only; absent from production binaries.
+qualification-clock = []
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support", "oteryn-world-bundle/writer"]
 
 [dependencies]

@@ -309,5 +309,10 @@
  "Unit item value (gold), kill target, or party extra cost": "Valor unitario (oro), objetivo de bajas o coste adicional",
  "Set party extra cost": "Fijar coste adicional",
  "Exclude party member": "Excluir miembro",
- "Include party member": "Incluir miembro"
+ "Include party member": "Incluir miembro",
+ "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.": "¿Quieres responder a una encuesta opcional de Oteryn de una pregunta? Puedes rechazar el envío tras revisar tu respuesta.",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\n¿Enviar exactamente esta respuesta al servidor de Oteryn en tu próxima sesión de juego con acceso iniciado?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\n¿Enviar exactamente este informe al servidor de Oteryn en tu próxima sesión de juego? Sí lo pone en cola; No lo descarta.",
+ "Crash report queued for delivery on your next play session.": "Informe de fallo en cola para tu próxima sesión de juego.",
+ "Survey response queued for delivery on your next play session.": "Respuesta de encuesta en cola para tu próxima sesión de juego."
 }

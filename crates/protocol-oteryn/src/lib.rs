@@ -131,6 +131,7 @@ pub mod staff;
 pub mod staff_tools;
 pub mod stash;
 pub mod store;
+pub mod support_intake;
 pub mod target_move;
 pub mod task_board;
 pub mod team_finder;

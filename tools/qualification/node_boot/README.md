@@ -13,6 +13,26 @@ Channel's existing first-entry start to Thais temple `(32369, 32238, -7)`. The p
 remains preproduction; this runner does not enable production Worlds. Each pass
 creates and cleans up its own Platform/PostgreSQL/node topology.
 
+W20a/W20b use an explicitly disposable `qualification-clock` build by default.
+The World UTC clock and dispatch's monotonic owner clock share an atomic file
+offset. W20a advances 75 game seconds per observed sample; W20b advances one
+light-decay interval at a time after the cast, cooldown and relog assertions.
+The original transition, color, rate, mana, decay and expiry assertions remain
+in place and measure elapsed game time. Each accelerated row has a 120-second
+wall-time budget, plus its existing cleanup budget (together under five minutes).
+Other rows do not advance the offset. Ordinary builds omit the clock input;
+even a qualification build requires the existing disposable fixture configuration.
+
+To retain the original real-clock observations and build the ordinary binary:
+
+```sh
+OTERYN_NODE_BOOT_REAL_CLOCK=1 PLATFORM_SOURCE=/path/to/pinned/platform \
+  bash tools/qualification/node_boot/run.sh
+```
+
+That mode retains the original 3,750/3,300-second row deadlines and is intended
+for an on-demand extended run, outside the normal 60-minute job budget.
+
 Before World admissions, the disposable administrator initializes epoch zero through
 `game_world_reset_initialize`, binding the compiled bundle to the operator's issued
 content activation. An exact replay must be idempotent. Runtime Cyclopedia and daily
