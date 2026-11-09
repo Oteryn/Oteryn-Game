@@ -1961,10 +1961,589 @@ normal-profile rebuild exhausted disk; it is not counted as a passing test.
 All13 required M24 PG cases above actually executed and passed. Inactive
 compiler caches were removed and the required format/tree/pin checks rerun.
 
-## Next QMECH work queue item
+## M03: live character requirements, first engine slice
 
-After publishing M24 code, the first OPEN/unclaimed INDEX row is M02, exact
-mutable Ground stack/custody/quantity/order admission for Nomads Land s4.
-Claimed for SRVENC in INDEX only; CLAIMS.md remains coordinator-owned.
-No migration or new numeric registry entry has been allocated. Any required
-forward schema change remains restricted to assigned range2180–2189.
+Coordinator correction: M02 already belongs to ENGNPC2/SRV7 and is not SRVENC
+work. After merging qmech 5b960aa2a, M03 was OPEN/unclaimed and is now claimed by
+SRVENC in INDEX only. CLAIMS.md remains coordinator-owned.
+
+The chosen 25 Years of Tibia recipe requirements are recorded in
+content/quests/definitions/quests-00200-00299.json:1, record 67. The retained
+Crystal donor data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:26-35
+supplies the entrance trigger, not these owner-selected prerequisites.
+The schema now binds explicit promotion/blessing requirements into the native
+world admission digest and rejects unbound or malformed requirements. The
+existing fenced world callback consumer reads permanent promotion and currently
+held blessings inside the Character writer transaction; consumed blessings
+cannot be accepted from session projections.
+
+This is a tested engine slice, not completed M03: premium owner threading and
+the two production quest entrance bindings follow. No migration, command,
+capability or registry number is allocated.
+
+M03 first-slice validation: schema test RED (unknown character_requirements),
+then GREEN. Real PG case
+m03_postgres_character_requirements_read_current_transaction executed in 5.87 s
+(wall 169.323 s including normal-profile compilation), covering missing promotion,
+current promotion, missing/held blessings and consumed blessing refusal.
+The qmech M07 fixture required the missing ground_stack:None initializer to
+compile; no assertion changed. Full quests lib run:356 PASS / 3 FAIL, all three
+failures in untouched reward_callbacks tests; baseline comparison is recorded
+separately in the local validation log. No failing test is skipped or weakened.
+Baseline qmech 5b960aa2a, with only the ground_stack:None compile repair and
+without any M03 source changes: reward_callbacks filter reproduced the same
+3 FAIL / 21 PASS in 3.96 s (wall 16.011 s). Thus these reward fixture failures predate
+this slice; reward code and assertions are unchanged.
+Workspace checking also exposed existing missing creature_use:None fields in
+engitem_oramond.rs and questpc5_map_marks.rs admission fixtures. Both are repaired
+without changing assertions. M03's PG test uses the existing harness's explicit
+noncanonical pre-routing behavior when PG is absent; only the real configured PG
+execution is counted as validation evidence.
+
+## M03: transaction-scoped Premium admission slice
+
+Pits of Inferno's chosen Premium requirement is recorded in
+content/quests/definitions/quests-00000-00099.json:1, record 89. The native
+SpellPremiumCoordinator already implements the transaction-scoped quest Premium
+port (spell_premium_coordinator/promotion_gate.rs:48-59); M03 reuses that owner.
+The writer resolves the account from the fenced Character root and asks that
+owner inside the same transaction. Missing authority refuses admission. Both
+immediate world callbacks and queued retries retain the native coordinator.
+Legacy callers without an owner remain fail-closed for newly gated callbacks.
+Reward callback Premium admission keeps its existing owner through the same
+helper. No new Premium projection, migration or numeric registry entry is added.
+
+The new Premium schema test first failed on the absent premium field, then
+passed. Its PG probe checks the actual durable account and PostgreSQL transaction
+ID, plus current/refused/missing-owner cases. Production entrance content wiring
+remains the next M03 slice; this engine slice alone is not marked DONE.
+Premium slice proof: both M03 PG tests executed on the configured real database
+and passed in 5.09 s (wall 132.715 s including compilation). Premium schema RED:
+unknown premium field; GREEN: both M03 schema tests pass. Changed production
+crates clippy -D warnings passed in 137.728 s; native regeneration passed in
+223.558 s without changing outputs. No content input changed in this slice.
+The compiled M03 PG cases were executed again with a clean proof log: 2 PASS,
+6.52 s (wall 6.523 s). Workspace all-target check passed in 307.226 s; format
+check and duplicate-migration check passed. The initial compile error from a
+borrowed Premium gate was fixed before these successful checks.
+
+## M03: production quest entrance wiring
+
+The existing shared-access generator now installs 19 native bindings: the nine
+source machine entry positions, nine unconditional return positions, and the
+source-selected PoI entrance at32795,32335,8. The retained B3 is read by the
+new generator to bind exact appearances and top-level ordinals; return corners
+contain extra decorations and therefore use ordinal2. No World tile is edited.
+Source URLs and exact chosen-recipe boundaries are recorded in
+`docs/reference/content-prep/qmech-m03/source-notes.md`.
+
+The closed chosen-entry profile validates both real recipe guards and source
+positions. It is the only new exception to donor-script provenance validation;
+arbitrary URLs and altered guards are rejected. Its first-stage counters start
+at0 and raise to1 without undoing later progress. Generic quest writers cannot
+impersonate these source-bound world entries. Return travel is not gated by
+Premium, promotion or blessings after the player has entered.
+
+RED production-catalogue test: missing M03 time-machine entry. GREEN: production
+catalogue includes all19 selectors and the real chosen first-stage counters.
+Generator tests:3PASS, including return ordinals and refusal after recipe drift.
+Real PG production PoI STEP:69.82s, including missing-Premium refusal, generic
+caller refusal, a committed stage counter, exact replay and a fresh refusal;
+exactly one receipt persists. Actual five-blessing source guard PG:7.00s;
+account/transaction Premium PG:6.74s. Content-tree validation:97/97 PASS.
+No migration or numeric identifier is allocated (assigned range2180–2189 unused).
+Quest-authoring checks passed in329.385s; the full unit runner passed all113
+modules in543.359s. Native regeneration passed in295.367s. M03 schema tests:
+3PASS; production entry catalogue test:PASS. Changed crates clippy passed
+in105.548s. The subsequent workspace check exhausted disk before completion;
+inactive compiler caches were removed and it is rerun after the requested
+qmech merge. No test or assertion was weakened.
+
+## M51: source Barbarian Arena death and geometry rules (first slice)
+
+Read current qmech INDEX, CLAIMS and ASSIGN without merging: M51 is OPEN,
+claim none, and has no assigned lane. Claimed M51 locally for SRVENC; CLAIMS.md
+is unchanged. Rules cite Crystal201189f
+`data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:2-38`
+and `data-global/lib/quests/svargrond_arena.lua:7-22,25-115,118-172,193-256,285-313`.
+The donor is retained in the source corpus and at
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/quests/svargrond_arena.lua
+
+The pure rules preserve most-damage credit, tier-wide creature membership,
+pillar/portal consequences, the source's 600-second deadline and exact ten-pit
+geometry. The last pit's center/pillar differs by one Y tile from its reset
+rectangle; spectator occupancy has a different readset from reset. All30 source
+creatures were checked against canonical creature keys. Missing pillar still
+advances PitDoor but creates no portal, matching the donor's branch ordering.
+This API computes proposals only: it is not an ownership or write capability.
+
+RED: absent source arena rules module (E0432). GREEN:3 focused rules tests;
+clippy all targets passed in10.977s and format check passed. No SQL or content
+input changed, so this slice adds no PG case or generated content. No migration
+or registry number is allocated. Exclusive pit custody, production death/map
+composition and durable kick/reset remain; M51 is PARTIAL, not DONE.
+
+## M51: atomic shared pit reservation before entry fee (second slice)
+
+Allocated migration2180 (assigned range2180–2189): game_svargrond_pit_leases.
+The existing fenced arena_match writer claims shared pit custody before charging
+an entry fee or accepting an advance. Transaction advisory locking closes the
+empty-slot race; a different live run cannot replace custody. Old-pit release
+and new-pit claim share the arena transaction, so a failed composition rolls
+back to the old pit. Idle/completed arena state releases custody. Progress,
+fees, victories and command receipts remain with the existing owner.
+
+Source: Crystal201189f movements_arena_enter.lua:22-30,
+movements_arena_pit.lua:52-62, lib/quests/svargrond_arena.lua:193-256,285-313.
+RED pre-migration PG fixture:5.22s, Database(Database(None)); new table absent.
+GREEN real PG: m51_postgres_pit_reservation_serializes_contenders_and_releases_atomically,
+4.95s (wall23.356s including compilation). It exercises actual simultaneous
+transactions, refusal after commit, rollback of an advance and release.
+Durability clippy -D warnings:98.792s; fmt check PASS. No generated content or
+command/capability ordinal changed. M51 remains PARTIAL pending native
+pillar/portal composition, recovery custody checks and kick/reset closure.
+
+## M51: custody checked before restoring a fight (third slice)
+
+The arena reader now proves exact run/session/scope/deadline ownership before
+allowing native opponent restoration. A still-current active run can adopt an
+unoccupied reservation through the same fenced owner; conflicting custody
+prevents restoration and follows the existing stale-run cleanup path.
+The dispatcher retains this result rather than respawning from progress alone.
+Source: movements_arena_enter.lua:22-30 and movements_arena_pit.lua:52-62.
+RED: missing owned predicate, E0425. GREEN real PG:5.10s, testing wrong run,
+wrong deadline, exact expiry and the existing contention/rollback checks.
+Durability + dispatch clippy -D warnings:122.612s; fmt PASS. No new migration.
+M51 remains PARTIAL: native pillar/portal projection and lifecycle closure follow.
+
+## M51: retain the kick timer while waiting at a victory portal
+
+Restored phase-2 matches now retain a live timer without spawning another
+opponent. Phase changes update that projection instead of reusing a fighting
+projection solely by run/pit. Only active phases before the original deadline
+can recover a timer; victory never grants another 600 seconds.
+Source: Crystal data-global/lib/quests/svargrond_arena.lua:259-313.
+RED: m51_restored_victory_keeps_the_original_kick_deadline, E0599 (12.245s).
+GREEN: four focused M51 durability tests, 29.645s including real PG execution
+4.85s. Durability/dispatch clippy -D warnings:34.850s. No SQL/content changes.
+M51 remains PARTIAL pending native pillar/portal projection and reset closure.
+
+## M51: native spectator occupancy before reserving a pit
+
+Entry/advance preflight now checks the positioned player census, not only
+center/summon cells and the local match registry. Other players anywhere in the
+source five-tile rectangle block entry; the entrant and other floors do not.
+Source: Crystal data-global/lib/quests/svargrond_arena.lua:193-205,249-256.
+RED: missing occupied_by_other predicate, E0599 (12.538s). GREEN: four arena
+source tests, 2.829s; quests/dispatch clippy -D warnings, 26.975s. No SQL/content
+changes or new numbers. M51 remains PARTIAL pending pillar/portal/reset wiring.
+Engine-only pin-check passed in 154.617s; the committed bundle digest is unchanged.
+
+## M51: native pillar/portal projection and exact-run reset
+
+The committed fight/victory projection now updates the pinned pillar occurrence
+between source Item1841 and Item5022, with its collision and client map facts in
+one callback-owner mutation. The portal is bound/non-pickupable. Recovery is
+idempotent; entry/advance, leaving, death/logout pruning and the existing timed
+kick close the matching run's portal. A late old-run release cannot reset a
+newer run. Missing/hidden pillars and ambiguous/foreign occurrences are refused.
+Sources: Crystal201189f data-global/scripts/quests/svargrond_arena/
+creaturescripts_arena_kill.lua:22-35; data-global/lib/quests/svargrond_arena.lua:
+207-246,259-313. This uses the existing Channel map callback owner and SV15
+committed match state; no protocol id, capability, mechanic ordinal or migration.
+RED: missing projection method E0599, 126.907s. GREEN native map/collision test
+m51_pillar_portal_view_and_collision_reset_together:21.475s including build.
+World/dispatch clippy -D warnings:49.571s. Pin-check:157.579s, unchanged bundle.
+M51 remains PARTIAL: native portal STEP admission, automatic death publication
+and the full source pit reset (including movable items) are still unfinished.
+Own M51 durability cases rerun:4 PASS, real PG4.81s (108.400s including rebuild).
+
+## M51: durable native portal origin (migration2181)
+
+Allocated2181_svargrond_native_step_origin.sql, in SRVENC's2180-2189 range.
+Arena receipts retain the complete native-step binding beside its compact id.
+Both client/native collisions and two native bindings with the same compact id
+refuse replay. Existing client reward/arena writers keep their NULL origin.
+NativeArenaStep is built from an actual translation snapshot at the source
+pillar, binding exact actor, session, run, pit, scope generation, owner epoch and
+movement revisions. The native writer accepts only credited phase2 Advance and
+requires exact current unexpired pit custody before a new transition.
+Source: Crystal201189f data-global/scripts/quests/svargrond_arena/
+movements_arena_pit.lua:52-64. No protocol command/capability/ordinal allocation.
+RED: missing origin helpers E0425,19.875s. GREEN:6 focused durability tests,
+31.976s including build. Real PG native-origin case:5.662605238s; pit custody:
+5.701863876s. Migration uniqueness/embedded-migrator test:14.968s PASS.
+Durability/dispatch clippy -D warnings:28.990s. Pin-check:166.664s PASS.
+M51 remains PARTIAL: native STEP ingress still needs to call this typed writer;
+automatic death publication and full source pit reset also remain unfinished.
+
+## M51: expose exact-run native portal admission
+
+The map owner now admits action25200 only for a visible, passable, bound,
+non-pickupable Item5022 projected by the matching run. Another run or a reset
+pillar cannot impersonate its portal. Source: Crystal201189f
+movements_arena_pit.lua:52-64 and creaturescripts_arena_kill.lua:22-35.
+RED missing admission predicate E0599:93.285s; GREEN map/collision test:31.793s.
+Changed world/dispatch/durability clippy -D warnings:41.711s. Formatting PASS;
+engine-only derive-identity equals the committed pin identity. No SQL or numbers.
+Native STEP caller and its full ten-pit PG case continue in the next slice.
+
+## M51: qualify plain pillars against the actual pinned base
+
+Plain, unique-id map items have no sparse placement record. The earlier pillar
+qualifier could therefore refuse a real unbound source pillar. It now proves
+position/ordinal/id against the pinned WorldBase and uses the existing unique
+palette fallback only after that proof. The dispatcher passes its actual base.
+The regression fixture now uses unique Item ids and also refuses a nonexistent
+occurrence even when supplied the correct pillar's known definition id.
+Source rule: Crystal201189f creaturescripts_arena_kill.lua:22-35.
+RED actual missing-portal assertion:31.086s. GREEN final source map test:14.016s;
+world/dispatch clippy -D warnings:121.696s; cargo fmt --all --check PASS.
+Engine-only derive-identity equals committed pin identity; no SQL or allocation.
+
+## M51: actual STEP ingress drives all ten arena portals
+
+Committed ordinary movement now calls the native arena portal owner. It retains
+its spell lane, compares the actual movement snapshot/actor lease, requires the
+exact run's visible portal, then uses the existing revision slot and typed native
+receipt. Fresh current pit custody is rechecked by the writer. Busy next pits
+preserve the credited victory; the tenth portal grants the existing achievement
+and enters the reward room. Native replay reads its full origin and restores the
+currently committed state instead of treating the step as a client command.
+Source: Crystal201189f movements_arena_pit.lua:24-64. No new numbers or SQL DDL.
+The existing funded/unfunded UI scenarios retain their original route. The new
+native-route scenario uses real admitted content, fee, ten production combat
+victories, ten ordinary routed movement steps, ten native receipts, rank reward
+and its unchanged replay/backpack assertions. No arena Advance command is sent
+for those ten successful transitions.
+Real PG m51_postgres_native_portals_complete_all_ten_pits_and_reward:
+58.949343258s (491.644s including cold compilation). World source regression:
+14.016s; world/dispatch clippy -D warnings:121.696s. Fmt and pin identity PASS.
+M51 remains PARTIAL: silent-death publication, runtime-role lease privileges and
+full source reset closure still follow; victory is currently observed by Status.
+
+## M51: production runtime-role custody permissions (migration2182)
+
+Allocated2182_svargrond_pit_runtime_privileges.sql within2180-2189. The runtime
+receives only SELECT/INSERT/UPDATE/DELETE on the existing shared pit leases;
+PUBLIC and control-plane access are revoked. The original2180 is unchanged.
+Source ownership: Crystal201189f movements_arena_enter.lua:22-30 and
+movements_arena_pit.lua:52-64. The native writer is the existing fenced runtime.
+RED actual PG4.98s: production runtime role lacks SELECT on pit custody.
+GREEN:7 M51 tests,34.588s including build; real PG runtime role5.302931318s,
+origin binding6.42310675s, custody race/rollback5.250074248s. Tests execute
+SET LOCAL ROLE and prove reservation/read/release, control write denial and
+runtime TRUNCATE denial. Migration uniqueness:14.791s; clippy:78.272s PASS.
+Fmt and engine-only pin identity verification PASS. M51 remains PARTIAL pending
+silent-death publication and complete source reset closure.
+
+## M51: typed native death receipt origin (migration2183)
+
+Allocated2183_svargrond_native_death_origin.sql within2180-2189. Rename
+the existing binding column to native_origin_binding without losing any STEP
+receipt or constraint. NativeArenaOrigin distinguishes real STEP from real DEATH;
+the latter binds the sealed creature death key, actor, session, scope generation,
+epoch, run and pit, and requires that exact victory when writing. Native writes
+still require current durable pit custody. Client command replay stays separate.
+Source: Crystal201189f creaturescripts_arena_kill.lua:2-38 and
+movements_arena_pit.lua:24-64. This SDK slice does not yet mount the death poller.
+Seven M51 durability tests PASS:126.678s including compilation; real PG origin
+4.977148183s, custody5.285750185s, runtime role4.988332058s. Durability/dispatch
+clippy -D warnings PASS115.057s. M51 remains PARTIAL: producer and reset closure.
+
+## M51: automatic credited death on the server creature cadence
+
+The regular monster-cycle entry polls active arena runs before acquiring the
+spell lane. One epoch/time gate coalesces the Channel's connection callers;
+at most ten live pits are inspected. Exact opponent death and most-damage
+Character are revalidated with current actor/session control and character lease.
+Existing kill rewards settle before the new native receipt or opponent removal;
+the existing character revision sequencer and durable current pit custody
+authorize phase1 -> phase2. The current original deadline remains in force.
+Source: Crystal201189f creaturescripts_arena_kill.lua:2-38. No new SQL/allocation.
+The full real-combat native portal test now removes the Status command between
+combat and the portal. It requires persisted victory from the ordinary monster
+cycle, plus exactly ten native DEATH receipts and ten native STEP receipts,
+then retains all prior rank, achievement, reward and replay assertions.
+Actual RED: first pit remains phase1 without the producer, real PG52.55s.
+GREEN real PG m51_postgres_native_portals_complete_all_ten_pits_and_reward:
+59.165918176s (488.670s including cold compilation), PostgreSQL180006, fee1000,
+completed rank1, one reward claim/item. Dispatch clippy --all-targets -D warnings
+PASS277.191s. Engine pin identity unchanged. M51 remains PARTIAL pending full
+source reset closure and immediate abandoned-run custody cleanup.
+
+## M51: commit-time kick deadline closes the read/write race
+
+Crystal201189f svargrond_arena.lua:259-313 makes the original600-second deadline
+final. The durable transition validator now refuses a new death credit or portal
+progress once its transaction clock reaches that deadline, even if the earlier
+read was live. An unchanged receipt and a timeout/leave reset remain permitted;
+a fabricated late victory cannot hide inside a reset. No DDL or numbers added.
+RED m51_commit_clock_refuses_late_victory_and_portal_progress: actual assertion
+failure (112.106s including cold build). GREEN8 M51 tests:27.090s; real PG native
+origin5.965053611s, custody5.954610372s, runtime-role5.960392139s. Durability
+clippy --all-targets -D warnings PASS98.231s. M51 still PARTIAL for reset closure.
+
+## M51: terminal session releases pit custody atomically
+
+The existing fenced terminal-release writer clears that exact session's shared
+arena lease in the same transaction as session_state=3, guard successors and its
+lifecycle receipt. Cleanup rechecks the durable terminal row, world/Channel,
+Character, connection/Character-lease/scope generations and session. Historical
+proofs cannot clear active custody or a newer session/run. No migration added.
+Source: Crystal201189f svargrond_arena.lua:259-313 (kick/reset owner).
+RED real PG4.77s: a Character-only deletion incorrectly clears an active run.
+GREEN9 M51 tests29.950s; own terminal PG6.567428569s proves active refusal,
+terminal release, rollback conservation and stale-session replay isolation.
+Other own PG: runtime role6.566619958s, native origin6.569492612s, pit custody
+6.572658424s. M51 remains PARTIAL for nonterminal departure/reset closure.
+Durability clippy --all-targets -D warnings PASS77.968s; cargo fmt --all --check
+PASS15.234s; engine-only pin identity equals the committed identity.
+
+## M51: actual Character death releases current shared-pit custody
+
+The fenced Character-death commit clears its exact Character/session/world/
+Channel/scope-generation lease after inserting the immutable death receipt, in
+that same transaction. The already-held Character root serializes a later run;
+old death replay returns before the deletion and cannot clear later custody.
+Refused death commits retain the lease. Instance death stays on its own owner.
+Source: Crystal201189f svargrond_arena.lua:259-313 (kick/reset custody).
+RED actual fenced death writer: PG5.35s, committed death wrongly leaves one lease.
+GREEN10 M51 tests35.060s including build; actual death commit/refusal/replay PG
+5.410638624s. Other PG: terminal5.677646709s, custody
+5.713720696s, origin5.713844757s, runtime role5.727044504s. No new migration or id.
+M51 remains PARTIAL for departure and full source reset closure.
+Durability clippy --all-targets -D warnings PASS80.717s; cargo fmt --all --check
+PASS15.382s; engine-only pin identity unchanged.
+
+## M51: typed native departure reset origin (SDK slice)
+
+NativeArenaDeparture binds the real actor position snapshot, epoch, session,
+scope generation, pit and run. Its constructor refuses positions inside the
+same live-owner pit envelope, including the pillar/portal tile. The origin is
+only Leave with no victory; completed ranks and other run/pit/scope states are
+refused. Cleanup does not require a still-live pit lease: the current Character
+root, node/session fence and exact prior state still guard it, and Leave can
+only cancel or preserve state. STEP/DEATH progress retains its live custody check.
+Source: Crystal201189f movements_arena_pit.lua:14-20 and svargrond_arena.lua:
+259-287. No new DDL/ids; existing native-origin receipt holds the full binding.
+GREEN11 M51 tests74.799s including build; own PG origin5.644428609s, terminal
+5.682860425s, pit custody5.684731297s, runtime role5.68501567s, actual Character
+death5.129897409s. New source geometry/validation regression covers all ten pits.
+M51 remains PARTIAL: this slice exposes the SDK; native departure producer and
+complete source reset closure follow.
+Durability clippy --all-targets -D warnings PASS53.614s; cargo fmt --all --check
+PASS15.231s; engine-only pin identity unchanged.
+
+## M51: native departure producer and retry ownership
+
+The existing coalesced creature pass now checks fighting/victory runs for an
+actual outside position before observing a kill. The spell lane, current native
+snapshot/control, Character lease, node/session fence and revision slot are
+rechecked before writing the typed Leave origin. Existing kill rewards settle
+before opponent removal. A pending departure retains its live retry owner if a
+database pass fails. Committed idle/reward states always clear their old exact
+run projection, including when the player has already left the pit/reward box;
+relocation remains limited to the existing source return areas.
+Source: Crystal201189f movements_arena_pit.lua:14-20 and svargrond_arena.lua:
+259-287. No new schema or ids. A separate actual PG story enters with fee, leaves
+through native relocation, then requires ordinary creature cadence to persist
+idle, free custody, remove the opponent and emit one native departure receipt,
+without a client Leave or any kill. Existing full-ten-pit story remains intact.
+RED actual PG51.98s (469.539s including cold compilation): rank/phase stays1/1.
+GREEN real PG native departure51.154184337s; native ten-pit fights/STEP/reward
+58.489216135s; two tests PASS199.256s including retry compilation. First green
+link attempt ran out of disk; stale own incremental/library variants were removed
+and the same unmodified tests rerun. PostgreSQL180006, entry fee1000, rank1,
+one reward claim/item remain proven. M51 remains PARTIAL pending full pit reset
+and silent timeout-state persistence closure.
+Dispatch clippy --lib -D warnings PASS124.540s; cargo fmt --all --check
+PASS15.897s; engine-only pin identity unchanged.
+
+## M51: original kick timer uses the deciding durable clock (SDK)
+
+NativeArenaTimeout binds the exact active run, pit, actor, session, generation,
+epoch and original deadline. It cannot target a completed or unowned state.
+The writer checks the database clock again before a new timeout reset; historical
+native replay stays read-only. Cleanup needs the current Character/node/session
+fence and exact before-state, rather than a lease which has already expired.
+The origin only carries Status/no-victory, and the existing validator only permits
+its timeout reset; no fee, achievement or rank progress is invented.
+Source: Crystal201189f svargrond_arena.lua:259-313. No new schema/id allocated.
+RED actual PG4.48s (157.058s including cold build): an unchecked native TimedOut
+callback prematurely cancels a live run. GREEN13 M51 tests37.359s; own deciding
+clock PG12.816919598s proves early refusal/no receipt, expired reset/release,
+immutable replay and client Status replay separation. Other own PG: origin
+6.978293831s, custody7.063450628s, runtime role7.07248877s, terminal5.873239257s,
+actual Character death5.789996439s. Production remains600s; only this isolated
+fixture uses a short timer for the actual PostgreSQL boundary.
+M51 remains PARTIAL: silent timer producer and complete pit reset closure follow.
+Durability clippy --all-targets -D warnings PASS81.542s; cargo fmt --all --check
+PASS16.302s; engine-only pin identity unchanged.
+
+## M51: silent timeout persists and physically kicks on native cadence
+
+The active run's original monotonic deadline schedules a typed timeout pass;
+the current native control/Character lease and sequencer slot are rechecked,
+then the durable deciding clock authorizes reset. The ordinary creature loop
+persists idle, releases custody, closes its exact pillar and removes its opponent
+before relocating to the source kick position. On persistence failure the physical
+kick stays timely and retains its run/deadline for a later durable retry.
+Source: Crystal201189f svargrond_arena.lua:259-313. No schema/id allocation.
+The new real-PG production-caller story enters normally with fee and opponent,
+waits for actual database expiry, then requires ordinary creature cadence to kick,
+remove the opponent, persist idle, release custody and write one native timeout
+receipt without any Status command. Only cfg(test) can select a bounded shorter
+interval before an empty match owner starts; production and all existing stories
+retain donor600s. The new isolated story selects5s, without editing durable rows.
+GREEN three real PG stories: timeout57.486779623s, departure52.457049843s,
+ten-pit native combat/portals/reward60.129570758s (439.318s with cold build).
+Dispatch clippy --lib -D warnings PASS95.419s; fmt PASS15.862s; engine-only pin
+identity unchanged. M51 remains PARTIAL for full source pit-reset cleanup.
+
+## M51: complete source monster reset census (rules slice)
+
+Rechecked Crystal201189f svargrond_arena.lua:207-246 directly: it removes Monsters,
+not NPCs, within the inclusive reset rectangle. PitLayout now enumerates the exact
+100 cells and selects only the native caller's live Monster identities inside
+that box. Ambiguous duplicate cells/identities refuse the read plan; it grants no
+removal or Item authority. Spectator radius and the last-pit center remain distinct.
+Six source tests PASS12.599s including build, covering all ten boxes, all100 cells,
+outside/floor exclusion and ambiguous observations. Quest crate clippy --all-targets
+-D warnings PASS8.980s; fmt PASS15.850s; engine-only pin identity unchanged.
+No SQL/id allocated; no content data changed. M51 remains PARTIAL; production
+monster reset composition and physical top-Item cleanup follow.
+
+## M51: source monster reset executes before the next fight
+
+Restoring a new fighting projection now performs the bounded source monster
+reset before spawning its opponent. It rechecks current Channel control, active
+session/generation and the full spectator census; only actual native Monster
+identities inside the exact reset rectangle are removed. The existing exact
+administrative creature owner removes them without death, corpse or kill credit.
+NPCs, Players and Monsters outside the rectangle remain. Native summon-family
+cleanup stays with that same existing owner. Source: Crystal201189f lib/quests/
+svargrond_arena.lua:207-246, movements_arena_enter.lua:22-30.
+GREEN actual PG entry reset53.034282454s: unregistered inside Monster removed,
+outside Monster and canonical Halvar NPC retained, new opponent spawned, fee
+retained and zero victories credited. Other real PG: departure52.970301648s,
+timeout57.891032298s, ten-pit combat/STEP/reward60.115019485s. Four tests PASS
+398.240s with cold build. Dispatch clippy --lib -D warnings PASS108.408s;
+fmt PASS15.750s; engine-only pin identity unchanged. No SQL/id allocation.
+M51 remains PARTIAL for physical top-Item reset and missing-pillar recreation.
+
+## M51: missing pillar has a bound native map representation (World SDK)
+
+Source: Crystal201189f lib/quests/svargrond_arena.lua:235-245. A reset can now
+recreate a missing pillar on an existing non-House tile, through the existing
+Channel-local movement-item view. Both pillar and portal remain bound and
+nonpickupable; no portable Item or MINT is invented. Native definitions1841/5022
+are resolved even when the base palette has no placement of those states.
+Only Fighting creates missing scenery; Victory alone still cannot invent a
+portal. An appearance change replaces the old Thing identity, exact-run release
+cannot close another run, replay does not duplicate items, and collision follows
+the actual recreated entry. Existing qualified base occurrences retain their
+original checked owner/API. No migration or command/capability id allocation.
+Focused World tests PASS94.320s including retry compilation; all World unit
+cases PASS22.527s (237 passed, one pre-existing ignored case). World clippy
+--all-targets -D warnings PASS93.414s. Initial build ran out of disk; stale own
+artifacts were removed and the same tests rerun. Engine-only pin identity matches.
+M51 remains PARTIAL: server composition of recreation and physical top-Item reset.
+Fmt corrected one array wrap; cargo fmt --all --check PASS15.293s.
+
+### M51 production missing-pillar reset composition
+Dispatch now uses the World-owned pillar projection after its existing native
+runtime and durable pit-custody checks. This composes Crystal 201189f
+lib/quests/svargrond_arena.lua:235-245 with the real kill/portal chain rather than
+requiring a pre-existing pillar placement in the base map. A new floor-only
+fixture contains no pillar/portal palette entries. Its real PostgreSQL story
+runs all ten normal fights, automatic death settlement, native STEP portals,
+rank completion and personal reward using recreated pillars.
+RED: the new story failed after the first kill at the unchanged native portal
+progression assertion (PG53.49s). GREEN: five native arena PG cases passed,
+including recreated pillars61.118s, base pillars61.124s, departure53.148s,
+monster reset53.695s and timeout56.535s (total209.246s including compilation).
+Failed pre-test links exhausted disk; inactive own incremental artifacts,
+failed linker temporary binaries and own old test databases were removed before
+rerunning the same commands. No new migration or numeric allocation. Engine-only
+bundle identity verification matches the committed pin. M51 remains PARTIAL:
+physical top-Item reset is not yet composed with its durable Item owner.
+Dispatch clippy --all-targets -D warnings PASS233.799s; direct rustfmt covers the
+mounted PostgreSQL source files as well as workspace cargo fmt verification.
+
+### M51 original top-Thing Item reset selection
+Crystal201189f data-global/lib/quests/svargrond_arena.lua:22,217-232 first
+inspects exactly getThing(255), before removing the top Monster. Added the typed
+original top-Thing read proposal: select only a movable Item inside the exact
+inclusive source box, preserving 21464/1841/2181/2182/2183. Creature, empty,
+immovable and preserved tops cannot select any lower Item. A proposal retains the
+exact caller-supplied identity and grants no custody/removal authority.
+Focused regression RED12.665s, then all seven srvenc_arena_deaths cases
+GREEN2.984s including compilation. Engine-only bundle identity matches; no SQL,
+new numeric allocation or content-input changes. This is a tested rules slice,
+not a completed reset: original native stack capture and physical one-item
+retirement with current pit custody remain to be composed.
+Quests clippy --all-targets -D warnings PASS5.991s; workspace fmt check
+PASS17.438s. No PostgreSQL writer was added or changed by this rules slice.
+
+### M51 hidden base pillar recreation and old timer retirement
+The source reset recreates a missing pillar (Crystal201189f
+lib/quests/svargrond_arena.lua:235-245). The production World API already recreated
+an absent blueprint but refused a hidden base pillar. Fighting reset now restores
+that qualified immutable base occurrence, advances its revision, and clears its
+old movement decay; Victory/Release still cannot resurrect a hidden pillar.
+The existing real-view/collision test retains its original refusal and adds
+recreation, exactly one visible pillar, stale timer absence and exact-run release
+checks. RED122.858s including cold dependency compilation, then all World library
+cases GREEN23.685s (237 passed, one pre-existing ignored case, unchanged).
+No SQL, migration or numeric allocation. Engine-only bundle identity matches.
+Physical portable top-Item retirement remains the unfinished M51 composition.
+World clippy --all-targets -D warnings PASS72.302s, workspace fmt check
+PASS15.378s; direct rustfmt check of both changed Rust files also passed.
+
+### M51 truthful arena-reset retirement audit grammar (writer pending)
+Added optional OneItemDecayRetireV1 protobuf tag10, OneItemArenaResetV1, the next
+unused field in this branch's existing one-item DECAY_RETIRE grammar. Existing
+payloads omit it; their canonical bytes and exact Channel/Instance scope tests
+remain unchanged. No event/command/capability/mechanic ID, migration or resource
+row allocation. Crystal201189f lib/quests/svargrond_arena.lua:217-225 is the source
+for retirement; the arena cause must not impersonate corpse decay, World reset
+or Instance retirement. The historical payload itself grants no authority.
+The current slice admits only a whole Ground root in its exact Channel and
+current Ground generation, inside the source pit reset box. It records exact
+Character/session/run, rank, pit and original deadline, preserves the Item's
+identity/definition/key number and retires its full quantity to zero. Mixed
+causes/locations, unknown Ground codec, invalid geometry, scope/value changes
+and event time at/after the original pit deadline are refused. Container-child
+and historical Ground-generation adoption remain unsupported pending their
+physical-owner proofs; neither is silently rewritten as current ownership.
+RED106.539s including test compilation; 16 retirement audit tests then
+GREEN24.806s including all legacy encoding tests and three new arena cases.
+Six existing own arena PG cases passed in26.973s total, with real PostgreSQL
+proof5.830-12.671s per case (role/custody race, native origin, timeout, terminal
+release, actual death cleanup). Durability clippy --all-targets -D warnings
+PASS77.236s and fmt PASS15.633s. Engine-only identity matches the committed pin.
+An initial build was stopped before cleaning inactive own caches; no compiler
+was active during the successful cleanup. This code does not yet select or
+retire a Ground Item. M51 remains PARTIAL until current pit custody, original
+native top-Thing capture and the shared physical retirement writer are composed.
+
+### M51 deciding pit-reset custody admission
+Crystal201189f lib/quests/svargrond_arena.lua:193-246 and
+movements_arena_enter.lua:22-30 require exclusive pit custody before reset.
+Added the fenced reset preflight and shared transaction helper: lock the exact
+persisted arena state and existing pit lease, match the full expected state,
+Character/session/run/scope/deadline, require fighting phase and no later death,
+and read the PostgreSQL clock after the row locks. This never claims, refreshes
+or releases a lease. A successful detached read is explicitly only a snapshot;
+the physical writer must invoke the helper again in its deciding transaction.
+A real PG regression first failed because a saved phase without a lease was
+accepted (PG5.10s, total43.083s). GREEN seven own PG cases43.576s total;
+new reset case11.344s proves current custody succeeds, missing/released custody
+is never reclaimed, changed run/deadline is refused and an exact retained lease
+is refused after its original deadline. Other own cases6.948-14.190s.
+Durability clippy --all-targets -D warnings PASS25.948s; fmt PASS15.975s.
+Engine-only bundle identity matches; no migration or numeric allocation.
+This slice reads/locks existing SQL rows only. M51 remains PARTIAL: native
+original top-Thing capture and the shared physical Item retirement transaction
+still need composition with the reset cause and this deciding custody helper.

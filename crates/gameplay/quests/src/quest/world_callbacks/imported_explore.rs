@@ -66,6 +66,9 @@ pub(super) fn admitted(callback: &Callback) -> bool {
 }
 
 pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
+    if let Some(initial) = super::character_requirements::entry_initial(callback, storage) {
+        return initial;
+    }
     if admitted(callback) && !storage.track.is_empty() {
         0
     } else {

@@ -33,6 +33,8 @@ pub enum Trigger {
 mod admission_tests;
 mod clear_area;
 pub use clear_area::ClearArea;
+mod character_requirements;
+pub use character_requirements::CharacterRequirements;
 mod clock;
 mod counterparts;
 mod craft_epoch;
@@ -53,6 +55,8 @@ pub mod phase;
 mod selected_tool_tests;
 mod native_trials;
 mod per_use_reward;
+mod ground_stack;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence, MagicEffect,
@@ -303,6 +307,9 @@ pub struct Callback {
     /// Rechecked through the existing transaction-bound Premium owner.
     #[serde(default, skip_serializing_if = "is_false")]
     pub requires_premium: bool,
+    /// Current durable character facts, bound to the native world admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub character_requirements: Option<CharacterRequirements>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -729,6 +736,14 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.reversible
                     || callback.opening_only
             })
+            || callback
+                .character_requirements
+                .as_ref()
+                .is_some_and(|requirements| {
+                    !requirements.valid()
+                        || !callback.requires_world_admission
+                        || callback.actor_kind != ActorKind::Player
+                })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -752,10 +767,16 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (!callback.offerings.is_empty() && !callback.has_personal_state())
             || (callback.key.starts_with("oteryn:quest-callback/m01b/")
                 && !imported_explore::admitted(callback))
+            || ((callback
+                .key
+                .starts_with("oteryn:quest-callback/m03/time-machine-entry-")
+                || callback.key == "oteryn:quest-callback/m03/pits-of-inferno-entry")
+                && !character_requirements::entry_admitted(callback))
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
                 || treasure_source::admitted(callback)
                 || feaster_routes::admitted(callback)
+                || character_requirements::entry_admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     phase::authored_source(callback, source)
@@ -2097,6 +2118,76 @@ mod srv7_mount_reward_replay_tests {
             super::parse(&value.to_string()).is_err(),
             "repeatable mount grants must fail closed"
         );
+mod srvenc_live_requirements_tests {
+    use super::*;
+
+    #[test]
+    fn m03_chosen_entry_refuses_loosened_guards_and_unqualified_sources() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/m03/pits-of-inferno-entry")
+            .ok_or("registered PoI")?;
+        let original = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        for case in 0..5 {
+            let mut value = original.clone();
+            match case {
+                0 => value["minimum_level"] = 79.into(),
+                1 => value["character_requirements"]["premium"] = false.into(),
+                2 => value["character_requirements"] = serde_json::Value::Null,
+                3 => value["sources"] = serde_json::json!(["https://example.com/unqualified"]),
+                _ => value["selector"]["native"]["ordinal"] = 1.into(),
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[value]}).to_string()).is_err(),
+                "M03 accepted altered profile {case}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn m03_live_premium_requirement_is_native_bound() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.requires_world_admission && !callback.storage.is_empty())
+            .ok_or("world fixture")?;
+        let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        value["character_requirements"] = serde_json::json!({"premium":true});
+        let packet = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        let admitted = parse(&packet(&value))?;
+        assert!(gated_binding(&admitted[0])?.is_some());
+        value["character_requirements"]["premium"] = false.into();
+        assert!(parse(&packet(&value)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn m03_character_requirements_are_registered_and_bound() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.requires_world_admission && !callback.storage.is_empty())
+            .ok_or("world fixture")?;
+        let baseline = gated_binding(&callback);
+        let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        value["character_requirements"] = serde_json::json!({"promoted":true,"blessings":["oteryn:blessing.the_spiritual_shielding"]});
+        let packet = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        let admitted = parse(&packet(&value))?;
+        assert_ne!(gated_binding(&admitted[0]), baseline);
+        value["requires_world_admission"] = false.into();
+        assert!(parse(&packet(&value)).is_err());
+        value["requires_world_admission"] = true.into();
+        for invalid in [
+            serde_json::json!({}),
+            serde_json::json!({"blessings":["invalid"]}),
+            serde_json::json!({"blessings":["oteryn:blessing.a","oteryn:blessing.a"]}),
+        ] {
+            value["character_requirements"] = invalid;
+            assert!(parse(&packet(&value)).is_err());
+        }
         Ok(())
     }
 }

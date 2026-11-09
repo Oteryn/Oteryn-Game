@@ -287,6 +287,27 @@ impl DurabilityRoot {
         admission: Option<QuestRewardAdmission<'_>>,
         premium: &G,
     ) -> Result<QuestTransitionOutcome> {
+        self.commit_character_world_callback_with_items_and_premium(
+            authority, node, fence, request, catalogue, permit, context, native,
+            admission, &grizzly::NoGrizzlyPremium,
+        ).await
+    }
+
+    /// Native Premium authority is retained across this exact world callback transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_items_and_premium<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
             node,
@@ -704,6 +725,7 @@ impl DurabilityRoot {
                             || c.admission.is_some()
                             || c.requires_live_premium()
                             || c.admission.is_some()
+                            || c.character_requirements.is_some()
                             || c.experience.is_some()
                             || c.monk_reward.is_some()
                             || c.native_rule.is_some()
@@ -906,6 +928,11 @@ impl DurabilityRoot {
                         if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    if (reward_callback.as_ref().is_some_and(|c| c.requires_premium)
+                        || callback.as_ref().and_then(|c| c.character_requirements.as_ref()).is_some_and(|requirements| requirements.premium))
+                        && !super::super::quest_world_callback::character_requirements::premium_is_current(&mut tx, character, *grizzly_gate).await?
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(

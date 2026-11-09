@@ -19,6 +19,19 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 pub mod donor;
+mod native_death;
+mod native_departure;
+mod native_origin;
+mod native_step;
+mod native_timeout;
+pub use native_death::NativeArenaDeath;
+pub use native_departure::NativeArenaDeparture;
+pub use native_origin::NativeArenaOrigin;
+pub use native_step::NativeArenaStep;
+pub use native_timeout::NativeArenaTimeout;
+mod pit_lease;
+pub(in crate::durability) mod pit_reset;
+pub(in crate::durability) mod terminal;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MatchState {
@@ -33,6 +46,39 @@ pub struct MatchState {
     pub run: [u8; 16],
 }
 impl MatchState {
+    /// Crystal svargrond_arena.lua:259-313: victory does not renew the pit's
+    /// kick timer. Recovery must retain its original deadline in either phase.
+    pub fn projection_remaining_ms(&self, now_ms: i64) -> Option<u64> {
+        if !matches!(self.phase, 1 | 2) {
+            return None;
+        }
+        let remaining = self.deadline_ms.checked_sub(now_ms)?;
+        (remaining > 0)
+            .then(|| u64::try_from(remaining).ok())
+            .flatten()
+    }
+
+    /// M51: project the state committed by pit custody/fee admission, never a
+    /// refused next-pit proposal. Source arena_kill.lua:37 preserves a credited
+    /// victory even when movements_arena_pit.lua:52-56 refuses the next room.
+    pub fn reconcile_arena_refusal(
+        &mut self,
+        before: &Self,
+        disposition: ArenaDisposition,
+        committed: &ArenaState,
+    ) {
+        match disposition {
+            ArenaDisposition::Busy => {
+                *self = before.clone();
+                self.phase = committed.phase;
+            }
+            ArenaDisposition::InsufficientGold | ArenaDisposition::InventoryFull => {
+                *self = before.clone()
+            }
+            _ => {}
+        }
+    }
+
     pub fn wire(&self, now_ms: i64, masks: [u8; 3]) -> ArenaState {
         ArenaState {
             completed_rank: self.completed,
@@ -70,6 +116,7 @@ pub fn identity(command: CommandRef, purpose: &[u8]) -> [u8; 16] {
 }
 
 pub struct MatchRead {
+    pub pit_owned: bool,
     pub state: MatchState,
     pub masks: [u8; 3],
     pub now_ms: i64,
@@ -127,6 +174,8 @@ impl MatchCause {
 
 pub struct MatchTransition {
     pub cause: MatchCause,
+    pub native_origin: Option<NativeArenaOrigin>,
+    pub command: CommandRef,
     pub payload: Vec<u8>,
     pub before: MatchState,
     pub after: MatchState,
@@ -146,6 +195,59 @@ impl DurabilityRoot {
         payload: &[u8],
     ) -> Result<MatchRead, CharacterProgressionError> {
         let cause = cause.into();
+        self.read_arena_match_origin(authority, node, fence, command, payload, None)
+            .await
+    }
+
+    pub async fn read_arena_portal_step(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        step: &NativeArenaStep,
+    ) -> Result<MatchRead, CharacterProgressionError> {
+        self.read_arena_native_origin(
+            authority,
+            node,
+            fence,
+            &NativeArenaOrigin::Step(step.clone()),
+        )
+        .await
+    }
+
+    pub async fn read_arena_native_origin(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        origin: &NativeArenaOrigin,
+    ) -> Result<MatchRead, CharacterProgressionError> {
+        if origin.command().game_session_id() != fence.game_session_id {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
+        let payload = origin
+            .payload()
+            .ok_or(CharacterProgressionError::AuthorityRejected)?;
+        self.read_arena_match_origin(
+            authority,
+            node,
+            fence,
+            origin.command(),
+            &payload,
+            Some(origin.binding().to_vec()),
+        )
+        .await
+    }
+
+    async fn read_arena_match_origin(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        payload: &[u8],
+        origin: Option<Vec<u8>>,
+    ) -> Result<MatchRead, CharacterProgressionError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -164,10 +266,15 @@ impl DurabilityRoot {
                     let masks = claimed_masks(&mut tx, fence).await?;
                     let now_ms = now(&mut tx).await?;
                     let replay = replay(&mut tx, fence, cause, &payload).await?;
+                    let replay = replay_origin(&mut tx, fence, command, &payload, origin.as_deref()).await?;
                     let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
                         .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
+                    let pit_owned = !matches!(state.phase,1|2) || (!dead &&
+                        (pit_lease::owned(&mut tx,fence,&state,now_ms).await?
+                         || pit_lease::claim(&mut tx,fence,&state,now_ms).await?));
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(MatchRead {
+                        pit_owned,
                         state,
                         masks,
                         now_ms,
@@ -194,6 +301,17 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
+        if let Some(origin) = &request.native_origin
+            && !origin.validates(
+                &request.before,
+                fence,
+                request.command,
+                &request.payload,
+                request.victory,
+            )
+        {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -204,11 +322,22 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             let root=match assert_gameplay_fence(&mut tx,&fence,&node).await? {Ok(root)=>root,Err(error)=>return Ok(Err(error))};
             if let Some(bytes)=replay(&mut tx,fence,request.cause,&request.payload).await? {
+            if let Some(bytes)=replay_origin(&mut tx,fence,request.command,&request.payload,
+                request.native_origin.as_ref().map(NativeArenaOrigin::binding)).await? {
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
             }
             let prior=load_state(&mut tx,fence).await?;
             if prior!=request.before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
             let now_ms=now(&mut tx).await?;
+            // Crystal201189f svargrond_arena.lua:259-313: callbacks cannot
+            // shorten the original timer; the deciding durable clock owns it.
+            if request.native_origin.as_ref().is_some_and(|origin| !origin.allows_commit_at(now_ms)) {
+                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+            }
+            if request.native_origin.as_ref().is_some_and(NativeArenaOrigin::requires_live_pit)
+                && !pit_lease::owned(&mut tx,fence,&prior,now_ms).await? {
+                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
+            }
             let mut ready=prior.clone();
             if let Some(death)=request.victory {
                 if prior.phase!=1 || death.runtime_scope()!=fence.runtime_scope || death.scope_ownership_generation()!=fence.scope_ownership_generation { return Err(DurabilityError::InvalidStoredState); }
@@ -220,6 +349,13 @@ impl DurabilityRoot {
             if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,command,now_ms) {return Err(DurabilityError::InvalidStoredState);}
             let mut after=request.after;
             let mut disposition=request.disposition;
+            // Claim shared custody before charging an entry fee or moving to the
+            // next pit. Runtime census alone cannot close concurrent admissions.
+            if disposition==ArenaDisposition::Applied && matches!(after.phase,1|2)
+                && !pit_lease::claim(&mut tx,fence,&after,now_ms).await? {
+                after=ready.clone();
+                disposition=ArenaDisposition::Busy;
+            }
             let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0;
             let mut fee_occurrence=None;
             if entering {
@@ -264,6 +400,9 @@ impl DurabilityRoot {
                 }
             }
             save(&mut tx,fence,request.cause,&request.payload,&prior,&after,&bytes).await?;
+            if !matches!(after.phase,1|2) { pit_lease::release(&mut tx,fence).await?; }
+            save_origin(&mut tx,fence,request.command,&request.payload,&prior,&after,&bytes,
+                request.native_origin.as_ref().map(NativeArenaOrigin::binding)).await?;
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?
     }
@@ -318,8 +457,24 @@ pub(super) async fn replay(
     let payload = cause.bind(payload);
     let row=sqlx::query("SELECT payload,reply FROM game_arena_match_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    replay_origin(tx, fence, command, payload, None).await
+}
+pub(super) async fn replay_origin(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    payload: &[u8],
+    origin: Option<&[u8]>,
+) -> Result<Option<Vec<u8>>, DurabilityError> {
+    let row=sqlx::query("SELECT payload,reply,native_origin_binding FROM game_arena_match_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid")
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     if let Some(row) = row {
-        if row.try_get::<Vec<u8>, _>("payload")? != payload {
+        if row.try_get::<Vec<u8>, _>("payload")? != payload
+            || row
+                .try_get::<Option<Vec<u8>>, _>("native_origin_binding")?
+                .as_deref()
+                != origin
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         return Ok(Some(row.try_get("reply")?));
@@ -342,6 +497,27 @@ pub(super) async fn save(
     let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(&payload).bind(before).bind(&after).bind(reply).execute(&mut **tx).await?;
+    save_origin(tx, fence, command, payload, before, after, reply, None).await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "binds the exact arena predecessor, reply and native origin"
+)]
+pub(super) async fn save_origin(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    payload: &[u8],
+    before: &MatchState,
+    after: &MatchState,
+    reply: &[u8],
+    origin: Option<&[u8]>,
+) -> Result<(), DurabilityError> {
+    let before = serde_json::to_value(before).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
+    sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply,native_origin_binding) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
         .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).execute(&mut **tx).await?;
     Ok(())
@@ -367,6 +543,12 @@ fn valid_transition(
     let Ok(action) = decode_match_request(payload) else {
         return false;
     };
+    // Crystal201189f svargrond_arena.lua:259-313: the original kick deadline
+    // is final. A read before expiry cannot authorize progress committed later.
+    let expired = matches!(before.phase, 1 | 2) && before.deadline_ms <= now_ms;
+    if expired && ready != before {
+        return false;
+    }
     if after == ready {
         return true;
     }
@@ -376,7 +558,7 @@ fn valid_transition(
     {
         return true;
     }
-    if disposition != D::Applied {
+    if expired || disposition != D::Applied {
         return false;
     }
     let mut expected = ready.clone();
@@ -449,3 +631,14 @@ impl DurabilityRoot {
         .await
     }
 }
+#[cfg(test)]
+#[path = "arena_match/projection_tests.rs"]
+mod projection_tests;
+
+#[cfg(test)]
+#[path = "arena_match/native_step_tests.rs"]
+mod native_step_tests;
+
+#[cfg(test)]
+#[path = "arena_match/native_timeout_tests.rs"]
+mod native_timeout_tests;

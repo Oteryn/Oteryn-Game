@@ -9,6 +9,26 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, false, false)
+}
+
+pub(in super::super) fn bundle_with_pillars(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false)
+}
+
+pub(in super::super) fn bundle_with_pillar_floors(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, false, true)
+}
+
+fn bundle_layout(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    with_pillars: bool,
+    pillar_floors_only: bool,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
         ("oteryn:item.tibia.i2854", 0),
@@ -71,6 +91,64 @@ pub(in super::super) fn bundle(
                 tile.y = at.1;
                 tiles.insert(at, tile);
             }
+        }
+    }
+    // M51 source pillars and portal Item facts, without changing production
+    // definitions. Crystal svargrond_arena.lua:25-115,207-246.
+    if with_pillars {
+        let mut pillar_palette = None;
+        for source in [1841, 5022] {
+            let key = format!("oteryn:item.tibia.i{source}");
+            let reference = native
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
+                .ok_or("arena object reference")?;
+            let palette = u32::try_from(bundle.manifest.palette.len())?;
+            bundle
+                .manifest
+                .palette
+                .push(oteryn_world_bundle::bundle::PaletteEntry {
+                    key,
+                    family: oteryn_world_bundle::bundle::Family::Item,
+                    id: reference.get() - 1,
+                    terrain: None,
+                });
+            if source == 1841 {
+                pillar_palette = Some(palette);
+            }
+        }
+        for number in 1..=10 {
+            let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+                .ok_or("source pit")?
+                .layout();
+            let [x, y, floor] = layout.pillar;
+            let at = (u16::try_from(x)?, u16::try_from(y)?, i8::try_from(floor)?);
+            let tile = tiles.entry(at).or_insert_with(|| {
+                let mut tile = bundle.sectors[0].tiles[0].clone();
+                tile.x = at.0;
+                tile.y = at.1;
+                tile
+            });
+            tile.items.push(oteryn_world_bundle::sector::Item {
+                palette: pillar_palette.ok_or("pillar palette")?,
+                depth: 0,
+                attrs: Default::default(),
+            });
+        }
+    }
+    // Crystal svargrond_arena.lua:235-244 recreates absent pillars on real floors.
+    // No pillar or portal palette entries are present in this fixture.
+    if pillar_floors_only {
+        for number in 1..=10 {
+            let [x, y, floor] = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+                .ok_or("source pit")?
+                .layout()
+                .pillar;
+            let at = (u16::try_from(x)?, u16::try_from(y)?, i8::try_from(floor)?);
+            let mut tile = bundle.sectors[0].tiles[0].clone();
+            tile.x = at.0;
+            tile.y = at.1;
+            tiles.insert(at, tile);
         }
     }
     for &(x, y) in &donor::CENTERS {

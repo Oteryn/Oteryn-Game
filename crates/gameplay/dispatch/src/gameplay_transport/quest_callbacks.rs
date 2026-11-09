@@ -431,6 +431,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.active_generation.and_then(|generation| generation.native_gameplay()),
                 admission,
                 &self.premium_coordinator,
+            let disposition = match slot.commit_world_callback_with_items_and_premium(self.root, self.character, self.holder, fence,
+                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
+                std::sync::Arc::clone(catalogue), &permit, context,
+                self.active_generation.and_then(|generation| generation.native_gameplay()),
+                admission, &self.premium_coordinator,
             ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
@@ -970,6 +975,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entered
         };
         let entered = self.step_arena_exit(actor, session, entered).await;
+        let entered = self
+            .step_arena_portal(permit, actor, session, origin, entered)
+            .await;
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;

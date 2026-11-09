@@ -59,6 +59,125 @@ async fn command(
     wire::decode_match_result(&bytes).map_err(debug)
 }
 fn scenario(funded: bool, expire: bool) -> TestResult {
+#[test]
+fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_path(true, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "M51 native portal run panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native ten-pit portal run duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
+#[test]
+fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(true, Some(NativeScenario::RecreatedPillars)).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "M51 recreated pillar worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES recreated pillars duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
+fn scenario(funded: bool) -> TestResult {
+    scenario_path(funded, false)
+}
+
+#[test]
+fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::Departure)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M51 native departure worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native departure duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+enum NativeScenario {
+    Portals,
+    RecreatedPillars,
+    Departure,
+    Timeout,
+    ResetMonsters,
+}
+
+#[test]
+fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::Timeout)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M51 native timeout worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native timeout duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+#[test]
+fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(true, Some(NativeScenario::ResetMonsters)).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "M51 native reset worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native monster reset duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
+fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
+    scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
+}
+fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
+    let native_portals = route.is_some();
+    let leave_early = matches!(route, Some(NativeScenario::Departure));
+    let timeout_early = matches!(route, Some(NativeScenario::Timeout));
+    let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
@@ -77,7 +196,13 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let (bytes, pins) = fixture::bundle(native)?;
+        let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
+            fixture::bundle_with_pillar_floors(native)?
+        } else if native_portals {
+            fixture::bundle_with_pillars(native)?
+        } else {
+            fixture::bundle(native)?
+        };
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = crate::map::boot::boot(
             &bytes,
@@ -222,6 +347,47 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 .await
                 .is_none()
         );
+        if timeout_early {
+            owner
+                .regression_arena_pit_time(5000)
+                .ok_or("fixture timer")?;
+        }
+        let reset_observations = if reset_monsters {
+            let mut runtime = deps.runtime.lock().await;
+            let mut spawn = |at| {
+                runtime
+                    .spawn_arena_opponent("oteryn:creature.frostfur", at, |runtime, at| {
+                        Some(crate::gameplay_transport::arena_match::walkable(
+                            &owner, runtime, at,
+                        ))
+                    })
+                    .map_err(debug)
+            };
+            let inside = spawn(crate::foundation::MovementLocalPosition {
+                x: 32205,
+                y: 31094,
+                floor: 7,
+            })?;
+            let outside = spawn(crate::foundation::MovementLocalPosition {
+                x: 32215,
+                y: 31098,
+                floor: 7,
+            })?;
+            let npc = runtime
+                .place_dynamic_npc(
+                    "oteryn:npc.halvar",
+                    crate::foundation::NpcPlacement {
+                        x: 32206,
+                        y: 31094,
+                        floor: -7,
+                        direction: crate::foundation::MovementFacing::South,
+                    },
+                )
+                .map_err(debug)?;
+            Some((inside, outside, npc))
+        } else {
+            None
+        };
         let entry_id = admitted.continuity.next_command_id;
         let entered = command(&owner, &mut admitted, A::Enter).await?;
         if !funded {
@@ -266,6 +432,140 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 assert_eq!(next.disposition, D::Applied);
                 assert_eq!(next.state.active_rank, rank);
             }
+        if let Some((inside, outside, npc)) = reset_observations {
+            let runtime = deps.runtime.lock().await;
+            assert!(
+                !runtime.contains_live_creature(inside),
+                "entry clears an unregistered Monster inside the source box"
+            );
+            assert!(
+                runtime.contains_live_creature(outside),
+                "source reset must preserve Monsters outside its box"
+            );
+            assert_eq!(
+                runtime.npc_key(npc),
+                Some("oteryn:npc.halvar"),
+                "source reset removes Monsters, never NPCs"
+            );
+            assert_eq!(
+                runtime.visible_entities().creatures.len(),
+                2,
+                "outside Monster and the newly spawned opponent remain"
+            );
+            drop(runtime);
+            let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(victories, 0, "administrative reset is not a kill source");
+            return Ok(());
+        }
+        if timeout_early {
+            let target = {
+                let runtime = deps.runtime.lock().await;
+                runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| runtime.contains_live_creature(c.actor))
+                    .ok_or("live arena opponent")?
+                    .actor
+            };
+            let deadline:i64 = sqlx::query_scalar("SELECT (body->>'deadline_ms')::bigint FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            sqlx::query("SELECT pg_sleep(GREATEST(0,($1-floor(extract(epoch FROM clock_timestamp())*1000))/1000.0)+0.05)")
+                .bind(deadline).execute(&harness.pool).await?;
+            let mut stored = (1, 1);
+            for _ in 0..100 {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                owner.drain_monster_melee().await;
+                stored=sqlx::query_as("SELECT (body->>'rank')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                if stored == (0, 0) {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+            assert_eq!(stored, (0, 0), "silent timeout must persist without Status");
+            let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(leases, 0);
+            let runtime = deps.runtime.lock().await;
+            assert!(!runtime.contains_live_creature(target));
+            let at = runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            assert_eq!(
+                (at.x, at.y, at.floor),
+                (32251, 31098, 6),
+                "native timer kicks to the source return"
+            );
+            drop(runtime);
+            let native:i64=sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2")
+                .bind(i32::try_from(b"oteryn:svargrond-native-timeout:v1".len())?)
+                .bind(b"oteryn:svargrond-native-timeout:v1".as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(native, 1);
+            return Ok(());
+        }
+        if leave_early {
+            let target = {
+                let mut runtime = deps.runtime.lock().await;
+                let target = runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| runtime.contains_live_creature(c.actor))
+                    .ok_or("live arena opponent")?
+                    .actor;
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime
+                    .relocate_arena_player(
+                        deps.actor,
+                        admitted.game_session_id,
+                        before,
+                        crate::foundation::MovementLocalPosition {
+                            x: 32251,
+                            y: 31098,
+                            floor: 6,
+                        },
+                    )
+                    .map_err(debug)?;
+                target
+            };
+            owner.clock_origin -= std::time::Duration::from_secs(3);
+            owner.drain_monster_melee().await;
+            let stored: (i32, i32) = sqlx::query_as("SELECT (body->>'rank')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                stored,
+                (0, 0),
+                "native departure must cancel without client Leave"
+            );
+            let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(
+                leases, 0,
+                "departure releases durable custody before the timer expires"
+            );
+            assert!(
+                !deps.runtime.lock().await.contains_live_creature(target),
+                "departure removes its old opponent"
+            );
+            let native: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2")
+                .bind(i32::try_from(b"oteryn:svargrond-native-departure:v1".len())?)
+                .bind(b"oteryn:svargrond-native-departure:v1".as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(native, 1);
+            let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(
+                victories, 0,
+                "leaving cannot create a kill or completed rank"
+            );
+            return Ok(());
+        }
         for pit in 1..=10 {
             assert_eq!(
                 command(&owner, &mut admitted, A::Advance)
@@ -334,6 +634,70 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
                 oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
             let advanced = command(&owner, &mut admitted, A::Status).await?;
+            let advanced = if native_portals {
+                owner.drain_monster_melee().await;
+                let stored: (i32, i32) = sqlx::query_as(
+                    "SELECT (body->>'pit')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid",
+                ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(
+                    stored,
+                    (i32::from(pit), 2),
+                    "credited death must persist without an arena Status command"
+                );
+                let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit)
+                    .ok_or("source pit")?
+                    .layout();
+                let [x, y, floor] = layout.pillar;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    runtime
+                        .relocate_arena_player(
+                            deps.actor,
+                            admitted.game_session_id,
+                            before,
+                            crate::foundation::MovementLocalPosition {
+                                x: x + 1,
+                                y,
+                                floor: -floor as i16,
+                            },
+                        )
+                        .map_err(debug)?;
+                }
+                let moved = crate::gameplay_transport::connection::regression_routed_step(
+                    &owner,
+                    admitted,
+                    deps.actor,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+                )
+                .await?;
+                assert_eq!(
+                    moved.disposition,
+                    oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
+                    "native portal STEP in pit {pit}"
+                );
+                let at = deps
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position();
+                let expected = if pit == 10 {
+                    crate::durability::arena_match::donor::REWARD_ROOM
+                } else {
+                    let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit)];
+                    (x, y, 7)
+                };
+                assert_eq!(
+                    (at.x, at.y, at.floor),
+                    expected,
+                    "portal must use its native progression owner"
+                );
+                command(&owner, &mut admitted, A::Status).await?
+            } else {
+                command(&owner, &mut admitted, A::Advance).await?
+            };
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
             projected.clear();
@@ -350,6 +714,18 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
         let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE command_id > 18446744073709551615")
             .fetch_one(&harness.pool).await?;
         assert_eq!(steps, 30, "native steps have their own durable receipt namespace");
+        assert_eq!(victories, 10);
+        if native_portals {
+            for (prefix, callback) in [
+                (b"oteryn:svargrond-native-step:v1".as_slice(), "STEP"),
+                (b"oteryn:svargrond-native-death:v1".as_slice(), "DEATH"),
+            ] {
+                let native_receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
+                ).bind(i32::try_from(prefix.len())?).bind(prefix).fetch_one(&harness.pool).await?;
+                assert_eq!(native_receipts, 10, "one native {callback} receipt per pit");
+            }
+        }
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;
         assert_eq!(achievements, 1);
         let status = command(&owner, &mut admitted, A::Status).await?;

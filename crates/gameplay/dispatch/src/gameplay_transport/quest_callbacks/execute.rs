@@ -788,6 +788,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let outcome = slot
                 .commit_world_callback_with_items_selected(
                 .commit_world_callback_with_requirements(
+                .commit_world_callback_with_items_and_premium(
                     self.root,
                     self.character,
                     self.holder,

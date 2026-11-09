@@ -1,5 +1,6 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
+pub(crate) mod character_requirements;
 pub(super) mod completion;
 #[cfg(feature = "test-support")]
 pub mod ground_stack;
@@ -295,6 +296,11 @@ pub(super) async fn consume(
         if level.is_none_or(|level| level < i64::from(minimum)) {
             return Ok(false);
         }
+    }
+    if let Some(requirements) = &callback.character_requirements
+        && !character_requirements::satisfied(tx, fence.character_id, requirements).await?
+    {
+        return Ok(false);
     }
     for requirement in &callback.world_requirements {
         let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Ground {
@@ -914,6 +920,10 @@ pub(super) async fn consume_npc_inputs(
     }
     Ok(true)
 }
+
+#[cfg(test)]
+#[path = "quest_world_callback/entry_postgres_tests.rs"]
+mod entry_postgres_tests;
 
 /// Exercise the exact durable predicate from auto-mounted PostgreSQL cases.
 #[cfg(any(test, feature = "test-support"))]

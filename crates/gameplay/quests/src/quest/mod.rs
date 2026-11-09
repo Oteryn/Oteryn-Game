@@ -20,6 +20,8 @@
 mod aggregate_completion_tests;
 
 pub mod admission_binding;
+pub mod authored_bindings;
+pub mod barbarian_arena;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.

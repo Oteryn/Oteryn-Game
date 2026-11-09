@@ -294,6 +294,8 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
             item_on_target:tool.map(|tool|ItemOnTarget{ target_remove: false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             item_on_target:tool.map(|tool|ItemOnTarget{selected_instance:false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             item_on_target:tool.map(|tool|ItemOnTarget{ ingredients: Vec::new(),alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
+            minimum_level:None, character_requirements: None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
+            item_on_target:tool.map(|tool|ItemOnTarget{alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
             sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/orockle.lua:explicit-native-geometry-and-execution-adaptation; wiki56916@1184992; NOT_DONOR_POSITION".into()],
         }

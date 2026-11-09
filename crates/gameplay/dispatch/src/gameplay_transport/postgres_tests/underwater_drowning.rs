@@ -462,7 +462,7 @@ admission: None,
                     vec![]
                 },
                 offerings: vec![],
-                minimum_level: None,
+                minimum_level: None, character_requirements: None,
                 experience: None,
                 monk_reward: None,
                 item_on_target: None,

@@ -19,6 +19,9 @@ mod timed_passages_tests;
 #[path = "rafzane_elevator.rs"]
 mod rafzane_elevator;
 pub use rafzane_elevator::RafzaneElevator;
+#[path = "arena_pillars.rs"]
+mod arena_pillars;
+pub use arena_pillars::ArenaPillarProjection;
 
 #[derive(Clone, Debug)]
 struct MovementDecay {
@@ -73,6 +76,8 @@ pub(super) struct CallbackStates {
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
+    arena_pillars: BTreeMap<u64, [u8; 16]>,
+    arena_recreated: BTreeMap<TilePos, arena_pillars::RecreatedPillar>,
     pub(super) movement_items: BTreeMap<TilePos, Vec<view::ComposedEntry>>,
     movement_sequence: u64,
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
@@ -330,6 +335,8 @@ impl CallbackStates {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
     fn has_capacity(&self, additional: usize) -> bool {
         let used = self.reserved.len()
+        let used = self.arena_pillars.len()
+            + self.arena_recreated.len()
             + self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
@@ -1273,6 +1280,7 @@ impl BundleFacts {
             return true;
         };
         if states.solid_items.contains(&pos) || states.batch_blockers.contains(&pos) {
+        if states.solid_items.contains(&pos) || states.arena_pillar_closed_at(pos) {
             return true;
         }
         if states.phase_entry(pos, 0).is_some() {

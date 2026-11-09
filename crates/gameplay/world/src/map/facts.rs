@@ -51,6 +51,7 @@ pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove, QuestTimedP
 pub use quest_callbacks::{
     ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove, RafzaneElevator,
 };
+pub use quest_callbacks::{ArenaPillarProjection, QuestCallbackProjection};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -334,6 +335,8 @@ impl BundleFacts {
             1025, 1949, 7252, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186,
             10187, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076,
             14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+            1025, 1841, 1949, 5022, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064,
+            14074, 14076, 14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
