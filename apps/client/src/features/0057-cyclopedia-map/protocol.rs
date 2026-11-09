@@ -51,6 +51,17 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    if command.kind == wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY {
+        panel.speed_pending = false;
+        panel.speed_bonus = if accepted(result) {
+            <[u8; 2]>::try_from(result.payload.as_slice())
+                .map(u16::from_le_bytes)
+                .unwrap_or(0)
+        } else {
+            0
+        };
+        return;
+    }
     if super::input::atlas::apply(panel, command, result) {
         return;
     }

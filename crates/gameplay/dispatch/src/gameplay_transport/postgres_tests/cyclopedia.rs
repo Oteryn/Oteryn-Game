@@ -10,6 +10,8 @@ use crate::gameplay_transport::guild_intent::GuildReply;
 use oteryn_protocol_oteryn::CommandStatus;
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
+#[path = "cyclopedia/speed.rs"]
+mod speed;
 #[path = "cyclopedia/fixture.rs"]
 pub(super) mod support;
 
@@ -237,6 +239,20 @@ fn scenario(canonical: bool) -> TestResult {
                 credited[9], 1,
                 "canonical current subarea inherits legacy completion"
             );
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .actor_active_speed_delta(
+                        deps.actor,
+                        Some(admitted.game_session_id),
+                        owner.owner_now(),
+                    )
+                    .map_err(debug)?,
+                195,
+                "T187: one fully discovered area contributes the content maximum"
+            );
             let (_, donated) =
                 support::exchange_inventory(&owner, &mut admitted, 4, 73, &request(4, 1)).await?;
             assert_eq!(donated[0], 0);
@@ -401,6 +417,16 @@ fn scenario(canonical: bool) -> TestResult {
                 small[9], 1,
                 "seven-candidate subarea retains its completed state"
             );
+            speed::verify(
+                &mut owner,
+                &deps,
+                &mut admitted,
+                &h,
+                &authority,
+                generation,
+                activation_pin.frame_binding().digest(),
+            )
+            .await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -717,7 +743,7 @@ fn scenario(canonical: bool) -> TestResult {
         );
         assert_eq!(reset_pois[9], 0, "the reset starts a fresh POI run");
         assert_eq!(count(&reset_pois), 0);
-        assert_eq!(percentage(&reset_pois), 50);
+        assert_eq!(percentage(&reset_pois), 0);
         let reset_progress: serde_json::Value =
             sqlx::query_scalar("SELECT progress->'subareas'->'2' FROM game_character_cyclopedia")
                 .fetch_one(&h.pool)
@@ -725,8 +751,8 @@ fn scenario(canonical: bool) -> TestResult {
         let reset_progress: crate::domain::cyclopedia::MapProgress =
             serde_json::from_value(reset_progress)?;
         assert!(
-            reset_progress.discovered,
-            "earned discovery survives a POI reset"
+            !reset_progress.discovered,
+            "T187: reset removes completion and speed eligibility"
         );
         let points = reset_progress
             .exploration
