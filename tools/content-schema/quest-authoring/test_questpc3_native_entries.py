@@ -64,6 +64,17 @@ class NativeEntries(unittest.TestCase):
         self.assertEqual(counter['creature'], 'oteryn:creature.bakragore')
         self.assertEqual((counter['gate_value'],counter['minimum'],counter['maximum'],counter['advance_gate_to']), (0,0,1,1))
 
+    def test_illuminator_shell_entry_preserves_level_premium_and_parent(self):
+        quest = source.build_illuminator()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.illuminator_outfits_quest')
+        self.assertEqual(quest['admission'], {'minimum_level':200,'premium':True,
+            'prerequisites':[{'requirement':'Between the Lines Quest','quest':'oteryn:quest.between_the_lines_quest'}]})
+        self.assertEqual(len(quest['stages']), 1)
+        self.assertFalse(quest['stages'][0]['completes'])
+        collection = quest['stages'][0]['trigger']['collection']
+        self.assertEqual(collection['items'], [{'item':'oteryn:item.tibia.i51656','count':1}])
+        self.assertEqual(collection['storage'][0]['set'], 1)
+
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()
         changed = copy.deepcopy(recipe)

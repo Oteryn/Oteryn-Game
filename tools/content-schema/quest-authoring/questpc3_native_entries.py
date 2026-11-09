@@ -183,6 +183,36 @@ def build_decaying_defender(root=ROOT):
             'crates/gameplay/durability/src/durability/quest_state/native_prerequisites.rs:completed']}]}
 
 
+
+def build_illuminator(root=ROOT):
+    quest = 'oteryn:quest.illuminator_outfits_quest'
+    requirement = 'Between the Lines Quest'
+    parent = 'oteryn:quest.between_the_lines_quest'
+    path, recipe = chosen(root, quest, ('s1','collect',1,['Scallop Shell']),
+                          minimum_level=200, premium=True, prerequisites=[requirement])
+    parents = [p.relative_to(root).as_posix() for p in sorted((root/'content/quests/definitions').glob('quests-*.json'))
+               for r in json.loads(p.read_bytes())['records'] if r['definition']['identity']['key'] == parent]
+    if len(parents) != 1:
+        raise ValueError('M01C_ILLUMINATOR_PARENT_IDENTITY')
+    item = 'oteryn:item.tibia.i51656'
+    items = [(p.relative_to(root).as_posix(), r['definition'])
+             for p in sorted((root/'content/items/definitions').glob('items-*.json'))
+             for r in json.loads(p.read_bytes())['records'] if r['definition']['identity']['key'] == item]
+    if len(items) != 1 or items[0][1]['semantics']['presentation']['value']['name']['value'] != 'scallop shell':
+        raise ValueError('M01C_ILLUMINATOR_SHELL_IDENTITY')
+    raw = json.dumps(recipe,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()
+    track = 'oteryn:quest-progress/m01c-illuminator-route'
+    evidence = [path+':s1', items[0][0]+':'+item, parents[0]+':'+parent]
+    return {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'admission':{'minimum_level':200,'premium':True,
+            'prerequisites':[{'requirement':requirement,'quest':parent}]},
+        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
+        'stages':[{'key':'s1-shell','completes':False,'trigger':{'kind':'collect','collection':{
+            'key':'oteryn:quest-collection/m01c-illuminator-shell',
+            'items':[{'item':item,'count':1}],
+            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}], 'sources':evidence}}}],
+        'sources':evidence}]}
+
 def content(check=False):
     documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender())]
     for output, value in documents:
