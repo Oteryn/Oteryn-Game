@@ -10,11 +10,22 @@ import qengine_reward_item_profiles as profiles
 
 
 class SharedPhysicalAdmission(unittest.TestCase):
+    def test_capture_keeps_the_mining_owned_pick_speed_unknown(self):
+        native=json.loads((profiles.ROOT/profiles.PROFILE).read_bytes())
+        key='oteryn:item.tibia.i3456'
+        existing=next(row for row in native['records'] if row['production_definition']['production_key']==key)
+        self.assertNotIn('speed_bonus',existing['attributes'])
+        packet=profiles.capture()
+        captured=next(row for row in packet['records'] if row['production_definition']['production_key']==key)
+        self.assertEqual(captured['attributes'],existing['attributes'])
+        self.assertEqual(captured['semantics'],existing['semantics'])
+
     def record(self):
         return {
             'production_definition': {'production_key': 'oteryn:item.tibia.i11701'},
             'production_binding': {'source': 'exact'},
-            'admission': {'materializable': True},
+            'admission': {'materializable': True, 'stack_class': 'NonStackable',
+                          'legal_destinations': ['CharacterInventory', 'Ground']},
             'semantics': {
                 'physical': {'state': 'KNOWN', 'value': {'weight': {'state': 'KNOWN', 'value': 3500}}},
                 'stack': {'state': 'NOT_APPLICABLE'},

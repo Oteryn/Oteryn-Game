@@ -44,7 +44,16 @@ class AcceptedOverlayTests(unittest.TestCase):
         # C1 registers the Newhaven starting-loadout item profiles; SRX-1
         # registers the pinned item-profile supplement. QENGINE2 adds its
         # source-qualified reward Item proof alongside the SEASON and quest constructor outputs.
-        self.assertEqual(len(actual.keys() - {qengine.PROOF}),45)
+        merged_outputs = {
+            'content/cosmetics/outfits/native-cosmetics.json',
+            *{f'tools/content-schema/native-gameplay/questpc7-{name}.json' for name in (
+                'marsh-corpse-profiles', 'slug-corpse-profiles',
+                'smith-corpse-profiles', 'smith-item-profile',
+                'hot-fishburger-profile', 'hot-corpse-profiles',
+            )},
+        }
+        self.assertTrue(merged_outputs <= actual.keys())
+        self.assertEqual(len(actual.keys() - {qengine.PROOF} - merged_outputs),45)
         self.assertIn(qengine.PROOF,actual)
         # Independently rebuild the complete merged128-identity packet; a count
         # alone cannot authorize a missing, duplicate or substituted reward.

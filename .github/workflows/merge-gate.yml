@@ -143,11 +143,7 @@ jobs:
               if pull_after_files.get('base', {}).get('ref') != 'main':
                   errors.append('pull request base ref changed during scope classification')
               if pull_after_files.get('changed_files') != changed_files:
-                  # GitHub can finish computing the count after publishing a head.
-                  # Discard the enumeration and run every lane; SHA/repository/base
-                  # movement above remains a hard failure.
-                  complete = False
-                  print('PR file count changed; using full-check routing.', file=sys.stderr)
+                  errors.append('pull request file count changed during scope classification')
 
           if errors:
               for error in errors:

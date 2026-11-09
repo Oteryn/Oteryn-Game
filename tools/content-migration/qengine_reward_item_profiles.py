@@ -114,6 +114,10 @@ def capture(root=ROOT):
             record['semantics']=accepted.accepted_first(semantics,refined) if semantics is not None else refined
             record['attributes']=accepted.accepted_first(prior['attributes'],record['attributes'])
             record['authoring']=copy.deepcopy(prior['authoring'])
+            # The proof and native admission share the same custody boundary:
+            # physical qualification cannot invent an owner's unknown mechanic.
+            import questpc7_physical_custody_join
+            record=questpc7_physical_custody_join.observation(prior,record,accepted.accepted_first)
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
