@@ -78,3 +78,15 @@ Dreamer fire-bug entry: only appearance1949 is ready; reset appearance3134 and
 unrelated appearances refuse. Three focused source-world-object tests and quest
 Clippy pass. This rule does not register a Dreamer callback or qualify its item
 use/step PostgreSQL path; those remain required before claiming the entrance.
+
+The pinned Fire Bug ignition source is now located:
+`data-global/scripts/quests/others/actions_fire_bug.lua:99-109,172-173`
+at the same Crystal commit. Item5467 is reused, not consumed, on UID2243.
+The action explicitly replaces ashes3134 at (32849,32233,z9) with portal1949,
+sets its destination to (32857,32234,z11), and schedules restoration after five
+minutes. This literal source position corroborates the retained bare B3 ashes;
+it does not bind the separate Death Ring AddItem tile. The current callback
+validator requires personal state for any item-on-target binding, so faithfully
+wiring ignition needs shared reusable-item admission rather than a fabricated
+personal progress track. The existing lit-glyph entry guard alone is not that
+implementation.
