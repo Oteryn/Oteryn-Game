@@ -91,7 +91,7 @@ Record reviewer identity/method, exact head and material findings. `PASS` requir
 
 A second genuinely independent reviewer is required when the trusted-base risk policy, owner or owning contract requires it. This includes high-risk authority/security/protocol/durable-data/production changes, safety-reducing governance changes and cases where material uncertainty/complexity makes self-review insufficient.
 
-Independent review may be performed by a qualified human, a separate non-authoring agent/session, Codex or a dedicated independent audit workflow. Codex is not mandatory by name and should not be invoked routinely for low-risk work.
+Independent review may be performed by a qualified human, a separate non-authoring agent/session, Codex or a dedicated independent audit workflow. For Game PRs the owner's rule of 2026-11-09 (`OWNER_FUNDED_AI_POLICY.md`, *Owner review rule for every PR*) requires one Codex review of every PR, at most two; outside that rule Codex is not mandatory by name.
 
 A review by the same agent/session that implemented or materially authored the change is self-review, not independent review. If independence is required and no genuine independent mechanism is available, the task is blocked rather than silently downgraded.
 

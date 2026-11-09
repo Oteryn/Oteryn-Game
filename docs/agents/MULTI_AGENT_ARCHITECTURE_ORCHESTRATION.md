@@ -187,9 +187,9 @@ coordinator audit
 - A coordinator audit is independent only if the coordinator did not materially author the worker proposal being audited.
 - If the coordinator substantially rewrites a worker proposal, it becomes a co-author and must not mislabel its own final review as independent.
 - Governance changes that introduce or expand coordinator merge authority require an independent exact-head review under root policy before merge.
-- Codex remains optional and owner-funded. No worker or coordinator may trigger it without exact authorization for that PR/use.
+- Codex is owner-funded. The owner's standing rule of 2026-11-09 (`OWNER_FUNDED_AI_POLICY.md`) authorizes one Codex review of every Game PR (at most two); only the coordinator starts it. No worker triggers it, and any other use needs exact authorization for that PR/use.
 - Marking a draft ready counts as a Codex-triggering action when repository automation is configured that way.
-- Authorization for one PR never carries to another PR or a second review invocation.
+- Authorization for one PR never carries to another PR or to a review invocation beyond what the standing per-PR rule allows.
 - If a repair moves the head, all exact-head validation/review evidence for the superseded head is stale.
 
 ## Status discipline
