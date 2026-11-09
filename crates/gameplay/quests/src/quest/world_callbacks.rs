@@ -802,9 +802,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (!callback.offerings.is_empty() && !callback.has_personal_state())
             || (callback.key.starts_with("oteryn:quest-callback/m01b/")
                 && !imported_explore::admitted(callback))
-            || ((callback
+            || (((callback
                 .key
                 .starts_with("oteryn:quest-callback/qm03/anniversary")
+                && !callback
+                    .key
+                    .starts_with("oteryn:quest-callback/qm03/anniversary-return-"))
                 || callback
                     .key
                     .starts_with("oteryn:quest-callback/m03/time-machine-entry-")
