@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "29e21a9ccd235ae00cad509802310984aa6c0174fbe8d6ca3e50c26a4eb1e478"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "212dbb53438c0b1fd34ae761075ee31f7ca04bca11b0dea0de4deffa6d0bd899"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "29e21a9ccd235ae00cad509802310984aa6c0174fbe8d6ca3e50c26a4eb1e478"
+digest = "212dbb53438c0b1fd34ae761075ee31f7ca04bca11b0dea0de4deffa6d0bd899"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "item-identity-20261108-r1"

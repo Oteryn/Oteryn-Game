@@ -27,7 +27,7 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     assert_eq!(catalogue.project_revision(), "item-identity-20261108-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "7dbf728198982819475801b1e864eeec98c82fb101d0dff5af36e8601f7f98d4"
+        "fcfe61c49c4397289bddaff18af9683e9d5ec75cd060fab30e76e7ad0a086aa7"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);
