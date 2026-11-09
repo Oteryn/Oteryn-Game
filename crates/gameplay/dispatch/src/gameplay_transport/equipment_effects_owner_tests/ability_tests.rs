@@ -713,6 +713,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .ok_or_else(|| format!("missing source-qualified W06/W07 profile {key}"))?;
         assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
     }
+    // BEGIN GENERATED SOURCE-QUALIFIED ZERO SPEED
+    // Pinned Canary XML/client: parchment and the two arena trophy promotions.
+    for key in [
+        "oteryn:item.tibia.i2833",
+        "oteryn:item.tibia.i5805",
+        "oteryn:item.tibia.i5806",
+    ] {
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or("missing source-qualified zero-speed Item")?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
+    // END GENERATED SOURCE-QUALIFIED ZERO SPEED
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {
@@ -808,6 +823,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
+        // BEGIN GENERATED KNOWN SPEED EXCLUSIONS
+        .filter(|key| !["oteryn:item.tibia.i2833", "oteryn:item.tibia.i5805", "oteryn:item.tibia.i5806"].contains(&key.as_str()))
+        // END GENERATED KNOWN SPEED EXCLUSIONS
         .collect()
     );
     Ok(())

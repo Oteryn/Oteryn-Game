@@ -318,6 +318,9 @@ def main():
     boss_corpses = keys(next(document for name, document, _ in srx3
                             if name == 'SRX3-BOSS-CORPSES'))
     source = equipment_source_overlaps.refresh(source, ROOT, boss_corpses)
+    import equipment_known_speed_pin
+    source = equipment_known_speed_pin.refresh(
+        source, equipment_known_speed_pin.producer.capture(ROOT, ids=equipment_known_speed_pin.IDS))
     generated, count = regenerate(
         register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=srx3,
         coowners=source_coowners(ROOT),

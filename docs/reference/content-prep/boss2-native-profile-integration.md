@@ -151,6 +151,22 @@ and the boots' speed 15 plus armor 2. It and the existing exact-identity/hash
 negative test both pass (2/2, 0.044s total). Full native-world/PG reruns remain
 separate from these completed source-decoder tests.
 
+The full production-profile test then passed the Galthen raw/typed speed checks
+and reached its older UNKNOWN-set assertion. Three leaves are now explicitly
+qualified: parchment 2833 and the existing arena custody promotions 5805/5806.
+The pin tool replays the existing source decoder for precisely those three IDs,
+checking the pinned XML/client metadata and exact zero-speed facts. It emits
+positive native assertions and an explicit exclusion from the unchanged older
+UNKNOWN list; it never derives the expected set from runtime output. Its three
+tests reject unknown/nonzero speed, duplicate IDs, changed source SHA and bad
+Rust anchors. Canary XML source lines are 5818, 15643 and 15649 respectively.
+
+The post-protection PG rerun again reached migration 2020 and failed before
+either mechanic body: healthy case 81.490s, unknown-commit case 90.021s, both
+with the same exact `actual BIGINT;` guard error recorded above. The native
+production-profile case took 114.550s and failed only on the three stale
+UNKNOWN entries; it is being rerun after source-backed pin regeneration.
+
 The post-fix native PG rerun reached real database migrations, but neither
 mechanic body ran: `srx3_cloak_` cases took 74.825 and 75.355 seconds and both
 failed with `while executing migration 2020: error returned from database:
