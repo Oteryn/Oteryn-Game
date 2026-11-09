@@ -740,7 +740,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Ok(mut cache) = kills.1.lock() else {
                         continue;
                     };
-                    let item = selected.weapon.item_key.as_deref().unwrap_or("");
+                    let item = selected.weapon.ranged.as_ref().map_or_else(
+                        || selected.weapon.item_key.as_deref().unwrap_or(""),
+                        |loadout| loadout.weapon.definition.production_key.as_str(),
+                    );
                     let creature = if extension { "" } else { race_key.as_str() };
                     let Ok(mut hits) = cache.hits.prepare(
                         &runtime,
