@@ -33,6 +33,8 @@ pub struct QuestWorldContext {
 
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
+#[path = "quest_world_callback/reward_inventory.rs"]
+mod reward_inventory;
 
 struct Input {
     item: String,
@@ -56,12 +58,15 @@ pub(super) async fn consume_reward_inputs(
     let super::quest_state::QuestCause::Command(_) = request.cause else {
         return Ok(false);
     };
-    let keys: Vec<_> = callback
+    let mut keys: Vec<_> = callback
         .take
         .iter()
         .chain(&callback.present)
         .map(|i| i.item.as_str())
         .collect();
+    keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
+    keys.sort_unstable();
+    keys.dedup();
     let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if let Some(use_) = carried_use {
@@ -75,6 +80,9 @@ pub(super) async fn consume_reward_inputs(
         }
     }
     if rows.len() > 500 {
+        return Ok(false);
+    }
+    if !reward_inventory::holds(&rows, &callback.inventory)? {
         return Ok(false);
     }
     if let Some(target_key) = &callback.carried_target {

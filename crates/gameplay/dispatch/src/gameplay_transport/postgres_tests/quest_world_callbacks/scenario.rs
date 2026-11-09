@@ -75,6 +75,8 @@ fn scenario_case(
             x: trigger.x + 1,
             ..trigger
         }
+    let start = if name.starts_with("qengine-rewards-m39-tomes") {
+        super::super::m39_tomes_journey::world::start()?
     } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
@@ -137,6 +139,7 @@ fn scenario_case(
             name,
             "engnpc-m04"
                 | "catalogue-npc"
+            "catalogue-npc"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"
@@ -153,6 +156,10 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = if last_creep {
         callback("last-creep-native-start")?
+    let mut callback = if name == "unnatural-selection-dance-native" {
+        callback("unnatural-selection-dance-2")?
+    } else if name.starts_with("qengine-rewards-m39-bone") {
+        callback("bone-pit-collect")?
     } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
@@ -364,6 +371,9 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native explore policies")?,
                 name,
+        let world = if name.starts_with("qengine-rewards-m39-tomes") {
+            super::super::m39_tomes_journey::world::build(
+                generation.native_gameplay().ok_or("Tomes native profiles")?
             )?
         } else if native_upper {
             super::super::l6_paradox_upper::world(
@@ -1174,6 +1184,8 @@ fn scenario_case(
                 origin,
             )
             .await?;
+        } else if name == "unnatural-selection-dance-native" {
+            super::super::m40_native_dance::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "unnatural-selection-dance-2" {
             super::unnatural_selection::exercise(
                 &mut owner,

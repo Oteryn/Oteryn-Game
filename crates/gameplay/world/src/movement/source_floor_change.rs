@@ -78,6 +78,7 @@ impl SourceStepProof<'_> {
             CardinalStep::SouthWest => MovementFacing::South,
             CardinalStep::NorthWest => MovementFacing::North,
         };
+        let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
 }
@@ -272,6 +273,7 @@ fn destination_with_lookup<'a>(
         CardinalStep::SouthWest => (-1, 1),
         CardinalStep::NorthWest => (-1, -1),
     };
+    let (dx, dy) = direction.delta();
     let mut next = shifted(origin, dx, dy, 0)?;
     // Canary 99902524 game.cpp2045..2079 excludes diagonals from implicit
     // height-three stairs; explicit tile floor changes below still apply.
@@ -543,6 +545,7 @@ mod tests {
                     CardinalStep::NorthWest => MovementFacing::North,
                 })
             );
+            assert_eq!(after.facing(), Some(dir.facing()));
         }
         assert_eq!(runtime.read_actor_position(actor).unwrap().position(), goal);
         assert_eq!(floors, std::collections::BTreeSet::from([-7, -6, -5]));

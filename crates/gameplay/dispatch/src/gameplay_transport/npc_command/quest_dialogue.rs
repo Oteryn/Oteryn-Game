@@ -93,6 +93,19 @@ pub(super) struct Step {
     next_topic: Option<Topic>,
     transition: Option<String>,
     reply: Vec<String>,
+    failure_reply: Vec<String>,
+    refused: bool,
+}
+
+impl Step {
+    pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
+        self.failure_reply = lines;
+        self
+    }
+    pub(super) fn with_refusal(mut self, refused: bool) -> Self {
+        self.refused = refused;
+        self
+    }
 }
 
 #[derive(Clone)]
@@ -143,6 +156,8 @@ pub(super) fn prepare(
         next_topic: choice.next_topic,
         transition: choice.transition,
         reply: choice.reply,
+        failure_reply: Vec::new(),
+        refused: false,
     })
 }
 
@@ -276,6 +291,9 @@ pub(super) async fn apply(
             return rejected();
         }
         state.apply_topic(step.context, step.next_topic);
+        if step.refused {
+            rendered.disposition = NpcIntentDisposition::Rejected;
+        }
         return rendered;
     };
     let (Some(item_fence), Ok(id), Some(catalogue)) = (
@@ -470,7 +488,29 @@ pub(super) async fn apply(
         )) => unknown(),
         _ => {
             finish(admission, command.game_session_id, false);
-            rejected()
+            if step.failure_reply.is_empty() {
+                return rejected();
+            }
+            let mut rendered = reply(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &intent,
+                step.failure_reply,
+            );
+            rendered.disposition = NpcIntentDisposition::Rejected;
+            let runtime = admission.runtime.lock().await;
+            publish_committed_reply(
+                admission.states.npc_conversations.current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                ),
+                &step.context,
+                rendered,
+            )
         }
     }
 }

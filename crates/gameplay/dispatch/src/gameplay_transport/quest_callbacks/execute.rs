@@ -104,6 +104,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        if callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|item| item.target_remove)
+        {
+            if projection.is_some() {
+                return UseDisposition::Rejected;
+            }
+            projection = Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+                position: pos,
+                remove: Some(key),
+                create: None,
+            });
+        }
         if !close && let Some(delay) = callback.effects.reset_after_ms {
             let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
@@ -685,19 +699,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
                     self.states.loop_ground.invalidate();
-                    // Shrine bonuses must see the committed flag before the next swing;
-                    // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
-                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
-                        && let Some(entry) = sessions.get_mut(&session)
-                    {
-                        entry.copy = entry.copy.take().and_then(|mut copy| {
-                            let next = entry.version.checked_add(1)?;
-                            if !copy.apply(committed) { return None; }
-                            entry.version = next;
-                            Some(copy)
-                        });
-                    }
+                    self.apply_committed_quest_copy(session, fresh, committed);
                     self.schedule_quest_refresh(session);
                 }
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {

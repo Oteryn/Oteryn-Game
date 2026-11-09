@@ -81,6 +81,7 @@ impl Scene {
                     StepDir::SouthWest => 2,
                     StepDir::NorthWest => 0,
                 }
+                oteryn_client_ui::diagonal_movement::facing(self.facing)
             } else {
                 match entity.detail {
                     EntityDetail::Actor { direction, .. } => match direction {

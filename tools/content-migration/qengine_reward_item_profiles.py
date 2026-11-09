@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+sys.path.insert(0,str(ROOT/'tools/content-schema/quest-authoring'))
+import qmech_m39
 
 IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
@@ -31,6 +33,7 @@ IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
 IDS |= {21504, 21505, 21506, 21507, 9106}
+IDS |= qmech_m39.ITEMS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

@@ -365,6 +365,16 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    if callback.key.starts_with("oteryn:quest-callback/unnatural-selection-dance-") {
+        for (x,y,floor) in oteryn_gameplay_quests::quest::unnatural_selection::TILES {
+            if (x,y,floor)==(trigger.x,trigger.y,trigger.floor) { continue; }
+            cells.entry((floor,x,y)).or_default().push(sector::Item {
+                palette:1, depth:0, attrs:sector::Attrs {
+                    action:callback.selector.action, ..Default::default()
+                }
+            });
+        }
+    }
     if callback.key == "oteryn:quest-callback/l6-shared-gate-fixture" {
         let (action, _, _) =
             super::l6_shared_gates::spec(callback.selector.unique.ok_or("gate UID")?)?;

@@ -336,6 +336,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::SouthWest => (-1, 1),
             StepDirection::NorthWest => (-1, -1),
         };
+        let (dx, dy) = direction.delta();
         let (Ok(x), Ok(y), Ok(floor)) = (
             u16::try_from(p.x + dx),
             u16::try_from(p.y + dy),

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0449-diagonal-movement",
+  "kind": "keybindings",
+  "id": "0449-diagonal-movement-southeast",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "NUMPAD3",
+  "entry": "input.rs::step"
+}

@@ -83,6 +83,7 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-migration/qengine_equipment_audit.py",
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
@@ -624,6 +625,7 @@ def main() -> int:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         run(["python3", "tools/content-migration/raid_catalogue.py", "content"])

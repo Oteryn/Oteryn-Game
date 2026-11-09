@@ -1490,6 +1490,7 @@ fn commit_summon_follow(
         crate::movement::CardinalStep::SouthWest => (-1, 1),
         crate::movement::CardinalStep::NorthWest => (-1, -1),
     };
+    let (dx, dy) = facts.direction.delta();
     let next = oteryn_gameplay_entities::MovementLocalPosition {
         x: at
             .x
@@ -2553,6 +2554,7 @@ fn commit_paced_summon_follow(
         crate::movement::CardinalStep::SouthWest => (-1, 1),
         crate::movement::CardinalStep::NorthWest => (-1, -1),
     };
+    let (dx, dy) = facts.direction.delta();
     let onto = crate::content::LogicalCell {
         x: at
             .x

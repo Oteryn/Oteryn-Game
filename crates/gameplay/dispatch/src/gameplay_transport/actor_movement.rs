@@ -9,9 +9,7 @@ use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
-use crate::movement::speed::{
-    EngineeringGroundSpeed, GroundSpeedSource, player_step_duration, runtime_player_speed,
-};
+use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource, runtime_player_speed};
 use crate::movement::{
     CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
     MovementTurnOutcome,
@@ -124,6 +122,14 @@ fn duration_onto(
     speed
         .and_then(|speed| player_step_duration(source, cell(onto), speed))
         .and_then(|duration| duration.checked_mul(if direction.is_diagonal() { 3 } else { 1 }))
+        .and_then(|speed| {
+            crate::movement::speed::player_directional_step_duration(
+                source,
+                cell(onto),
+                speed,
+                direction,
+            )
+        })
         .ok_or(MovementError::NotQualified)
 }
 
@@ -1227,7 +1233,7 @@ mod tests {
             spell_state_speed(&runtime, state, actor, session, 1, None, true),
             None
         );
-        let expected = player_step_duration(
+        let expected = crate::movement::speed::player_step_duration(
             &EngineeringGroundSpeed,
             LogicalCell { x: 1, y: 0, z: 0 },
             hasted,

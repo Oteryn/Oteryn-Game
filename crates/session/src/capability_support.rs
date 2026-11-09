@@ -137,6 +137,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+    oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

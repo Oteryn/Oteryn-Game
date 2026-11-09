@@ -161,6 +161,12 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-cael-tome-") { return &["tome"]; }
+    if key.ends_with("/l2-zalamon-tome") { return &["mission"]; }
+    if key.ends_with("/l2-bone-start") {
+        return &["mission"];
+    }
+
     match key.rsplit('/').next().unwrap_or(key) {
         "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
@@ -323,11 +329,7 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     wire_reward(owner, admitted, npc, callback, true).await
 }
 
@@ -337,11 +339,22 @@ pub(super) async fn wire_reward(
     npc: EntityRef,
     callback: &RewardCallback,
     expect_outfit: bool,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
+    let words: Vec<_> = std::iter::once("hi")
+        .chain(offer_words(&callback.key).iter().copied())
+        .chain(std::iter::once(callback.keywords[0].as_str()))
+        .collect();
+    wire_conversation(owner, admitted, npc, callback, expect_outfit, words).await
+}
+
+pub(super) async fn wire_conversation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+    words: Vec<&str>,
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -349,10 +362,6 @@ pub(super) async fn wire_reward(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let words: Vec<_> = std::iter::once("hi")
-        .chain(offer_words(&callback.key).iter().copied())
-        .chain(std::iter::once(callback.keywords[0].as_str()))
-        .collect();
     let last = admitted.continuity.next_command_id + u64::try_from(words.len())? - 1;
     let generation = admitted.continuity.connection_generation;
     let frames = words
@@ -789,6 +798,15 @@ pub(super) async fn exercise(
     }
     if name.starts_with("qengine-rewards-qworld-phase-") {
         return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-m39-any-topic" {
+        return m39_any_topic::exercise(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-m39-tomes") {
+        return super::m39_tomes_journey::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-m39-bone") {
+        return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;
     }
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;

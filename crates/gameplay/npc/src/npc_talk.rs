@@ -23,6 +23,7 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
+    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];

@@ -837,6 +837,7 @@ async fn wardrobe(
         take: vec![],
         fee: None,
         present: vec![],
+        inventory: vec![],
         give: None,
         outfit: Some(reward.clone()),
         outfits: vec![],
@@ -844,6 +845,9 @@ async fn wardrobe(
         achievement: None,
         achievement_progress: vec![],
         reply: vec![],
+        failure_reply: vec![],
+        experience: None,
+        repeatable: false,
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;

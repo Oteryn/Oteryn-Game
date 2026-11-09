@@ -67,6 +67,7 @@ pub const fn delta(step: CardinalStep) -> (i32, i32) {
         CardinalStep::SouthWest => (-1, 1),
         CardinalStep::NorthWest => (-1, -1),
     }
+    step.delta()
 }
 
 pub fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 {

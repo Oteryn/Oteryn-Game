@@ -636,6 +636,54 @@
         "completes": {
           "type": "boolean",
           "default": false
+        },
+        "inventory": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "item",
+              "minimum",
+              "maximum"
+            ],
+            "properties": {
+              "item": {
+                "type": "string",
+                "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+                "maxLength": 256
+              },
+              "minimum": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              },
+              "maximum": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              }
+            }
+          }
+        },
+        "failure_reply": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "experience": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        "repeatable": {
+          "type": "boolean"
         }
       }
     },

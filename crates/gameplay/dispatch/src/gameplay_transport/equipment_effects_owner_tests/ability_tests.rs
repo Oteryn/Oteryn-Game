@@ -358,6 +358,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // QENGINE2 independently captures shared engine and portable quest Items.
     // QENGINE2 captures 63 source-qualified Items (qengine_reward_item_profiles.IDS).
     // QENGINE2 captures the closed shared, QUESTPC4, M12 and QN4 Item cohorts.
+    // QENGINE2 adds exactly the 62 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -386,6 +387,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     }
     assert_eq!(added_keys.len(), 63);
     assert_eq!(added_keys.len(), QENGINE_SOURCE_PROFILES);
+    assert_eq!(added_keys.len(), 62);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -453,6 +455,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ("seasonal-item-profiles.json", 48),
         ("qengine-reward-item-profiles.json", 63),
         ("qengine-reward-item-profiles.json", QENGINE_SOURCE_PROFILES),
+        ("qengine-reward-item-profiles.json", 62),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

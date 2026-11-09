@@ -361,6 +361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     StepDirection::SouthWest => (-1, 1),
                     StepDirection::NorthWest => (-1, -1),
                 };
+                let (dx, dy) = direction.delta();
                 expected.revision().checked_add(1) == Some(current.revision())
                     && expected.context() == current.context()
                     && expected.position().x.checked_add(dx) == Some(current.position().x)

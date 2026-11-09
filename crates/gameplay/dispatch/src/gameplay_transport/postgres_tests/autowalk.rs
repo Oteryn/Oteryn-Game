@@ -704,6 +704,9 @@ fn next(
             at.y -= 1;
         }
     }
+    let (dx,dy)=step.delta();
+    at.x+=dx;
+    at.y+=dy;
     at
 }
 
