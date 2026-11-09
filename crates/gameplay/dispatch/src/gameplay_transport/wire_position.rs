@@ -1,5 +1,5 @@
 //! Project one proven physical position into the existing wire position fields.
-//! Source activity Bundles use native -z on their map wire and legacy +z in physics.
+//! Qualified Bundles use native -z on their map wire and legacy +z in physics.
 use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
@@ -15,7 +15,7 @@ impl WirePositionFrame {
         pin: &ChannelContentPin,
         map: [u8; 32],
     ) -> Option<Self> {
-        let native_source_bundle = room.is_some_and(|r| r.pinned_activity_source_room().is_some())
+        let native_source_bundle = room.is_some()
             && matches!(
                 cells.index(),
                 crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
@@ -285,9 +285,9 @@ mod tests {
             Some(ActorPosition {
                 x: 32373,
                 y: 31151,
-                floor: 8
+                floor: -8
             }),
-            "ordinary Bundle contract remains explicit"
+            "whole World Bundle positions must match its native map floor too"
         );
         assert!(
             WirePositionFrame::from_pin(Some(&bundle), bundle.movement_cells(), &pin, [0; 32])
