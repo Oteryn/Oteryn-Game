@@ -1030,6 +1030,14 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(None)
     }
 
+    /// Own current-placement PvP observation; this never observes another character's totals.
+    fn observe_pvp_status(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::party_skull::PvpStatus>> {
+        std::future::ready(None)
+    }
+
     /// PARTY-1: basic session-fenced membership commands and own-state query.
     fn party_command(
         &self,

@@ -2,7 +2,7 @@ syntax = "proto3";
 package oteryn.protocol.v1;
 // Capability 49. Commands 56/57. Required fields include explicit scalar zeroes.
 // Unknown, duplicate, missing fields and multiple actions refuse. UUIDs are 16-byte UUIDv7.
-// Optional scalar declarations retain explicit zero presence; every request field except cursor is required by the strict codec.
+// Optional scalar declarations retain explicit zero presence; every request field except cursor and details is required by the strict codec.
 // Intent <=4168 B, query <=1056 B, result <=32768 B. Keys/town/cursor <=512 UTF-8 B.
 // Management works remotely; the server obtains the current session/lease/scope, never the body.
 message HouseTargetV1 { bytes world_id = 1; string house_key = 2; }
@@ -28,14 +28,21 @@ message HouseIntentV1 {
   }
   HouseTargetV1 target = 8;
 }
-// Field 4 requests one ACL instead of catalogue rows; cursor is absent.
+// Field 5 requests one ACL instead of catalogue rows; cursor is absent.
 // Owner may read every list; Subowner may read only Guest. Session/World/content
 // and the real door binding are checked by the same server owner as writes.
 message HouseAclReadV1 { string house_key = 1; uint32 role = 2; HouseDoorPositionV1 door = 3; } // role 1 Guest, 2 Subowner, 3 Door
 message HouseAclSnapshotV1 { repeated bytes character_ids = 1; } // <=200 unique UUIDv7, canonical order
-message HouseQueryV1 { bytes world_id = 1; string town = 2; optional string cursor = 3; HouseAclReadV1 acl = 4; }
+message HouseQueryV1 { bytes world_id = 1; string town = 2; optional string cursor = 3; optional bool details = 4; HouseAclReadV1 acl = 5; }
 message HouseSummaryV1 {
   string house_key = 1;
+  // All six metadata fields are emitted together only when details=true.
+  optional string name = 12; // 1..512 UTF-8 bytes, server catalogue name
+  optional uint32 size_sqm = 13; // positive
+  optional uint32 beds = 14; // <=65535
+  optional uint32 entrance_x = 15; // <=65535
+  optional uint32 entrance_y = 16; // <=65535
+  optional sint32 entrance_floor = 17; // -15..0, north-up map coordinates
   uint32 kind = 11; // present only with selected capability 99: 1 private house, 2 shop, 3 Guildhall
   uint32 state = 2; // native property state 1..6
   uint64 rent_gold = 3;

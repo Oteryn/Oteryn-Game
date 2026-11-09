@@ -33,6 +33,16 @@ pub(in crate::play) fn submit(
     }
 }
 impl PlayLink {
+    /// Keep the confirmed receipt readable after session shutdown, without owning a PlayLink.
+    pub fn training_completion(&self) -> impl Fn() -> bool + Send + 'static {
+        let shared = self.mailbox.clone();
+        move || lock(&shared).properties.training.offline_confirmed
+    }
+    pub fn training_batch_label(&self, name: &str, remaining: usize) {
+        lock(&self.mailbox).properties.training.batch_summary = format!(
+            "Character: {name}; {remaining} remaining. Confirm offline training for each character; cancel the next login to stop the batch."
+        );
+    }
     pub fn training_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).properties.training, field, value);
     }

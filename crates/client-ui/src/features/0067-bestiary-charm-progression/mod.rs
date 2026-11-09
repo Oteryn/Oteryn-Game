@@ -1,3 +1,5 @@
+#[path = "state/catalogue.rs"]
+pub mod catalogue;
 mod input;
 mod protocol;
 mod state;

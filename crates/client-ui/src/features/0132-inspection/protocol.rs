@@ -1,3 +1,5 @@
+#[path = "protocol/catalogue.rs"]
+mod catalogue;
 use super::*;
 use oteryn_client_runtime::server_mechanic::{
     CommandStatus, ServerMechanicCommand, ServerMechanicResponse,
@@ -25,15 +27,13 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
     if matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) && let Ok(reply) = decode_reply(&response.payload)
+    ) && let Ok(mut reply) = decode_reply(&response.payload)
     {
-        if reply.status == 1 && matches!(panel.last_request, Some(Request::Catalogue(_))) {
-            for item in &reply.items {
-                if panel.catalogue.contains_key(&item.definition_ref) || panel.catalogue.len() < 512
-                {
-                    panel.catalogue.insert(item.definition_ref, item.clone());
-                }
-            }
+        if reply.status == 1
+            && let Err(message) = catalogue::apply(panel, &mut reply)
+        {
+            panel.feedback = message.into();
+            return;
         }
         panel.feedback = match reply.status {
             1 => "Inspection received",

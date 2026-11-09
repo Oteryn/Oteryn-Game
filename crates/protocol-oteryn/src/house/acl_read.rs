@@ -46,7 +46,7 @@ pub fn encode_house_acl_read_query(
     let mut out = Vec::new();
     bytes(&mut out, 1, &world);
     bytes(&mut out, 2, town.as_bytes());
-    bytes(&mut out, 4, &nested);
+    bytes(&mut out, 5, &nested);
     decode_house_query(&out)?;
     Ok(out)
 }

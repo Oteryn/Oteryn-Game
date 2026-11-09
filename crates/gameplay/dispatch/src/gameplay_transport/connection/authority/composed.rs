@@ -184,6 +184,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    async fn observe_pvp_status(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::party_skull::PvpStatus> {
+        self.observe_own_pvp(admitted).await
+    }
+
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
@@ -435,6 +442,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn server_messages_left(&self, admitted: AdmittedSession) {
+        self.states.server_modals.leave((
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        ));
         self.states.server_messages.leave(
             admitted.game_session_id,
             admitted.continuity.connection_generation,

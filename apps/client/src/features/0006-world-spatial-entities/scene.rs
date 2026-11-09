@@ -3,6 +3,17 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    pub(crate) fn set_label_scale(&mut self, percentage: u16) {
+        self.label_scale = percentage;
+    }
+    pub(crate) fn own_identity(&self) -> Option<[u8; 16]> {
+        self.own_identity
+    }
+    pub(crate) fn set_name_options(&mut self, marks: bool, npc_names: bool) {
+        self.name_marks = marks;
+        self.npc_names = npc_names;
+    }
+
     pub(crate) fn set_name_visibility(&mut self, visibility: [bool; 3]) {
         self.name_visibility = visibility;
     }
@@ -104,11 +115,16 @@ impl Scene {
             } else {
                 2
             };
-            if self.view.contains(tile) && self.name_visibility[name_group] {
+            let visible = if entity.kind == oteryn_session::EntityKind::Npc {
+                self.npc_names
+            } else {
+                self.name_visibility[name_group]
+            };
+            if self.view.contains(tile) && visible {
                 let mut marker = None;
                 oteryn_client_ui::forge_creature::protocol::replace(
                     &mut marker,
-                    entity.kind == oteryn_session::EntityKind::Creature,
+                    entity.kind == oteryn_session::EntityKind::Creature && self.name_marks,
                     entry.forge_stacks,
                 );
                 let name = entity

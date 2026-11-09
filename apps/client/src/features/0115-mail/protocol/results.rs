@@ -6,6 +6,10 @@ impl Outbox {
         result: &GatedCommandResult,
     ) {
         let mut shared = lock(&self.0);
+        if command.capability == 152 {
+            oteryn_client_ui::item_forge::preview::apply(&mut shared.item_forge, command, result);
+            return;
+        }
         if command.capability == 447 {
             oteryn_client_ui::imbue::details::apply(&mut shared.imbue, command, result);
             return;

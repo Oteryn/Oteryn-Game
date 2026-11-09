@@ -141,10 +141,10 @@ fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
         });
     }
     for (read_button, save_button, selector) in [
-        (10, 3, wire::HouseAclSelector::Guest),
-        (11, 4, wire::HouseAclSelector::Subowner),
+        (11, 3, wire::HouseAclSelector::Guest),
+        (12, 4, wire::HouseAclSelector::Subowner),
         (
-            12,
+            13,
             5,
             wire::HouseAclSelector::Door {
                 x: 6,
@@ -243,7 +243,7 @@ fn house_acl_handoff_cancels_pending_read_and_ignores_late_snapshot()
             ..Row::default()
         });
     }
-    link.house_request(10);
+    link.house_request(11);
     let PlayCommand::Feature(read) = receiver.try_recv()? else {
         return Err("read missing".into());
     };
@@ -266,5 +266,54 @@ fn house_acl_handoff_cancels_pending_read_and_ignores_late_snapshot()
     );
     assert!(link.house_panel().model.acl_snapshot.is_none());
     assert!(link.house_panel().fields[4].is_empty());
+    Ok(())
+}
+
+#[test]
+fn house_catalogue_details_reach_production_panel() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.properties.house.initialize(true);
+    }
+    link.house_edit(0, "01010101-0101-7101-8101-010101010101".into());
+    link.house_edit(1, "oteryn:content.area.city.thais".into());
+    link.house_request(0);
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("missing house query".into());
+    };
+    assert!(
+        command.payload.ends_with(&[32, 1]),
+        "request map details explicitly"
+    );
+    let mut row = vec![10, 1, b'h', 16, 3, 24, 50, 32, 1, 40, 0, 56, 100, 80, 1];
+    row.extend([64, 200, 1, 72, 150, 1]);
+    // Detail metadata: name, area, beds and entrance x/y/floor from the server.
+    row.extend([
+        98, 4, b'H', b'o', b'm', b'e', 104, 25, 112, 2, 120, 100, 128, 1, 110, 136, 1, 13,
+    ]);
+    let mut payload = vec![8, 1, 26, u8::try_from(row.len())?];
+    payload.extend(row);
+    outbox.properties_result(
+        &command,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    let panel = link.house_panel();
+    assert!(panel.model.feedback.contains("updated"));
+    let text = oteryn_client_ui::house::panel_text(&panel.model);
+    assert!(text.contains("Auction ends (Unix ms): 200; your maximum bid: 150"));
+    assert!(text.contains("Home"));
+    assert!(text.contains("25 m²"));
+    assert!(text.contains("100,110,-7"));
+    let map = oteryn_client_ui::house::map_houses(&panel.model);
+    assert_eq!(map.len(), 1);
+    assert_eq!(map[0].position, (100, 110, -7));
+    assert!(map[0].selected);
+    assert_eq!(map[0].label, "1: Home");
     Ok(())
 }

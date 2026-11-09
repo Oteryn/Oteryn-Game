@@ -28,6 +28,10 @@ pub enum Action {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Row {
+    pub name: String,
+    pub size: u32,
+    pub beds: u16,
+    pub entrance: Option<(u16, u16, i8)>,
     pub house: String,
     pub state: u64,
     pub rent: u64,
@@ -87,6 +91,7 @@ pub fn query(world: [u8; 16], town: &str, cursor: Option<&str>) -> Result<Featur
         "Invalid town key",
     )?;
     let mut payload = [bytes(1, &world), bytes(2, town.as_bytes())].concat();
+    payload.extend(number(4, 1));
     if let Some(c) = cursor {
         text(c.as_bytes())?;
         payload.extend(bytes(3, c.as_bytes()));
@@ -184,18 +189,24 @@ fn row(body: &[u8]) -> Result<Row> {
         kind: 1,
         ..Row::default()
     };
-    let mut seen = 0u16;
+    let mut seen = 0u32;
+    let (mut x, mut y, mut floor) = (0, 0, 0);
     while !r.0.is_empty() {
         let key = r.var()?;
         let tag = key >> 3;
         require(
-            (1..=11).contains(&tag) && seen & (1 << tag) == 0,
+            (1..=17).contains(&tag) && seen & (1 << tag) == 0,
             "Invalid row field",
         )?;
         seen |= 1 << tag;
-        if tag == 1 {
-            require(key == 10, "Invalid house field")?;
-            row.house = text(r.bytes()?)?.into();
+        if tag == 1 || tag == 12 {
+            require(key & 7 == 2, "Invalid house text field")?;
+            let value = text(r.bytes()?)?.into();
+            if tag == 1 {
+                row.house = value;
+            } else {
+                row.name = value;
+            }
             continue;
         }
         require(key & 7 == 0, "Invalid scalar")?;
@@ -211,11 +222,24 @@ fn row(body: &[u8]) -> Result<Row> {
             9 => row.maximum = Some(n),
             10 => row.acl_revision = n,
             11 if (1..=3).contains(&n) => row.kind = n,
+            13 if n > 0 => row.size = n.try_into().map_err(|_| "Invalid size")?,
+            14 => row.beds = n.try_into().map_err(|_| "Invalid beds")?,
+            15 => x = n.try_into().map_err(|_| "Invalid entrance x")?,
+            16 => y = n.try_into().map_err(|_| "Invalid entrance y")?,
+            17 if n == 0 || (n <= 29 && n & 1 == 1) => floor = ((n >> 1) as i8) ^ -((n & 1) as i8),
             _ => return Err("Invalid row value"),
         }
     }
     // Required tags: house, state, rent, revision, owned, price, ACL revision.
     require(seen & 1214 == 1214, "Missing row field")?;
+    let details = (12..=17).fold(0u32, |mask, tag| mask | (1 << tag));
+    require(
+        seen & details == 0 || seen & details == details,
+        "Incomplete house metadata",
+    )?;
+    if seen & details != 0 {
+        row.entrance = Some((x, y, floor));
+    }
     Ok(row)
 }
 pub fn page(body: &[u8]) -> Result<Page> {

@@ -19,6 +19,7 @@ pub(in crate::play) const BUTTONS: &[&str] = &[
     controller::BUTTONS[7],
     controller::BUTTONS[8],
     controller::BUTTONS[9],
+    "Show entrance map",
     "Load guests",
     "Load subowners",
     "Load door",
@@ -54,12 +55,12 @@ pub(in crate::play) fn prepare(
             .and_then(|n| n.checked_sub(1))
             .ok_or("Select a house row (starting at 1)")?;
     }
-    if selection >= 10 {
+    if selection >= 11 {
         use oteryn_client_runtime::house::HouseAclSelector;
         let selector = match selection {
-            10 => HouseAclSelector::Guest,
-            11 => HouseAclSelector::Subowner,
-            12 => {
+            11 => HouseAclSelector::Guest,
+            12 => HouseAclSelector::Subowner,
+            13 => {
                 let fields = panel.fields[5].split_whitespace().collect::<Vec<_>>();
                 let [x, y, floor] = fields.as_slice() else {
                     return Err("Enter door x y floor".into());

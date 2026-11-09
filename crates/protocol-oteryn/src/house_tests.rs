@@ -121,6 +121,7 @@ fn house_results_page_limit_and_typed_refusal() {
         vec![8, 3, 16, 0]
     );
     let row = HouseSummary {
+        details: None,
         house: "h".into(),
         kind: HouseKind::Guildhall,
         state: 3,
@@ -171,6 +172,53 @@ fn guildhall_leadership_codec_is_bounded_and_strict() {
 }
 
 #[test]
+fn house_metadata_is_explicitly_requested_and_bounded()
+-> std::result::Result<(), crate::charm_wire::CyclopediaWireError> {
+    let mut query = Vec::new();
+    bytes(&mut query, 1, &id(1));
+    bytes(&mut query, 2, b"oteryn:content.area.city.thais");
+    assert!(!decode_house_query(&query)?.details);
+    scalar(&mut query, 4, 1);
+    assert!(decode_house_query(&query)?.details);
+    scalar(&mut query, 4, 1);
+    assert!(decode_house_query(&query).is_err());
+    Ok(())
+}
+
+#[test]
+fn house_metadata_encoder_rejects_invalid_geometry() {
+    let mut row = HouseSummary {
+        details: Some(HouseDetails {
+            name: "Home".into(),
+            size: 25,
+            beds: 2,
+            entrance: (100, 110, -7),
+        }),
+        house: "h".into(),
+        kind: HouseKind::PrivateHouse,
+        state: 1,
+        rent: 1,
+        revision: 1,
+        acl_revision: 1,
+        owned: false,
+        move_out_ms: None,
+        price: 0,
+        ends_ms: None,
+        own_maximum: None,
+    };
+    assert!(encode_house_page(std::slice::from_ref(&row), None, true).is_ok());
+    if let Some(details) = &mut row.details {
+        details.entrance.2 = 1;
+    }
+    assert!(encode_house_page(std::slice::from_ref(&row), None, true).is_err());
+    if let Some(details) = &mut row.details {
+        details.entrance.2 = -7;
+        details.size = 0;
+    }
+    assert!(encode_house_page(std::slice::from_ref(&row), None, true).is_err());
+}
+
+#[test]
 fn house_acl_read_round_trips_the_exact_list_and_bounded_snapshot()
 -> std::result::Result<(), String> {
     let read = HouseAclRead {
@@ -184,7 +232,13 @@ fn house_acl_read_round_trips_the_exact_list_and_bounded_snapshot()
     let encoded = encode_house_acl_read_query(id(1), "oteryn:content.area.city.thais", &read)
         .map_err(|e| format!("{e:?}"))?;
     let decoded = decode_house_query(&encoded).map_err(|e| format!("{e:?}"))?;
-    assert_eq!(decoded.acl, Some(read));
+    assert!(!decoded.details);
+    assert_eq!(decoded.acl, Some(read.clone()));
+    let mut combined = encoded.clone();
+    scalar(&mut combined, 4, 1);
+    let combined = decode_house_query(&combined).map_err(|e| format!("{e:?}"))?;
+    assert!(combined.details);
+    assert_eq!(combined.acl, Some(read));
     let snapshot = HouseAclSnapshot {
         revision: 7,
         members: vec![id(2), id(3)],

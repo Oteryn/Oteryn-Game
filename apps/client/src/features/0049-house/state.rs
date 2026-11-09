@@ -1,5 +1,6 @@
 #[derive(Clone, Debug, Default)]
 pub struct Panel {
+    pub map_running: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub model: oteryn_client_ui::house::Panel,
     pub fields: [String; 7],
 }
