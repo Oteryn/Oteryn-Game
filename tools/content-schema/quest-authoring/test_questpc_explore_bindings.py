@@ -21,6 +21,22 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_hero_rathleton_first_voice_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest']=='oteryn:quest.hero_of_rathleton_quest' and '/s1/' in c['key']]
+        self.assertEqual(len(callbacks),1,'the first voice approach is activated')
+        self.assertEqual(callbacks[0]['admission'],{'premium':True})
+
+    def test_hero_rathleton_voice_approach_precedes_its_access_door(self):
+        bindings = (('oteryn:quest.hero_of_rathleton_quest','s1',
+                     'npc-approach:oteryn:npc.strange_pipe','chosen-source/hero_of_rathleton_quest'),)
+        with mock.patch.object(explore,'BINDINGS',bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position':{'x':33533,'y':31951,'floor':-14},'ordinal':0,'appearance':20545})
+            self.assertEqual(callback['admission'],{'premium':True})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_ghoul_room_outside_door_entry_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT) if c['quest']=='oteryn:quest.ghoul_room_quest']
         self.assertEqual(len(callbacks),1,'outside final-key-door approach is activated')

@@ -1891,6 +1891,61 @@
       "minimum_level": 150
     },
     {
+      "key": "oteryn:quest-callback/m01b/hero-of-rathleton/s1/entry",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33533,
+          "y": 31951,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 20545,
+        "native": {
+          "position": {
+            "x": 33533,
+            "y": 31951,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 20545
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json#/candidates/941",
+        "https://tibia.fandom.com/index.php?curid=69693&oldid=1116848",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/inukaya/s1/inukaya",
       "quest": "oteryn:quest.inukaya_quest",
       "trigger": "step_in",

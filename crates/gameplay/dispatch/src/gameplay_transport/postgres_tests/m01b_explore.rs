@@ -60,6 +60,9 @@ mod bear_entry;
 #[path = "m01b_explore/ghoul_entry.rs"]
 mod ghoul_entry;
 
+#[path = "m01b_explore/hero_entry.rs"]
+mod hero_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -336,6 +339,9 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if name == "m01b/hero-of-rathleton/s1/entry" {
+        return hero_entry::world(native);
     }
     if name == "m01b/ghoul-room/s1/entry" {
         return ghoul_entry::world(native);

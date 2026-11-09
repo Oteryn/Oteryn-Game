@@ -159,3 +159,7 @@ south. Observe from32145,32102,z11 ground355,starting south on354. This
 precedes the mud-floor/key/stone-switch steps. Ghoul gate32506,32175,z14
 retains409+5106;observe from its eastern outside tile32507,32175ground409,
 starting east32508,32175ground409. Neither hook crosses or unlocks its door.
+
+## Hero of Rathleton pipe-room approach
+
+Source geometry: samples/promotion-candidates-v1.json, Strange Pipe at33533,31950,z14; https://tibia.fandom.com/index.php?curid=69693&oldid=1116848 . This is an OTS-hypothesis geometry reference, not NPC placement promotion. Chosen entry33533,31951,z14 retains native20545ground; eastern start33534,31951 retains20533. Canonical CurrentPremium remains required. This first investigation precedes the workshop and dungeon-access stages; it grants no later-stage credit.

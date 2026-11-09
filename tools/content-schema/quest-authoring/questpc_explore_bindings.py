@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.hero_of_rathleton_quest', 's1', 'npc-approach:oteryn:npc.strange_pipe', 'chosen-source/hero_of_rathleton_quest'),
     ('oteryn:quest.ghoul_room_quest', 's1', 'door-approach:canary:door-gate/key/3600', 'chosen-source/ghoul_room_quest'),
     ('oteryn:quest.bear_room_quest', 's1', 'door-approach:canary:door-gate/key/4601', 'chosen-source/bear_room_quest'),
     ('oteryn:quest.mad_mage_room_quest', 's1', 'npc-approach:oteryn:npc.a_prisoner', 'chosen-source/mad_mage_room_quest'),

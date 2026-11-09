@@ -37,9 +37,10 @@
       "Medusa Shield Quest",
       "Mad Mage Room Quest",
       "Bear Room Quest",
-      "Ghoul Room Quest"
+      "Ghoul Room Quest",
+      "Hero of Rathleton Quest"
     ],
-    "wired_explore_stages": 30,
+    "wired_explore_stages": 31,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -68,9 +69,12 @@
       "Grimvale Mini World Change",
       "Inukaya Quest",
       "Medusa Shield Quest",
-      "Mad Mage Room Quest"
+      "Mad Mage Room Quest",
+      "Bear Room Quest",
+      "Ghoul Room Quest",
+      "Hero of Rathleton Quest"
     ],
-    "wired_native_visit_anchors": 44
+    "wired_native_visit_anchors": 45
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -175,10 +179,14 @@
     "bear_preparation": "INACTIVE:door4601 approach before retainedstone1791;REDunsupported0.182s ->GREEN0.451s;sourcekeyclaimmembershipverified",
     "two_door_activation": "BearREDmissing0.350s,GhoulREDmissing0.369s ->GREEN57Python19.358s;both outside locked source doors,keys not granted",
     "two_door_clippy": "GREEN quests+dispatch all-targets strict4m05s",
-    "two_door_postgres": "PENDING Bearnativecase building;Ghoul case will run from the same compiled test binary",
-    "two_door_profile": "GREEN6Rustprofiletests0.06s"
+    "two_door_postgres": "GREEN Bear59.612522805s,Ghoul59.795926699s;real PostgreSQL native STEP,freshonce,replay/revisit,completion0",
+    "two_door_profile": "GREEN6Rustprofiletests0.06s",
+    "hero_authoring": "RED missing source/binding -> GREEN59Python21.553s",
+    "hero_clippy": "GREEN quests+dispatch all-targets strict4m09s",
+    "hero_profile": "GREEN6Rustprofiletests0.04s",
+    "hero_postgres": "GREEN62.061107841s:real native STEP,CurrentPremium refusal,old replay no retro-credit,freshonce,revisit no farming,wholecompletion0"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "30wiredstage/routes,28PG-proven entry routes,44nativeanchors;16routes/26stages unwired. FinishBear/Ghoul nativePG,then remainingHero/Lion ordinary routes and laterstages. M01b PARTIAL."
+  "continuation": "31wiredstage/routes,31PG-proven entry routes,45nativeanchors;15routes/25stages unwired. M01b PARTIAL."
 }
