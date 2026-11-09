@@ -3468,7 +3468,7 @@
     "otclient_path": [
       "modules/game_playermount/playermount.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0025-appearance/view.rs",
@@ -3489,7 +3489,7 @@
     "mechanics_row": [
       "S06"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Wybór wierzchowca. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O046",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3497,21 +3497,59 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Selektory wierzchowca korzystają z bieżącego katalogu appearance i zatwierdzenia change_appearance; wybór wraca w stanie serwera.",
     "otclient_evidence": [
       {
         "path": "modules/game_playermount/playermount.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0025-appearance/input.rs",
+        "line": 45,
+        "detail": "Wejście: pub fn appearance_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0025-appearance/input.rs",
+        "line": 10,
+        "detail": "Przekazanie komendy: pub(in crate::play) fn submit("
+      },
+      {
+        "path": "apps/client/src/features/0025-appearance/protocol.rs",
+        "line": 63,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn apply("
+      },
+      {
+        "path": "apps/client/src/features/0025-appearance/view.rs",
+        "line": 8,
+        "detail": "Widok: pub(in crate::play) fn open_window(link: &PlayLink) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs",
+        "line": 53,
+        "detail": "Serwer: pub(super) async fn current_mount("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/appearance/selection.rs",
+        "line": 14,
+        "detail": "protocol-oteryn: pub fn encode(&self) -> Result<Vec<u8>> {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs",
+        "line": 98,
+        "detail": "Zatwierdzenie wierzchowca: pub(super) async fn change_appearance("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Handel między graczami",
     "otclient_path": [
       "modules/game_playertrade/playertrade.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0060-player-trade/native.rs",
@@ -3537,7 +3575,7 @@
     "mechanics_row": [
       "E04"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Handel między graczami. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O047",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3545,21 +3583,64 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Oferta rzeczywistego przedmiotu, wybór partnera, akceptacja i anulowanie przechodzą do player_trade; klient konsumuje potwierdzony stan obu stron.",
     "otclient_evidence": [
       {
         "path": "modules/game_playertrade/playertrade.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0060-player-trade/input.rs",
+        "line": 6,
+        "detail": "Wejście: pub fn player_trade_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0060-player-trade/input.rs",
+        "line": 11,
+        "detail": "Przekazanie komendy: .send(PlayCommand::PlayerTrade(command))"
+      },
+      {
+        "path": "apps/client/src/features/0060-player-trade/protocol.rs",
+        "line": 22,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn player_trade_result(&self, response: &PlayerTradeResponse) {"
+      },
+      {
+        "path": "apps/client/src/features/0060-player-trade/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::{context_menu, open_window};"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/player_trade.rs",
+        "line": 198,
+        "detail": "Serwer: async fn wait_staged("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/player_trade.rs",
+        "line": 133,
+        "detail": "protocol-oteryn: pub fn encode_intent(intent: Intent) -> Result<Vec<u8>, Error> {"
+      },
+      {
+        "path": "apps/client/src/play/session_loop.rs",
+        "line": 300,
+        "detail": "Transport wymiany: Ok(PlayCommand::PlayerTrade(request)) => match session.player_trade(&request).await {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/player_trade.rs",
+        "line": 8,
+        "detail": "Serwerowy routing wymiany: pub(in super::super) async fn route<A: FreshAdmissionAuthority>("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Prey: wybór i premie",
     "otclient_path": [
       "modules/game_prey/prey.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0140-prey/native.rs",
@@ -3585,7 +3666,7 @@
     "mechanics_row": [
       "P03"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Prey: wybór i premie. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O048",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3593,21 +3674,64 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywne akcje wyboru/przerzutu/premii przechodzą przez session.prey i serwerowego właściciela prey; panel redukuje wynik.",
     "otclient_evidence": [
       {
         "path": "modules/game_prey/prey.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0140-prey/input.rs",
+        "line": 11,
+        "detail": "Wejście: pub fn prey_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0140-prey/input.rs",
+        "line": 12,
+        "detail": "Przekazanie komendy: enqueue(&mut lock(&self.mailbox), &self.commands, intent);"
+      },
+      {
+        "path": "apps/client/src/features/0140-prey/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn prey_result(&self, response: &PreyResponse) {"
+      },
+      {
+        "path": "apps/client/src/features/0140-prey/view.rs",
+        "line": 15,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/prey.rs",
+        "line": 37,
+        "detail": "Serwer: async fn allocation_permitted("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/prey.rs",
+        "line": 118,
+        "detail": "protocol-oteryn: pub fn encode_request(request: &Request) -> Result<Vec<u8>, Error> {"
+      },
+      {
+        "path": "apps/client/src/play/session_loop.rs",
+        "line": 276,
+        "detail": "Transport prey: Ok(PlayCommand::Prey(command)) => match session.prey(&command).await {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/prey.rs",
+        "line": 66,
+        "detail": "Wykonanie prey: pub(super) async fn prey_wire("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Biegłość broni i perki",
     "otclient_path": [
       "modules/game_proficiency/proficiency.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0195-weapon-proficiency/native.rs",
@@ -3633,7 +3757,7 @@
     "mechanics_row": [
       "P08"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Biegłość broni i perki. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O049",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3641,21 +3765,64 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Wybór broni i perków korzysta z serwerowego katalogu i aktualnego stanu biegłości; komendy nie nadają lokalnie progresji.",
     "otclient_evidence": [
       {
         "path": "modules/game_proficiency/proficiency.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0195-weapon-proficiency/input.rs",
+        "line": 16,
+        "detail": "Wejście: pub fn weapon_proficiency_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0195-weapon-proficiency/input.rs",
+        "line": 10,
+        "detail": "Przekazanie komendy: && self.commands.send(PlayCommand::Feature(command)).is_err()"
+      },
+      {
+        "path": "apps/client/src/features/0195-weapon-proficiency/protocol.rs",
+        "line": 14,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn weapon_proficiency_result(&self, result: &GatedCommandResult) {"
+      },
+      {
+        "path": "apps/client/src/features/0195-weapon-proficiency/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_browse.rs",
+        "line": 26,
+        "detail": "Serwer: async fn weapon_proficiency_browse("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/weapon_proficiency_state.rs",
+        "line": 6,
+        "detail": "protocol-oteryn: pub fn encode_request(definition: u32) -> Option<[u8; 4]> {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_select.rs",
+        "line": 98,
+        "detail": "Serwer wyboru perków: async fn weapon_proficiency_catalogue("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_select.rs",
+        "line": 242,
+        "detail": "Wykonanie wyboru perka: pub(super) async fn execute("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Dziennik zadań i śledzenie",
     "otclient_path": [
       "modules/game_questlog/game_questlog.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0016-quest-log/native.rs",
@@ -3686,7 +3853,7 @@
     "mechanics_row": [
       "W15a"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Dziennik zadań i śledzenie. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O050",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -3694,21 +3861,64 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Dziennik odpytuje rzeczywisty stan zadań i misji, filtruje/sortuje potwierdzone opisy oraz obsługuje śledzenie; kursor serwera pozostaje oddzielony od filtrów lokalnych.",
     "otclient_evidence": [
       {
         "path": "modules/game_questlog/game_questlog.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0016-quest-log/input.rs",
+        "line": 12,
+        "detail": "Wejście: pub fn quest_request(&self, query: &QuestLogQuery) {"
+      },
+      {
+        "path": "apps/client/src/features/0016-quest-log/input.rs",
+        "line": 18,
+        "detail": "Przekazanie komendy: mailbox.quest_pending = self.commands.send(PlayCommand::QuestLog(payload)).is_ok();"
+      },
+      {
+        "path": "apps/client/src/features/0016-quest-log/protocol.rs",
+        "line": 30,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn quest_result(&self, result: &oteryn_session::GatedCommandResult) {"
+      },
+      {
+        "path": "apps/client/src/features/0016-quest-log/view.rs",
+        "line": 16,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/quest_log.rs",
+        "line": 46,
+        "detail": "Serwer: pub fn admit(&mut self, now: Instant) -> bool {"
+      },
+      {
+        "path": "crates/protocol-oteryn/src/quest_log.rs",
+        "line": 324,
+        "detail": "protocol-oteryn: pub fn encode_quest_log(log: &QuestLog) -> WireResult<Vec<u8>> {"
+      },
+      {
+        "path": "crates/client-ui/src/features/0016-quest-log/state.rs",
+        "line": 8,
+        "detail": "Wyszukiwanie i sortowanie: pub list_search: String,"
+      },
+      {
+        "path": "apps/client/src/play/session_loop.rs",
+        "line": 164,
+        "detail": "Transport dziennika: Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Quick loot i kategorie",
     "otclient_path": [
       "modules/game_quickloot/quickloot.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0098-quick-loot/native.rs",
@@ -3734,7 +3944,7 @@
     "mechanics_row": [
       "I07"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Quick loot i kategorie. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O051",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3742,21 +3952,54 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Wybór kategorii i akcje quick loot przechodzą do rzeczywistej komendy; serwer wykonuje operację na przedmiotach, a panel przyjmuje odpowiedź.",
     "otclient_evidence": [
       {
         "path": "modules/game_quickloot/quickloot.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0098-quick-loot/input.rs",
+        "line": 8,
+        "detail": "Wejście: pub fn discovery_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {"
+      },
+      {
+        "path": "apps/client/src/features/0098-quick-loot/protocol.rs",
+        "line": 61,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn discovery_result("
+      },
+      {
+        "path": "apps/client/src/features/0098-quick-loot/view.rs",
+        "line": 13,
+        "detail": "Widok: native::open_window(self, panel);"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/quick_loot.rs",
+        "line": 30,
+        "detail": "Serwer: async fn quick_loot("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/quick_loot.rs",
+        "line": 98,
+        "detail": "protocol-oteryn: pub fn encode_quick_loot_request(request: &QuickLootRequest) -> WireResult<Vec<u8>> {"
+      },
+      {
+        "path": "apps/client/src/features/0098-quick-loot/protocol.rs",
+        "line": 5,
+        "detail": "Caller loot: pub(in crate::play) fn discovery_send(&self, command: ServerMechanicCommand) -> bool {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Codzienne nagrody",
     "otclient_path": [
       "modules/game_rewardwall/game_rewardwall.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0182-daily-reward/native.rs",
@@ -3782,7 +4025,7 @@
     "mechanics_row": [
       "P09"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Codzienne nagrody. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O052",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3790,21 +4033,59 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Zapytanie/odbiór nagrody, picker i returner mają rzeczywiste komendy; daily_reward po stronie serwera jest właścicielem przyznania i replay.",
     "otclient_evidence": [
       {
         "path": "modules/game_rewardwall/game_rewardwall.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0182-daily-reward/input.rs",
+        "line": 10,
+        "detail": "Wejście: pub fn daily_reward_details_request(&self) {"
+      },
+      {
+        "path": "apps/client/src/features/0182-daily-reward/input.rs",
+        "line": 15,
+        "detail": "Przekazanie komendy: enqueue(&mut lock(&self.mailbox), &self.commands, intent);"
+      },
+      {
+        "path": "apps/client/src/features/0182-daily-reward/protocol.rs",
+        "line": 4,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn daily_reward_details_result("
+      },
+      {
+        "path": "apps/client/src/features/0182-daily-reward/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/daily_reward.rs",
+        "line": 24,
+        "detail": "Serwer: pub(super) async fn dispatch("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/daily_reward.rs",
+        "line": 25,
+        "detail": "protocol-oteryn: pub fn decode(bytes: &[u8]) -> WireResult<Self> {"
+      },
+      {
+        "path": "apps/client/src/play/session_loop.rs",
+        "line": 284,
+        "detail": "Transport nagrody: Ok(PlayCommand::DailyReward(command)) => match session.daily_reward(&command).await {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Raport naruszenia zasad",
     "otclient_path": [
       "modules/game_ruleviolation/ruleviolation.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0076-player-report/view.rs",
@@ -3825,7 +4106,7 @@
     "mechanics_row": [
       "S12"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Raport naruszenia zasad. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O053",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -3833,14 +4114,52 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Formularz naruszenia reguł wysyła player_report ze wskazaną kategorią i treścią; serwer odpowiada, a klient redukuje akceptację/odmowę.",
     "otclient_evidence": [
       {
         "path": "modules/game_ruleviolation/ruleviolation.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0076-player-report/input.rs",
+        "line": 43,
+        "detail": "Wejście: pub fn player_report_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/input.rs",
+        "line": 10,
+        "detail": "Przekazanie komendy: pub(in crate::play) fn submit("
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/protocol.rs",
+        "line": 59,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn apply("
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/view.rs",
+        "line": 8,
+        "detail": "Widok: pub(in crate::play) fn open_window(link: &PlayLink) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/player_report.rs",
+        "line": 16,
+        "detail": "Serwer: pub(super) async fn player_report_wire("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/player_report.rs",
+        "line": 114,
+        "detail": "protocol-oteryn: pub fn encode_player_report_request(r: &PlayerReportRequest) -> Result<Vec<u8>, Error> {"
+      },
+      {
+        "path": "apps/client/src/features/0076-player-report/input.rs",
+        "line": 27,
+        "detail": "Caller raportu: && commands.send(PlayCommand::Feature(command)).is_err()"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Shadery kosmetyczne OT",
@@ -3970,7 +4289,7 @@
     "otclient_path": [
       "modules/game_skills/skills.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "crates/client-ui/src/features/0279-skill-progress/view.rs",
@@ -4013,7 +4332,7 @@
       "P13",
       "P14"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Umiejętności, poziom i trening. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O057",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -4021,14 +4340,47 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Zapytanie skill_progress zwraca potwierdzone poziomy i progres; widok prezentuje trained/loyalty/current, a osobny caller treningu korzysta z właściciela gry.",
     "otclient_evidence": [
       {
         "path": "modules/game_skills/skills.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0279-skill-progress/protocol.rs",
+        "line": 32,
+        "detail": "Wejście umiejętności: pub fn skill_progress_input(&self, events: &[NormalizedInputEvent]) -> bool {"
+      },
+      {
+        "path": "apps/client/src/features/0279-skill-progress/protocol.rs",
+        "line": 13,
+        "detail": "Zapytanie umiejętności: .send(PlayCommand::Feature(FeatureCommand {"
+      },
+      {
+        "path": "apps/client/src/features/0054-training/input.rs",
+        "line": 49,
+        "detail": "Wejście treningu: pub fn training_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/skill_progress.rs",
+        "line": 33,
+        "detail": "Serwer progresji: pub(super) async fn skill_progress_page("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/skill_progress.rs",
+        "line": 23,
+        "detail": "Wire progresji: pub fn decode_query(bytes: &[u8]) -> Option<()> {"
+      },
+      {
+        "path": "crates/client-ui/src/features/0279-skill-progress/view.rs",
+        "line": 3,
+        "detail": "Widok umiejętności: pub fn panel_text(panel: &SkillProgressPanel) -> String {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Debug dźwięków",
@@ -4066,7 +4418,7 @@
     "otclient_path": [
       "modules/game_spelllist/spelllist.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0287-actor-spell-catalog/view.rs",
@@ -4108,7 +4460,7 @@
       "ADD-0287",
       "C14"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Lista czarów i wyszukiwanie. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O059",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -4116,14 +4468,52 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywny spellbook filtruje i stronicuje pełne opisy serwera, pokazuje szczegóły i bieżące cooldowny; koszt i dostępność nie są lokalnym nadaniem czaru.",
     "otclient_evidence": [
       {
         "path": "modules/game_spelllist/spelllist.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs",
+        "line": 295,
+        "detail": "Natywne filtrowanie katalogu: if !super::book::request(&commands, &shared, filter, page)"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/book.rs",
+        "line": 185,
+        "detail": "Caller zapytania: .send(crate::combat_input::PlayCommand::Feature(command))"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/book.rs",
+        "line": 202,
+        "detail": "Konsument wyniku: pub(in crate::play) fn spellbook_details_result("
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/book_detail.rs",
+        "line": 5,
+        "detail": "Szczegóły i cooldowny: pub(super) fn text(mailbox: &Mailbox, row: usize) -> String {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs",
+        "line": 72,
+        "detail": "Serwer katalogu: pub(super) async fn spellbook_details_page("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/spellbook_details.rs",
+        "line": 31,
+        "detail": "Wire katalogu: pub fn valid(&self) -> bool {"
+      },
+      {
+        "path": "crates/protocol-oteryn/src/spellbook_details.rs",
+        "line": 40,
+        "detail": "Kodowanie katalogu: pub fn encode(&self) -> Option<Vec<u8>> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Supply stash",

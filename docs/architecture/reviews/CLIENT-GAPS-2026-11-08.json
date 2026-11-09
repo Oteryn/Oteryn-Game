@@ -1567,7 +1567,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "crates/client-ui/src/features/0016-quest-log/state.rs:15 + journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor; apps/client/src/features/0016-quest-log/tests/list_options.rs:77"
+  "evidence": "apps/client/src/features/0016-quest-log/input.rs:12; apps/client/src/features/0016-quest-log/input.rs:18; apps/client/src/features/0016-quest-log/protocol.rs:30; apps/client/src/features/0016-quest-log/view.rs:16; crates/gameplay/dispatch/src/gameplay_transport/quest_log.rs:46; crates/protocol-oteryn/src/quest_log.rs:324; crates/client-ui/src/features/0016-quest-log/state.rs:8; apps/client/src/play/session_loop.rs:164"
  },
  {
   "id": "O056",
@@ -1587,7 +1587,7 @@
   "status": "DONE",
   "gap": "Filtry nazwy/formuły, profesji, grupy, poziomu i premium; karta szczegółów z czasem pozostałego cooldownu opartym na snapshotach serwera.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:323 + native filtered spell detail with live cooldown projection; apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; apps/client/src/features/0287-actor-spell-catalog/book_detail.rs:50 + spellbook_details_project_live_spell_and_group_cooldowns_without_claiming_cast_authority"
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:295; apps/client/src/features/0287-actor-spell-catalog/book.rs:185; apps/client/src/features/0287-actor-spell-catalog/book.rs:202; apps/client/src/features/0287-actor-spell-catalog/book_detail.rs:5; crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs:72; crates/protocol-oteryn/src/spellbook_details.rs:31; crates/protocol-oteryn/src/spellbook_details.rs:40"
  },
  {
   "id": "O066",
