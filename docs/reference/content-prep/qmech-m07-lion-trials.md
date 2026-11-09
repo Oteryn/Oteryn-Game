@@ -37,3 +37,10 @@ test fails for Ice Islands (`ca68476c…` observed, `ce91fb47…` expected), inc
 with the base loader and callback registry restored. Its assertion is unchanged.
 The provisional flower and water PostgreSQL cases fail with `DefinitionNotFound`;
 those cases and their activation remain unfinished working-tree changes.
+
+`tools/content-migration/lion_trial_item_profiles.py` now qualifies the two held
+inputs from exact retained source records, preserving canonical facts. Five
+source-backed tests cover their temporal policy, source tampering, binding and
+weight conflicts, fluid flags and immovable custody. The helper does not select
+or publish native profiles; provider regeneration and activation remain work
+for the next slice, together with the two strict PostgreSQL cases.
