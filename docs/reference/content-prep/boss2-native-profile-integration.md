@@ -72,3 +72,18 @@ identity, binding or custody conflict is ignored. The real overlapping oil/dust
 admission was red, then green; five negative conflict vectors still refuse
 without publishing any output. Native registration next reaches
 `PREY_MODEL_STALE`, whose existing simulation tool is being run.
+
+### First command after a presented native scope
+
+The native Ahau replay exposed a second command drain: the shared presentation
+owner had already discarded the retired scope's queue, but the legacy
+`activity_reset_commands` flag subsequently discarded the first destination
+STEP. Matching presentation now clears that already-consumed reset under the
+same mailbox lock. A mismatched session still releases neither fence.
+
+The first-destination-step regression was red while the wrong-session negative
+case passed; both then passed. The unchanged actual server entry/exit transcript
+also passed through the native client in 0.220708162 seconds, including native
+own appearance and the destination teleport effect. The peer observed the real
+STEP and delivered all eight captured return frames. Clippy with `-D warnings`
+passed for all client targets. Post-regeneration server PG reruns remain due.

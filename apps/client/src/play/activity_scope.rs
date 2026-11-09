@@ -74,6 +74,9 @@ impl PlayLink {
                 .is_some_and(|scope| scope.session == session)
         {
             discard_commands(&mailbox);
+            // This presentation already drained the retired namespace. A later
+            // legacy drain would discard the first fresh destination command.
+            mailbox.activity_reset_commands = false;
             mailbox.scope_pending = false;
             mailbox.world_context.pending = false;
             mailbox.scope_initialize = true;
@@ -112,5 +115,77 @@ impl PlayView {
             ActivityScope::Channel { .. } => "Returned to channel",
         });
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::input::StepDir;
+
+    fn id(value: u8) -> [u8; 16] {
+        let mut id = [value; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id
+    }
+
+    fn pending(link: &PlayLink) -> [u8; 16] {
+        let scope = ActivityScopeSnapshot {
+            handoff: id(1),
+            source_session: id(2),
+            session: id(3),
+            scope: ActivityScope::Instance {
+                world: id(4),
+                instance: id(5),
+            },
+            scope_generation: 1,
+            connection_generation: 1,
+            lease_generation: 1,
+            selection: vec![117],
+            requires_ack: false,
+        };
+        assert!(oteryn_session::activity_scope::encode_activity_scope(&scope).is_ok());
+        let session = scope.session;
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.activity_scope = Some(scope);
+        mailbox.scope_pending = true;
+        mailbox.activity_reset_commands = true;
+        session
+    }
+
+    #[test]
+    fn m25_presented_scope_preserves_first_destination_step_after_legacy_reset() {
+        let (link, commands, outbox) = crate::play::play_channel();
+        let receiver = Arc::new(Mutex::new(commands));
+        outbox.scope_receiver(&receiver);
+        let session = pending(&link);
+        assert!(
+            link.commands
+                .send(PlayCommand::Step(StepDir::North))
+                .is_ok()
+        );
+        link.scope_presented(session);
+        link.request(StepDir::South);
+        assert!(matches!(
+            outbox.scope_command(&receiver),
+            Ok(PlayCommand::Step(StepDir::South))
+        ));
+        assert!(matches!(
+            outbox.scope_command(&receiver),
+            Err(TryRecvError::Empty)
+        ));
+    }
+
+    #[test]
+    fn m25_wrong_presentation_cannot_release_scope_or_legacy_reset() {
+        let (link, mut commands, _) = crate::play::play_channel();
+        pending(&link);
+        link.scope_presented(id(9));
+        link.request(StepDir::South);
+        assert!(matches!(commands.try_recv(), Err(TryRecvError::Empty)));
+        let mailbox = lock(&link.mailbox);
+        assert!(mailbox.scope_pending);
+        assert!(mailbox.activity_reset_commands);
     }
 }
