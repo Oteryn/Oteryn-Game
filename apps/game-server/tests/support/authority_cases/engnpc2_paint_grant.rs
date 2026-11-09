@@ -131,6 +131,28 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     assert!(progress.contains(&(seals::MISSION04.into(), 1)));
     let item: String = sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 AND quantity=1")
         .bind(seals::PAINT).fetch_one(&h.pool).await?;
+    let stored: (String, String) = sqlx::query_as("SELECT definition_family,definition_revision_ref FROM game_item_instances WHERE item_instance_id=$1::uuid")
+        .bind(&item).fetch_one(&h.pool).await?;
+    let reference = native
+        .item_index()
+        .ok_or("native item index")?
+        .definition_ref(&stored.0, seals::PAINT, &stored.1)
+        .ok_or("current minted paint definition")?;
+    let subject = oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(reference);
+    let instance = *sqlx::types::Uuid::parse_str(&item)?.as_bytes();
+    assert!(
+        super::engnpc2_corpse_routing::world_quest_tools::matches_source(
+            &subject,
+            None,
+            instance,
+            Some(reference)
+        )
+    );
+    assert!(
+        !super::engnpc2_corpse_routing::world_quest_tools::matches_source(
+            &subject, None, instance, None
+        )
+    );
     let atomic: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts m JOIN game_character_quest_receipts q ON m.xmin=q.xmin WHERE q.transition_key=$1")
         .bind(&grant.key).fetch_one(&h.pool).await?;
     assert_eq!(

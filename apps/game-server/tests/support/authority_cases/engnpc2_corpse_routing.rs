@@ -4,4 +4,4 @@
 mod routing_contract;
 
 #[path = "../../../../../crates/gameplay/dispatch/src/gameplay_transport/mount_taming/quest_objects.rs"]
-mod world_quest_tools;
+pub(super) mod world_quest_tools;

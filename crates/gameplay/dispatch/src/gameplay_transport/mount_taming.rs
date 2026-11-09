@@ -81,8 +81,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let source = match (&intent.target, source) {
+            (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
+            (UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Some(map) = self.bundle_map() else {
             return Ok(None);
@@ -125,8 +127,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .any(|entry| {
-                entry.item.item_instance_id == source
-                    && entry.item.definition.production_key == required.item
+                entry.item.definition.production_key == required.item
+                    && quest_objects::matches_source(
+                        &intent.target,
+                        source,
+                        entry.item.item_instance_id,
+                        self.active_generation
+                            .and_then(crate::content::ActiveGeneration::native_gameplay)
+                            .and_then(|native| native.item_index())
+                            .and_then(|index| {
+                                index.definition_ref(
+                                    &entry.item.definition.family,
+                                    &entry.item.definition.production_key,
+                                    &entry.item.definition.revision_ref,
+                                )
+                            }),
+                    )
             });
         if !selected {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));

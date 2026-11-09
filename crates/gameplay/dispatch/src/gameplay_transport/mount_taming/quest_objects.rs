@@ -10,6 +10,24 @@ pub(super) fn accepts(callback: &Callback) -> bool {
             ))
 }
 
+/// Select only the wire subject observed in the fenced inventory snapshot.
+/// This read does not grant mutation authority; the World writer locks custody.
+pub(crate) fn matches_source(
+    subject: &oteryn_protocol_oteryn::world_object::UseTarget,
+    resolved: Option<[u8; 16]>,
+    candidate: [u8; 16],
+    current_definition: Option<std::num::NonZeroU32>,
+) -> bool {
+    use oteryn_protocol_oteryn::world_object::UseTarget;
+    match subject {
+        UseTarget::Item(_) => resolved == Some(candidate),
+        UseTarget::ItemByDefinition(definition) => {
+            resolved.is_none() && current_definition == Some(*definition)
+        }
+        UseTarget::WorldObject(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -40,6 +58,37 @@ mod tests {
         assert!(!accepts(&unrelated));
         unrelated.key = "oteryn:quest-callback/unrelated".into();
         assert!(!accepts(&unrelated));
+        Ok(())
+    }
+    #[test]
+    fn world_tool_source_accepts_current_definition_and_exact_handle() -> Result<(), String> {
+        use oteryn_protocol_oteryn::{item_view::ItemHandle, world_object::UseTarget};
+        let definition = std::num::NonZeroU32::MIN;
+        let other = std::num::NonZeroU32::new(2).ok_or("other definition")?;
+        let hotkey = UseTarget::ItemByDefinition(definition);
+        assert!(matches_source(&hotkey, None, [1; 16], Some(definition)));
+        assert!(!matches_source(&hotkey, None, [1; 16], None));
+        assert!(!matches_source(&hotkey, None, [1; 16], Some(other)));
+        assert!(!matches_source(
+            &hotkey,
+            Some([1; 16]),
+            [1; 16],
+            Some(definition)
+        ));
+        let handle = UseTarget::Item(ItemHandle::new(7).ok_or("handle")?);
+        assert!(matches_source(
+            &handle,
+            Some([1; 16]),
+            [1; 16],
+            Some(definition)
+        ));
+        assert!(!matches_source(
+            &handle,
+            Some([2; 16]),
+            [1; 16],
+            Some(definition)
+        ));
+        assert!(!matches_source(&handle, None, [1; 16], Some(definition)));
         Ok(())
     }
 }
