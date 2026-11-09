@@ -444,6 +444,13 @@ impl BundleFacts {
 
     /// The bath's occupied state cannot be picked up while its player stands inside it.
     pub fn transform_movement_item(&self, key: u64, appearance: u16) -> bool {
+        if key >> 62 == 2 {
+            return self.compare_transform_movement_item(
+                key,
+                self.object_revision(key),
+                appearance,
+            );
+        }
         let Some(mut after) = self.movement_item_facts(appearance) else {
             return false;
         };
@@ -452,6 +459,53 @@ impl BundleFacts {
         }
         self.apply_quest_callback(key, self.object_revision(key), after, &[], &[], false, None)
     }
+    /// Transform one callback-created item without replacing its native identity.
+    /// Base, durable Ground/House and stable world-change objects have other owners.
+    pub fn compare_transform_movement_item(
+        &self,
+        key: u64,
+        expected: u64,
+        appearance: u16,
+    ) -> bool {
+        if key >> 62 != 2 || expected == u64::MAX {
+            return false;
+        }
+        let Some(mut after) = self.movement_item_facts(appearance) else {
+            return false;
+        };
+        if appearance == 26100 {
+            after.pickupable = false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states
+            .changed
+            .get(&key)
+            .map_or(0, |(revision, _)| *revision)
+            != expected
+            || !states.has_capacity(usize::from(!states.changed.contains_key(&key)))
+        {
+            return false;
+        }
+        let Some((pos, id)) = states.movement_item(key) else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        let Some(entry) = states.movement_items.get_mut(&pos).and_then(|entries| {
+            entries
+                .iter_mut()
+                .find(|entry| entry.source == view::EntrySource::Added(id))
+        }) else {
+            return false;
+        };
+        after.bound = entry.facts.bound;
+        after.count = entry.facts.count;
+        entry.facts = after;
+        states.changed.insert(key, (expected + 1, after));
+        true
+    }
+
     /// Crystal yellow_pillow.lua:9: native monster-say, independent of the player's chat limiter.
     pub fn emit_movement_speech(&self, speech: MovementSpeech) -> bool {
         let Ok(mut states) = self.callbacks.lock() else {

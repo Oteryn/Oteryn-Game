@@ -241,6 +241,16 @@ mod tests {
         creature: &str,
         health: i64,
     ) -> Result<(u16, u16, i64, i64), BoxError> {
+        trap_case_source(trap, protection_zone, creature, health, false)
+    }
+
+    fn trap_case_source(
+        trap: u16,
+        protection_zone: bool,
+        creature: &str,
+        health: i64,
+        volatile: bool,
+    ) -> Result<(u16, u16, i64, i64), BoxError> {
         let (mut runtime, actor, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x72);
         let key = format!("oteryn:item.tibia.i{trap}");
@@ -253,6 +263,13 @@ mod tests {
         );
         let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&key, 0), (&other, 1));
         let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
+        if volatile {
+            for tile in &mut bundle.sectors[0].tiles {
+                if tile.x == 6 {
+                    tile.items.truncate(1);
+                }
+            }
+        }
         if protection_zone {
             for tile in &mut bundle.sectors[0].tiles {
                 if tile.x == 6 {
@@ -309,6 +326,28 @@ mod tests {
             return Err("bundle collision".into());
         };
         let map = collision.map();
+        if volatile {
+            assert!(map.facts.create_movement_item(pos, trap, 0, || true));
+        }
+        let original_created = map.facts.movement_items(pos);
+        let pinned_before = map.facts.pinned();
+        let appearance = || -> Result<u16, BoxError> {
+            if volatile {
+                Ok(map
+                    .facts
+                    .movement_items(pos)
+                    .first()
+                    .ok_or("created trap")?
+                    .facts
+                    .appearance_id)
+            } else {
+                Ok(map
+                    .facts
+                    .base_entry(pos, 1, 0)
+                    .ok_or("base trap")?
+                    .appearance_id)
+            }
+        };
         let at = MovementLocalPosition {
             x: 6,
             y: 0,
@@ -375,11 +414,7 @@ mod tests {
                 .map_err(|error| format!("{error:?}"))?;
         }
         apply_monster_trap_steps(&mut runtime, &states, map, 1_000_000);
-        let after_step_in = map
-            .facts
-            .base_entry(pos, 1, 0)
-            .ok_or("trap after step-in")?
-            .appearance_id;
+        let after_step_in = appearance()?;
         let health_after =
             i64::try_from(runtime.live_creature_health(rat).ok_or("rat after hit")?)?;
         if trap == 22059 {
@@ -401,12 +436,58 @@ mod tests {
             to: away,
         }));
         apply_monster_trap_steps(&mut runtime, &states, map, 1_000_001);
-        let after_step_out = map
-            .facts
-            .base_entry(pos, 1, 0)
-            .ok_or("trap after step-out")?
-            .appearance_id;
+        let after_step_out = appearance()?;
+        if volatile {
+            let current = map.facts.movement_items(pos);
+            assert_eq!(current.len(), original_created.len());
+            assert_eq!(
+                current[0].source, original_created[0].source,
+                "a transform preserves the exact created item identity"
+            );
+            assert_eq!(
+                pinned_before.movement_items(pos),
+                original_created,
+                "previously pinned views retain their original source facts"
+            );
+            let crate::map::view::EntrySource::Added(id) = current[0].source else {
+                return Err("created source identity".into());
+            };
+            assert!(
+                !map.facts.compare_transform_movement_item(id.get(), 0, trap),
+                "a stale revision cannot rearm a consumed trap"
+            );
+            assert!(
+                !map.facts.compare_transform_movement_item(
+                    crate::map::view::placement_key(pos, 0).ok_or("base key")?,
+                    0,
+                    trap
+                ),
+                "a base placement is not a callback-created item"
+            );
+        }
         Ok((after_step_in, after_step_out, health_before, health_after))
+    }
+
+    #[test]
+    fn qn5_callback_created_traps_trigger_and_retain_their_native_identity() -> Result<(), BoxError>
+    {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), BoxError> {
+                let (closed, exited, before, after) =
+                    trap_case_source(22059, false, "oteryn:creature.feroxa2", 50_000, true)?;
+                assert_eq!(
+                    (closed, exited, before, after),
+                    (22074, 22074, 50_000, 49_000)
+                );
+                let (closed, exited, before, after) =
+                    trap_case_source(2145, false, "oteryn:creature.rat", 1_000, true)?;
+                assert_eq!((closed, exited), (2146, 2145));
+                assert!(after < before);
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "created trap thread")?
     }
 
     #[test]

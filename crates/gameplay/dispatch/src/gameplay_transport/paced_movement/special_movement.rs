@@ -123,6 +123,17 @@ pub(super) fn tile_entries(
         }
         ordinal = ordinal.checked_add(1)?;
     }
+    appearances.extend(
+        map.facts
+            .movement_items(pos)
+            .into_iter()
+            .filter_map(|entry| match entry.source {
+                crate::map::view::EntrySource::Added(id) if id.get() >> 62 == 2 => {
+                    Some((id.get(), entry.facts))
+                }
+                _ => None,
+            }),
+    );
     Some(TileEntries {
         protection_zone: tile.protection_zone(),
         entries: appearances,
@@ -130,6 +141,13 @@ pub(super) fn tile_entries(
 }
 
 pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+    if key >> 62 == 2 {
+        return map.facts.compare_transform_movement_item(
+            key,
+            map.facts.object_revision(key),
+            appearance,
+        );
+    }
     let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
         return false;
     };
