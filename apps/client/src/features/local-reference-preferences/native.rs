@@ -372,46 +372,6 @@ unsafe fn text(hwnd: HWND) -> String {
 #[path = "dialog.rs"]
 mod dialog;
 
-unsafe fn set_checked(handle: HWND, checked: bool) {
-    unsafe {
-        SendMessageW(handle, BM_SETCHECK, usize::from(checked), 0);
-    }
-}
-
-unsafe fn settings_window() -> HWND {
-    unsafe {
-        CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Oteryn Settings").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            760,
-            650,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        )
-    }
-}
-
-unsafe fn refresh_hud_checks(
-    hud_checks: &[HWND],
-    preferences: &oteryn_client::play::ReferencePreferences,
-) {
-    unsafe {
-        for (control, checked) in hud_checks.iter().zip([
-            preferences.hud_bars,
-            preferences.show_harmony,
-            preferences.show_serene,
-            preferences.show_lights,
-            preferences.show_effects,
-            preferences.creature_bars,
-            preferences.health_circle,
-        ]) {
-            SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
-        }
-    }
-}
+#[path = "native_helpers.rs"]
+mod helpers;
+use helpers::*;

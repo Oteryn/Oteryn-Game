@@ -5,6 +5,7 @@ impl Controls {
             let actor_hud = HudControls::new(hwnd)?;
             let console = ConsoleControls::new(hwnd)?;
             let layout = LayoutControls::new(hwnd)?;
+            let battle_filters = BattleFilterControls::new(hwnd)?;
             let mixer = MixerControls::new(hwnd)?;
             let stability = control(
                 hwnd,
@@ -291,6 +292,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                battle_filters,
                 actor_hud,
                 manual,
                 console,

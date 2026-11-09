@@ -12,6 +12,7 @@ pub const MAX_SOUND_BYTES: u64 = 16 * 1024 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct AudioSettings {
+    pub battle_filters: [[bool; 3]; 3],
     pub channel_volumes: [u8; 4],
     pub ui_sounds: [bool; 4],
     pub master_volume: u8,
@@ -24,6 +25,7 @@ impl Default for AudioSettings {
     fn default() -> Self {
         Self {
             master_volume: 100,
+            battle_filters: [[true; 3]; 3],
             channel_volumes: [100; 4],
             ui_sounds: [true; 4],
             ambient_volume: 100,
@@ -68,6 +70,8 @@ pub struct SoundCue {
 #[derive(Deserialize)]
 struct SoundManifest {
     #[serde(default)]
+    battle_classes: BTreeMap<u32, BattleClass>,
+    #[serde(default)]
     sound_channels: BTreeMap<u32, SoundChannel>,
     schema: String,
     sound_data: String,
@@ -86,6 +90,13 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
         || !plain(&manifest.sound_data)
         || manifest.sound_cues.is_empty()
         || manifest.sound_cues.len() > 65_535
+        || manifest.battle_classes.keys().any(|id| {
+            !manifest.sound_cues.contains_key(id)
+                || manifest
+                    .sound_channels
+                    .get(id)
+                    .is_some_and(|channel| *channel != SoundChannel::Battle)
+        })
         || manifest
             .sound_channels
             .keys()
@@ -109,6 +120,7 @@ pub fn decode_mapping(bytes: &[u8]) -> Result<(String, BTreeMap<u32, Vec<String>
 }
 
 pub struct SoundCatalog {
+    classes: BTreeMap<u32, BattleClass>,
     channels: BTreeMap<u32, SoundChannel>,
     store: AssetStore,
     cues: BTreeMap<u32, Vec<String>>,
@@ -116,6 +128,9 @@ pub struct SoundCatalog {
 }
 
 impl SoundCatalog {
+    pub fn battle_class(&self, id: u32) -> Option<BattleClass> {
+        self.classes.get(&id).copied()
+    }
     pub fn channel(&self, id: u32) -> SoundChannel {
         self.channels.get(&id).copied().unwrap_or_default()
     }
@@ -143,6 +158,7 @@ impl SoundCatalog {
         let ambient = parsed.ambient_cues;
         Ok(Self {
             channels: parsed.sound_channels,
+            classes: parsed.battle_classes,
             store,
             cues,
             ambient,
@@ -196,4 +212,4 @@ pub use device::select_audio_device;
 
 #[path = "mixer.rs"]
 mod mixer;
-pub use mixer::SoundChannel;
+pub use mixer::{BattleClass, SoundChannel};

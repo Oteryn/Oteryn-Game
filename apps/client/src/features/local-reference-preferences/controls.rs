@@ -25,7 +25,11 @@ use battle_sound_controls::BattleSoundControls;
 mod mixer_controls;
 use mixer_controls::MixerControls;
 
+#[path = "battle_filter_controls.rs"]
+mod battle_filter_controls;
+use battle_filter_controls::BattleFilterControls;
 pub(super) struct Controls {
+    pub(super) battle_filters: BattleFilterControls,
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,
@@ -73,11 +77,13 @@ impl Controls {
         mixer: &MixerControls,
         frames: &FrameControls,
         battle: &BattleSoundControls,
+        battle_filters: &BattleFilterControls,
         page: SettingsPage,
         preferences: &mut oteryn_client::play::ReferencePreferences,
     ) -> Result<(), String> {
         unsafe {
             match page {
+                SettingsPage::Battle => battle_filters.read(preferences),
                 SettingsPage::Mixer => mixer.read(preferences),
                 SettingsPage::Graphics => frames.read(preferences),
                 SettingsPage::Sound => battle.read(preferences),

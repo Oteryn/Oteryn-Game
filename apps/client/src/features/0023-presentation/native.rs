@@ -1,5 +1,7 @@
 //! Windows playback through upstream Rodio. No device is opened by headless tests.
-use super::{AudioSettings, SoundCatalog, SoundChannel, SoundCue, select_audio_device};
+use super::{
+    AudioSettings, BattleClass, SoundCatalog, SoundChannel, SoundCue, select_audio_device,
+};
 use oteryn_session::PresentationSource;
 use rodio::cpal::traits::{DeviceTrait, HostTrait};
 use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
@@ -10,7 +12,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 pub struct AudioOutput {
     stream: OutputStream,
     catalog: SoundCatalog,
-    voices: Vec<(PresentationSource, SoundChannel, Sink)>,
+    voices: Vec<(PresentationSource, SoundChannel, Option<BattleClass>, Sink)>,
     ambient: Option<(u32, Sink)>,
     error: Option<String>,
 }
@@ -55,7 +57,7 @@ impl AudioOutput {
         if let Some((_, voice)) = self.ambient.take() {
             voice.stop();
         }
-        for (_, _, voice) in self.voices.drain(..) {
+        for (_, _, _, voice) in self.voices.drain(..) {
             voice.stop();
         }
     }
@@ -65,16 +67,20 @@ impl AudioOutput {
     }
 
     pub fn update(&mut self, settings: AudioSettings, cues: Vec<SoundCue>) {
-        self.voices.retain(|(_, _, voice)| !voice.empty());
-        for (source, channel, voice) in &self.voices {
-            voice.set_volume(settings.channel_gain(*source, *channel));
+        self.voices.retain(|(_, _, _, voice)| !voice.empty());
+        for (source, channel, class, voice) in &self.voices {
+            voice.set_volume(settings.classified_gain(*source, *channel, *class));
         }
         if let Some((_, voice)) = &self.ambient {
             voice.set_volume(settings.ambient_gain());
         }
         for cue in cues {
             if !cue.ambient
-                && settings.channel_gain(cue.source, self.catalog.channel(cue.id)) == 0.0
+                && settings.classified_gain(
+                    cue.source,
+                    self.catalog.channel(cue.id),
+                    self.catalog.battle_class(cue.id),
+                ) == 0.0
             {
                 continue;
             }
@@ -83,7 +89,11 @@ impl AudioOutput {
                 if cue.ambient {
                     settings.ambient_gain()
                 } else {
-                    settings.channel_gain(cue.source, self.catalog.channel(cue.id))
+                    settings.classified_gain(
+                        cue.source,
+                        self.catalog.channel(cue.id),
+                        self.catalog.battle_class(cue.id),
+                    )
                 },
             ) {
                 self.error = Some(error);
@@ -120,14 +130,18 @@ impl AudioOutput {
         };
         let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
         if self.voices.len() == 32 {
-            self.voices.remove(0).2.stop();
+            self.voices.remove(0).3.stop();
         }
         let voice = Sink::connect_new(self.stream.mixer());
         voice.set_volume(gain);
         // Numeric cues are one-shots. Bound voice lifetime even for malformed/stream assets.
         voice.append(source.take_duration(Duration::from_secs(30)));
-        self.voices
-            .push((cue.source, self.catalog.channel(cue.id), voice));
+        self.voices.push((
+            cue.source,
+            self.catalog.channel(cue.id),
+            self.catalog.battle_class(cue.id),
+            voice,
+        ));
         Ok(())
     }
 }

@@ -425,10 +425,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / Battle Sounds: own/others/creatures, attack/heal/support",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Playback istnieje; brak suwaków i filtrów walki.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/native.rs:49 + battle_sound_source_gain_multiplies_master_and_mute; native source mixer controls persist own/others/creatures volumes. Remaining: attack/heal/support classification and native caller coverage."
+  "evidence": "apps/client/src/features/0023-presentation/mixer.rs:37 + apps/client/src/features/0023-presentation/native.rs:72 + apps/client/src/features/local-reference-preferences/battle_filter_controls.rs:1; confirmed_battle_cues_respect_each_source_and_class (apps/client/tests/battle_filters.rs:34), battle_filters_separate_source_and_spell_class, battle_sound_source_gain_multiplies_master_and_mute. Nine persisted filters and three source gains consume confirmed sound cues and pinned battle_classes metadata; active voices reapply filters. Main and own branch checked first; legacy unclassified cues retain existing behaviour."
  },
  {
   "id": "T066",

@@ -25,6 +25,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             manual,
             console,
             layout,
+            battle_filters,
             mixer,
             stability,
             battle_sounds,
@@ -127,8 +128,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
             battle_sounds.show(state.page == SettingsPage::Sound);
+            battle_filters.show(state.page == SettingsPage::Battle);
             mixer.show(state.page == SettingsPage::Mixer);
-            mixer.position_apply(apply, state.page == SettingsPage::Mixer);
+            mixer.position_apply(
+                apply,
+                matches!(state.page, SettingsPage::Mixer | SettingsPage::Battle),
+            );
             frames.show(state.page == SettingsPage::Graphics);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
@@ -184,6 +189,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         | SettingsPage::Status
                         | SettingsPage::Sound
                         | SettingsPage::Mixer
+                        | SettingsPage::Battle
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
                         | SettingsPage::ActorHud
@@ -280,6 +286,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         &mixer,
                         &frames,
                         &battle_sounds,
+                        &battle_filters,
                         state.page,
                         &mut preferences,
                     ) {
@@ -332,6 +339,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 layout.refresh(&state.preferences);
                 set_checked(stability, state.preferences.optimise_connection);
                 battle_sounds.refresh(&state.preferences);
+                battle_filters.refresh(&state.preferences);
                 mixer.refresh(&state.preferences);
                 frames.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
@@ -347,14 +355,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
                 SendMessageW(list, CB_SETCURSEL, selection, 0);
-                SetWindowTextW(
-                    scale,
-                    wide(&state.preferences.ui_scale.to_string()).as_ptr(),
-                );
-                SetWindowTextW(
-                    volume,
-                    wide(&state.preferences.audio.master_volume.to_string()).as_ptr(),
-                );
+                refresh_scale_volume(scale, volume, &state.preferences);
                 SendMessageW(
                     mute,
                     BM_SETCHECK,
