@@ -720,6 +720,7 @@ async fn level_admission_fixture(
     for minimum in [above, level] {
         quest.admission = Some(ActorAdmission {
             minimum_level: minimum,
+            premium: false,
         });
         let bindings = Bindings {
             schema: 1,
@@ -909,8 +910,145 @@ async fn production_black_knight_collection(
     let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.black_knight_quest'")
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     assert!(incomplete);
+    premium_admission_fixture(h, authority, &catalogue, reward_fixture::command(9891)?).await?;
     eprintln!(
         "M01C_BLACK_KNIGHT production_collect native_reward_receipt wrong_key_refused forged_command_refused exact_key_committed custody_preserved replay_safe completion_held"
     );
     Ok(())
+}
+
+async fn premium_admission_fixture(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    source: &QuestStateCatalogue,
+    command: foundation::CommandRef,
+) -> f::TestResult {
+    use oteryn_gameplay_quests::quest::authored_bindings::{Bindings, Trigger};
+    let mut quest = source
+        .authored_bindings()
+        .and_then(|bindings| {
+            bindings
+                .quests
+                .iter()
+                .find(|quest| quest.quest == "oteryn:quest.black_knight_quest")
+        })
+        .ok_or("Black Knight binding fixture")?
+        .clone();
+    quest.quest = "oteryn:quest.m01c_premium_fixture".into();
+    quest.sources = vec!["M01c premium engine fixture; no production quest qualification".into()];
+    quest.tracks[0].key = "oteryn:quest-progress/m01c-premium-fixture".into();
+    quest.admission.as_mut().ok_or("level admission")?.premium = true;
+    let Trigger::Collect { collection } = &mut quest.stages[0].trigger else {
+        return Err("collection fixture".into());
+    };
+    collection.key = "oteryn:quest-collection/m01c-premium-fixture".into();
+    collection.storage[0].track = quest.tracks[0].key.clone();
+    let key = collection.key.clone();
+    let bindings = Bindings {
+        schema: 1,
+        quests: vec![quest],
+    };
+    let catalogue = Arc::new(
+        bindings
+            .attach(&QuestStateCatalogue::empty("content-1").ok_or("revision")?)
+            .map_err(f::debug)?,
+    );
+    let request = QuestTransitionRequest {
+        transition_key: key,
+        cause: QuestCause::Command(command),
+    };
+    let outcome = h
+        .root
+        .commit_character_quest_transition(
+            authority,
+            &h.node,
+            f::fence(8)?,
+            request.clone(),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    if !matches!(
+        outcome,
+        QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+    ) {
+        return Err(format!(
+            "premium route must fail closed without its registered owner: {outcome:?}"
+        )
+        .into());
+    }
+    let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    let account: [u8; 16] = account.try_into().map_err(|_| "fixture account UUID")?;
+    let expired = PremiumProbe {
+        account,
+        allowed: false,
+        calls: std::sync::atomic::AtomicU32::new(0),
+    };
+    let outcome = h
+        .root
+        .commit_character_quest_transition_with_admission(
+            authority,
+            &h.node,
+            f::fence(8)?,
+            request.clone(),
+            Arc::clone(&catalogue),
+            &expired,
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        outcome,
+        QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+    ));
+    assert_eq!(expired.calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+    let current = PremiumProbe {
+        account,
+        allowed: true,
+        calls: std::sync::atomic::AtomicU32::new(0),
+    };
+    let outcome = h
+        .root
+        .commit_character_quest_transition_with_admission(
+            authority,
+            &h.node,
+            f::fence(8)?,
+            request.clone(),
+            Arc::clone(&catalogue),
+            &current,
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    let replay = h
+        .root
+        .commit_character_quest_transition(authority, &h.node, f::fence(8)?, request, catalogue)
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        replay,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    assert_eq!(current.calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+    eprintln!(
+        "M01C_PREMIUM missing_owner_refused expired_owner_refused registered_owner_committed replay_without_recheck"
+    );
+    Ok(())
+}
+
+struct PremiumProbe {
+    account: [u8; 16],
+    allowed: bool,
+    calls: std::sync::atomic::AtomicU32,
+}
+impl durability::quest_state::grizzly::GrizzlyPremiumGate for PremiumProbe {
+    async fn task_permitted(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        account: [u8; 16],
+    ) -> Result<bool, durability::DurabilityError> {
+        assert_eq!(account, self.account);
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Ok(self.allowed)
+    }
 }

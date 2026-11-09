@@ -213,3 +213,33 @@ fn native_partial_claim_hold_allows_only_admission_free_nonreward_progress() -> 
     assert!(evidence(&index, &shard)?.verify(&bindings).is_err());
     Ok(())
 }
+
+#[test]
+fn typed_premium_admission_must_match_the_canonical_recipe() -> Result<(), String> {
+    let mut document = super::super::terrain_use_tests::document();
+    document["quests"][0]["admission"] = serde_json::json!({"minimum_level":0,"premium":true});
+    let mut bindings = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    let recipe = serde_json::json!({"requirements":{"min_level":0,"premium":true,"prerequisites":[]},"stages":[{"key":"s1","kind":"use","count":1}]});
+    bindings.quests[0].recipe_sha256 =
+        Sha256::digest(serde_json::to_vec(&recipe).map_err(|e| e.to_string())?)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+    let identity = serde_json::json!({"key":bindings.quests[0].quest,"revision":"authored-r1"});
+    let index = serde_json::json!({"schema":"OTERYN_FAMILY_INDEX/v1","family":"Quest","shards":["fixture-shard"],"record_count":1});
+    let shard = serde_json::json!({"schema":"OTERYN_QUEST_TREE_SHARD/v1","family":"Quest","records":[{"definition":{
+        "identity":identity,"missing_data":[{"code":"claim_native_lowering_missing"}],
+        "oteryn_recipe":{"profile":"chosen_source_completion_v1","chosen_data_complete":true,"payload":{"identity":identity,"recipe":recipe}}
+    }}]});
+    evidence(&index, &shard)?.verify(&bindings)?;
+    bindings.quests[0].admission = None;
+    assert!(
+        evidence(&index, &shard)?.verify(&bindings).is_err(),
+        "premium may not be implicit"
+    );
+    document["quests"][0]["admission"]["premium"] = false.into();
+    let mut wrong = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    wrong.quests[0].recipe_sha256 = bindings.quests[0].recipe_sha256.clone();
+    assert!(evidence(&index, &shard)?.verify(&wrong).is_err());
+    Ok(())
+}

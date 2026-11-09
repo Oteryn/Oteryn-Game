@@ -64,7 +64,8 @@ struct Recipe {
     data_holds: bool,
     claim_only_pending: bool,
     minimum_level: Option<u32>,
-    level_only_admission: bool,
+    requires_premium: Option<bool>,
+    prerequisite_free: bool,
 }
 
 impl RecipeEvidence {
@@ -156,12 +157,13 @@ impl RecipeEvidence {
                 .recipe
                 .and_then(|recipe| recipe["requirements"]["min_level"].as_u64())
                 .and_then(|minimum| u32::try_from(minimum).ok());
-            let level_only_admission = selected.recipe.is_some_and(|recipe| {
-                let requirements = &recipe["requirements"];
-                requirements["premium"] == false
-                    && requirements["prerequisites"]
-                        .as_array()
-                        .is_some_and(Vec::is_empty)
+            let requires_premium = selected
+                .recipe
+                .and_then(|recipe| recipe["requirements"]["premium"].as_bool());
+            let prerequisite_free = selected.recipe.is_some_and(|recipe| {
+                recipe["requirements"]["prerequisites"]
+                    .as_array()
+                    .is_some_and(Vec::is_empty)
             });
             let digest = selected
                 .recipe
@@ -183,7 +185,8 @@ impl RecipeEvidence {
                     data_holds,
                     claim_only_pending,
                     minimum_level,
-                    level_only_admission,
+                    requires_premium,
+                    prerequisite_free,
                 },
             );
         }
@@ -213,7 +216,9 @@ impl RecipeEvidence {
                         | super::Trigger::Kill { .. }
                 )
             });
-            let admission_matches = recipe.level_only_admission
+            let admission_matches = recipe.prerequisite_free
+                && recipe.requires_premium
+                    == Some(quest.admission.as_ref().is_some_and(|gate| gate.premium))
                 && recipe.minimum_level
                     == Some(
                         quest

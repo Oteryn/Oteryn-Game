@@ -47,3 +47,15 @@ fn production_black_knight_collection_enforces_its_canonical_level() -> Result<(
     assert_eq!(collection.items[0].key_number, Some(5010));
     Ok(())
 }
+
+#[test]
+fn adding_premium_support_preserves_the_published_level_only_shape() -> Result<(), String> {
+    let admission: super::actor_admission::ActorAdmission =
+        serde_json::from_value(serde_json::json!({"minimum_level":50}))
+            .map_err(|e| e.to_string())?;
+    assert_eq!(
+        serde_json::to_value(admission).map_err(|e| e.to_string())?,
+        serde_json::json!({"minimum_level":50})
+    );
+    Ok(())
+}

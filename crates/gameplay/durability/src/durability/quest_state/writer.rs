@@ -157,6 +157,25 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Native authored actor admission uses the existing registered premium owner.
+    pub async fn commit_character_quest_transition_with_admission<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority, node, fence, request, catalogue, None, None, None, None, gate, None, None,
+            None, None, None,
+        )
+        .await
+    }
+
     /// A content-bound world callback uses the same fenced quest writer and receipt.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_character_world_callback(
@@ -727,7 +746,8 @@ impl DurabilityRoot {
                     };
                     // Premium's shared latch precedes the Character root lock. Historical
                     // receipts above replay without evaluating current entrance eligibility.
-                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium) {
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium)
+                        || super::authored_admission::requires_premium(&catalogue, &transition.quest) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
