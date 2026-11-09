@@ -4,24 +4,21 @@ Work branch: `claude/happy-davinci-ijz3wy-qm-questpc`. Normal push only; verify
 every push with git ls-remote. Never merge qmech/main or edit CLAIMS.md.
 Old publication instructions below are historical.
 
-Packet audit:46 routes,56 EXPLORE stages.38 routes/44 stages/58 native anchors
-have stage-level PG proofs;8 routes/12 stages remain unwired. This does not claim
-whole-quest completion. Latest three later visits:Dragon Corpse s3 fire corridor,
-Dragon Tower s3 top floor,Edron Goblin s3 throne room. Each first survey is a real
-native STEP;only separate non-EXPLORE action/kill evidence was arranged.
+Packet audit:46 routes,56 EXPLORE stages.38 routes/45 stages/59 native anchors
+have stage-level PG proofs;8 routes/11 stages remain unwired. This does not claim
+whole-quest completion. Latest slice:Chakoya s3 selected northern ice-walled
+chamber, guarded by the real first survey,three kills and CurrentPremium.
 
-PG durations:67.987155645s,68.044933223s,68.476461392s;3passed0failed0ignored,
-total204.51s. Full123 modules/1231 authoring tests pass after fixing callback order
-and requiring exactly the two intended Dragon Corpse callback keys. No assertion
-was loosened. Checks/tree/regeneration/pins/duplicates/fmt and explicit mounted
-Rust format checks pass;all-feature strict Clippy4m17s;workspacealltargets4m47s.
-An initial compiler SIGKILL was recovered by a two-job rebuild;all cases then ran.
+Real-dispatch PG:chamber66.819570055s,first-visit regression64.969116186s;
+2 passed,0 failed,0 ignored,total131.79s. RED native footprint mismatch retained
+all six assertions;fixed half-open crop bounds,then both cases GREEN.
+Full124 modules/1234 authoring tests,checks/tree/regeneration/pins/duplicates,
+strict all-feature Clippy,workspace all-targets and Cargo/explicit Rust fmt PASS.
 
-Remaining stages:Chakoya s3,Chyllfroest s1,Deeplings s4,Devovorga Essence s1,
-Down the Drain s1,Fury Gates s2,Hive Outpost s1,Insectoid Invasion s1,Jungle Camp
-s1+s3,Kingsday s1,Lumberjack s1. Prioritize source-verified personal routes and
-existing admitted World mechanics. Never substitute a nearby unverified landmark,
-fake activation flag or promoted HELD global owner for a real physical visit.
+Remaining stages:Chyllfroest s1,Deeplings s4,Devovorga Essence s1,Down the Drain
+s1,Fury Gates s2,Hive Outpost s1,Insectoid Invasion s1,Jungle Camp s1+s3,Kingsday
+s1,Lumberjack s1. Preserve admitted World mechanics and exact native evidence;
+never replace an actual visit with a nearby landmark or synthetic activation.
 
 ## Historical continuation notes
 
@@ -265,3 +262,5 @@ Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s.38routes41stages55a
 Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain. Full123modules1231testsGREENafterordering/exact-two-keyfix;Clippy/workspacepending. M01bPARTIAL,notfullquestcompletion.
 
 Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.
+
+Chakoya s3 chamber nativePG GREEN66.819570055s;oldfirstvisitregressionGREEN64.969116186s;2passed0failed0ignored,total131.79s.38routes45stages59anchorsPG-proven;8routes11stagesunwired.124modules1234authoringtests/checks/tree/pins/fmtGREEN;Clippy/workspacepending. M01bPARTIAL;no wholequestclaim.

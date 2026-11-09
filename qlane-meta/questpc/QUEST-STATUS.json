@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.",
+  "batch_state": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1114,8 +1114,8 @@
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
-  "m01b_latest_batch": "Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.",
-  "m01b_latest_slice": "Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.",
+  "m01b_latest_batch": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
+  "m01b_latest_slice": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
   "native_anchor_generation": {
     "state": "SLICE_GREEN",
     "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
@@ -1146,7 +1146,7 @@
     "publication_gates": "GREEN122authoringmodules1229tests,0failingmodules;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt+explicitauto-mountedparent/newcaseformatchecks;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s;nativePG78.48657683s.",
     "native_postgres": "m01b_chakoya_native_personal_iceberg_entry_requires_current_premium GREEN78.48657683s,0ignored;exactlandmark[799,7152]preserved;realCurrentPremium/refusedreplay/freshonce/revisit;laterstage/completion/globalstate0."
   },
-  "remaining_stage_audit": "Counted46MISSINGexplorerows/canonicalrecipe.stages:56stages;44boundandPG-proven. Remaining12:Chakoya3,Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.",
+  "remaining_stage_audit": "46routes56stagescountedfrompacketandcanonicaldefs;45boundandPG-proven. Remaining11:Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.",
   "later_native_surveys": {
     "state": "LATER_VISITS_NATIVE_PG_QUALIFIED",
     "scope": "DragonCorpse s3 fire corridor,DragonTower s3 lastfloor,EdronGoblin s3 throneapproach;real s1STEPbeforeevidence,onlyseparateUSE/KILLconditionarranged;noExplore/receipt/rootrevisionseeding;EdronCurrentPremium;freshonce/refusedreplay/revisit/wholecomplete0.",
@@ -1160,5 +1160,16 @@
     "build_recovery": "FirstdispatchtestbuildSIGKILLbeforerunningPG;16GiBcgroup. ReranwithCARGO_BUILD_JOBS=2afterdependencycachecompleted;compileGREEN6m51s,all3realPGcasesGREEN.",
     "pending": "No new reward/kill/action/transport/fullquestqualification;allpublicationgatesGREEN.",
     "publication_gates": "PASS123modules1231testsafterfullretry;authoringchecks;content-tree;nativeproviderregeneration;callbackcheck/equipment5795pin/dupmigrations;strictquests+dispatchalltargetsALLFEATURESClippy4m17s;workspacealltargets4m47s;fmt+explicitauto-mountedparent/newfilechecks;3realPGcases204.51s."
+  },
+  "iceberg_chamber_survey": {
+    "state": "NATIVE_PG_GREEN_PUBLISHED_GATES",
+    "scope": "Authoredfixedpersonalnorthernice-walledalcove;frozenchair+threewallsSourcefootprintpreserved;actuals1STEP,onlynonExplorethree-killevidencearranged;Premium/refusedreplay/freshonce/revisit;wholecompletion0. No globalWorldownerpromotion.",
+    "postgres": {
+      "new_chamber_seconds": 66.819570055,
+      "first_visit_regression_seconds": 64.969116186,
+      "result": "2passed0failed0ignored,total131.79s"
+    },
+    "red_green": "3focusedtestsREDmissingresolver/currentWorldowner/live0vs1->GREEN1.523s;4firsttestsGREEN1.427s;65bindingtestsGREEN41.116s.124modules1234authoringtests0failures. FirstPGRED58.114248801s expectedsource4vs6 becausehalf-opencropmaxexcludedwall/start;expandedboundsretainingALL6assertions;BOTHnativePGcasesGREENafterfix.",
+    "pending": "First and chamber visits qualified;kill/reward/completion/transport qualification remains outside these visit proofs. All publication gates GREEN."
   }
 }

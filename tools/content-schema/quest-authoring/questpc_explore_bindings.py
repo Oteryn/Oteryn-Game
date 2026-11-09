@@ -70,6 +70,7 @@ BINDINGS = (
     ('oteryn:quest.dragon_corpse_quest', 's3', 'claim:canary:reward-claim/kv/dragoncorpse', 'chosen-source/dragon_corpse_quest'),
     ('oteryn:quest.dragon_tower_quest', 's3', 'claim:canary:reward-claim/quest/u7_1/dragon_tower/rewards/backpack1', 'chosen-source/dragon_tower_quest'),
     ('oteryn:quest.edron_goblin_quest', 's3', 'claim:canary:reward-claim/kv/edrongoblin1', 'chosen-source/edron_goblin_quest'),
+    ('oteryn:quest.authored.chakoya_iceberg_mini_world_change', 's3', 'iceberg-chamber:northern-alcove', 'authored/chakoya_iceberg_mini_world_change'),
 )
 ANCHORS = {
     'oteryn:area.hunting_place.edron_goblin_cave': (33108, 31850, -7, 355),
@@ -149,6 +150,11 @@ def callbacks(root):
         elif area.startswith('cauldron-approach:'):
             import questpc_cauldron_approaches
             cauldron_approach = questpc_cauldron_approaches.resolve(
+                root, quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('iceberg-chamber:'):
+            import questpc_iceberg_chamber
+            iceberg_approach = questpc_iceberg_chamber.resolve(
                 root, quest, stage, area, definition=definition)
             world_change = None
         elif area.startswith('iceberg-approach:'):

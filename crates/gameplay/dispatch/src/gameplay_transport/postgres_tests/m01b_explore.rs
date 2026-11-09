@@ -36,6 +36,9 @@ mod treasure_entries;
 #[path = "m01b_explore/cave_entry.rs"]
 mod cave_entry;
 
+#[path = "m01b_explore/iceberg_chamber.rs"]
+mod iceberg_chamber;
+
 #[path = "m01b_explore/iceberg_entry.rs"]
 mod iceberg_entry;
 
@@ -338,7 +341,11 @@ pub(super) fn start(name: &str, trigger: Position) -> Position {
     if let Some(start) = followup_entries::start(name) {
         return start;
     }
-    if name == "m01b/chakoya-iceberg-mini-world-change/s1/entry" {
+    if matches!(
+        name,
+        "m01b/chakoya-iceberg-mini-world-change/s1/entry"
+            | "m01b/chakoya-iceberg-mini-world-change/s3/entry"
+    ) {
         return Position {
             y: trigger.y + 1,
             ..trigger
@@ -400,6 +407,9 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if name == "m01b/chakoya-iceberg-mini-world-change/s3/entry" {
+        return iceberg_chamber::world(native);
     }
     if name == "m01b/chakoya-iceberg-mini-world-change/s1/entry" {
         return iceberg_entry::world(native);
@@ -647,6 +657,9 @@ pub(super) async fn exercise(
         || callback.key.ends_with("m01b/edron-goblin/s3/edrongoblin1")
     {
         return followup_entries::exercise(owner, admitted, h, callback).await;
+    }
+    if callback.key == "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s3/entry" {
+        return iceberg_chamber::exercise(owner, admitted, h).await;
     }
     if callback.key == "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry" {
         return iceberg_entry::exercise(owner, admitted, h, callback).await;

@@ -586,6 +586,77 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s3/entry",
+      "quest": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32621,
+          "y": 32555,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6585,
+        "native": {
+          "position": {
+            "x": 32621,
+            "y": 32555,
+            "floor": -6
+          },
+          "ordinal": 0,
+          "appearance": 6585
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s3/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s2",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/48",
+        "https://tibia.fandom.com/index.php?curid=75507&oldid=1117033",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only",
+        "https://tibia.fandom.com/index.php?curid=76213&oldid=887139",
+        "content/world/placements/region-z06-x127-y127.b3"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/deeplings-worldchange/s1/entry",
       "quest": "oteryn:quest.deeplings_worldchange",
       "trigger": "step_in",

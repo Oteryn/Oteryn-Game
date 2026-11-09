@@ -32,36 +32,37 @@ fn m01b_chakoya_native_personal_iceberg_entry_requires_current_premium() -> Test
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
-    native_crop(
-        native,
-        NativeCrop {
-            bytes: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z07-x127-y127.b3"
-            )),
-            region: (7, 127, 127),
-            bounds: (32619, 32582, 32625, 32588),
-            start: (32622, 32586),
-            expected: vec![
-                ExpectedTile {
-                    position: (32623, 32584),
-                    ids: vec![799, 7152],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (32622, 32585),
-                    ids: vec![6585],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (32622, 32586),
-                    ids: vec![6582],
-                    counted_entry: None,
-                },
-            ],
-        },
-    )
+    super::super::l6_world_pickups::native_crop(native, crop())
+}
+
+pub(super) fn crop() -> super::super::l6_world_pickups::NativeCrop {
+    use super::super::l6_world_pickups::{ExpectedTile, NativeCrop};
+    NativeCrop {
+        bytes: include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z07-x127-y127.b3"
+        )),
+        region: (7, 127, 127),
+        bounds: (32619, 32582, 32625, 32588),
+        start: (32622, 32586),
+        expected: vec![
+            ExpectedTile {
+                position: (32623, 32584),
+                ids: vec![799, 7152],
+                counted_entry: None,
+            },
+            ExpectedTile {
+                position: (32622, 32585),
+                ids: vec![6585],
+                counted_entry: None,
+            },
+            ExpectedTile {
+                position: (32622, 32586),
+                ids: vec![6582],
+                counted_entry: None,
+            },
+        ],
+    }
 }
 
 pub(super) async fn exercise(

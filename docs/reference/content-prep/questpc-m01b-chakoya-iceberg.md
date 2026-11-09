@@ -38,3 +38,29 @@ Premium refuses credit; gaining Premium cannot retroactively credit a replay;
 fresh entry credits once and revisits do not farm it. Kill/chamber track rows,
 whole-quest completion and global iceberg event state remain zero.
 This qualifies only the first survey, not the remaining expedition or its reward.
+
+## Selected later igloo inspection
+
+The authored s3 objective is “Inspect the hidden igloo chamber”. Its exact Native
+binding selects the existing northern ice-walled alcove at (32621,32555,-6),
+ground6585, with clear south start (32621,32556,-6), ground799. This is a documented
+Oteryn room selection for the authored fixed expedition, not a claim that a wiki
+body supplied these precise coordinates or an original secret-trigger algorithm.
+
+The retained `region-z06-x127-y127.b3` has a frozen chair at (32620,32554), stack
+[799,7107,7163], enclosed by checked north/west/east wall stacks at
+(32620,32553)[6869,6729,6952],(32618,32555)[6869,6728], and
+(32622,32555)[6591,7110,6728]. The scoped resolver verifies this complete footprint
+and the fixed personal first-route contract, then retains both prior guards:
+s1=1 and s2=3, plus Current Premium. Other stages/objectives cannot borrow it.
+No item is spawned or changed; the global iceberg owner remains HELD.
+
+The dedicated native PG case passed in66.819570055s. It earned s1 through real
+STEP, arranged only the separate KILL owner's three-kill condition, refused stale
+replay and missing Premium, credited a fresh room entry once and left whole
+completion zero. The first-visit regression also passed in64.969116186s after
+sharing its unchanged NativeCrop. Combined:2passed0failed0ignored,131.79s.
+
+The first chamber PG run failed in58.114248801s because half-open crop maxima
+excluded the east wall and south start:4 of6 required tiles. Expanding the crop
+included both while retaining all six source assertions; both cases then passed.

@@ -22,7 +22,8 @@ def definition():
 
 class IcebergApproachTests(unittest.TestCase):
     def test_fixed_personal_iceberg_entry_is_live(self):
-        self.assertEqual(sum(c['quest'] == QUEST for c in explore.callbacks(ROOT)), 1)
+        key = 'oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry'
+        self.assertEqual(sum(c['key'] == key for c in explore.callbacks(ROOT)), 1)
 
     def test_native_landmark_keeps_its_complete_source_stack(self):
         from questpc_native_anchors import NativeAnchors
