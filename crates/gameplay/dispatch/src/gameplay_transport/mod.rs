@@ -44,8 +44,8 @@ mod chat_relay;
 mod coin_use;
 mod combat_lock_fact;
 mod composed_admission;
-#[cfg(test)]
-mod composed_test_owner;
+#[cfg(any(test, feature = "test-support"))]
+pub mod composed_test_owner;
 mod condition_persistence;
 mod condition_snapshots;
 mod connection;
