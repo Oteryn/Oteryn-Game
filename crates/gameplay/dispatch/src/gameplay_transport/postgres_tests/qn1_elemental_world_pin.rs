@@ -5,6 +5,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[path = "qn1_elemental_world_pin/arrival.rs"]
 mod arrival;
+#[path = "qn1_elemental_world_pin/soil.rs"]
+mod soil;
 
 #[test]
 fn qn1_elemental_world_pass_accepts_native_bundle_pin() -> TestResult {
@@ -14,6 +16,11 @@ fn qn1_elemental_world_pass_accepts_native_bundle_pin() -> TestResult {
 #[test]
 fn qn1_elemental_live_drop_consumes_corpse_and_projects_native_boss() -> TestResult {
     run("qn1-elemental-arrival")
+}
+
+#[test]
+fn qn1_elemental_soil_use_consumes_one_replays_and_recovers_decay() -> TestResult {
+    run("qn1-elemental-soil")
 }
 
 fn run(name: &'static str) -> TestResult {
@@ -110,6 +117,10 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut runtime)
         .map_err(super::fixture::debug)?;
+    if name == "qn1-elemental-soil" {
+        drop(runtime);
+        return soil::exercise(owner, harness, actor, fence).await;
+    }
     if name == "qn1-elemental-arrival" {
         drop(runtime);
         return arrival::exercise(owner, harness, actor, fence).await;
