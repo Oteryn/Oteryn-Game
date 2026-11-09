@@ -107,3 +107,72 @@ fn qm55_daily_restart_rejects_rewards_foreign_tracks_and_noninitial_resets() -> 
     }
     Ok(())
 }
+
+#[test]
+fn qm55_bank_daily_route_binds_real_recipe_and_orders_kill_custody_and_handin() -> Result<(), String>
+{
+    let bindings = embedded::load()?.ok_or("production authored bindings")?;
+    bindings.verify_embedded_recipe_evidence()?;
+    let quest = "oteryn:quest.authored.bank_robbery_mini_world_change";
+    let bound = bindings
+        .quests
+        .iter()
+        .find(|b| b.quest == quest)
+        .ok_or("bank binding")?;
+    let catalogue = bindings.attach(
+        &QuestStateCatalogue::new("fixture", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+    )?;
+    let mut stored = std::collections::BTreeMap::new();
+    let sequence = [
+        crate::quest::shared_world_progress::save_event_restart_key(quest),
+        "oteryn:quest-reward/qm55-bank-start".into(),
+        "oteryn:quest-transition/native-kills/qm55-bank-jesse".into(),
+        "oteryn:quest-collection/qm55-bank-stolen-gold".into(),
+        "oteryn:quest-reward/qm55-bank-return".into(),
+    ];
+    let finish = catalogue.transition(&sequence[4]).ok_or("hand-in")?;
+    assert!(catalogue.evaluate(finish, &stored, 0).is_err());
+    for (index, key) in sequence.iter().enumerate() {
+        let transition = catalogue.transition(key).ok_or("bound transition")?;
+        assert_eq!(transition.world_change.as_deref(), Some("server_save"));
+        assert_eq!(transition.completes, index == 4);
+        for change in catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|e| format!("{e:?}"))?
+        {
+            stored.insert(change.track, change.after);
+        }
+    }
+    assert!(catalogue.evaluate(finish, &stored, 0).is_err());
+    let callbacks: Vec<_> = bindings
+        .reward_callbacks()
+        .filter(|c| c.quest == quest)
+        .collect();
+    assert_eq!(callbacks.len(), 3);
+    let reward = callbacks
+        .iter()
+        .find(|c| c.key == sequence[4])
+        .ok_or("reward callback")?;
+    assert_eq!(reward.npc, "oteryn:npc.naji");
+    assert_eq!(reward.take.len(), 1);
+    assert_eq!(reward.take[0].item, "oteryn:item.tibia.i13429");
+    assert_eq!(reward.take[0].count, 1);
+    assert_eq!(
+        reward.achievement.as_deref(),
+        Some("oteryn:achievement/honest_finder")
+    );
+    let restart = catalogue.save_event_restart(quest).ok_or("restart")?;
+    for change in catalogue
+        .evaluate(restart, &stored, 0)
+        .map_err(|e| format!("{e:?}"))?
+    {
+        stored.insert(change.track, change.after);
+    }
+    assert!(
+        bound
+            .tracks
+            .iter()
+            .all(|track| stored.get(&track.key) == Some(&track.initial))
+    );
+    Ok(())
+}
