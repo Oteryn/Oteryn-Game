@@ -74,6 +74,7 @@ enum Case {
     DemonaRing,
     DoubleHero,
     Katana,
+    Longsword,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -93,6 +94,25 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: UID6146..6148 are three independent rewards.
+#[test]
+fn m35_longsword_dispatch_requires_all_three_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Longsword).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Longsword scenario panicked")??;
+    println!("M35_LONGSWORD_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1850-1864: independent Katana corpse rewards.
@@ -336,6 +356,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::Longsword => (
+            (32649, 31969, -9),
+            2472,
+            "oteryn:quest.longsword_quest",
+            &[(32649, 6146), (32650, 6147), (32651, 6148)],
+        ),
         Case::Katana => (
             (32175, 32145, -11),
             4240,
@@ -490,7 +516,9 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(
+            if matches!(case, Case::Longsword) {
+                3
+            } else if matches!(
                 case,
                 Case::Alawar
                     | Case::Koshei
@@ -744,6 +772,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
+                        || matches!(case, Case::Longsword) && index == 2
                         || matches!(
                             case,
                             Case::Alawar
@@ -759,6 +788,49 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::DoubleHero
                                 | Case::Katana
                         ) && index == 1
+                );
+            }
+            if matches!(case, Case::Longsword) {
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 4")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                let mut bag_claimed = false;
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    let key = match pos {
+                        0 => "oteryn:item.tibia.i3285",
+                        1 => "oteryn:item.tibia.i3004",
+                        _ => {
+                            bag_claimed = true;
+                            "oteryn:item.tibia.i2853"
+                        }
+                    };
+                    expected.push((key.to_owned(), 1));
+                }
+                expected.sort();
+                assert_eq!(roots, expected);
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 5")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    children,
+                    if bag_claimed {
+                        vec![
+                            ("oteryn:item.tibia.i2989".to_owned(), 1),
+                            ("oteryn:item.tibia.i3031".to_owned(), 76),
+                            ("oteryn:item.tibia.i3147".to_owned(), 3),
+                            ("oteryn:item.tibia.i3463".to_owned(), 1),
+                        ]
+                    } else {
+                        Vec::new()
+                    }
                 );
             }
             if matches!(case, Case::GoblinTemple) {

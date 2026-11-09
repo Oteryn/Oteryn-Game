@@ -494,3 +494,25 @@ changes against donor endpoints and quantities; no significant finding. No
 existing assertion was removed or loosened. Local node boot was skipped as
 instructed. The complete M35 row remains PARTIAL for the final-source binding,
 partial-charge and remaining caller-proof requirements documented above.
+
+## Longsword three-claim real-caller qualification
+
+Crystal 201189f8 `chest.lua:1712-1735` binds UID6146/6147/6148 at
+(32649/32650/32651,31969,9), all appearance2472. The first two grant
+item3285 x1 and item3004 x1. The third grants bag2853 with item3147 x3,
+item2989 x1, gold3031 x76 and item3463 x1. The mounted caller case exercises
+ascending and descending source order, so the bag is tested both first and
+last. It requires incomplete quest state after both the first and second
+claims and completion only after the third. Exact roots and all four bag
+contents, receipt/consumed-obligation counts, replay and fresh-repeat refusal
+are checked at each step, with quest state reloaded between claims. Existing
+production declarations, rewards and generated content remain unchanged.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL case in122.67 seconds, printing
+`M35_LONGSWORD_POSTGRES_CASE_COMPLETED`. Self-review covered the full
+handwritten delta and exact donor quantities; no significant finding. No
+existing assertion was removed or loosened. No generated file changed and
+local node boot was skipped as instructed. M35 remains PARTIAL for its
+previously documented final-source binding, partial-charge and remaining
+real-caller proof requirements.
