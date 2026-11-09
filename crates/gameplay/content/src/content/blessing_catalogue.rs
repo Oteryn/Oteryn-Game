@@ -85,6 +85,13 @@ impl BlessingCatalogue {
         Ok(catalogue)
     }
 
+    /// The seven regular death-protection blessings; Twist is a separate PvP protection.
+    pub fn regular_blessings(&self) -> impl Iterator<Item = &Blessing> {
+        self.blessings
+            .iter()
+            .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
+    }
+
     /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.
     /// The durable owner also enforces eligibility and refuses partial regular ownership;
     /// this pure missing-set calculation alone does not authorize a purchase.

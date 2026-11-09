@@ -912,6 +912,7 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
             .world_requirements
             .iter()
             .all(WorldRequirement::is_map)
+    if !callback.requires_world_admission && !callback.opening_only && callback.admission.is_none()
     {
         return Ok(None);
     }

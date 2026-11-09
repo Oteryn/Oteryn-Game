@@ -101,3 +101,18 @@ fn henricus_offer_is_exactly_five_regular_blessings_with_ten_percent_surcharge()
         assert_eq!(quoted, price);
     }
 }
+
+#[test]
+fn regular_quest_blessings_include_mountain_and_exclude_twist() -> Result<(), &'static str> {
+    let catalogue = super::BlessingCatalogue::load()?;
+    let keys: Vec<_> = catalogue
+        .regular_blessings()
+        .map(|b| b.storage_key.as_str())
+        .collect();
+    assert_eq!(keys.len(), 7);
+    assert!(keys.contains(&"oteryn:blessing.the_wisdom_of_solitude"));
+    assert!(keys.contains(&"oteryn:blessing.blood_of_the_mountain"));
+    assert!(keys.contains(&"oteryn:blessing.heart_of_the_mountain"));
+    assert!(!keys.contains(&"oteryn:blessing.twist_of_fate"));
+    Ok(())
+}

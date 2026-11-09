@@ -1,6 +1,10 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
 pub(super) mod completion;
+#[cfg(feature = "test-support")]
+#[doc(hidden)]
+pub mod ground_stack;
+#[cfg(not(feature = "test-support"))]
 mod ground_read;
 pub(crate) mod ground_stack;
 #[cfg(feature = "test-support")]
@@ -207,6 +211,10 @@ pub(super) async fn consume_reward_inputs(
     reward_inputs::apply(tx, fence, request, callback, carried_use, &inputs).await
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "retains source, scope and live eligibility owners in one transaction"
+)]
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
@@ -345,9 +353,7 @@ pub(super) async fn consume(
                 oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             if !catalogue
-                .blessings
-                .iter()
-                .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
+                .regular_blessings()
                 .all(|blessing| held.contains(&blessing.storage_key))
             {
                 return Ok(false);

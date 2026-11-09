@@ -1,3 +1,6 @@
+#[cfg(feature = "test-support")]
+mod world_fixture;
+
 use super::super::db::begin_type2_transaction;
 use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
@@ -484,10 +487,11 @@ impl DurabilityRoot {
         }
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
-            oteryn_gameplay_quests::quest::admission_binding::validate_for_catalogue(
+            oteryn_gameplay_quests::quest::admission_binding::validate_resolved_world(
                 &catalogue,
                 transition,
                 context.is_some(),
+                &world_callbacks,
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
