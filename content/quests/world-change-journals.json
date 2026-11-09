@@ -1724,7 +1724,7 @@
       "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
       "repeat": "once",
       "requires_premium": false,
-      "runtime_enabled": false,
+      "runtime_enabled": true,
       "sources": [
         "https://tibia.fandom.com/index.php?curid=54570&oldid=1106148",
         "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
@@ -1762,10 +1762,69 @@
           "max": 1,
           "min": 0,
           "quest": "oteryn:quest.authored.insectoid_invasion_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/insectoid_invasion/waves",
+          "max": 9223372036854775807,
+          "min": 0,
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change"
         }
       ],
       "world_callbacks": [
         {
+          "effects": {
+            "encounter": {
+              "minimum_level": 1,
+              "monsters": [
+                {
+                  "creature": "oteryn:creature.insectoid_scout",
+                  "position": {
+                    "floor": -7,
+                    "x": 32208,
+                    "y": 32058
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.insectoid_scout",
+                  "position": {
+                    "floor": -7,
+                    "x": 32209,
+                    "y": 32060
+                  }
+                }
+              ],
+              "players": [
+                {
+                  "from": {
+                    "floor": -7,
+                    "x": 32208,
+                    "y": 32059
+                  },
+                  "to": {
+                    "floor": -7,
+                    "x": 32209,
+                    "y": 32059
+                  }
+                }
+              ],
+              "room_max": {
+                "floor": -7,
+                "x": 32209,
+                "y": 32060
+              },
+              "room_min": {
+                "floor": -7,
+                "x": 32208,
+                "y": 32058
+              }
+            },
+            "facing": null,
+            "item_cycle": null,
+            "magic": null,
+            "portals": null,
+            "transform": null
+          },
           "failure_message": "The personal journey requirements are not met.",
           "item_on_target": null,
           "key": "oteryn:quest-callback/worldchg-m31/insectoid_invasion/incursion",
@@ -1793,16 +1852,30 @@
           ],
           "storage": [
             {
-              "maximum": 0,
+              "maximum": 1,
               "minimum": -1,
               "set": 1,
               "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/phase"
             },
             {
-              "maximum": 0,
+              "maximum": 9,
+              "minimum": 0,
+              "preserve": true,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills"
+            },
+            {
+              "maximum": 1,
               "minimum": 0,
               "set": 1,
               "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/enabled"
+            },
+            {
+              "increment": true,
+              "maximum": 9223372036854775806,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/waves"
             }
           ],
           "success_message": "Your personal journal has been updated.",

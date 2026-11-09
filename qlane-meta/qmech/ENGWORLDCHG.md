@@ -46,7 +46,7 @@ unit cases also pass. The authoring checks pass, and all 115 authoring unit
 modules pass (1,148 tests, with the existing module skips unchanged).
 
 Fury Gates also has programme wiring and lowering tests; its own personal
-journey PostgreSQL case is still pending. Six other programmes remain disabled
+journey PostgreSQL case is still pending. Five other programmes remain disabled
 until their remaining engine paths and focused proofs are implemented.
 Kingsday's royal contact now has its captured native placement at
 `(32311,32172,6)`, facing north. The real-dispatch case passed in 175.683 seconds:
@@ -62,6 +62,19 @@ passable, nonmovable and nonpickupable; its Ground-only profile makes the actual
 royal cell admissible without changing the NPC compiler's strict collision rule.
 The profile's red-then-green source tests and official parity check pass.
 
-Pending M31 includes the remaining native NPC and achievement composition, counter-goal
-completion, personal Hive favour/access, and Horse Station's taming receipt.
+Insectoid Invasion now binds its source scout pair at `(32208,32058,7)` and
+`(32209,32060,7)` to a personal ten-kill journey. Its real-dispatch PG case passed
+in 125.994 seconds: a second player blocks entry, the cleared native pair can be
+readmitted, only the tenth actual death completes, later deaths preserve one
+completion receipt, and a cold read plus the domain-16 journal show completion.
+The shared parser/runtime contract permits one fenced personal STEP entrant
+at the exact declared room entry; every other player still blocks the room.
+Counter goals reject foreign, missing, mismatched and mixed completion policies.
+The same built engine passes Grimvale in 114.745 seconds, Hive Outpost in
+114.786 seconds and Kingsday in 170.981 seconds. All 69 focused quest/callback
+tests and both encounter lifecycle unit tests pass. The full 115-module
+authoring runner and authoring checks pass; content-tree validation is 97/97.
+
+Pending M31 includes the remaining native NPC and achievement composition,
+Jungle Camp's staged hunting, personal Hive favour/access, and Horse Station's taming receipt.
 Independent package review and protected integration belong to the coordinator.

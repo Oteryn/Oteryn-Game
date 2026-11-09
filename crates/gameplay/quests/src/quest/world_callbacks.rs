@@ -272,6 +272,23 @@ pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>>
 }
 
 impl Callback {
+    /// A fenced single-player STEP may stage inside its own bounded room.
+    /// Runtime admission still rejects every other player in that room.
+    #[must_use]
+    pub fn personal_room_entry(&self) -> Option<Position> {
+        let encounter = self.effects.encounter.as_ref()?;
+        let [member] = encounter.players.as_slice() else {
+            return None;
+        };
+        (self.requires_world_admission
+            && self.has_personal_state()
+            && self.actor_kind == ActorKind::Player
+            && self.trigger == Trigger::StepIn
+            && encounter.timing.is_none()
+            && self.selector.position == Some(member.from))
+        .then_some(member.from)
+    }
+
     /// Canary action_horn.lua:38-50: mammoth progress requires a currently active
     /// Drunk condition, never the historical mead counters or a cached quest flag.
     pub fn requires_live_drunk(&self) -> bool {

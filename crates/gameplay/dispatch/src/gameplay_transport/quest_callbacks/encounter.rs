@@ -115,10 +115,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
                     .contains(&at.y)
         };
-        if census
-            .iter()
-            .any(|(_, pos, session)| session.is_some() && in_room(pos.position()))
-        {
+        let personal_entry = callback.personal_room_entry().map(local);
+        if census.iter().any(|(who, pos, occupant_session)| {
+            occupant_session.is_some()
+                && in_room(pos.position())
+                && !(Some(pos.position()) == personal_entry
+                    && *who == actor
+                    && *occupant_session == Some(session))
+        }) {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(map.facts.doors());

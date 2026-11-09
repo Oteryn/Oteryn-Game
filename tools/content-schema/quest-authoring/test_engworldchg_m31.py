@@ -70,6 +70,26 @@ class NativeWorldChangeJournals(unittest.TestCase):
         self.assertTrue(any(s["track"].endswith("/waves") and s.get("increment") for s in entry["storage"]))
         self.assertEqual(program["counters"][0]["area"], [33300, 33360, 31665, 31730, 0, 15])
 
+    def test_insectoid_uses_the_source_scout_pair_and_goal_receipt(self):
+        program = next(p for p in json.loads(PROFILE.read_text())["programs"]
+                       if p["key"] == "insectoid_invasion")
+        self.assertTrue(program["runtime_enabled"])
+        self.assertFalse(program["requires_premium"])
+        entry, = program["world_callbacks"]
+        self.assertEqual(entry["trigger"], "step_in")
+        cohort = entry["effects"]["encounter"]
+        self.assertEqual({tuple(m["position"][k] for k in ("x", "y", "floor"))
+                          for m in cohort["monsters"]},
+                         {(32208, 32058, -7), (32209, 32060, -7)})
+        self.assertTrue(all(m["creature"] == "oteryn:creature.insectoid_scout"
+                            for m in cohort["monsters"]))
+        self.assertEqual(program["completion"], {
+            "callbacks": [], "counter_target": 10,
+            "counter_track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills",
+        })
+        self.assertTrue(any(s["track"].endswith("/kills") and s["maximum"] == 9
+                            and s.get("preserve") for s in entry["storage"]))
+
 
 if __name__ == "__main__":
     unittest.main()

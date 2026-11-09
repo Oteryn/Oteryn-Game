@@ -463,10 +463,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.room_min.floor != encounter.room_max.floor
             || encounter.room_min.x > encounter.room_max.x
             || encounter.room_min.y > encounter.room_max.y
-            || encounter
-                .players
-                .iter()
-                .any(|p| !pos(p.from) || !pos(p.to) || !in_room(p.to) || in_room(p.from))
+            || encounter.players.iter().any(|p| {
+                !pos(p.from)
+                    || !pos(p.to)
+                    || !in_room(p.to)
+                    || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
+            })
             || encounter.monsters.iter().any(|m| {
                 !pos(m.position)
                     || !in_room(m.position)

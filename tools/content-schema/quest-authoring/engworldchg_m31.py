@@ -150,7 +150,7 @@ def expected(root=ROOT):
                    "requires_premium": recipe["requirements"]["premium"],
                    "minimum_level": recipe["requirements"]["min_level"],
                    "journal": {"name": definition["display_name"], "objectives": [s["objective"] for s in stages]},
-                   "runtime_enabled": key in {"fury_gates", "grimvale", "hive_outpost", "kingsday"},
+                   "runtime_enabled": key in {"fury_gates", "grimvale", "hive_outpost", "kingsday", "insectoid_invasion"},
                    "phase_track": track(key), "tracks": [], "world_callbacks": [],
                    "npc_callbacks": [], "counters": [], "stage_bindings": {},
                    "completion": {"callbacks": [], "counter_track": None, "counter_target": None},
@@ -195,10 +195,15 @@ def expected(root=ROOT):
           writes=[state(active, 1, 1, 0)], completes=True)
 
     p = programs["insectoid_invasion"]
-    _, active = kills(p, ["insectoid_scout"], 10, ["s2", "s3"],
+    progress, active = kills(p, ["insectoid_scout"], 10, ["s2", "s3"],
                       [32200, 32220, 32050, 32070, 7, 7], completes=True)
-    world(p, "incursion", position(32208, 32059, 7), 4407, (-1, 0), 1, ["s1"],
-          trigger="step_in", writes=[state(active, 0, 0, 1)])
+    cohort = encounter(position(32208, 32059, 7), position(32209, 32059, 7),
+                       position(32208, 32058, 7), position(32209, 32060, 7),
+                       [("insectoid_scout", position(32208, 32058, 7)),
+                        ("insectoid_scout", position(32209, 32060, 7))])
+    world(p, "incursion", position(32208, 32059, 7), 4407, (-1, 1), 1, ["s1"],
+          trigger="step_in", guards=[state(progress, 0, 9, 0, preserve=True)],
+          writes=[state(active, 0, 1, 1), wave(p)], encounter=cohort)
 
     p = programs["jungle_camp"]
     hunted, hunting = kills(p, ["hunter", "poacher"], 5, ["s2"],

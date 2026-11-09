@@ -492,6 +492,41 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
 #[cfg(test)]
 mod tests {
     #[test]
+    fn personal_room_entry_rejects_unfenced_shared_or_remote_staging() -> Result<(), String> {
+        let value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/world-change-journals.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let programme = value["programs"]
+            .as_array()
+            .ok_or("programmes")?
+            .iter()
+            .find(|p| p["key"] == "insectoid_invasion")
+            .ok_or("invasion")?;
+        let callback: super::super::world_callbacks::Callback =
+            serde_json::from_value(programme["world_callbacks"][0].clone())
+                .map_err(|error| error.to_string())?;
+        assert_eq!(callback.personal_room_entry(), callback.selector.position);
+        super::super::world_callbacks::validate_callbacks(std::slice::from_ref(&callback))?;
+        for case in 0..5 {
+            let mut bad = callback.clone();
+            match case {
+                0 => bad.requires_world_admission = false,
+                1 => bad.storage.clear(),
+                2 => bad.trigger = super::super::world_callbacks::Trigger::Use,
+                3 => bad.selector.position.as_mut().ok_or("selector")?.x += 1,
+                _ => {
+                    let encounter = bad.effects.encounter.as_mut().ok_or("encounter")?;
+                    encounter.players.push(encounter.players[0].clone());
+                }
+            }
+            assert_eq!(bad.personal_room_entry(), None, "staging case {case}");
+            assert!(super::super::world_callbacks::validate_callbacks(&[bad]).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn personal_counter_goal_programmes_lower_without_premature_completion() -> Result<(), String> {
         for selected in ["insectoid_invasion", "jungle_camp"] {
             let mut value: serde_json::Value = serde_json::from_str(include_str!(

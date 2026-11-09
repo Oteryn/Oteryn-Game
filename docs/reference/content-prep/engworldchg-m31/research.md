@@ -631,3 +631,17 @@ pathfinding blocking are false; there is no floor change or height. M31 adds
 that single source-derived profile through the existing closed World-change
 provider, retaining Ground-only custody. The NPC compiler's strict cell rule
 and player/creature collision rules remain intact.
+
+### Insectoid personal room entry
+
+The source scout cells `(32208,32058,7)` and `(32209,32060,7)` and the captured
+entry `(32208,32059,7)` occupy one bounded room. Their spawn identities and source
+URLs are recorded above. The selected personal journey uses cleared-wave
+re-entry; the source spawn records retain their90-second respawn.
+
+The encounter parser and runtime now share a narrow entry contract: one
+personal player STEP, mandatory World admission, one participant and an exact
+selector/staging match. The occupancy guard exempts only that exact actor and
+current session at the declared cell. Its PG case admits another runtime player
+into the room first, verifies that no actors or quest state are published,
+moves that player out, then completes the ten real scout deaths once.

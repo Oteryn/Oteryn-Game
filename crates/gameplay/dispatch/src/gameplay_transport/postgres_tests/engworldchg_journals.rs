@@ -20,6 +20,16 @@ fn engworldchg_kingsday_native_npc_journal_postgres() -> TestResult {
     scenario("kingsday", "royal-visit", "royal-visit", "", 0)
 }
 #[test]
+fn engworldchg_insectoid_counter_completion_postgres() -> TestResult {
+    scenario(
+        "insectoid_invasion",
+        "incursion",
+        "incursion",
+        "insectoid_scout",
+        10,
+    )
+}
+#[test]
 fn engworldchg_outpost_personal_native_journal_postgres() -> TestResult {
     scenario("hive_outpost", "outpost", "survey", "insectoid_worker", 20)
 }
@@ -204,7 +214,9 @@ fn scenario(
                 .map_err(debug)?;
             let phase = format!("oteryn:quest-progress/world-change-journal/{program}/phase");
             let kills = format!("oteryn:quest-progress/world-change-journal/{program}/kills");
-            if program == "kingsday" {
+            if program == "insectoid_invasion" {
+                exercise_incursion(&mut owner, &mut admitted, &h, &authority).await?;
+            } else if program == "kingsday" {
                 super::engworldchg_kingsday::exercise(&mut owner, &mut admitted, &h, &authority)
                     .await?;
             } else {
@@ -366,6 +378,7 @@ fn scenario(
             let journal_command = match program {
                 "grimvale" => 11,
                 "hive_outpost" => 7,
+                "insectoid_invasion" => 9,
                 _ => 3,
             };
             prove_journal_wire(
@@ -387,6 +400,120 @@ fn scenario(
             h.cleanup().await
         })
     })
+}
+
+async fn exercise_incursion(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    const QUEST: &str = "oteryn:quest.authored.insectoid_invasion_world_change";
+    const KILLS: &str = "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills";
+    const SCOUT: &str = "oteryn:creature.insectoid_scout";
+    owner.premium_coordinator = None;
+    super::qengine_kill_stories::death(owner, admitted, SCOUT, 23000).await?;
+    assert_eq!(
+        value(h, KILLS).await?,
+        0,
+        "a death before entry cannot count"
+    );
+    let blocker_cell = super::quest_world_callbacks::local(Position {
+        x: 32208,
+        y: 32058,
+        floor: -7,
+    });
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&id(76)).map_err(debug)?;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let blocker = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(blocker, blocker_cell)
+            .map_err(debug)?;
+    }
+    step(owner, admitted, 1, StepDirection::West).await?;
+    assert!(
+        live_creatures(owner, SCOUT).await?.is_empty(),
+        "another player must block admission"
+    );
+    assert_eq!(
+        value(
+            h,
+            "oteryn:quest-progress/world-change-journal/insectoid_invasion/phase"
+        )
+        .await?,
+        0
+    );
+    {
+        let outside = super::quest_world_callbacks::local(Position {
+            x: 32211,
+            y: 32061,
+            floor: -7,
+        });
+        let mut runtime = owner.runtime.lock().await;
+        let moved = runtime
+            .commit_quest_platform_displacement(blocker_cell, outside, |_, _, _| true, || true)
+            .map_err(debug)?;
+        assert_eq!(moved.len(), 1);
+    }
+    step(owner, admitted, 2, StepDirection::East).await?;
+    for wave in 0..5_u64 {
+        step(owner, admitted, wave + 3, StepDirection::West).await?;
+        let cohort = live_creatures(owner, SCOUT).await?;
+        assert_eq!(
+            cohort.len(),
+            2,
+            "the native step must supply the source scout pair"
+        );
+        for (ordinal, target) in cohort.into_iter().enumerate() {
+            kill_actor(
+                owner,
+                admitted,
+                target,
+                24000 + wave * 2 + u64::try_from(ordinal)?,
+            )
+            .await?;
+            let count = i64::try_from(wave * 2 + u64::try_from(ordinal)? + 1)?;
+            assert_eq!(value(h, KILLS).await?, count);
+            let completions: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes")
+                .bind(QUEST).fetch_one(&h.pool).await?;
+            assert_eq!(
+                completions,
+                i64::from(count == 10),
+                "only the tenth real death completes"
+            );
+        }
+    }
+    step(owner, admitted, 8, StepDirection::West).await?;
+    assert!(
+        live_creatures(owner, SCOUT).await?.is_empty(),
+        "the completed encounter cannot restart"
+    );
+    super::qengine_kill_stories::death(owner, admitted, SCOUT, 25000).await?;
+    assert_eq!(value(h, KILLS).await?, 10);
+    let completions: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
+    )
+    .bind(QUEST)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        completions, 1,
+        "later deaths cannot mint another completion"
+    );
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let state = h
+        .root
+        .read_character_quest_state(authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(state.tracks().get(KILLS), Some(&10));
+    Ok(())
 }
 
 pub(super) async fn value(h: &Harness, track: &str) -> TestResult<i64> {
@@ -646,6 +773,13 @@ async fn kill_actor(
             .bound_attacker_lease(actor, session)
             .map_err(debug)?;
         let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+        let definition = runtime
+            .companion_snapshot(target)
+            .map_err(debug)?
+            .state
+            .policy
+            .definition_key
+            .clone();
         runtime
             .borrow_exact_actor_commit_at(now)
             .commit_damage_for_bound_attacker(
@@ -654,7 +788,7 @@ async fn kill_actor(
                 CommandRef::new(session, CommandId::new(command).map_err(debug)?),
                 0,
                 crate::foundation::OwnerDamageCommand {
-                    target: b"oteryn:creature.werewolf",
+                    target: definition.as_bytes(),
                     occurrence: session.as_bytes(),
                     binding: b"m31-native-island-death",
                     damage: health,
