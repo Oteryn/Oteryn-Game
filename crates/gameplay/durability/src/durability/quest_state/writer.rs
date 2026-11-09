@@ -996,6 +996,22 @@ impl DurabilityRoot {
                         oteryn_gameplay_quests::quest::QuestEffectKind::Native(
                             oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
                         )
+                    )) && oteryn_gameplay_quests::quest::barbarian_mead::needs_draw(
+                        stored.get(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0]).copied().unwrap_or(-1),
+                        stored.get(oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[3]).copied().unwrap_or(0),
+                    ) {
+                        let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 5))::smallint")
+                            .fetch_one(&mut *tx).await?;
+                        Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else { None };
+                    // M47: historical receipts returned above. Draw only in this fenced
+                    // transaction; the resulting complete snapshot is persisted in its
+                    // existing Quest receipt, atomically with all four source tracks.
+                    let roll = if transition.effects.iter().any(|effect| matches!(
+                        effect.effect,
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(
+                            oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
+                        )
                     )) {
                         let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 5))::smallint")
                             .fetch_one(&mut *tx).await?;

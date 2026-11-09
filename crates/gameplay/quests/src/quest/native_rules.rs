@@ -29,6 +29,7 @@ impl NativeRule {
     pub const fn tracks(self) -> &'static [&'static str] {
         match self {
             Self::BarbarianMead => &barbarian_mead::TRACKS,
+            Self::BarbarianMead => &barbarian_mead::NATIVE_TRACKS,
             Self::CultsSymbol { .. } => &[
                 cults_of_tibia::MISSION,
                 cults_of_tibia::TEMP,
@@ -94,6 +95,8 @@ impl NativeRule {
         let next = match self {
             Self::BarbarianMead => barbarian_mead::apply(
                 [
+            Self::BarbarianMead => {
+                let before = [
                     read(barbarian_mead::TRACKS[0])?,
                     read(barbarian_mead::TRACKS[1])?,
                     read(barbarian_mead::TRACKS[2])?,
@@ -102,6 +105,17 @@ impl NativeRule {
                 roll.ok_or(QuestRefusal::NotSupported)?,
             )?
             .to_vec(),
+                ];
+                let random = barbarian_mead::needs_draw(before[0], before[3]);
+                let roll = if random {
+                    roll.ok_or(QuestRefusal::NotSupported)?
+                } else {
+                    1
+                };
+                let mut after = barbarian_mead::apply(before, roll)?.to_vec();
+                after.push(if random { i64::from(roll) } else { 0 });
+                after
+            }
             Self::CultsSymbol { symbol } => {
                 let snapshot = cults_of_tibia::apply_symbol(
                     symbol,

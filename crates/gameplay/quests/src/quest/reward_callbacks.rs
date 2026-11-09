@@ -1334,6 +1334,8 @@ mod tests {
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 adds the canonical four-track native mead transition.
                 "ce91fb477a2477dfa81674b40bb86149ee17e775b0d1ee623bfac428ae3e7fe4",
+                // M47 binds four source counters plus the durable roll; absence stays -1.
+                "a23884420cacf0330e359241e5fb30715e768051cd3ffd4b11985cb19ed3b3af",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
