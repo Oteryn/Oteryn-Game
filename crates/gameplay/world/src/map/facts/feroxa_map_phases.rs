@@ -13,6 +13,68 @@ pub struct FeroxaPhaseTile {
     pub teleport: Option<(u8, TilePos)>,
 }
 
+/// Resolve every source ID through the served generation before any publication.
+/// The caller supplies only definition identity/kind; physical flags come from
+/// the independently pinned source item loader, not a stale bundle palette.
+pub fn prepare_feroxa_phase(
+    elapsed_ms: u64,
+    mut resolve: impl FnMut(u16) -> Option<EntryFacts>,
+) -> Option<(u8, [u8; 32], Vec<FeroxaPhaseTile>)> {
+    let maps = crate::content::feroxa_source_maps::FeroxaSourceMaps::embedded()?;
+    let phase = maps.due(elapsed_ms)?;
+    let mut tiles = Vec::with_capacity(phase.tiles.len());
+    for source in &phase.tiles {
+        let position = TilePos {
+            x: source.0,
+            y: source.1,
+            floor: -i8::try_from(source.2).ok()?,
+        };
+        let mut entries = Vec::with_capacity(source.4.len());
+        let teleport = phase
+            .teleports
+            .iter()
+            .find(|p| p[..3] == [source.0, source.1, u16::from(source.2)]);
+        for (ordinal, id) in source.4.iter().enumerate() {
+            let physical = maps.item(*id)?;
+            let mut entry = resolve(*id)?;
+            if entry.appearance_id != *id
+                || physical.pickupable
+                || physical.container
+                || physical.floor_change
+            {
+                return None;
+            }
+            if physical.ground {
+                entry.terrain_kind = Some(TerrainKind::Ground);
+            }
+            entry.blocks_projectile = physical.block_projectile;
+            entry.pickupable = false;
+            entry.bound = teleport.is_some_and(|p| usize::from(p[3]) == ordinal);
+            entry.count = 1;
+            entry.sub_type = 0;
+            entries.push(entry);
+        }
+        tiles.push(FeroxaPhaseTile {
+            position,
+            entries,
+            spell: maps.spell_tile(source)?,
+            no_logout: source.3 & 8 != 0,
+            teleport: match teleport {
+                Some(p) => Some((
+                    u8::try_from(p[3]).ok()?,
+                    TilePos {
+                        x: p[4],
+                        y: p[5],
+                        floor: -i8::try_from(p[6]).ok()?,
+                    },
+                )),
+                None => None,
+            },
+        });
+    }
+    Some((phase.phase, maps.capture_digest(), tiles))
+}
+
 #[derive(Debug)]
 pub(super) struct FeroxaMapPhase {
     firing: [u8; 16],

@@ -235,3 +235,87 @@ fn qn5_feroxa_phase_publishes_ground_collision_combat_and_pinned_views_atomicall
     assert!(!facts.publish_feroxa_phase(id(91), 2, [4; 32], final_map));
     Ok(())
 }
+
+#[test]
+fn qn5_feroxa_retained_maps_prepare_complete_native_stacks_and_refuse_missing_definitions()
+-> TestResult {
+    let resolve = |id| {
+        Some(EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::new(u32::from(id))?),
+            terrain_kind: None,
+            appearance_id: id,
+            blocks_projectile: false,
+            pickupable: true,
+            bound: false,
+            count: 99,
+            sub_type: 7,
+        })
+    };
+    assert!(prepare_feroxa_phase(1_799_999, resolve).is_none());
+    let (middle, digest, before) = prepare_feroxa_phase(1_800_000, resolve).ok_or("middle")?;
+    let (final_map, final_digest, after) =
+        prepare_feroxa_phase(3_600_000, resolve).ok_or("final")?;
+    assert_eq!((middle, final_map), (1, 2));
+    assert_eq!(digest, final_digest);
+    assert_ne!(digest, [0; 32]);
+    assert_eq!((before.len(), after.len()), (1225, 1225));
+    assert_eq!(
+        before.iter().zip(&after).filter(|(a, b)| a != b).count(),
+        806
+    );
+    assert_eq!(before.iter().filter(|t| t.no_logout).count(), 1056);
+    assert_eq!(after.iter().filter(|t| t.no_logout).count(), 507);
+    for tiles in [&before, &after] {
+        let portals: Vec<_> = tiles.iter().filter(|t| t.teleport.is_some()).collect();
+        assert_eq!(portals.len(), 1);
+        assert_eq!(
+            portals[0].position,
+            TilePos {
+                x: 33430,
+                y: 31537,
+                floor: -11
+            }
+        );
+        assert_eq!(
+            portals[0].teleport,
+            Some((
+                1,
+                TilePos {
+                    x: 33457,
+                    y: 31531,
+                    floor: -11
+                }
+            ))
+        );
+        assert!(portals[0].entries[1].bound);
+        assert_eq!(
+            tiles.iter().filter(|t| t.spell.flags().block_solid).count(),
+            729
+        );
+        assert_eq!(
+            tiles
+                .iter()
+                .filter(|t| t.spell.flags().block_projectile)
+                .count(),
+            729
+        );
+        for tile in tiles {
+            assert!(!tile.spell.flags().protection_zone);
+            for entry in &tile.entries {
+                assert!(!entry.pickupable);
+                assert_eq!((entry.count, entry.sub_type), (1, 0));
+            }
+        }
+    }
+    assert!(
+        prepare_feroxa_phase(1_800_000, |id| if id == 1949 { None } else { resolve(id) }).is_none()
+    );
+    assert!(
+        prepare_feroxa_phase(3_600_000, |id| resolve(id).map(|mut entry| {
+            entry.appearance_id = 0;
+            entry
+        }))
+        .is_none()
+    );
+    Ok(())
+}

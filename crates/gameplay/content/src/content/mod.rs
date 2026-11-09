@@ -48,6 +48,7 @@ pub mod daily_boost;
 pub mod daily_reward;
 mod digest;
 pub mod encounter_map_item;
+pub mod feroxa_source_maps;
 pub mod field_condition;
 mod fixture;
 pub mod item_abilities;
