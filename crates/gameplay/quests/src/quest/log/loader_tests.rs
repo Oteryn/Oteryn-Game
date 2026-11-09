@@ -77,6 +77,17 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
                 "Shrine of Serenity",
                 "Shrine of Eternity",
             ]
+        } else if matches!(
+            key.as_str(),
+            "oteryn:quest.fury_gates_mini_world_change" | "oteryn:quest.grimvale_mini_world_change"
+        ) {
+            assert!(admitted.shown_in_quest_log);
+            assert_eq!(admitted.kind, super::super::QuestLogKind::Storyline);
+            vec![
+                quest["display_name"]
+                    .as_str()
+                    .expect("personal programme title"),
+            ]
         } else {
             quest["missions"]
                 .as_array()

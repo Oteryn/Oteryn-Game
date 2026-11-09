@@ -4,6 +4,10 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NativeDeathSource {
     Party(Arc<crate::foundation::PartySnapshot>),
+    PositionedParty {
+        source: Arc<crate::foundation::PartySnapshot>,
+        position: (u16, u16, i8),
+    },
     Source(super::source_deaths::SourceDeathContext),
 }
 
@@ -27,8 +31,15 @@ impl NativeQuestDeath {
             && self.observed_revision > 0
             && matches!(request.cause, QuestCause::CreatureDeath(_))
             && match &self.source {
-                NativeDeathSource::Party(_) => {
-                    oteryn_gameplay_quests::quest::native_kills::counter_for(
+                NativeDeathSource::Party(_) | NativeDeathSource::PositionedParty { .. } => {
+                    let position = match &self.source {
+                        NativeDeathSource::PositionedParty { position, .. } => Some(*position),
+                        _ => None,
+                    };
+                    oteryn_gameplay_quests::quest::world_change_journals::admits_position(
+                        &self.transition,
+                        position,
+                    ) && oteryn_gameplay_quests::quest::native_kills::counter_for(
                         catalogue,
                         &self.transition,
                     )
@@ -57,7 +68,8 @@ impl NativeQuestDeath {
 
     pub(super) fn party(&self) -> Option<&crate::foundation::PartySnapshot> {
         match &self.source {
-            NativeDeathSource::Party(source) => Some(source.as_ref()),
+            NativeDeathSource::Party(source)
+            | NativeDeathSource::PositionedParty { source, .. } => Some(source.as_ref()),
             NativeDeathSource::Source(_) => None,
         }
     }
@@ -65,6 +77,20 @@ impl NativeQuestDeath {
     pub(super) fn bind(&self, binding: &mut [u8; 33]) -> Result<()> {
         match &self.source {
             NativeDeathSource::Party(source) => super::grizzly::bind_party(binding, source)?,
+            NativeDeathSource::PositionedParty {
+                source,
+                position: (x, y, floor),
+            } => {
+                super::grizzly::bind_party(binding, source)?;
+                let digest = Sha256::new()
+                    .chain_update(*binding)
+                    .chain_update(b"native-death-origin-v1")
+                    .chain_update(x.to_be_bytes())
+                    .chain_update(y.to_be_bytes())
+                    .chain_update(floor.to_be_bytes())
+                    .finalize();
+                binding[1..].copy_from_slice(&digest);
+            }
             NativeDeathSource::Source(source) => source.bind(binding),
         }
         let mut digest = Sha256::new()

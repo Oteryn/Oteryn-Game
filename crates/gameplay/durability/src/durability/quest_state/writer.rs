@@ -225,6 +225,41 @@ impl DurabilityRoot {
         .await
     }
 
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_requirements<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, native)),
+            None,
+            None,
+            None,
+            premium,
+            None,
+            None,
+            admission,
+            None,
+            None,
+        )
+        .await
+    }
+
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
     /// this same Quest writer in one physical transaction.
     pub async fn commit_rotten_blood_access_purchase(
@@ -720,7 +755,8 @@ impl DurabilityRoot {
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
+                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium)
+                        || callback.as_ref().is_some_and(|c| oteryn_gameplay_quests::quest::world_change_journals::requires_premium(&c.key)) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;

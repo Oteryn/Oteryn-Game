@@ -381,10 +381,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some());
+    let personal_encounter = effects.encounter.as_ref().is_some_and(|encounter| {
+        callback.has_personal_state()
+            && callback.requires_world_admission
+            && callback.actor_kind == ActorKind::Player
+            && matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+            && callback.lever.is_none()
+            && !callback.opening_only
+            && !callback.reversible
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
+            && encounter.players.len() == 1
+            && encounter.timing.is_none()
+            && effects.item_reward.is_none()
+            && effects.outfit_reward.is_none()
+    });
     if operations > 1
         || (operations > 0
-            && (!lever
-                || callback.has_personal_state()
+            && ((!personal_encounter && (!lever || callback.has_personal_state()))
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {

@@ -569,6 +569,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
+            return UseDisposition::Rejected;
+        }
+        let mut personal_reservation = if callback.effects.encounter.is_some()
+            && callback.has_personal_state()
+        {
+            let (Some(fence), Some(definition)) = (
+                fence,
+                self.quest_catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.definition_hash(&callback.quest)),
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            match self.states.quest_callbacks.personal.reserve(
+                runtime,
+                &callback.key,
+                personal_encounter::Origin::new(*fence.character_id.as_bytes(), cause, definition),
+            ) {
+                Ok(reservation) => Some(reservation),
+                Err(disposition) => return disposition,
+            }
+        } else {
+            None
+        };
+        if callback.effects.encounter.is_some() && callback.has_personal_state() {
+            let ready = self.preflight_personal_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+            );
+            if ready != UseDisposition::Committed {
+                return ready;
+            }
+        }
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -630,7 +671,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
             let outcome = slot
-                .commit_world_callback_with_items(
+                .commit_world_callback_with_requirements(
                     self.root,
                     self.character,
                     self.holder,
@@ -698,7 +739,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if callback.effects.encounter.is_some() {
-            return self.execute_quest_encounter(
+            let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
                 actor,
@@ -708,7 +749,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                personal_reservation.as_mut(),
             );
+            if disposition == UseDisposition::Committed && callback.has_personal_state() {
+                if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                    pending.remove(&session);
+                }
+                if let Some(message) = success_message {
+                    self.states.chat.push_quest_feedback(session, &message);
+                }
+            }
+            return disposition;
         }
         if !map.facts.apply_quest_callback(
             key,

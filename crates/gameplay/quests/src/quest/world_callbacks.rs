@@ -317,6 +317,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.extend(super::world_change_journals::callbacks()?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
@@ -545,7 +546,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !(imported_explore::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                    source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    (source == "oteryn-native:world-change-journal:v1"
+                        && callback
+                            .key
+                            .starts_with("oteryn:quest-callback/worldchg-m31/")
+                        && callback.requires_world_admission
+                        && callback.world_change.is_none())
+                        || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                         || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                         || (callback.effects.outfit_reward.is_some()
                             && source
@@ -735,7 +742,8 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     .map(|operation| operation.quest_effect()),
             )
             .collect(),
-        completes: callback.effects.completes_quest,
+        completes: callback.effects.completes_quest
+            || super::world_change_journals::completes(&callback.key),
         experience: callback.experience,
     })
 }
@@ -748,6 +756,22 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     use sha2::{Digest, Sha256};
     let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
     let fields = value.as_object_mut().ok_or("world callback object")?;
+    if callback
+        .key
+        .starts_with("oteryn:quest-callback/worldchg-m31/")
+    {
+        fields.insert(
+            "journal_premium".into(),
+            super::world_change_journals::requires_premium(&callback.key).into(),
+        );
+        fields.insert(
+            "journal_completes".into(),
+            super::world_change_journals::completes(&callback.key).into(),
+        );
+    }
+    if let Some(policy) = super::world_change_journals::policy_binding(&callback.key)? {
+        fields.insert("journal_policy".into(), policy);
+    }
     fields.remove("sources");
     fields.remove("success_message");
     fields.remove("failure_message");

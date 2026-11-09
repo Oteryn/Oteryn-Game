@@ -354,3 +354,263 @@ Selecting this existing source scene for a bounded personal cohort is a native
 adaptation choice, not a claim that the original shared volcano script used
 this exact rectangle. Existing global-inactive kill masking still needs an
 explicit personal encounter route to avoid silently counting excluded natives.
+
+## Horse personal room, Hive landings, and Chip stock follow-up
+
+The same direct B3 reader and official appearance-flag check establishes these
+small exact selectors. Every listed tile has flags0, house0, depth0 items with
+no attributes; every listed appearance is bank/unmove/fullbank with no unpass
+or avoid flag.
+
+| Role | Source coordinate | Entire stack |
+|---|---|---|
+| Horse staging outside chosen room |32462,32213,7|4519|
+| Horse room monster cell |32462,32214,7|4522|
+| Horse room player landing |32463,32214,7|4530|
+| Hive minimum-stage2 inner landing |33599,31228,1|12854|
+| Hive minimum-stage3 inner landing |33494,31197,1|13038|
+
+The two Horse room cells form rectangle x32462..32463/y32214/z7, with staging
+one step north of the monster cell. The source coordinate32462,32214 is already
+the Wild Horse point in the retained Canary raid XML described above. Selecting
+a single-monster personal encounter here is a native recipe adaptation; do not
+copy the global raid timer. Source stacks do not prove runtime actor vacancy:
+the Encounter's existing empty-room check must still run. Map region
+`region-z07-x126-y125.b3` SHA256 is
+`b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037`.
+
+`crates/gameplay/quests/src/quest/hive_access.rs` preserves the actual gate
+crossing axis: appearances13290..13292 cross x; the opposite landing is x+1
+when approaching from the west, x-1 when approaching from the east. Accordingly
+stage2 gate33598,31228,z1 leads inward to33599,31228; stage3 gate33495,31197,z1
+leads inward to33494,31197. The source `outer_route` witnesses are33577,31235
+for the stage2 gate and33501,31197 for stage3; they identify the exterior side,
+not a replacement teleport destination. Gate source locator:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data/scripts/actions/objects/hive_gates.lua
+and retained wiki56902@930222:20. Landing B3 SHA256 witnesses:
+`region-z01-x131-y121.b3` =
+`e9dcd49d7ce26d8c71e04050256629e1596ffefea74145abab68e143c3a8b498`;
+`region-z01-x130-y121.b3` =
+`ab09aa7157ba7b409bcb3bcfe27ba3d46f1add7c7ea64423af95e8ed4052427e`.
+Personal access after the selected50point exchange and10defenders is a separate
+personal journal policy; these source coordinates do not authorize changing
+shared thresholds or worldwide expiry.
+
+### Chip trades: direction known, executable offer not established
+
+In `content/npcs/definitions/npcs-00000-00499.json`, Chip has `services: []`.
+His retained `oteryn:source.npc.bulk.wiki_trade_reference` is literally
+`{"BuyFromPlayer":{"Wood":[null]},"SellToPlayer":{}}`. Thus the retained
+reference describes Chip BUYING Wood from the player; it is not stock that
+sells Wood to the player, and its price is null. Source public article locators
+retained in that definition are https://tibiopedia.pl/npcs/Chip and
+https://tibia.fandom.com/wiki/Chip. Previously attempted current public wiki
+routes did not supply an article body, and inspected pinned Canary/Crystal
+trees contained no Chip NPC script. A fresh GitHub code search for
+`filename:chip.lua wood` found no relevant Tibia script. These inspected
+references do not establish an executable quantity/price offer.
+
+The materializable native Wood identity DOES exist:
+`content/items/definitions/spell-native-profiles.json` row whose
+`production_definition.production_key` is `oteryn:item.tibia.i5901`.
+Its presentation name is wood; it is movable/pickupable, stackable max100,
+weight500 in the native unit. This row's exact production binding is donor
+server item5901, Crystal revision
+`ff7ede593c69d4c658b382c97443e8155926924a`; the same mapping appears in
+`imports/crystalserver/bindings/items.json`. The other historical items named
+wood (e.g.i7916/i7921..) have unknown semantics and are not evidence for the
+tradeable5901 product. Source item URL:
+https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/items/items.xml
+
+A completed access flag can prove the character unlocked the selected journal
+reward permission. With the currently inspected catalogue it cannot honestly
+prove that Chip has a working Wood shop offer: there is no native Chip service
+or known-price offer to exercise. Do not convert the quest's unspecified50gold
+text into an invented unit price or quantity; any explicit native offer choice
+must be recorded as such, preserving the proven BuyFromPlayer direction.
+
+## Final starter and ordinary-population verification
+
+Direct B3 extraction establishes these full stacks (all depth0, attributes
+absent, flags0/house0/zones empty):
+
+| Starter | Source coordinate | Entire stack |
+|---|---|---|
+| Fury dungeon STEP |33290,31786,13|10549,14113,1866|
+| Insectoid start STEP |32208,32059,7|4407,6480,1071|
+| Horse station starter STEP |32438,32231,7|4522,5485,6218|
+
+Official appearance objects confirm first IDs10549/4407/4522 are bank grounds;
+none of the nine listed appearances has unpass/avoid. The remaining IDs are
+immovable overlays, several with clip/ignore_look, rather than invented source
+objects. Select the ground explicitly if the selected journey uses ground
+STEP; retain the full stacks as evidence.
+
+### Grimvale personal encounter scene and missing original cohort
+
+A source-backed3x2 room excluding the existing survey stone is
+x33310..33312/y31710..31711/z7. Staging33312,31709,z7 has stack4409,311 and
+lies immediately north of landing33312,31710. The six full stacks are:
+
+| y | x33310 | x33311 | x33312 |
+|---|---|---|---|
+|31710|4402,4577|4405,311|4397,315,6218|
+|31711|4399,407,21935|4406,315,6217|4518,6218|
+
+All six tiles have flags0/house0/zones empty/depth0/no attributes. Each first
+appearance is bank ground; no appearance in these stacks has unpass/avoid in
+the pinned official appearance object. Thus one player landing and five
+Werewolf cells can fit the chosen bounded encounter, subject to runtime
+vacancy and existing Encounter ownership checks. Two personal waves of five
+are an explicit native selected-journey adaptation, not a source calendar
+rule. Existing survey stone33311,31709 remains immediately outside the room.
+Region witness remains `region-z07-x130-y123.b3` SHA256
+`694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9`.
+
+The native spawn tree contains NO Werewolf point in the checked Grimvale
+rectangle33300..33360/31665..31730 on any floor. The closest retained Werewolf
+point to the Grimvale area anchor is33438,31619,z10 (Edron-side), source
+`oteryn:spawn.x33435_y31622_z10` in `spawns-30000-31999.json`,90s respawn.
+Do not describe that as an existing Grimvale population. The daily Grimvale
+producer in `crates/gameplay/world/src/map/daily.rs::grimvale_spawns` only adds
+Wereboar/Werebadger on full-moon days, versus Bandit/Badger/BlueButterfly/
+YellowButterfly otherwise, within33330..33350/31670..31690/z7. It does not
+supply the selected recipe's ten Werewolves.
+
+### Ordinary Fury and Outpost sources survive shared variant projection
+
+The source spawn tree has29 Fury points in33260..33330/31760..31850, allfloors.
+A concrete example in `spawns-48000-49999.json` is
+`oteryn:spawn.x33315_y31798_z14`, Fury33316,31800,z14,60000ms.
+For the Outpost rectangle32135..32195/32805..32870, allfloors, the source point
+counts are: Waspoid37, Crawler21, InsectoidWorker20, Spitter16, Swarmer14,
+Spidris7, Kollos4. There are no HiveOverseer/SpidrisElite points in this checked
+rectangle, so don't claim all nine nominal area species are present. These
+seven ordinary species still support the chosen ordinary-kill objective.
+Examples in `spawns-04000-05999.json` include Crawler32156,32852,z5 and
+Kollos32154,32862,z5; all seven listed source types use90000ms in the checked
+sampled points.
+
+The actual runtime masking caller is
+`apps/game-server/src/node/raid_scheduler/world_changes.rs::project`:
+`project_world_spawn_cohorts` finds a rule only by exact base creature plus
+bounded home cell and leaves a point unchanged when none matches. Its source
+`content/encounters/world-changes/credited-kills.json::spawn_rules` has no Fury
+or Werewolf rules. Hive Kollos/Spidris/SpidrisElite rules are restricted to
+33001..33700/30900..31400/z0..15; the southern Outpost rectangle is outside
+those bounds. Therefore those checked Fury and Outpost source cohorts are
+not suppressed by these shared phase rules. Normal map composition may still
+reject a source point on obstructed/protection tiles, and native creature
+admission remains required; this inspection does not replace a live dispatch
+proof. `map/boot.rs::activation_spawns` retains ordinary source points subject
+to composed-ground/door/protection checks and then appends daily Grimvale
+sources; it does not replace all ordinary cohorts with the daily list.
+
+## Hive Favour admission and western native defender cohort
+
+`crates/gameplay/durability/src/durability/world_event/changes/counters/shared_progress.rs::credit_completed`
+currently gates BOTH native task acceptance and completed task turn-in on
+`load(world,epoch)` returning a day. Missing reset/day returns Refused. Task
+acceptance additionally requires precisely the expected active-track0->1
+command effect. Eligibility is stage3 for anytask, stage1 for tasks0..3,
+stage2 for tasks4..5; stage0 refuses. Completed task turn-in independently
+checks source action/cause, the real objective changes and stage eligibility
+before crediting the shared World owner. Thus these existing tasks cannot
+already earn personal Favour at reset0/inactive World through this path.
+A selected personal programme needs an explicitly scoped exemption or separate
+personal receipt policy that retains real task objective/turn-in validation,
+without manufacturing shared global credits.
+
+`quests/src/quest/shared_world_progress.rs` binds six actual tasks: antennae8,
+digestion blobs7, chitin8 plus hatchlings8, pores7, Kollos9, monoliths5.
+Only their actual completed task transitions add the Favour track.
+`hive_access.rs::favour_reward` grants1 for tasks0..3,2 for tasks4..5;
+`BUY` consumes50 Favour and records PURCHASED. Fifty Favour therefore cannot
+be substituted with a direct marker grant. The retained task source locator
+is https://tibia.fandom.com/index.php?curid=56916&oldid=1184992
+(War Against the Hive), as identified by shared_world_progress's source header.
+
+The source spawn catalogue contains62 Crawler points west of the eastern gate
+inside x33470..33597/y31165..31250/z3..9. Counts by sourcefloor: z3=3,z4=8,
+z5=13,z6=10,z7=17,z8=4,z9=7. There are NONE on z1 in this checked box, so the
+z1 gate landings do not imply a z1 Crawler cohort. Concrete nearby records:
+
+| Source shard | Source key | Crawler coordinate | Respawn |
+|---|---|---|---|
+|spawns-06000-07999.json|oteryn:spawn.x33585_y31228_z7|33586,31228,7|90000ms|
+|spawns-06000-07999.json|oteryn:spawn.x33592_y31215_z7|33593,31215,7|90000ms|
+|spawns-00000-01999.json|oteryn:spawn.x33594_y31219_z4|33595,31219,4|90000ms|
+|spawns-00000-01999.json|oteryn:spawn.x33592_y31236_z3|33593,31236,3|90000ms|
+
+There is no Crawler rule in credited-kills.json's spawn_rules. Accordingly the
+source projection caller described above leaves these ordinary Crawler points
+unchanged at global stage0. This is a source-backed hunting eligibility bound
+on the western side, not a demonstrated continuous traversable path between
+the two z1 gates: connectivity and floor transitions were not proved by this
+spawn inventory inspection. Chip findings remain unchanged: checked native
+identity5901 and buy-from-player direction are established; no executable
+known-price native Chip offer was located in the inspected sources.
+
+## Hive task callback guards and newly accessible Chip price reference
+
+First-four task callbacks in `shared_world_progress.rs::callbacks` have
+`requires_world_admission:false`, empty world_requirements, `native_rule:None`,
+and no world_change effect. `world_callbacks.rs::world_change_requirement`
+does not map these objective keys. Their actual requirements remain the active
+personal task track, bounded objective count, exact position/appearance and
+carried reusable tool (tools13974/13976/14052/14051 respectively). Hatchlings
+add their separate exact marker/tool requirement. `npc_command/hive_shared.rs`
+selects acceptance/turn-in using actual tracks and task counts; no calendar or
+World stage check occurs in that NPC selector itself.
+
+There IS another boot/projection prerequisite besides shared_progress:
+`apps/game-server/src/node/raid_scheduler/world_changes.rs::project_map_parts`
+returns without installing anything when `!day.world_counters`. It skips
+unadmitted counters, then installs every Hive callback source with `active=true`
+regardless of shared stage. Therefore stage0 with admitted world_counters has
+the Hive objects, but reset0/default world_counters=false does not. A personal
+programme must explicitly project the existing exact source cohort as well as
+exempting its personal task receipt; do not fake client object names or bypass
+source custody. `dispatch/.../quest_callbacks.rs::shared_added_source` verifies
+server Added identity encoded position/appearance, exact expected generated
+callback equality, nohouse and current movement custody. In
+`map/facts/quest_callbacks.rs::create_world_change_callback_item`, those objects
+are made nonpickupable and bound. Completing Hive USE leaves the shared task
+object present; execute.rs removes only non-Hive shared objects. No additional
+first-four terrain-tool/native-rule stage guard was found in these inspected
+paths.
+
+### Fresh ordinary public HTTP evidence supersedes earlier inaccessible pages
+
+On2026-11-08 normal public requests (no access bypass) returned real articles:
+
+* https://tibiopedia.pl/npcs/Chip — HTTP200,72627UTF8bytes,
+  SHA256`1a642e3847d832d1689c5386c5f789aa2bfb224e883d175a7ef8cdf8fc6afc74`.
+  Its actual HTML `table id="table_buys"` row links
+  `https://tibiopedia.pl/items/Wood` and literally displays `Wood (50gp)`.
+  Its sells tab says `Brak.` (none). Article description says Chip appears
+  during Lumberjack Mini World Change and trades wood to rescue his abducted
+  family; informing the queen leads to Whistle-Blower.
+* https://tibiopedia.pl/items/Wood — HTTP200,
+  SHA256`d6dadc9dc84c406bfbdeeb9428ec3d072fa9fa2f5d6cf04fba8a3f96d0361abe`.
+  Under `Sprzedaż` the actual `item_trade` table columns are Miasto/NPC/
+  `Cena [gp]`, with row `Carlin | Chip | 50` and `Tibia | Yasir | 5`.
+  Under `Kupno`, it explicitly says the item cannot be bought from any NPC.
+
+This is specific item-level shop-price evidence for Chip buying Wood at50gold,
+stronger than an unspecified quest payout. Neither page states a special batch
+quantity. A native one-item priced trade row can be explicitly selected from
+this public price reference, with catalogue identity i5901 established above;
+do not claim the reference contains an executable Lua offer or a source batch
+quantity. Earlier catalogue assertions of unknown price describe the older
+retained data, not this newly fetched article. Keep runtime admission and
+transactional stock/trade implementation explicit; the native Chip services
+array was still empty when inspected.
+
+Bounded GitHub code searches across whole current public Canary/Crystal
+repositories for `lumberjack` returned only quest/storage catalogue matches,
+not executable Chip/world-change shop scripts. The pinned filtered tree path
+scan also found no lumberjack/Chip script. No executable-source price evidence
+was located. These negative searches are bounded observations, not proof no
+implementation exists anywhere; the now-accessible public shop tables supply
+the concrete price reference without inventing50gold per undefined quest event.

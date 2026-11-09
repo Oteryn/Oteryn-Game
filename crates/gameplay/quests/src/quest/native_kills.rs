@@ -115,18 +115,26 @@ fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
         .chain(qworld::counters().unwrap_or_default())
+        .chain(
+            super::world_change_journals::counters()
+                .into_iter()
+                .flatten(),
+        )
 }
 
 /// Fail closed when a file-authored counter registry cannot be loaded.
 pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Counter>, String> {
-    Ok(COUNTERS.iter().chain(qworld::counters()?))
+    Ok(COUNTERS
+        .iter()
+        .chain(qworld::counters()?)
+        .chain(super::world_change_journals::counters()?))
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
-    for counter in counters() {
+    for counter in registered_counters()? {
         transitions.push(counter.transition());
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)

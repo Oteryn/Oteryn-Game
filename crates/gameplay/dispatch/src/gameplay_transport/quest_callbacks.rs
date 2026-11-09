@@ -14,6 +14,7 @@ mod encounter;
 mod execute;
 mod ground_stack;
 pub(super) mod monsters;
+mod personal_encounter;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
@@ -67,6 +68,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:
@@ -373,7 +375,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         fee_payment: None,
                     }
                 });
-            let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
+            let disposition = match slot.commit_world_callback_with_requirements(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
                 self.active_generation.and_then(|generation| generation.native_gameplay()),

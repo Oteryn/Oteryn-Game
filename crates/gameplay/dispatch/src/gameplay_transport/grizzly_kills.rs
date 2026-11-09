@@ -310,6 +310,43 @@ pub(super) fn capture(
                 &entry.creature,
                 &live,
             );
+            let origin = runtime
+                .read_actor_position(entry.target)
+                .ok()
+                .and_then(|facts| {
+                    let at = facts.position();
+                    Some((
+                        u16::try_from(at.x).ok()?,
+                        u16::try_from(at.y).ok()?,
+                        i8::try_from(at.floor.checked_neg()?).ok()?,
+                    ))
+                });
+            frozen.native.retain_mut(|recipient| {
+                if !recipient
+                    .death
+                    .transition
+                    .starts_with("oteryn:quest-transition/native-kills/m31/")
+                {
+                    return true;
+                }
+                if !oteryn_gameplay_quests::quest::world_change_journals::admits_position(
+                    &recipient.death.transition,
+                    origin,
+                ) {
+                    return false;
+                }
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let (NativeDeathSource::Party(source), Some(position)) =
+                    (&recipient.death.source, origin)
+                else {
+                    return false;
+                };
+                recipient.death.source = NativeDeathSource::PositionedParty {
+                    source: Arc::clone(source),
+                    position,
+                };
+                true
+            });
             frozen.native.extend(super::quest_batch3_c::capture(
                 runtime,
                 entry,
