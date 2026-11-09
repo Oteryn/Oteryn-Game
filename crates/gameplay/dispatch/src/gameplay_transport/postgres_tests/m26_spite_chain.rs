@@ -4,6 +4,7 @@ use super::{Dependencies, TestResult};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::content::native_gameplay::NativeGameplayInput;
 use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityReturnReason};
+use crate::durability::character_equipment::{EquipmentError, MovementEquipmentSnapshot};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::runtime_actor_spell_types::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
@@ -287,7 +288,175 @@ async fn scenario(admin: String) -> TestResult {
         .read_actor_position(boss)
         .map_err(debug)?
         .position();
+    {
+        use crate::spell::source_map_initialization::CurrentNativeMapInitialization;
+        let runtime = destination.runtime.lock().await;
+        let room = destination
+            .rooms()
+            .gate_source_map_initialization()
+            .ok_or("actual bounded source Instance map")?;
+        assert!(
+            room.source_world()
+                .ok_or("source Instance")?
+                .pending_mutable_placements()
+                .is_empty()
+        );
+        assert!(
+            CurrentNativeMapInitialization::qualify_static_instance(&runtime, room, native).is_ok()
+        );
+        assert!(
+            CurrentNativeMapInitialization::qualify_current_binding(&runtime, room, native)
+                .is_err(),
+            "a static Instance never borrows Channel Item custody"
+        );
+        assert!(
+            CurrentNativeMapInitialization::qualify_static_instance(&runtime, &deps.room, native)
+                .is_err(),
+            "the full source map cannot borrow the bounded room's empty-placement proof"
+        );
+    }
+    // Match the production movement preflight: its bounded PvP read also
+    // recovers a busy durability holder after the handoff's initial snapshots.
+    assert!(
+        destination
+            .refresh_pvp_locks(actor, admitted.game_session_id)
+            .await,
+        "production activity movement preflight"
+    );
+    let equipment_fence = admitted.item_fence.ok_or("movement equipment fence")?;
+    assert_eq!(
+        Some(equipment_fence),
+        item_fence_of(
+            FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(admitted.game_session_id)
+                .await?
+                .0
+        ),
+        "the handed-off transport retains its actual current durable equipment fence"
+    );
+    let equipment =
+        read_activity_equipment(&destination, &equipment_fence, native.source_digest()).await?;
+    assert!(
+        equipment.is_ok(),
+        "actual activity participation admits its persisted equipment read: {equipment:?}"
+    );
+    let wrong_content = read_activity_equipment(&destination, &equipment_fence, [0xa5; 32]).await?;
+    assert!(
+        matches!(
+            wrong_content,
+            Err(EquipmentError::Rejected(
+                "activity equipment destination Content pin"
+            ))
+        ),
+        "the activity cannot substitute another equipment policy generation: {wrong_content:?}"
+    );
+    let mut stale_equipment_fence = equipment_fence;
+    stale_equipment_fence.character_lease_generation += 1;
+    let stale_lease =
+        read_activity_equipment(&destination, &stale_equipment_fence, native.source_digest())
+            .await?;
+    assert!(
+        matches!(
+            stale_lease,
+            Err(EquipmentError::Rejected(
+                "activity equipment current lifecycle fence"
+            ))
+        ),
+        "a stale activity lease grants no equipment read: {stale_lease:?}"
+    );
+    assert!(
+        destination.ensure_source_map_initialized().await,
+        "static source map admission"
+    );
+    assert!(
+        destination
+            .refresh_pvp_locks(actor, admitted.game_session_id)
+            .await,
+        "the actual activity retains its fenced combat locks"
+    );
+    {
+        let runtime = destination.runtime.lock().await;
+        assert!(
+            runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .map_err(debug)?
+                .control_loss
+                .is_none()
+        );
+    }
+    assert!(
+        destination
+            .read_movement_equipment(actor, admitted.game_session_id)
+            .await
+            .is_some(),
+        "the Movement owner consumes the real equipment facts"
+    );
+    // The source landing is seven rows south of Spite, outside the player's
+    // north-facing view (six rows). Enter the fight through the actual paced
+    // Movement owner; the boss must never acquire a player it cannot perceive.
+    let entry = destination
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    assert!(!crate::ai_think::targeting::sees(entry, before));
+    let (step, _) = destination
+        .ordinary_paced_step(
+            actor,
+            admitted.game_session_id,
+            oteryn_protocol_oteryn::world_spatial::StepDirection::North,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(
+        step.disposition,
+        oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
+        "the source entry admits the real northward movement into the fight"
+    );
+    let visible_from = destination
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!(visible_from.y, entry.y - 1);
+    assert!(crate::ai_think::targeting::sees(visible_from, before));
     let now = destination.owner_now();
+    assert!(
+        destination.spell_lane_permit().await.is_some(),
+        "the actual Instance has its fenced spell lane"
+    );
+    {
+        let runtime = destination.runtime.lock().await;
+        let states = destination.states.spell_states.lock().await;
+        let attack = destination.states.attack.lock().await;
+        let census = runtime.positioned_melee_census().map_err(debug)?;
+        let room = destination
+            .rooms()
+            .gate_monster_ai()
+            .ok_or("Instance AI room")?;
+        let targets = crate::gameplay_transport::monster_ai_cycle::melee_targets(
+            room,
+            &runtime,
+            &states,
+            &attack,
+            &census,
+            now.get(),
+        );
+        assert_eq!(
+            targets.len(),
+            1,
+            "the actual Instance participant is a native AI target"
+        );
+        assert!(
+            !targets[0].4,
+            "the source entry participant is not protected from monsters"
+        );
+    }
     for tick in 0..=8 {
         destination
             .drain_monster_melee_at(
@@ -296,6 +465,18 @@ async fn scenario(admin: String) -> TestResult {
                 ),
             )
             .await;
+        assert!(
+            destination
+                .states
+                .spell_states
+                .lock()
+                .await
+                .monster_melee
+                .creature_ai
+                .state(boss)
+                .is_some(),
+            "the native scheduler admits the source boss"
+        );
     }
     let after = destination
         .runtime
@@ -479,4 +660,32 @@ async fn scenario(admin: String) -> TestResult {
         started.elapsed()
     );
     Ok(())
+}
+
+// Retry only unavailable read holders; negative cases must observe the actual
+// policy/fence refusal, never pass because an unrelated holder was busy.
+async fn read_activity_equipment(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    digest: [u8; 32],
+) -> TestResult<Result<MovementEquipmentSnapshot, EquipmentError>> {
+    use crate::durability::DurabilityError;
+    use crate::gameplay_transport::connection::AdmissionRefusal;
+    crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root)
+        .retry_unavailable(async || {
+            match owner
+                .root
+                .read_movement_equipment(owner.character, owner.holder, fence, digest)
+                .await
+            {
+                Err(EquipmentError::Durability(
+                    DurabilityError::Unavailable
+                    | DurabilityError::RootUnavailable
+                    | DurabilityError::RootPassDeadlineExceeded,
+                )) => Err(AdmissionRefusal::Unavailable),
+                result => Ok(result),
+            }
+        })
+        .await
+        .map_err(debug)
 }
