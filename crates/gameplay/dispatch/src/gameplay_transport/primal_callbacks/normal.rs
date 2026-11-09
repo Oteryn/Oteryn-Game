@@ -698,8 +698,10 @@ mod lifecycle_controls {
         use std::future::Future;
         let (mut runtime, actor) = runtime(2)?;
         let phase = pending(&mut runtime)?;
-        let mut canonical = PrimalCallbacks::default();
-        canonical.normal = Some(Arc::clone(&phase));
+        let mut canonical = PrimalCallbacks {
+            normal: Some(Arc::clone(&phase)),
+            ..PrimalCallbacks::default()
+        };
         assert!(
             source_snapshot_or_skip(&runtime, actor, &phase)
                 .map_err(|_| "live source snapshot")?
@@ -726,7 +728,7 @@ mod lifecycle_controls {
                 OwnerDamageCommand {
                     target: b"fixture:source-lifecycle",
                     occurrence: b"lifecycle-actual-lethal",
-                    binding: b"lifecycle-actual-lethal",
+                    binding: b"lifecycle-actual-lethal\0source-lifecycle",
                     damage: 20,
                 },
             )
