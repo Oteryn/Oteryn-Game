@@ -26,7 +26,16 @@ fn engnpc2_live_transport_rotworm_handle_and_replay() -> TestResult {
     run(true)
 }
 
+#[test]
+fn engnpc2_live_transport_slug_corpse_hotkey_and_replay() -> TestResult {
+    run_case(false, true)
+}
+
 fn run(handle: bool) -> TestResult {
+    run_case(handle, false)
+}
+
+fn run_case(handle: bool, corpse: bool) -> TestResult {
     if fixture::configured_admin().is_none() {
         return Ok(());
     }
@@ -40,7 +49,9 @@ fn run(handle: bool) -> TestResult {
                     let started = std::time::Instant::now();
                     let h = fixture::Harness::create_with_admission_seed(
                         admin,
-                        if handle {
+                        if corpse {
+                            "engnpc2_corpse_caller"
+                        } else if handle {
                             "engnpc2_live_handle"
                         } else {
                             "engnpc2_live_transport"
@@ -49,13 +60,15 @@ fn run(handle: bool) -> TestResult {
                         false,
                     )
                     .await?;
-                    let result = exercise(&h, handle).await;
+                    let result = exercise(&h, handle, corpse).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
                         "PG_EXECUTED {} duration={:?}",
-                        if handle {
+                        if corpse {
+                            "engnpc2_live_transport_slug_corpse_hotkey_and_replay"
+                        } else if handle {
                             "engnpc2_live_transport_rotworm_handle_and_replay"
                         } else {
                             "engnpc2_live_transport_rotworm_hotkey_and_replay"
@@ -107,7 +120,7 @@ async fn fresh(h: &fixture::Harness) -> TestResult {
     Ok(())
 }
 
-async fn exercise(h: &fixture::Harness, handle: bool) -> TestResult {
+async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResult {
     fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
@@ -274,9 +287,18 @@ async fn exercise(h: &fixture::Harness, handle: bool) -> TestResult {
             .clone(),
     ));
     let fence = composed_test_owner::load_quests(&owner, session).await?;
-    seed_tool(h, native).await?;
+    let key = if corpse {
+        "oteryn:item.tibia.i17670"
+    } else {
+        "oteryn:item.tibia.i17673"
+    };
+    seed_tool(h, native, key).await?;
+    let corpse_item = if corpse {
+        Some(corpse::mint(h, &authority, native, at).await?)
+    } else {
+        None
+    };
     let index = native.item_index().ok_or("native item index")?;
-    let key = "oteryn:item.tibia.i17673";
     let definition = index
         .definition_ref("Item", key, index.revision(key).ok_or("gatherer revision")?)
         .ok_or("gatherer reference")?;
@@ -286,11 +308,17 @@ async fn exercise(h: &fixture::Harness, handle: bool) -> TestResult {
         } else {
             UseTarget::ItemByDefinition(definition)
         },
-        use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+        use_with: (!corpse).then_some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
             identity: creature.placement_identity(),
             generation: generation_id,
         }),
-        use_with_map_item: None,
+        use_with_map_item: if corpse {
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(
+                std::num::NonZeroU64::new(77).ok_or("corpse handle")?,
+            ))
+        } else {
+            None
+        },
         use_with_position: None,
     };
     let payload = encode_item_use_intent(&intent).map_err(debug)?;
@@ -301,6 +329,7 @@ async fn exercise(h: &fixture::Harness, handle: bool) -> TestResult {
         item_fence: Some(fence.item_fence()),
     };
     let mut wrong = intent.clone();
+    wrong.use_with_map_item = None;
     wrong.use_with = Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
         identity: other.placement_identity(),
         generation: other_generation,
@@ -314,35 +343,46 @@ async fn exercise(h: &fixture::Harness, handle: bool) -> TestResult {
         },
         wrong,
         handle,
-        true,
-        true,
+        (true, true, None),
     )
     .await?
-    .ok_or("wrong-species caller fell through")?;
+    .ok_or("invalid-target caller fell through")?;
     assert_eq!(refusal, UseDisposition::Rejected);
     let refused: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_character_quest_receipts),(SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
         .bind(id(92).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         refused,
         (0, 0, 1),
-        "wrong species must not consume or credit the tool"
+        "invalid target must not consume or credit the tool"
     );
-    let outcome = call(&owner, actor, command, intent.clone(), handle, true, true)
-        .await?
-        .ok_or("composed quest caller fell through")?;
+    let outcome = call(
+        &owner,
+        actor,
+        command,
+        intent.clone(),
+        handle,
+        (true, true, corpse_item),
+    )
+    .await?
+    .ok_or("composed quest caller fell through")?;
     assert_eq!(outcome, UseDisposition::Committed);
     let counts:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(counts, (1, 1, 1));
-    let values:(i64,i64)=sqlx::query_as("SELECT (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid),(SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i17674' AND lifecycle=1)").bind(id(92).as_slice()).fetch_one(&h.pool).await?;
+    let output = if corpse {
+        "oteryn:item.tibia.i17672"
+    } else {
+        "oteryn:item.tibia.i17674"
+    };
+    let values:(i64,i64)=sqlx::query_as("SELECT (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid),(SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$2 AND lifecycle=1)").bind(id(92).as_slice()).bind(output).fetch_one(&h.pool).await?;
     assert_eq!(values, (0, 1));
     runtime
         .lock()
         .await
         .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
         .map_err(debug)?;
-    // A spent handle no longer resolves, and the removed actor is no longer visible.
+    // Spent source and target handles no longer resolve; the live actor is removed.
     // The historical command must still reach the existing receipt owner.
-    let replay = call(&owner, actor, command, intent, handle, false, false)
+    let replay = call(&owner, actor, command, intent, handle, (false, false, None))
         .await?
         .ok_or("composed replay fell through")?;
     assert_eq!(replay, UseDisposition::Committed);
@@ -357,9 +397,9 @@ async fn call(
     command: UseCommand,
     intent: UseIntent,
     handle: bool,
-    source_present: bool,
-    visible: bool,
+    observation: (bool, bool, Option<[u8; 16]>),
 ) -> TestResult<Option<UseDisposition>> {
+    let (source_present, visible, target) = observation;
     let result = if handle {
         let source = source_present.then_some(composed_test_owner::ItemKey::Instance(id(92)));
         owner
@@ -367,7 +407,13 @@ async fn call(
             .await
     } else {
         owner
-            .use_quest_tool(actor, command, intent, None, None)
+            .use_quest_tool(
+                actor,
+                command,
+                intent,
+                None,
+                target.map(composed_test_owner::ItemKey::Instance),
+            )
             .await
     };
     result
@@ -378,16 +424,14 @@ async fn call(
 async fn seed_tool(
     h: &fixture::Harness,
     native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    tool: &str,
 ) -> TestResult {
     let index = native.item_index().ok_or("native index")?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    for (seed, key) in [
-        (91, "oteryn:item.tibia.i2854"),
-        (92, "oteryn:item.tibia.i17673"),
-    ] {
+    for (seed, key) in [(91, "oteryn:item.tibia.i2854"), (92, tool)] {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)").bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(index.revision(key).ok_or("stock revision")?).bind(id(seed+10).as_slice()).execute(&mut *tx).await?;
     }
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(id(41).as_slice()).bind(id(91).as_slice()).bind(id(42).as_slice()).bind(id(111).as_slice()).execute(&mut *tx).await?;
@@ -395,3 +439,6 @@ async fn seed_tool(
     tx.commit().await?;
     Ok(())
 }
+
+#[path = "engnpc2_live_transport/corpse.rs"]
+mod corpse;

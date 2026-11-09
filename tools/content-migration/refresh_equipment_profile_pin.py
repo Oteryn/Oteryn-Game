@@ -91,6 +91,11 @@ def main():
         original,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
     )
+    import engnpc2_slug_corpse_profiles
+    source = engnpc2_slug_corpse_profiles.refresh_cohort(
+        source,
+        json.loads((ROOT / engnpc2_slug_corpse_profiles.PATH).read_bytes()),
+    )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)
     )
