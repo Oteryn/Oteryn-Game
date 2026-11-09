@@ -214,6 +214,29 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
+impl RewardCallback {
+    /// Syntax-only reset shape. Current save authority is resolved by the writer;
+    /// the catalogue separately validates owned tracks and their initial values.
+    pub(crate) fn is_save_restart_only(&self) -> bool {
+        if self.key != super::shared_world_progress::save_event_restart_key(&self.quest)
+            || self.storage.is_empty()
+            || self
+                .storage
+                .iter()
+                .any(|state| state.preserve || state.increment || state.at_least)
+        {
+            return false;
+        }
+        let pure = serde_json::from_value::<Self>(serde_json::json!({
+            "key":self.key,"quest":self.quest,"npc":self.npc,"keywords":self.keywords,
+            "topic":self.topic,"next_topic":self.next_topic,"storage":self.storage,
+            "take":[],"give":null,"outfit":null,"achievement":null,
+            "reply":self.reply,"sources":self.sources
+        }));
+        pure.is_ok_and(|callback| callback == *self)
+    }
+}
+
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
         match self.sex {
@@ -491,7 +514,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
         if c.map_mark
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
-            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || !(slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+                || (c.is_save_restart_only()
+                    && slug(
+                        &c.key,
+                        super::shared_world_progress::SAVE_EVENT_RESTART_PREFIX,
+                        b"._/-",
+                        128,
+                    )))
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -563,6 +593,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
             || (!c.value_only_guarded()
+                && !c.is_save_restart_only()
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))

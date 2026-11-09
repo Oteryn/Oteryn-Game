@@ -5,6 +5,8 @@
 pub mod collection;
 pub(crate) mod embedded;
 mod imported_recipe;
+mod occurrence;
+pub use occurrence::Occurrence;
 pub mod kills;
 mod state_operations;
 pub use kills::KillCounter;
@@ -67,6 +69,8 @@ pub struct Stage {
 pub struct BoundQuest {
     pub quest: String,
     pub recipe_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence: Option<Occurrence>,
     pub tracks: Vec<Track>,
     pub stages: Vec<Stage>,
     pub sources: Vec<String>,
@@ -115,6 +119,11 @@ impl Bindings {
                     _ => 1,
                 })
                 .sum::<usize>()
+                + self
+                    .quests
+                    .iter()
+                    .filter(|quest| quest.occurrence.is_some())
+                    .count()
                 > MAX_BOUND_STAGES
         {
             return Err("authored binding bounds/schema".into());
@@ -138,6 +147,12 @@ impl Bindings {
                     .any(|s| s.is_empty() || s.len() > 1024 || !s.is_ascii())
             {
                 return Err("authored quest identity/source/bounds".into());
+            }
+            if let Some(occurrence) = &quest.occurrence {
+                occurrence.validate(quest)?;
+                if !transitions.insert(&occurrence.restart().key) {
+                    return Err("authored save restart binding collision".into());
+                }
             }
             let mut tracks = BTreeSet::new();
             for track in &quest.tracks {
@@ -294,12 +309,22 @@ impl Bindings {
                     max: t.maximum,
                 });
             }
+            if let Some(occurrence) = &quest.occurrence {
+                transitions.push(occurrence.transition()?);
+            }
             for stage in &quest.stages {
-                transitions.push(stage.transition(&quest.quest)?);
+                let mut transition = stage.transition(&quest.quest)?;
+                if let Some(occurrence) = &quest.occurrence {
+                    occurrence.qualify(&mut transition);
+                }
+                transitions.push(transition);
                 if let Trigger::NpcDialogue { alternatives, .. } = &stage.trigger {
                     for callback in alternatives {
                         let mut transition = super::reward_callbacks::primary_transition(callback)?;
                         transition.completes = stage.completes;
+                        if let Some(occurrence) = &quest.occurrence {
+                            occurrence.qualify(&mut transition);
+                        }
                         transitions.push(transition);
                     }
                 }
@@ -353,10 +378,12 @@ impl Bindings {
     }
 
     pub fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
-        self.quests
-            .iter()
-            .flat_map(|q| &q.stages)
-            .flat_map(|s| s.trigger.reward_callbacks())
+        self.quests.iter().flat_map(|q| {
+            q.occurrence
+                .iter()
+                .map(Occurrence::restart)
+                .chain(q.stages.iter().flat_map(|s| s.trigger.reward_callbacks()))
+        })
     }
     pub fn world_callbacks(&self) -> impl Iterator<Item = &Callback> {
         self.quests
@@ -408,6 +435,9 @@ mod collection_tests;
 
 #[cfg(test)]
 mod composition_tests;
+
+#[cfg(test)]
+mod occurrence_tests;
 
 impl Trigger {
     fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
