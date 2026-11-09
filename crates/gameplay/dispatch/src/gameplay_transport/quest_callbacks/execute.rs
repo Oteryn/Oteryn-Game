@@ -89,6 +89,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }
+        if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback)
+            && !self.personal_trial_ready(runtime, callback, key)
+        {
+            return UseDisposition::Occupied;
+        }
         let before = after;
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];

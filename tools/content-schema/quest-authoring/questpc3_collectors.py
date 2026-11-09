@@ -124,14 +124,15 @@ def build_stampede(root=ROOT):
             'sources':sources}]}
 
 def content(check=False):
-    expected = build_pilgrimage()
-    path = ROOT / OUTPUT
-    if check:
-        if not path.is_file() or json.loads(path.read_bytes()) != expected:
-            raise ValueError('M01C_COLLECTOR_BINDING_DRIFT')
-    else:
-        path.write_text(json.dumps(expected, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n')
-    print('PASS M01c Pilgrimage collector: ordered visits, one final 20-platinum grant')
+    for output, expected in [(OUTPUT, build_pilgrimage()),
+                             (Path('content/quests/authored-bindings/qmech-m01c-stampede.json'), build_stampede())]:
+        path = ROOT / output
+        if check:
+            if not path.is_file() or json.loads(path.read_bytes()) != expected:
+                raise ValueError('M01C_COLLECTOR_BINDING_DRIFT:' + str(output))
+        else:
+            path.write_text(json.dumps(expected, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n')
+    print('PASS M01c collectors: Pilgrimage ordered visits and final platinum; Stampede personal trial and achievement')
 
 
 if __name__ == '__main__':
