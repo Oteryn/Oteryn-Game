@@ -11,8 +11,8 @@ pub(super) async fn dispatch(
     admitted: AdmittedSession,
     payload: &[u8],
 ) -> GuildReply {
-    let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len()%2==0 {
-        let races:Vec<_>=payload[2..].chunks_exact(2).map(|b|u16::from_le_bytes([b[0],b[1]])).collect();
+    let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len().is_multiple_of(2) {
+        let races:Vec<_>=payload[2..].as_chunks::<2>().0.iter().map(|b|u16::from_le_bytes(*b)).collect();
         if races.iter().any(|r|!(1..=1024).contains(r)) || races.windows(2).any(|p|p[0]>=p[1]) { return GuildReply::Rejected; }
         Some(races)
     } else { None };
@@ -50,7 +50,7 @@ pub(super) async fn dispatch(
         return cards.and_then(|cards| { let categories=cards.iter().map(|c|c.category.clone()).collect::<BTreeSet<_>>().into_iter().collect(); wire::encode_page(&Page {next:None,cards,categories}).ok() }).map_or(GuildReply::Rejected,GuildReply::Payload);
     }
     if let Some(after) = charm_after {
-        return super::charm_details::page(&owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
+        return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
     }
     project(native, request)
         .and_then(|page| wire::encode_page(&page).ok())
