@@ -1473,7 +1473,7 @@ pub async fn prepare_moved_arrival_corpse_in_transaction(
     moved: &super::item_loop_move::LoopMoveReceipt,
 ) -> Result<DurableCorpseReservation> {
     check_transaction(tx, authority).await?;
-    if authority.due_read_only || moved.replayed || moved.operation != 4 {
+    if authority.due_read_only || moved.replayed || !matches!(moved.operation, 1 | 4) {
         return Err(SpellItemError::Rejected("arrival requires a fresh Ground drop"));
     }
     let valid: bool = sqlx::query_scalar(
@@ -1482,7 +1482,7 @@ pub async fn prepare_moved_arrival_corpse_in_transaction(
             JOIN game_item_loop_move_lines l USING(transaction_id)
             JOIN game_item_instances i USING(item_instance_id)
             WHERE r.transaction_id=encode($1,'hex')::uuid
-              AND r.event_id=encode($2,'hex')::uuid AND r.operation=4
+              AND r.event_id=encode($2,'hex')::uuid AND r.operation IN(1,4)
               AND r.character_id=encode($3,'hex')::uuid
               AND r.game_session_id=encode($4,'hex')::uuid
               AND r.command_id=$5::text::numeric
@@ -1495,7 +1495,7 @@ pub async fn prepare_moved_arrival_corpse_in_transaction(
               AND r.created_xact_id=pg_current_xact_id()
               AND l.created_xact_id=r.created_xact_id
               AND l.item_instance_id=encode($12,'hex')::uuid
-              AND l.to_kind=3 AND l.from_kind IN (1,2)
+              AND l.to_kind=3 AND ((r.operation=4 AND l.from_kind IN (1,2)) OR (r.operation=1 AND l.from_kind=3))
               AND l.to_spatial_position=$13
               AND l.quantity_before=1 AND l.quantity_after=1
               AND i.state_revision=$14::text::numeric
