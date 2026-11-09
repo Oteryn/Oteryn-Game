@@ -793,8 +793,12 @@ pub(super) fn train_distance(
 pub(super) fn immune(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
 ) -> bool {
-    let (physical, elemental, element) = ranged.split(100).unwrap_or((0, 0, Element::Physical));
+    let (physical, elemental, element) = ranged
+        .split(100)
+        .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+        .unwrap_or((0, 0, Element::Physical));
     (physical == 0 || policy.damage_immunities.iter().any(|key| key == "physical"))
         && (elemental == 0
             || policy
@@ -818,6 +822,7 @@ pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
     damage: i64,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -837,7 +842,9 @@ pub(super) fn creature_damage(
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let (physical, elemental, element) = ranged.split(damage)?;
+    let (physical, elemental, element) = ranged
+        .split(damage)
+        .and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
     let physical = if physical > 0 {
         let physical = swing_mitigated(
             root,

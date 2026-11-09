@@ -536,12 +536,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
                 // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
                 if selected.weapon.ranged.is_none()
+                    && offence.elemental_conversion.is_none()
                     && creature_physically_immune(&snapshot.state.policy)
                 {
                     continue;
                 }
                 if let Some(ranged) = &selected.weapon.ranged
-                    && ranged::immune(ranged, &snapshot.state.policy)
+                    && ranged::immune(ranged, &snapshot.state.policy, &offence)
                 {
                     if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
                         ranged::train_distance(
@@ -557,11 +558,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
-                let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
+                let mut ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
                         ranged,
                         &snapshot.state.policy,
                         damage,
+                        &offence,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
                         states
                             .get(&runtime, entry.actor, entry.session)
@@ -595,7 +597,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let blocked = selected.weapon.ranged.is_none()
                     && blocks[index].1.try_block(&constants.block, swing.at);
-                let Some(magnitude) = (if selected.weapon.ranged.is_some() {
+                if selected.weapon.ranged.is_none() && offence.elemental_conversion.is_some() {
+                    ranged_magnitude = {
+                        use crate::content::ProjectV2RangedElement as E;
+                        offence.convert_physical(damage, 0, E::Physical).and_then(|(physical, elemental, element)| {
+                        let physical = creature_mitigated(&root, constants, entry.actor, swing.lineage, ordinal, physical, blocked, defense, armor)?;
+                        let physical = creature_physical_response(&snapshot.state.policy, physical)?;
+                        let key = match element {E::Fire=>"fire",E::Earth=>"earth",E::Ice=>"ice",E::Energy=>"energy",E::Death=>"death",E::Physical=>"physical"};
+                        let elemental = oteryn_gameplay_combat_rules::resolution::creature_damage_response(&snapshot.state.policy, elemental, key)?;
+                        Some([physical,elemental])
+                    })
+                    };
+                }
+                let Some(magnitude) = (if selected.weapon.ranged.is_some()
+                    || offence.elemental_conversion.is_some()
+                {
                     ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
                 } else {
                     creature_mitigated(
@@ -615,18 +631,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
                 // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
                 // Training already counted the swing by its block, so it trains by `magnitude`.
-                let landed = if selected.weapon.ranged.is_some() {
-                    magnitude
-                } else if magnitude > 0 {
-                    let Some(landed) =
-                        creature_physical_response(&snapshot.state.policy, magnitude)
-                    else {
-                        continue;
+                let landed =
+                    if selected.weapon.ranged.is_some() || offence.elemental_conversion.is_some() {
+                        magnitude
+                    } else if magnitude > 0 {
+                        let Some(landed) =
+                            creature_physical_response(&snapshot.state.policy, magnitude)
+                        else {
+                            continue;
+                        };
+                        landed
+                    } else {
+                        magnitude
                     };
-                    landed
-                } else {
-                    magnitude
-                };
                 let landed = if selected.weapon.ranged.is_none() {
                     if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
                         let Some((primary, _)) = state.finish_wheel_attack_components(
@@ -796,6 +813,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 ranged::RangedDamage::Magic { element, .. }
                                 | ranged::RangedDamage::Distance { element, .. } => element,
                             };
+                            (
+                                u32::try_from(primary).unwrap_or(0).min(value),
+                                ranged::analyser_element(element),
+                            )
+                        }
+                        None if offence.elemental_conversion.is_some() => {
+                            let Some((element, _)) = offence.elemental_conversion else {
+                                continue;
+                            };
+                            let primary = ranged_magnitude.map_or(0, |parts| parts[0]);
                             (
                                 u32::try_from(primary).unwrap_or(0).min(value),
                                 ranged::analyser_element(element),
@@ -1281,6 +1308,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         };
+        let offence = equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
         let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
             self.ranged_player_damage(
                 permit,
@@ -1288,6 +1316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 target_session,
                 ranged,
+                &offence,
                 &hit,
                 constants,
                 root,
@@ -1318,6 +1347,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let armor = vitals.target_armor(runtime, hit.target, target_session);
         let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
+        let Some((physical_raw, secondary_raw, converted_element)) = offence.convert_physical(
+            hit.magnitude,
+            0,
+            crate::content::ProjectV2RangedElement::Physical,
+        ) else {
+            return;
+        };
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
             ranged_damage
                 .as_ref()
@@ -1338,7 +1374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     hit.lineage.command_id().get(),
                 ),
                 hit.ordinal,
-                hit.magnitude,
+                physical_raw,
                 defence,
                 armor,
             )
@@ -1377,7 +1413,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             crate::spell::cast::WheelAttackComponents {
                 primary: (primary, crate::player_lethal::PlayerHitKind::Physical),
-                secondary: (0, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (
+                    u32::try_from(secondary_raw).unwrap_or(0),
+                    match converted_element {
+                        crate::content::ProjectV2RangedElement::Fire => {
+                            crate::player_lethal::PlayerHitKind::Fire
+                        }
+                        crate::content::ProjectV2RangedElement::Earth => {
+                            crate::player_lethal::PlayerHitKind::Earth
+                        }
+                        crate::content::ProjectV2RangedElement::Ice => {
+                            crate::player_lethal::PlayerHitKind::Ice
+                        }
+                        crate::content::ProjectV2RangedElement::Energy => {
+                            crate::player_lethal::PlayerHitKind::Energy
+                        }
+                        crate::content::ProjectV2RangedElement::Death => {
+                            crate::player_lethal::PlayerHitKind::Death
+                        }
+                        crate::content::ProjectV2RangedElement::Physical => {
+                            crate::player_lethal::PlayerHitKind::Physical
+                        }
+                    },
+                ),
             }
         };
         let Some(attacker) = states.get(runtime, hit.actor, hit.session) else {
@@ -1401,7 +1459,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let sum = ranged_damage
                 .as_ref()
                 .and_then(|read| read.protections.get(&kind).copied())
-                .or_else(|| hit.weapon.ranged.is_none().then_some(protection).flatten());
+                .or_else(|| {
+                    if hit.weapon.ranged.is_none() {
+                        if kind == Kind::Physical {
+                            protection
+                        } else {
+                            target.equipped_element_protection(kind)
+                        }
+                    } else {
+                        None
+                    }
+                });
             let magnitude = match sum {
                 Some(sum) => apply_protection(i64::from(magnitude), sum)?,
                 None => i64::from(magnitude),
@@ -1908,6 +1976,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         session: GameSessionId,
         ranged: &ranged::RangedLoadout,
+        offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
         hit: &PvpSwing,
         constants: &AttackConstants,
         root: &GameplayDecisionRoot,
@@ -1932,7 +2001,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let equipment = equipment::read_equipment_in_transaction(&mut tx, &authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
             crate::gameplay_transport::equipment_move::equipment_effects_owner::equipment_effects(&equipment, content).ok_or(crate::durability::DurabilityError::Unavailable)
         })).await.ok()?;
-        let (physical, elemental, element) = ranged.split(hit.magnitude)?;
+        let (physical, elemental, element) = ranged
+            .split(hit.magnitude)
+            .and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
         let physical = if physical > 0 {
             oteryn_gameplay_combat_rules::resolution::swing_mitigated(
                 root,
