@@ -11,6 +11,8 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
         return None;
     }
     let mut query = HighscoresQuery {
+        world: p.world,
+        details: true,
         category: p.category,
         vocation: p.vocation,
         page: 1,
@@ -18,24 +20,16 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
     };
     match action {
         Action::Refresh => {}
+        Action::World(world) => {
+            query.world = world;
+        }
         Action::ShowMe => {
             let reply = p.reply.as_ref()?;
-            let own = reply.own_row.as_ref()?;
-            if own.rank
-                > u64::from(oteryn_client_runtime::highscores::wire::MAX_HIGHSCORES_LIST_ROWS)
-            {
-                p.feedback = Some(
-                    "Your rank is outside the published top 1000; your rank remains shown below"
-                        .into(),
-                );
+            let Some(page) = reply.own_page else {
+                p.feedback = Some("Your character is not in this World's selected list".into());
                 return None;
-            }
-            query.page = u32::try_from(
-                own.rank.saturating_sub(1)
-                    / oteryn_client_runtime::highscores::wire::MAX_HIGHSCORES_PAGE_ROWS as u64
-                    + 1,
-            )
-            .ok()?;
+            };
+            query.page = page;
             query.snapshot_id = reply.snapshot_id;
         }
         Action::Filter { category, vocation } => {
@@ -62,9 +56,10 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
         }
     }
     let command = command(query).ok()?;
-    if (p.category, p.vocation) != (query.category, query.vocation) {
+    if (p.world, p.category, p.vocation) != (query.world, query.category, query.vocation) {
         p.reply = None;
     }
+    p.world = query.world;
     p.category = query.category;
     p.vocation = query.vocation;
     p.query = Some(query);
@@ -89,7 +84,8 @@ pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse) {
     }
     match decode_highscores_result(&r.payload) {
         Ok(reply)
-            if reply.category == query.category
+            if query.world.is_none_or(|world| reply.world == Some(world))
+                && reply.category == query.category
                 && reply.page == query.page
                 && (query.snapshot_id == 0 || query.snapshot_id == reply.snapshot_id) =>
         {

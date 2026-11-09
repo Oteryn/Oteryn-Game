@@ -1,10 +1,10 @@
 //! Transient combat overlays use server positions, including the own actor and hidden attackers.
 //! Item effects retain their donor colours; fireworks expand into eight emissive sparks.
 //! Other magic effects retain the existing hit pulse until official sprites are resolved.
-#[path = "actor_hud.rs"]
-mod actor_hud;
 #[path = "resources.rs"]
 mod resources;
+#[path = "actor_hud.rs"]
+mod actor_hud;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
@@ -48,37 +48,21 @@ impl PlayView {
         let atlas = atlas.atlas();
         let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
-        let own_ref = self.scene.own_identity().and_then(|identity| {
-            self.appearances
-                .iter()
-                .find(|entry| entry.entity.entity.identity == identity)
-                .map(|entry| entry.entity.entity)
-        });
+        let game_window = self.preferences().game_window;
+        let own_ref = self.scene.own_identity().and_then(|identity| self.appearances.iter().find(|entry| entry.entity.entity.identity == identity).map(|entry| entry.entity.entity));
         let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref);
         let (view, batch) = self.scene.presentation_base()?;
-        resources::draw(
-            batch,
-            view,
-            atlas,
-            self.vitals.as_ref(),
-            self.own,
-            resource_options,
-        )?;
-        actor_hud::draw(
-            batch,
-            view,
-            atlas,
-            self.own,
-            &self.entities,
-            &self.party_icons,
-            actor_options,
-        )?;
+        resources::draw(batch, view, atlas, self.vitals.as_ref(), self.own, resource_options)?;
+        actor_hud::draw(batch, view, atlas, self.own, &self.entities, &self.party_icons, actor_options)?;
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         if !effects {
             return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
         for cue in &self.visuals {
+            if !game_window.visible(&cue.kind) {
+                continue;
+            }
             let age = now.saturating_duration_since(cue.received);
             if age >= VISUAL_LIFETIME {
                 continue;

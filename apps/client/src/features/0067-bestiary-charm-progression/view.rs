@@ -11,7 +11,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Bestiary and Charms",
-            labels: &["Charm index", "Bestiary race index"],
+            labels: &[
+                "Charm name",
+                "Creature name (browse the creature catalogue)",
+            ],
             buttons: &[
                 "Query",
                 "Unlock",
@@ -35,17 +38,15 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Next creature category",
                 "Previous catalogue creature",
                 "Next catalogue creature",
-                "Previous charm",
-                "Next charm",
-                "Previous eligible race",
-                "Next eligible race",
+                "Load charm names",
+                "More charm names",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.charm_progression;
                 (
                     panel.open,
                     panel.pending,
-                    panel.fields.to_vec(),
+                    oteryn_client_ui::charm_progression::charm_browser::named_fields(panel),
                     format!(
                         "{}\r\n{}",
                         oteryn_client_ui::charm_progression::bestiary_text(panel),
@@ -55,6 +56,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.charm_progression.open = value,
             submit: |mailbox, commands, action, values| {
+                if matches!(action, 22 | 23) {
+                    super::input::charm_browser::submit(mailbox, commands, action == 23);
+                    return;
+                }
                 if action >= 14 {
                     for (index, value) in values.into_iter().enumerate() {
                         super::input::edit(&mut mailbox.properties.charm_progression, index, value);

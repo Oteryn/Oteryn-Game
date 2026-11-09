@@ -17,6 +17,7 @@ super::feature_0014_container_tree::protocol::session_trait! {
     > + Send {
         async { Err(SessionError::CapabilityNotSelected { capability: 64 }) }
     }
+    fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> { None }
     fn hotkey_equip_items(&self) -> Vec<u32> { Vec::new() }
     fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         None

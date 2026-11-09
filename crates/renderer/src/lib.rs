@@ -5,10 +5,12 @@ use std::fmt::{self, Display, Formatter};
 mod batch;
 #[cfg(windows)]
 mod capture;
+mod graphics;
 #[cfg(windows)]
 pub use capture::CapturedFrame;
 pub mod lighting;
 mod resources;
+pub use graphics::{ANTIALIASING, Antialiasing, GRAPHICS_ENGINE, GraphicsEngine, PresentationMode};
 
 #[cfg(windows)]
 mod scene_gpu;

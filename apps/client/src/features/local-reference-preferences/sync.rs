@@ -19,13 +19,14 @@ pub enum SettingsPage {
     Status,
     Console,
     Interface,
+    Shortcuts,
     Graphics,
     Sound,
     Help,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 13] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -35,6 +36,7 @@ impl SettingsPage {
         Self::Status,
         Self::Console,
         Self::Interface,
+        Self::Shortcuts,
         Self::Graphics,
         Self::Sound,
         Self::Help,
@@ -51,6 +53,7 @@ impl SettingsPage {
             Self::Arcs => "Interface / HUD Arcs",
             Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
             Self::Interface => "Interface",
+            Self::Shortcuts => "Interface / Shortcuts",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",
             Self::Help => "Help / settings transfer",
@@ -78,6 +81,7 @@ pub struct SettingsState {
     character: Option<[u8; 16]>,
     skills_edit: u64,
     pub(crate) item_hotkeys_edit: u64,
+    pub(crate) bar_actions_edit: u64,
     minimap_edit: u64,
     spellbook_edit: u64,
     archive_edit: u64,
@@ -166,6 +170,7 @@ impl SettingsState {
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.item_hotkeys_edit = self.battle_edit;
+        self.bar_actions_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
@@ -201,6 +206,7 @@ impl SettingsState {
             character: None,
             skills_edit: 0,
             item_hotkeys_edit: 0,
+            bar_actions_edit: 0,
             minimap_edit: 0,
             spellbook_edit: 0,
             archive_edit: 0,
@@ -335,7 +341,9 @@ impl SettingsState {
         if self.preferences.skills_layout != preferences.skills_layout {
             self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
         }
-        if self.preferences.battle_lists != preferences.battle_lists {
+        if self.preferences.battle_lists != preferences.battle_lists
+            || self.preferences.active_battle_list != preferences.active_battle_list
+        {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if !preferences.chat_context_hotkeys {
@@ -347,45 +355,6 @@ impl SettingsState {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
-    }
-
-    pub fn restore(
-        &mut self,
-        view: &mut PlayView,
-        viewport: [u32; 2],
-    ) -> Result<(), PreferenceError> {
-        if view.local.minimap_edit > self.minimap_edit {
-            let edit = view.local.minimap_edit;
-            let mut preferences = self.preferences.clone();
-            preferences.minimap = view.preferences().minimap.clone();
-            self.apply(preferences);
-            self.minimap_edit = edit;
-        }
-        view.local.minimap_edit = self.minimap_edit;
-        view.set_world_viewport(viewport)?;
-        if view.preferences() != &self.preferences {
-            view.set_preferences(self.preferences.clone())?;
-        }
-        Ok(())
-    }
-
-    pub fn capture(&mut self, view: &mut PlayView) -> Result<(), PreferenceError> {
-        if view.preferences().audio != self.preferences.audio {
-            let mut preferences = self.preferences.clone();
-            preferences.audio = view.preferences().audio;
-            self.apply(preferences);
-        }
-        // Merge any binding/zoom edit made while the shortcut was being handled.
-        if view.preferences() != &self.preferences {
-            view.set_preferences(self.preferences.clone())?;
-        }
-        Ok(())
-    }
-}
-
-impl crate::play::PlayLink {
-    pub fn preference_chat_open(&self) -> bool {
-        crate::play::mailbox::lock(&self.mailbox).chat.open
     }
 }
 

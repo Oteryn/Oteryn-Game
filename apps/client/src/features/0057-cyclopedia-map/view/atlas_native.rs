@@ -1,140 +1,185 @@
-//! Large atlas viewport. The thread owns every HWND and GDI resource.
+//! Original Win32 atlas renderer; geometry is supplied by the admitted server.
 #![allow(
     unsafe_code,
-    reason = "Win32 atlas resources stay on their owning thread"
+    reason = "HWND and GDI resources stay on this window thread"
 )]
 use crate::play::{PlayLink, mailbox::lock};
-use std::ptr::{null, null_mut};
+use oteryn_client_ui::cyclopedia_map::{Intent, Panel, atlas_action, atlas_detail};
+use std::{
+    ptr::{null, null_mut},
+    sync::Arc,
+};
 use windows_sys::Win32::{Foundation::*, Graphics::Gdi::*, UI::WindowsAndMessaging::*};
-fn wide(text: &str) -> Vec<u16> {
-    text.replace('\0', "�")
-        .encode_utf16()
-        .chain(Some(0))
-        .collect()
-}
+#[path = "atlas_native/paint.rs"]
+mod paint;
 #[derive(Default)]
-struct Actions(Vec<usize>);
-unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+struct Events {
+    actions: Vec<usize>,
+    dirty: bool,
+}
+unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
-        if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
-            let state = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            if !state.is_null() && (*state).0.len() < 16 {
-                (*state).0.push(w & 0xffff);
+        let events = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Events;
+        if !events.is_null() {
+            if msg == WM_PAINT {
+                (*events).dirty = true;
             }
-            return 0;
+            if msg == WM_COMMAND
+                && (w >> 16) & 65535 == BN_CLICKED as usize
+                && (*events).actions.len() < 32
+            {
+                (*events).actions.push(w & 65535);
+                return 0;
+            }
+            if msg == WM_LBUTTONDOWN && (*events).actions.len() < 32 {
+                let x = (l & 65535) as usize;
+                let y = ((l >> 16) & 65535) as usize;
+                if (10..778).contains(&x) && (90..570).contains(&y) {
+                    (*events)
+                        .actions
+                        .push(1000 + (y - 90) / 12 * 64 + (x - 10) / 12);
+                }
+            }
         }
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
 pub(super) fn open(link: &PlayLink) {
     {
-        let mut mailbox = lock(&link.mailbox);
-        if mailbox.properties.cyclopedia_map.atlas_open {
+        let mut m = lock(&link.mailbox);
+        let p = &mut m.properties.cyclopedia_map;
+        if p.atlas_open {
             return;
         }
-        mailbox.properties.cyclopedia_map.atlas_open = true;
+        p.atlas_open = true;
+        p.atlas_layers = 15;
     }
-    let weak = std::sync::Arc::downgrade(&link.mailbox);
-    let rollback = weak.clone();
+    let weak = Arc::downgrade(&link.mailbox);
     let commands = link.commands.clone();
+    let rollback = weak.clone();
     if std::thread::Builder::new()
         .name("cyclopedia-atlas".into())
         .spawn(move || unsafe {
+            let class = wide("OterynCyclopediaAtlas");
+            let wc = WNDCLASSW {
+                lpfnWndProc: Some(proc),
+                lpszClassName: class.as_ptr(),
+                hCursor: LoadCursorW(null_mut(), IDC_ARROW),
+                ..std::mem::zeroed()
+            };
+            RegisterClassW(&wc);
             let hwnd = CreateWindowExW(
                 0,
-                wide("STATIC").as_ptr(),
-                wide("Cyclopedia — Region atlas").as_ptr(),
+                class.as_ptr(),
+                wide("Cyclopedia atlas").as_ptr(),
                 WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                80,
-                80,
-                1200,
-                850,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                1080,
+                790,
                 null_mut(),
                 null_mut(),
                 null_mut(),
                 null(),
             );
-            if !hwnd.is_null() {
-                let mut actions = Box::<Actions>::default();
-                SetWindowLongPtrW(
+            if hwnd.is_null() {
+                if let Some(shared) = weak.upgrade() {
+                    lock(&shared).properties.cyclopedia_map.atlas_open = false;
+                }
+                return;
+            }
+            let mut events = Box::<Events>::default();
+            events.dirty = true;
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *events as *mut Events) as isize);
+            for (i, title) in [
+                "Refresh",
+                "Center",
+                "Floor up",
+                "Floor down",
+                "Zoom in",
+                "Zoom out",
+                "North",
+                "South",
+                "West",
+                "East",
+                "NPC layer",
+                "Passages",
+                "POI layer",
+                "Regions",
+                "Prev markers",
+                "Next markers",
+            ]
+            .iter()
+            .enumerate()
+            {
+                control(
                     hwnd,
-                    GWLP_USERDATA,
-                    actions.as_mut() as *mut Actions as isize,
+                    "BUTTON",
+                    title,
+                    100 + i,
+                    [10 + (i % 8) as i32 * 130, 10 + (i / 8) as i32 * 32, 125, 28],
+                    WS_TABSTOP,
                 );
-                SetWindowLongPtrW(hwnd, GWLP_WNDPROC, procedure as *const () as isize);
-                for (i, label) in [
-                    "Load atlas",
-                    "Next atlas page",
-                    "Previous floor",
-                    "Next floor",
-                    "Toggle POIs",
-                ]
-                .iter()
-                .enumerate()
-                {
-                    CreateWindowExW(
-                        0,
-                        wide("BUTTON").as_ptr(),
-                        wide(label).as_ptr(),
-                        WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-                        12 + i as i32 * 155,
-                        10,
-                        150,
-                        30,
-                        hwnd,
-                        (100 + i) as _,
-                        null_mut(),
-                        null(),
-                    );
+            }
+            let legend = control(
+                hwnd,
+                "EDIT",
+                "",
+                400,
+                [790, 90, 250, 480],
+                ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL,
+            );
+            let detail = control(
+                hwnd,
+                "EDIT",
+                "",
+                401,
+                [10, 585, 1030, 150],
+                ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL,
+            );
+            let mut held: Option<Panel> = None;
+            let mut msg: MSG = std::mem::zeroed();
+            if let Some(shared) = weak.upgrade() {
+                let mut m = lock(&shared);
+                super::super::input::submit(&mut m, &commands, Intent::Atlas);
+            }
+            while IsWindow(hwnd) != 0 {
+                while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
                 }
-                let mut msg: MSG = std::mem::zeroed();
-                while IsWindow(hwnd) != 0 && !commands.is_closed() {
-                    while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
-                        TranslateMessage(&msg);
-                        DispatchMessageW(&msg);
+                let Some(shared) = weak.upgrade() else {
+                    break;
+                };
+                let mut m = lock(&shared);
+                if !m.properties.cyclopedia_map.atlas_open {
+                    break;
+                }
+                for action in std::mem::take(&mut events.actions) {
+                    let p = &mut m.properties.cyclopedia_map;
+                    if action >= 1000 {
+                        p.atlas_cell = action - 1000;
+                    } else if let Some(action) = action.checked_sub(100)
+                        && atlas_action(p, action)
+                    {
+                        super::super::input::submit(&mut m, &commands, Intent::Atlas);
                     }
-                    if IsWindow(hwnd) == 0 {
-                        break;
-                    }
-                    let Some(shared) = weak.upgrade() else {
-                        break;
-                    };
-                    let panel = {
-                        let mut mailbox = lock(&shared);
-                        for action in actions.0.drain(..) {
-                            match action {
-                                100 | 101 => super::super::input::submit(
-                                    &mut mailbox,
-                                    &commands,
-                                    if action == 100 {
-                                        oteryn_client_ui::cyclopedia_map::Intent::Atlas
-                                    } else {
-                                        oteryn_client_ui::cyclopedia_map::Intent::AtlasNext
-                                    },
-                                ),
-                                102 | 103 => mailbox
-                                    .properties
-                                    .cyclopedia_map
-                                    .select_floor(action == 102),
-                                104 => {
-                                    let panel = &mut mailbox.properties.cyclopedia_map;
-                                    panel.hide_pois = !panel.hide_pois;
-                                }
-                                _ => {}
-                            }
-                        }
-                        mailbox.properties.cyclopedia_map.clone()
-                    };
-                    paint(hwnd, &panel);
-                    std::thread::sleep(std::time::Duration::from_millis(80));
                 }
-                if IsWindow(hwnd) != 0 {
-                    DestroyWindow(hwnd);
+                let p = &m.properties.cyclopedia_map;
+                if events.dirty || held.as_ref() != Some(p) {
+                    paint::draw(hwnd, p);
+                    SetWindowTextW(legend, wide(&paint::legend(p)).as_ptr());
+                    SetWindowTextW(detail, wide(&atlas_detail(p)).as_ptr());
+                    held = Some(p.clone());
+                    events.dirty = false;
                 }
+                drop(m);
+                std::thread::sleep(std::time::Duration::from_millis(25));
             }
             if let Some(shared) = weak.upgrade() {
                 lock(&shared).properties.cyclopedia_map.atlas_open = false;
             }
+            DestroyWindow(hwnd);
         })
         .is_err()
         && let Some(shared) = rollback.upgrade()
@@ -142,123 +187,31 @@ pub(super) fn open(link: &PlayLink) {
         lock(&shared).properties.cyclopedia_map.atlas_open = false;
     }
 }
-unsafe fn label(dc: HDC, x: i32, y: i32, text: &str) {
-    unsafe {
-        let text = wide(text);
-        TextOutW(dc, x, y, text.as_ptr(), text.len().saturating_sub(1) as i32);
-    }
+fn wide(s: &str) -> Vec<u16> {
+    s.replace('\0', "�").encode_utf16().chain(Some(0)).collect()
 }
-unsafe fn fill(dc: HDC, rect: RECT, color: u32) {
+unsafe fn control(
+    hwnd: HWND,
+    class: &str,
+    title: &str,
+    id: usize,
+    r: [i32; 4],
+    style: u32,
+) -> HWND {
     unsafe {
-        let brush = CreateSolidBrush(color);
-        if !brush.is_null() {
-            FillRect(dc, &rect, brush);
-            DeleteObject(brush);
-        }
+        CreateWindowExW(
+            0,
+            wide(class).as_ptr(),
+            wide(title).as_ptr(),
+            WS_CHILD | WS_VISIBLE | style,
+            r[0],
+            r[1],
+            r[2],
+            r[3],
+            hwnd,
+            id as HMENU,
+            null_mut(),
+            null(),
+        )
     }
-}
-unsafe fn paint(hwnd: HWND, panel: &oteryn_client_ui::cyclopedia_map::Panel) {
-    unsafe {
-        let mut rect: RECT = std::mem::zeroed();
-        GetClientRect(hwnd, &mut rect);
-        let dc = GetDC(hwnd);
-        if dc.is_null() {
-            return;
-        }
-        fill(
-            dc,
-            RECT {
-                left: 0,
-                top: 46,
-                right: rect.right,
-                bottom: rect.bottom,
-            },
-            0x181818,
-        );
-        SetBkMode(dc, TRANSPARENT as i32);
-        SetTextColor(dc, 0xeeeeee);
-        label(
-            dc,
-            12,
-            50,
-            &format!("Floor {} • north up • {}", panel.floor, panel.feedback),
-        );
-        let width = rect.right.saturating_sub(320).max(1) as u32;
-        let height = rect.bottom.saturating_sub(110).max(1) as u32;
-        for run in oteryn_client_ui::cyclopedia_map::atlas_runs(panel, width, height) {
-            let color = color(run.area);
-            fill(
-                dc,
-                RECT {
-                    left: 12 + run.left as i32,
-                    top: 85 + run.top as i32,
-                    right: 12 + run.right.max(run.left + 1) as i32,
-                    bottom: 85 + run.bottom.max(run.top + 1) as i32,
-                },
-                color,
-            );
-        }
-        for poi in oteryn_client_ui::cyclopedia_map::atlas_pois(panel, width, height) {
-            let x = 12 + poi.column as i32;
-            let y = 85 + poi.row as i32;
-            fill(
-                dc,
-                RECT {
-                    left: x - 3,
-                    top: y - 3,
-                    right: x + 4,
-                    bottom: y + 4,
-                },
-                0x00ffff,
-            );
-        }
-        if let Some(atlas) = &panel.region_atlas {
-            let ids: std::collections::BTreeSet<_> = atlas
-                .runs
-                .iter()
-                .filter(|r| r.floor == panel.floor)
-                .map(|r| r.area)
-                .collect();
-            let mut y = 85;
-            for area in atlas.areas.iter().filter(|a| ids.contains(&a.id)) {
-                fill(
-                    dc,
-                    RECT {
-                        left: rect.right - 285,
-                        top: y,
-                        right: rect.right - 270,
-                        bottom: y + 15,
-                    },
-                    color(area.id),
-                );
-                label(dc, rect.right - 263, y, &area.name);
-                y += 24;
-                if y > rect.bottom - 60 {
-                    break;
-                }
-            }
-            label(
-                dc,
-                rect.right - 285,
-                rect.bottom - 40,
-                if atlas.next.is_some() {
-                    "More atlas pages available"
-                } else {
-                    "Complete admitted coverage"
-                },
-            );
-        } else {
-            label(
-                dc,
-                30,
-                100,
-                "Load atlas to display the server's named regions and subareas.",
-            );
-        }
-        ReleaseDC(hwnd, dc);
-    }
-}
-fn color(area: u32) -> u32 {
-    let n = area.wrapping_mul(0x9e3779b9);
-    (0x40 + (n & 0x7f)) | ((0x40 + ((n >> 8) & 0x7f)) << 8) | ((0x40 + ((n >> 16) & 0x7f)) << 16)
 }

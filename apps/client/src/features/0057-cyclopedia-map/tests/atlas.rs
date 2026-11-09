@@ -26,7 +26,7 @@ pub(super) async fn round_trip(link: &PlayLink, exchanges: &Arc<Script>) -> Resu
     send(
         link,
         exchanges,
-        Intent::Atlas,
+        Intent::RegionAtlas,
         kind,
         bytes,
         CommandStatus::Accepted,

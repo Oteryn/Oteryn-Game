@@ -1,6 +1,11 @@
+#[path = "session_adapter/own_actor.rs"]
+mod own_actor;
 use super::*;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> {
+        own_actor::get(self)
+    }
     fn refusal_detail(&self) -> Option<oteryn_session::refusal_detail::RefusalDetail> {
         self.last_refusal_detail()
     }

@@ -44,6 +44,7 @@ impl SettingsState {
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.item_hotkeys_edit = self.battle_edit;
+        self.bar_actions_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;

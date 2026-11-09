@@ -50,7 +50,7 @@ fn magical_archive_assignments_persist_and_resolve_current_server_indices()
     assert!(link.archive_assign(0, 0));
     assert!(!link.archive_assign(1, 0));
     assert!(link.archive_assign(0, 11));
-    assert!(!link.archive_assign(0, 12));
+    assert!(!link.archive_assign(0, 36));
     let path = std::env::temp_dir().join(format!("archive-bindings-{}.json", std::process::id()));
     let mut settings = SettingsState::new(Some(path.clone()));
     settings.sync_archive_bindings(&link);
@@ -128,7 +128,7 @@ fn four_slot_saved_archive_migrates_to_the_full_row_without_losing_bindings()
 -> Result<(), Box<dyn std::error::Error>> {
     let saved = r#"{"slots":[{"kind":"Empty"},{"kind":"Unmanaged"},{"kind":"Empty"},{"kind":"Unmanaged"}]}"#;
     let archive: super::archive::ArchiveBindings = serde_json::from_str(saved)?;
-    assert_eq!(archive.slots.len(), 12);
+    assert_eq!(archive.slots.len(), 36);
     assert!(matches!(
         archive.slots[0],
         super::archive::ArchiveSlot::Empty
@@ -140,7 +140,7 @@ fn four_slot_saved_archive_migrates_to_the_full_row_without_losing_bindings()
     assert!(
         serde_json::from_str::<super::archive::ArchiveBindings>(&format!(
             "{{\"slots\":[{}]}}",
-            vec!["{\"kind\":\"Empty\"}"; 13].join(",")
+            vec!["{\"kind\":\"Empty\"}"; 37].join(",")
         ))
         .is_err()
     );

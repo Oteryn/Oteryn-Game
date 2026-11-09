@@ -135,7 +135,8 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
             for (index, label) in form.labels.iter().enumerate() {
                 control(hwnd, "STATIC", label, 0, [12, y, 640, 20], 0);
                 y += 22;
-                let multiline = (form.title == "Writing and mail" && index == 2)
+                let multiline = (form.title == "Houses" && index == 4)
+                    || (form.title == "Writing and mail" && index == 2)
                     || (form.title == "Player reports" && index == 4)
                     || (form.title == "Bug report" && index == 1)
                     || (form.title == "Staff authorized actions" && index > 0);

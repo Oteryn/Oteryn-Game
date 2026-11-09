@@ -6,6 +6,7 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    atlas_native::open(link);
     use crate::play::feature_0115_mail::view::native::{Form, open};
     atlas_native::open(link);
     open(
@@ -111,7 +112,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox,
                         commands,
                         if action == 34 {
-                            oteryn_client_ui::cyclopedia_map::Intent::Atlas
+                            oteryn_client_ui::cyclopedia_map::Intent::RegionAtlas
                         } else {
                             oteryn_client_ui::cyclopedia_map::Intent::AtlasNext
                         },
@@ -314,3 +315,7 @@ mod analytics_tests;
 #[cfg(windows)]
 #[path = "view/atlas.rs"]
 pub(in crate::play) mod atlas;
+
+#[cfg(test)]
+#[path = "view/atlas_tests.rs"]
+mod atlas_tests;

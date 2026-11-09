@@ -27,6 +27,7 @@ impl PlayView {
     /// The existing native status surface displays the latest notice without erasing combat.
     #[must_use]
     pub fn server_message_status(&self) -> Option<String> {
+        if !self.preferences().game_window.banner { return None; }
         self.server_messages
             .back()
             .map(|message| match &message.value {

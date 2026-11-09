@@ -1,13 +1,17 @@
 //! Local-only preferences whose keys come from the audited client reference surface.
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
-
+#[path = "capture_options.rs"]
+mod capture_options;
+pub use capture_options::ScreenshotPreferences;
+#[path = "game_window.rs"]
+mod game_window;
 use crate::map::World;
 use crate::play::PlayView;
+pub use game_window::GameWindowPreferences;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
-
 #[path = "arcs.rs"]
 mod arcs;
 pub use arcs::{ArcLayout, ArcPreferences};
@@ -21,6 +25,8 @@ mod controls;
 #[path = "frames.rs"]
 mod frames;
 pub use frames::{FramePacer, FramePreferences};
+#[path = "graphics.rs"]
+mod graphics;
 #[path = "help.rs"]
 mod help;
 #[path = "profile_contexts.rs"]
@@ -35,10 +41,13 @@ mod status_order;
 mod store;
 #[path = "sync.rs"]
 mod sync;
+pub use graphics::GraphicsPreferences;
+pub use shortcuts::ShortcutEdit;
 #[path = "tooltips.rs"]
 mod tooltips;
 #[path = "ui_geometry.rs"]
 mod ui_geometry;
+pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
@@ -48,7 +57,6 @@ pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
 pub use tooltips::{HoverTooltip, TooltipTarget};
 pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
-
 const PANEL_IDS: &[&str] = &[
     "battle",
     "chat",
@@ -68,15 +76,17 @@ const PANEL_IDS: &[&str] = &[
     "vip",
     "wheel",
 ];
-
 #[path = "defaults.rs"]
 mod defaults;
 use defaults::*;
-
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub graphics: GraphicsPreferences,
+    #[serde(default)]
+    pub game_window: GameWindowPreferences,
     #[serde(default = "enabled")]
     pub tooltips_enabled: bool,
     #[serde(default = "default_tooltip_delay")]
@@ -149,6 +159,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub frames: FramePreferences,
     #[serde(default)]
+    pub screenshots: ScreenshotPreferences,
+    #[serde(default)]
     pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
     #[serde(default)]
     pub spellbook_filter: crate::play::feature_0287_actor_spell_catalog::view::SpellbookFilter,
@@ -160,6 +172,14 @@ pub struct ReferencePreferences {
     pub controls: ControlPreferences,
     #[serde(default)]
     pub skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout,
+    #[serde(default)]
+    pub active_battle_list: usize,
+    #[serde(default)]
+    pub action_keys: crate::play::feature_local_spell_action_bar::view::ActionKeys,
+    #[serde(default)]
+    pub bar_layout: crate::play::feature_local_spell_action_bar::view::BarLayout,
+    #[serde(default)]
+    pub bar_actions: crate::play::feature_local_spell_action_bar::view::BarActions,
     #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
     pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
@@ -183,10 +203,10 @@ pub struct ReferencePreferences {
     #[serde(default = "default_panels")]
     pub visible_panels: Vec<String>,
 }
-
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            graphics: GraphicsPreferences::default(),
             tooltips_enabled: true,
             tooltip_delay_ms: 500,
             hud_health: true,
@@ -212,6 +232,7 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            game_window: Default::default(),
             show_effects: true,
             show_lights: true,
             show_harmony: true,
@@ -223,11 +244,16 @@ impl Default for ReferencePreferences {
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
+            screenshots: Default::default(),
             arcs: Default::default(),
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
+            active_battle_list: Default::default(),
+            action_keys: Default::default(),
+            bar_layout: Default::default(),
+            bar_actions: Default::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
@@ -241,10 +267,8 @@ impl Default for ReferencePreferences {
         }
     }
 }
-
 impl ReferencePreferences {
     pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
-
     pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
         if index >= Self::MOUSE_PRESETS.len() {
             return Err(PreferenceError);
@@ -252,7 +276,6 @@ impl ReferencePreferences {
         self.swap_mouse_buttons = index == 1;
         Ok(())
     }
-
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;
@@ -262,6 +285,13 @@ impl ReferencePreferences {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)
                     || self.shortcut_order[..i].contains(id)
             })
+        {
+            return Err(PreferenceError);
+        }
+        if self.active_battle_list >= self.battle_lists.len()
+            || !self.bar_actions.valid()
+            || !self.bar_layout.valid()
+            || !self.action_keys.valid(self)
         {
             return Err(PreferenceError);
         }
@@ -275,6 +305,7 @@ impl ReferencePreferences {
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()
             || !self.frames.valid()
+            || !self.screenshots.valid()
             || !self.arcs.valid()
             || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)
@@ -298,7 +329,6 @@ impl ReferencePreferences {
         Ok(())
     }
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreferenceError;
 
@@ -344,55 +374,5 @@ impl LocalPlayState {
     }
 }
 
-impl PlayView {
-    pub fn preference_character(&self) -> Option<[u8; 16]> {
-        self.local.character
-    }
-
-    /// Installed only after native admission has accepted the selected character.
-    pub(crate) fn set_preference_character(&mut self, character: [u8; 16]) {
-        self.local.character = Some(character);
-    }
-
-    pub(in crate::play) fn apply_preference_scale(
-        &mut self,
-    ) -> Result<(), oteryn_renderer::BatchError> {
-        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
-        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
-            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
-            .max(1);
-        self.scene
-            .set_label_scale(self.preferences().interface_scale);
-        self.scene.set_tile_px(pixels.min(fit))
-    }
-
-    pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {
-        if viewport.contains(&0) || self.local.viewport == viewport {
-            return Ok(());
-        }
-        let mut candidate = self.clone();
-        candidate.local.viewport = viewport;
-        candidate
-            .apply_preference_scale()
-            .map_err(|_| PreferenceError)?;
-        *self = candidate;
-        Ok(())
-    }
-
-    #[must_use]
-    pub const fn preferences(&self) -> &ReferencePreferences {
-        &self.local.preferences
-    }
-
-    pub fn set_preferences(
-        &mut self,
-        preferences: ReferencePreferences,
-    ) -> Result<(), PreferenceError> {
-        preferences.validate()?;
-        let mut candidate = self.clone();
-        candidate.local.preferences = preferences;
-        candidate.rebuild().map_err(|_| PreferenceError)?;
-        *self = candidate;
-        Ok(())
-    }
-}
+#[path = "settings_view.rs"]
+mod settings_view;

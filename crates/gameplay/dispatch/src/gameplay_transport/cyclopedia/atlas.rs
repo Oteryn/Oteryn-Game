@@ -1,6 +1,6 @@
 //! Static atlas facts from the actual admitted bundle; exploration POIs stay on the legacy query.
 use super::*;
-use oteryn_protocol_oteryn::cyclopedia::atlas::{
+use oteryn_protocol_oteryn::cyclopedia::geometry::{
     self as wire, Area, AreaPage, GeometryPage, Reply, Request, Run,
 };
 use std::collections::HashSet;

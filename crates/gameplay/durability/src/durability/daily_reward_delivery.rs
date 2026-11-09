@@ -31,6 +31,7 @@ pub struct DailyRewardDeliveryPlan {
 #[derive(Debug, Clone)]
 pub struct DailyRewardView {
     pub epoch: u64,
+    pub history: Vec<oteryn_protocol_oteryn::daily_reward::details::Receipt>,
     pub lane_day: u8,
     pub streak: u32,
     pub jokers: u8,
@@ -100,7 +101,8 @@ impl DurabilityRoot {
                 oteryn_gameplay_progression::daily_reward::advance_daily_reward(state, epoch, jokers)
                     .map_err(|_| DurabilityError::InvalidStoredState)?.claimed_lane_day
             } else { state.lane_day };
-            Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled }))
+            let history=super::daily_reward::history::load(&mut tx,fence.character_id.as_bytes(),fence.runtime_scope.world_id().as_bytes(),epoch).await?;
+            Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled, history }))
         })).await?
     }
 

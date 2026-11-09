@@ -17,6 +17,7 @@ pub(super) fn publish<T: Stepper>(
     held: &mut Vec<WorldSpatialEntity>,
 ) {
     outbox.hotkey_equip_items(session.hotkey_equip_items());
+    outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.chat_private_publish(session);
     outbox.targeting_refresh(session);
     outbox.achievement_notices_publish(session);

@@ -29,7 +29,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             if !actions.is_null()
                 && (*actions).0.len() < 16
                 && ((matches!(id, 101 | 102) && notification == CBN_SELCHANGE as usize)
-                    || (matches!(id, 103..=106) && notification == BN_CLICKED as usize))
+                    || (matches!(id, 103..=106 | 108) && notification == BN_CLICKED as usize))
             {
                 (*actions).0.push(id);
             }
@@ -113,6 +113,18 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         let previous = control(hwnd, "BUTTON", "Previous", 104, 520, 80, 0);
         let next = control(hwnd, "BUTTON", "Next", 105, 610, 80, 0);
         let show_me = control(hwnd, "BUTTON", "Show me", 106, 700, 100, 0);
+        let world_label = control(hwnd, "STATIC", "World ID (blank = current)", 0, 10, 220, 0);
+        let world = control(hwnd, "EDIT", "", 107, 240, 460, WS_BORDER);
+        let select_world = control(hwnd, "BUTTON", "Select", 108, 710, 90, 0);
+        for (handle, x) in [(world_label, 10), (world, 240), (select_world, 710)] {
+            SetWindowPos(handle, null_mut(), x, 50, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+        }
+        SendMessageW(
+            world,
+            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
+            36,
+            0,
+        );
         let text = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -126,17 +138,28 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 | ES_READONLY as u32
                 | ES_AUTOVSCROLL as u32,
             10,
-            55,
+            95,
             790,
-            495,
+            455,
             hwnd,
             null_mut(),
             null_mut(),
             null(),
         );
-        if [category, vocation, refresh, previous, next, show_me, text]
-            .iter()
-            .any(|h| h.is_null())
+        if [
+            category,
+            vocation,
+            refresh,
+            previous,
+            next,
+            show_me,
+            world_label,
+            world,
+            select_world,
+            text,
+        ]
+        .iter()
+        .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
             close(&weak);
@@ -187,6 +210,20 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                             vocation: v as u32,
                         }
                     }
+                    108 => {
+                        let mut value = [0u16; 37];
+                        let length = GetWindowTextW(world, value.as_mut_ptr(), value.len() as i32);
+                        let Some(world) = highscores::parse_world(&String::from_utf16_lossy(
+                            &value[..length.max(0) as usize],
+                        )) else {
+                            panel.feedback = Some(
+                                "Enter a valid World ID, or leave blank for the current World"
+                                    .into(),
+                            );
+                            continue;
+                        };
+                        Action::World(world)
+                    }
                     104 => Action::Previous,
                     105 => Action::Next,
                     106 => Action::ShowMe,
@@ -209,7 +246,16 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 }
                 SendMessageW(vocation, CB_SETCURSEL, panel.vocation as usize, 0);
                 let enabled = panel.selected && !panel.pending;
-                for h in [category, vocation, refresh] {
+                if held
+                    .as_ref()
+                    .is_none_or(|old: &highscores::HighscoresPanel| old.world != panel.world)
+                {
+                    SetWindowTextW(
+                        world,
+                        wide(&panel.world.map(highscores::world_text).unwrap_or_default()).as_ptr(),
+                    );
+                }
+                for h in [category, vocation, refresh, world, select_world] {
                     windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                         h,
                         i32::from(enabled),
@@ -225,7 +271,9 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 );
                 windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                     show_me,
-                    i32::from(enabled && panel.reply.as_ref().is_some_and(|r| r.own_row.is_some())),
+                    i32::from(
+                        enabled && panel.reply.as_ref().is_some_and(|r| r.own_page.is_some()),
+                    ),
                 );
                 held = Some(panel.clone());
             }

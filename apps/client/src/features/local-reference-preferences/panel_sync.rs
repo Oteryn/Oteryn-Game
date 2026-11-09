@@ -33,10 +33,48 @@ impl SettingsState {
 
     pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
         let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
-        {
+        if let Some(edit) = link.sync_battle_list_state(
+            &mut preferences.battle_lists,
+            &mut preferences.active_battle_list,
+            self.battle_edit,
+        ) {
             self.apply(preferences);
             self.battle_edit = edit;
         }
+    }
+}
+
+impl SettingsState {
+    pub fn restore(
+        &mut self,
+        view: &mut PlayView,
+        viewport: [u32; 2],
+    ) -> Result<(), PreferenceError> {
+        if view.local.minimap_edit > self.minimap_edit {
+            let edit = view.local.minimap_edit;
+            let mut preferences = self.preferences.clone();
+            preferences.minimap = view.preferences().minimap.clone();
+            self.apply(preferences);
+            self.minimap_edit = edit;
+        }
+        view.local.minimap_edit = self.minimap_edit;
+        view.set_world_viewport(viewport)?;
+        if view.preferences() != &self.preferences {
+            view.set_preferences(self.preferences.clone())?;
+        }
+        Ok(())
+    }
+
+    pub fn capture(&mut self, view: &mut PlayView) -> Result<(), PreferenceError> {
+        if view.preferences().audio != self.preferences.audio {
+            let mut preferences = self.preferences.clone();
+            preferences.audio = view.preferences().audio;
+            self.apply(preferences);
+        }
+        // Merge any binding/zoom edit made while the shortcut was being handled.
+        if view.preferences() != &self.preferences {
+            view.set_preferences(self.preferences.clone())?;
+        }
+        Ok(())
     }
 }

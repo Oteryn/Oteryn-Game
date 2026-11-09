@@ -1,11 +1,15 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Preview,
     Refresh,
     Projection,
     Set,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub artwork: Option<oteryn_client_runtime::cui3::house_podium::preview::Artwork>,
+    pub graphic_worker: bool,
+    pub preview_requested: bool,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

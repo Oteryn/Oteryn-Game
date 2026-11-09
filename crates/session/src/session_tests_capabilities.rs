@@ -101,5 +101,7 @@ fn prey_native_capability_routes_tier_and_confirmed_pick_and_refuses_without_sel
         .map_err(|_| "Prey selection thread panicked")?
 }
 
-#[path="session_tests_capabilities/gated_routes.rs"]
+#[path = "session_tests_capabilities/gated_routes.rs"]
 mod gated_route_tests;
+
+include!("session_tests_coin_history.rs");

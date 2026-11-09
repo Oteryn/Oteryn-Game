@@ -10,7 +10,7 @@ fn index(text: &str) -> Result<NonZeroU32, String> {
         .parse::<u32>()
         .ok()
         .and_then(NonZeroU32::new)
-        .ok_or_else(|| "Choose a positive index".into())
+        .ok_or_else(|| "Choose a confirmed charm or creature".into())
 }
 pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureCommand, String> {
     use wire::CharmProgressionAction as A;
@@ -50,6 +50,9 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    if super::input::charm_browser::apply(panel, command, result) {
+        return;
+    }
     if super::input::catalogue::apply(panel, command, result) {
         return;
     }

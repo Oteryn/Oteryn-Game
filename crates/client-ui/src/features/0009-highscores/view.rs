@@ -10,6 +10,11 @@ pub fn panel_text(p: &HighscoresPanel) -> String {
             .unwrap_or("Unavailable"),
         VOCATIONS[p.vocation as usize]
     );
+    let _ = write!(
+        text,
+        " / World: {}",
+        p.world.map(world_text).unwrap_or_else(|| "current".into())
+    );
     if !p.selected {
         text.push_str("\nHighscores unavailable in this session");
     }
@@ -44,6 +49,35 @@ pub fn panel_text(p: &HighscoresPanel) -> String {
     }
     if let Some(feedback) = &p.feedback {
         let _ = write!(text, "\n{feedback}");
+    }
+    text
+}
+
+/// Canonical typed World identity; never accepts a Channel selector.
+pub fn parse_world(text: &str) -> Option<Option<oteryn_client_runtime::highscores::wire::WorldId>> {
+    let text = text.trim();
+    if text.is_empty() {
+        return Some(None);
+    }
+    let hex: String = text.chars().filter(|c| *c != '-').collect();
+    if hex.len() != 32 || !hex.is_ascii() {
+        return None;
+    }
+    let mut bytes = [0; 16];
+    for (i, byte) in bytes.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).ok()?;
+    }
+    oteryn_client_runtime::highscores::wire::WorldId::decode(&bytes)
+        .ok()
+        .map(Some)
+}
+pub fn world_text(world: oteryn_client_runtime::highscores::wire::WorldId) -> String {
+    let mut text = String::with_capacity(36);
+    for (i, byte) in world.as_bytes().iter().enumerate() {
+        if [4, 6, 8, 10].contains(&i) {
+            text.push('-');
+        }
+        let _ = write!(text, "{byte:02x}");
     }
     text
 }

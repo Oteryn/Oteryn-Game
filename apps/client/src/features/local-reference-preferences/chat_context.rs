@@ -49,3 +49,9 @@ impl SettingsState {
         }
     }
 }
+
+impl crate::play::PlayLink {
+    pub fn preference_chat_open(&self) -> bool {
+        crate::play::mailbox::lock(&self.mailbox).chat.open
+    }
+}

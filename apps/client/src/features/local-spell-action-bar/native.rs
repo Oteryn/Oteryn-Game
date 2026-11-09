@@ -126,11 +126,8 @@ impl super::Application {
             if let Some(hud) = &mut self.hud {
                 hud.arcs.update(play.view.hud_arc_layout());
                 let labels = play.link.spell_slot_labels();
-                for slot in hud.spells.update(Some(&labels)) {
-                    if let Some(slot) = u32::try_from(slot).ok().and_then(std::num::NonZeroU32::new)
-                    {
-                        play.link.cast_spell_slot(slot);
-                    }
+                for gesture in hud.spells.update(Some(&labels), &play.link.bar_layout()) {
+                    play.link.bar_gesture(gesture);
                 }
                 for id in hud
                     .shortcuts
@@ -149,7 +146,8 @@ impl super::Application {
         if self.play.is_none()
             && let Some(hud) = &mut self.hud
         {
-            hud.spells.update(None);
+            hud.spells
+                .update(None, &oteryn_client::play::BarLayout::default());
             hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);

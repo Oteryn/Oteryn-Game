@@ -134,14 +134,19 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
     ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences,
-    FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, HelpTopic, HoverTooltip, MousePreset,
-    MovementKeys, PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences,
-    RotationModifier, SHORTCUTS, SettingsPage, SettingsState, TooltipTarget, WINDOW_ACTIONS,
-    fit_ui_scale, help_text, preference_bindings, rescale_ui_rect, scale_ui_rect,
+    FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, GraphicsPreferences, HelpTopic,
+    HoverTooltip, MousePreset, MovementKeys, PreferenceBinding, PreferenceInput, PreferenceStore,
+    ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
+    SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help_text,
+    preference_bindings, rescale_ui_rect, scale_ui_rect,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;
+pub use feature_0017_attack::view::GuildFilter;
 pub use feature_local_minimap::view::{MinimapBinding, MinimapMark, MinimapMemory};
+pub use feature_local_spell_action_bar::view::{
+    BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility,
+};
 
 pub use feature_0023_presentation::state::*;
 

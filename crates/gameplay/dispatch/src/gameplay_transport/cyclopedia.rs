@@ -15,6 +15,8 @@ use sha2::{Digest, Sha256};
 
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
+#[path = "cyclopedia/overview.rs"]
+mod overview;
 #[path = "cyclopedia/content.rs"]
 mod content;
 #[path = "cyclopedia/respawn.rs"]
@@ -59,6 +61,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content::admit(self)
     }
     pub(super) async fn cyclopedia_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> GuildReply {
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&128) {
+            return self.cyclopedia_atlas_wire(admitted, id, payload).await;
+        }
+        self.cyclopedia_basic_wire(admitted, id, kind, payload)
+            .await
+    }
+    pub(super) async fn cyclopedia_basic_wire(
         &self,
         admitted: AdmittedSession,
         id: u64,
