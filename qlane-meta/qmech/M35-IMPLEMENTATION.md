@@ -413,3 +413,21 @@ The full pinned-production equipment/attribute check also passed in76.86
 seconds with the exact5803 profile union. Self-review covered all handwritten
 changes and semantic generated deltas; no significant finding. Independent
 coordinator review and CI are not claimed by this lane.
+
+## Crystal Wand real-caller qualification
+
+Crystal 201189f8 `chest.lua:1540-1554` binds UID6124 at(32479,31611,15)
+and UID6125 at(32481,31611,15), both appearance2472. The independent rewards
+are item3068 x1 and item11609 x1. The mounted PostgreSQL case uses those
+literal endpoints and the production wire USE/RewardClaim/quest-obligation
+path. In each order it requires the first reward to leave the quest incomplete
+and the second to complete it, with exact persisted rewards, consumed
+obligations, duplicate replay, fresh-repeat refusal and track reload between
+claims. Existing production group declarations and grants remain unchanged.
+
+Fresh validation: formatting and dispatch all-features/all-target clippy with
+`-D warnings` passed. The live PostgreSQL case passed in135.59 seconds and
+printed `M35_CRYSTAL_WAND_POSTGRES_CASE_COMPLETED`. Self-review found no
+significant issue; existing assertions are retained and exact-reward checks
+are extended. No generated content changed. The full M35 scope remains PARTIAL
+for the source-binding, partial-charge and remaining caller-proof gaps above.
