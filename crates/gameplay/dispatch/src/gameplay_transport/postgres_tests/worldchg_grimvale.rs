@@ -556,20 +556,25 @@ fn producer_world(
 
 #[test]
 fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestResult {
-    run_producer(false, false)
+    run_producer(false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_final_opens_portal_when_boss_spawn_is_blocked() -> TestResult {
-    run_producer(true, false)
+    run_producer(true, false, false)
 }
 
 #[test]
 fn qn5_feroxa_timed_native_maps_ignore_pending_delivery_and_reject_stale_reset() -> TestResult {
-    run_producer(false, true)
+    run_producer(false, true, false)
 }
 
-fn run_producer(block_spawn: bool, prove_phases: bool) -> TestResult {
+#[test]
+fn qn5_feroxa_spectators_return_to_saved_positions_once_on_both_source_timers() -> TestResult {
+    run_producer(false, true, true)
+}
+
+fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -582,7 +587,7 @@ fn run_producer(block_spawn: bool, prove_phases: bool) -> TestResult {
                 false,
             )
             .await?;
-            let result = producer_scenario(&h, block_spawn, prove_phases).await;
+            let result = producer_scenario(&h, block_spawn, prove_phases, prove_spectators).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -618,7 +623,7 @@ async fn producer_seed(
     Ok(())
 }
 
-async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool) -> TestResult {
+async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool, prove_spectators: bool) -> TestResult {
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -804,6 +809,36 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
         assert!(owner.bundle_map().ok_or("map")?.facts.phase_tile(at).map_err(debug)?.is_none());
         for (now, expected_ground, expected_no_logout) in [(1_800_000, 13989, true), (3_600_000, 8087, false)] {
             owner.apply_feroxa_map_clock(firing, now).await.map_err(|_| "native map timer")?;
+            if prove_spectators && now == 1_800_000 {
+                let mut timers = crate::gameplay_transport::raid_live_world::FeroxaSpectators::default();
+                let actor = deps.actor;
+                let session = deps.admitted.game_session_id;
+                let original = deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+                owner.apply_feroxa_spectators(firing, now, &mut timers).await.map_err(|_| "first spectator capture")?;
+                move_spectator(&owner, actor, session, super::quest_world_callbacks::local(DESTINATION)).await?;
+                owner.apply_feroxa_spectators(firing, now + 59_999, &mut timers).await.map_err(|_| "before spectator deadline")?;
+                assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                    super::quest_world_callbacks::local(DESTINATION));
+                owner.reset_epoch = 2;
+                assert!(owner.apply_feroxa_spectators(firing, now + 60_000, &mut timers).await.is_err());
+                owner.reset_epoch = 1;
+                owner.apply_feroxa_spectators(firing, now + 60_000, &mut timers).await.map_err(|_| "first spectator return")?;
+                assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), original);
+                move_spectator(&owner, actor, session, super::quest_world_callbacks::local(DESTINATION)).await?;
+                owner.apply_feroxa_spectators(firing, now + 60_001, &mut timers).await.map_err(|_| "spectator replay")?;
+                assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                    super::quest_world_callbacks::local(DESTINATION), "replay cannot return a later arrival");
+                owner.apply_feroxa_spectators(firing, 2_700_000, &mut timers).await.map_err(|_| "second spectator capture")?;
+                let (second, second_original) = extra_players[0];
+                let second_session = crate::foundation::GameSessionId::decode(&id(81)).map_err(debug)?;
+                move_spectator(&owner, second, second_session, super::quest_world_callbacks::local(DESTINATION)).await?;
+                owner.apply_feroxa_spectators(firing, 2_760_000, &mut timers).await.map_err(|_| "second spectator return")?;
+                assert_eq!(deps.runtime.lock().await.read_actor_position(second).map_err(debug)?.position(),
+                    super::quest_world_callbacks::local(second_original));
+                assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                    super::quest_world_callbacks::local(DESTINATION), "players outside the source floor are not captured");
+                move_spectator(&owner, actor, session, original).await?;
+            }
             let map = owner.bundle_map().ok_or("map")?;
             let tile = map.facts.phase_tile(at).map_err(debug)?.ok_or("published source phase")?;
             assert_eq!(tile.entries[0].facts.appearance_id, expected_ground);
@@ -1125,5 +1160,21 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
         "WORLDCHG-Q PG EXECUTED: Grimvale native75min source wave, source Feroxa form handoffs, exact1949/22761 ingress, replay and close; elapsed={:?}",
         start.elapsed()
     );
+    Ok(())
+}
+
+async fn move_spectator(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    destination: crate::foundation::MovementLocalPosition,
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let before = runtime.read_actor_position(actor).map_err(debug)?;
+    let closed = crate::map::floor::BundleDoors(owner.bundle_map().ok_or("map")?.facts.doors());
+    let proof = crate::map::floor::prepare_quest_encounter_ejection(
+        &runtime, owner.movement_cells(), actor, session, before, destination, &closed,
+    ).map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }

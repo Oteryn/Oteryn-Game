@@ -28,6 +28,7 @@ pub(super) struct RaidEffectProgress {
     source_aborted: BTreeSet<[u8; 16]>,
     settled_ends: BTreeSet<[u8; 16]>,
     retries: BTreeMap<[u8; 16], RaidRetry>,
+    feroxa_spectators: super::raid_live_world::FeroxaSpectators,
 }
 
 impl RaidEffectProgress {
@@ -510,6 +511,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if key.as_str() == "raid:edron.feroxa" {
             self.apply_feroxa_map_clock(firing, now_ms).await?;
+            self.apply_feroxa_spectators(firing, now_ms, &mut progress.feroxa_spectators)
+                .await?;
         }
         if let Some(terminal) = progress.terminal(firing) {
             self.apply_current_raid_step(&terminal, &selected, progress, seed, now_ms)
