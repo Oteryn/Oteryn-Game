@@ -8,4 +8,4 @@ The chosen first objective is exactly “Visit the horse station east of Thais a
 
 The selected survey point `(32442,32229,-7)` retains ground 4521, two tiles north of the paddock's northeast corner. Its northern starting tile `(32442,32228,-7)` retains ground 4515. Both were verified in `content/world/placements/region-z07-x126-y125.b3`; fences, stable triggers and source objects remain intact.
 
-This resolver is inactive pending native dispatch/PostgreSQL proof. It does not activate horse escapes, raids, taming or rewards.
+The real dispatch/PostgreSQL STEP case passed in 70.018382489 seconds: the visit works without a Premium provider, replay/revisit cannot farm it, and horse escape state remains absent. This qualifies the first survey hook; horse escapes, raids, taming and rewards remain outside that proof.

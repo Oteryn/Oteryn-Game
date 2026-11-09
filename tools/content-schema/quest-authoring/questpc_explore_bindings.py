@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.horse_station_world_change', 's1', 'station-approach:palomino-pasture', 'chosen-source/horse_station_world_change'),
     ('oteryn:quest.hero_of_rathleton_quest', 's3', 'source-approach:hero-into-the-fire', 'chosen-source/hero_of_rathleton_quest'),
     ('oteryn:quest.grave_danger_quest', 's4', 'area-approach:oteryn:area.hunting_place.cobra_bastion', 'chosen-source/grave_danger_quest'),
     ('oteryn:quest.fury_gates_mini_world_change', 's1', 'fury-approach:thais', 'chosen-source/fury_gates_mini_world_change'),
@@ -123,6 +124,12 @@ def callbacks(root):
         if len(definitions) != 1:
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
         definition = definitions[0]
+        recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
+        if not recipe:
+            raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
+        named_visit = area.startswith('claim:') or (area.startswith('source-approach:') and '/' in area)
+        visit = area.rsplit('/', 1)[-1] if named_visit else 'entry'
+        storage = stage_storage(quest, stage, recipe, track_tail, visit)
         fury_approach = None
         station_approach = None
         if area.startswith('station-approach:'):
@@ -136,12 +143,6 @@ def callbacks(root):
             world_change = fury_approach[3]
         else:
             world_change = questpc_world_requirements.requirement(quest, world_owners)
-        recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
-        if not recipe:
-            raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
-        named_visit = area.startswith('claim:') or (area.startswith('source-approach:') and '/' in area)
-        visit = area.rsplit('/', 1)[-1] if named_visit else 'entry'
-        storage = stage_storage(quest, stage, recipe, track_tail, visit)
         anchors = [a for q, s, a, _ in BINDINGS if (q, s) == (quest, stage)]
         # Every counted visit needs a distinct explicit physical anchor; a partial
         # fragment set cannot make the selected four-visit stage completable.

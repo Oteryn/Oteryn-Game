@@ -2317,6 +2317,58 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/horse-station-world-change/s1/entry",
+      "quest": "oteryn:quest.horse_station_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32442,
+          "y": 32229,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4521,
+        "native": {
+          "position": {
+            "x": 32442,
+            "y": 32229,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4521
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/horse_station_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/horse_station_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only",
+        "OTERYN_PERMANENT_LANDMARK_SURVEY:horse-station/s1;no-escape-activation"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/inukaya/s1/inukaya",
       "quest": "oteryn:quest.inukaya_quest",
       "trigger": "step_in",

@@ -29,7 +29,7 @@ class StationApproachTests(unittest.TestCase):
         self.assertEqual(callback['selector']['native'],dict(
             position=dict(x=32442,y=32229,floor=-7),ordinal=0,appearance=4521))
         self.assertEqual(len(callback['storage']),2)
-        self.assertFalse(any(c['quest']==QUEST for c in explore.callbacks(ROOT)))
+        self.assertTrue(any(c['quest']==QUEST for c in explore.callbacks(ROOT)))
 
     def test_whole_world_change_stays_held(self):
         catalogue = owners.catalogue(ROOT)
