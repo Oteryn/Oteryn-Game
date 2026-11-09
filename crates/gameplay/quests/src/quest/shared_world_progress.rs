@@ -189,9 +189,92 @@ pub fn completed_action(key: &str, changes: &[QuestTrackChange]) -> Option<Share
     .then_some(binding.action)
 }
 
+/// Reserved transition namespace for an explicit, once-per-save reset profile.
+pub const SAVE_EVENT_RESTART_PREFIX: &str = "oteryn:quest-transition/save-event-restart/";
+
+/// Private daily quest scope. It never activates a physical World change.
+pub const PERSONAL_SERVER_SAVE_SCOPE: &str = "server_save";
+
+/// Stable reset declaration key for a canonical quest. The declaration names
+/// exactly which owned tracks restart; other persistent tracks remain unchanged.
+pub fn save_event_restart_key(quest: &str) -> String {
+    let name = quest
+        .strip_prefix("oteryn:quest.")
+        .or_else(|| quest.strip_prefix("oteryn:quest/"))
+        .unwrap_or(quest);
+    format!("{SAVE_EVENT_RESTART_PREFIX}{name}")
+}
+
 pub const HIVE_QUEST: &str = "oteryn:quest.hive_native_shared";
 pub const DEEPLING_QUEST: &str = "oteryn:quest.deeplings_native_shared";
 pub const HIVE_OBJECTIVE_PREFIX: &str = "oteryn:quest-callback/hive-native-objective-";
+
+/// Source mission counters cleared together at the first acceptance of a new cycle.
+pub fn hive_mission_tracks() -> impl Iterator<Item = &'static str> {
+    BINDINGS
+        .iter()
+        .filter(|binding| matches!(binding.action, SharedAction::HiveTask(_)))
+        .map(|binding| binding.track)
+        .chain(ACTIVE_TRACKS)
+        .chain([HATCHLINGS_TRACK])
+}
+
+/// Build the physical receipt delta for first acceptance in a source cycle.
+/// The durable owner must independently prove that this is the current cycle's
+/// first acceptance. Private balances and timestamps are never part of this plan.
+pub fn plan_hive_cycle_acceptance(
+    catalogue: &super::QuestStateCatalogue,
+    stored: &std::collections::BTreeMap<String, i64>,
+    task: u8,
+) -> Result<Vec<QuestTrackChange>, super::QuestRefusal> {
+    let selected = ACTIVE_TRACKS
+        .get(usize::from(task))
+        .ok_or(super::QuestRefusal::StageMismatch)?;
+    let mut changes = Vec::new();
+    for key in hive_mission_tracks() {
+        let track = catalogue
+            .track(key)
+            .ok_or(super::QuestRefusal::StageMismatch)?;
+        let before = stored.get(key).copied().unwrap_or(track.initial);
+        let after = i64::from(key == *selected);
+        if track.quest != HIVE_QUEST
+            || track.initial != 0
+            || !(track.min..=track.max).contains(&before)
+            || !(track.min..=track.max).contains(&after)
+        {
+            return Err(super::QuestRefusal::OutOfRange);
+        }
+        if before != after || key == *selected {
+            changes.push(QuestTrackChange {
+                track: key.into(),
+                before,
+                after,
+            });
+        }
+    }
+    Ok(changes)
+}
+
+/// Mission tracks scoped to the counter cycle. Private Favour and scent
+/// timestamps remain persistent across cycles.
+pub fn counter_progress_track(quest: &str, track: &str) -> bool {
+    match quest {
+        HIVE_QUEST => hive_mission_tracks().any(|key| key == track),
+        DEEPLING_QUEST => BINDINGS.iter().any(|binding| {
+            !matches!(binding.action, SharedAction::HiveTask(_)) && binding.track == track
+        }),
+        _ => false,
+    }
+}
+
+/// Retain native object, kill, acceptance and completion progress receipts in
+/// their counter cycle without classifying private-only purchases as missions.
+pub fn records_counter_progress(transition: &super::QuestTransition) -> bool {
+    transition
+        .effects
+        .iter()
+        .any(|effect| counter_progress_track(&transition.quest, &effect.track))
+}
 
 /// Existing object USE owner supplies real handle, range, position and revision.
 /// Tool appearances are source mission tools, retained across a successful action.
@@ -545,6 +628,41 @@ mod tests {
 #[cfg(test)]
 mod native_cycle_tests {
     use super::*;
+    #[test]
+    fn qm55_counter_history_includes_native_objectives_and_excludes_private_scent()
+    -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        for binding in BINDINGS {
+            assert!(records_counter_progress(
+                catalogue.transition(binding.key).ok_or("native binding")?
+            ));
+        }
+        for index in 0..6 {
+            let objective = if index == 4 {
+                "oteryn:quest-transition/hive-native-kollos-kill".into()
+            } else {
+                format!("{HIVE_OBJECTIVE_PREFIX}{index}")
+            };
+            for key in [accept_key(index), objective] {
+                assert!(records_counter_progress(
+                    catalogue.transition(&key).ok_or("native mission")?
+                ));
+            }
+        }
+        assert!(records_counter_progress(
+            catalogue
+                .transition("oteryn:quest-callback/hive-native-hatchlings")
+                .ok_or("compound objective")?
+        ));
+        assert!(!records_counter_progress(
+            catalogue
+                .transition(super::super::hive_access::BUY)
+                .ok_or("scent purchase")?
+        ));
+        Ok(())
+    }
     #[test]
     fn worldchg_hive_native_objectives_require_full_count_then_npc_resets_cycle()
     -> Result<(), String> {

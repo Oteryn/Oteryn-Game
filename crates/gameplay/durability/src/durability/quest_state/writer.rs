@@ -888,10 +888,36 @@ impl DurabilityRoot {
                     {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if let Some(change) = transition.world_change.as_deref()
-                        && !super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
-                    {
-                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    // The existing ledger scopes non-counter event receipts to
+                    // the World/server save. Capture that scope before its active
+                    // gate and fence publication against a concurrent save switch.
+                    let save_event_epoch = if transition.world_change.as_deref().is_some_and(|change|
+                        oteryn_gameplay_world_change::counter::CounterKind::from_key(change).is_none()) {
+                        let epoch: Option<String> = sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
+                            .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                        let Some(epoch) = epoch else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        Some(epoch)
+                    } else { None };
+                    if let Some(change) = transition.world_change.as_deref() {
+                        let active = if change == oteryn_gameplay_quests::quest::shared_world_progress::PERSONAL_SERVER_SAVE_SCOPE {
+                            // This scope is private to an explicit daily Quest
+                            // profile; it must not activate global event/travel gates.
+                            if !catalogue.save_event_restart(&transition.quest).is_some_and(|restart|
+                                restart.world_change.as_deref() == Some(change)) {
+                                false
+                            } else {
+                                let current: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch>0 AND NOT EXISTS(SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=a.world_id AND j.phase='RETIRING') FOR SHARE OF a")
+                                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                                current.is_some() && current.as_deref() == save_event_epoch.as_deref()
+                            }
+                        } else {
+                            super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
+                        };
+                        if !active {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     let pending: bool = sqlx::query_scalar(
                         "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
@@ -944,6 +970,7 @@ impl DurabilityRoot {
                     }
 
                     let quest = transition.quest.as_str();
+                    let save_restart = catalogue.save_event_restart(quest);
                     let current_hash = catalogue
                         .definition_hash(quest)
                         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -966,7 +993,7 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)?;
                             // §6: a completed quest keeps its pin and no longer blocks.
                             let blocked =
-                                hash != current_hash && !row.try_get::<bool, _>("completed")?;
+                                hash != current_hash && (!row.try_get::<bool, _>("completed")? || save_restart.is_some());
                             (
                                 row.try_get::<String, _>("pinned_content_revision")?,
                                 hash,
@@ -982,6 +1009,21 @@ impl DurabilityRoot {
                             )
                         }
                     };
+                    if refusal.is_none() && let Some(restart) = save_restart
+                        && (transition.completes || transition.effects.iter().any(|effect|
+                            restart.effects.iter().any(|reset| reset.track == effect.track))) {
+                        let Some(epoch) = &save_event_epoch else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        // Read current-save progress under the Character root
+                        // lock; the current World and gameplay fence were resolved above.
+                        let restarted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_event_quest_progress p WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND p.quest_key=$3 AND p.reset_epoch=$4::text::numeric AND p.transition_key=$5)")
+                            .bind(id).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(quest).bind(epoch).bind(&restart.key).fetch_one(&mut *tx).await?;
+                        let eligible = if request.transition_key == restart.key { !restarted } else { restarted };
+                        if !eligible {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let final_flags: Vec<String> = if request.transition_key == oteryn_gameplay_quests::quest::monk_shrines::FINISH {
                         oteryn_gameplay_quests::quest::monk_shrines::NAMES.iter().map(|name|
                             format!("{}{name}", oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX)).collect()
@@ -992,6 +1034,12 @@ impl DurabilityRoot {
                         .map(|effect| effect.track.as_str())
                         .collect();
                     keys.extend(catalogue.completion_tracks(quest));
+                    if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
+                        for key in oteryn_gameplay_quests::quest::shared_world_progress::hive_mission_tracks() {
+                            keys.push(key);
+                        }
+                    }
+
                     let grizzly_keys = grizzly_action.as_ref().map(|_| {
                         oteryn_gameplay_quests::quest::grizzly_adams::storage_keys()
                     }).unwrap_or_default();
@@ -1025,6 +1073,44 @@ impl DurabilityRoot {
                         }
                         stored.insert(key, row.try_get("value")?);
                     }
+                    // Resolve World authority before planning lifecycle-driven
+                    // Character resets. Receipt replay returned above this boundary.
+                    let hive_progress = quest == oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST
+                        && oteryn_gameplay_quests::quest::shared_world_progress::records_counter_progress(transition);
+                    let shared_counter = if refusal.is_none() && (
+                        oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()
+                        || hive_progress) {
+                        let world=fence.runtime_scope.world_id();
+                        let epoch:String=sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
+                            .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        let epoch=epoch.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)?;
+                        let Some(counter_authority)=super::super::world_event::changes::counters::authorize(
+                            &mut tx,&recovery,&node,fence.runtime_scope,fence.scope_ownership_generation,epoch,
+                        ).await? else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        Some((epoch,counter_authority))
+                    } else { None };
+                    // Every Hive objective and turn-in must belong to a cycle
+                    // with a fresh acceptance. Old active flags are not that proof.
+                    let first_hive_cycle = if hive_progress && shared_counter.is_some() {
+                        match super::super::world_event::changes::counters::shared_progress::first_in_hive_cycle(
+                            &mut tx,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,
+                        ).await? {
+                            Some(first) => Some(first),
+                            None => return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))),
+                        }
+                    } else { None };
+                    let counter_reset_plan = if first_hive_cycle == Some(true) {
+                        let Some(task) = oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key) else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        match oteryn_gameplay_quests::quest::shared_world_progress::plan_hive_cycle_acceptance(&catalogue,&stored,task) {
+                            Ok(plan) => Some(plan),
+                            Err(refusal) => return Ok(Ok(QuestTransitionOutcome::Refused(refusal))),
+                        }
+                    } else { None };
                     let refusal = if refusal.is_none() {
                         if let Some(collection) = &collection {
                             (!super::collection::admit(&mut tx, fence, &request, collection).await?)
@@ -1072,13 +1158,17 @@ impl DurabilityRoot {
                         } else { None }
                     } else { refusal };
                     // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
-                    let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
+                    let written_keys: Vec<&str> = if let Some(plan) = &counter_reset_plan {
+                        plan.iter().map(|change|change.track.as_str()).collect()
+                    } else if oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
+                        transition.effects.iter().map(|effect|effect.track.as_str()).collect()
+                    } else { grizzly_plan.as_ref().map_or_else(
                         || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
                             !c.requires.iter().any(|r| r.track == *key)))
                             .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
                                 || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
-                    );
+                    ) };
                     let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
                     let refusal = match refusal {
                         Some(refusal) => Some(refusal),
@@ -1153,7 +1243,9 @@ impl DurabilityRoot {
                     } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
-                            || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                            || counter_reset_plan.as_ref().map_or_else(
+                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
                             if xp_full {
@@ -1305,20 +1397,12 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some() || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some() {
-                        // Native object/NPC selection and the locked complete quest plan
-                        // precede shared credit. Refusal drops all input and quest writes.
-                        let world=fence.runtime_scope.world_id();
-                        let epoch:String=sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
-                            .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                        let epoch=epoch.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)?;
-                        let Some(counter_authority)=super::super::world_event::changes::counters::authorize(
-                            &mut tx,&recovery,&node,fence.runtime_scope,fence.scope_ownership_generation,epoch,
-                        ).await? else {
-                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                        };
+                    if let Some((epoch,counter_authority)) = &shared_counter
+                        && (oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                            || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()) {
+
                         let credited=super::super::world_event::changes::counters::shared_progress::credit_completed(
-                            &mut tx,&counter_authority,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,epoch,
+                            &mut tx,counter_authority,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,*epoch,
                             &request.transition_key,request.cause,&changes,
                         ).await?;
                         if !matches!(credited,super::super::world_event::changes::counters::CreditOutcome::Applied {..}) {
@@ -1337,6 +1421,50 @@ impl DurabilityRoot {
                             &mut tx,&counter_authority,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,epoch,request.cause,&changes,
                         ).await?;
                         if !matches!(credited,super::super::world_event::changes::counters::CreditOutcome::Applied{..}) {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
+                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
+                    if completes {
+                        use oteryn_gameplay_quests::quest::shared_world_progress as shared;
+                        use oteryn_gameplay_world_change::counter::CounterKind as K;
+                        let counter = match quest {
+                            shared::HIVE_QUEST => Some(K::HiveBorn),
+                            shared::DEEPLING_QUEST => Some(K::Deeplings),
+                            _ => None,
+                        };
+                        if let Some(counter) = counter {
+                            // Canonical completion is permanent history. A fresh
+                            // completion must bind the declared source owner and
+                            // independently resolve its current cycle under lock.
+                            if transition.world_change.as_deref() != Some(counter.key()) {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                            let current: Option<String> = sqlx::query_scalar("SELECT c.change_key FROM game_world_reset_active a JOIN game_world_change_counters c ON c.world_id=a.world_id AND c.reset_epoch=a.reset_epoch WHERE a.world_id=encode($1,'hex')::uuid AND c.change_key=$2 FOR SHARE OF a,c")
+                                .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(counter.key()).fetch_optional(&mut *tx).await?;
+                            if current.is_none() {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                            // The Character root serializes completions; the World
+                            // and counter locks keep this scope through projection.
+                            let completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_current_counter_quest_progress p WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND p.quest_key=$3 AND p.change_key=$4 AND p.completes)")
+                                .bind(id).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(quest).bind(counter.key()).fetch_one(&mut *tx).await?;
+                            if completed {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        }
+                    }
+                    if completes && let Some(epoch) = &save_event_epoch {
+                        // The root lock serializes all event completions for this
+                        // Character. Canonical completion from older saves neither
+                        // proves nor blocks completion in the captured occurrence.
+                        let completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_event_quest_progress p WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND p.quest_key=$3 AND p.reset_epoch=$4::text::numeric AND p.completes)")
+                            .bind(id).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(quest).bind(epoch).fetch_one(&mut *tx).await?;
+                        if completed {
+                            tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
@@ -1369,7 +1497,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
+
                     let (cause_id, ordinal) = request.cause.key();
                     let track_keys: Vec<&str> =
                         changes.iter().map(|change| change.track.as_str()).collect();
@@ -1420,12 +1548,15 @@ impl DurabilityRoot {
                     // also owns personal progress in this World occurrence. Historical
                     // replay returned earlier, so it cannot attach to a later save.
                     if transition.world_change.is_some()
-                        || oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
-                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()
+                        || oteryn_gameplay_quests::quest::shared_world_progress::records_counter_progress(transition)
                     {
-                        sqlx::query("INSERT INTO game_character_event_quest_progress(character_id,world_id,reset_epoch,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after) SELECT r.character_id,a.world_id,a.reset_epoch,r.committed_character_revision,r.quest_key,r.transition_key,r.completes,r.track_keys,r.values_after FROM game_character_quest_receipts r JOIN game_world_reset_active a ON a.world_id=encode($3,'hex')::uuid WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision=$2::text::numeric")
-                            .bind(id).bind(&committed).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                        let projected = sqlx::query("INSERT INTO game_character_event_quest_progress(character_id,world_id,reset_epoch,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after) SELECT r.character_id,a.world_id,a.reset_epoch,r.committed_character_revision,r.quest_key,r.transition_key,r.completes,r.track_keys,r.values_after FROM game_character_quest_receipts r JOIN game_world_reset_active a ON a.world_id=encode($3,'hex')::uuid WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision=$2::text::numeric AND ($4::text IS NULL OR a.reset_epoch=$4::text::numeric)")
+                            .bind(id).bind(&committed).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(save_event_epoch.as_deref())
                             .execute(&mut *tx).await?;
+                        if projected.rows_affected() != 1 {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     for change in &changes {
                         let written = sqlx::query(

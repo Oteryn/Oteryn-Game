@@ -8,10 +8,13 @@ BINDINGS = (
      'oteryn:area.hunting_place.dusalk_s_troll_clan_cave', 'chosen-source/longsword_quest'),
     ('oteryn:quest.geomancer_quest', 's1',
      'oteryn:area.hunting_place.mount_sternum_undead_cave', 'chosen-source/geomancer_quest'),
+    ('oteryn:quest.authored.chakoya_iceberg_mini_world_change', 's1',
+     'oteryn:area.hunting_place.chakoya_iceberg', 'authored/chakoya_iceberg_mini_world_change'),
 )
 ANCHORS = {
     'oteryn:area.hunting_place.dusalk_s_troll_clan_cave': (32663, 31970, -7, 4525),
     'oteryn:area.hunting_place.mount_sternum_undead_cave': (32418, 32017, -7, 4529),
+    'oteryn:area.hunting_place.chakoya_iceberg': (32623, 32584, -7, 799),
 }
 
 
@@ -41,8 +44,7 @@ def callbacks(root):
         if track_tail != expected_tail:
             raise ValueError('Explore counter owner differs from canonical quest: ' + quest)
         requirements = recipe['requirements']
-        if (requirements['premium'] or requirements['min_level'] != 0
-                or requirements['prerequisites']):
+        if requirements['min_level'] != 0 or requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
         matches = [(i, r) for i, r in enumerate(areas)
                    if r['declaration']['identity']['key'] == area]
@@ -65,7 +67,7 @@ def callbacks(root):
                + '&oldid=' + binding['source_revision'])
         slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
         track = 'oteryn:quest-progress/' + track_tail + '/' + stage
-        result.append(dict(
+        row = dict(
             key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/entry', quest=quest,
             trigger='step_in', selector=dict(position=at, unique=None, action=None,
                 appearance=appearance, native=dict(position=at, ordinal=0, appearance=appearance)),
@@ -76,5 +78,9 @@ def callbacks(root):
             requires_world_admission=True,
             sources=[AREA + '#/records/' + str(index),
                 url,
-                'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']))
+                'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only'])
+        if requirements['premium']:
+            # Reuse the native admission latch, resolved again by the Root writer.
+            row['admission'] = dict(premium=True)
+        result.append(row)
     return result

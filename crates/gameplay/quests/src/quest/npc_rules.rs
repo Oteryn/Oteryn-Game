@@ -494,6 +494,8 @@ impl NpcRuleCatalog {
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.citizen-source-sagas")
+                        || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.citizen-source-sagas")

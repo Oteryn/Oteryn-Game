@@ -156,6 +156,7 @@ def main():
         ['source_lowered_binding_plan.py', '--check'],
         ['quest_completion_import.py', '--check'],
         ['quest_native_binding_preflight.py', '--check'],
+        ['qmech_m55_daily_bank.py', '--check'],
         ['quest_reward_only_binding_candidates.py', '--check'],
         DONOR_SOURCE_CHECK,
         ['bundle_authoring.py', '--check'],

@@ -62,6 +62,7 @@ struct Recipe {
     digest: Option<String>,
     complete: bool,
     data_holds: bool,
+    repeat: Option<String>,
 }
 
 impl RecipeEvidence {
@@ -152,6 +153,10 @@ impl RecipeEvidence {
                     digest,
                     complete: selected.complete,
                     data_holds,
+                    repeat: selected
+                        .recipe
+                        .and_then(|recipe| recipe["repeat"]["kind"].as_str())
+                        .map(str::to_owned),
                 },
             );
         }
@@ -178,6 +183,9 @@ impl RecipeEvidence {
                     "authored Quest has unresolved data holds: {}",
                     quest.quest
                 ));
+            }
+            if quest.occurrence.is_some() && recipe.repeat.as_deref() != Some("daily") {
+                return Err("save occurrence requires a canonical daily recipe".into());
             }
             if recipe.digest.as_deref() != Some(quest.recipe_sha256.as_str()) {
                 return Err(format!(

@@ -165,3 +165,38 @@ fn imported_talk_reuses_owned_bounded_state_operations() -> Result<(), String> {
     assert!(Bindings::parse(overflow.to_string().as_bytes()).is_err());
     Ok(())
 }
+
+#[test]
+fn qm55_save_scope_requires_daily_canonical_recipe_even_with_a_matching_digest()
+-> Result<(), String> {
+    let (bindings, index, shard) = canonical_inputs()?;
+    let original = serde_json::to_value(bindings).map_err(|e| e.to_string())?;
+    for repeat in ["once", "daily"] {
+        let mut source = shard.clone();
+        source["records"][0]["definition"]["recipe"]["repeat"] = serde_json::json!({"kind":repeat});
+        let mut value = original.clone();
+        let quest = &mut value["quests"][0];
+        quest["recipe_sha256"] = Sha256::digest(
+            serde_json::to_vec(&source["records"][0]["definition"]["recipe"])
+                .map_err(|e| e.to_string())?,
+        )
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>()
+        .into();
+        let mut restart = quest["stages"][0]["trigger"]["callback"].clone();
+        restart["key"] = crate::quest::shared_world_progress::save_event_restart_key(
+            quest["quest"].as_str().ok_or("quest")?,
+        )
+        .into();
+        restart["storage"]=serde_json::Value::Array(quest["tracks"].as_array().ok_or("tracks")?.iter().map(|t|serde_json::json!({"track":t["key"],"minimum":t["minimum"],"maximum":t["maximum"],"set":t["initial"]})).collect());
+        quest["occurrence"] =
+            serde_json::json!({"kind":"server_save","world_change":"grimvale","restart":restart});
+        let bindings = Bindings::parse(&serde_json::to_vec(&value).map_err(|e| e.to_string())?)?;
+        assert_eq!(
+            evidence(&index, &source)?.verify(&bindings).is_ok(),
+            repeat == "daily"
+        );
+    }
+    Ok(())
+}

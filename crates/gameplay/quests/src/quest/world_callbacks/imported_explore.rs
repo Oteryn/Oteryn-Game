@@ -78,6 +78,47 @@ mod tests {
     use super::super::*;
 
     #[test]
+    fn qm55_chakoya_premium_entry_credits_the_canonical_stage_once() -> Result<(), String> {
+        let callbacks = load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.quest == "oteryn:quest.authored.chakoya_iceberg_mini_world_change")
+            .ok_or("bound Chakoya entry")?;
+        assert!(super::admitted(callback));
+        assert!(callback.admission.as_ref().is_some_and(|gate| gate.premium));
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+            std::slice::from_ref(callback),
+        )?;
+        let transition = catalogue
+            .transition(&callback.key)
+            .ok_or("entry transition")?;
+        assert!(!transition.completes);
+        assert!(transition.experience.is_none());
+        let track = "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1";
+        assert_eq!(catalogue.track(track).ok_or("canonical stage")?.initial, 0);
+        let changes = catalogue
+            .evaluate(transition, &std::collections::BTreeMap::new(), 0)
+            .map_err(|e| format!("first entry: {e:?}"))?;
+        assert_eq!(changes.len(), 2);
+        assert!(
+            changes
+                .iter()
+                .all(|change| change.before == 0 && change.after == 1)
+        );
+        assert!(changes.iter().any(|change| change.track == track));
+        let stored = changes
+            .into_iter()
+            .map(|change| (change.track, change.after))
+            .collect();
+        assert_eq!(
+            catalogue.evaluate(transition, &stored, 0),
+            Err(crate::quest::QuestRefusal::StageMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn geomancer_explore_entry_has_its_own_zero_initial_counter() -> Result<(), String> {
         let callbacks = load()?;
         let callback = callbacks
