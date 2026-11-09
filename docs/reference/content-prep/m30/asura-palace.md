@@ -210,3 +210,26 @@ pin regeneration preserved digest
 `7b680a6007b27dff037ef35cfdb4bd97deec63b32e47c88cc597a603cd28a41c`.
 The remaining M30b qualification is the full three-chamber dispatch path through
 admission, ordinary-combat deaths and personal door opening.
+
+The three native chamber admissions now pass PostgreSQL qualification through
+literal framed USE and `serve_admitted`, with the production authored selectors,
+actual B3 crops and native creature policies. Each route proves teleportation,
+two defenders, one durable entry receipt and replay without another spawn.
+Tests: `engenc_postgres_native_destroyer_chamber_admission`,
+`engenc_postgres_native_fire_chamber_admission`, and
+`engenc_postgres_native_energy_chamber_admission`.
+
+The Destroyer crop exposed two obstructed previous home anchors (ball/chains
+5471 and clutter 2696). **Authored per owner rule**: use adjacent plain floor
+410 at (32959,32674,4) and (32958,32677,4). Stage USE at (32958,32675,3),
+beside the crack at (32959,32675,3), whose item 21973 has floor-change down.
+The native map objects are preserved. The generator now supports a separate
+staging tile without changing the native target selector.
+
+The dispatch qualification also exposed a production pending-command leak:
+successful encounter execution returned before clearing its pending callback,
+so the committed admission produced no wire result. The encounter branch now
+clears that record on committed execution, matching the ordinary callback path.
+The Destroyer literal USE test was observed failing before this correction and
+passing afterward. Ordinary defender deaths and participant-scoped door opening
+through all three real callers remain to be qualified.

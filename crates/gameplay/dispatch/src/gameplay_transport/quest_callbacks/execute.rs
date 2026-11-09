@@ -771,7 +771,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if callback.effects.encounter.is_some() {
-            return self.execute_quest_encounter(
+            let result = self.execute_quest_encounter(
                 runtime,
                 states,
                 actor,
@@ -784,6 +784,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
                 cause,
             );
+            if result == UseDisposition::Committed
+                && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
+            {
+                pending.remove(&session);
+            }
+            return result;
         }
         if !map.facts.apply_quest_callback(
             key,
