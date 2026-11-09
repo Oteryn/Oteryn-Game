@@ -29,7 +29,9 @@ Each row has the following canonical byte layout, with integers big endian:
 
 Health/mana are 0–100, rounded up; skull is 0–6. Beyond 30 fields, health, mana and skull
 are all unavailable. Binding entity must match the row. Rows are at most 512
-bytes, entries at most 1536 bytes, and PartyResult at most 65536 bytes.
+bytes, entries at most 1536 bytes, and PartyResult at most 65536 bytes only
+when capability 461 is selected. Without 461, the peer-aware server encoder
+enforces the legacy 8192-byte limit and rejects Party List fields.
 Cosmetics enrichment uses the existing appearance owner; unavailable artwork
 never prevents membership operations or fabricates a portrait.
 
