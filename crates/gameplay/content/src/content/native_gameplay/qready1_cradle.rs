@@ -73,8 +73,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn cradle_materials_keep_their_official_identity_and_exact_source_profiles() {
-        let profiles = profiles().expect("source-qualified Cradle materials");
+    fn cradle_materials_keep_their_official_identity_and_exact_source_profiles()
+    -> Result<(), ContentError> {
+        let profiles = profiles()?;
         assert_eq!(profiles.len(), 4);
         for (id, record) in profiles {
             assert_eq!(
@@ -85,5 +86,6 @@ mod tests {
             assert!(record.admission.materializable);
             assert!(record.production_binding_qualification.is_none());
         }
+        Ok(())
     }
 }
