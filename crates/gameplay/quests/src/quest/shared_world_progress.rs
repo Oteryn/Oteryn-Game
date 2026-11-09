@@ -192,6 +192,9 @@ pub fn completed_action(key: &str, changes: &[QuestTrackChange]) -> Option<Share
 /// Reserved transition namespace for an explicit, once-per-save reset profile.
 pub const SAVE_EVENT_RESTART_PREFIX: &str = "oteryn:quest-transition/save-event-restart/";
 
+/// Private daily quest scope. It never activates a physical World change.
+pub const PERSONAL_SERVER_SAVE_SCOPE: &str = "server_save";
+
 /// Stable reset declaration key for a canonical quest. The declaration names
 /// exactly which owned tracks restart; other persistent tracks remain unchanged.
 pub fn save_event_restart_key(quest: &str) -> String {

@@ -776,10 +776,24 @@ impl DurabilityRoot {
                         };
                         Some(epoch)
                     } else { None };
-                    if let Some(change) = transition.world_change.as_deref()
-                        && !super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
-                    {
-                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    if let Some(change) = transition.world_change.as_deref() {
+                        let active = if change == oteryn_gameplay_quests::quest::shared_world_progress::PERSONAL_SERVER_SAVE_SCOPE {
+                            // This scope is private to an explicit daily Quest
+                            // profile; it must not activate global event/travel gates.
+                            if !catalogue.save_event_restart(&transition.quest).is_some_and(|restart|
+                                restart.world_change.as_deref() == Some(change)) {
+                                false
+                            } else {
+                                let current: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch>0 AND NOT EXISTS(SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=a.world_id AND j.phase='RETIRING') FOR SHARE OF a")
+                                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                                current.is_some() && current.as_deref() == save_event_epoch.as_deref()
+                            }
+                        } else {
+                            super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
+                        };
+                        if !active {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     let pending: bool = sqlx::query_scalar(
                         "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
