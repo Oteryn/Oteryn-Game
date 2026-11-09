@@ -401,6 +401,42 @@
     "fmt": "PASS",
     "pins": "PASS unchanged inputs",
     "migration": "none",
-    "remaining": "Authored four-name data repairs and other M38 bindings remain unfinished; node boot delegated to CI by owner."
+    "remaining": "Four native data repairs now restored and locally checked; other M38 bindings remain unfinished."
+  },
+  "preserved_display_name_data": {
+    "state": "GREEN",
+    "count": 4,
+    "keys": [
+      "oteryn:npc.ferryman_kamil_meluna",
+      "oteryn:npc.harlow_vengoth",
+      "oteryn:npc.junkar_mines",
+      "oteryn:npc.maris_mistrock"
+    ],
+    "red": "Two new materializer tests failed before correction implementation",
+    "green": "Two correction tests and repaired existing Quest fixture pass",
+    "authoring_checks": "PASS full checks rerun",
+    "authoring_units": {
+      "modules": 114,
+      "cases": 1145,
+      "state": "PASS full rerun after generated packet fixes"
+    },
+    "content_tree": "PASS; no declarations added or removed; only four display-name fields changed",
+    "workspace_check": "PASS 14m30s",
+    "clippy": "PASS strict changed materializer target 10m26s",
+    "fmt": "PASS",
+    "pins": "PASS after isolated repository pin-refresh",
+    "duplicate_migrations": "PASS; no SQL changed",
+    "validation_limits": "Broader materializer example suite and generator broad integration-check phase were stopped for focused checks, not reported green. No new PG case claimed; no SQL change. Node boot delegated to CI by owner.",
+    "deployment_handoff": {
+      "coordinator_refresh_required": true,
+      "path": "deploy/synology-game/preprod-topology.toml",
+      "action": "coordinator runs pin-refresh after integration; no deployment file changed in lane checkout"
+    },
+    "whole_M38": "PARTIAL"
+  },
+  "node_boot_execution": {
+    "owner_decision": "CI runs node boot; unavailable container qualification is not a blocker",
+    "local": "NOT_RUN",
+    "coordinator_action": "Refresh deployment manifest digest during integration; protected deployment path unchanged by this lane."
   }
 }
