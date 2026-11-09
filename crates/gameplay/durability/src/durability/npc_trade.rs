@@ -1161,7 +1161,7 @@ async fn apply_trade(
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, $32, $33)",
+           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2])",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1194,8 +1194,10 @@ async fn apply_trade(
     .bind(gold(plan.bank_debit_gold_units)?)
     .bind(sell_all)
     .bind(house_key)
-    .bind(request.fluid_subtype.map(i16::from))
-    .bind(request.full_charges.map(i32::from))
+    .bind(vec![
+        request.fluid_subtype.map(i32::from),
+        request.full_charges.map(i32::from),
+    ])
     .execute(&mut **tx)
     .await?;
 

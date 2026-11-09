@@ -22,7 +22,9 @@ readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
 readonly INTENT_NAMES=("Qualification One" "Qualification Two")
-readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 nb-content-1 nb-starter-1)
+# Runtime build writers bind to the shipped training formula's content revision,
+# just as the S3-B seam does; progression is initialized from this interpretation.
+readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml

@@ -100,11 +100,10 @@ pub(super) async fn provision(
 }
 
 pub(super) fn item_index() -> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
-    let keys = input.item_keys.ok_or("qualification Item keys missing")?;
+    let keys = native_input()?
+        .item_keys
+        .as_ref()
+        .ok_or("qualification Item keys missing")?;
     Ok(crate::content::item_ref::ItemDefinitionIndex::decode(
         &keys.bytes,
     )?)

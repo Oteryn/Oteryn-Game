@@ -288,6 +288,17 @@ where
             ),
         },
     };
+    operator_event(&format!(
+        "event=connection_served end={} served={served} ms={} detail={}",
+        connection_end_kind(&end),
+        admit_started.elapsed().as_millis(),
+        match &end {
+            ConnectionEnd::AdmissionRefused(r) => format!("{r:?}"),
+            ConnectionEnd::AdmittedThenClosed(_, e) | ConnectionEnd::ProtocolViolation(e) =>
+                format!("{e:?}"),
+            _ => String::from("-"),
+        },
+    ));
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)

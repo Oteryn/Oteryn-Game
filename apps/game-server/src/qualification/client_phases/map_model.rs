@@ -34,14 +34,14 @@ struct Sample {
     content: Option<String>,
 }
 
-struct MapModel<'a> {
+pub(super) struct MapModel<'a> {
     world: &'a BundleWorld,
     tiles: BTreeMap<TilePos, MapTile>,
     samples: Vec<Sample>,
 }
 
 impl<'a> MapModel<'a> {
-    fn load(world: &'a BundleWorld, bytes: &[u8], root: &Path) -> TestResult<Self> {
+    pub(super) fn load(world: &'a BundleWorld, bytes: &[u8], root: &Path) -> TestResult<Self> {
         // Classification supplements the bundle, never parses map geometry a second time.
         // UNKNOWN catalogue fields stay unknown; no appearance/name heuristics.
         let mut kinds = BTreeMap::new();

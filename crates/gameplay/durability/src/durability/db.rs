@@ -1076,6 +1076,14 @@ impl DurabilityRoot {
     #[cfg(any(test, feature = "test-support"))]
     #[allow(dead_code)]
     pub fn connect_test_runtime(database_url: &str) -> Result<Self, DurabilityError> {
+        // Exercise the production SQL wire profile in every root-backed PG fixture.
+        let options = database_url
+            .parse::<PgConnectOptions>()?
+            .oteryn_wp3_resource_budget(Arc::new(RootBudgetAdapter {
+                ledger: RootLedgerHandle::Test(Arc::new(RootResidentLedger::new(
+                    ROOT_TOTAL_RESIDENT_BYTES,
+                ))),
+            }));
         Ok(Self {
             pool: PgPoolOptions::new()
                 .max_connections(1)
@@ -1083,7 +1091,7 @@ impl DurabilityRoot {
                 .acquire_timeout(ROOT_RECOVERY_WINDOW)
                 .idle_timeout(HOLDER_IDLE_TIMEOUT)
                 .max_lifetime(HOLDER_MAX_LIFETIME)
-                .connect_lazy(database_url)?,
+                .connect_lazy_with(options),
             runtime: RootRuntime::AmbientTestFixture,
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
