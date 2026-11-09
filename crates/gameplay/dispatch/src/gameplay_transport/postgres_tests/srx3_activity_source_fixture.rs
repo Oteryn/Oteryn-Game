@@ -1,6 +1,6 @@
 //! Shared SRX-3 PG preparation using actual pinned maps and existing Character
 //! owners. No synthetic boss profile, Instance assignment or handoff is issued.
-use super::fixture::{Harness, debug, id};
+use super::fixture::{Harness, debug};
 use super::{Dependencies, TestResult};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::content::{ContentActivationController, QualifiedNativeEntryRoom};
@@ -168,13 +168,17 @@ pub(super) async fn prepare_player_with_operation(
         .await
         .map_err(|_| "Character fence")?
         .ok_or("current Character")?;
+    // Receipt occurrence identities are global, including independently
+    // admitted Party members prepared by this same fixture.
+    let mut build_occurrence = *fence.character_id.as_bytes();
+    build_occurrence[14] = 211;
     h.root
         .commit_character_build(
             owner.character,
             owner.holder,
             quest,
             BuildChangeRequest {
-                occurrence: BuildOccurrence::from_bytes(id(211)).map_err(debug)?,
+                occurrence: BuildOccurrence::from_bytes(build_occurrence).map_err(debug)?,
                 cause: BuildCause::VocationChoice,
                 before,
                 after,
@@ -205,13 +209,16 @@ pub(super) async fn prepare_player_with_operation(
         .await
         .map_err(|_| "Character XP fence")?
         .ok_or("current Character")?;
+    let mut experience_occurrence = *fence.character_id.as_bytes();
+    experience_occurrence[14] = 212;
     h.root
         .commit_character_experience(
             owner.character,
             owner.holder,
             quest,
             ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(id(212)).map_err(debug)?,
+                occurrence: ExperienceRewardOccurrence::from_bytes(experience_occurrence)
+                    .map_err(debug)?,
                 amount: oteryn_simulation_determinism::ExactI64::new(
                     threshold.get() - current.total_experience.get(),
                 ),

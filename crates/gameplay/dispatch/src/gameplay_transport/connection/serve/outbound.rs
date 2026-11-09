@@ -91,6 +91,16 @@ where
     if write_frame(stream, &result).await.is_err() {
         return Err(ServeEnd::Disconnected);
     }
+    // Native movement can commit an activity return and retire this actor.
+    // Send its command result first; the serve loop then crosses the existing
+    // scope barrier before observing any destination-owned state.
+    if authority
+        .current_activity_connection(session.admitted)
+        .game_session_id
+        != session.admitted.game_session_id
+    {
+        return Ok(());
+    }
     if matches!(dispatch, Dispatch::Logout(_) | Dispatch::NoLogout) {
         if outcome.second_logout {
             return Err(close(

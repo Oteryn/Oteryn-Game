@@ -31,11 +31,46 @@ fn scenario(push: bool) -> TestResult {
             let native = active
                 .native_gameplay()
                 .ok_or("actual native definitions")?;
+            let mitmah = captured_boss_levers()
+                .map_err(debug)?
+                .into_iter()
+                .find(|row| row.creature_key.as_deref() == Some("oteryn:creature.mitmah_vanguard"))
+                .ok_or("actual Mitmah source candidate")?;
+            scene
+                .controller
+                .qualify_activity_template(
+                    &scene.room,
+                    &scene.room,
+                    native.training_formula().ok_or("active interpretation")?.content_revision(),
+                    &mitmah,
+                )
+                .map_err(debug)?;
             let candidate = captured_boss_levers()
                 .map_err(debug)?
                 .into_iter()
                 .find(|row| row.creature_key.as_deref() == Some("oteryn:creature.ahau"))
                 .ok_or("actual Ahau source candidate")?;
+            for [x, y, z] in [
+                [34002, 31706, 10],
+                [34008, 31696, 10],
+                [34008, 31703, 10],
+                [34036, 31717, 10],
+                [34033, 31714, 10],
+                [34034, 31714, 10],
+                [34035, 31714, 10],
+                [34036, 31714, 10],
+                [34037, 31714, 10],
+            ] {
+                let cells = scene.room.movement_cells();
+                assert_eq!(
+                    cells.index().lookup(
+                        cells.scope(),
+                        crate::content::LogicalCell { x, y, z },
+                    ),
+                    Ok(crate::content::CollisionClass::Walkable),
+                    "actual published Ahau source placement {x},{y},{z}"
+                );
+            }
             let template = scene
                 .controller
                 .qualify_activity_template(
@@ -456,9 +491,17 @@ fn export(
                 oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
             for domain in domains {
                 if domain.domain_id == movement::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY {
-                    let at = movement::decode_world_spatial(domain.payload)
-                        .map_err(debug)?
-                        .actor_position;
+                    use oteryn_protocol_oteryn::world_spatial_entities::{
+                        EntityFields, SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                        decode_world_spatial_entities_snapshot_with_fields,
+                    };
+                    assert_eq!(domain.snapshot_type, SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2);
+                    let (snapshot, _) = decode_world_spatial_entities_snapshot_with_fields(
+                        domain.payload,
+                        EntityFields::selected(source.continuity.selected_capabilities.as_slice()),
+                    )
+                    .map_err(debug)?;
+                    let at = snapshot.actor_position;
                     return Ok([at.x, at.y, i32::from(at.floor)]);
                 }
             }
