@@ -173,7 +173,7 @@ The worker stops its delivery authority at draft/integration-ready state. The co
 ```text
 coordinator audit
 -> ACCEPT | REWORK | BLOCKED | SUPERSEDED
--> optional exact owner-authorized independent/Codex review when required
+-> the Codex review under the owner's per-PR rule (`OWNER_FUNDED_AI_POLICY.md`), plus any other independent review when required
 -> final exact-head CI/review/thread/drift check
 -> current bound META integration-capability routing: DIRECT_CAPABLE or freshly proven DELEGATED_CAPABLE; BLOCKED_CAPABILITY_UNAVAILABLE only when neither route is proven
 -> squash merge, green post-merge full gate and protected-main readback confirming the accepted candidate is integrated
@@ -190,7 +190,7 @@ coordinator audit
 - Codex is owner-funded. The owner's standing rule of 2026-11-09 (`OWNER_FUNDED_AI_POLICY.md`) authorizes one Codex review of every Game PR (at most two); only the coordinator starts it. No worker triggers it, and any other use needs exact authorization for that PR/use.
 - Marking a draft ready counts as a Codex-triggering action when repository automation is configured that way.
 - Authorization for one PR never carries to another PR or to a review invocation beyond what the standing per-PR rule allows.
-- If a repair moves the head, all exact-head validation/review evidence for the superseded head is stale.
+- If a repair moves the head, all exact-head validation/review evidence for the superseded head is stale, except the Codex review under the owner's per-PR rule (`OWNER_FUNDED_AI_POLICY.md`): it stays valid and is repeated only when that rule's second-review condition applies.
 
 ## Status discipline
 
@@ -211,7 +211,7 @@ Before each merge:
 1. recompute worker branch drift against live main;
 2. inspect already-merged sibling work for new dependencies/conflicts;
 3. require the worker to rebase/reconcile when its assumptions changed;
-4. invalidate stale exact-head review/CI after any head move;
+4. invalidate stale exact-head CI and self-review after any head move (the per-PR Codex review follows `OWNER_FUNDED_AI_POLICY.md`);
 5. merge only when the resulting head remains integration-safe.
 
 Completion order never overrides dependency order.
