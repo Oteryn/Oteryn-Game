@@ -24,6 +24,7 @@ mod appearance_revision;
 mod arena_match;
 mod atelier;
 mod npc_program;
+mod npc_teleport;
 
 use std::collections::HashMap;
 use std::future::Future;

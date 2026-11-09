@@ -109,6 +109,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map(Ok),
+                newhaven_travel::Departure::Quest(proof) => {
+                    match super::npc_command::catalogue::teleport::commit(
+                        self,
+                        actor,
+                        fence,
+                        *proof,
+                        frozen.arrival,
+                        &capture,
+                    )
+                    .await?
+                    {
+                        Ok(arrival) => Ok(Ok(arrival)),
+                        Err(error) => Err(error),
+                    }
+                }
                 newhaven_travel::Departure::Paid(request) => {
                     let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
                     slot.commit_npc_travel(
@@ -230,6 +245,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .placement_recorded(frozen.arrival.occurrence, std::time::Instant::now())
                 .ok()?;
             held.placed = Some(record);
+            if let newhaven_travel::Departure::Quest(proof) = &held.route
+                && let Some(map) = self.bundle_map()
+                && let Some(tile) =
+                    crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+                        x: destination.x,
+                        y: destination.y,
+                        z: i32::from(destination.floor),
+                    })
+            {
+                // Crystal utils_definitions.hpp:66, CONST_ME_TELEPORT; emit only at first placement.
+                for _ in 0..proof.magic {
+                    let _ = map.facts.emit_movement_effect(tile, 11);
+                }
+            }
             placed = Some(record);
             self.states.chat.close_out_of_range(&runtime, session);
         }

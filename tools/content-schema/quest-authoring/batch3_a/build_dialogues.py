@@ -16,6 +16,7 @@ QUESTS = {
     "fathers_burden": "oteryn:quest.a_father_s_burden_quest",
     "hot_cuisine": "oteryn:quest.hot_cuisine_quest",
     "in_service_of_yalahar": "oteryn:quest.in_service_of_yalahar_quest",
+    "the_paradox_tower": "oteryn:quest.the_paradox_tower_quest",
     "the_hidden_city_of_beregar": "oteryn:quest.the_hidden_city_of_beregar_quest",
     "the_cursed_crystal": "oteryn:quest.tibia_tales",
     "the_way_of_the_monk": "oteryn:quest.the_way_of_the_monk_quest",
