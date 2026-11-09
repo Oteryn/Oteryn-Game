@@ -741,17 +741,19 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .as_ref()
         .zip(index)
         .and_then(|(ground, index)| elemental_arrival::normalize(&mut loop_request, ground, index));
-    let elemental = if let (Some(definition), Some(index), LoopTarget::Ground(to), Some(map)) = (
-        elemental_definition.as_ref(),
-        index,
-        request.target,
-        admission.bundle_map(),
-    ) {
-        let mut runtime = admission.runtime.lock().await;
-        elemental_arrival::observe(&mut runtime, map, index, native, to, definition)
-    } else {
-        None
-    };
+    let elemental =
+        if let (Some(definition), Some(index), LoopTarget::Ground(to), Some(map), Some(ground)) = (
+            elemental_definition.as_ref(),
+            index,
+            request.target,
+            admission.bundle_map(),
+            ground.as_ref(),
+        ) {
+            let mut runtime = admission.runtime.lock().await;
+            elemental_arrival::observe(&mut runtime, map, index, native, ground, to, definition)
+        } else {
+            None
+        };
     let command_ref = CommandRef::new(command.game_session_id, command_id);
     let seed_target = if seed_target.is_some() {
         match admission
@@ -818,7 +820,8 @@ pub(super) async fn move_loop_item_with_house_capacity(
                         observed.plan.rule.key,
                         observed.plan.entries,
                         epoch,
-                    ),
+                    )
+                    .with_field_reads(observed.fields),
                 )
                 .await
                 .map(|outcome| outcome.map(|receipt| receipt.moved))

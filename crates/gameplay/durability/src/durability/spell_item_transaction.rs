@@ -1463,7 +1463,7 @@ pub async fn prepare_arrival_corpse_in_transaction(
 /// Reserve a corpse only after its ordinary move reached this tile in the
 /// current physical transaction. Historical receipts cannot start a summon.
 /// The compositor must still retire the reservation and record the boss latch
-/// before committing this same transaction (M49 remains a partial caller).
+/// before committing this same transaction (the M49 arrival compositor does so).
 pub async fn prepare_moved_arrival_corpse_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
@@ -1532,6 +1532,24 @@ pub async fn read_spell_tile_in_transaction(
         authority.ownership_generation,
         target,
     )
+}
+
+/// Read one exact field operand without requiring unrelated ordinary items on
+/// its tile to have spell collision metadata. The same bounded tile locks and
+/// independently current authority checks apply before selecting its UUID.
+pub async fn read_spell_field_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    target: &SpellGroundTarget,
+    item: [u8; 16],
+) -> Result<Option<DurableTileItem>> {
+    for row in locked_tile_rows(tx, authority, target).await? {
+        if uuid(&row.try_get::<String, _>("item_instance_id")?)? == item {
+            let mut tile = decode_tile_rows(vec![row], authority.ownership_generation, target)?;
+            return Ok(tile.items.pop());
+        }
+    }
+    Ok(None)
 }
 
 /// Native qualification spawn reads the actual scope-owned Item tile, without

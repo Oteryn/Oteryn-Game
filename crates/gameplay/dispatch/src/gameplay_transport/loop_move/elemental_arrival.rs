@@ -1,4 +1,5 @@
 //! Native AddItem ingress and owner-cycle realization for Elemental Spheres.
+mod realization;
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::spell_items_abi::QualifiedItemDefinition;
@@ -6,10 +7,12 @@ use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::map::boot::BundleMap;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::elemental_spheres::{self, ArrivalPlan};
+use realization::RealizationGuard;
 
 pub(super) struct ObservedArrival {
     pub plan: ArrivalPlan,
     pub qualified: QualifiedItemDefinition,
+    pub fields: Vec<crate::durability::item_loop_move::AltarFieldRead>,
 }
 
 pub(super) fn corpse_facts(
@@ -130,6 +133,7 @@ pub(super) fn observe(
     map: &BundleMap,
     index: &ItemDefinitionIndex,
     native: &NativeGameplayState,
+    ground: &LoopGroundOverlay,
     to: WorldTilePosition,
     definition: &TypedDefinitionRef,
 ) -> Option<ObservedArrival> {
@@ -149,29 +153,50 @@ pub(super) fn observe(
     native.install_companion_policies(runtime).ok()?;
     runtime.companion_policy(rule.creature).ok()?;
     let census = runtime.current_live_creature_candidates(4096).ok()?;
-    let boss = census.into_iter().any(|actor| {
-        runtime
-            .companion_snapshot(actor)
-            .is_ok_and(|s| s.state.policy.definition_key == rule.creature)
-    });
+    let boss = census
+        .into_iter()
+        .any(|actor| runtime.matches_live_creature_identity(actor, rule.creature.as_bytes()));
+    let mut fields = Vec::new();
     let plan = elemental_spheres::plan_arrival(rule.altar, rule.corpse, boss, |p, key| {
-        map_item(
-            map,
-            index,
-            TilePos {
-                x: p.x,
-                y: p.y,
-                floor: p.floor,
-            },
-            key,
-        )
+        let pos = TilePos {
+            x: p.x,
+            y: p.y,
+            floor: p.floor,
+        };
+        if let Some(entry) = map_item(map, index, pos, key) {
+            return Some(entry);
+        }
+        // Durable rune fields live in the item overlay. Fence their base tile
+        // here, then lock and re-read the exact field in the arrival transaction.
+        let tile = ground.overlay.tile(pos)?;
+        let field = tile.added().iter().find_map(|entry| {
+            let AddedItem::Ground(item) = entry.item() else {
+                return None;
+            };
+            (item.definition.production_key == key
+                && ground
+                    .facts
+                    .get(&item.item_instance_id)
+                    .is_some_and(|f| !f.pickupable))
+            .then_some(item)
+        })?;
+        let base = view::placement_key(pos, 0)?;
+        fields.push(crate::durability::item_loop_move::AltarFieldRead::new(
+            field.item_instance_id,
+            ground_cell(i32::from(pos.x), i32::from(pos.y), -i16::from(pos.floor)),
+        ));
+        Some((base, map.facts.object_revision(base)))
     })?;
     map.facts.with_quest_readset(&plan.entries, || ())?;
     let qualified = QualifiedItemDefinition::from_native_policy(
         native.item_policy(&definition.production_key, &definition.revision_ref)?,
     )
     .ok()?;
-    Some(ObservedArrival { plan, qualified })
+    Some(ObservedArrival {
+        plan,
+        qualified,
+        fields,
+    })
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -247,9 +272,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(census) = runtime.current_live_creature_candidates(4096) else {
                     continue;
                 };
-                if pending.actor.is_some() {
-                    // A committed ACK never authorizes another incarnation under
-                    // this namespace. Native death settlement releases its latch.
+                if let Some((id, generation)) = pending.actor {
+                    // A fresh committed ACK can release the exact source reservation
+                    // even after losing the volatile actor memo. It never respawns.
+                    if let Some(actor) = census.iter().find(|actor| {
+                        actor.0.actor_local_id.0 == id
+                            && actor.0.actor_local_generation.0 == generation
+                    }) {
+                        RealizationGuard::new(
+                            *actor,
+                            pending.source.transaction_id,
+                            rule.creature,
+                            native.source_digest(),
+                        )
+                        .release(&mut runtime);
+                    }
                     continue;
                 }
                 let retained = self
@@ -258,21 +295,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .elemental
                     .lock()
                     .ok()
-                    .and_then(|actors| actors.get(&pending.source.transaction_id).copied());
+                    .and_then(|actors| actors.get(&pending.source.transaction_id).copied())
+                    .or_else(|| {
+                        census.iter().copied().find(|actor| {
+                            // Recover only an already reserved exact occurrence. A live
+                            // lookalike cannot be adopted as this pending arrival.
+                            runtime.matches_live_creature_identity(*actor, rule.creature.as_bytes())
+                                && runtime.actor_spell_reserved(*actor)
+                                && RealizationGuard::new(
+                                    *actor,
+                                    pending.source.transaction_id,
+                                    rule.creature,
+                                    native.source_digest(),
+                                )
+                                .hold(&mut runtime)
+                        })
+                    });
                 if let Some(actor) = retained {
-                    if runtime
-                        .companion_snapshot(actor)
-                        .is_ok_and(|s| s.state.policy.definition_key == rule.creature)
-                    {
-                        Some(actor)
+                    if runtime.matches_live_creature_identity(actor, rule.creature.as_bytes()) {
+                        RealizationGuard::new(
+                            actor,
+                            pending.source.transaction_id,
+                            rule.creature,
+                            native.source_digest(),
+                        )
+                        .hold(&mut runtime)
+                        .then_some(actor)
                     } else {
                         None
                     }
                 } else {
                     if census.iter().any(|actor| {
-                        runtime
-                            .companion_snapshot(*actor)
-                            .is_ok_and(|s| s.state.policy.definition_key == rule.creature)
+                        runtime.matches_live_creature_identity(*actor, rule.creature.as_bytes())
                     }) {
                         continue;
                     }
@@ -306,23 +360,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(actor) = actors.first().copied() else {
                         continue;
                     };
+                    if !RealizationGuard::new(
+                        actor,
+                        pending.source.transaction_id,
+                        rule.creature,
+                        native.source_digest(),
+                    )
+                    .hold(&mut runtime)
+                    {
+                        let _ = runtime.remove_encounter_actor(actor);
+                        continue;
+                    }
                     retained.insert(pending.source.transaction_id, actor);
                     Some(actor)
                 }
             };
             if let Some(actor) = actor {
-                // An unknown ACK retains the exact actor in the volatile cache; retry
-                // records that incarnation, never a second physical spawn.
-                let _ = self
-                    .root
-                    .record_altar_boss_realization(
-                        permit,
-                        self.character,
-                        self.holder,
-                        pending.source.transaction_id,
+                // Unknown ACK retains both exact actor and source reservation:
+                // it cannot die before the latch knows which actor death releases it.
+                if matches!(
+                    self.root
+                        .record_altar_boss_realization(
+                            permit,
+                            self.character,
+                            self.holder,
+                            pending.source.transaction_id,
+                            actor,
+                        )
+                        .await,
+                    Ok(true)
+                ) {
+                    let mut runtime = self.runtime.lock().await;
+                    RealizationGuard::new(
                         actor,
+                        pending.source.transaction_id,
+                        rule.creature,
+                        native.source_digest(),
                     )
-                    .await;
+                    .release(&mut runtime);
+                }
             }
         }
     }

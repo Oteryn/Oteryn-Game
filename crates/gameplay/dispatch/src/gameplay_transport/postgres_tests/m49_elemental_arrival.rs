@@ -99,6 +99,14 @@ fn m49_energy_native_arrival_summons_once() -> TestResult {
     run("m49-energy")
 }
 #[test]
+fn m49_energy_durable_fields_summon_once() -> TestResult {
+    run("m49-energy-fields")
+}
+#[test]
+fn m49_missing_durable_energy_field_keeps_corpse_and_boss_absent() -> TestResult {
+    run("m49-energy-fields-missing")
+}
+#[test]
 fn m49_fire_native_arrival_summons_once() -> TestResult {
     run("m49-fire")
 }
@@ -141,6 +149,14 @@ pub(super) async fn exercise(
     };
     use crate::foundation::ScopeOwnershipGeneration;
     let r = rule(name)?;
+    if name.contains("-fields") {
+        // This fixture creates actual player fields, so declare their real boot
+        // capability closure; the writer still checks the current persisted guard.
+        owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &[11,30], actor.runtime_scope(), actor.scope_generation().get(), "policy-1",
+            crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        ).map_err(debug)?;
+    }
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -161,6 +177,9 @@ pub(super) async fn exercise(
     // Seed the source charging operation's exact map projection. Arrivals still
     // read/fence these real native placements through the production owner.
     for (n, p) in r.positions.iter().enumerate() {
+        if name.contains("-fields") {
+            break;
+        }
         let pos = TilePos {
             x: p.x,
             y: p.y,
@@ -223,6 +242,73 @@ pub(super) async fn exercise(
         content_revision: physical_content,
         native_room_placement_context: frame,
     };
+    if name.contains("-fields") {
+        seed_fields(
+            owner,
+            h,
+            admitted,
+            actor,
+            r,
+            &source,
+            name.ends_with("missing"),
+        )
+        .await?;
+    }
+    if name.contains("-fields") {
+        let p = r.positions[0];
+        let mut placement = source.clone();
+        placement.spatial_position = [
+            i32::from(p.x).to_be_bytes().as_slice(),
+            i32::from(p.y).to_be_bytes().as_slice(),
+            (-i16::from(p.floor)).to_be_bytes().as_slice(),
+        ]
+        .concat();
+        // Ordinary loot has no spell collision row. Its presence beside the
+        // charge must neither hide the field nor qualify the coin as a charge.
+        let mut coin = h
+            .root
+            .freeze_item_mint(
+                owner.character,
+                owner.holder,
+                ItemMintRequest {
+                    cause: ItemMintCause::for_test(
+                        owner.world_id,
+                        owner.channel_id,
+                        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+                        101,
+                        1,
+                        TypedDefinitionRef {
+                            family: "LootTable".into(),
+                            production_key: "fixture:m49.loot".into(),
+                            revision_ref: "definition-r1".into(),
+                        },
+                        "fixture:m49.field-neighbor".into(),
+                        1,
+                    ),
+                    item: TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: "oteryn:item.tibia.i3031".into(),
+                        revision_ref: "definition-r1".into(),
+                    },
+                    quantity: 1,
+                    ground: placement,
+                    content_revision: "content-1".into(),
+                    ruleset_revision: "ruleset-1".into(),
+                    sim_revision: "sim-1".into(),
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let permit = coin.fresh_death_lane_permit().await;
+        assert!(matches!(
+            h.root
+                .commit_item_mint(&permit, owner.character, owner.holder, &mut coin)
+                .await
+                .map_err(debug)?,
+            ItemMintOutcome::Committed(_)
+        ));
+        drop(permit);
+    }
     let definition = TypedDefinitionRef {
         family: "Item".into(),
         production_key: r.corpse.into(),
@@ -419,6 +505,21 @@ pub(super) async fn exercise(
         .await?;
     if name.ends_with("missing") {
         assert_eq!(count, 0);
+        let state:(i16,i64,i64)=sqlx::query_as("SELECT lifecycle,quantity,(SELECT count(*) FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(corpse.item_instance_id.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(state, (1, 1, 1));
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            !runtime
+                .current_live_creature_candidates(4096)
+                .map_err(debug)?
+                .iter()
+                .any(|actor| runtime.companion_snapshot(*actor).is_ok_and(|s| s
+                    .state
+                    .policy
+                    .definition_key
+                    == r.creature))
+        );
     } else {
         assert_eq!(count, 1);
         if let Some(blocker) = blocker {
@@ -463,9 +564,59 @@ pub(super) async fn exercise(
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(realizations, 0);
+            let boss = {
+                let mut runtime = owner.runtime.lock().await;
+                let boss = runtime
+                    .current_live_creature_candidates(4096)
+                    .map_err(debug)?
+                    .into_iter()
+                    .find(|actor| {
+                        runtime.matches_live_creature_identity(*actor, r.creature.as_bytes())
+                    })
+                    .ok_or("unacknowledged boss")?;
+                assert!(runtime.actor_spell_reserved(boss));
+                assert!(
+                    runtime.remove_encounter_actor(boss).is_err(),
+                    "unknown ACK must prevent death/removal before the latch records its exact actor"
+                );
+                boss
+            };
+            // Lose the volatile memo while the ACK is still failing. The real
+            // owner reconstructs only the matching installed source reservation.
+            owner
+                .states
+                .quest_callbacks
+                .elemental
+                .lock()
+                .map_err(|_| "actor cache")?
+                .clear();
+            owner.drain_elemental_altar_bosses().await;
             sqlx::query("DROP TRIGGER m49_ack_fail ON game_elemental_boss_realizations")
                 .execute(&h.pool)
                 .await?;
+            // Persist ACK but omit its physical projection, simulating a lost
+            // successful response. The next owner pass must read it afresh.
+            let arrival: Vec<u8> = sqlx::query_scalar(
+                "SELECT uuid_send(transaction_id) FROM game_elemental_altar_receipts LIMIT 1",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            let permit = owner.spell_lane_permit().await.ok_or("realization lane")?;
+            assert!(
+                owner
+                    .root
+                    .record_altar_boss_realization(
+                        &permit,
+                        owner.character,
+                        owner.holder,
+                        arrival.try_into().map_err(|_| "arrival UUID")?,
+                        boss
+                    )
+                    .await
+                    .map_err(debug)?
+            );
+            drop(permit);
+            assert!(owner.runtime.lock().await.actor_spell_reserved(boss));
         }
         if name.ends_with("loot") {
             let retired:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_elemental_altar_receipts r ON r.transaction_id=i.last_transaction_id WHERE i.lifecycle=2 AND i.quantity=0").fetch_one(&h.pool).await?;
@@ -501,14 +652,149 @@ pub(super) async fn exercise(
         );
         drop(runtime);
         owner.drain_elemental_altar_bosses().await;
+        assert!(!owner.runtime.lock().await.actor_spell_reserved(bosses[0]));
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_elemental_boss_realizations")
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(count, 1);
     }
+    if name.contains("-fields") {
+        let fields:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i2126' AND lifecycle=1 AND quantity=1").fetch_one(&h.pool).await?;
+        assert_eq!(fields, if name.ends_with("missing") { 7 } else { 8 });
+    }
     for (key, rev) in charged {
         assert_eq!(map.facts.object_revision(key), rev);
     }
+    Ok(())
+}
+
+/// Fixture cast/cost, but real native qualification, current guard and Item writer.
+async fn seed_fields(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+    rule: &SummonRule,
+    at: &crate::durability::item_mint::GroundPlacement,
+    missing: bool,
+) -> TestResult {
+    use crate::durability::spell_item_transaction::{
+        apply_spell_items_in_transaction, assert_spell_item_authority_in_transaction,
+    };
+    use crate::durability::spell_items_abi::*;
+    use crate::foundation::{CommandId, CommandRef};
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native fields")?;
+    let policy = native
+        .item_policy_for_source_id(2126)
+        .ok_or("native energy field")?;
+    let definition = crate::durability::native_world_items::qualify_source_field_chain(
+        native,
+        QualifiedItemDefinition::from_native_policy(policy).map_err(debug)?,
+    )
+    .map_err(debug)?;
+    assert_eq!(definition.field_class, SpellFieldClass::Field);
+    let blocks_movement = policy
+        .record()
+        .attributes
+        .blocks_movement
+        .ok_or("field movement")?;
+    let blocks_projectile = policy
+        .record()
+        .attributes
+        .blocks_projectile
+        .ok_or("field projectile")?;
+    let (current, _) =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(admitted.game_session_id)
+            .await?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("field fence")?;
+    let command = CommandRef::new(
+        admitted.game_session_id,
+        CommandId::new(4900).map_err(debug)?,
+    );
+    let mut operations = Vec::new();
+    for (ordinal, p) in rule.positions.iter().enumerate() {
+        if missing && ordinal == 7 {
+            continue;
+        }
+        let mut placement = at.clone();
+        placement.spatial_position = [
+            i32::from(p.x).to_be_bytes().as_slice(),
+            i32::from(p.y).to_be_bytes().as_slice(),
+            (-i16::from(p.floor)).to_be_bytes().as_slice(),
+        ]
+        .concat();
+        operations.push(SpellItemOperation::MintGround {
+            item_instance_id: id(180 + u8::try_from(ordinal)?),
+            definition: definition.clone(),
+            quantity: 1,
+            placement,
+            lifetime_millis: None,
+            blocks_movement,
+            blocks_projectile,
+            description: None,
+        });
+    }
+    let request = SpellItemTransactionRequest {
+        swing_ordinal: None,
+        command,
+        spell: crate::durability::item_mint::TypedDefinitionRef {
+            family: "Spell".into(),
+            production_key: "fixture:m49.energy-charge".into(),
+            revision_ref: "definition-r1".into(),
+        },
+        catalog_digest: native.source_digest(),
+        transaction_id: id(188),
+        event_id: id(189),
+        cost: CastCostBinding {
+            vitals_revision_before: 1,
+            vitals_revision_after: 2,
+            mana_before: 200,
+            mana_after: 180,
+            soul_before: 100,
+            soul_after: 100,
+            cooldowns_before: Vec::new(),
+            cooldowns_after: vec![("spell:fixture_m49".into(), 100_000)],
+            caster_digest_before: [11; 32],
+            caster_digest_after: [12; 32],
+        },
+        caster_origin: Some(SourceCasterOrigin {
+            actor,
+            character_lease_generation: fence.character_lease_generation,
+        }),
+        operations,
+        companion: None,
+        direct_companion: None,
+    };
+    let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+    let mut tx = h.pool.begin().await?;
+    let authority = assert_spell_item_authority_in_transaction(
+        &mut tx,
+        &permit,
+        owner.root,
+        owner.character,
+        owner.holder,
+        &fence,
+        command,
+        native.source_digest(),
+    )
+    .await
+    .map_err(debug)?;
+    let outcome = apply_spell_items_in_transaction(
+        &mut tx,
+        &authority,
+        &request,
+        &crate::gameplay_transport::world_required_field_guard::player_origin(
+            &owner.required_capabilities,
+        ),
+    )
+    .await
+    .map_err(debug)?;
+    assert!(matches!(outcome, SpellItemTransactionOutcome::Applied(_)));
+    tx.commit().await?;
     Ok(())
 }
