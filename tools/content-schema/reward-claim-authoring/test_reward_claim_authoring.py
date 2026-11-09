@@ -397,14 +397,54 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
     expected_claim_sets = {
         "oteryn:reward-claim.kv." + marker: {"oteryn:quest-transition/kv/" + marker + "/chest"}
         for marker in ("adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues",
-                       "bear_chest1", "bear_chest2", "bear_chest3")
+                       "bear_chest1", "bear_chest2", "bear_chest3",
+                       "alawars_vault1", "alawars_vault2",
+                       "behemothquest1", "behemothquest2", "behemothquest3", "behemothquest4",
+                       "blackknight1", "blackknight2", "circleroom1", "circleroom2",
+                       "crystalwand1", "crystalwand2", "demonaring1", "demonaring2",
+                       "doublehero1", "doublehero2", "draconia1", "draconia2",
+                       "edrongoblin1", "edrongoblin2", "fireaxe1", "fireaxe2",
+                       "ghoulroom1", "ghoulroom2", "goblintemple", "goblintemple2",
+                       "griffinshield1", "griffinshield2", "griffinshield3",
+                       "katanacorpse1", "katanacorpse2", "longsword1", "longsword2", "longsword3",
+                       "madmageroom1", "madmageroom2", "madmageroom3",
+                       "minohell1", "minohell2", "minohell3")
     }
+    expected_claim_sets.update({
+        "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards." + marker:
+            {"oteryn:quest-transition/quest/u7_1/dragon_tower/rewards/" + marker + "/chest"}
+        for marker in ("backpack1", "backpack2")
+    })
+    expected_claim_sets.update({
+        "oteryn:reward-claim.quest.u7_9.dreamers_challenge." + marker:
+            {"oteryn:quest-transition/quest/u7_9/dreamers_challenge/" + marker + "/chest"}
+        for marker in ("bplong_sword", "chest_book", "chests3_small_diamond", "chests_wine")
+    })
     assert bound == expected_claim_sets | {
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
             {"oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest"},
         "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":
             {"oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest"},
     }
+
+
+def test_dreamer_wine_alternatives_share_one_required_group() -> None:
+    rules = json.loads((rca.ROOT / "content/quests/claim-sets.json").read_text())
+    prefix = "quest/u7_9/dreamers_challenge/"
+    assert rules["oteryn:quest.dreamer_s_challenge_quest"]["groups"] == [
+        [prefix + "bplong_sword"], [prefix + "chest_book"],
+        [prefix + "chests3_small_diamond"], [prefix + "chests_wine"],
+    ]
+    records = [r["definition"] for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
+               for r in json.loads((rca.ROOT / p).read_text())["records"]]
+    wine = next(r for r in records if r["identity"]["key"] ==
+                "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine")
+    assert len(wine["placements"]) == 4
+    assert {ref["unique_id"] for p in wine["placements"]
+            for ref in p["source_binding"]["legacy_unique_ids"]
+            if ref["server"] == "crystalserver"} == {6197, 6198, 6199, 6200}
+    assert {p["quest_transition"] for p in wine["placements"]} == {
+        "oteryn:quest-transition/" + prefix + "chests_wine/chest"}
 
 
 def test_committed_content_is_valid() -> None:

@@ -44,6 +44,9 @@ Their linked claims include shared placements, access keys or mission components
 claim list alone does not establish which required/alternative groups constitute the final reward set.
 Elvenbane has no canonical RewardClaim association in its current quest definition.
 These require explicit source-qualified group declarations and dispatch completion cases.
+For example, Crystal `data-global/lib/core/quests.lua:5173-5176,5241-5247` starts
+Forgotten Knowledge on tomes but names `LastLoreKilled` for its final fight; merely
+claiming the linked tomes and mission objects does not prove that completion.
 
 The existing alternative-group evaluator is retained. This slice adds no new alternative
 group declaration and does not claim the complete 26-quest M35 row is DONE.
@@ -57,3 +60,15 @@ completion only on the final chest. The catalogue test must exercise each declar
 and last, in forward and reverse rotations. The authoring test must retain an exact binding map.
 
 Source qualification is complete; runtime validation is pending and this document is not a completion claim.
+
+## Claim-set slice validation
+
+- 20 sets / 49 claim tracks / 52 source placements checked against Crystal.
+- 49 generated placement-binding additions; no other shard changes.
+- Rust formatting and Clippy for quests, content and dispatch (all targets/features) passed.
+- All 28 reward authoring checks passed.
+- Quest suite: 403 passed; one pre-existing Ice Islands exact-hash baseline failure.
+  The same `ca68476c…` versus `ce91fb47…` mismatch reproduces with the original
+  one-set qmech input. Its assertion is unchanged.
+- World pin refresh completed with the same pin digest.
+- Live dispatch regression: RED on the base's missing Alawar binding; GREEN run pending.
