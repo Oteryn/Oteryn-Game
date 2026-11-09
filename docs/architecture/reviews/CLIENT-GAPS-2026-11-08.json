@@ -1320,10 +1320,10 @@
   "src": "TIBAUD-1",
   "area": "Account",
   "feature": "Premium status/features i expiry",
-  "status": "PARTIAL",
-  "gap": "Native Premium panel, typed client and real-caller mock tests exist; remaining: existing Platform Premium read model needs the authenticated native projection and live qualification. Real-money purchase excluded.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_account",
-  "evidence": "apps/client/src/features/local-premium/mod.rs:133 + premium_panel_opens_from_real_services_selection_and_refreshes_without_payment; apps/client/src/features/local-premium/tests.rs:131 + premium_panel_reports_missing_service_and_never_confirms_cached_benefits. PARTIAL: authenticated native Premium status/features/expiry producer remains unqualified; see docs/contracts/OTERYN_PREMIUM_PANEL_V1.md."
+  "evidence": "apps/client/src/features/local-premium/game_play.rs:32 + premium_game_real_controller_sends_existing_command_and_refuses_stale_data; crates/gameplay/dispatch/src/gameplay_transport/premium_overview.rs:9 + t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases (executed real PostgreSQL). Existing capability 97 / command 113 / operation 5; dedicated in-game native panel, actual subscription expiry, lease freshness, features, account privacy and stale-session rejection; no new capability files."
  },
  {
   "id": "T166",

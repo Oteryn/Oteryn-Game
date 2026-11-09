@@ -128,6 +128,7 @@ impl Application {
                 || play.link.cyclopedia_atlas_input(events)
                 || play.link.cyclopedia_map_input(events)
                 || play.link.party_skull_input(events)
+                || play.link.premium_overview_input(events)
                 || play.link.character_info_input(events)
                 || play.link.raid_schedule_input(events)
                 || play.link.container_sort_input(events)

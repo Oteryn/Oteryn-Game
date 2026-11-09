@@ -215,6 +215,7 @@ mod windows {
                         control(hwnd, "BUTTON", tr!("Search this category page"), 11, 620, 30, 0);
                         control(hwnd, "BUTTON", tr!("Sort: catalogue / title / price"), 12, 655, 30, 0);
                         control(hwnd, "BUTTON", tr!("Gift coins (preview only)"), 13, 695, 30, 0);
+                        control(hwnd, "STATIC", "Premium overview: Ctrl+Alt+Shift+P", 0, 730, 20, 0);
                         let mut displayed_rows = Vec::new();
                         let mut displayed = None;
                         let status = control(hwnd, "STATIC", "", 0, 450, 100, 0);

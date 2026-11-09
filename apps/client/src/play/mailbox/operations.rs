@@ -117,6 +117,7 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.premium_game = Default::default();
         mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
         mailbox.weapon_proficiency = Default::default();
@@ -170,6 +171,7 @@ impl Outbox {
         }
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.premium_game = Default::default();
         mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
         mailbox.weapon_proficiency = Default::default();
@@ -302,6 +304,7 @@ impl Drop for PlayLink {
             launcher.end();
         }
         mailbox.properties.end();
+        mailbox.premium_game = Default::default();
         mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
         mailbox.weapon_proficiency = Default::default();

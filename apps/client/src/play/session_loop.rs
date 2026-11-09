@@ -51,6 +51,7 @@ pub async fn run_session<T: Stepper>(
                         53 => outbox.world_event_result(&result),
                         54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
+                        97 if command.kind == 113 && command.payload == [5] => outbox.premium_game_result(&command,&result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
                         76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),

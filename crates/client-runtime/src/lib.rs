@@ -212,6 +212,7 @@ pub use oteryn_session::loyalty_skills;
 pub use oteryn_session::mechanics_status;
 pub use oteryn_session::party_effects;
 pub use oteryn_session::potion_durations;
+pub use oteryn_session::premium_overview;
 pub use oteryn_session::rest_status;
 pub use oteryn_session::skill_display;
 pub use oteryn_session::skill_progress;
