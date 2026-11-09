@@ -1,4 +1,6 @@
 //! USE cosmetic items through the shared item-action transaction and existing Premium owner.
+pub(super) mod quest_targets;
+
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
@@ -346,6 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
         self.use_carried_quest_item_targeted(actor, command, intent, source, None)
             .await
@@ -411,6 +414,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let Some(ItemKey::Instance(source)) = source else {
             return Ok(None);
+        let source = match (&intent.target, source) {
+            (
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_),
+                Some(ItemKey::Instance(item)),
+            ) => Some(item),
+            (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Ok(inventory) = self
             .root
@@ -424,7 +434,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
-            .find(|item| item.item_instance_id == source)
+            .find(|item| {
+                super::mount_taming::quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    item.item_instance_id,
+                    self.active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &item.definition.family,
+                                &item.definition.production_key,
+                                &item.definition.revision_ref,
+                            )
+                        }),
+                )
+            })
         else {
             return Ok(None);
         };
@@ -657,6 +683,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.owner_wake.notify_one();
             return Ok(Some(outcome(UseDisposition::Committed)));
         }
+        let source = item.item_instance_id;
         let Some(catalogue) = self.quest_catalogue.as_deref() else {
             return Ok(None);
         };
@@ -685,6 +712,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .player_trades
                     .physical(command.game_session_id, Some(id))
             })
+        if intent.use_with_map_item.is_some() && !bound.iter().any(|c| c.fresh_corpse) {
+            // A legacy carried callback does not take ownership of unrelated
+            // map-item actions such as crafting or taming.
+            return Ok(None);
+        }
+        if intent.use_with_position.is_some()
             || !self
                 .states
                 .player_trades
@@ -725,6 +758,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || c.creature_target.is_some()
                     || c.self_target.is_some())
                     == intent.use_with.is_some())
+                quest_targets::accepts(c, intent)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
@@ -775,6 +809,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let corpse_operand = if callback.fresh_corpse {
+            let Some(ItemKey::Instance(item)) = target else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let Some(ground) = self
+                .root
+                .read_ground_action_source(self.character, item_fence, item)
+                .await
+                .map_err(|_| ())?
+            else {
+                return Ok(Some(outcome(UseDisposition::StaleState)));
+            };
+            Some(ground.quest_corpse_operand())
+        } else {
+            None
+        };
+        // Lane -> Character sequence -> runtime is retained through COMMIT.
+        // The proof's borrow prevents detaching a live target snapshot.
+        let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
+        let creature_runtime = if callback.creature_target.is_some() {
+            Some(self.runtime.lock().await)
+        } else {
+            None
+        };
+        let creature = if let Some(runtime) = creature_runtime.as_ref() {
+            use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
+            let proof = if let Some(operand) = corpse_operand {
+                QuestCreatureUseProof::read_corpse(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    operand,
+                    &permit,
+                )
+            } else {
+                QuestCreatureUseProof::read_current(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                )
+            };
+            let Some(proof) = proof else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            Some(proof)
+        } else {
+            None
+        };
         let native = self
             .active_generation
             .and_then(|g| g.native_gameplay())
@@ -785,10 +873,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             recipe_target,
             intent: encoded,
         };
-        let result = self
-            .revision_sequencer
-            .acquire(fence.character_id)
-            .await
+        let result = sequence
             .commit_quest_reward(
                 self.root,
                 self.character,
@@ -812,6 +897,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
+        drop(creature);
+        drop(creature_runtime);
+        drop(sequence);
         drop(permit);
         let disposition = if matches!(
             result,

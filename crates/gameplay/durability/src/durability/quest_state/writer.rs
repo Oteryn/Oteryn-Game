@@ -5,6 +5,10 @@ use super::super::db::begin_type2_transaction;
 use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
 
+#[cfg(feature = "test-support")]
+#[path = "writer/ground_fixture.rs"]
+mod ground_fixture;
+
 impl DurabilityRoot {
     /// Isolated source fixtures exercise the production reward transaction without adding quest content.
     #[cfg(feature = "test-support")]
@@ -644,7 +648,8 @@ impl DurabilityRoot {
             && (native_world_rule
                 || world_callbacks.iter().any(|c| {
                     c.key == request.transition_key
-                        && (!c.state_ops.is_empty()
+                        && (c.has_ground_stack_requirements()
+                            || !c.state_ops.is_empty()
                             || !c.offerings.is_empty()
                             || c.item_on_target.is_some()
                             || c.world_change.is_some()
@@ -732,6 +737,7 @@ impl DurabilityRoot {
                 .finalize();
             binding[1..].copy_from_slice(&digest);
         }
+        let reward_root = self.clone();
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -1333,7 +1339,7 @@ impl DurabilityRoot {
                         }
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context, (&recovery, &node)).await?
+                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
@@ -1343,7 +1349,7 @@ impl DurabilityRoot {
                         }
                     }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
-                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
+                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,(&reward_root,&recovery),&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.item_reward

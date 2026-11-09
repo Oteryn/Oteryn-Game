@@ -17,6 +17,8 @@ use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
+pub mod corpse_target;
+
 #[derive(Debug)]
 pub enum SpellItemError {
     Rejected(&'static str),

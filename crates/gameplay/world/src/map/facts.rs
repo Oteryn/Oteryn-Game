@@ -35,6 +35,8 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
 mod empty_amphora;
+#[cfg(test)]
+mod seal_paint_tests;
 mod source_container_capacity;
 pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
@@ -317,6 +319,7 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
+        // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions = [
@@ -328,6 +331,9 @@ impl BundleFacts {
             1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
             12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
             14163, 14164, 14255, 17939, 21804, 21805, 21812, 26077, 26087, 26100,
+            1025, 1949, 7252, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186,
+            10187, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076,
+            14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)

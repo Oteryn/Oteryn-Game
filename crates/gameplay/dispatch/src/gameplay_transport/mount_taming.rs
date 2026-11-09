@@ -1,4 +1,6 @@
 //! MOUNTTAME: existing USE -> carried item -> current creature -> fenced durable attempt.
+pub(super) mod quest_objects;
+
 use super::{
     ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
@@ -80,6 +82,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Carried quest tools use the registered World receipt and exact selected custody.
     async fn use_quest_tool_object(
+    /// Registered carried World tools reuse the fenced World receipt owner.
+    async fn tame_quest_object(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -91,8 +95,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let source = match (&intent.target, source) {
+            (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
+            (UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Some(map) = self.bundle_map() else {
             return Ok(None);
@@ -118,6 +124,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .item_on_target
                     .as_ref()
                     .is_some_and(|item| item.selected_instance)
+            quest_objects::accepts(callback)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
@@ -139,8 +146,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .any(|entry| {
-                entry.item.item_instance_id == source
-                    && entry.item.definition.production_key == required.item
+                entry.item.definition.production_key == required.item
+                    && quest_objects::matches_source(
+                        &intent.target,
+                        source,
+                        entry.item.item_instance_id,
+                        self.active_generation
+                            .and_then(crate::content::ActiveGeneration::native_gameplay)
+                            .and_then(|native| native.item_index())
+                            .and_then(|index| {
+                                index.definition_ref(
+                                    &entry.item.definition.family,
+                                    &entry.item.definition.production_key,
+                                    &entry.item.definition.revision_ref,
+                                )
+                            }),
+                    )
             });
         if !selected {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));

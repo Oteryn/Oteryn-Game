@@ -230,6 +230,9 @@ pub struct RewardCallback {
     /// Exact current self entity, inside the source-authored native area.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub self_target: Option<SelfTarget>,
+    /// Sample the exact original fresh Ground corpse instead of a live creature.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub fresh_corpse: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -312,6 +315,10 @@ impl RewardCallback {
         pure.is_ok_and(|callback| callback == *self)
     }
 }
+#[cfg(test)]
+mod fresh_corpse_tests;
+#[cfg(test)]
+mod ice_paint_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -419,6 +426,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
@@ -640,6 +649,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                         b"._/-",
                         128,
                     )))
+            || (c.fresh_corpse && c.creature_target.is_none())
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -1497,12 +1507,14 @@ mod tests {
                 "oteryn:quest.outfit_and_addon_quests",
                 "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
             ),
+            // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 adds the canonical four-track native mead transition.
                 "ce91fb477a2477dfa81674b40bb86149ee17e775b0d1ee623bfac428ae3e7fe4",
                 // M47 binds four source counters plus the durable roll; absence stays -1.
                 "a23884420cacf0330e359241e5fb30715e768051cd3ffd4b11985cb19ed3b3af",
+                "9782c7b0b02cbac847e7630db5ca2846a0888592611c35d4070840b1123bc018",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

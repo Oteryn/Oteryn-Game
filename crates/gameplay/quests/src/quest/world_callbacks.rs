@@ -10,7 +10,7 @@ mod m39_sample_tests;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Static quest batches and the code-built source callbacks share this bound.
-pub const MAX_CALLBACKS: usize = 512;
+pub const MAX_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -40,6 +40,8 @@ mod effects;
 mod feaster_routes;
 mod ground_stack;
 mod guarded_routes;
+#[cfg(test)]
+mod ice_islands_tests;
 mod imported_explore;
 mod treasure_source;
 #[cfg(test)]
@@ -203,6 +205,9 @@ impl ActorKind {
 /// A static native anchor or a closed mutable Ground-only prerequisite.
 pub use ground_stack::GroundStackEntry as GroundStackItem;
 
+mod requirements;
+
+/// A static native anchor, optionally guarded by an ordered durable Ground stack.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
@@ -287,6 +292,8 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
     /// Immutable map predicates use the Channel turn; portable stacks use the fenced SQL receipt.
+    /// Immutable map predicates run under the Channel turn; live Ground predicates
+    /// are checked and locked by the durable progress transaction.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
     /// Checked against the progression owner in the same fenced quest transaction.
@@ -402,6 +409,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/engenc2-cults.json"
+        "../../../../../content/quests/world-callbacks/ice-islands-seals.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
@@ -633,6 +641,9 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
             || (callback.requires_premium && !callback.has_personal_state())
+            || (callback.has_ground_stack_requirements()
+                && callback.has_personal_state()
+                && !callback.supports_ground_stack_guard())
             || callback.world_requirements.len() > MAX_EFFECTS
             || callback.world_requirements.iter().any(|r| {
                 !valid_pos(r.position)
@@ -854,6 +865,7 @@ fn extend_callbacks(
     let inherited: BTreeSet<_> = catalogue.tracks.keys().cloned().collect();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    super::ice_islands_seals::catalogue::declare(&mut tracks, callbacks)?;
     for callback in callbacks.iter().filter(|c| c.has_personal_state()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
@@ -1025,6 +1037,9 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     let bytes = serde_json::to_vec(&value).map_err(|error| error.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
 }
+
+#[cfg(test)]
+mod ground_requirement_tests;
 
 #[cfg(test)]
 mod timed_tests;

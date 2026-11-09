@@ -12,6 +12,9 @@ pub mod ground_stack;
 pub mod ground_stack;
 #[cfg(not(feature = "test-support"))]
 mod ground_read;
+#[cfg(any(test, feature = "test-support"))]
+pub mod ground_stack;
+#[cfg(not(any(test, feature = "test-support")))]
 pub(crate) mod ground_stack;
 #[cfg(feature = "test-support")]
 pub mod ground_stack;
@@ -221,6 +224,7 @@ pub(super) async fn consume_reward_inputs(
 #[allow(
     clippy::too_many_arguments,
     reason = "retains source, scope and live eligibility owners in one transaction"
+    reason = "the existing fenced participant also receives the exact locked quest plan"
 )]
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -229,6 +233,8 @@ pub(super) async fn consume(
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
     context: &QuestWorldToolContext,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
+    context: &QuestWorldContext,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
         &super::runtime_scope_assignment::NodeIncarnationProof,
@@ -371,7 +377,7 @@ pub(super) async fn consume(
         return Ok(true);
     }
     consume_inputs(
-        tx, permit, fence, request, callback, context, command, world_id, channel_id,
+        tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await
 }
@@ -441,6 +447,8 @@ async fn consume_inputs(
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
     context: &QuestWorldToolContext,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
+    context: &QuestWorldContext,
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
     channel_id: crate::foundation::ChannelId,
@@ -517,7 +525,26 @@ async fn consume_inputs(
         // Retained tools still require a positive quantity, live custody and the
         // same location lock. The enclosing Quest receipt binds this read to the
         // action without inventing an item consumption or changing its identity.
-        if !required.reusable {
+        let consume = match callback.native_rule {
+            Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint {
+                seal,
+            }) => {
+                use oteryn_gameplay_quests::quest::ice_islands_seals;
+                if required.item != ice_islands_seals::PAINT
+                    || required.count != 1
+                    || !required.reusable
+                    || required.replacement.is_some()
+                    || required.target_replacement.is_some()
+                    || !required.alternatives.is_empty()
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                ice_islands_seals::consumes_paint(seal, changes)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
+            }
+            _ => !required.reusable,
+        };
+        if consume {
             inputs.push(input);
         } else if required.selected_instance
             && !tool_reads::record(tx, fence, request, callback, context, &input).await?

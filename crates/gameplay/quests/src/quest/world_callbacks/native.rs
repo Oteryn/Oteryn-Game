@@ -1,4 +1,4 @@
-//! Closed source bindings and committed feedback for batch four's two native rules.
+//! Closed source bindings and committed feedback for native world rules.
 use super::{Callback, NativeRule, Position, Trigger};
 use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selection as dance};
 
@@ -11,6 +11,10 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             &crate::quest::barbarian_mead::RANGES,
             crate::quest::barbarian_mead::SOURCE,
         ),
+    let (trigger, position, action, ranges, source) = match rule {
+        NativeRule::IceSealPaint { seal } => {
+            return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
+        }
         NativeRule::CultsSymbol { symbol } => {
             let Some(position) = cults::SYMBOL_POSITIONS.get(usize::from(symbol)).copied() else {
                 return false;
@@ -135,6 +139,7 @@ impl Callback {
                     None
                 }
             }
+            Some(NativeRule::IceSealPaint { .. }) => None,
             None => self.success_message.as_deref(),
         }
     }

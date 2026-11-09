@@ -45,6 +45,33 @@ pub struct QuestCreatureUseProof<'runtime> {
     target: EntityRef,
     key: String,
     target: Target,
+use oteryn_protocol_oteryn::world_object::UseIntent;
+
+mod corpse;
+pub use corpse::QuestCorpseOperand;
+
+/// A live target proof binds the complete decoded tool intent and borrows its
+/// runtime owner until the quest commit ends.
+/// Mutating or releasing that owner while retaining the proof is forbidden.
+///
+/// ```compile_fail
+/// use oteryn_gameplay_durability::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
+/// let _requires_owner = |runtime: &mut _, actor, fence, command, callback, intent| {
+///     let proof = QuestCreatureUseProof::read_current(runtime, actor, fence, command, callback, intent);
+///     fn change_runtime<T>(_: &mut T) {}
+///     change_runtime(runtime);
+///     drop(proof);
+/// };
+/// ```
+#[derive(Debug)]
+pub struct QuestCreatureUseProof<'runtime> {
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    callback: String,
+    key: String,
+    intent: UseIntent,
+    corpse: Option<corpse::CorpseUse<'runtime>>,
+    _runtime: std::marker::PhantomData<&'runtime ()>,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
     pub fn read_current(
@@ -57,6 +84,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
     ) -> Option<Self> {
         let key = callback.creature_target.as_ref();
         if callback.corpse_target.is_some() {
+        if callback.fresh_corpse {
             return None;
         }
         let key = callback.creature_target.as_ref()?;
@@ -135,6 +163,10 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 entity: target,
                 actor: creature,
             },
+            key: key.clone(),
+            intent: intent.clone(),
+            corpse: None,
+            _runtime: std::marker::PhantomData,
         })
     }
     /// Exact handle observed in the retained runtime turn; used after a committed capture.
@@ -228,7 +260,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
         carried: &super::QuestCarriedUse,
     ) -> bool {
-        self.fence.item_fence() == fence.item_fence()
+        self.corpse.is_none()
+            && self.fence.item_fence() == fence.item_fence()
             && request.cause == QuestCause::Command(self.command)
             && request.transition_key == self.callback
             && self.key == callback.creature_target
@@ -252,6 +285,9 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                                 && matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
                         }
                     }
+                intent == self.intent
+                    && intent.use_with_map_item.is_none()
+                    && intent.use_with_position.is_none()
             })
     }
 }

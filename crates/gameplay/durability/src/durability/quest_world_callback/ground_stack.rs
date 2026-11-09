@@ -28,7 +28,8 @@ struct GroundRoot {
     definition_production_key: String,
     definition_revision_ref: String,
     quantity: i64,
-    stack_ordinal: i64,
+    stack_ordinal: Option<i64>,
+    ownership_generation: String,
     map_revision: String,
     content_revision: String,
     native_room_placement_context: Vec<u8>,
@@ -47,6 +48,26 @@ pub(super) async fn require(
 ) -> Result<bool, DurabilityError> {
     if !requirements.iter().any(|r| r.ground_stack.is_some()) {
         return Ok(true);
+    }
+    // The scope issuer also takes namespace 33 with a blocking lock. Acquire
+    // it non-blockingly first, before asking that issuer for its same-TX token.
+    // Otherwise the later NOWAIT rows cannot prevent a pickup lock cycle.
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Ok(false);
+    };
+    let available: bool = sqlx::query_scalar(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
+    )
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    if !available {
+        return Ok(false);
     }
     let authority = assert_spell_item_scope_with_recovery(
         tx,
@@ -102,22 +123,36 @@ pub async fn matches(
         return Ok(false);
     }
     let world = authority.world_bytes();
-    // Existing Item owner, migrations 0034:21-32 and 0049:360-376; no second
-    // tile lock or independent custody store is introduced.
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
+    // Existing Ground namespace (0034/0049). Try-lock plus NOWAIT Item locks
+    // preserve Item-before-Ground ordering: a concurrent pickup must cause
+    // refusal/rollback instead of a cycle with this progress transaction.
+    let available: bool = sqlx::query_scalar(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended(encode($1,'hex')||encode($2,'hex'),33))",
     )
     .bind(world.as_slice())
     .bind(channel.as_slice())
-    .execute(&mut **tx)
+    .fetch_one(&mut **tx)
     .await?;
-    let mut rows = sqlx::query_as::<_, GroundRoot>("SELECT i.item_instance_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL AND g.spatial_position=$3 AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 65 FOR UPDATE OF i,g")
+    if !available {
+        return Ok(false);
+    }
+    let mut rows = sqlx::query_as::<_, GroundRoot>("SELECT i.item_instance_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal,g.runtime_scope_ownership_generation::text AS ownership_generation,g.map_revision,g.content_revision,g.native_room_placement_context FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id,world_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL AND g.spatial_position=$3 AND i.lifecycle=1 ORDER BY i.item_instance_id LIMIT 65 FOR UPDATE OF i,g NOWAIT")
         .bind(world.as_slice()).bind(channel.as_slice()).bind(&target.spatial_position)
         .fetch_all(&mut **tx).await?;
     if rows.len() != expected.len() {
         return Ok(false);
     }
     rows.sort_by_key(|r| r.stack_ordinal);
+    let mut previous = 0;
+    for row in &rows {
+        let Some(ordinal) = row.stack_ordinal.filter(|n| *n > previous) else {
+            return Ok(false);
+        };
+        previous = ordinal;
+        if row.ownership_generation != authority.generation().to_string() {
+            return Ok(false);
+        }
+    }
     Ok(ground_stack_matches(
         expected,
         rows.iter().map(|row| {
@@ -136,6 +171,18 @@ pub async fn matches(
             })
         }),
     ))
+}
+
+/// Isolated PG fixture entry: the supplied owner token is still checked against
+/// this exact physical transaction; no mutable registry or authority bypass.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn fixture_matches(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+    expected: &[GroundStackEntry],
+) -> Result<bool, DurabilityError> {
+    matches(tx, authority, target, expected).await
 }
 //! M02: physical Ground predicates participate in the existing fenced quest TX.
 //! Nomads Land chosen recipe s4 (Wiki spoiler revision 1002600) needs actual

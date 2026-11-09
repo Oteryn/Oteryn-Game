@@ -50,6 +50,12 @@ IDS |= {14682, 7785}
 IDS |= {5467}
 # M07 Too Hot cleaning, column and floor-repair tools from the same pinned source.
 IDS |= {36543, 36544, 36545}
+# ENGNPC2: the registered Goblin Merchant Slug and Rotworm exchanges consume
+# a gatherer and mint its next variant. Only physical custody is qualified
+# here; the exact corpse/live-target callbacks remain the use authority.
+IDS |= {17670, 17672, 17673, 17674}
+# Siflind grants one plain paint vial; the World owner controls its use.
+IDS |= {7253}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

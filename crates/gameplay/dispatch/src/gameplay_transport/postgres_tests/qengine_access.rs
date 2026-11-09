@@ -818,6 +818,7 @@ async fn wardrobe(
         capture_creature: false,
         corpse_target: None,
         creature_target: None,
+        fresh_corpse: false,
         self_target: None,
         minimum_level: None,
         requires_addons: vec![],

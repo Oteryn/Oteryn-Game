@@ -5,6 +5,8 @@
 
 use super::{
     QuestEffect, QuestEffectKind, QuestRefusal, barbarian_mead, cults_of_tibia, unnatural_selection,
+    QuestEffect, QuestEffectKind, QuestRefusal, cults_of_tibia, ice_islands_seals,
+    unnatural_selection,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -15,6 +17,7 @@ pub enum NativeRule {
     BarbarianMead,
     CultsSymbol { symbol: u8 },
     UnnaturalDance { tile: u8 },
+    IceSealPaint { seal: u16 },
 }
 
 impl NativeRule {
@@ -23,6 +26,7 @@ impl NativeRule {
             Self::BarbarianMead => barbarian_mead::QUEST,
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
+            Self::IceSealPaint { .. } => ice_islands_seals::QUEST,
         }
     }
 
@@ -36,6 +40,8 @@ impl NativeRule {
                 cults_of_tibia::OBJECTS,
             ],
             Self::UnnaturalDance { .. } => &unnatural_selection::TRACKS,
+            Self::UnnaturalDance { .. } => unnatural_selection::TRACKS,
+            Self::IceSealPaint { .. } => ice_islands_seals::TRACKS,
         }
     }
 
@@ -45,6 +51,10 @@ impl NativeRule {
             Self::BarbarianMead => out.push(3),
             Self::CultsSymbol { symbol } => out.extend_from_slice(&[1, symbol]),
             Self::UnnaturalDance { tile } => out.extend_from_slice(&[2, tile]),
+            Self::IceSealPaint { seal } => {
+                out.push(3);
+                out.extend_from_slice(&seal.to_be_bytes());
+            }
         }
     }
 
@@ -53,6 +63,7 @@ impl NativeRule {
             Self::BarbarianMead => true,
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
+            Self::IceSealPaint { seal } => seal < ice_islands_seals::targets::TARGET_COUNT,
         }
     }
 
@@ -126,6 +137,17 @@ impl NativeRule {
                     },
                 )?;
                 vec![snapshot.mission, snapshot.temp, snapshot.objects]
+            }
+            Self::IceSealPaint { seal } => {
+                let snapshot = ice_islands_seals::paint(
+                    seal,
+                    ice_islands_seals::Snapshot {
+                        questline: read(ice_islands_seals::QUESTLINE)?,
+                        targets: read(ice_islands_seals::TARGETS)?,
+                        mission04: read(ice_islands_seals::MISSION04)?,
+                    },
+                )?;
+                [snapshot.questline, snapshot.targets, snapshot.mission04]
             }
             Self::UnnaturalDance { tile } => {
                 let snapshot = unnatural_selection::apply_dance(
@@ -235,6 +257,10 @@ mod tests {
             NativeRule::CultsSymbol { symbol: u8::MAX },
             NativeRule::UnnaturalDance { tile: 0 },
             NativeRule::UnnaturalDance { tile: 10 },
+            NativeRule::IceSealPaint {
+                seal: ice_islands_seals::targets::TARGET_COUNT,
+            },
+            NativeRule::IceSealPaint { seal: u16::MAX },
         ] {
             assert!(!rule.valid_effects(rule.quest(), &effects(rule)));
             assert_eq!(

@@ -1,6 +1,6 @@
 # QMECH missing-mechanics index
 
-**65 unique mechanics: 3 DONE, 38 CLAIMED, 23 OPEN, 1 OWNER. OPEN rows block 68 distinct named quests. Four additional NPC interaction groups have unmapped quest identities; all four are CLAIMED and are excluded from quest counts.**
+**65 unique mechanics: 3 DONE, 39 CLAIMED, 22 OPEN, 1 OWNER. OPEN rows block 67 distinct named quests. Four additional NPC interaction groups have unmapped quest identities; all four are CLAIMED and are excluded from quest counts.**
 
 Indexed all **32** `MISSING-*.md` reports and `CLAIMS.md` against qmech `84cbdfb9f6c6f7f1a68ade136a53d4b93cbb4cd3`. Counts describe reported stage/route blockers, not whole quests newly playable after a fix. Quest names are unioned across OPEN rows, never summed. Multiple engine capabilities can block one quest.
 

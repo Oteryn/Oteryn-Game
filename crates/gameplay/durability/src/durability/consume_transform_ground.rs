@@ -27,6 +27,19 @@ impl GroundActionSource {
     pub fn position(&self) -> MovementLocalPosition {
         self.position
     }
+    /// Read-only operand for the quest participant, which rereads custody and
+    /// corpse provenance inside its own fenced transaction before any mutation.
+    pub fn quest_corpse_operand(&self) -> crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
+        crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
+            item: self.item,
+            ground: crate::durability::spell_items_abi::SpellGroundTarget {
+                spatial_position: self.target.spatial_position.clone(),
+                map_revision: self.target.map_revision.clone(),
+                content_revision: self.target.content_revision.clone(),
+                placement_context: self.target.placement_context.clone(),
+            },
+        }
+    }
 }
 
 /// Constructed only from a current native cell and an actual positioned actor.
