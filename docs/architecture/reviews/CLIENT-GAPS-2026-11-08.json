@@ -1487,7 +1487,7 @@
   "status": "DONE",
   "gap": "Miniokna są dziećmi okna gry, zachowują własne wątki i rzeczywistych konsumentów; przeciąganie/resize, dokowanie w kolumnach, kolejność i układ po restarcie są wspólne dla natywnych paneli.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/miniwindow/native.rs:79 + o033_native_sidebar_actions_preserve_order_resize_and_closed_siblings"
+  "evidence": "apps/client/src/miniwindow/native.rs:79; apps/client/src/miniwindow/native.rs:57; apps/client/src/miniwindow/native.rs:151; apps/client/src/features/local-reference-preferences/shortcuts.rs:27"
  },
  {
   "id": "O035",
@@ -1504,10 +1504,10 @@
   "src": "OTCAUD1108",
   "area": "Analytics",
   "feature": "Kalkulator podziału łupu drużyny",
-  "status": "DONE",
-  "gap": "Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny.",
+  "status": "PARTIAL",
+  "gap": "Brakuje zaawansowanej edycji rozliczenia: dodatkowego kosztu i wyłączenia wybranego uczestnika bez edycji pliku. OTClient game_lootsplitter/lootsplitter.lua:80 pobiera ExtraCost/isRemoved; Oteryn party::split liczy wszystkich dostępnych uczestników z loot_value i supply_cost, a import wymaga własnego nagłówka OTERYN-PARTY-SUMMARY. Podstawowy kalkulator i przelewy istnieją.",
   "lane": "cg_analytics",
-  "evidence": "apps/client/src/features/0010-analyser/input/party_import.rs:11 + party_summary_file_io_is_bounded_advisory_and_keeps_live_members_untouched (apps/client/src/features/0010-analyser/tests/party_import.rs)"
+  "evidence": "apps/client/src/features/0010-analyser/input.rs:76; apps/client/src/features/0010-analyser/input/party_import.rs:43; crates/client-ui/src/features/0010-analyser/state/party_import.rs:12; crates/client-ui/src/features/0010-analyser/state/party.rs:72; crates/gameplay/dispatch/src/gameplay_transport/analyser_party.rs:175; crates/protocol-oteryn/src/analyser_party.rs:66"
  },
  {
   "id": "O037",
@@ -1517,7 +1517,7 @@
   "status": "DONE",
   "gap": "Główny panel przycisków funkcji ma zwijanie, trwałą kolejność i selektor dodawania/usuwania; przyciski otwierają istniejące okna klienta.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:152 + collapsible function panel and saved ordering; apps/client/src/features/local-reference-preferences/native.rs:288 + persist collapse action; apps/client/src/features/local-reference-preferences/shortcut_controls.rs:52 + native add/remove/reorder controls; apps/client/src/features/local-reference-preferences/shortcuts.rs:27 + validated layout edits; apps/client/src/features/local-reference-preferences/tests/presentation.rs:196 + o037_shortcut_panel_collapse_and_order_survive_restart; apps/client/src/features/local-reference-preferences/tests/shortcuts.rs:3 + t059_settings_selector_persists_order_and_routes_the_selected_shortcut"
+  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:145; apps/client/src/features/local-reference-preferences/native.rs:75; apps/client/src/features/local-reference-preferences/shortcut_controls.rs:84; apps/client/src/features/local-reference-preferences/shortcuts.rs:27; apps/client/src/windows_shell/application_handler.rs:199"
  },
  {
   "id": "O039",
@@ -1527,7 +1527,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation; apps/client/src/features/local-minimap/state.rs:79 + live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_binding; apps/client/src/features/local-minimap/tests/play_persistence.rs:10"
+  "evidence": "apps/client/src/features/local-minimap/input.rs:31; apps/client/src/features/local-minimap/state.rs:81; apps/client/src/features/local-minimap/state.rs:280; apps/client/src/features/0064-target-move/protocol.rs:9; crates/gameplay/dispatch/src/gameplay_transport/paced_movement/autowalk.rs:30; crates/protocol-oteryn/src/target_move.rs:18"
  },
  {
   "id": "O040",
@@ -1547,7 +1547,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/local-game-notifications/state.rs:31 + game_notices_follow_real_delivery_configuration_expiry_and_reconnect; apps/client/src/features/local-game-notifications/native.rs:53 + raids_global_client_dispatch_preserves_messages_across_step_and_renders_each_kind"
+  "evidence": "apps/client/src/features/local-game-notifications/state.rs:31; apps/client/src/features/local-game-notifications/native.rs:58; crates/gameplay/dispatch/src/gameplay_transport/connection/serve/inbound.rs:33; crates/gameplay/dispatch/src/gameplay_transport/raid_notices.rs:46; crates/protocol-oteryn/src/zones_nologout.rs:21; crates/gameplay/dispatch/src/gameplay_transport/raid_notices.rs:158"
  },
  {
   "id": "O043",
@@ -1557,7 +1557,7 @@
   "status": "DONE",
   "gap": "Visual outfit preview, catalogue palette and addon selectors, and server-validated Apply.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0025-appearance/preview.rs:30 + appearance_preview_selectors_reach_the_wire_command; outfit_mask_tints_all_four_parts_without_changing_alpha"
+  "evidence": "apps/client/src/features/0025-appearance/input.rs:45; apps/client/src/features/0025-appearance/input.rs:10; apps/client/src/features/0025-appearance/protocol.rs:63; apps/client/src/features/0025-appearance/view.rs:8; crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs:53; crates/protocol-oteryn/src/appearance.rs:10; apps/client/src/features/0025-appearance/preview.rs:15; crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs:98; crates/protocol-oteryn/src/appearance/selection.rs:14"
  },
  {
   "id": "O050",
