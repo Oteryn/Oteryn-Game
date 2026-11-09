@@ -10,10 +10,10 @@ class SourceCohortTests(unittest.TestCase):
     def setUp(self):
         self.packet = json.loads((Path(__file__).resolve().parents[1] /
             "content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes())
-        self.source = "assert_eq!(added_keys.len(), 60);"
+        self.source = 'assert_eq!(added_keys.len(), 60);\n("qengine-reward-item-profiles.json", 60)'
 
     def test_regenerates_stale_cardinality_from_the_producer_cohort(self):
-        self.assertEqual("assert_eq!(added_keys.len(), 63);", refresh(self.source, self.packet))
+        self.assertEqual('assert_eq!(added_keys.len(), 63);\n("qengine-reward-item-profiles.json", 63)', refresh(self.source, self.packet))
 
     def test_refuses_a_missing_source_identity(self):
         self.packet["records"].pop()

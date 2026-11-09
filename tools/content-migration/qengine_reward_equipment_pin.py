@@ -19,7 +19,14 @@ def refresh(source, packet):
         or set(keys) != expected
     ):
         raise ValueError("QENGINE_EQUIPMENT_SOURCE_COHORT")
-    pattern = r"assert_eq!\(added_keys\.len\(\),\s*[0-9_]+\);"
-    if len(re.findall(pattern, source)) != 1:
-        raise ValueError("QENGINE_EQUIPMENT_PIN_ANCHOR")
-    return re.sub(pattern, f"assert_eq!(added_keys.len(), {len(producer.IDS)});", source)
+    pins = [
+        (r"assert_eq!\(added_keys\.len\(\),\s*[0-9_]+\);",
+         f"assert_eq!(added_keys.len(), {len(producer.IDS)});"),
+        (r'\("qengine-reward-item-profiles\.json",\s*[0-9_]+\)',
+         f'("qengine-reward-item-profiles.json", {len(producer.IDS)})'),
+    ]
+    for pattern, replacement in pins:
+        if len(re.findall(pattern, source)) != 1:
+            raise ValueError("QENGINE_EQUIPMENT_PIN_ANCHOR")
+        source = re.sub(pattern, replacement, source)
+    return source
