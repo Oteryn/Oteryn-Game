@@ -9,10 +9,11 @@ pub struct GameWindowPreferences {
     pub other_spells: bool,
     pub value_text: bool,
     pub loot_messages: bool,
+    pub target_frame: bool,
 }
 impl Default for GameWindowPreferences {
     fn default() -> Self {
-        Self { own_spells: true, other_spells: true, value_text: true, loot_messages: true }
+        Self { own_spells: true, other_spells: true, value_text: true, target_frame: true, loot_messages: true }
     }
 }
 impl GameWindowPreferences {

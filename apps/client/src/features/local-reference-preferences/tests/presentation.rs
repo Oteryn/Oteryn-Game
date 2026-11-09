@@ -239,3 +239,14 @@ fn t056_own_spell_filter_changes_live_projection() -> Result<(), Box<dyn std::er
     assert_eq!(play.scene().sprites().len(), baseline);
     Ok(())
 }
+
+#[test]
+fn t057_target_frame_setting_keeps_target_selected() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let target = play.scene().target();
+    let mut preferences = play.preferences().clone();
+    preferences.game_window.target_frame = false;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().target(), target);
+    Ok(())
+}
