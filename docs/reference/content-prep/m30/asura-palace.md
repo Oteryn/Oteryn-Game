@@ -171,3 +171,15 @@ The focused pending-fence regression and ten existing capture tests cover this
 slice. Both real framed Child of Destiny hit-credit PostgreSQL callers passed
 again after the shared snapshot refactor. Full physical Asura encounter/death/door
 qualification remains pending, along with the two elemental native policies.
+
+`engenc_elemental_profiles.py` in `tools/content-migration/` implements the
+owner-authored Greater Elemental policy transformation. Pending a retrievable
+Tibia revision, **authored per owner rule**: use the admitted Massive Fire and
+Massive Energy Elemental combat profiles as the respective bounded baselines,
+retaining their health, speed, attacks, armor and resistances. The variants use
+new Greater identities and display names, zero XP, no bestiary progression,
+no prey/forge eligibility and no inherited soul-core or encyclopedia reference.
+The original provider records remain byte-for-byte equivalent as JSON values.
+This factory does not yet register the variants: provider integration, explicit
+loot admission and native activation qualification still remain. No donor script
+is represented as implementing a Greater Elemental identity.
