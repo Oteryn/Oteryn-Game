@@ -34,6 +34,7 @@ async fn install_offsets<const N: usize>(
         .programs()
         .iter()
         .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+        .chain(keys.iter().copied())
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();

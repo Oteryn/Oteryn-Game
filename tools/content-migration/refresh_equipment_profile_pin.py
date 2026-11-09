@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -33,6 +34,18 @@ def questpc2_additions(source):
     return declared_additions(TEST.with_name("questpc2_source_profile_cohort.rs"))
 
 
+def declared_cohorts(source):
+    table = source.split("const PROFILE_ADDITIONS:", 1)[1].split("];", 1)[0]
+    names = re.findall(r'\(\s*"([^\"]+)"\s*,', table)
+    counts = {name: int(n.replace('_', '')) for name, n in
+              re.findall(r'\(\s*"([^\"]+)"\s*,\s*([\d_]+)\s*,?\s*\)', table)}
+    if 'QUESTPC2-SOURCE-CLOSURE' in names and 'QUESTPC2-SOURCE-CLOSURE' not in counts:
+        counts['QUESTPC2-SOURCE-CLOSURE'] = questpc2_additions(source)
+    if len(names) != len(set(names)) or set(names) != counts.keys():
+        raise ValueError('duplicate or unresolved declared profile cohort')
+    return counts
+
+
 def frozen_union():
     sys.path.insert(0, str(ROOT / "tools/contracts"))
     from refresh_quest_custody_equipment import composition
@@ -43,7 +56,45 @@ def frozen_union():
     return own | main, len(own - main)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None, custody=None, frozen=None, overlap_keys=frozenset()):
+def source_speed_pin(source, qengine):
+    marker = '("qengine-reward-item-profiles.json",'
+    if marker not in source:
+        return source
+    pick = 'oteryn:item.tibia.i3456'
+    unknown = {row['production_definition']['production_key']
+               for row in qengine['records']
+               if row['attributes'].get('speed_bonus') is None}
+    if unknown != {pick} or any(row['attributes'].get('speed_bonus') not in (None, 0)
+                               for row in qengine['records']):
+        raise ValueError('QENGINE speed proof must retain only the existing unknown-speed pick')
+    source = re.sub(r'\("qengine-reward-item-profiles.json", [\d_]+\)',
+                    f'("qengine-reward-item-profiles.json", {len(keys(qengine))})', source)
+    start = source.index('        for source in records {', source.index(marker))
+    end = source.index('\n    for id in [2949,', start)
+    source = source[:start] + '''        for source in records {
+            let key = source["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("source Item key")?;
+            let actual = profiles
+                .records
+                .iter()
+                .find(|row| row.production_definition.production_key == key)
+                .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
+            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
+                assert!(source["attributes"]["speed_bonus"].is_null(), "source speed {path}:{key}");
+                assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            } else {
+                assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(0), "source speed {path}:{key}");
+                assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
+            }
+            assert!(actual.admission.materializable, "{path}:{key}");
+        }
+    }''' + source[end:]
+    return source
+
+
+def regenerate(source, base, updates, qengine, npc, starting=None, custody=None, frozen=None, overlap_keys=frozenset(), baseline_cohorts=None, baseline_qengine_count=None):
+    source = source_speed_pin(source, qengine)
     if frozen is not None:
         expected, own_only = frozen
         row = f'    ("QUESTPC8-MERGED", {own_only}),'
@@ -63,7 +114,23 @@ def regenerate(source, base, updates, qengine, npc, starting=None, custody=None,
                 later = later.replace('"QUESTPC8-MERGED"', f'"QUESTPC8-MERGED" | "{name}"')
         later = re.sub(r"Frozen own-only cohort\d+ plus\d+ post-baseline main registrations\.",
                        "Frozen published union partitions the same205 post-baseline registrations.", later)
-        if frozen is not None:
+        if custody is not None and baseline_cohorts is not None:
+            if baseline_qengine_count is None:
+                raise ValueError('missing immutable QENGINE baseline cohort')
+            cohorts = declared_cohorts(source)
+            # The NPC row is independently deducted below. Every other row
+            # absent from the immutable published baseline is a later cohort,
+            # including the package's corpse/profile successors.
+            later_names = sorted(cohorts.keys() - set(baseline_cohorts) - {'QNPCFX'})
+            later_count = sum(cohorts[name] for name in later_names)
+            later = ('    let later_main_profiles = PROFILE_ADDITIONS\n'
+                     '        .iter()\n        .filter(|(name, _)| matches!(*name, '
+                     + ' | '.join(json.dumps(name) for name in later_names)
+                     + '))\n        .map(|(_, count)| count)\n        .sum::<usize>();\n'
+                     + f'    assert_eq!(later_main_profiles, {later_count});\n'
+                     + f'    const QENGINE2_BASE_PROFILES: usize = {baseline_qengine_count};\n'
+                     + f'    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + {len(keys(qengine)) - baseline_qengine_count});\n')
+        elif frozen is not None:
             cohort_names = {"WORLDCHG", "SRV9-MARRIAGE", "QNPCFX", "QUESTPC4-STAG-ITEMS", "QUESTPC8-MERGED", "QREADY1", "QREADY2"}
             table = source.split("const PROFILE_ADDITIONS:", 1)[1].split("];", 1)[0]
             later_count = sum(int(n.replace("_", "")) for name, n in re.findall(r'\("([^\"]+)",\s*([\d_]+)\)', table) if name in cohort_names)
@@ -161,14 +228,28 @@ def main():
         "content/items/definitions/starting-loadout-profiles.json",
     )
     source = TEST.read_text()
+    census_path = ROOT / "tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"
+    custody = json.loads(census_path.read_text()) if "questpc8-equipment-custody-census.json" in source else None
+    baseline_cohorts = None
+    baseline_qengine_count = None
+    if custody is not None:
+        published = subprocess.check_output(['git', 'show', custody['base'] + ':' + TEST.relative_to(ROOT).as_posix()], cwd=ROOT, text=True)
+        baseline_cohorts = set(declared_cohorts(published))
+        baseline_qengine = subprocess.check_output(['git', 'show', custody['base'] + ':tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'], cwd=ROOT)
+        baseline_qengine_count = len(keys(json.loads(baseline_qengine)))
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths),
-        custody=(json.loads((ROOT / "tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json").read_text())
-                 if "questpc8-equipment-custody-census.json" in source else None),
+        custody=custody,
+        baseline_cohorts=baseline_cohorts,
+        baseline_qengine_count=baseline_qengine_count,
         overlap_keys=(set() if "questpc8-equipment-custody-census.json" in source else
             {f"oteryn:item.tibia.i{i}" for i in
              __import__('qengine_reward_item_profiles').PREVIOUSLY_COUNTED_IDS}),
         frozen=None if "questpc8-equipment-custody-census.json" in source else frozen_union(),
+    )
+    generated = subprocess.check_output(
+        ['rustfmt', '--edition', '2024', '--config', 'skip_children=true'],
+        input=generated, text=True, cwd=ROOT,
     )
     if args.check and generated != source:
         raise SystemExit("equipment cohort pin is stale")

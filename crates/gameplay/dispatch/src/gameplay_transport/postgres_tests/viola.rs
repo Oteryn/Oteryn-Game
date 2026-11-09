@@ -477,19 +477,21 @@ async fn install_source(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    let document: serde_json::Value = serde_json::from_slice(&std::fs::read(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/npc-placements/placements-00000-00033.json"
-    ))?)?;
-    let declaration = document["records"]
-        .as_array()
-        .ok_or("placements")?
-        .iter()
-        .find_map(|row| {
-            let d = &row["declaration"];
-            (d["npc"].as_str() == Some("oteryn:npc.viola")).then_some(d)
-        })
-        .ok_or("authored Viola placement")?;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/world/npc-placements");
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("index.json"))?)?;
+    let mut placements = Vec::new();
+    for shard in index["shards"].as_array().ok_or("placement shards")? {
+        let path = shard.as_str().ok_or("placement shard path")?;
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..").join(path),
+        )?)?;
+        placements.extend(document["records"].as_array().ok_or("placements")?.iter().cloned());
+    }
+    let matches: Vec<_> = placements.iter().map(|row| &row["declaration"])
+        .filter(|row| row["npc"].as_str() == Some("oteryn:npc.viola")).collect();
+    assert_eq!(matches.len(), 1, "one authored Viola placement");
+    let declaration = matches[0];
     assert_eq!(
         declaration["cell"],
         serde_json::json!({"x":32571,"y":32507,"floor":7})

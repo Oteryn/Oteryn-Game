@@ -123,7 +123,8 @@ pub(super) fn prepare(
     };
     let sessions = admission.states.quest_sessions.lock().ok()?;
     let copy = sessions.get(&command.game_session_id)?.copy.as_ref()?;
-    let choice = select(&context, &topic, fresh_conversation, copy.tracks())?;
+    let tracks = copy.read_tracks(admission.quest_catalogue.as_deref()?)?;
+    let choice = select(&context, &topic, fresh_conversation, &tracks)?;
     Some(Step {
         context,
         topic,

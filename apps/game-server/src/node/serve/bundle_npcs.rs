@@ -368,10 +368,18 @@ impl LoadedNpcCatalogue {
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
         let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
             .map_err(|_| BootError::ContentActivation("native NPC quest catalogue"))?;
+        let rewards = oteryn_gameplay_quests::quest::reward_callbacks::load()
+            .map_err(|_| BootError::ContentActivation("native NPC reward catalogue"))?;
         let native_npcs = source
             .programs()
             .iter()
             .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+            .chain(
+                rewards
+                    .iter()
+                    .filter(|reward| reward.carried_item.is_none())
+                    .map(|reward| reward.npc.as_str()),
+            )
             .chain(std::iter::once("oteryn:npc.viola"))
             .collect::<BTreeSet<_>>()
             .into_iter()

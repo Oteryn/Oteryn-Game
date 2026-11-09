@@ -809,6 +809,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     self.states.loop_ground.invalidate();
                     self.apply_committed_quest_copy(session, fresh, committed);
+                    // Publish the committed activation before the next lethal turn;
+                    // the cadence reload still owns recovery and pending obligations.
+                    self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
+                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
                     self.schedule_quest_refresh(session);
                 }
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {

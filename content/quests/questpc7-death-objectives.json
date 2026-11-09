@@ -110,7 +110,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
       ]
     },
@@ -141,7 +141,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
       ]
     },
@@ -172,7 +172,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
       ]
     },
@@ -459,7 +459,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -491,7 +491,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -523,7 +523,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -555,7 +555,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -587,7 +587,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -619,7 +619,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -651,7 +651,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -683,7 +683,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
@@ -715,7 +715,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -747,7 +747,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -779,7 +779,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -811,7 +811,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -843,7 +843,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z08-x129-y125.b3:1:sha256:29959154e97f6a6dd24b0cf3076f3316b218717ea0f2a0165b1dc90530ee9ea4",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -875,7 +875,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z09-x129-y124.b3:1:sha256:54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -907,7 +907,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z09-x129-y125.b3:1:sha256:c1fcb7d5e080ccec3f7b90b7cac20fd12ef72db083ac86a3dbc823b9b092f2c3",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -939,7 +939,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -971,7 +971,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -1003,7 +1003,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -1035,7 +1035,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -1067,7 +1067,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -1099,7 +1099,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -1131,7 +1131,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x125-y122.b3:1:sha256:7428566700a7797e6b7192751f44a0964e148c53844be8480f32ab8242314367",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -1163,7 +1163,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x126-y122.b3:1:sha256:3df7f463fc58299f2b4cd53aba79344414f4d72e6e2d0c56a0f5d4631718e494",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/heart_of_destruction/actions_anomaly_lever.lua:1-39:sha256:b552a05e52be2c70c107ea0a1034710c081f3ac03ebfff98a8f957478abbc831"
       ]
@@ -1195,7 +1195,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x128-y128.b3:1:sha256:e8f96a7b6754fcf438b1a55bbe0d73cedd6e4e3321b0b6c33303c294dffe7f3b",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -1227,7 +1227,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -1259,7 +1259,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x127-y128.b3:1:sha256:f818c8913aab12300cd2e84dc6593a76215f758a8b83c8ac9c62c5329b29b3e7",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -1291,7 +1291,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z10-x130-y121.b3:1:sha256:8eda13410a87ebf971595eeacb54bbe16eb2ba2bfc379fc4f1cd3af7fd8a48ef",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -1323,7 +1323,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x128-y123.b3:1:sha256:dcfa219637e4fe4d31dbc93bf592057d93ef3d37d6bdd10c1d183235637b4fc6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -1355,7 +1355,7 @@
         "respawn_ms": 60000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "content/world/placements/region-z14-x124-y128.b3:1:sha256:2a5e9f0f36729af80ae8a40c92d07ebde9b20410966aefc248512247cb73e791",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907"
       ]
@@ -1380,7 +1380,7 @@
       },
       "sources": [
         "content/world/spawns/spawns-10000-11999.json:1:sha256:a74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ]
     },
@@ -1411,7 +1411,7 @@
         "respawn_ms": 90000
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/49/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
         "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:content/quests/authored-world-callbacks.json:authored-smith-cache",
         "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
         "content/world/placements/region-z08-x128-y125.b3:sha256:76c361de85ac9c6306f4e7eb5d52a52117f695a15bed7629b1ed735c789a593f"

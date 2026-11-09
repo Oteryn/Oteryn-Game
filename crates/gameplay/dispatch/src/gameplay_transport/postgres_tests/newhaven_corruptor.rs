@@ -696,14 +696,12 @@ async fn qualify_lifecycle(
     h: &Harness,
     corpse: [u8; 16],
 ) -> TestResult {
-    sqlx::raw_sql(sqlx::AssertSqlSafe(
-        include_str!(
-            "../../../../../../apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql"
-        )
-        .to_owned(),
-    ))
-    .execute(&h.pool)
-    .await?;
+    // Harness creation applies the complete migration chain. Reapplying 1300
+    // collides with its CREATE FUNCTION and would also replace later proofs.
+    let chain: Vec<i32> = sqlx::query_scalar(
+        "SELECT game_summer_corpse_chain('oteryn:item.tibia.i52113')",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(chain, vec![52113, 52114, 52115, 52116]);
     let schedules: Vec<(i32, i64, i64)> = sqlx::query_as("SELECT p.source_stage,p.duration_millis,p.expires_at_unix_ms-m.materialized_at FROM game_spell_field_temporal_schedules p JOIN game_item_mint_receipts m USING(item_instance_id) WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
         .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(

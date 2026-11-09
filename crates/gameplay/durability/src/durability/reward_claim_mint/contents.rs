@@ -381,6 +381,9 @@ pub(super) async fn apply(
             )
             .await?;
         }
+        if let Some(subtype) = child.fluid_subtype {
+            super::fluid::initialize(tx, reservation, item, transaction, subtype).await?;
+        }
     }
     Ok(())
 }

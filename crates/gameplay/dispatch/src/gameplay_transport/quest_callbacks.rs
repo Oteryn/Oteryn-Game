@@ -269,6 +269,28 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return true;
     }
     let selector = &callback.selector;
+    if selector.ordinal.is_some()
+        && selector.unique.is_none()
+        && selector.action.is_none()
+        && let Some(appearance) = selector.appearance
+        && !map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|base| {
+                base.ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+                    .map(|(id, _)| *id)
+            })
+            .is_some_and(|id| map.facts.quest_callback_native_object(key, id, appearance))
+    {
+        // An authored ordinal alias describes a bare native object. Retained
+        // UID/AID bindings keep their existing source owner, including chests.
+        return false;
+    }
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.
     selector.matches_position(Position {
@@ -824,8 +846,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 sessions
                                     .get(&command.game_session_id)
                                     .and_then(|s| s.copy.as_ref())
-                                    .and_then(|copy| copy.tracks().get(&activation.track))
-                                    .copied()
+                                    .and_then(|copy| {
+                                        copy.read_tracks(self.quest_catalogue.as_deref()?)?
+                                            .get(&activation.track)
+                                            .copied()
+                                    })
                             })
                             .is_some_and(|value| {
                                 (activation.minimum..=activation.maximum).contains(&value)
@@ -848,7 +873,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(UseOutcome::rejected());
             };
-            let Some(callback) = unique_eligible(selected.iter().copied(), copy.tracks()) else {
+            let Some(tracks) = self
+                .quest_catalogue
+                .as_deref()
+                .and_then(|catalogue| copy.read_tracks(catalogue))
+            else {
+                return Some(UseOutcome::rejected());
+            };
+            let Some(callback) = unique_eligible(selected.iter().copied(), &tracks) else {
                 return Some(UseOutcome::rejected());
             };
             callback
@@ -1101,10 +1133,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(copy) = sessions.get(&session).and_then(|state| state.copy.as_ref()) else {
                 return entered;
             };
-            let Some(callback) = unique_eligible(
-                selected.iter().map(|(callback, _)| *callback),
-                copy.tracks(),
-            ) else {
+            let Some(tracks) = self
+                .quest_catalogue
+                .as_deref()
+                .and_then(|catalogue| copy.read_tracks(catalogue))
+            else {
+                return entered;
+            };
+            let Some(callback) =
+                unique_eligible(selected.iter().map(|(callback, _)| *callback), &tracks)
+            else {
                 return entered;
             };
             let Some(pair) = selected

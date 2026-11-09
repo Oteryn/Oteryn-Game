@@ -316,10 +316,17 @@ impl QuestStateCopy {
             .is_some_and(|value| *value != -1)
     }
     /// Stored track values with supported read projections (including the Monk shrine count).
-    /// Admission projects declared non-minus-one initials; legacy absence remains `-1`.
+    /// Declared defaults belong to [`Self::read_tracks`], not stored progress.
     #[must_use]
     pub fn tracks(&self) -> &BTreeMap<String, i64> {
         &self.tracks
+    }
+
+    /// A bounded evaluation view of declared defaults, without adding unearned
+    /// rows to the session's stored progress projection.
+    pub fn read_tracks(&self, catalogue: &QuestStateCatalogue) -> Option<BTreeMap<String, i64>> {
+        let mut view = self.clone();
+        view.project_declared_initials(catalogue).then_some(view.tracks)
     }
 
     #[must_use]
@@ -468,7 +475,7 @@ pub async fn admit_character_quest_state(
         };
     };
     if let Some(catalogue) = catalogue
-        && !copy.project_declared_initials(catalogue)
+        && copy.read_tracks(catalogue).is_none()
     {
         return QuestAdmission { copy: None, retry: false };
     }

@@ -73,8 +73,7 @@ pub(super) fn prepare(
             .get(&command.game_session_id)?
             .copy
             .as_ref()?
-            .tracks()
-            .clone()
+            .read_tracks(admission.quest_catalogue.as_deref()?)?
     };
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;

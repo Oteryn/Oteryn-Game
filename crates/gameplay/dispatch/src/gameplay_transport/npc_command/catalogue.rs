@@ -76,7 +76,7 @@ pub(super) fn prepare(
     let tracks = {
         let sessions = admission.states.quest_sessions.lock().ok()?;
         let copy = sessions.get(&command.game_session_id)?.copy.as_ref()?;
-        let mut tracks = copy.tracks().clone();
+        let mut tracks = copy.read_tracks(catalogue)?;
         for (quest, state) in copy.states() {
             if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
                 catalogue,

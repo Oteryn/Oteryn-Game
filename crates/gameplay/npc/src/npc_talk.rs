@@ -30,6 +30,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
@@ -371,7 +372,10 @@ impl NpcTalkBook {
                 model,
                 &reference.key,
                 &npc.services,
-            );
+            )
+            .into_iter()
+            .filter(|route| native_quest || route.quest_gate.is_none())
+            .collect::<Vec<_>>();
             let bank = npc
                 .services
                 .iter()
@@ -1148,10 +1152,12 @@ mod tests {
         }];
         let mut engaged = None;
         let greeting = talk(at(100), "hi", &npcs, &mut engaged).ok_or("greeting")?;
-        assert_eq!(greeting.text, "Yasu me halaka. <greets you friendly>");
+        // The qualified Lua consumer uses NpcHandler's default greeting;
+        // the retained historic XML dialogue does not own this native book.
+        assert_eq!(greeting.text, "Greetings, |PLAYERNAME|.");
         assert_eq!(engaged, Some(1));
         let trade = talk(at(100), "trade", &npcs, &mut engaged).ok_or("trade")?;
-        assert_eq!(trade.text, "Si! Haneka ariki!");
+        assert_eq!(trade.text, "Tje hari ku ne finjala. {Ariki}?");
         let farewell = talk(at(100), "bye", &npcs, &mut engaged).ok_or("farewell")?;
         assert_eq!(farewell.text, "Si, jema ze harun. <waves>");
         assert_eq!(engaged, None);

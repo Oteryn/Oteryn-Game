@@ -456,24 +456,30 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .filter(|(name, _)| {
             matches!(
                 *name,
-                "WORLDCHG"
-                    | "SRV9-MARRIAGE"
-                    | "QUESTPC4-STAG-ITEMS"
+                "QENGINE-REWARDS"
                     | "QREADY1"
                     | "QREADY2"
-                    | "W10-PRIMAL"
-                    | "SRVENC-W02"
-                    | "SEASON-W18-HOUSE"
-                    | "QENGINE-REWARDS"
+                    | "QUESTPC2-SOURCE-CLOSURE"
+                    | "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC7-HOT-CORPSES"
+                    | "QUESTPC7-HOT-FISHBURGER"
+                    | "QUESTPC7-MARSH-CORPSES"
+                    | "QUESTPC7-REGISTERED-UNION"
+                    | "QUESTPC7-SLUG-CORPSES"
+                    | "QUESTPC7-SMITH"
+                    | "QUESTPC7-SMITH-CORPSES"
                     | "QUESTPC8-MERGED"
                     | "SEASON-W05D"
+                    | "SEASON-W18-HOUSE"
+                    | "SRV9-MARRIAGE"
+                    | "SRVENC-W02"
+                    | "W10-PRIMAL"
+                    | "WORLDCHG"
             )
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2_270);
-    // BASE1ae39c7f has53 QENGINE2 records. Main's seven QUESTPC4 records
-    // are already enumerated in the generated custody delta, not in that base.
+    assert_eq!(later_main_profiles, 2442);
     const QENGINE2_BASE_PROFILES: usize = 53;
     assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 75);
     let baseline = ORIGINAL_PROFILES
@@ -537,7 +543,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 71),
+        ("qengine-reward-item-profiles.json", 128),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -552,17 +558,25 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             let key = source["production_definition"]["production_key"]
                 .as_str()
                 .ok_or("source Item key")?;
-            assert_eq!(
-                source["attributes"]["speed_bonus"],
-                serde_json::json!(0),
-                "source speed {path}:{key}"
-            );
             let actual = profiles
                 .records
                 .iter()
                 .find(|row| row.production_definition.production_key == key)
                 .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
-            assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
+            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
+                assert!(
+                    source["attributes"]["speed_bonus"].is_null(),
+                    "source speed {path}:{key}"
+                );
+                assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            } else {
+                assert_eq!(
+                    source["attributes"]["speed_bonus"],
+                    serde_json::json!(0),
+                    "source speed {path}:{key}"
+                );
+                assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
+            }
             assert!(actual.admission.materializable, "{path}:{key}");
         }
     }

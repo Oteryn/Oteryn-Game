@@ -148,7 +148,12 @@ pub(super) async fn exercise(
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&h.pool)
         .await?;
-    let _ = super::qengine_rewards::wire_reward(owner, admitted, npc, join, false).await?;
+    // With the independent parent absent, the guarded source conversation
+    // refuses its first "yes" as well as the final document confirmation.
+    let (refused, _, _) = super::qengine_rewards::wire_reward_with_prefix_refusal(
+        owner, admitted, npc, join, false, Some(2),
+    ).await?;
+    assert_eq!(refused, oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected);
     let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
         .fetch_one(&h.pool)
         .await?;

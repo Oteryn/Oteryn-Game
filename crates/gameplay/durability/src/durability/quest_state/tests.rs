@@ -249,3 +249,18 @@ fn admission_defaults_preserve_stored_progress_and_refuse_overflow_atomically() 
     assert!(!full.project_declared_initials(&catalogue));
     assert_eq!(full, before);
 }
+
+#[test]
+fn evaluation_defaults_do_not_seed_unrelated_live_progress() {
+    use oteryn_gameplay_quests::quest::QuestTrack;
+    let key = "oteryn:quest-progress/storage/4500";
+    let catalogue = QuestStateCatalogue::new("content-1", vec![QuestTrack {
+        key: key.into(), quest: "oteryn:quest/initials".into(), initial: 0, min: -1, max: 1,
+    }], vec![]).expect("catalogue");
+    let copy = QuestStateCopy::default();
+    let before = copy.clone();
+    assert_eq!(copy.read_tracks(&catalogue).expect("bounded defaults").get(key), Some(&0));
+    assert_eq!(copy, before);
+    assert!(copy.tracks().is_empty());
+    assert!(!copy.meets_door_storage(4500));
+}

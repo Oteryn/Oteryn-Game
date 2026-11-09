@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct DeathObjective {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -23,7 +23,7 @@ pub struct DeathObjective {
     pub sources: Vec<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct GuardianSpawn {
     pub position: Position,
@@ -130,9 +130,44 @@ fn parse(text: &str) -> Result<Vec<DeathObjective>, String> {
 pub fn load() -> Result<&'static [DeathObjective], String> {
     static DATA: OnceLock<Result<Vec<DeathObjective>, String>> = OnceLock::new();
     DATA.get_or_init(|| {
-        parse(include_str!(
-            "../../../../../content/quests/questpc7-death-objectives.json"
-        ))
+        let mut objectives: Vec<DeathObjective> = Vec::new();
+        let mut keys = BTreeSet::new();
+        for source in [
+            include_str!("../../../../../content/quests/authored-death-objectives.json"),
+            include_str!("../../../../../content/quests/questpc7-death-objectives.json"),
+        ] {
+            for objective in parse(source)? {
+                if !keys.insert(objective.key.clone()) {
+                    // QuestPC7 explicitly consolidates the existing smith cache.
+                    // Only its provenance changes; never replace another plan.
+                    let previous = objectives
+                        .iter_mut()
+                        .find(|row| row.key == objective.key)
+                        .ok_or("missing duplicate objective")?;
+                    let mut before = previous.clone();
+                    let mut after = objective.clone();
+                    before.sources.clear();
+                    after.sources.clear();
+                    if objective.key != "oteryn:quest-death/authored-smith-guardian"
+                        || before != after
+                        || !objective.sources.iter().any(|source| {
+                            source.starts_with(
+                                "reused:questpc8:3b315d18dbb0a3a00149a2a14b9a19fcb42053a1:",
+                            )
+                        })
+                    {
+                        return Err("conflicting death objective catalogue".into());
+                    }
+                    *previous = objective;
+                    continue;
+                }
+                if objectives.len() >= MAX_OBJECTIVES {
+                    return Err("duplicate or oversized death objective catalogue".into());
+                }
+                objectives.push(objective);
+            }
+        }
+        Ok(objectives)
     })
     .as_ref()
     .map(Vec::as_slice)
@@ -213,6 +248,29 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn merged_catalogue_retains_both_authored_and_questpc7_guardians() -> Result<(), String> {
+        let objectives = load()?;
+        for key in [
+            "oteryn:quest-death/authored-anniversary-cyclops",
+            "oteryn:quest-death/questpc7-hydra-guardian",
+        ] {
+            assert!(
+                objectives
+                    .iter()
+                    .any(|row| row.key == key && row.guardian.is_some())
+            );
+        }
+        assert_eq!(objectives.len(), 61);
+        assert_eq!(
+            objectives
+                .iter()
+                .filter(|row| row.key == "oteryn:quest-death/authored-smith-guardian")
+                .count(),
+            1
+        );
+        Ok(())
+    }
     fn fixture(count: usize) -> Result<serde_json::Value, String> {
         let source: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/questpc7-death-objectives.json"

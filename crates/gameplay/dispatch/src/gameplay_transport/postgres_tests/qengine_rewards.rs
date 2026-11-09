@@ -364,6 +364,21 @@ pub(super) async fn wire_reward(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
+    wire_reward_with_prefix_refusal(owner, admitted, npc, callback, expect_outfit, None).await
+}
+
+pub(super) async fn wire_reward_with_prefix_refusal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+    prefix_refusal: Option<u64>,
+) -> TestResult<(
+    NpcIntentDisposition,
+    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
+    u64,
+)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -376,6 +391,8 @@ pub(super) async fn wire_reward(
         .chain(std::iter::once(callback.keywords[0].as_str()))
         .collect();
     let last = admitted.continuity.next_command_id + u64::try_from(words.len())? - 1;
+    let prefix_refusal = prefix_refusal.map(|offset| admitted.continuity.next_command_id + offset);
+    assert!(prefix_refusal.is_none_or(|command| command < last));
     let generation = admitted.continuity.connection_generation;
     let frames = words
         .into_iter()
@@ -495,7 +512,11 @@ pub(super) async fn wire_reward(
                     } else {
                         assert_eq!(
                             disposition,
-                            NpcIntentDisposition::Ok,
+                            if prefix_refusal == Some(command.command_id) {
+                                NpcIntentDisposition::Rejected
+                            } else {
+                                NpcIntentDisposition::Ok
+                            },
                             "conversation command {}",
                             command.command_id
                         );

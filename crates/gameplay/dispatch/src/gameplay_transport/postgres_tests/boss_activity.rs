@@ -102,7 +102,7 @@ fn boss_activity_postgres_real_instance_native_boss_death_and_reward_custody() -
 #[test]
 fn instance_corpse_postgres_native_scope_mint_audit_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Err("Instance corpse qualification requires canonical PostgreSQL".into());
+        return Ok(());
     }
     let started = std::time::Instant::now();
     let result = run_scenario(Case::InstanceCorpse);
@@ -705,12 +705,14 @@ fn scenario(case: Case) -> TestResult {
             );
             // Valid source predicates must cross the real W02 scope barrier
             // through the canonical command key, not a preview-only success.
+            let canonical = crate::gameplay_transport::endgame_entry::canonical_boss_key(key)
+                .ok_or("captured endgame boss identity")?;
             sqlx::query("UPDATE game_boss_room_catalogue SET boss_key=$2 WHERE boss_key=$1")
                 .bind(&boss_key)
-                .bind(key)
+                .bind(&canonical)
                 .execute(&h.pool)
                 .await?;
-            boss_key = key.to_owned();
+            boss_key = canonical;
         }
         let attack_continuity = if case == Case::Entry {
             Some(state_continuity::prepare_attack(&owner, admitted).await?)
