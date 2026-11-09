@@ -8,9 +8,10 @@
   ],
   "command_types": [
     736,
-    737
+    737,
+    6196
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; active native gameplay, selected capability 92 and exact current connected actor required. No durable value mutation."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; active native gameplay, selected capability 92 and exact current connected actor required. Hireling selection additionally requires selected Store and Hireling management; callbacks use the existing fenced Store owner."
 }

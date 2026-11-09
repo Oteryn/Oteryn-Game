@@ -1,8 +1,20 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
-    pub(in crate::play) fn store_initialize(&self, selected: bool) {
+    pub(in crate::play) fn store_modal_answered(
+        &self,
+        answer: oteryn_client_runtime::server_modal::Answer,
+    ) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.store.hireling_modal_id == Some(answer.dialog_id) {
+            mailbox.store.hireling_modal_id = None;
+            mailbox.store.confirmed_purchase = None;
+            mailbox.store.feedback = None;
+        }
+    }
+    pub(in crate::play) fn store_initialize(&self, selected: bool, hireling_modal_selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.store.selected = selected;
+        mailbox.store.hireling_modal_selected = hireling_modal_selected;
         mailbox.store.gift_open = false;
         mailbox.store.gift_fields = Default::default();
         mailbox.store.gift_reviewed = None;

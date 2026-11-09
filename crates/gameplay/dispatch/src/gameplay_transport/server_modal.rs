@@ -1,8 +1,10 @@
-//! Connection-owned informational dialogs; no durable gameplay value is changed.
+//! Connection-owned dialogs; rule callbacks use their existing fenced owners.
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use oteryn_protocol_oteryn::server_modal::{CAPABILITY_SERVER_MODAL_V1, Dialog};
 #[path = "server_modal/owner.rs"]
 mod owner;
+#[path = "server_modal/store.rs"]
+mod store;
 pub(super) use owner::ModalHub;
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
@@ -15,6 +17,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn server_modal_page(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
         kind: u32,
         payload: &[u8],
     ) -> Option<Vec<u8>> {
@@ -33,6 +36,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.game_session_id,
             admitted.continuity.connection_generation,
         )?;
+        drop(runtime);
+        if kind == oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION {
+            return store::start(self, admitted, root, payload).await;
+        }
+        if kind == oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_ANSWER
+            && let Some(reply) = store::answer(self, admitted, root, command_id, payload).await
+        {
+            return reply;
+        }
         let notice = (!self.server_motd.is_empty()).then(|| Dialog {
             id: 1,
             title: "Server notice".into(),
@@ -55,6 +67,7 @@ macro_rules! authority_methods {
         fn server_modal_execute(
             &self,
             _admitted: $crate::gameplay_transport::AdmittedSession,
+            _command_id: u64,
             _kind: u32,
             _payload: &[u8],
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
@@ -73,10 +86,12 @@ macro_rules! composed_methods {
         async fn server_modal_execute(
             &self,
             admitted: connection::AdmittedSession,
+            command_id: u64,
             kind: u32,
             payload: &[u8],
         ) -> Option<Vec<u8>> {
-            self.server_modal_page(admitted, kind, payload).await
+            self.server_modal_page(admitted, command_id, kind, payload)
+                .await
         }
     };
 }
