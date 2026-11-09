@@ -80,9 +80,10 @@
     "three_clear_approaches_progress": "GREEN3passed181.96s:Berserk61.915477873s,DragonTower59.325819576s,FireAxe60.718034379s;Rust/data snapshot ece58df60",
     "spawn_coordinate_frame": "RED missing frame guard0.022s -> GREEN22Python tests26.943s;foreign coordinate frame rejected;activeJSONunchanged",
     "behemoth_activation": "RED missing active entry2.545s -> GREEN23Python tests32.042s;5Rust profile tests0.04s",
-    "behemoth_postgres": "PENDING:real floor12 approach case building;level80+CurrentPremium retained"
+    "behemoth_postgres": "PENDING:real floor12 approach case building;level80+CurrentPremium retained",
+    "frost_claim_resolver": "RED unsupported claim0.191s,thenRED namespace assumption30.694s -> GREEN24Python40.970s plus focusedforeign-owner rejection1.172s. Exactcanonicalsource quest/refmembership replaces inferredCanarynamespace;Frostinactive,activeJSONunchanged"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish Behemoth nativePG;FrostDragon clear corpse-adjacent approach next.12wired,11PG-proven;34routes/44stages unwired. M01b PARTIAL."
+  "continuation": "Finish Behemoth nativePG;activateFrost clear corpse-adjacent entry next.12wired,11PG-proven;34routes/44stages unwired. M01b PARTIAL."
 }

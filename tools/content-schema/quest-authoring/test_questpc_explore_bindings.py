@@ -21,6 +21,23 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_frost_dragon_approach_is_beside_the_retained_quest_corpse(self):
+        binding = (('oteryn:quest.frost_dragon_quest', 's1',
+                    'claim:canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir',
+                    'chosen-source/frost_dragon_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32146, 'y': 31431, 'floor': -8},
+                'ordinal': 0, 'appearance': 4407})
+            self.assertEqual(callback['admission'], {'premium': True})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+        foreign = (('oteryn:quest.longsword_quest', 's1', binding[0][2],
+                    'chosen-source/longsword_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', foreign):
+            with self.assertRaisesRegex(ValueError, 'same canonical quest'):
+                explore.callbacks(ROOT)
+
     def test_behemoth_floor_entry_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT) if c['quest'] == 'oteryn:quest.behemoth_quest']
         self.assertEqual(len(callbacks), 1, 'Behemoth floor entry is activated')
