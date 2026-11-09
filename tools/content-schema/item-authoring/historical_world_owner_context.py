@@ -23,6 +23,7 @@ SOULPIT_NOTE = (
     " total 8669 Terrain records."
 )
 SUGAR_GROUND = "terrain-08614-08692.json"
+FEROXA_STATIC = "terrain-08748-08748.json"
 
 
 @lru_cache(maxsize=1)
@@ -59,6 +60,19 @@ def original_marker(root):
     """Recover the exact old marker after independently qualified owner additions."""
     root = Path(root)
     raw = (root / MARKER).read_bytes()
+    feroxa = root / "content/world/terrain" / FEROXA_STATIC
+    if feroxa.exists():
+        path = Path(__file__).resolve().parents[1] / "world-object-authoring/feroxa_static.py"
+        spec = importlib.util.spec_from_file_location("historical_feroxa_static", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        expected = module.outputs(root)[module.SHARD]
+        marker = json.loads(raw)
+        if (feroxa.read_bytes() != expected or not marker["notes"].endswith(module.NOTE)
+                or (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw):
+            raise ValueError("source digest drift: Feroxa static World witness")
+        marker["notes"] = marker["notes"].removesuffix(module.NOTE)
+        raw = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     sugar = root / "content/world/terrain" / SUGAR_GROUND
     if sugar.exists():
         raw = without_sugar(root, raw)
@@ -111,7 +125,7 @@ def link_world(root, target, detached=()):
         for path in source.iterdir():
             if path.name == "index.json":
                 (destination / path.name).write_bytes(original)
-            elif path.name not in {GROUND, SOULPIT, SUGAR_GROUND}:
+            elif path.name not in {GROUND, SOULPIT, SUGAR_GROUND, FEROXA_STATIC}:
                 (destination / path.name).symlink_to(path.resolve())
 
 

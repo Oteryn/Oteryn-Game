@@ -504,6 +504,12 @@ def validate_record(record):
     if errors:
         return errors
     if "item_pointer" not in record["provenance"]:
+        import feroxa_static
+
+        if (record["provenance"]["source"].get("profile") == feroxa_static.PROFILE
+                or record["provenance"]["source_item_id"] == feroxa_static.IDENTIFIER):
+            return ([] if record in feroxa_static.records()
+                    else ["Feroxa scenery differs from its pinned source map and official appearance"])
         import soulpit_static
 
         if (

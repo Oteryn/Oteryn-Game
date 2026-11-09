@@ -94,6 +94,7 @@ CHECKS = (
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/feroxa_static.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
@@ -617,6 +618,7 @@ def main() -> int:
     if args.native_only:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
@@ -642,6 +644,7 @@ def main() -> int:
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     materialize_world()
+    run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])

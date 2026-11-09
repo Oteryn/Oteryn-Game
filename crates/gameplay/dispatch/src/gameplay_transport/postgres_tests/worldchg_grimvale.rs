@@ -467,7 +467,7 @@ fn producer_world(
         family: bundle::Family::Terrain,
         id: 3,
         terrain: Some(bundle::Terrain {
-            kind: bundle::TerrainKind::Common,
+            kind: bundle::TerrainKind::Border,
             walkable: None,
             ground_speed: None,
             blocks_projectile: Some(false),

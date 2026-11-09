@@ -408,6 +408,14 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import feroxa_static
+
+        files[feroxa_static.SHARD] = feroxa_static.outputs()[feroxa_static.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += feroxa_static.NOTE
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     return files, world_objects.census_document_bytes(result)
 
 

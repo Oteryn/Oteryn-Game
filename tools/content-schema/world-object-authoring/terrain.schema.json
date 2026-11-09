@@ -365,7 +365,8 @@
                     "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
                     "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
-                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                    "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
                   ]
                 },
                 "client_version": {
@@ -836,6 +837,38 @@
               "item_pointer"
             ]
           }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "feroxa_fixed_source_scenery"
+                }
+              }
+            },
+            "source_item_id": {
+              "const": 13841
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
         }
       ]
     },
@@ -918,6 +951,16 @@
                     },
                     "profile": {
                       "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
                     }
                   }
                 }
