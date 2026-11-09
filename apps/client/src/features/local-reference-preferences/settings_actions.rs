@@ -125,6 +125,7 @@ impl SettingsState {
         self.minimap_edit = self.battle_edit;
         self.hud_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
+        self.stash_sort_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
         Ok(())
     }
@@ -169,6 +170,7 @@ impl SettingsState {
             minimap_edit: 0,
             hud_edit: 0,
             spellbook_edit: 0,
+            stash_sort_edit: 0,
             archive_edit: 0,
             battle_edit: 0,
             store,
@@ -296,6 +298,9 @@ impl SettingsState {
         }
         if self.preferences.archive_bindings != preferences.archive_bindings {
             self.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
+        if self.preferences.stash_stock_order != preferences.stash_stock_order {
+            self.stash_sort_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if self.preferences.spellbook_filter != preferences.spellbook_filter {
             self.spellbook_edit = crate::play::feature_0017_attack::view::next_edit();

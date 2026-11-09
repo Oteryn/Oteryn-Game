@@ -95,6 +95,8 @@ use defaults::*;
 pub struct ReferencePreferences {
     #[serde(default)]
     pub performance: PerformanceSettings,
+    #[serde(default)]
+    pub stash_stock_order: bool,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
@@ -265,6 +267,7 @@ impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
             performance: PerformanceSettings::default(),
+            stash_stock_order: false,
             miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),

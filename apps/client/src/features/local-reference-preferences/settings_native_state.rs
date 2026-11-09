@@ -243,6 +243,7 @@ impl Settings {
         state.sync_item_hotkeys(link);
         state.sync_bar_actions(link);
         state.sync_spellbook_filter(link);
+        state.sync_stash_sort(link);
         state.sync_archive_bindings(link);
         state.refresh_custom_choices(link);
         state.sync_chat_context(link);

@@ -7,6 +7,8 @@ pub struct StashPanel {
     pub category: String,
     pub trader: String,
     pub sort: Sort,
+    pub sort_edit: u64,
+    pub return_from_market: bool,
     pub selected: bool,
     pub open: bool,
     pub page: u32,
