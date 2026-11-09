@@ -45,6 +45,21 @@ impl Outbox {
                     .console
                     .metadata
                     .received(&delta.value, received),
+                oteryn_session::SessionEvent::ServerMessage(delta) => {
+                    use oteryn_client_ui::chat::NoticeClass;
+                    let (class, text) = match &delta.value {
+                        oteryn_session::ServerMessage::Advance(text) => {
+                            (NoticeClass::Event, text.clone())
+                        }
+                        oteryn_session::ServerMessage::StatusText(text) => {
+                            (NoticeClass::Status, text.clone())
+                        }
+                        oteryn_session::ServerMessage::Warning(text) => {
+                            (NoticeClass::Status, format!("Warning: {text}"))
+                        }
+                    };
+                    mailbox.chat.console.notices.push(class, &text, received);
+                }
                 oteryn_session::SessionEvent::ChatSnapshot(_) => {
                     mailbox.chat.console.metadata.reset_history()
                 }

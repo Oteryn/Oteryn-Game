@@ -2,6 +2,9 @@
 #[path = "../../components/console_display.rs"]
 mod display;
 pub use display::{ConsoleDisplay, Metadata};
+#[path = "../../components/console_filters.rs"]
+mod filters;
+pub use filters::{ConsoleFilters, ConsoleNotices, NoticeClass};
 mod input;
 mod protocol;
 mod state;

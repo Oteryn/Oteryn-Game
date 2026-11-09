@@ -20,3 +20,7 @@ mod console_tests;
 
 #[path = "console.rs"]
 mod console;
+
+#[cfg(test)]
+#[path = "filter_tests.rs"]
+mod filter_tests;

@@ -7,8 +7,14 @@ const TIME: usize = 118;
 const SECONDS: usize = 119;
 const LEVELS: usize = 120;
 const OPTIONS: usize = 121;
+const INFO: usize = 122;
+const EVENTS: usize = 123;
+const STATUS: usize = 124;
+const PRIVATE: usize = 125;
+const STORE: usize = 126;
+const PRIVATE_TAB: usize = 127;
 pub(super) fn accepts(id: usize, note: usize) -> bool {
-    (FONT..=OPTIONS).contains(&id) && note == BN_CLICKED as usize
+    (FONT..=PRIVATE_TAB).contains(&id) && note == BN_CLICKED as usize
 }
 pub(super) struct Controls {
     hwnd: HWND,
@@ -55,7 +61,7 @@ impl Controls {
                         CW_USEDEFAULT,
                         CW_USEDEFAULT,
                         410,
-                        200,
+                        370,
                         self.hwnd,
                         null_mut(),
                         null_mut(),
@@ -75,6 +81,12 @@ impl Controls {
                         (TIME, "Receipt time (UTC)", 40),
                         (SECONDS, "Include seconds", 70),
                         (LEVELS, "Show current sender levels", 100),
+                        (INFO, "Information and chat feedback", 140),
+                        (EVENTS, "Event announcements", 170),
+                        (STATUS, "Status and warnings", 200),
+                        (PRIVATE, "Private messages", 230),
+                        (STORE, "Store messages", 260),
+                        (PRIVATE_TAB, "Private messages in Private tab only", 290),
                     ] {
                         control(
                             self.options,
@@ -96,7 +108,7 @@ impl Controls {
                 self.tick(mailbox, commands, transcript);
                 return true;
             }
-            if !(FONT..=LEVELS).contains(&id) {
+            if !(FONT..=PRIVATE_TAB).contains(&id) {
                 return false;
             }
             let display = &mut mailbox.chat.console.display;
@@ -115,7 +127,14 @@ impl Controls {
                 match id {
                     TIME => display.time = checked,
                     SECONDS => display.seconds = checked,
-                    _ => display.levels = checked,
+                    LEVELS => display.levels = checked,
+                    INFO => mailbox.chat.console.filters.information = checked,
+                    EVENTS => mailbox.chat.console.filters.events = checked,
+                    STATUS => mailbox.chat.console.filters.status = checked,
+                    PRIVATE => mailbox.chat.console.filters.private_messages = checked,
+                    STORE => mailbox.chat.console.filters.store = checked,
+                    PRIVATE_TAB => mailbox.chat.console.filters.private_tab = checked,
+                    _ => return false,
                 }
             }
             self.queried = None;
@@ -131,10 +150,17 @@ impl Controls {
     ) {
         unsafe {
             let display = mailbox.chat.console.display;
+            let filters = mailbox.chat.console.filters;
             for (id, checked) in [
                 (TIME, display.time),
                 (SECONDS, display.seconds),
                 (LEVELS, display.levels),
+                (INFO, filters.information),
+                (EVENTS, filters.events),
+                (STATUS, filters.status),
+                (PRIVATE, filters.private_messages),
+                (STORE, filters.store),
+                (PRIVATE_TAB, filters.private_tab),
             ] {
                 SendMessageW(
                     GetDlgItem(self.options, id as i32),

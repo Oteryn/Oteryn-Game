@@ -9,6 +9,9 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         if !panel.console.communication.visible(line) {
             continue;
         }
+        if !panel.console.filters.visible(panel.console.tab, line) {
+            continue;
+        }
         if !panel.console.show_messages {
             continue;
         }
@@ -18,6 +21,7 @@ pub fn panel_text(panel: &ChatPanel) -> String {
             (ConsoleTab::All, _)
                 | (ConsoleTab::Local, ChatLine::Local { .. })
                 | (ConsoleTab::Private, ChatLine::Private { .. })
+                | (ConsoleTab::Private, ChatLine::PrivateChannel(_))
                 | (ConsoleTab::Guild, ChatLine::Guild(_))
                 | (_, ChatLine::Dropped)
         ) {
@@ -119,7 +123,17 @@ pub fn panel_text(panel: &ChatPanel) -> String {
             _ => {}
         }
     }
-    if let Some(feedback) = &panel.feedback {
+    if panel.console.show_messages && panel.console.tab == crate::chat::ConsoleTab::All {
+        text.push_str(
+            &panel
+                .console
+                .notices
+                .text(panel.console.filters, panel.console.display),
+        );
+    }
+    if panel.console.filters.information
+        && let Some(feedback) = &panel.feedback
+    {
         let _ = writeln!(text, "{feedback}");
     }
     text

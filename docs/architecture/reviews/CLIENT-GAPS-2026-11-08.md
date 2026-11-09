@@ -129,7 +129,7 @@ Zasady przeciw dublowaniu:
 | T052 | Options | Interface / HUD: arcs/distance/size/opacity | MISSING | Brak konfigurowalnych łuków HP/mana. |
 | T053 | Options | Interface / HUD: status bars/panel, style, skills/condition order | PARTIAL | Dane statusu są; brak edytora stylu, pozycji i kolejności. |
 | T054 | Options | Interface / Console: font/time/seconds/level | DONE | Natywne Console display: font, czas odbioru UTC, sekundy i aktualne poziomy z serwera. evidence: apps/client/src/features/0007-chat/console.rs:9 + console_controls_reach_received_lines_and_current_server_levels + console_query_uses_selected_chat_capability_and_leaves_legacy_lines_unchanged + console_metadata_dispatch_checks_selection_and_preserves_unavailable_levels |
-| T055 | Options | Interface / Console: info/event/status/private/store filters | MISSING | Brak niezależnych filtrów i opcji private tab. |
+| T055 | Options | Interface / Console: info/event/status/private/store filters | DONE | Niezależne filtry rzeczywistych wiadomości i wyników sklepu; opcja Private tab zachowuje historię. evidence: apps/client/src/features/0007-chat/console.rs:48 + apps/client/src/features/0007-chat/native_console.rs:84 + console_filters_route_real_notices_store_results_and_private_tabs |
 | T056 | Options | Interface / Game Window: own/other spells, text, loot messages | PARTIAL | Zdarzenia są; brak przełączników według źródła i klasy tekstu. |
 | T057 | Options | Interface / Game Window: target/PvP frame, banner, loot highlight | PARTIAL | Cel jest wybierany; brak konfiguracji ramek/banerów/kolorowania loot. |
 | T058 | Options | Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells | PARTIAL | Brak pełnej strony ustawień barów. |

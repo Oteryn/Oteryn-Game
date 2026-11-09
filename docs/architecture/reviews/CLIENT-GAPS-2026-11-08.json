@@ -311,9 +311,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Console: info/event/status/private/store filters",
-  "status": "MISSING",
-  "gap": "Brak niezależnych filtrów i opcji private tab.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Niezależne filtry informacji/feedbacku, zdarzeń, statusu/ostrzeżeń, wiadomości prywatnych i sklepu są w Console display. Opcja Private tab oddziela prywatne wiadomości od All; ukrywanie nie usuwa historii. Źródła: typowane zdarzenia sesji, wyniki czatu i dekodowane wyniki sklepu.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:48 + apps/client/src/features/0007-chat/native_console.rs:84 + console_filters_route_real_notices_store_results_and_private_tabs"
  },
  {
   "id": "T056",

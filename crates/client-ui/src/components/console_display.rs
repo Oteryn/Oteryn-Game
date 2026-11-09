@@ -21,6 +21,17 @@ impl ConsoleDisplay {
     pub fn valid(self) -> bool {
         [12, 14, 16, 18, 20, 24].contains(&self.font_px)
     }
+    pub fn timestamp(self, time: u64) -> String {
+        if !self.time {
+            return String::new();
+        }
+        let (hours, minutes, seconds) = ((time / 3600) % 24, (time / 60) % 60, time % 60);
+        if self.seconds {
+            format!("[{hours:02}:{minutes:02}:{seconds:02} UTC] ")
+        } else {
+            format!("[{hours:02}:{minutes:02} UTC] ")
+        }
+    }
 }
 pub fn speaker(line: &ChatLine) -> Option<&str> {
     match line {
@@ -84,13 +95,9 @@ impl Metadata {
         let Some(&time) = self.receipts.get(index) else {
             return String::new();
         };
-        let (hours, minutes, seconds) = ((time / 3600) % 24, (time / 60) % 60, time % 60);
-        if display.seconds {
-            format!("[{hours:02}:{minutes:02}:{seconds:02} UTC] ")
-        } else {
-            format!("[{hours:02}:{minutes:02} UTC] ")
-        }
+        display.timestamp(time)
     }
+
     pub fn name(&self, display: ConsoleDisplay, name: &str) -> String {
         if display.levels
             && let Some(level) = self.levels.get(name)
