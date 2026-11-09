@@ -845,6 +845,7 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
         }
     ));
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
+    let mut clear_corpse = None;
     if prove_phases {
         owner.apply_feroxa_map_clock(firing, 0).await.map_err(|_| "new firing before first announcement")?;
         let pending = harness.root.advance_raid_run(&harness.node, firing, owner.channel_id,
@@ -864,6 +865,7 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
             }
             seed_feroxa_clear_item(harness, &owner, id(112), 33428, 31536).await?;
             seed_feroxa_clear_item(harness, &owner, id(114), 33457, 31531).await?;
+            clear_corpse = Some(mint_feroxa_clear_corpse(harness, &owner).await?);
         }
         owner.reset_epoch = 2;
         assert!(owner.apply_feroxa_map_clock(firing, 1_800_000).await.is_err());
@@ -878,6 +880,16 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
             }
 
             owner.apply_feroxa_map_clock(firing, now).await.map_err(|_| "native map timer")?;
+            if let Some((corpse, loot)) = clear_corpse {
+                for item in [corpse, loot] {
+                    let retired: (i16, i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+                    assert_eq!(retired, (2, 0), "source clear retires the actual corpse and its loot");
+                }
+                let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+                    .bind(corpse.as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(entries, 0);
+            }
             if prove_spectators && now == 1_800_000 {
                 let mut timers = crate::gameplay_transport::raid_live_world::FeroxaSpectators::default();
                 let actor = deps.actor;
@@ -1320,4 +1332,49 @@ async fn seed_feroxa_clear_item(
         .bind(pin.frame_binding_digest().as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
+}
+
+/// Trusted fixture baseline is minted through the real corpse and loot owners.
+/// The tested World phase then retires those exact physical identities.
+async fn mint_feroxa_clear_corpse(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<([u8; 16], [u8; 16])> {
+    use crate::durability::item_mint::*;
+    let runtime = owner.runtime.lock().await;
+    let pin = runtime.content_pin();
+    let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let ground = GroundPlacement {
+        spatial_position: [33428_i32.to_be_bytes().as_slice(),31536_i32.to_be_bytes().as_slice(),11_i16.to_be_bytes().as_slice()].concat(),
+        corpse_ref: id(119).to_vec(),
+        map_revision: format!("sha256:{}", hex(pin.map_revision_digest())),
+        content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
+        native_room_placement_context: pin.frame_binding_digest().to_vec(),
+    };
+    let generation = runtime.owner_fence().map_err(debug)?.generation();
+    drop(runtime);
+    let definition = |key: &str| TypedDefinitionRef { family: "Item".into(), production_key: key.into(), revision_ref: "definition-r1".into() };
+    let cause = |purpose: &str, ordinal: u32| ItemMintCause::for_test(owner.world_id, owner.channel_id,
+        generation, 119, 1,
+        TypedDefinitionRef { family: "LootTable".into(), production_key: "fixture:loot.feroxa-clear".into(), revision_ref: "definition-r1".into() },
+        purpose.into(), ordinal);
+    let mut candidate = h.root.freeze_item_mint(owner.character, &h.node, ItemMintRequest {
+        cause: cause(CORPSE_MATERIALIZATION_PURPOSE_KEY, 0), item: definition("oteryn:item.tibia.i5973"),
+        quantity: 1, ground, content_revision: "content-1".into(), ruleset_revision: "ruleset-1".into(), sim_revision: "sim-1".into(),
+    }).await.map_err(debug)?;
+    let permit = owner.spell_lane_permit().await.ok_or("corpse mint permit")?;
+    let corpse = match h.root.commit_corpse_mint(&permit, owner.character, &h.node, &mut candidate, id(41)).await.map_err(debug)? {
+        ItemMintOutcome::Committed(v) => v.item_instance_id,
+        other => return Err(debug(other)),
+    };
+    let mut candidate = h.root.freeze_corpse_loot_mint(owner.character, &h.node, CorpseLootMintRequest {
+        cause: cause("fixture:purpose.feroxa-clear", 1), item: definition("oteryn:item.tibia.i3031"), quantity: 17,
+        placement: CorpseContainerPlacement { corpse_item_instance_id: corpse, placement_ordinal: 1, fluid_subtype: None },
+        content_revision: "content-1".into(), ruleset_revision: "ruleset-1".into(), sim_revision: "sim-1".into(),
+    }).await.map_err(debug)?;
+    let loot = match h.root.commit_corpse_loot_mint(&permit, owner.character, &h.node, &mut candidate).await.map_err(debug)? {
+        ItemMintOutcome::Committed(v) => v.item_instance_id,
+        other => return Err(debug(other)),
+    };
+    Ok((corpse, loot))
 }
