@@ -231,6 +231,17 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.player_speech.as_ref().is_some_and(|text| {
         callback.actor_kind != ActorKind::Player
             || text.is_empty()
+            // CHAT0-RL-01: 255 Unicode scalars, each at most four UTF-8 bytes.
+            || text.len() > 1_020
+            || text.chars().count() > 255
+            || text.trim() != text.as_str()
+            || text.chars().any(char::is_control)
+    }) {
+        return false;
+    }
+    if effects.player_speech.as_ref().is_some_and(|text| {
+        callback.actor_kind != ActorKind::Player
+            || text.is_empty()
             || text.len() > 255
             || text.trim() != text.as_str()
             || text.chars().any(char::is_control)
@@ -473,6 +484,53 @@ pub(super) fn valid(callback: &Callback) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod speech_tests {
+    use super::*;
+
+    #[test]
+    fn qm46_authored_public_speech_accepts_chat_unicode_boundaries() -> Result<(), String> {
+        let mut callback = super::super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/children-grease")
+            .ok_or("grease callback")?;
+        for scalar in ["x", "é", "界", "🦋"] {
+            callback.effects.player_speech = Some(scalar.repeat(255));
+            let document = serde_json::json!({"schema": 1, "callbacks": [&callback]});
+            super::super::parse(&document.to_string())?;
+            callback.effects.player_speech = Some(scalar.repeat(256));
+            let document = serde_json::json!({"schema": 1, "callbacks": [&callback]});
+            assert!(super::super::parse(&document.to_string()).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn qm46_public_speech_is_bounded_and_player_only() -> Result<(), String> {
+        let original = super::super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/children-grease")
+            .ok_or("grease callback")?;
+        assert!(valid(&original));
+        for text in [
+            String::new(),
+            "x".repeat(256),
+            " whitespace ".into(),
+            "tab\t".into(),
+            "line\nbreak".into(),
+            "nul\0".into(),
+        ] {
+            let mut callback = original.clone();
+            callback.effects.player_speech = Some(text);
+            assert!(!valid(&callback));
+        }
+        let mut monster = original;
+        monster.actor_kind = ActorKind::Monster;
+        assert!(!valid(&monster));
+        Ok(())
+    }
 }
 
 #[cfg(test)]
