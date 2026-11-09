@@ -542,10 +542,19 @@ fn producer_world(
 
 #[test]
 fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestResult {
+    run_producer(false)
+}
+
+#[test]
+fn qn5_feroxa_final_opens_portal_when_boss_spawn_is_blocked() -> TestResult {
+    run_producer(true)
+}
+
+fn run_producer(block_spawn: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("worldchg-grimvale-producer", || {
+    super::kill_reward_e2e::scenario_thread::run("worldchg-grimvale-producer", move || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,
@@ -554,7 +563,7 @@ fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestRe
                 false,
             )
             .await?;
-            let result = producer_scenario(&h).await;
+            let result = producer_scenario(&h, block_spawn).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -590,7 +599,7 @@ async fn producer_seed(
     Ok(())
 }
 
-async fn producer_scenario(harness: &Harness) -> TestResult {
+async fn producer_scenario(harness: &Harness, block_spawn: bool) -> TestResult {
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -727,7 +736,10 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     let mut extra_players = Vec::new();
     for (n, at) in [
         (81, Position { x: TRIGGER.x - 2, ..TRIGGER }),
-        (82, Position { x: 33457, y: 31531, floor: -11 }),
+        (82, if block_spawn {
+            // An actual current player occupies the source's only spawn tile.
+            Position { x: 33380, y: 31537, floor: -11 }
+        } else { Position { x: 33457, y: 31531, floor: -11 } }),
         (83, DESTINATION),
     ] {
         let session = crate::foundation::GameSessionId::decode(&id(n)).map_err(debug)?;
@@ -805,7 +817,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         .await
         .map_err(|_| "physical raid wave")?;
     assert_eq!(outcomes.len(), expected);
-    assert!(outcomes.iter().all(|outcome| outcome.placed));
+    assert!(outcomes.iter().all(|outcome| outcome.placed != block_spawn));
     assert_eq!(
         deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
         super::quest_world_callbacks::local(DESTINATION),
@@ -874,6 +886,15 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     let mut runtime = deps.runtime.lock().await;
     let statuses = runtime.raid_creatures(firing).map_err(debug)?;
     assert_eq!(statuses.len(), 1);
+    if block_spawn {
+        assert_eq!(statuses[0].outcome, oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Failed);
+        assert!(!statuses[0].alive, "failed placement must not fabricate a live boss");
+        drop(runtime);
+        harness.root.acknowledge_raid_effect(&harness.node, wave.identity, outcomes, now).await?;
+        assert!(start.elapsed().as_secs_f64() > 0.01);
+        eprintln!("QN5_FEROXA_BLOCKED_SPAWN_POSTGRES_COMPLETED elapsed={:?}", start.elapsed());
+        return Ok(());
+    }
     assert!(statuses[0].alive);
     let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(actor) = statuses[0].outcome
     else {

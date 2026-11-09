@@ -149,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // was held. This transaction only read current world facts.
                 drop(map);
                 let mut moves = Vec::new();
-                if grimvale && final_wave_placed(selected, match &step.action { CommittedRaidAction::Wave { wave, .. } => *wave, _ => return Err(DurabilityError::InvalidStoredState) }, &outcomes)
+                if grimvale && is_final_wave(selected, match &step.action { CommittedRaidAction::Wave { wave, .. } => *wave, _ => return Err(DurabilityError::InvalidStoredState) })
                     && !grimvale_portal_is_open(index.map())
                 {
                     // Crystal grimvale.lua final(): current players within the
@@ -209,17 +209,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-/// The source Lua occurrence opens after its final successful native wave (75 minutes).
-/// Until-reset completion
-/// retains this projection; revocation restores the original1949 native travel.
-fn final_wave_placed(
-    selected: &SelectedRaid,
-    wave: u16,
-    outcomes: &[RaidPlacementOutcome],
-) -> bool {
+/// Crystal grimvale.lua final() ejects players and opens entry even if
+/// Game.createMonster subsequently fails. A failed spawn remains a failed receipt.
+/// Until-reset completion retains this projection; revocation restores1949 travel.
+fn is_final_wave(selected: &SelectedRaid, wave: u16) -> bool {
     usize::from(wave).checked_add(1) == Some(selected.definition.waves.len())
-        && !outcomes.is_empty()
-        && outcomes.iter().all(|outcome| outcome.placed)
 }
 
 fn grimvale_portal_is_open(bundle: &crate::map::boot::BundleMap) -> bool {
