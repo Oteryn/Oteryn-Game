@@ -131,7 +131,8 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "engnpc-m04"
+            "m16-marker"
+                | "engnpc-m04"
                 | "catalogue-npc"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
@@ -892,6 +893,8 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name == "m16-marker" {
+            super::super::m16_personal_map_marker::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "engnpc-m04" {
             super::super::engnpc_m04_completion::exercise(
                 &mut owner,

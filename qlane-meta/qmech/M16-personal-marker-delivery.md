@@ -36,10 +36,31 @@ existing migration 2070 is reused. No content inputs or generated pins change.
 First delivery slice: `cargo fmt --all --check`; clippy for protocol, dispatch,
 client-runtime and native client with all targets/features and `-D warnings`;
 13 quest-log codec tests; 5 client-runtime quest tests; and the native marker
-rendering/replacement test passed. The PostgreSQL command-dispatch proof is being
-qualified separately and M16 remains PARTIAL until that proof is committed.
+rendering/replacement test passed. The PostgreSQL command-dispatch proof is described below.
 
 The full protocol suite exposed the existing target-move test rejecting direction
 5 although the unchanged qmech step codec accepts NorthEast=5. It is outside M16
 and remains unchanged. Local node-boot is excluded by the owner's instruction;
 Windows execution remains a CI check.
+
+## PostgreSQL qualification
+
+`cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib m16_sterling -- --nocapture`
+executed against PostgreSQL 18.6: **1 passed**, 83.12 seconds, with
+`M16_STERLING_DISPATCH_PG_EXECUTED marker_delta_reconnect_replay`.
+
+The mounted case drives real command 7 through `serve_admitted`. It proves an
+empty initial marker projection, Sterling's guarded confirmation, mission=4 and
+treasure-marked=1, exactly one marker/source/receipt transaction, a domain-16
+marker delta while the log is closed, a reconnect snapshot, exact-command
+`DuplicateReplay`, and no second marker/receipt for a fresh repeated confirmation.
+Its prerequisite setup uses the existing quest-runtime fixture transition to
+establish a valid Character revision/receipt chain, then seeds later Targuna
+prerequisites with fixture privileges. The marker confirmation uses the production
+callback, runtime role and all original database guards.
+
+The same case returns **Ok(())** with no PostgreSQL admin URL (1 passed, 0.00s).
+The twelve existing dispatch quest-log regressions also pass. The full protocol
+suite reports **724 passed, 1 unchanged target-move failure**; none is ignored or
+removed. This completes the bounded M16 delivery mechanic, not the other Targuna
+stages. No migration or pin regeneration is needed.
