@@ -22,4 +22,7 @@ def requirement(quest, owners):
         return None
     if len(matches) != 1 or matches[0]['status'] not in ('READY', 'QUALIFIED'):
         raise ValueError('World-change EXPLORE needs one admitted World owner: ' + quest)
-    return matches[0]['key']
+    key = matches[0].get('key')
+    if not isinstance(key, str) or not key or key.strip() != key:
+        raise ValueError('World-owner admission key must be a nonempty exact string: ' + quest)
+    return key

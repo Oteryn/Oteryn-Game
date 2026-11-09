@@ -59,7 +59,8 @@
       "Ferumbras' Ascension Quest",
       "Heart of Destruction Quest",
       "Grave Danger Quest",
-      "Emperor's Cookies Quest"
+      "Emperor's Cookies Quest",
+      "Grimvale Mini World Change"
     ],
     "wired_native_visit_anchors": 39
   },
@@ -147,10 +148,15 @@
     "grimvale_activation": "REDmissingentry0.332s ->GREEN48Python15.834s;canonicalArea origin unchanged,clear east-distance2 ground4515,CurrentPremium retained",
     "grimvale_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m20s",
     "grimvale_profile": "GREEN6Rustprofiletests0.06s,including World-predicate stripping changes native binding",
-    "grimvale_postgres": "PENDING ownnative case building:inactive/active/currentreset,stale retained moon,Premium refusal,old replay,once/revisit",
-    "authoring_cookie_snapshot": "Full authoring unit runner GREEN1180tests924.761s,8preexisting skips;World48focused rerun separately;content-tree running"
+    "grimvale_postgres": "GREEN61.823016566s:inactive day refuses,activation cannot retro-credit old command,stale active reset refuses,CurrentPremium refusal/replay,fresh current-moon visit once,revisit no farming,wholecompletion0;runtime/data snapshotce7b9e55f",
+    "authoring_cookie_snapshot": "Full authoring unit runner GREEN1180tests924.761s,8preexisting skips;World48focused rerun separately;content-tree running",
+    "world_owner_key_guard": "RED2null/empty qualified-owner cases0.001s ->GREEN48authoring tests15.806s;generated callback JSON unchanged",
+    "latest_quest_units": "GREEN all375quest library unit tests37.67s,0failed,0ignored",
+    "latest_quest_clippy": "GREEN quests all-targets strict -Dwarnings13.17s;preceding quests+dispatch all-targets4m20s",
+    "current_authoring_checks": "GREEN run_checks.py --part checks on current World-entry snapshot plusqengine_access --check and duplicate-migration check",
+    "current_content_tree": "GREEN validate_world_project_v2_to_tree.py after World-entry activation;no Item/Mount/World geometry changes"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "25wiredstage/routes,24PG-proven entry routes,39nativeanchors;21routes/31stages unwired. FinishGrimvale nativePG;reuse qualified existingWorld owners for next event entries. M01b PARTIAL."
+  "continuation": "25wiredstage/routes,all25PG-proven entry routes,39nativeanchors;21routes/31stages unwired. M01b PARTIAL: no full-quest completion claim. Next reuse qualified current-World predicates or bind remaining ordinary entries;no main/qmech merges."
 }

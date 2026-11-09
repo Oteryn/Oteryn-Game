@@ -92,13 +92,20 @@ mod tests {
             .ok_or("bound current-moon entry")?;
         assert!(super::admitted(&callback));
         assert_eq!(callback.world_change.as_deref(), Some("grimvale"));
-        let required = gated_binding(&callback)?.ok_or("native World-bound occurrence")?;
+        let required = gated_binding(&callback)?;
+        assert!(required.is_some(), "native World-bound occurrence");
         let mut stripped = callback;
         stripped.world_change = None;
         assert_ne!(
             gated_binding(&stripped)?,
-            Some(required),
+            required,
             "the admitted native occurrence cannot lose its current-World predicate"
+        );
+        stripped.world_change = Some("fury_gates".into());
+        assert_ne!(
+            gated_binding(&stripped)?,
+            required,
+            "a different World event cannot substitute for the admitted moon predicate"
         );
         Ok(())
     }

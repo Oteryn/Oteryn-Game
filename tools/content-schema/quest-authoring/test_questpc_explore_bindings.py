@@ -24,7 +24,9 @@ class ExploreBindingsTests(unittest.TestCase):
     def test_world_entry_owner_cannot_be_missing_held_or_ambiguous(self):
         import questpc_world_requirements as world
         quest = 'oteryn:quest.grimvale_mini_world_change'
-        for owners in ({}, {quest: [{'status': 'HELD', 'key': 'grimvale'}]},
+        for owners in ({}, {quest: [{'status': 'QUALIFIED', 'key': None}]},
+                       {quest: [{'status': 'QUALIFIED', 'key': ''}]},
+                       {quest: [{'status': 'HELD', 'key': 'grimvale'}]},
                        {quest: [{'status': 'QUALIFIED', 'key': 'grimvale'}] * 2}):
             with self.subTest(owners=owners):
                 with self.assertRaises(ValueError):
