@@ -12,6 +12,22 @@ pub enum ArenaPillarProjection {
 }
 
 impl BundleFacts {
+    /// Source action25200 is usable only while this exact run owns the opened
+    /// immutable pillar occurrence; an appearance alone is not an admission.
+    pub fn svargrond_portal_open(&self, pos: TilePos, run: [u8; 16]) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states.arena_pillars.iter().any(|(key, owner)| {
+                *owner == run
+                    && view::placement_of(*key).is_some_and(|(at, _)| at == pos)
+                    && !states.hidden.contains(key)
+                    && states.passable.get(key) == Some(&true)
+                    && states.changed.get(key).is_some_and(|(_, facts)| {
+                        facts.appearance_id == 5022 && facts.bound && !facts.pickupable
+                    })
+            })
+        })
+    }
+
     /// Caller holds the current native runtime guard and, except for exact-run
     /// Release, the durable pit lease. A stale release never resets a newer run.
     pub fn set_svargrond_pillar(

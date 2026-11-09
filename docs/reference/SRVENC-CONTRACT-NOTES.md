@@ -2176,3 +2176,14 @@ RED: missing origin helpers E0425,19.875s. GREEN:6 focused durability tests,
 Durability/dispatch clippy -D warnings:28.990s. Pin-check:166.664s PASS.
 M51 remains PARTIAL: native STEP ingress still needs to call this typed writer;
 automatic death publication and full source pit reset also remain unfinished.
+
+## M51: expose exact-run native portal admission
+
+The map owner now admits action25200 only for a visible, passable, bound,
+non-pickupable Item5022 projected by the matching run. Another run or a reset
+pillar cannot impersonate its portal. Source: Crystal201189f
+movements_arena_pit.lua:52-64 and creaturescripts_arena_kill.lua:22-35.
+RED missing admission predicate E0599:93.285s; GREEN map/collision test:31.793s.
+Changed world/dispatch/durability clippy -D warnings:41.711s. Formatting PASS;
+engine-only derive-identity equals the committed pin identity. No SQL or numbers.
+Native STEP caller and its full ten-pit PG case continue in the next slice.

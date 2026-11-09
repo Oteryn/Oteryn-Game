@@ -33,6 +33,8 @@ fn m51_pillar_portal_view_and_collision_reset_together() -> TestResult {
     assert!(facts.set_svargrond_pillar(pos, 1, 0, [1; 16], ArenaPillarProjection::Victory));
     let portal = facts.base_entry(pos, 1, 0).ok_or("visible portal")?;
     assert_eq!(portal.appearance_id, 5022);
+    assert!(facts.svargrond_portal_open(pos, [1; 16]));
+    assert!(!facts.svargrond_portal_open(pos, [2; 16]));
     assert!(portal.bound);
     assert!(!portal.pickupable);
     assert!(!facts.quest_callback_blocked(&base, pos, true));
@@ -48,6 +50,7 @@ fn m51_pillar_portal_view_and_collision_reset_together() -> TestResult {
         1841
     );
     assert!(facts.quest_callback_blocked(&base, pos, true));
+    assert!(!facts.svargrond_portal_open(pos, [1; 16]));
     assert!(!facts.set_svargrond_pillar(pos, 0, 0, [1; 16], ArenaPillarProjection::Victory));
     assert!(!facts.set_svargrond_pillar(
         TilePos { x: 3, ..pos },
