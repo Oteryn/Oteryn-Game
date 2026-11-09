@@ -2,6 +2,9 @@
 use super::*;
 use crate::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
 
+#[path = "elemental_boss_spawns_tests.rs"]
+mod elemental_boss_spawns_tests;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn checked<T, E: std::fmt::Debug>(value: Result<T, E>) -> TestResult<T> {
