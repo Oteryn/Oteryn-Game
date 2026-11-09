@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oteryn logging event fragment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["module", "owner", "events"],
+  "properties": {
+    "module": {"type": "string", "pattern": "^[A-Za-z0-9_/-]+$"},
+    "owner": {"type": "string", "pattern": "^[A-Za-z0-9_/-]+$"},
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["event", "level", "span", "fields", "codes", "note"],
+        "properties": {
+          "event": {"type": "string", "pattern": "^[A-Za-z0-9_/-]+$"},
+          "level": {"enum": ["error", "warn", "info", "debug"]},
+          "span": {"type": "boolean"},
+          "fields": {"type": "array", "items": {"type": "string"}},
+          "codes": {"type": "array", "items": {"type": "string", "pattern": "^E[0-9]{4}$"}},
+          "note": {"type": "string"}
+        }
+      }
+    }
+  }
+}

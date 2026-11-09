@@ -1,0 +1,5 @@
+{
+  "module": "scheduler",
+  "owner": "apps/game-server",
+  "events": []
+}

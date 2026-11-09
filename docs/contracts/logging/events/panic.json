@@ -1,0 +1,14 @@
+{
+  "module": "panic",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "panic",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

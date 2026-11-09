@@ -71,10 +71,10 @@ fn browse_retry_deadline_probe_prioritizes_held_input_without_waiting() -> TestR
         .block_on(async {
             let (mut server, mut client) = tokio::io::duplex(64);
             let mut frames = FrameReader::default();
-            let mut held = VecDeque::from([(vec![1, 2], true)]);
+            let mut held = VecDeque::from([(vec![1, 2], true, tokio::time::Instant::now())]);
             client.write_all(&[0, 0, 0, 3, 7, 8, 9]).await?;
             match ready_input(&mut server, &mut frames, &mut held, false).await {
-                Some(poll::Next::Held(frame, behind_step)) => {
+                Some(poll::Next::Held(frame, behind_step, _)) => {
                     assert_eq!(frame, [1, 2]);
                     assert!(behind_step);
                 }

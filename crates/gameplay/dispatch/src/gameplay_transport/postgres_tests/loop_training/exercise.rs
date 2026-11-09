@@ -21,9 +21,19 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "exercise PG panic")??;
+    Ok(())
+}
+
+#[test]
+fn loop_training_postgres_node_boot_offline_settlement_and_replay() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "node boot training PG panic")??;
     Ok(())
 }
 
@@ -253,12 +263,66 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
     })
 }
 
-fn scenario() -> TestResult {
+fn scenario(node_boot: bool) -> TestResult {
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "loop_training_exercise", true, false)
-            .await?;
+        let h =
+            Harness::create_with_admission_seed(admin, "loop_training_exercise", !node_boot, false)
+                .await?;
         eprintln!("POSTGRES_STARTED LOOP-TRAIN-1 exercise");
-        prepare_current_session(&h).await?;
+        // Use the actual node-boot interpretation, including its content revision. Do not
+        // rebind the production training formula to the fixture's usual content-1.
+        let interpretation =
+            include_str!("../../../../../../../tools/qualification/node_boot/run.sh")
+                .lines()
+                .find_map(|line| {
+                    line.strip_prefix("readonly INTERPRETATION=(")?
+                        .strip_suffix(')')
+                })
+                .ok_or("node-boot interpretation")?;
+        let revisions: Vec<_> = if node_boot {
+            interpretation.split_whitespace().collect()
+        } else {
+            vec!["profile-1", "ruleset-1", "content-1", "starter-1"]
+        };
+        assert_eq!(revisions.len(), 4);
+        // Replace only the fresh admin fixture root, before admission or progression exists.
+        if node_boot {
+            h.root
+                .configure_character_interpretation(
+                    revisions[0],
+                    revisions[1],
+                    revisions[2],
+                    revisions[3],
+                )
+                .await
+                .map_err(|e| format!("node-boot interpretation: {e:?}"))?;
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_character_roots SET profile_revision=$1,ruleset_revision=$2,content_revision=$3,starter_template_revision=$4 WHERE character_id=encode($5,'hex')::uuid")
+            .bind(revisions[0]).bind(revisions[1]).bind(revisions[2]).bind(revisions[3])
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            // Keep the historical fixture's creation proof consistent with its root;
+            // open_character_authority below still performs the full recovery checks.
+            sqlx::query("UPDATE game_character_operation_receipts o SET command_binding=decode('02','hex') \
+                || uuid_send(o.issuer_decision_id) || int8send(o.intent_source_revision) \
+                || uuid_send(o.operation_id) || uuid_send(o.account_id) || uuid_send(r.world_id) \
+                || int8send(o.issued_at_source) || int8send(o.expires_at_source) \
+                || int2send(octet_length(r.profile_revision)::int2) || convert_to(r.profile_revision,'UTF8') \
+                || int2send(octet_length(r.ruleset_revision)::int2) || convert_to(r.ruleset_revision,'UTF8') \
+                || int2send(octet_length(r.content_revision)::int2) || convert_to(r.content_revision,'UTF8') \
+                || int2send(octet_length(r.starter_template_revision)::int2) || convert_to(r.starter_template_revision,'UTF8') \
+                || int2send(octet_length(r.name)::int2) || convert_to(r.name,'UTF8') \
+                FROM game_character_roots r WHERE o.character_id=r.character_id AND r.character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_character_bootstrap_intent_floors f SET intent_binding=o.command_binding FROM game_character_operation_receipts o WHERE f.issuer_decision_id=o.issuer_decision_id")
+                .execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
+        prepare_current_session(&h)
+            .await
+            .map_err(|e| format!("node-boot admission setup: {e}"))?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -266,11 +330,25 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if node_boot {
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            let mut input =
+                crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
+                    .map_err(debug)?;
+            // This test uses its tiny training map; gameplay and training bytes stay shipped.
+            input.source_world = None;
+            crate::content::native_gameplay::test_support::try_activate_input(
+                deps.admitted.world_id,
+                &input,
+            )
+            .map_err(debug)?
+        } else {
             super::super::death_ml_loss_composed::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?;
+            )?
+        };
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
@@ -356,14 +434,43 @@ fn scenario() -> TestResult {
                 .map_err(debug)?
                 .revision,
         };
+        // Node provisioning initializes a fresh Character from the served progression's
+        // policy_for(root interpretation), then prepares its vocation under that context.
+        if node_boot {
+            let policy = active
+                .progression()
+                .ok_or("progression")?
+                .policy_for(revisions[0], revisions[1], revisions[2])
+                .map_err(debug)?;
+            h.root
+                .initialize_character_progression(
+                    &authority,
+                    &h.node,
+                    gameplay,
+                    crate::durability::character_progression::ProgressionInitializationRequest {
+                        context: policy.context.clone(),
+                        policy_revision: policy.policy_revision.clone(),
+                        reward_revision: policy.reward_revision.clone(),
+                        policy,
+                    },
+                )
+                .await
+                .map_err(|e| format!("node-boot progression initialization: {e:?}"))?;
+        }
+        let formula = crate::content::training_formula::CompiledTrainingFormula::from_profile(
+            include_bytes!(
+                "../../../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
+            revisions[2],
+        )
+        .map_err(debug)?;
         let before = h
             .root
             .read_character_build_state(&authority, fence.character_id)
             .await
             .map_err(debug)?;
-        let formula = native.training_formula().ok_or("training formula")?;
         let after =
-            crate::durability::character_build::convert_vocation(formula, &before, "knight")
+            crate::durability::character_build::convert_vocation(&formula, &before, "knight")
                 .map_err(debug)?;
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         slot.commit_build(
@@ -379,11 +486,11 @@ fn scenario() -> TestResult {
                 after,
                 pruned_stance: None,
             },
-            formula,
+            &formula,
             None,
         )
         .await
-        .map_err(debug)?;
+        .map_err(|e| format!("node-boot vocation preparation: {e:?}"))?;
         drop(slot);
         sqlx::query("UPDATE game_character_build_state SET stamina_minutes=2339 WHERE character_id=encode($1,'hex')::uuid")
             .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -970,7 +1077,19 @@ fn scenario() -> TestResult {
             stamina, 2341,
             "real successor admission crosses the 39h stamina boundary"
         );
+        let committed: (i64, String) = sqlx::query_as(
+            "SELECT count(*),max(committed_character_revision)::text FROM game_character_build_receipts WHERE cause='offline_settlement'",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(committed.0, 2, "one settlement per admission");
         owner.admit_loop_training(&mut next_admitted).await;
+        assert_eq!(next_admitted.first_entry, FirstEntryOutcome::Positioned);
+        let replayed: (i64, String) = sqlx::query_as(
+            "SELECT count(*),max(committed_character_revision)::text FROM game_character_build_receipts WHERE cause='offline_settlement'",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(
+            replayed, committed,
+            "already committed replay adds no receipt or revision"
+        );
         assert_eq!(
             h.root
                 .read_character_build_state(&authority, fence.character_id)

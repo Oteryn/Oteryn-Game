@@ -196,6 +196,10 @@ async fn check_scope_replay(
         &objects,
         native,
     );
+    assert!(
+        wrong.prefetch_empty_tiles(&runtime, &[cell(2)]).await.is_err(),
+        "exact-cell prefetch cannot borrow authority from another physical transaction"
+    );
     assert_eq!(
         wrong.read(&runtime, cell(2)).await,
         None,
@@ -211,6 +215,9 @@ async fn check_scope_replay(
         &objects,
         native,
     );
+    map.prefetch_empty_tiles(&runtime, &[cell(2)])
+        .await
+        .map_err(debug)?;
     assert_eq!(map.read(&runtime, cell(2)).await, Some(true));
     let mut budget = ChannelPathBudget::default();
     let mut reader =
