@@ -7,6 +7,14 @@ use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
+/// A paid ticket's purchase time is a Quest-owned Unix-second track.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TravelTicketRequirement {
+    pub track: String,
+    pub valid_for_seconds: u32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TravelRoute {
     pub service: String,
@@ -20,6 +28,7 @@ pub struct TravelRoute {
     pub quest_gate: Option<String>,
     /// Refuse travel unless this track is absent or exactly zero (for example an unpaid fine).
     pub quest_clear_gate: Option<String>,
+    pub ticket: Option<TravelTicketRequirement>,
     pub world_change: Option<String>,
 }
 
@@ -45,6 +54,8 @@ struct Correction {
     quest_gate: Option<String>,
     #[serde(default)]
     quest_clear_gate: Option<String>,
+    #[serde(default)]
+    ticket: Option<TravelTicketRequirement>,
     #[serde(default)]
     world_change: Option<String>,
 }
@@ -121,6 +132,7 @@ pub fn resolve(
                 yalahar_town_gate: correction.yalahar_town_gate.clone(),
                 quest_gate: correction.quest_gate.clone(),
                 quest_clear_gate: correction.quest_clear_gate.clone(),
+                ticket: correction.ticket.clone(),
                 world_change: correction.world_change.clone(),
             })
         })
@@ -130,6 +142,27 @@ pub fn resolve(
 #[cfg(test)]
 mod tests {
     use super::revision_material;
+
+    #[test]
+    fn m38_travel_ticket_requirement_is_optional_and_keeps_elapsed_seconds()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(revision_material())?;
+        let mut row = rows.into_iter().next().ok_or("travel correction")?;
+        let legacy: super::Correction = serde_json::from_value(row.clone())?;
+        assert!(legacy.ticket.is_none());
+        row["ticket"] = serde_json::json!({"track":"oteryn:quest-progress/travora/ticket_purchased", "valid_for_seconds":86400});
+        let guarded: super::Correction = serde_json::from_value(row.clone())?;
+        assert_eq!(
+            guarded.ticket,
+            Some(super::TravelTicketRequirement {
+                track: "oteryn:quest-progress/travora/ticket_purchased".into(),
+                valid_for_seconds: 86400,
+            })
+        );
+        row["ticket"]["client_clock"] = 1.into();
+        assert!(serde_json::from_value::<super::Correction>(row).is_err());
+        Ok(())
+    }
 
     #[test]
     fn m38_travel_clear_gate_is_optional_and_preserved_by_the_catalogue_parser()

@@ -9,6 +9,8 @@ use sha2::{Digest, Sha256};
 
 #[path = "clear_gate.rs"]
 mod clear_gate;
+#[path = "ticket.rs"]
+mod ticket;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TravelRefusal {
@@ -91,6 +93,11 @@ async fn quote(
     }
     if let Some(track) = &route.quest_clear_gate
         && !clear_gate::permitted(tx, fence.character_id, track).await?
+    {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if let Some(requirement) = &route.ticket
+        && !ticket::permitted(tx, fence.character_id, requirement).await?
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
@@ -213,6 +220,7 @@ impl DurabilityRoot {
             if let Some(town) = &route.yalahar_town_gate { hash.update(town.as_bytes()); }
             if let Some(track) = &route.quest_gate { hash.update(track.as_bytes()); }
             if let Some(track) = &route.quest_clear_gate { clear_gate::bind(&mut hash, track); }
+            if let Some(requirement) = &route.ticket { ticket::bind(&mut hash, requirement); }
             hash.update(arrival.destination.x.to_be_bytes());
             hash.update(arrival.destination.y.to_be_bytes());
             hash.update(arrival.destination.floor.to_be_bytes());

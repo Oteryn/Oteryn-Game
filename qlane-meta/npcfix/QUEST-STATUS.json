@@ -333,5 +333,34 @@
       "cargo fmt --all --check PASS"
     ],
     "remaining_validation": "Fresh workspace all-target compilation and full node-boot matrix remain pending; no PR-ready or whole M38 claim."
+  },
+  "travel_ticket_slice": {
+    "state": "GREEN_FOCUSED",
+    "mechanic": "Optional elapsed ticket requirement in existing paid-travel quote and commit owner",
+    "pg_seconds": 9.919992454,
+    "test": "npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres",
+    "red": "No purchase existed; quote returned100 instead of UnavailableRoute. Actual PG marker and18.38s two-case dispatch partition retained.",
+    "focused_tests": 8,
+    "fine_guard_regression_pg_seconds": 9.722255115,
+    "source": "docs/reference/tibia-manual/products.md:162 sha256 cf08d91adf258fab093f7e66767374ecd0bdc5a401ce4bdde7e6f918b6b2c2df",
+    "coverage": [
+      "strict24h elapsed window across midnight",
+      "missing/zero/expired/future purchase refusal",
+      "server-owned SetNow purchase",
+      "invalid lifetime refusal",
+      "quotes never renew purchase time",
+      "optional legacy policy unchanged",
+      "track and lifetime included in replay binding"
+    ],
+    "scope": "Requirement only. Ticket-sale/arrival integration and last-port return remain unfinished. Existing routes omit the field; Petros returns remain unrestricted.",
+    "migration": "none",
+    "checks": [
+      "8 focused tests PASS including real PG9.919992454s and fine-guard PG9.722255115s",
+      "cargo check --workspace --all-targets PASS6m13s",
+      "strict content/durability/dispatch all-target/all-feature Clippy PASS6m37s",
+      "fmt PASS",
+      "World pin-check PASS",
+      "duplicate migrations PASS"
+    ]
   }
 }

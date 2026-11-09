@@ -3,7 +3,7 @@ use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::npc_travel::{NpcTravelGate, TravelRefusal};
 
-struct NoPremium;
+pub(super) struct NoPremium;
 impl NpcTravelGate for NoPremium {
     async fn travel_permitted(
         &self,
@@ -42,7 +42,7 @@ fn npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres() -> T
                     }, price: 100, premium: false, min_level: None,
                 }, keyword: "return".into(), postman: false, carpet: false, held: false,
                 yalahar_gate: false, yalahar_town_gate: None,
-                quest_gate: Some(permission.into()), quest_clear_gate: Some(fine.into()), world_change: None,
+                quest_gate: Some(permission.into()), quest_clear_gate: Some(fine.into()), ticket: None, world_change: None,
             };
             use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition};
             use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
