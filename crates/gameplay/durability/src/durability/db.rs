@@ -105,24 +105,37 @@ fn record_holder_usage(
     let held: Duration = window.callers.iter().map(|(_, entry)| entry.held).sum();
     let passes: u64 = window.callers.iter().map(|(_, entry)| entry.passes).sum();
     let refused: u64 = window.callers.iter().map(|(_, entry)| entry.refused).sum();
-    eprintln!(
-        "DURABILITY_HOLDER_WINDOW window_ms={} held_ms={} passes={passes} refused={refused}",
-        elapsed.as_millis(),
-        held.as_millis(),
+    oteryn_error_codes::emit(
+        DIAGNOSTIC_PROCESS,
+        &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "holder_window")
+            .field("window_ms", millis(elapsed))
+            .field("held_ms", millis(held))
+            .field("passes", oteryn_error_codes::FieldValue::U64(passes))
+            .field("refused", oteryn_error_codes::FieldValue::U64(refused)),
     );
     window
         .callers
         .sort_by_key(|(_, entry)| std::cmp::Reverse(entry.held));
     for (caller, entry) in window.callers.iter().take(8) {
         let site = caller.map_or_else(|| "maintenance".to_owned(), ToString::to_string);
-        eprintln!(
-            "DURABILITY_HOLDER_USAGE caller={site} passes={} held_ms={} refused={}",
-            entry.passes,
-            entry.held.as_millis(),
-            entry.refused,
+        oteryn_error_codes::emit(
+            DIAGNOSTIC_PROCESS,
+            &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Info, "durability", "holder_usage")
+                .field("caller", oteryn_error_codes::FieldValue::Owned(site))
+                .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
+                .field("held_ms", millis(entry.held))
+                .field("refused", oteryn_error_codes::FieldValue::U64(entry.refused)),
         );
     }
     *usage = None;
+}
+
+/// Process name on the durability diagnostic lines (NBDIAG-4).
+const DIAGNOSTIC_PROCESS: &str = "oteryn-game-server";
+
+/// Whole milliseconds of `duration` as a numeric log field.
+fn millis(duration: Duration) -> oteryn_error_codes::FieldValue<'static> {
+    oteryn_error_codes::FieldValue::U64(u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
 }
 
 /// Records which semantic pass has the holder checked out, and reports a pass that drops it
@@ -157,10 +170,11 @@ impl Drop for PassOwner {
     fn drop(&mut self) {
         record_holder_usage(Some(self.caller), Some(self.issued.elapsed()));
         if !self.finished {
-            eprintln!(
-                "DURABILITY_PASS_DROPPED caller={} held_ms={}",
-                self.caller,
-                self.issued.elapsed().as_millis()
+            oteryn_error_codes::emit(
+                DIAGNOSTIC_PROCESS,
+                &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "pass_dropped")
+                    .field("caller", oteryn_error_codes::FieldValue::Owned(self.caller.to_string()))
+                    .field("held_ms", millis(self.issued.elapsed())),
             );
         }
         if let Ok(mut owner) = self.slot.lock()
