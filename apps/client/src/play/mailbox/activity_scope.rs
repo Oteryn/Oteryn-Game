@@ -62,6 +62,11 @@ impl Mailbox {
         self.discovery.history.pending = Default::default();
         self.properties.appearance.pending = Default::default();
         self.properties.charm_progression.pending = Default::default();
+        self.properties.charm_progression.catalogue = Default::default();
+        self.properties.charm_progression.charm_browser = Default::default();
+        self.properties.charm_progression.reply = None;
+        self.properties.charm_progression.summary.clear();
+        self.properties.charm_progression.feedback.clear();
         self.properties.character_info.pending = Default::default();
         self.properties.raid_schedule.pending = Default::default();
         self.properties.container_sort.pending = Default::default();

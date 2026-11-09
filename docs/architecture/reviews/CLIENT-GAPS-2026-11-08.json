@@ -561,9 +561,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Charms: points/unlock/assign/remove/reset",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/metadata.rs:14 + named_charms_and_creatures_drive_the_real_progression_caller + duplicate_creature_captions_keep_the_selected_server_identity + charm_names_and_descriptions_match_the_actual_server_catalogue + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T081 framed names, stage costs/chances and authoritative unlock/assign/remove/reset)"
  },
  {
   "id": "T082",

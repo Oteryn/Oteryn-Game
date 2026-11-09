@@ -358,6 +358,11 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
         if !expansion && !premium_current {
             catalogue::verify(&owner, &mut admitted, races).await?;
         }
+        let named_dodge = if !expansion && !premium_current {
+            Some(metadata::verify(&owner, &mut admitted).await?)
+        } else {
+            None
+        };
         let query = reply(&owner, &mut admitted, CharmProgressionAction::Query).await?;
         assert_eq!(query.outcome, CharmProgressionOutcome::Query);
         assert!(
@@ -386,6 +391,19 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
         };
         let first = race(completed[0].key())?;
         assert!(query.bestiary.iter().any(|p| p.race == first));
+        if let Some(id) = named_dodge {
+            let selected = query
+                .charms
+                .charms
+                .iter()
+                .find(|c| c.charm == id)
+                .ok_or("named charm in authoritative view")?;
+            assert_eq!(selected.next_stage_cost, 240);
+            assert_eq!(
+                selected.kind,
+                oteryn_protocol_oteryn::charm::CharmKind::Major
+            );
+        }
         // The 240-point major charm (dodge).
         let charm = query
             .charms
@@ -663,3 +681,6 @@ fn charm_premium_real_dispatch_has_six_slots_without_expansion() -> TestResult {
 
 #[path = "charm_progression/catalogue.rs"]
 mod catalogue;
+
+#[path = "charm_progression/metadata.rs"]
+mod metadata;

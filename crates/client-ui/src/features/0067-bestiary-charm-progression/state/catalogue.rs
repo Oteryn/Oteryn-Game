@@ -1,6 +1,7 @@
 use oteryn_client_runtime::charm_progression::catalogue::{Page, Request};
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Catalogue {
+    pub names: std::collections::BTreeMap<u16, String>,
     pub page: Page,
     pub detail: String,
     pub category: u8,
