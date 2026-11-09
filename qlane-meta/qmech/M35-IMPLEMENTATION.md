@@ -70,7 +70,9 @@ The twenty-set slice is validated; the six remaining quests keep the full M35 ro
 - Quest suite: 403 passed; one pre-existing Ice Islands exact-hash baseline failure.
   The same `ca68476c…` versus `ce91fb47…` mismatch reproduces with the original
   one-set qmech input. Its assertion is unchanged.
-- World pin refresh completed with the same pin digest.
+- World pin refresh and `pin-check . /tmp/m35-pin-check` passed with the same pin digest:
+  `4b6cb9bf12cf8b14b66da82168c23b53f89c45dfeb5c5d666829d5c562a4d7cb`.
+- Local node boot was not run, as requested by the owner.
 - Affected claim-set tests: 3 passed, 0 failed.
 - Affected content `world_reward_claims` tests: 11 passed, 0 failed.
 - Live dispatch regression: RED on the base's missing Alawar binding, then GREEN:
