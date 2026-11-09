@@ -228,6 +228,15 @@ pub struct Encounter {
     /// A value-free source switch schedules native monsters without moving a party.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<EncounterTiming>,
+    /// Source phases run on the shared encounter owner after atomic party admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<EncounterPhase>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum EncounterPhase {
+    #[serde(rename = "cults_boss_phase_closures")]
+    Cults,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -470,7 +479,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_from: BTreeSet<_> = encounter.players.iter().map(|p| p.from).collect();
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
-        if encounter.minimum_level == 0
+        let source_party = encounter.phase == Some(EncounterPhase::Cults);
+        if (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -488,12 +498,15 @@ pub(super) fn valid(callback: &Callback) -> bool {
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
             } else {
-                !(1..=8).contains(&encounter.players.len())
+                !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                    .contains(&encounter.players.len())
             }
-            || !(1..=8).contains(&encounter.monsters.len())
-            || callback.reversible
+            || !(1..=if encounter.phase.is_some() { 16 } else { 8 })
+                .contains(&encounter.monsters.len())
+            || (encounter.phase.is_some() && encounter.timing.is_some())
+            || (callback.reversible && !source_party)
             || unique_from.len() != encounter.players.len()
-            || unique_to.len() != encounter.players.len()
+            || (unique_to.len() != encounter.players.len() && !source_party)
             || unique_monsters.len() != encounter.monsters.len()
             || !unique_to.is_disjoint(&unique_monsters)
             || !pos(encounter.room_min)
@@ -515,6 +528,46 @@ pub(super) fn valid(callback: &Callback) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod phase_tests {
+    #[test]
+    fn production_cults_callback_is_source_qualified() -> Result<(), String> {
+        let callbacks = super::super::load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/engenc2/cults-essence")
+            .ok_or("Cults callback is not registered")?;
+        let encounter = callback
+            .effects
+            .encounter
+            .as_ref()
+            .ok_or("Cults encounter missing")?;
+        assert_eq!(encounter.phase, Some(super::EncounterPhase::Cults));
+        assert_eq!(encounter.players.len(), 5);
+        assert_eq!(encounter.monsters.len(), 10);
+        assert!(
+            encounter
+                .players
+                .iter()
+                .all(|p| p.to == encounter.players[0].to)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cults_phase_is_an_authored_encounter_input() -> Result<(), serde_json::Error> {
+        let encounter: super::Encounter = serde_json::from_value(serde_json::json!({
+            "minimum_level": 0, "players": [], "monsters": [],
+            "room_min": {"x":33084,"y":31907,"floor":-15},
+            "room_max": {"x":33114,"y":31933,"floor":-15},
+            "phase": "cults_boss_phase_closures"
+        }))?;
+        let encoded = serde_json::to_value(encounter)?;
+        assert_eq!(encoded["phase"], "cults_boss_phase_closures");
+        Ok(())
+    }
 }
 
 #[cfg(test)]

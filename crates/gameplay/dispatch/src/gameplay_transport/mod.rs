@@ -67,6 +67,7 @@ mod dawnport_trial;
 mod death_ml_loss_postgres;
 mod depot;
 mod echo_warden;
+mod encounter_phases;
 mod endgame_entry;
 mod endgame_room_policy;
 mod entity_names;

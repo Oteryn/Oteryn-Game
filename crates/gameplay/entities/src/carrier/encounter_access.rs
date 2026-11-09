@@ -175,6 +175,20 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
         if players.is_empty() || players.len() > 8 || monsters.is_empty() || monsters.len() > 8 {
+        self.commit_quest_encounter_with_phase(players, monsters, |_, _| Ok(()), project)
+            .map(|(positions, ())| positions)
+    }
+
+    /// Bind the encounter phase owner before publishing the entry's map mutation.
+    /// A failed phase binding restores every spawn and player relocation together.
+    pub fn commit_quest_encounter_with_phase<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
@@ -192,6 +206,10 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
+            let mut actors = Vec::new();
+            actors
+                .try_reserve(monsters.len())
+                .map_err(|_| CarrierError::AllocationFailed)?;
             for (key, health, at) in monsters {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;
@@ -200,10 +218,12 @@ impl ChannelRuntimeV1 {
             for proof in players {
                 snapshots.push(self.commit_source_step(proof)?);
             }
+            let phase = bind(self, &actors)?;
             if !project() {
                 return Err(CarrierError::PlanConflict);
             }
             Ok((snapshots, actors))
+            Ok((snapshots, phase))
         })();
         if result.is_err() {
             self.carrier = before;

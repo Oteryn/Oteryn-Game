@@ -104,6 +104,10 @@ impl NativeQuestDeath {
         Ok(sqlx::query_scalar("SELECT coalesce((SELECT value=$4 AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),$5)")
             .bind(character.as_bytes().as_slice()).bind(counter.gate)
             .bind(self.observed_revision.to_string()).bind(counter.gate_value).bind(initial_gate==counter.gate_value).fetch_one(&mut **tx).await?)
+        let (minimum, maximum) = counter.gate_bounds();
+        Ok(sqlx::query_scalar("SELECT COALESCE((SELECT value BETWEEN $4::bigint AND $5::bigint AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2), $4::bigint <= 0 AND $5::bigint >= 0)")
+            .bind(character.as_bytes().as_slice()).bind(counter.gate)
+            .bind(self.observed_revision.to_string()).bind(minimum).bind(maximum).fetch_one(&mut **tx).await?)
     }
 }
 

@@ -3,6 +3,9 @@
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use std::collections::BTreeMap;
 
+mod fugue;
+mod phase_settlements;
+
 mod registry;
 pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
 
@@ -21,7 +24,31 @@ pub struct Counter {
 }
 
 impl Counter {
+    #[must_use]
+    pub fn gate_bounds(self) -> (i64, i64) {
+        if fugue::matches(&self) {
+            (2, 2)
+        } else {
+            phase_settlements::gate_bounds(&self).unwrap_or((1, 1))
+        }
+    }
+
     pub(crate) fn transition(self) -> QuestTransition {
+        let settlement = if fugue::matches(&self) {
+            Some(fugue::effects())
+        } else {
+            phase_settlements::effects(&self)
+        };
+        if let Some(effects) = settlement {
+            return QuestTransition {
+                world_change: None,
+                key: self.transition.into(),
+                quest: self.quest.into(),
+                effects,
+                completes: false,
+                experience: None,
+            };
+        }
         QuestTransition {
             world_change: self.world_change.map(str::to_owned),
             key: self.transition.into(),
@@ -92,20 +119,38 @@ pub const COUNTERS: &[Counter] = &[
 
 #[must_use]
 pub fn counter(transition: &str) -> Option<&'static Counter> {
-    counters().find(|counter| counter.transition == transition)
+    counters()
+        .chain(phase_settlements::COUNTERS)
+        .find(|counter| counter.transition == transition)
 }
 
 #[must_use]
 pub fn tracks_creature(creature: &str) -> bool {
-    counters().any(|counter| counter.creature == creature)
+    counters()
+        .chain(phase_settlements::COUNTERS)
+        .any(|counter| counter.creature == creature)
 }
 
 #[must_use]
 pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
     counters()
         .filter(|counter| {
-            tracks.get(counter.gate) == Some(&1)
+            let (minimum, maximum) = counter.gate_bounds();
+            (minimum..=maximum).contains(&tracks.get(counter.gate).copied().unwrap_or(0))
                 && (0..counter.maximum).contains(&tracks.get(counter.track).copied().unwrap_or(0))
+        })
+        .map(|counter| counter.transition)
+        .collect()
+}
+
+/// Only the shared encounter admission may capture terminal phase settlement.
+#[must_use]
+pub fn active_encounter(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
+    phase_settlements::COUNTERS
+        .iter()
+        .filter(|counter| {
+            let (minimum, maximum) = counter.gate_bounds();
+            (minimum..=maximum).contains(&tracks.get(counter.gate).copied().unwrap_or(0))
         })
         .map(|counter| counter.transition)
         .collect()
@@ -115,6 +160,7 @@ fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
         .chain(qworld::counters().unwrap_or_default())
+        .chain(fugue::COUNTERS)
 }
 
 /// Fail closed when a file-authored counter registry cannot be loaded.
@@ -126,7 +172,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     let mut tracks: Vec<_> = catalogue.tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
-    for counter in counters() {
+    for counter in counters().chain(phase_settlements::COUNTERS) {
         transitions.push(counter.transition());
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)

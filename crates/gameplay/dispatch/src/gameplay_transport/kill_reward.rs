@@ -1343,6 +1343,11 @@ pub fn record_creature_kill(
     {
         return;
     }
+    if let Some(states) = sink.prey {
+        states
+            .encounter_phases
+            .note_projected_death(runtime, target);
+    }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
         return;
@@ -1529,9 +1534,10 @@ pub fn record_creature_kill(
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
                 if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
-                    accept_kill(
+                    accept_encounter_kill(
                         runtime,
                         sink.queue,
+                        sink.prey,
                         PendingKillSettlement {
                             facts,
                             creature,
@@ -1588,7 +1594,7 @@ pub fn record_creature_kill(
             entry.world_change = world_change;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
-            accept_kill(runtime, sink.queue, entry);
+            accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
             return;
         }
     };
@@ -1895,7 +1901,7 @@ pub fn record_creature_kill(
         target,
         no_progression_logged: false,
     };
-    accept_kill(runtime, sink.queue, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
 }
 
 /// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
@@ -1981,20 +1987,35 @@ fn record_soulpit_kill(
     entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
     entry.activity_at_death = Some(sink.activity.to_vec());
     entry.damage_shares = shares;
-    accept_kill(runtime, sink.queue, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
 }
 
 /// Append `entry` to `queue`. Once the queue accepts it (queued or parked), pin its killed
 /// actor's corpse projection, so no later death evicts it before the settle binds the committed
 /// corpse (Codex 4248192466). A duplicate keeps the pin its first append took; a kill the full
 /// queue refuses pins nothing. Runs under the runtime lock and the `attack` guard.
+#[cfg(test)]
 fn accept_kill(
     runtime: &mut ChannelRuntimeV1,
     queue: &KillSettlementQueue,
+    entry: PendingKillSettlement,
+) -> AppendOutcome {
+    accept_encounter_kill(runtime, queue, None, entry)
+}
+
+fn accept_encounter_kill(
+    runtime: &mut ChannelRuntimeV1,
+    queue: &KillSettlementQueue,
+    states: Option<&super::actor_spell::ChannelSpellStates>,
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     if entry.soulpit_experience.is_none() {
         super::grizzly_kills::capture(runtime, queue, &mut entry);
+        if let Some(states) = states {
+            states
+                .encounter_phases
+                .capture_terminal(runtime, states, &mut entry);
+        }
     }
     let target = entry.target;
     let creature = entry.creature.clone();

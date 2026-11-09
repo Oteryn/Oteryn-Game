@@ -106,6 +106,9 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) encounter_phases: super::encounter_phases::Registry,
+    pub(super) native_self_heals: crate::foundation::CreatureSelfHealLedger,
+    pub(super) native_self_heal_content: Option<[u8; 32]>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     pub(in crate::gameplay_transport) enchanting_pending: Vec<(ExactActorRef, GameSessionId)>,
     /// Last persisted native gourmet conditions; a write-suppression projection only.
@@ -298,6 +301,9 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            encounter_phases: Default::default(),
+            native_self_heals: Default::default(),
+            native_self_heal_content: None,
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
             pending_item_effects: Vec::new(),

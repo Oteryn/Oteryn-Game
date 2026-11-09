@@ -721,7 +721,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if callback.effects.encounter.is_some() {
+        if callback.effects.encounter.is_some() && !close {
             return self.execute_quest_encounter(
                 runtime,
                 states,

@@ -60,6 +60,10 @@ impl ItemLoopContent for NativeItemWeights<'_> {
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         generation_item_facts(self.0, definition).ok()
     }
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(self.0, definition)
+            .ok()
+    }
     fn loop_definition(&self, reference: u32) -> Option<TypedDefinitionRef> {
         let (key, revision) = self
             .0

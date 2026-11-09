@@ -1197,6 +1197,15 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
         if requirement.appearance == 0 {
             let position = tile(requirement.position);
             return requirement.ground_stack.is_some()
+        // Ground contents are proved by the fenced quest transaction, never
+        // by static map appearances. Here admit only an existing non-house tile.
+        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Map {
+            position,
+            appearance,
+        } = requirement
+        else {
+            let position = tile(requirement.position());
+            return callback.has_personal_state()
                 && !map.facts.house_tile(position)
                 && map
                     .overlay
@@ -1205,6 +1214,8 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                     .is_some();
         }
         let position = tile(requirement.position);
+        };
+        let position = tile(*position);
         !map.facts.house_tile(position)
             && map
                 .overlay
@@ -1225,10 +1236,7 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                             };
                             !map.facts.base_hidden(key)
                                 && map.facts.base_entry(position, ordinal, *id).is_some_and(
-                                    |entry| {
-                                        !entry.pickupable
-                                            && entry.appearance_id == requirement.appearance
-                                    },
+                                    |entry| !entry.pickupable && entry.appearance_id == *appearance,
                                 )
                         })
                 })

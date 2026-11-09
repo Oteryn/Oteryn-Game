@@ -1,6 +1,7 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
 pub(super) mod completion;
+mod ground_read;
 pub(crate) mod ground_stack;
 #[cfg(feature = "test-support")]
 pub mod ground_stack;
@@ -242,6 +243,33 @@ pub(super) async fn consume(
         .fetch_optional(&mut **tx)
         .await?;
         if level.is_none_or(|level| level < i64::from(minimum)) {
+            return Ok(false);
+        }
+    }
+    for requirement in &callback.world_requirements {
+        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Ground {
+            position,
+            ground,
+        } = requirement
+        else {
+            continue;
+        };
+        if !callback.has_personal_state()
+            || !ground_read::matches(
+                tx,
+                &ground_read::Context {
+                    world: world_id.as_bytes(),
+                    channel: channel_id.as_bytes(),
+                    generation: fence.scope_ownership_generation.get(),
+                    map: &context.map_revision,
+                    content: &context.content_revision,
+                    placement: &context.placement_context,
+                },
+                *position,
+                ground,
+            )
+            .await?
+        {
             return Ok(false);
         }
     }

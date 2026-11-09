@@ -60,6 +60,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
+                // Cults collects whoever stands on the five source staging tiles.
+                if encounter.phase
+                    == Some(oteryn_gameplay_quests::quest::world_callbacks::EncounterPhase::Cults)
+                {
+                    continue;
+                }
                 return UseDisposition::Rejected;
             };
             if occupants.next().is_some()
@@ -122,12 +128,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
-        let Ok(snapshots) = runtime.commit_quest_encounter_entry(proofs, &monsters, || {
-            map.facts
-                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-        }) else {
+        let party: Vec<_> = players
+            .iter()
+            .map(|(actor, session, _)| (*actor, *session))
+            .collect();
+        let credits = if encounter.phase.is_some() {
+            let Ok(credits) =
+                super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
+            else {
+                return UseDisposition::Rejected;
+            };
+            Some(credits)
+        } else {
+            None
+        };
+        let mut phases = if encounter.phase.is_some() {
+            let Ok(active) = states.encounter_phases.reserve(runtime, key) else {
+                return UseDisposition::Occupied;
+            };
+            Some(active)
+        } else {
+            None
+        };
+        let Ok((snapshots, phase)) = runtime.commit_quest_encounter_with_phase(
+            proofs,
+            &monsters,
+            |runtime, actors| {
+                credits
+                    .map(|credits| {
+                        super::super::encounter_phases::bind(
+                            runtime,
+                            callback,
+                            key,
+                            actors,
+                            &party,
+                            credits,
+                            self.movement_cells().clone(),
+                        )
+                    })
+                    .transpose()
+            },
+            || {
+                map.facts
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+            },
+        ) else {
             return UseDisposition::Rejected;
         };
+        if let (Some(phases), Some(phase)) = (&mut phases, phase) {
+            phases.push(phase);
+        }
+        drop(phases);
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,

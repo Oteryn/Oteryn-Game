@@ -192,6 +192,10 @@ pub trait ItemLoopContent: ItemWeightLookup {
     }
     fn loop_content_digest(&self) -> [u8; 32];
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts>;
+    /// Only Ground-to-Ground relocation may admit a movable, non-portable profile.
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {
         None
     }
@@ -1175,7 +1179,14 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let Some(facts) = content.loop_facts(&definition) else {
+    let facts = if source == SourceKind::Ground
+        && matches!(request.destination, LoopDestination::Ground(_))
+    {
+        content.loop_ground_facts(&definition)
+    } else {
+        content.loop_facts(&definition)
+    };
+    let Some(facts) = facts else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
     if facts.definition != definition {
@@ -1607,6 +1618,20 @@ async fn main_target<C: ItemLoopContent>(
     })
 }
 
+/// Share map-source admission with the MINT owner before reserving an origin.
+/// Current generation facts must still match the complete requested definition facts.
+pub fn plan_map_item_loop_mint(
+    mint: &super::map_item_mint::MapItemMintRequest,
+    current_facts: Option<&ItemDefinitionFacts>,
+) -> std::result::Result<(), LoopMoveRefusal> {
+    if current_facts != Some(&mint.item)
+        || super::map_item_mint::plan_map_item_mint_request(mint, false).is_err()
+    {
+        return Err(LoopMoveRefusal::NotSupported);
+    }
+    Ok(())
+}
+
 impl DurabilityRoot {
     /// MAP-PICKUP-1: read-only destination/weight admission before reserving a MINT.
     /// Reuses the live loop's planner; the move rechecks everything under its own fence.
@@ -1641,11 +1666,13 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let world = fence.runtime_scope.world_id();
-                        if mint.item.container_capacity.is_some()
-                            || content.loop_facts(&mint.item.definition).as_ref()
-                                != Some(&mint.item)
-                        {
-                            return refuse(LoopMoveRefusal::NotSupported);
+                        let facts = if matches!(destination, LoopDestination::Ground(_)) {
+                            content.loop_ground_facts(&mint.item.definition)
+                        } else {
+                            content.loop_facts(&mint.item.definition)
+                        };
+                        if let Err(reason) = plan_map_item_loop_mint(mint, facts.as_ref()) {
+                            return refuse(reason);
                         }
                         plan_loop_destination(
                             &mut tx,

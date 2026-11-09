@@ -44,6 +44,11 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence, MagicEffect,
     MountReward, Portal, PortalPair,
+pub mod ground;
+pub use effects::{
+    CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
+    EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal,
+    PortalPair,
 };
 pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
@@ -113,6 +118,7 @@ fn is_false(value: &bool) -> bool {
 mod mammoth_tests;
 mod native;
 mod nomads_window;
+mod nomads_land;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
@@ -187,6 +193,35 @@ pub struct Admission {
     pub promotion: bool,
     #[serde(default)]
     pub premium: bool,
+/// Static map entries and mutable Ground custody are distinct evidence kinds.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum WorldRequirement {
+    Map {
+        position: Position,
+        appearance: u16,
+    },
+    Ground {
+        position: Position,
+        ground: ground::GroundStackRequirement,
+    },
+}
+impl WorldRequirement {
+    pub fn position(&self) -> Position {
+        match self {
+            Self::Map { position, .. } | Self::Ground { position, .. } => *position,
+        }
+    }
+    pub fn valid(&self) -> bool {
+        (-15..=0).contains(&self.position().floor)
+            && match self {
+                Self::Map { appearance, .. } => *appearance != 0,
+                Self::Ground { ground, .. } => ground.valid(),
+            }
+    }
+    pub fn is_map(&self) -> bool {
+        matches!(self, Self::Map { .. })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -313,6 +348,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m39-stories.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/engenc2-cults.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -354,6 +392,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
+    callbacks.push(nomads_land::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
@@ -434,6 +473,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .as_ref()
                 .is_some_and(|n| !valid_pos(n.position) || n.appearance == 0)
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || (callback.world_requirements.iter().any(|r| !r.is_map())
+                && !callback.has_personal_state())
             || !effects::valid(callback)
             || callback
                 .effects
@@ -458,7 +499,9 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.portals.is_some()
                     || callback.effects.item_cycle.is_some()
                     || !callback.passages.is_empty()))
-            || ((callback.requires_world_admission || callback.opening_only)
+            || ((callback.requires_world_admission
+                || callback.opening_only
+                || callback.world_requirements.iter().any(|r| !r.is_map()))
                 && (callback.storage.iter().all(|state| state.preserve)
                     || callback.native_rule.is_some()))
             || (callback.opening_only
@@ -491,6 +534,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
+            || callback.world_requirements.iter().any(|r| !r.valid())
+            || (callback
+                .world_requirements
+                .iter()
+                .any(WorldRequirement::is_map)
+                && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
@@ -787,7 +836,15 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
 
 /// New physical bindings omit display/citation fields and leave every legacy hash unchanged.
 pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
-    if !callback.requires_world_admission && !callback.opening_only {
+    // Mutable custody evidence always belongs to the physical writer, even
+    // when an author omitted the optional flag. Keep legacy map-only hashes.
+    if !callback.requires_world_admission
+        && !callback.opening_only
+        && callback
+            .world_requirements
+            .iter()
+            .all(WorldRequirement::is_map)
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};
@@ -990,7 +1047,7 @@ mod tests {
             );
         }
         callback.actor_kind = ActorKind::Player;
-        callback.world_requirements = vec![WorldRequirement {
+        callback.world_requirements = vec![WorldRequirement::Map {
             position: Position {
                 x: 1,
                 y: 1,
