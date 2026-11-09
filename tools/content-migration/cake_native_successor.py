@@ -12,6 +12,7 @@ import cake_creature_admission as admission
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 from build_canonical_monster_profiles import read_canonical, union_profiles, identity
+from build_spell_item_identities import binding_index
 
 PRESENTATIONS = 'content/presentations/definitions/spell-native-profiles.json'
 PACKET = 'tools/content-schema/native-gameplay/cake-creature-admission.json'
@@ -147,7 +148,11 @@ def admit(root, generated):
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
         document, _ = read_canonical(path)
         rows.extend(document['records'])
-    item_bindings, _ = read_canonical(root / 'imports/crystalserver/bindings/items.json')
+    # The normal Item importer verifies the generator-pinned complete table.
+    # This also permits an admitted additive identity during regeneration,
+    # before its authoring commit exists; source Creature packets remain HEAD-fenced.
+    item_bindings = {'bindings': list(binding_index(
+        (root / 'imports/crystalserver/bindings/items.json').read_bytes()).values())}
     cake = qualify(rows, declarations, reference, packet, item_bindings)
     active = json.loads(generated[CREATURES])
     presentations = json.loads(generated[PRESENTATIONS])

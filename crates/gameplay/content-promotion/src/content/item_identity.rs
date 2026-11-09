@@ -39,6 +39,10 @@ pub const APPEARANCE_ONLY_ITEM_IDS: [u64; 62] = [
     49124, 51276, 51302, 51560, 53197, 53199, 53201, 53203, 53205, 53855,
 ];
 
+/// Owner 2026-11-08: explicit source-created Items absent from items.xml.
+/// Their producer-qualified EXACT bindings use the ordinary canonical Tibia id rule.
+pub const SOURCE_CREATED_ITEM_IDS: [u64; 1] = [48227];
+
 /// SHARDS-I1: independently identified current-source Item, held by the historical import.
 /// Crystal Summer 00ce02a57ca5a12e48f32a3476e37471167e4c3f items.xml, Git blob
 /// 5530bb76d896d31fb75d6cad23969e1cc463b1c5 / SHA256
@@ -330,6 +334,52 @@ fn validate_appearance_items(
         manifest_bytes,
         &APPEARANCE_ONLY_ITEM_IDS,
     )
+}
+
+/// Extend an already canonical predecessor with admitted source-created identities.
+/// The same membership and minimal identity shape checks as the historical switch
+/// apply; existing records and their accepted gameplay facts remain untouched.
+pub fn admit_source_created_identities(
+    draft: &mut ProjectV2Draft,
+) -> Result<usize, ItemIdentityError> {
+    let mut added = Vec::new();
+    for id in SOURCE_CREATED_ITEM_IDS {
+        let key = tibia_item_key(id).ok_or(ItemIdentityError::AliasTable("appearance id"))?;
+        if draft.core.records.iter().any(|record| {
+            matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == key)
+        }) {
+            continue;
+        }
+        added.push(ProjectReferenceRecord::Item {
+            identity: super::DefinitionIdentityDocument {
+                family: "Item".to_owned(),
+                key,
+                revision: "definition-r1".to_owned(),
+            },
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: false,
+            stack_class: ItemStackDocument::Unknown,
+            semantics: Default::default(),
+        });
+    }
+    let index =
+        include_bytes!("../../../../../imports/official/appearance-membership/admitted.json");
+    let manifest = include_bytes!(
+        "../../../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
+    );
+    validate_current_items(
+        &added,
+        &BTreeMap::new(),
+        index,
+        manifest,
+        &SOURCE_CREATED_ITEM_IDS,
+    )?;
+    let count = added.len();
+    draft.core.records.extend(added);
+    if count > 0 {
+        draft.core.project_revision = "item-identity-20261108-r1".to_owned();
+    }
+    Ok(count)
 }
 
 /// Admit separately qualified current-source identities alongside appearance-only identities.

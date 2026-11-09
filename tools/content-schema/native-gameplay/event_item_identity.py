@@ -1,7 +1,7 @@
-"""Exact Cake bridge source evidence without canonical Item admission.
+"""Exact Cake bridge identity admitted by the owner on 2026-11-08.
 
-PR 2781 ANSWER 6549960114 keeps this known source item unavailable until the
-canonical identity/map owner resolves it. Physical evidence grants no reference.
+The explicit producer and loader closure qualify the Crystal binding even though
+the floor has no items.xml row. Canonical identity uses the normal Tibia id rule.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from canary_generic_item_identity import _fields
 
 CRYSTAL = '201189f871d23597b82caf88fd611454a2ddefb8'
 CANARY = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
-DECISION = 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114'
+DECISION = '2026-11-08: Zatwierdzam 48227'
 SOURCES = (
     ('crystal', 'src/items/item.cpp', 'e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b'),
     ('crystal', 'src/items/items.hpp', '06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca'),
@@ -30,9 +30,9 @@ SOURCES = (
 
 def evidence():
     return {
-        'schema': 'OTERYN_UNAVAILABLE_ITEM_SOURCE_EVIDENCE/v1',
+        'schema': 'OTERYN_ADMITTED_ITEM_SOURCE_EVIDENCE/v1',
         'item_id': 48227,
-        'reason': 'EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
+        'reason': 'OWNER_ADMITTED_SOURCE_CREATED_ITEM',
         'decision': DECISION,
         'source_revision': CRYSTAL,
         'sources': [{'source_key': 'oteryn:source.crystalserver' if engine == 'crystal' else 'oteryn:source.canary',
@@ -43,8 +43,18 @@ def evidence():
         'items_xml_present': False,
         'appearance_flags': {'bank': True, 'bank_waypoints': 150, 'unmove': True,
                              'automap': True, 'automap_color': 121, 'fullbank': True},
-        'status': 'Unavailable until the canonical Item identity/map owner supplies an admitted definition; no source suffix',
+        'status': 'Canonical identity admitted; gameplay geometry uses the pinned donor facts',
     }
+
+
+def admitted_bindings():
+    """Explicit source-created identities consumed by the normal binding generator."""
+    return [{
+        'source_key': 'oteryn:source.crystalserver', 'source_revision': CRYSTAL,
+        'identity_namespace': 'ots/item_server_id', 'external_id': '48227',
+        'target': {'family': 'Item', 'key': 'oteryn:item.tibia.i48227',
+                   'revision': 'definition-r1'}, 'disposition': 'EXACT',
+    }]
 
 
 def _contains_item(raw, item_id):

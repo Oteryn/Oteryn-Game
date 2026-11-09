@@ -51,6 +51,7 @@ Crystal revisions.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -105,7 +106,7 @@ EXPECTED_EPOCH1_OUTPUT_SHA256 = (
 )
 # A12: 38,157 epoch-1 rows less the 4,590 D149 rows, plus the 404 epoch-2 rows.
 EXPECTED_BOUND_EPOCH1 = 33_567
-EXPECTED_BOUND = 33_971
+EXPECTED_BOUND = 33_972
 EXPECTED_D149_UNBOUND = 4_590
 
 # Epoch 2 (A8 decision). Every value below is cross-checked against the Rust pins.
@@ -932,17 +933,32 @@ def generate() -> tuple[dict[str, Any], bytes]:
     # keys of current CipSoft ids no Crystal row names (ITEM-ADD-1, A12 section 4.1).
     definition_keys = load_definition_keys()
     epoch2_targets = {row["target"]["key"] for row in bound_epoch2}
+    sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
+    from event_item_identity import admitted_bindings
+    produced = admitted_bindings()
+    produced_targets = {row['target']['key'] for row in produced}
     rule_only = rule_only_definition_keys(
-        definition_keys - epoch2_targets,
+        definition_keys - epoch2_targets - produced_targets,
         {row["external_id"] for row in epoch1 + epoch2},
         current_appearance_ids(),
     )
     verify_allocations(
         [(int(row["external_id"]), row["target"]["key"]) for row in bound_epoch1],
-        definition_keys - epoch2_targets - rule_only,
+        definition_keys - epoch2_targets - produced_targets - rule_only,
         load_tibiawiki_targets(),
     )
-    bindings = sorted(bound_epoch1 + bound_epoch2, key=canonical_bytes)
+    # Explicit owner-admitted producer identities share the canonical Tibia id
+    # rule and ordering. They do not rewrite either historical allocation epoch.
+    existing_ids = {row['external_id'] for row in bound_epoch1 + bound_epoch2}
+    for row in produced:
+        external = row['external_id']
+        key = TIBIA_KEY_PREFIX + external
+        if (external in existing_ids or key not in definition_keys
+                or int(external) not in current_appearance_ids()
+                or row['target'] != {'family': 'Item', 'key': key, 'revision': DEFINITION_REVISION}):
+            raise GeneratorError('SOURCE_CREATED_IDENTITY_NOT_QUALIFIED')
+        existing_ids.add(external)
+    bindings = sorted(bound_epoch1 + bound_epoch2 + produced, key=canonical_bytes)
     if (
         len(bindings) != EXPECTED_BOUND
         or len({row["target"]["key"] for row in bindings}) != EXPECTED_BOUND
@@ -982,6 +998,71 @@ def alias_crosswalk_main(args: argparse.Namespace) -> int:
     return 0
 
 
+def refresh_consumer_pins(payload: bytes, previous: bytes | None = None) -> None:
+    """Repin active consumers only after proving every previous binding is unchanged.
+
+    Historical evidence packets retain their original captured table digest.
+    Profile records, their source facts and record digests are never rewritten.
+    """
+    previous = OUTPUT.read_bytes() if previous is None else previous
+    before = json.loads(previous)
+    after = json.loads(payload)
+    old_rows = {row['external_id']: row for row in before['bindings']}
+    new_rows = {row['external_id']: row for row in after['bindings']}
+    if any(new_rows.get(key) != row for key, row in old_rows.items()):
+        raise GeneratorError('CONSUMER_REPIN_REQUIRES_ADDITIVE_BINDINGS')
+    old_sha, new_sha = sha256_hex(previous), sha256_hex(payload)
+    if old_sha == new_sha:
+        return
+    native = ROOT / 'tools/content-schema/native-gameplay'
+    for path in sorted(native.glob('*item-profiles.json')):
+        document = json.loads(path.read_bytes())
+        fields = [key for key in ('binding_table_sha256', 'identity_binding_sha256')
+                  if document.get(key) == old_sha]
+        if fields:
+            for key in fields:
+                document[key] = new_sha
+            path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + '\n')
+    for path in (native / 'build_spell_item_identities.py',
+                 ROOT / 'tools/content-migration/drome_item_profiles.py'):
+        text = path.read_text()
+        pattern = 'BINDINGS_SHA = "' + old_sha + '"'
+        current_pattern = 'BINDINGS_SHA = "' + new_sha + '"'
+        if text.count(pattern) != 1 and text.count(current_pattern) != 1:
+            raise GeneratorError('CONSUMER_BINDING_PIN_NOT_FOUND:' + str(path))
+        path.write_text(text.replace(pattern, current_pattern))
+    # Navigation packets retain their reviewed bytes. Record the exact additive
+    # table successor in the repository's existing pinned-source relocation ledger.
+    ledger = ROOT / 'tools/content-migration/source_relocations.py'
+    if ledger.exists():
+        text = ledger.read_text()
+        assignment = next(node for node in ast.parse(text).body
+                          if isinstance(node, ast.Assign)
+                          and any(isinstance(target, ast.Name) and target.id == 'RELOCATIONS'
+                                  for target in node.targets))
+        entries = ast.literal_eval(assignment.value)
+        identity_path = 'crates/gameplay/content-promotion/src/content/item_identity.rs'
+        identity = (ROOT / identity_path).read_bytes()
+        cohort = re.search(rb'const APPEARANCE_ONLY_ITEM_IDS:.*?= \[([\d,\s]+)\];', identity)
+        ids = [int(value) for value in cohort[1].split(b',') if value.strip()] if cohort else []
+        qualification = json.loads((ROOT / 'tools/content-migration/samples/official-rule-only-navigation-six.json').read_bytes())['admission_source']
+        if (len(ids) != qualification['explicit_rule_only_count']
+                or sha256_hex(json.dumps(ids, separators=(',', ':')).encode()) != qualification['explicit_ids_sha256']):
+            raise GeneratorError('HISTORICAL_APPEARANCE_COHORT_CHANGED')
+        for key, (path, digest) in entries.items():
+            if path == identity_path:
+                text = text.replace('"' + digest + '"', '"' + sha256_hex(identity) + '"')
+        key = ('imports/crystalserver/bindings/items.json', old_sha)
+        current = ('imports/crystalserver/bindings/items.json', new_sha)
+        if key in entries:
+            if entries[key] != current:
+                raise GeneratorError('BINDING_RELOCATION_CONFLICT')
+        else:
+            entry = f'    # M57: every previous binding is byte-equivalent; explicit producer admission only.\n    {key!r}: {current!r},\n'
+            text = text.replace('\n}\n# pinned path', '\n' + entry + '}\n# pinned path', 1)
+        ledger.write_text(text)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -989,6 +1070,10 @@ def main() -> int:
         action="store_true",
         help="Regenerate in memory and require the on-disk output to already match, without writing.",
     )
+    parser.add_argument('--refresh-consumer-pins', action='store_true',
+                        help='Refresh active native binding-table pins after a proven additive admission.')
+    parser.add_argument('--previous-bindings', type=Path,
+                        help='Previously pinned table for replaying an additive consumer-pin refresh.')
     parser.add_argument(
         "--build-alias-crosswalk",
         action="store_true",
@@ -1021,6 +1106,8 @@ def main() -> int:
         )
         return 0
 
+    if args.refresh_consumer_pins:
+        refresh_consumer_pins(payload, args.previous_bindings.read_bytes() if args.previous_bindings else None)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_bytes(payload)
     print(

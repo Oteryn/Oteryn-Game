@@ -8,6 +8,26 @@ const MANIFEST: &[u8] = include_bytes!(
 );
 
 #[test]
+fn m57_canonical_bridge_resolves_through_the_sorted_native_index()
+-> Result<(), Box<dyn std::error::Error>> {
+    let index = crate::content::item_ref::ItemDefinitionIndex::decode(include_bytes!(
+        "../../../../../tools/content-schema/native-gameplay/item-keys.json"
+    ))?;
+    let key = "oteryn:item.tibia.i48227";
+    let reference = index
+        .definition_ref("Item", key, "definition-r1")
+        .ok_or("admitted Cake bridge identity missing")?;
+    assert_eq!(index.definition_at(reference), Some((key, "definition-r1")));
+    assert!(
+        index
+            .definition_ref("Terrain", key, "definition-r1")
+            .is_none()
+    );
+    assert!(index.definition_ref("Item", key, "definition-r2").is_none());
+    Ok(())
+}
+
+#[test]
 fn admission_proof_cannot_be_replaced_by_self_consistent_unpinned_bytes() {
     let mut unpinned = INDEX.to_vec();
     unpinned.push(b'\n');

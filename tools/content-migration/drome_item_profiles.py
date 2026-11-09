@@ -23,7 +23,7 @@ ITEM_IDS = (*REWARD_IDS, CUBE_ID)
 KEYS = tuple(f"oteryn:item.tibia.i{item}" for item in ITEM_IDS)
 PATH = "tools/content-schema/native-gameplay/drome-item-profiles.json"
 BINDINGS_PATH = "imports/crystalserver/bindings/items.json"
-BINDINGS_SHA = "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+BINDINGS_SHA = "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66"
 SOURCE_PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 # GitHub tree/file reads on SOURCE_PIN; capture re-proves each complete blob.
 SOURCE_BLOBS = {

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 from build_spell_item_identities import BINDINGS, binding_index, bind_profiles
-from event_item_identity import DECISION as BRIDGE_IDENTITY_DECISION, evidence as bridge_source_evidence, source_evidence
+from event_item_identity import evidence as bridge_source_evidence, source_evidence
 sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
 from build_world_change_layers import BLOBS as WORLD_LAYER_BLOBS
 from build_world_change_layers import PREFIX as WORLD_LAYER_PREFIX
@@ -28,9 +28,8 @@ WORLD_DOOR_FAMILIES = ((4912, 5007, 4911), (4913, 5006, 4914))
 WORLD_DOOR_SOURCE = 'data/libs/tables/doors.lua'
 # Crystal's Cake bridge explicitly creates this appearance-only Ground item.
 # Its own Item loader supplies physical facts before optional XML overrides.
-# This is evidence only: ANSWER6549960114 does not admit a canonical reference.
+# Owner 2026-11-08 admits its canonical identity through the normal Item path.
 APPEARANCE_ONLY = {48227}
-CANONICAL_IDENTITY_UNAVAILABLE = {48227}
 
 
 def world_layers(root):
@@ -155,10 +154,9 @@ def capture(canary, crystal):
     primary_ids = ids & xml.keys()
     secondary_ids = (ids - primary_ids) & secondary.keys()
     appearance_only_ids = (ids - primary_ids - secondary_ids) & APPEARANCE_ONLY
-    identity_unavailable_ids = ids & CANONICAL_IDENTITY_UNAVAILABLE
-    unavailable_ids = (ids - primary_ids - secondary_ids - appearance_only_ids) | identity_unavailable_ids
+    unavailable_ids = (ids - primary_ids - secondary_ids - appearance_only_ids)
     qualified_ids = (primary_ids | secondary_ids | appearance_only_ids) - unavailable_ids
-    identity_evidence = [source_evidence(canary, crystal)] if identity_unavailable_ids else []
+    identity_evidence = [source_evidence(canary, crystal)]
     loader_sources = []
     if appearance_only_ids:
         loader = {path: (crystal / path).read_bytes() for path in
@@ -192,8 +190,7 @@ def capture(canary, crystal):
         item = xml.get(item_id) if item_id in primary_ids | appearance_only_ids else secondary[item_id]
         records.append(source.profile(item_id, item, objects[item_id],
                                       physical[item_id], bindings, None))
-    # Keep the exact observed source facts, without turning them into an Item policy,
-    # binding, key-section entry, map qualifier or wire reference.
+    # Preserve the exact loader facts for the admitted bridge geometry.
     for item_id in sorted(appearance_only_ids):
         if (item_id not in objects or not physical[item_id]['ground']
                 or physical[item_id]['ground_speed'] != 150 or physical[item_id]['movable']
@@ -205,16 +202,12 @@ def capture(canary, crystal):
                           bindings, native_ids)
     cosmetic_rules = json.loads((ROOT / COSMETICS).read_bytes())['rules']
     unavailable = [{'item_id': item_id, 'production_key': f'oteryn:item.tibia.i{item_id}',
-                    'reason': ('EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE' if item_id in identity_unavailable_ids
-                               else 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE'),
+                    'reason': 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE',
                     'donor': [row['donor'] for row in cosmetic_rules if row['item_id'] == item_id]
                              + layer_donors.get(item_id, [])
                              + [row['donor'] for row in door_records
-                                if item_id in (row['locked'], row['closed'], row['open'])]
-                             + (['data-global/scripts/lib/a_piece_of_cake_config.lua:249-292']
-                                if item_id in identity_unavailable_ids else []),
-                    'appearance_present': item_id in objects,
-                    **({'decision': BRIDGE_IDENTITY_DECISION} if item_id in identity_unavailable_ids else {})}
+                                if item_id in (row['locked'], row['closed'], row['open'])],
+                    'appearance_present': item_id in objects}
                    for item_id in sorted(unavailable_ids)]
     return {'schema': 'OTERYN_NATIVE_EVENT_ITEM_PROFILES/v1',
             'sources': [{'path': path, 'sha256': hashlib.sha256(raw).hexdigest()}
@@ -227,7 +220,7 @@ def capture(canary, crystal):
             'novelty_actions_sha256': hashlib.sha256((ROOT / NOVELTY).read_bytes()).hexdigest(),
             'world_layer_item_ids': sorted(layer_donors),
             'world_door_families': door_records,
-            'canonical_identity_unavailable_evidence': identity_evidence,
+            'canonical_identity_evidence': identity_evidence,
             'native_item_profile_ids': sorted(native_ids),
             'projection_only_item_ids': sorted(projection_only_ids),
             # These complete source dictionaries retain XML door/floor classification.
@@ -253,7 +246,6 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     unavailable_keys = {row['production_key'] for row in unavailable}
     record_keys = {r['production_definition']['production_key'] for r in records}
     keys = {f'oteryn:item.tibia.i{i}' for i in item_ids(root)}
-    identity_unavailable_keys = {f'oteryn:item.tibia.i{i}' for i in CANONICAL_IDENTITY_UNAVAILABLE} & keys
     unavailable_ids = {row['item_id'] for row in unavailable}
     map_ids = world_map_item_ids(root) - unavailable_ids
     physical = {row['server_item_id']: row for row in overlay['world_map_physical']}
@@ -269,21 +261,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or overlay['world_layers_sha256'] != hashlib.sha256((root / WORLD_LAYERS).read_bytes()).hexdigest()
             or overlay['event_actions_sha256'] != hashlib.sha256((root / ACTIONS).read_bytes()).hexdigest()
             or overlay['novelty_actions_sha256'] != hashlib.sha256((root / NOVELTY).read_bytes()).hexdigest()
-            or overlay['canonical_identity_unavailable_evidence'] != ([bridge_source_evidence()] if identity_unavailable_keys else [])
+            or overlay['canonical_identity_evidence'] != [bridge_source_evidence()]
             or [row['server_item_id'] for row in overlay['world_map_physical']] != sorted(map_ids)
             or overlay['native_item_profile_ids'] != sorted(native_ids)
             or overlay['projection_only_item_ids'] != sorted(projection_only_ids)
-            or not identity_unavailable_keys <= unavailable_keys
-            or identity_unavailable_keys & record_keys
             or len(records) != len(record_keys) or record_keys != native_keys
             or len(unavailable) != len(unavailable_keys)
             or record_keys & unavailable_keys or projection_only_keys & unavailable_keys
             or record_keys | projection_only_keys | unavailable_keys != keys
-            or any(row['reason'] != ('EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE'
-                                    if row['item_id'] in CANONICAL_IDENTITY_UNAVAILABLE
-                                    else 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE')
-                   or (row['item_id'] in CANONICAL_IDENTITY_UNAVAILABLE
-                       and row.get('decision') != BRIDGE_IDENTITY_DECISION)
+            or any(row['reason'] != 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE'
                    or row['production_key'] != f"oteryn:item.tibia.i{row['item_id']}"
                    for row in unavailable)):
         raise ValueError('EVENT_ITEM_PROFILE_SET')

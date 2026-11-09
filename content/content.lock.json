@@ -25,7 +25,7 @@
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34111,
+    "Item": 34112,
     "Loot": 1292,
     "Mount": 252,
     "NPC": 1282,
@@ -49,8 +49,8 @@
   "legacy_blobs": {
     "declarations": "931400d1aa2f48d068879a7d27faf1f33a2e5bfb",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "2581f7b7711076371ac4c85869ab2a89d65ea333",
-    "reference": "5ea6d7f635a63d18d48f368c70e252e39910bc76",
+    "imports": "a067e48e76e991891a4435640fac1de23fb94c38",
+    "reference": "d659262fdead6ce624fc3dfa4d8f09aebfce73c3",
     "sources": "4f6b825b939e0b74d049f6be23306972299ecf28"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "5b0531550dc98b86ad6767d3622367501019147dc7a6e7275fa7ef25295fa13e"
+          "sha256": "95c807ec0aeefb639c42d43130634bc3c5e31382fcd79e3eeda1606ee6cc002e"
         },
         {
           "creates_canonical_identities": false,

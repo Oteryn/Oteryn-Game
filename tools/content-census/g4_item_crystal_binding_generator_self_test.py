@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 MODULE_PATH = Path(__file__).with_name("g4_item_crystal_binding_generator.py")
 SPEC = importlib.util.spec_from_file_location(
@@ -269,7 +272,7 @@ def epoch2_committed_output() -> None:
     # A12 §4.2: every emitted row is EXACT to the Tibia key of its own external id; the
     # D149 rows (no CipSoft appearance) and the held donor ids emit no binding.
     bindings = output["bindings"]
-    assert len(bindings) == MODULE.EXPECTED_BOUND == 33_971
+    assert len(bindings) == MODULE.EXPECTED_BOUND == 33_972
     assert bindings == sorted(bindings, key=MODULE.canonical_bytes)
     for row in bindings:
         assert row["disposition"] == "EXACT", row
@@ -413,6 +416,47 @@ def epoch2_committed_output() -> None:
         )
     finally:
         MODULE.EPOCH1_HIGHEST_SEQUENCE = original
+
+
+def m57_source_created_bridge_identity_resolves() -> None:
+    document, _ = MODULE.generate()
+    rows = [row for row in document['bindings'] if row['external_id'] == '48227']
+    assert rows == [{
+        'disposition': 'EXACT', 'external_id': '48227',
+        'identity_namespace': 'ots/item_server_id',
+        'source_key': 'oteryn:source.crystalserver',
+        'source_revision': '201189f871d23597b82caf88fd611454a2ddefb8',
+        'target': {'family': 'Item', 'key': 'oteryn:item.tibia.i48227',
+                   'revision': 'definition-r1'},
+    }], rows
+
+
+def m57_additive_binding_refresh_preserves_records_and_rejects_rewrites() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        native = root / 'tools/content-schema/native-gameplay'
+        native.mkdir(parents=True)
+        migration = root / 'tools/content-migration'
+        migration.mkdir()
+        output = root / 'bindings.json'
+        before = {'bindings': [{'external_id': '1', 'target': {'key': 'one'}}]}
+        previous = MODULE.canonical_bytes(before)
+        output.write_bytes(previous)
+        digest = MODULE.sha256_hex(previous)
+        profile = native / 'source-item-profiles.json'
+        records = [{'source': 'preserved exact facts'}]
+        profile.write_text(json.dumps({'binding_table_sha256': digest, 'records': records}))
+        consumers = (native / 'build_spell_item_identities.py', migration / 'drome_item_profiles.py')
+        for path in consumers:
+            path.write_text(f'BINDINGS_SHA = "{digest}"\n')
+        payload = MODULE.canonical_bytes({'bindings': [*before['bindings'], {'external_id': '2'}]})
+        with patch.object(MODULE, 'ROOT', root), patch.object(MODULE, 'OUTPUT', output):
+            MODULE.refresh_consumer_pins(payload)
+            actual = json.loads(profile.read_text())
+            assert actual == {'binding_table_sha256': MODULE.sha256_hex(payload), 'records': records}
+            assert all(MODULE.sha256_hex(payload) in path.read_text() for path in consumers)
+            expect_error('CONSUMER_REPIN_REQUIRES_ADDITIVE_BINDINGS',
+                         MODULE.refresh_consumer_pins, MODULE.canonical_bytes({'bindings': []}))
 
 
 def main() -> None:
@@ -610,6 +654,8 @@ def main() -> None:
         },
     }
 
+    m57_source_created_bridge_identity_resolves()
+    m57_additive_binding_refresh_preserves_records_and_rejects_rewrites()
     epoch2_alias_gate_and_allocation()
     epoch2_committed_output()
 

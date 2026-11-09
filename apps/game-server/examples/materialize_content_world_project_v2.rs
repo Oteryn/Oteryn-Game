@@ -3104,6 +3104,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
         cake_creature_admission::apply(&mut draft)?;
+        oteryn_gameplay_content_promotion::content::item_identity::admit_source_created_identities(
+            &mut draft,
+        )?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.
@@ -3413,6 +3416,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     promote_beds(&mut draft)?;
     apply_official_creature_balance(&mut draft)?;
     cake_creature_admission::apply(&mut draft)?;
+    oteryn_gameplay_content_promotion::content::item_identity::admit_source_created_identities(
+        &mut draft,
+    )?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

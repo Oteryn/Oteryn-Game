@@ -420,7 +420,7 @@ fn content_names_only_canonical_item_keys() {
     let table = table();
     let content = content_item_keys();
     // #1807 adds 10 item keys; E06/#2792 intentionally adds 68 Crystal market goods.
-    assert_eq!(content.len(), 34_111);
+    assert_eq!(content.len(), 34_112);
     for key in &content {
         assert!(is_canonical_item_key(key), "{key}");
         assert!(key.starts_with("oteryn:item.tibia.i"), "{key}");

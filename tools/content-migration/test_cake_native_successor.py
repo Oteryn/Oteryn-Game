@@ -15,6 +15,15 @@ import import_spell_families as importer
 
 
 class CakeNativeSuccessorTests(unittest.TestCase):
+    def test_m57_tampered_binding_table_is_rejected_before_cake_admission(self):
+        path = importer.ROOT / 'imports/crystalserver/bindings/items.json'
+        read_bytes = Path.read_bytes
+        baseline = importer.baseline_outputs(importer.ROOT)
+        with patch.object(Path, 'read_bytes', lambda selected:
+                          read_bytes(selected) + b' ' if selected == path else read_bytes(selected)):
+            with self.assertRaisesRegex(ValueError, 'Item binding table digest mismatch'):
+                successor.admit(importer.ROOT, baseline)
+
     def test_generated_project_pin_accepts_new_revision_but_rejects_tampering(self):
         for mutation in [None, 'bytes', 'length', 'hash', 'membership', 'root', 'revision', 'schema', 'bound']:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:

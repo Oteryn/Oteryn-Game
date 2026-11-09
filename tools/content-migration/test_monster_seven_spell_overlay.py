@@ -43,16 +43,16 @@ class AcceptedOverlayTests(unittest.TestCase):
         # source-qualified reward Item proof alongside the43 SEASON outputs.
         self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
         self.assertIn(qengine.PROOF,actual)
-        # Independently rebuild the complete pinned63-identity packet; a count
+        # Independently rebuild the complete pinned64-identity packet; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
         self.assertEqual(actual[qengine.PROOF],expected_raw)
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
-        # M12 adds Juicy Roots; QN4 adds the two source Medusa Oil ingredients.
-        self.assertEqual(len(keys),63)
-        self.assertEqual(len(set(keys)),63)
+        # M12 adds Juicy Roots; QN4 adds two Medusa Oil ingredients; M56 adds Molten Wax.
+        self.assertEqual(len(keys),64)
+        self.assertEqual(len(set(keys)),64)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         native=json.loads(actual[producer.PROVIDER_DESTINATIONS['item_profiles']])
         by_key={row['production_definition']['production_key']:row for row in native['records']}

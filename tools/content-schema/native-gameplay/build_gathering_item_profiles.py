@@ -75,11 +75,30 @@ def build(checkout):
             'records': bound['records']}
 
 
+def refresh_canonical_input_pins():
+    """Requalify the unchanged mechanical rod when Item shard membership changes."""
+    path = ROOT / OUTPUT
+    document = json.loads(path.read_bytes())
+    _, _, proof = mechanical_rod_policy(ROOT)
+    previous, = document['qualified_overrides']
+    if {key: value for key, value in previous.items() if key != 'inputs'} != {
+            key: value for key, value in proof.items() if key != 'inputs'}:
+        raise ValueError('GATHERING_MECHANICAL_QUALIFICATION_CHANGED')
+    document['qualified_overrides'] = [proof]
+    path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + '\n')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('checkout', type=Path)
+    parser.add_argument('checkout', type=Path, nargs='?')
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--refresh-canonical-input-pins', action='store_true')
     args = parser.parse_args()
+    if args.refresh_canonical_input_pins:
+        refresh_canonical_input_pins()
+        raise SystemExit(0)
+    if args.checkout is None:
+        parser.error('checkout is required for source regeneration')
     data = (json.dumps(build(args.checkout), indent=2, ensure_ascii=False) + '\n').encode()
     if args.check:
         if (ROOT / OUTPUT).read_bytes() != data:

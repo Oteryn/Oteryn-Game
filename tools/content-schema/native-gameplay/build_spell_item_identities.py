@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
-BINDINGS_SHA = "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+BINDINGS_SHA = "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66"
 CRYSTAL_PIN = "ff7ede593c69d4c658b382c97443e8155926924a"
 CANARY_PIN = "99902524e052f37574194466c2949c576e4ab269"
 XML_PATH = "data/items/items.xml"

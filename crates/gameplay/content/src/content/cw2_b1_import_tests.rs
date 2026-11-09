@@ -234,9 +234,25 @@ fn committed_bindings_requalify_epochs_1_and_2_through_the_alias_table() {
     }
     assert_eq!(unbound, 4_590);
 
+    // M57's producer-qualified cohort is admitted after the frozen alias epochs.
+    for source_id in super::super::item_identity::SOURCE_CREATED_ITEM_IDS {
+        let target = tibia_item_key(source_id).expect("admitted source-created Tibia id");
+        assert!(
+            expected
+                .insert(
+                    (
+                        "201189f871d23597b82caf88fd611454a2ddefb8".to_owned(),
+                        source_id.to_string(),
+                    ),
+                    target
+                )
+                .is_none()
+        );
+    }
+
     let bindings = bindings_file();
     assert_eq!(bindings.len(), expected.len());
-    assert_eq!(bindings.len(), 33_971);
+    assert_eq!(bindings.len(), 33_972);
     for row in &bindings {
         assert_eq!(row["disposition"], "EXACT");
         assert_eq!(row["identity_namespace"], "ots/item_server_id");

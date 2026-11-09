@@ -17,8 +17,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "c4a89b37a6469d28d7237de37e521c92ba5dc606459f46f74b496c6fb90a75b1",
+        391,
+        "42c496bcab350ffdb8bf91913faab26ec5240fa337c3d5782895a190ed0d01d9",
     ),
     (
         "definitions/declarations.json",
@@ -27,8 +27,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_392_657,
-        "2a0677dca5bf18dbb2cb2a4d35ee26484d34eef4125d6c3eca75c500804e8a41",
+        27_392_842,
+        "fbd2d81d1bfa0b9b83be2cd675bbe7c55a22614c5e35dbc8729ea94766de7094",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "5dee43dac6802ce6d9bcb96d5fa13a7176ca7ee3aea6f0aae68308dfa8075f37",
+        1948,
+        "7864344d5f8a88735d3ad556155b4cc18f051a4f03859e9adc3dedfcf37e61b5",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "d3cca18ce0d03e4f2878cd81a00d8abc930b87544ee00f3d27c981c6a53192a2",
+        399,
+        "203f392630c16c8943008a339a8aa4bde08ed73cbd51123b72e042c846361b7d",
     ),
     (
         "provenance/imports.json",
         6_773_975,
-        "dc291fbe0517cdf75ec8f18fa82e7ff4b29aeb516ff238a5ac51179ca75c1e63",
+        "695ed66dc777511171a0acf1cbfae2adef4388e9452bd5857565e38e6b5ecb9e",
     ),
     (
         "provenance/sources.json",
@@ -140,11 +140,11 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "a36690ef76871e794e391198db3262afdfeb0433fc3430f69b848cfb77a1d287";
+const TREE_SHA256: &str = "7dbf728198982819475801b1e864eeec98c82fb101d0dff5af36e8601f7f98d4";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
-const ITEMS: usize = 34_111;
+const ITEMS: usize = 34_112;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
@@ -392,10 +392,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
-    );
+    assert_eq!(project.project_revision(), "item-identity-20261108-r1");
     // E06 adds its client market mint batch; Cake adds one separate qualified batch.
     assert_eq!(project.imports().len(), 36);
     let legacy_imports: Vec<_> = project

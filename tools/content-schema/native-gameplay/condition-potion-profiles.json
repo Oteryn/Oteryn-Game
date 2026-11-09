@@ -14,15 +14,15 @@
     },
     {
       "path": "content/items/definitions/items-27000-27499.json",
-      "sha256": "afcc5ebe9e3e0b88bf932e18c8673f99d9af6dab473e941c6072735a30ddfe07"
+      "sha256": "ca7791f9221bcd291f931facba30140dfdbdcd8d2cff648244157e531d44476d"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "f3fca5c5d8d67861740bb947f120530949a9138eb254dc76efbf32d4a2fca309"
+      "sha256": "5c0df4ada78bab1e3e65ecc2cce11fdaa0fbdd214eec4a4d6de404906a03a9e3"
     },
     {
       "path": "content/items/definitions/items-31500-31999.json",
-      "sha256": "4841f1fdb841522222816d72596ca831ddaf249a8d49ca07651788d0e2e3e079"
+      "sha256": "5922d91875b35ddf3bce62a38175d2f9650bc19ed5317be507127d5e73bdd0ea"
     }
   ],
   "sources": [

@@ -135,7 +135,7 @@ creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1_864
 assert lock["family_counts"] == {
-    "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
+    "Item": 34112, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10, "Encounter": 108, "Charm": 25,

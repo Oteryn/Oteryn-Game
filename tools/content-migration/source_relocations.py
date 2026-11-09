@@ -27,7 +27,7 @@ RELOCATIONS = {
         "0df52c391a1d56e5d82be269ddcd480233f923007cfdf35b9a79226bf2868dde",
     ): (
         "crates/gameplay/content-promotion/src/content/item_identity.rs",
-        "12b998650847975760f4f5abbbf38e2f0eba1c11b51e844e5c89c74854103544",
+        "6805770ebba94dfb52f9b399022a8c2eff208977a425dd308e491ede2e81b7ce",
     ),
     # The same carve: the A12 helper reads the native admission through this ledger.
     (
@@ -37,6 +37,8 @@ RELOCATIONS = {
         "tools/content-migration/item_official_navigation.py",
         "ab3cb5adc65b9afabeb15cef77f26a68febef3a31da40c57a98d734ada48aae3",
     ),
+    # M57: every previous binding is byte-equivalent; explicit producer admission only.
+    ('imports/crystalserver/bindings/items.json', '1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a'): ('imports/crystalserver/bindings/items.json', '6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66'),
 }
 # pinned path -> current path, for sources a structural change moved byte-identically,
 # so the recorded pin digest still names the current bytes.

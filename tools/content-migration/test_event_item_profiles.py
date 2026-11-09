@@ -153,44 +153,35 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertFalse(physical['movable'])
         self.assertFalse(any(row['item_id'] == 31159 for row in source['unavailable']))
 
-    def test_cake_bridge_source_facts_do_not_admit_missing_canonical_identity(self):
+    def test_m57_cake_bridge_has_canonical_identity_and_exact_source_facts(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
-        captured = source['appearance_only_items']
-        self.assertEqual([row['item_id'] for row in captured], [48227])
-        self.assertTrue(captured[0]['physical']['ground'])
-        self.assertEqual(captured[0]['physical']['ground_speed'], 150)
-        self.assertFalse(captured[0]['physical']['movable'])
-        self.assertFalse(captured[0]['physical']['pickupable'])
-        self.assertFalse(any(row['server_item_id'] == 48227 for row in source['world_map_physical']))
-        self.assertFalse(any(row['production_definition']['production_key'] == 'oteryn:item.tibia.i48227'
-                             for row in source['records']))
-        gap = next(row for row in source['unavailable'] if row['item_id'] == 48227)
-        self.assertEqual(gap, {
-            'item_id': 48227,
-            'production_key': 'oteryn:item.tibia.i48227',
-            'reason': 'EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
-            'donor': ['data-global/scripts/lib/a_piece_of_cake_config.lua:249-292'],
-            'appearance_present': True,
-            'decision': 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114',
-        })
-        evidence = source['canonical_identity_unavailable_evidence']
-        self.assertEqual(len(evidence), 1)
-        self.assertEqual(evidence[0]['item_id'], 48227)
-        self.assertEqual(evidence[0]['reason'], gap['reason'])
-        self.assertEqual(evidence[0]['decision'], gap['decision'])
-        self.assertEqual(evidence[0]['source_revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
-        self.assertEqual(len(evidence[0]['sources']), 8)
-        self.assertTrue(all(len(row['sha256']) == 64 for row in evidence[0]['sources']))
-        self.assertFalse({'bindings', 'target', 'policy', 'index'} & evidence[0].keys())
-        # ANSWER6549960114 preserves the canonical key section and sorted reference
-        # contract. Neither observed physical flags nor the producer allocates a key.
+        captured, = source['appearance_only_items']
+        self.assertEqual(captured['item_id'], 48227)
+        self.assertTrue(captured['physical']['ground'])
+        self.assertEqual(captured['physical']['ground_speed'], 150)
+        self.assertFalse(captured['physical']['movable'])
+        self.assertFalse(captured['physical']['pickupable'])
+        physical, = [row for row in source['world_map_physical'] if row['server_item_id'] == 48227]
+        self.assertEqual(physical, captured['physical'])
+        self.assertIn(48227, source['projection_only_item_ids'])
+        self.assertFalse(any(row['item_id'] == 48227 for row in source['unavailable']))
+        proof, = source['canonical_identity_evidence']
+        self.assertEqual(proof['item_id'], 48227)
+        self.assertEqual(proof['decision'], '2026-11-08: Zatwierdzam 48227')
+        self.assertEqual(proof['source_revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+        self.assertEqual(len(proof['sources']), 8)
+        self.assertTrue(all(len(row['sha256']) == 64 for row in proof['sources']))
         keys = json.loads((ROOT / 'tools/content-schema/native-gameplay/item-keys.json').read_bytes())
-        self.assertNotIn('oteryn:item.tibia.i48227', [row[0] for row in keys['records']])
+        self.assertEqual(sum(row[0] == 'oteryn:item.tibia.i48227' for row in keys['records']), 1)
+        reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_bytes())
+        identity, = [row['identity'] for row in reference['records']
+                     if row['identity']['key'] == 'oteryn:item.tibia.i48227']
+        self.assertEqual(identity, {'family': 'Item', 'key': 'oteryn:item.tibia.i48227', 'revision': 'definition-r1'})
 
     def test_spiritual_horseshoe_source_rule_survives_without_invented_item_profile(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
         unavailable = source['unavailable']
-        self.assertEqual([row['item_id'] for row in unavailable], [44048, 48227])
+        self.assertEqual([row['item_id'] for row in unavailable], [44048])
         self.assertEqual(unavailable[0]['reason'], 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE')
         self.assertTrue(unavailable[0]['appearance_present'])
         self.assertFalse(any(row['production_definition']['production_key'] == 'oteryn:item.tibia.i44048'

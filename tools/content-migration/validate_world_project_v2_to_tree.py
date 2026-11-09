@@ -722,7 +722,7 @@ def main() -> int:
         require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
         require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
     # E06 (owner decision 2026-10-31) minted the 68 client-only Crystal market Items: 34043 + 68.
-    require(lock["family_counts"] == {"Item": 34111, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+    require(lock["family_counts"] == {"Item": 34112, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
                                        # RAIDS-GLOBAL 2026-11-01; raid_catalogue.py --check pins the full source reconciliation.
                                        "Encounter.Raid": load(ROOT / "content/encounters/raids/index.json")["record_count"],
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
@@ -732,7 +732,7 @@ def main() -> int:
                                        **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 34111 and len(item_index["shards"]) == 69, "ITEM_INDEX")
+    require(item_index["record_count"] == 34112 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -769,7 +769,7 @@ def main() -> int:
     apply_enchanting_admissions(legacy_items)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(legacy_items, ROOT)
-    require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 34112, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -801,7 +801,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 34111, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 34112, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -892,7 +892,7 @@ def main() -> int:
         starter_kit_keys |= {(row["definition"]["template"], row["definition"]["identity"]["key"]) for row in shard["records"]}
     require(len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=34111 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 "
+        "PASS items=34112 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "

@@ -55,7 +55,7 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
             max_locator_segments: 8,
             // Generated source-cohort bounds: regenerate_content.py measures the
             // already admitted normal World package; limit+1 remains rejected.
-            max_reference_records: 62_883,
+            max_reference_records: 62_884,
             max_import_records: 30,
             // #1807 adds 4 reimport states to g4-creature-crystal-1530-r1: 404, measured.
             max_reimport_states: 104 + 296 + 4,

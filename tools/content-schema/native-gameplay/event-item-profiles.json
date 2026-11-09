@@ -601,12 +601,12 @@
       "donor": "data/libs/tables/doors.lua:18"
     }
   ],
-  "canonical_identity_unavailable_evidence": [
+  "canonical_identity_evidence": [
     {
-      "schema": "OTERYN_UNAVAILABLE_ITEM_SOURCE_EVIDENCE/v1",
+      "schema": "OTERYN_ADMITTED_ITEM_SOURCE_EVIDENCE/v1",
       "item_id": 48227,
-      "reason": "EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE",
-      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114",
+      "reason": "OWNER_ADMITTED_SOURCE_CREATED_ITEM",
+      "decision": "2026-11-08: Zatwierdzam 48227",
       "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
       "sources": [
         {
@@ -669,7 +669,7 @@
         "automap_color": 121,
         "fullbank": true
       },
-      "status": "Unavailable until the canonical Item identity/map owner supplies an admitted definition; no source suffix"
+      "status": "Canonical identity admitted; gameplay geometry uses the pinned donor facts"
     }
   ],
   "native_item_profile_ids": [
@@ -1506,7 +1506,8 @@
     20250,
     20251,
     21935,
-    31159
+    31159,
+    48227
   ],
   "world_map_physical": [
     {
@@ -12680,6 +12681,23 @@
       "dynamic_kind": null,
       "xml_attributes": [],
       "magic_field": false
+    },
+    {
+      "server_item_id": 48227,
+      "ground": true,
+      "ground_speed": 150,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [],
+      "magic_field": false
     }
   ],
   "secondary_item_ids": [],
@@ -12720,16 +12738,6 @@
         "data/scripts/actions/items/usable_spirit_of_purity_items.lua:1"
       ],
       "appearance_present": true
-    },
-    {
-      "item_id": 48227,
-      "production_key": "oteryn:item.tibia.i48227",
-      "reason": "EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE",
-      "donor": [
-        "data-global/scripts/lib/a_piece_of_cake_config.lua:249-292"
-      ],
-      "appearance_present": true,
-      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114"
     }
   ],
   "records": [
@@ -37613,7 +37621,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -37757,7 +37766,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -37901,7 +37911,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38045,7 +38056,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38189,7 +38201,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38333,7 +38346,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38477,7 +38491,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38621,7 +38636,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38765,7 +38781,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38909,7 +38926,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39053,7 +39071,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39197,7 +39216,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39341,7 +39361,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39485,7 +39506,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39629,7 +39651,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39773,7 +39796,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39917,7 +39941,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40061,7 +40086,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40205,7 +40231,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40349,7 +40376,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40493,7 +40521,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40637,7 +40666,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
