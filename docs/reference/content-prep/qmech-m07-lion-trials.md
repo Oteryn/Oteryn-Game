@@ -1,6 +1,6 @@
 # M07 Lion trial slice
 
-M07 remains PARTIAL: Dreamer's Challenge's carrot and Death Ring entrance
+M07 remains PARTIAL: Dreamer's Challenge's Death Ring entrance
 and shared tree restoration still require their native callers and durable item
 participation. The Fire Bug owner is covered in
 [its separate slice](qmech-m07-dreamer-fire-bug.md). This slice addresses the three Lion offerings and pagoda resets;
@@ -51,10 +51,10 @@ The unchanged `published_ungated_quest_hash_baseline` test still has the previou
 reproduced Ice Islands mismatch (`ca68476c…` observed, `ce91fb47…` expected), also
 with the base loader and callback registry restored. Its assertion is unchanged.
 
-Remaining M07 work is Dreamer's Challenge's carrot and Death Ring offering
+Remaining M07 work is Dreamer's Challenge's Death Ring offering
 and tree reset caller. In particular, Death Ring 6299 is an AddItem offering at UID2244, not a
 surrogate USE: it removes trees 3636 at (32857,32231..32233,z11). UID9234 restores
-missing trees and teleports to (32819,32347,z9). The carrot entry retains its live
+missing trees and teleports to (32819,32347,z9). The [carrot entry](qmech-m07-dreamer-carrot.md) implements its live
 Premium and carried-item requirements; the Fire Bug entrance retains its shared
 1949/3134 lifecycle. The generic full-route registration remains M01's boundary.
 

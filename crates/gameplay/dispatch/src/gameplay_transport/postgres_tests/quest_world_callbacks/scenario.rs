@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let carrot = name.starts_with("m07-carrot-");
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -151,7 +152,7 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if name == "triangle-tower-wall" {
+        callback(if carrot { "dreamers-challenge-carrot-entry" } else if name == "triangle-tower-wall" {
             "triangle-tower-lever"
         } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
@@ -510,7 +511,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if name == "m07-carrot-premium" || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -938,6 +939,8 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if carrot {
+            super::super::m07_dreamer_carrot::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,origin,name == "m07-carrot-premium").await?;
         } else if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             super::super::m07_dreamer_fire_bug::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger).await?;
         } else if oteryn_gameplay_quests::quest::lions_rock::binding(&callback.key).is_some() {

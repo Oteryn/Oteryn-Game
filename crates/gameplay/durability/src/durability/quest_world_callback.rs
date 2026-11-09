@@ -1,5 +1,6 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
+pub(super) mod carrot;
 pub(super) mod completion;
 #[cfg(feature = "test-support")]
 pub mod ground_stack;

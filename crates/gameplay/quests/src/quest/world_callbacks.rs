@@ -343,6 +343,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.push(super::dreamer_carrot::callback());
     callbacks.extend(super::dreamer_fire_bug::callbacks());
     callbacks.extend(super::lions_rock::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
@@ -404,6 +405,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
         if (callback.key == super::dreamer_fire_bug::IGNITE
             && !super::dreamer_fire_bug::callbacks().contains(callback))
+            || (callback.key == super::dreamer_carrot::KEY
+                && !super::dreamer_carrot::shared_input(callback))
             || (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
             || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
@@ -470,7 +473,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.mount_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
-            || (callback.requires_premium && !callback.has_personal_state())
+            || (callback.requires_premium && !callback.requires_durable_commit())
             || callback.world_requirements.len() > MAX_EFFECTS
             || callback.world_requirements.iter().any(|r| {
                 !valid_pos(r.position)
@@ -580,7 +583,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.requires_durable_commit()
-                    || callback.trigger != Trigger::Use
+                    || (callback.trigger != Trigger::Use
+                        && !super::dreamer_carrot::shared_input(callback))
                     || item.count == 0
                     || item.count > 100
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))

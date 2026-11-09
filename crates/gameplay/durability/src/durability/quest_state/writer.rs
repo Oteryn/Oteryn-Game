@@ -466,12 +466,17 @@ impl DurabilityRoot {
         let shared_entrance = context.is_some()
             && world_callbacks.iter().any(|callback| {
                 callback.key == request.transition_key
-                    && oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
+                    && (oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
+                        || oteryn_gameplay_quests::quest::dreamer_carrot::shared_input(callback))
+                    && matches!((callback.trigger,request.cause),
+                        (oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use,QuestCause::Use(_))
+                        | (oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn,QuestCause::Step(_)))
             })
-            && catalogue.transition(&request.transition_key).is_some_and(
-                oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition,
-            );
-        if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE)
+            && catalogue.transition(&request.transition_key).is_some_and(|transition|
+                oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition(transition)
+                    || oteryn_gameplay_quests::quest::dreamer_carrot::shared_transition(transition));
+        if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+            || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY)
             != shared_entrance
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -719,18 +724,28 @@ impl DurabilityRoot {
                     };
                     // Premium's shared latch precedes the Character root lock. Historical
                     // receipts above replay without evaluating current entrance eligibility.
+                    let carrot = callback.as_ref().is_some_and(oteryn_gameplay_quests::quest::dreamer_carrot::shared_input);
+                    let mut entrance_premium_denied = false;
                     if callback.as_ref().is_some_and(|c| c.requires_live_premium()) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                         if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
-                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            if !carrot { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                            entrance_premium_denied = true;
                         }
                     }
                     let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if carrot {
+                        let Some((permit,context,_))=context.as_ref() else {return Ok(Err(CharacterProgressionError::InvalidInput));};
+                        if let Some(refusal)=super::super::quest_world_callback::carrot::eligibility(
+                            &mut tx,permit,fence,context,!entrance_premium_denied).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
+                        }
+                    }
                     if let Some(recipe) = timer_recipe
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));

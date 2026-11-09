@@ -667,6 +667,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &self.premium_coordinator,
                 )
                 .await;
+            if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
+                && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
+                    oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing
+                    | oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingPremiumRequired)))
+            {
+                if matches!(
+                    &outcome,
+                    Ok(QuestTransitionOutcome::Refused(
+                        oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingPremiumRequired
+                    ))
+                ) {
+                    self.states.chat.publish_quest_speech(
+                        runtime,
+                        actor,
+                        session,
+                        oteryn_gameplay_quests::quest::dreamer_carrot::PREMIUM_SPEECH,
+                    );
+                }
+                if let Ok(mut refusal) = self.states.quest_callbacks.carrot_refusal.lock() {
+                    *refusal = Some((actor, session, expected));
+                }
+            }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(

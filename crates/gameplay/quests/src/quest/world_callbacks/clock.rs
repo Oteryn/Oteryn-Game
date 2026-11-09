@@ -4,7 +4,9 @@ use super::Callback;
 impl Callback {
     /// Item custody is fenced even when the source writes no personal progress.
     pub fn requires_durable_commit(&self) -> bool {
-        self.has_personal_state() || super::super::dreamer_fire_bug::shared_input(self)
+        self.has_personal_state()
+            || super::super::dreamer_fire_bug::shared_input(self)
+            || super::super::dreamer_carrot::shared_input(self)
     }
 
     pub fn has_personal_state(&self) -> bool {
