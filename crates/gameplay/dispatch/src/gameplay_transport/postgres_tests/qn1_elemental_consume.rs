@@ -267,6 +267,88 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let permit = SpellLanePermit::of_fresh_scope(f::scope()?)
         .await
         .map_err(f::debug)?;
+    let mut stale_connection = f::fence()?;
+    stale_connection.connection_generation =
+        crate::foundation::ConnectionGeneration::new(2).map_err(f::debug)?;
+    let mut stale_lease = f::fence()?;
+    stale_lease.character_lease_generation = 2;
+    let mut stale_scope = f::fence()?;
+    stale_scope.scope_ownership_generation =
+        crate::foundation::ScopeOwnershipGeneration::new(2).map_err(f::debug)?;
+    for stale_fence in [stale_connection, stale_lease, stale_scope] {
+        let refused = h
+            .root
+            .item_loop_elemental_corpse(
+                &permit,
+                &authority,
+                &h.node,
+                stale_fence,
+                &Content,
+                crate::durability::item_loop_move::ElementalArrivalProbe {
+                    command: f::command(100)?,
+                    item,
+                    position,
+                },
+            )
+            .await
+            .map_err(f::debug)?;
+        assert_eq!(refused, None);
+    }
+    let observed = h
+        .root
+        .item_loop_elemental_corpse(
+            &permit,
+            &authority,
+            &h.node,
+            f::fence()?,
+            &Content,
+            crate::durability::item_loop_move::ElementalArrivalProbe {
+                command: f::command(100)?,
+                item,
+                position,
+            },
+        )
+        .await
+        .map_err(f::debug)?
+        .ok_or("missing physical corpse probe")?;
+    assert_eq!(observed, corpse);
+    let stale_plan = rules::prepare_arrival(
+        plan.fence(),
+        target,
+        rules::CorpseArrival {
+            state_revision: corpse.state_revision + 1,
+            ..corpse
+        },
+        &cells,
+        false,
+    )
+    .ok_or("well-formed stale physical revision")?;
+    let stale = h
+        .root
+        .commit_item_loop_elemental_arrival(
+            &permit,
+            &authority,
+            &h.node,
+            f::fence()?,
+            f::command(100)?,
+            &Content,
+            request.clone(),
+            ElementalArrivalTarget::new(stale_plan),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        stale,
+        Err(crate::durability::item_loop_move::LoopMoveRefusal::Stale)
+    ));
+    let unchanged: (String, i64) = sqlx::query_as(
+        "SELECT state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid"
+    ).bind(item.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(unchanged, (revision, 1));
+    let intents: i64 = sqlx::query_scalar("SELECT count(*) FROM game_elemental_summon_intents")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(intents, 0);
     let result = h
         .root
         .commit_item_loop_elemental_arrival(
@@ -310,6 +392,23 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(count, 1);
+    let retired = h
+        .root
+        .item_loop_elemental_corpse(
+            &permit,
+            &authority,
+            &h.node,
+            f::fence()?,
+            &Content,
+            crate::durability::item_loop_move::ElementalArrivalProbe {
+                command: f::command(101)?,
+                item,
+                position,
+            },
+        )
+        .await
+        .map_err(f::debug)?;
+    assert_eq!(retired, None);
     Ok(())
 }
 

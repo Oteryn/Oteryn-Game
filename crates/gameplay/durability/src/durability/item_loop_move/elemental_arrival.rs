@@ -2,6 +2,14 @@
 use super::*;
 use oteryn_gameplay_quests::quest::elemental_arrival::SummonPlan;
 
+/// The actual source item and requested arrival cell, before reserving the map readset.
+#[derive(Debug, Clone, Copy)]
+pub struct ElementalArrivalProbe {
+    pub command: CommandRef,
+    pub item: [u8; 16],
+    pub position: oteryn_gameplay_quests::quest::world_callbacks::Position,
+}
+
 /// The dispatch owner retains its owned map reservation with the spell lane until
 /// this writer's outcome is known, including any parked unresolved attempt.
 #[derive(Debug, Clone)]
@@ -15,6 +23,87 @@ impl ElementalArrivalTarget {
 }
 
 impl DurabilityRoot {
+    /// Read the live physical corpse under the same equipment/content authority as the move.
+    /// The returned revision predicts one whole-item drop; the writer rechecks the source
+    /// under its own row lock, so this observation never substitutes for the custody proof.
+    pub async fn item_loop_elemental_corpse<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        content: &C,
+        request: ElementalArrivalProbe,
+    ) -> Result<
+        Option<oteryn_gameplay_quests::quest::elemental_arrival::CorpseArrival>,
+        DurabilityError,
+    > {
+        use oteryn_gameplay_quests::quest::elemental_arrival::{CorpseArrival, RECIPES};
+        permit.check_scope(fence.runtime_scope)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let mut context = content;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, content| {
+                Box::pin(async move {
+                    let mut tx =
+                        crate::durability::db::begin_type2_transaction(holder, deadline).await?;
+                    let attempt: LoopResult<Option<CorpseArrival>> = async {
+                        assert_recovery_fence(&mut tx, &record).await?;
+                        assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &record,
+                            &node,
+                            &fence,
+                            Some(request.command),
+                            content.loop_content_digest(),
+                        )
+                        .await?;
+                        let (world, _) = scope_of(&fence)
+                            .map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                        let Some((definition, quantity, revision)) =
+                            lock_live_item(&mut tx, request.item, *world.as_bytes()).await?
+                        else {
+                            return Ok(None);
+                        };
+                        if definition.family != "Item"
+                            || definition.revision_ref != "definition-r1"
+                            || quantity != 1
+                        {
+                            return Ok(None);
+                        }
+                        let Some(recipe) = RECIPES.iter().find(|recipe| {
+                            definition.production_key
+                                == format!("oteryn:item.tibia.i{}", recipe.corpse)
+                        }) else {
+                            return Ok(None);
+                        };
+                        let Some(state_revision) = revision.checked_add(1) else {
+                            return Ok(None);
+                        };
+                        Ok(Some(CorpseArrival {
+                            instance: request.item,
+                            state_revision,
+                            item: recipe.corpse,
+                            quantity,
+                            position: request.position,
+                        }))
+                    }
+                    .await;
+                    match attempt {
+                        Ok(corpse) => {
+                            tx.commit(deadline).await?;
+                            Ok(corpse)
+                        }
+                        Err(error) => loop_error(error).map(|_| None),
+                    }
+                })
+            })
+            .await
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "the physical successor shares the ordinary move's complete authority and content fence"
