@@ -259,6 +259,62 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/behemoth/s1/entry",
+      "quest": "oteryn:quest.behemoth_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33235,
+          "y": 31695,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 499,
+        "native": {
+          "position": {
+            "x": 33235,
+            "y": 31695,
+            "floor": -12
+          },
+          "ordinal": 0,
+          "appearance": 499
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/behemoth_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/behemoth_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/spawns/spawns-42000-43999.json#/records/110/declaration/points/3",
+        "content/world/placements/region-z12-x129-y123.b3",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 80
+    },
+    {
       "key": "oteryn:quest-callback/m01b/berserk-potion/s1/entry",
       "quest": "oteryn:quest.berserk_potion_quest",
       "trigger": "step_in",

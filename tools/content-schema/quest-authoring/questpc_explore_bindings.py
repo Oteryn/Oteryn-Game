@@ -5,6 +5,8 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.behemoth_quest', 's1',
+     'spawn-approach:oteryn:spawn.x33230_y31696_z12#3', 'chosen-source/behemoth_quest'),
     ('oteryn:quest.dragon_tower_quest', 's1',
      'area-approach:oteryn:area.hunting_place.shadowthorn', 'chosen-source/dragon_tower_quest'),
     ('oteryn:quest.berserk_potion_quest', 's1',

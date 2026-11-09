@@ -12,6 +12,9 @@ mod fire_axe;
 #[path = "m01b_explore/koshei.rs"]
 mod koshei;
 
+#[path = "m01b_explore/spawn_entries.rs"]
+mod spawn_entries;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -272,6 +275,9 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/behemoth/s1/entry" {
+        return spawn_entries::world(native);
+    }
     if matches!(
         name,
         "m01b/dragon-tower/s1/entry" | "m01b/berserk-potion/s1/entry"

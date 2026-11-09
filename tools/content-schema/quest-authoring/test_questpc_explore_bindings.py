@@ -21,6 +21,11 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_behemoth_floor_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT) if c['quest'] == 'oteryn:quest.behemoth_quest']
+        self.assertEqual(len(callbacks), 1, 'Behemoth floor entry is activated')
+        self.assertEqual(callbacks[0]['selector']['position']['floor'], -12)
+
     def test_spawn_approach_rejects_another_coordinate_frame(self):
         import questpc_spawn_approaches as spawns
         source = ROOT / spawns.SOURCE
