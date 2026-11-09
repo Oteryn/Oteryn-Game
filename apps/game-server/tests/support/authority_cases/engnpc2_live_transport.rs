@@ -18,33 +18,53 @@ type TestResult<T = ()> = fixture::TestResult<T>;
 
 #[test]
 fn engnpc2_live_transport_rotworm_hotkey_and_replay() -> TestResult {
+    run(false)
+}
+
+#[test]
+fn engnpc2_live_transport_rotworm_handle_and_replay() -> TestResult {
+    run(true)
+}
+
+fn run(handle: bool) -> TestResult {
     if fixture::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| -> Result<(), String> {
+        .spawn(move || -> Result<(), String> {
             let admin = fixture::configured_admin().ok_or("configured PG admin")?;
-            fixture::runtime().map_err(|error| error.to_string())?.block_on(async {
-                let started = std::time::Instant::now();
-                let h = fixture::Harness::create_with_admission_seed(
-                    admin,
-                    "engnpc2_live_transport",
-                    true,
-                    false,
-                )
-                .await?;
-                let result = exercise(&h).await;
-                h.cleanup().await?;
-                result?;
-                assert!(started.elapsed().as_secs_f64() > 0.01);
-                eprintln!(
-                    "PG_EXECUTED engnpc2_live_transport_rotworm_hotkey_and_replay duration={:?}",
-                    started.elapsed()
-                );
-                Ok::<(), Box<dyn std::error::Error>>(())
-            })
-            .map_err(|error: Box<dyn std::error::Error>| error.to_string())
+            fixture::runtime()
+                .map_err(|error| error.to_string())?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create_with_admission_seed(
+                        admin,
+                        if handle {
+                            "engnpc2_live_handle"
+                        } else {
+                            "engnpc2_live_transport"
+                        },
+                        true,
+                        false,
+                    )
+                    .await?;
+                    let result = exercise(&h, handle).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "PG_EXECUTED {} duration={:?}",
+                        if handle {
+                            "engnpc2_live_transport_rotworm_handle_and_replay"
+                        } else {
+                            "engnpc2_live_transport_rotworm_hotkey_and_replay"
+                        },
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(|error: Box<dyn std::error::Error>| error.to_string())
         })?
         .join()
         .map_err(|_| "live transport PG thread failed")?
@@ -87,7 +107,7 @@ async fn fresh(h: &fixture::Harness) -> TestResult {
     Ok(())
 }
 
-async fn exercise(h: &fixture::Harness) -> TestResult {
+async fn exercise(h: &fixture::Harness, handle: bool) -> TestResult {
     fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
@@ -261,7 +281,11 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         .definition_ref("Item", key, index.revision(key).ok_or("gatherer revision")?)
         .ok_or("gatherer reference")?;
     let intent = UseIntent {
-        target: UseTarget::ItemByDefinition(definition),
+        target: if handle {
+            UseTarget::Item(std::num::NonZeroU64::new(7).ok_or("tool handle")?)
+        } else {
+            UseTarget::ItemByDefinition(definition)
+        },
         use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
             identity: creature.placement_identity(),
             generation: generation_id,
@@ -281,21 +305,21 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         identity: other.placement_identity(),
         generation: other_generation,
     });
-    let refusal = owner
-        .use_quest_tool(
-            actor,
-            UseCommand {
-                command_id: 13100,
-                ..command
-            },
-            wrong,
-            None,
-            None,
-        )
-        .await
-        .map_err(|_| "wrong-species caller unavailable")?
-        .ok_or("wrong-species caller fell through")?;
-    assert_eq!(refusal.disposition, UseDisposition::Rejected);
+    let refusal = call(
+        &owner,
+        actor,
+        UseCommand {
+            command_id: 13100,
+            ..command
+        },
+        wrong,
+        handle,
+        true,
+        true,
+    )
+    .await?
+    .ok_or("wrong-species caller fell through")?;
+    assert_eq!(refusal, UseDisposition::Rejected);
     let refused: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_character_quest_receipts),(SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
         .bind(id(92).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
@@ -303,12 +327,10 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         (0, 0, 1),
         "wrong species must not consume or credit the tool"
     );
-    let outcome = owner
-        .use_quest_tool(actor, command, intent.clone(), None, None)
-        .await
-        .map_err(|_| "composed quest caller unavailable")?
+    let outcome = call(&owner, actor, command, intent.clone(), handle, true, true)
+        .await?
         .ok_or("composed quest caller fell through")?;
-    assert_eq!(outcome.disposition, UseDisposition::Committed);
+    assert_eq!(outcome, UseDisposition::Committed);
     let counts:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(counts, (1, 1, 1));
     let values:(i64,i64)=sqlx::query_as("SELECT (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid),(SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i17674' AND lifecycle=1)").bind(id(92).as_slice()).fetch_one(&h.pool).await?;
@@ -318,15 +340,39 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         .await
         .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
         .map_err(debug)?;
-    let replay = owner
-        .use_quest_tool(actor, command, intent, None, None)
-        .await
-        .map_err(|_| "composed replay unavailable")?
+    // A spent handle no longer resolves, and the removed actor is no longer visible.
+    // The historical command must still reach the existing receipt owner.
+    let replay = call(&owner, actor, command, intent, handle, false, false)
+        .await?
         .ok_or("composed replay fell through")?;
-    assert_eq!(replay.disposition, UseDisposition::Committed);
+    assert_eq!(replay, UseDisposition::Committed);
     let counts_after:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(counts_after, counts);
     Ok(())
+}
+
+async fn call(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    intent: UseIntent,
+    handle: bool,
+    source_present: bool,
+    visible: bool,
+) -> TestResult<Option<UseDisposition>> {
+    let result = if handle {
+        let source = source_present.then_some(composed_test_owner::ItemKey::Instance(id(92)));
+        owner
+            .use_event_item(actor, command, intent, source, visible)
+            .await
+    } else {
+        owner
+            .use_quest_tool(actor, command, intent, None, None)
+            .await
+    };
+    result
+        .map(|outcome| outcome.map(|outcome| outcome.disposition))
+        .map_err(|_| "composed quest caller unavailable".into())
 }
 
 async fn seed_tool(
