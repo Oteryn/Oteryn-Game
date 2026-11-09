@@ -29,6 +29,7 @@ pub(crate) fn callback() -> Callback {
     callback.requires_premium = true;
     callback.return_on_failure = true;
     callback.item_on_target = Some(ItemOnTarget {
+        on_step: false,
         item: ITEM.into(),
         alternatives: vec![],
         count: 1,

@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "d4fef6c5b34ad91852dfb49f7b9c1e1bb6b2ebca6cb9297adf4b6fc97b2ee707"
+    "sha256": "51d3e91c3bd77821dfc364d8fe12fff68c729a9ce383b093cae0fcfc7abdf4a7"
   },
   "changes": [
     {
@@ -314895,7 +314895,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
-      "sha256": "b52c35e3c8cfc0de2ee6d385dfe092d7ebd2839196d6e21c3036ff5773d82f44"
+      "sha256": "308a919e9e03235aa7f97d3049854a0c7d9bd4e62008397be860d64b089b345f"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
