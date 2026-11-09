@@ -68,7 +68,6 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
-    ("ENGNPC-M05", 1),
     // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
     ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
@@ -82,6 +81,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("CRAFT-2", 2),
     // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
     ("ENERGY-RING-1", 2),
+    // M04: Crystal 201189f marlin901, trophy902 and blessed Ankh3214.
+    // The marlin retains its independently sealed NonStackable native core.
+    // Diary3212 already exists: its physical admission adds no profile count.
+    ("ENGNPC-M04", 3),
+    ("ENGNPC-M05", 1),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
     ("FORGECREATURE", 1),
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
