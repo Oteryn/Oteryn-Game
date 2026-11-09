@@ -24,6 +24,8 @@ struct Program {
     phase_track: String,
     tracks: Vec<Track>,
     world_callbacks: Vec<serde_json::Value>,
+    #[serde(default)]
+    egress_callbacks: Vec<String>,
     npc_callbacks: Vec<serde_json::Value>,
     counters: Vec<AreaCounter>,
     stage_bindings: std::collections::BTreeMap<String, Vec<String>>,
@@ -84,6 +86,91 @@ fn document() -> Result<&'static Document, String> {
         .map_err(Clone::clone)
 }
 
+// Egress may only restore the already earned phase and return to its own entrance.
+fn validate_egress(p: &Program) -> Result<(), String> {
+    let mut seen = BTreeSet::new();
+    if p.egress_callbacks.len() > 4 {
+        return Err("personal egress bounds".into());
+    }
+    for key in &p.egress_callbacks {
+        if !seen.insert(key) || p.completion.callbacks.contains(key) {
+            return Err("personal egress ownership".into());
+        }
+        let exit = p
+            .world_callbacks
+            .iter()
+            .find(|c| c["key"].as_str() == Some(key))
+            .ok_or("personal egress callback")?;
+        let entrance = p
+            .world_callbacks
+            .iter()
+            .find(|c| {
+                !p.egress_callbacks
+                    .iter()
+                    .any(|key| c["key"].as_str() == Some(key))
+                    && c["selector"]["position"] == exit["teleport"]
+                    && c["storage"].as_array().is_some_and(|storage| {
+                        storage.iter().any(|guard| {
+                            guard["track"].as_str() == Some(&p.phase_track)
+                                && guard["minimum"].as_i64().is_some_and(|n| n <= 0)
+                                && guard["maximum"].as_i64().is_some_and(|n| n >= 0)
+                                && guard["set"].as_i64().is_some_and(|n| n >= 1)
+                        })
+                    })
+            })
+            .ok_or("personal egress entrance")?;
+        let phase = p
+            .tracks
+            .iter()
+            .find(|t| t.key == p.phase_track)
+            .ok_or("egress phase")?;
+        let mut expected = entrance.clone();
+        expected["key"] = key.clone().into();
+        expected["selector"] = exit["selector"].clone();
+        expected["teleport"] = entrance["selector"]["position"].clone();
+        expected["minimum_level"] = serde_json::Value::Null;
+        expected["storage"] = serde_json::json!([{"track":p.phase_track,"minimum":1,"maximum":phase.max,"set":1,"at_least":true}]);
+        // Compare every field, so future value-bearing callback fields fail closed too.
+        if exit != &expected
+            || exit["trigger"] != "use"
+            || exit["selector"]["position"].is_null()
+            || entrance["offerings"] != serde_json::json!([])
+            || entrance["passages"] != serde_json::json!([])
+            || !entrance["item_on_target"].is_null()
+            || !entrance["lever"].is_null()
+            || entrance["return_on_failure"] != false
+            || entrance["reversible"] != false
+            || entrance.as_object().is_none_or(|fields| {
+                fields.keys().any(|key| {
+                    ![
+                        "key",
+                        "quest",
+                        "trigger",
+                        "selector",
+                        "storage",
+                        "teleport",
+                        "minimum_level",
+                        "requires_world_admission",
+                        "offerings",
+                        "passages",
+                        "item_on_target",
+                        "lever",
+                        "return_on_failure",
+                        "reversible",
+                        "sources",
+                        "failure_message",
+                        "success_message",
+                    ]
+                    .contains(&key.as_str())
+                })
+            })
+        {
+            return Err("personal egress must be transport only".into());
+        }
+    }
+    Ok(())
+}
+
 fn parse(source: &'static str) -> Result<Document, String> {
     let mut document: Document = serde_json::from_str(source).map_err(|e| e.to_string())?;
     let mut keys = BTreeSet::new();
@@ -135,6 +222,7 @@ fn parse(source: &'static str) -> Result<Document, String> {
         {
             return Err("unsupported enabled journal reward policy".into());
         }
+        validate_egress(program)?;
         let callbacks = super::world_callbacks::parse(
             &serde_json::json!({
                 "schema": 1, "callbacks": program.world_callbacks,
@@ -146,7 +234,12 @@ fn parse(source: &'static str) -> Result<Document, String> {
             if callback.quest != program.quest
                 || !callback.requires_world_admission
                 || callback.world_change.is_some()
-                || callback.minimum_level.unwrap_or(0) != program.minimum_level
+                || callback.minimum_level.unwrap_or(0)
+                    != if program.egress_callbacks.contains(&callback.key) {
+                        0
+                    } else {
+                        program.minimum_level
+                    }
                 || !callback
                     .key
                     .starts_with("oteryn:quest-callback/worldchg-m31/")
@@ -440,16 +533,16 @@ fn journal_end(p: &Program) -> Result<(String, i64), String> {
 /// Requirement terms are included in the callback binding and read in its fenced transaction.
 #[must_use]
 pub fn requires_premium(callback: &str) -> bool {
-    document().is_ok_and(|d| {
-        d.programs
+    document().is_ok_and(|d| d.programs.iter().any(|p| premium_required(p, callback)))
+}
+
+fn premium_required(p: &Program, callback: &str) -> bool {
+    p.runtime_enabled
+        && p.requires_premium
+        && !p.egress_callbacks.iter().any(|key| key == callback)
+        && p.world_callbacks
             .iter()
-            .filter(|p| p.runtime_enabled && p.requires_premium)
-            .any(|p| {
-                p.world_callbacks
-                    .iter()
-                    .any(|c| c["key"].as_str() == Some(callback))
-            })
-    })
+            .any(|c| c["key"].as_str() == Some(callback))
 }
 
 /// Bind executable journal rules, including death areas, to every activation receipt.
@@ -467,7 +560,7 @@ pub(super) fn policy_binding(callback: &str) -> Result<Option<serde_json::Value>
 }
 
 fn executable_policy(p: &Program) -> Result<serde_json::Value, String> {
-    serde_json::to_value((
+    let base = serde_json::to_value((
         &p.key,
         &p.quest,
         p.requires_premium,
@@ -477,7 +570,12 @@ fn executable_policy(p: &Program) -> Result<serde_json::Value, String> {
         &p.achievement,
         &p.taming,
     ))
-    .map_err(|error| error.to_string())
+    .map_err(|error| error.to_string())?;
+    Ok(if p.egress_callbacks.is_empty() {
+        base
+    } else {
+        serde_json::json!({"base":base,"egress_callbacks":p.egress_callbacks})
+    })
 }
 
 pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> Result<(), String> {
@@ -518,6 +616,112 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn personal_egress_requires_prior_admission_and_cannot_carry_value() -> Result<(), String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/world-change-journals.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        for programme in value["programs"].as_array_mut().ok_or("programmes")? {
+            let selected = programme["key"] == "fury_gates";
+            programme["runtime_enabled"] = selected.into();
+            if selected {
+                let key = "oteryn:quest-callback/worldchg-m31/fury_gates/egress";
+                let mut exit = programme["world_callbacks"][0].clone();
+                exit["key"] = key.into();
+                exit["minimum_level"] = serde_json::Value::Null;
+                exit["teleport"] = programme["world_callbacks"][0]["selector"]["position"].clone();
+                exit["selector"] = programme["world_callbacks"][1]["selector"].clone();
+                exit["storage"] = serde_json::json!([{"track":programme["phase_track"],
+                    "minimum":1,"maximum":7,"set":1,"at_least":true}]);
+                programme["egress_callbacks"] = serde_json::json!([key]);
+                programme["world_callbacks"]
+                    .as_array_mut()
+                    .ok_or("callbacks")?
+                    .push(exit);
+            }
+        }
+        let document = super::parse(Box::leak(value.to_string().into_boxed_str()))?;
+        let programme = document
+            .programs
+            .iter()
+            .find(|p| p.runtime_enabled)
+            .ok_or("fury")?;
+        assert!(super::premium_required(
+            programme,
+            "oteryn:quest-callback/worldchg-m31/fury_gates/entry"
+        ));
+        assert!(!super::premium_required(
+            programme,
+            "oteryn:quest-callback/worldchg-m31/fury_gates/egress"
+        ));
+        let original_policy = super::executable_policy(programme)?;
+        let mut without_exit = value.clone();
+        let p = without_exit["programs"]
+            .as_array_mut()
+            .ok_or("programmes")?
+            .iter_mut()
+            .find(|p| p["key"] == "fury_gates")
+            .ok_or("fury")?;
+        p["egress_callbacks"] = serde_json::json!([]);
+        p["world_callbacks"]
+            .as_array_mut()
+            .ok_or("callbacks")?
+            .pop();
+        let baseline = super::parse(Box::leak(without_exit.to_string().into_boxed_str()))?;
+        let p = baseline
+            .programs
+            .iter()
+            .find(|p| p.runtime_enabled)
+            .ok_or("fury")?;
+        assert_ne!(original_policy, super::executable_policy(p)?);
+        for minimum in [0, -1] {
+            let mut invalid = value.clone();
+            let programme = invalid["programs"]
+                .as_array_mut()
+                .ok_or("programmes")?
+                .iter_mut()
+                .find(|p| p["key"] == "fury_gates")
+                .ok_or("fury")?;
+            let exit = programme["world_callbacks"]
+                .as_array_mut()
+                .ok_or("callbacks")?
+                .last_mut()
+                .ok_or("exit")?;
+            exit["storage"][0]["minimum"] = minimum.into();
+            assert!(super::parse(Box::leak(invalid.to_string().into_boxed_str())).is_err());
+        }
+        for (field, replacement) in [
+            ("minimum_level", serde_json::json!(60)),
+            ("storage", serde_json::json!([])),
+            ("teleport", serde_json::json!({"x":1,"y":1,"floor":-7})),
+            (
+                "offerings",
+                serde_json::json!([{"item":"oteryn:item/gold_coin","count":1}]),
+            ),
+            ("experience", serde_json::json!(100)),
+        ] {
+            let mut invalid = value.clone();
+            let programme = invalid["programs"]
+                .as_array_mut()
+                .ok_or("programmes")?
+                .iter_mut()
+                .find(|p| p["key"] == "fury_gates")
+                .ok_or("fury")?;
+            let exit = programme["world_callbacks"]
+                .as_array_mut()
+                .ok_or("callbacks")?
+                .last_mut()
+                .ok_or("exit")?;
+            exit[field] = replacement;
+            assert!(
+                super::parse(Box::leak(invalid.to_string().into_boxed_str())).is_err(),
+                "accepted {field}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn native_counter_achievement_programme_requires_a_bound_goal() -> Result<(), String> {
         let mut value: serde_json::Value = serde_json::from_str(include_str!(
