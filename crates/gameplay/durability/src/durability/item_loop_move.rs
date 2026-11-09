@@ -2102,24 +2102,15 @@ impl DurabilityRoot {
                     .bind(channel.map(|id| id.to_vec()))
                     .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + 1)
                     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
-                    .fetch_all(&mut *tx)
-                    .await?;
-                    // Keep the bounded Ground read fail-closed, including pending map pickups.
-                    // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
-                    // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    if rows.len() > bound {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    let invalid = |_| DurabilityError::InvalidStoredState;
-                    let mut items = Vec::with_capacity(rows.len());
-                    for row in &rows {
+                    // Decode before collecting: retaining every raw PgRow also retains its
+                    // WP3 wire and column-offset reservations until the root budget is full.
+                    .map(|row| -> Result<LoopGroundItem, DurabilityError> {
+                        let invalid = |_| DurabilityError::InvalidStoredState;
                         let stack_ordinal = row
                             .try_get::<Option<i64>, _>("stack_ordinal")?
                             .and_then(|ordinal| u64::try_from(ordinal).ok())
                             .ok_or(DurabilityError::InvalidStoredState)?;
-                        items.push(LoopGroundItem {
+                        Ok(LoopGroundItem {
                             native_corpse: row.try_get("native_corpse")?,
                             field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
                             stack_ordinal,
@@ -2127,7 +2118,7 @@ impl DurabilityRoot {
                                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
                                 world_id: WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
                                     .map_err(invalid)?,
-                                runtime_scope: decode_ground_scope(row)?,
+                                runtime_scope: decode_ground_scope(&row)?,
                                 definition: TypedDefinitionRef {
                                     family: row.try_get("definition_family")?,
                                     production_key: row.try_get("definition_production_key")?,
@@ -2151,8 +2142,19 @@ impl DurabilityRoot {
                                     row.try_get("minted_transaction_id")?,
                                 )?,
                             },
-                        });
+                        })
+                    })
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    // Keep the bounded Ground read fail-closed, including pending map pickups.
+                    // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
+                    // never substitute the base placement ordinal or invent a missing one.
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if rows.len() > bound {
+                        return Err(DurabilityError::InvalidStoredState);
                     }
+                    let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
                     super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(items)
                 })

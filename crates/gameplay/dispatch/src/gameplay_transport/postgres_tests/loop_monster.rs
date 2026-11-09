@@ -7,6 +7,8 @@ pub(super) mod fixture;
 use fixture::{cell, dependencies, next_pass, run_case};
 #[path = "loop_monster/item_scope.rs"]
 mod item_scope;
+#[path = "loop_monster/pass_cost.rs"]
+mod pass_cost;
 #[path = "loop_monster/shared_budget.rs"]
 mod shared_budget;
 #[path = "loop_monster/sql_cancellation.rs"]

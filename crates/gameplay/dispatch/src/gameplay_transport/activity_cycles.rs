@@ -15,6 +15,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn run_activity_owner_cycles(&self, shutdown: &CancellationToken) {
         let mut jobs: Vec<ActivityCycleJob<'_>> = Vec::new();
         let mut recoveries: Vec<ActivityRecoveryJob<'_>> = Vec::new();
+        let mut durable_scan = ActivityDurableScan::new(tokio::time::Instant::now());
         loop {
             let owners = self.activity_runtimes.activity_owners().unwrap_or_default();
             for (key, stop, _) in &jobs {
@@ -84,7 +85,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             let mut pass = pin!(async {
-                let _ = self.activity_lifecycle_pass().await;
+                let scan = durable_scan.due(tokio::time::Instant::now());
+                let _ = self.activity_lifecycle_pass_with(scan).await;
                 let _ = self.publish_activity_raid_presence().await;
                 tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             });
@@ -118,5 +120,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             }
         }
+    }
+}
+
+/// Interval between the lifecycle's ownerless database traversals (NBHOG-1).
+pub(super) const ACTIVITY_DURABLE_SCAN_CADENCE: std::time::Duration =
+    std::time::Duration::from_secs(1);
+
+/// The heartbeat polls rooms every 50 ms; the departed-recovery and due-room traversals lock every
+/// admission relation, so they run at most once per [`ACTIVITY_DURABLE_SCAN_CADENCE`], the first
+/// heartbeat included.
+pub(super) struct ActivityDurableScan {
+    next: tokio::time::Instant,
+}
+
+impl ActivityDurableScan {
+    pub(super) const fn new(now: tokio::time::Instant) -> Self {
+        Self { next: now }
+    }
+
+    pub(super) fn due(&mut self, now: tokio::time::Instant) -> bool {
+        if now < self.next {
+            return false;
+        }
+        self.next = now + ACTIVITY_DURABLE_SCAN_CADENCE;
+        true
+    }
+}
+
+#[cfg(test)]
+mod durable_scan_tests {
+    use super::{ACTIVITY_DURABLE_SCAN_CADENCE, ActivityDurableScan};
+    use std::time::Duration;
+
+    #[test]
+    fn heartbeats_run_the_durable_scan_once_per_cadence() {
+        let start = tokio::time::Instant::now();
+        let mut scan = ActivityDurableScan::new(start);
+        // Two seconds of 50 ms heartbeats, as `run_activity_owner_cycles` polls.
+        let runs = (0..40_u32)
+            .filter(|tick| scan.due(start + Duration::from_millis(50) * *tick))
+            .count();
+        assert_eq!(runs, 2);
+        assert!(scan.due(start + ACTIVITY_DURABLE_SCAN_CADENCE * 2));
+    }
+
+    #[test]
+    fn the_first_heartbeat_scans() {
+        let start = tokio::time::Instant::now();
+        let mut scan = ActivityDurableScan::new(start);
+        assert!(scan.due(start));
+        assert!(!scan.due(start + Duration::from_millis(50)));
     }
 }

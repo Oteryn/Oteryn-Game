@@ -133,11 +133,21 @@ where
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    if input_permit.is_some()
-        && (!authority.house_transfer_input(session.admitted).await
-            || !authority.activity_transfer_input(session.admitted).await)
-    {
-        return Err(ServeEnd::Disconnected);
+    if input_permit.is_some() {
+        let failed_guard = if !authority.house_transfer_input(session.admitted).await {
+            Some("house_transfer_input")
+        } else if !authority.activity_transfer_input(session.admitted).await {
+            Some("activity_transfer_input")
+        } else {
+            None
+        };
+        if let Some(guard) = failed_guard {
+            operator_event(&format!(
+                "event=command_guard_failed guard={guard} command_type={} command_id={}",
+                command.command_type, command.command_id,
+            ));
+            return Err(ServeEnd::Disconnected);
+        }
     }
 
     // Count a newly received action once, never its retained replay or delayed step.

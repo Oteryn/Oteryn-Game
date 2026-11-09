@@ -325,9 +325,9 @@ impl DurabilityRoot {
                            vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after, death_scope_kind, death_instance_id, death_scope_generation) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), $7, $8, $9, $10, \
-                           $11, $12, $13, $62::text::uuid, $63::text[]::uuid[], $64, encode($14,'hex')::uuid, \
-                           encode($15,'hex')::uuid, $16, $17, $18, $19, $20, $21, $22, $23, \
-                           $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $65, encode($66,'hex')::uuid, $67::text::numeric)",
+                           $11, $12, $13, $25::text::uuid, $26::text[]::uuid[], $27, encode($14,'hex')::uuid, \
+                           encode($15,'hex')::uuid, $16, $17, $18, $19, ($20::text[])[1], ($20::text[])[2], ($20::text[])[3], ($20::text[])[4], \
+                           ($20::text[])[5], ($20::text[])[6], ($20::text[])[7], ($20::text[])[8], $21, $22, ($23::bigint[])[1]::integer, ($23::bigint[])[2], ($23::bigint[])[3]::integer, ($23::bigint[])[4], ($23::bigint[])[5]::integer, ($23::bigint[])[6], ($23::bigint[])[7]::integer, ($23::bigint[])[8], ($23::bigint[])[9]::integer, ($23::bigint[])[10], ($23::bigint[])[11]::integer, ($23::bigint[])[12], ($23::bigint[])[13]::integer, ($23::bigint[])[14], ($23::bigint[])[15]::integer, ($23::bigint[])[16], ($24::bigint[])[1]::integer, ($24::bigint[])[2], ($24::bigint[])[3]::integer, ($24::bigint[])[4], ($24::bigint[])[5]::integer, ($24::bigint[])[6], ($24::bigint[])[7]::integer, ($24::bigint[])[8], ($24::bigint[])[9]::integer, ($24::bigint[])[10], ($24::bigint[])[11]::integer, ($24::bigint[])[12], ($24::bigint[])[13]::integer, ($24::bigint[])[14], ($24::bigint[])[15]::integer, ($24::bigint[])[16], $28, encode($29,'hex')::uuid, $30::text::numeric)",
                     )
                     .bind(request.occurrence.0.as_slice())
                     .bind(&binding)
@@ -348,14 +348,12 @@ impl DurabilityRoot {
                     .bind(&request.death_cell.map_revision)
                     .bind(&request.respawn_position)
                     .bind(&request.policy.death_policy_revision)
-                    .bind(&request.context.profile)
-                    .bind(&request.context.ruleset)
-                    .bind(&request.context.content)
-                    .bind(&request.context.simulation)
-                    .bind(&request.context.evidence)
-                    .bind(&request.context.declaration)
-                    .bind(&request.policy_revision)
-                    .bind(&request.reward_revision)
+                    .bind(vec![
+                        request.context.profile.as_str(), request.context.ruleset.as_str(),
+                        request.context.content.as_str(), request.context.simulation.as_str(),
+                        request.context.evidence.as_str(), request.context.declaration.as_str(),
+                        request.policy_revision.as_str(), request.reward_revision.as_str(),
+                    ])
                     .bind(committed_at);
                     let receipt = bind_death_build(receipt, build_loss.as_ref())
                         .bind(items.as_ref().and_then(|i| i.amulet.map(items::uuid)))

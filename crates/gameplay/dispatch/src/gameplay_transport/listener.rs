@@ -63,6 +63,7 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
     // After an accept error (e.g. EMFILE) accepting pauses instead of spinning.
     let mut accept_pause: Option<Pin<Box<tokio::time::Sleep>>> = None;
     poll_fn(|context| {
+        let poll_started = std::time::Instant::now();
         if !stopped && stopping.as_mut().poll(context).is_ready() {
             stopped = true;
         }
@@ -93,20 +94,32 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 Poll::Pending => break,
             }
         }
-        connections.retain_mut(|connection| match connection.as_mut().poll(context) {
-            Poll::Pending => true,
-            Poll::Ready(lost) => {
-                if let Some(lost) = lost {
-                    let mut lifecycle = Box::pin(control_loss_lifecycle(authority, lost, shutdown));
-                    // Registers the lifecycle's first wake-up.
-                    if lifecycle.as_mut().poll(context).is_pending() {
-                        lifecycles.push(lifecycle);
+        connections.retain_mut(
+            |connection| match timed_poll(connection.as_mut(), context) {
+                Poll::Pending => true,
+                Poll::Ready(lost) => {
+                    if let Some(lost) = lost {
+                        let mut lifecycle =
+                            Box::pin(control_loss_lifecycle(authority, lost, shutdown));
+                        // Registers the lifecycle's first wake-up.
+                        if lifecycle.as_mut().poll(context).is_pending() {
+                            lifecycles.push(lifecycle);
+                        }
                     }
+                    false
                 }
-                false
-            }
-        });
+            },
+        );
         lifecycles.retain_mut(|lifecycle| lifecycle.as_mut().poll(context).is_pending());
+        let polled = poll_started.elapsed();
+        if polled >= LISTENER_POLL_REPORT {
+            operator_event(&format!(
+                "event=listener_poll_slow ms={} connections={} lifecycles={}",
+                polled.as_millis(),
+                connections.len(),
+                lifecycles.len(),
+            ));
+        }
         if stopped && connections.is_empty() && lifecycles.is_empty() {
             Poll::Ready(())
         } else {
@@ -114,6 +127,49 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
         }
     })
     .await;
+}
+
+/// One poll of the shared listener task, or of one connection in it, that runs at least this
+/// long is reported (NBDIAG-6): every other connection, including TLS entry, waits meanwhile.
+const LISTENER_POLL_REPORT: Duration = Duration::from_millis(500);
+
+/// Polls one connection and reports a poll that kept the shared listener task (NBDIAG-6).
+fn timed_poll(
+    connection: Pin<&mut (dyn Future<Output = Option<LostControl>> + '_)>,
+    context: &mut std::task::Context<'_>,
+) -> Poll<Option<LostControl>> {
+    let started = std::time::Instant::now();
+    let poll = connection.poll(context);
+    let polled = started.elapsed();
+    if polled >= LISTENER_POLL_REPORT {
+        operator_event(&format!(
+            "event=listener_connection_poll_slow ms={} ready={}",
+            polled.as_millis(),
+            poll.is_ready(),
+        ));
+    }
+    poll
+}
+
+/// The closed-schema name of how a connection ended before or at admission (NBDIAG-6).
+fn connection_end_kind(end: &connection::ConnectionEnd) -> &'static str {
+    use connection::{AdmissionRefusal, ConnectionEnd};
+    match end {
+        ConnectionEnd::ProtocolViolation(_) => "protocol_violation",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::PremiumRequired) => "refused_premium",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::Rejected) => "refused_rejected",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::Unavailable) => "refused_unavailable",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::Classified(_)) => "refused_classified",
+        ConnectionEnd::AdmissionRefused(AdmissionRefusal::RecoveryCapabilityRequired) => {
+            "refused_recovery_capability"
+        }
+        ConnectionEnd::ResumeUnavailable => "resume_unavailable",
+        ConnectionEnd::AdmittedThenClosed(..) => "admitted_then_closed",
+        ConnectionEnd::AdmittedThenDisconnected(_) => "admitted_then_disconnected",
+        ConnectionEnd::AdmittedThenControlLost(_) => "admitted_then_control_lost",
+        ConnectionEnd::AdmittedThenLoggedOut(_) => "admitted_then_logged_out",
+        ConnectionEnd::TransportFailed => "transport_failed",
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -136,10 +192,16 @@ where
     use connection::ConnectionEnd;
     // Entry work (unit wait, TLS, entry frame) is bounded by the deadline and
     // cancelled by shutdown; nothing authoritative has started yet.
+    // NBDIAG-6: which entry step a failed or slow entry was waiting for.
+    let entry_started = tokio::time::Instant::now();
+    let entry_step = std::sync::atomic::AtomicU8::new(0);
     let entry = async {
         let unit = units.acquire().await.ok()?;
+        entry_step.store(1, std::sync::atomic::Ordering::Relaxed);
         let mut stream = tcp_tls::accept_tls(stream, tls.clone()).await.ok()?;
+        entry_step.store(2, std::sync::atomic::Ordering::Relaxed);
         let frame = tcp_tls::read_frame(&mut stream).await.ok()?;
+        entry_step.store(3, std::sync::atomic::Ordering::Relaxed);
         Some((unit, stream, frame))
     };
     let entry = first(tokio::time::timeout(entry_deadline, entry), async {
@@ -151,10 +213,29 @@ where
         }
     })
     .await;
+    let entry_step = match entry_step.load(std::sync::atomic::Ordering::Relaxed) {
+        0 => "unit",
+        1 => "tls",
+        2 => "frame",
+        _ => "done",
+    };
+    let entry_ms = entry_started.elapsed().as_millis();
+    let outcome = match &entry {
+        None => "shutdown",
+        Some(Err(_)) => "deadline",
+        Some(Ok(None)) => "failed",
+        Some(Ok(Some(_))) => "entered",
+    };
     let Some(Ok(Some((unit, mut stream, frame)))) = entry else {
+        operator_event(&format!(
+            "event=connection_entry_failed step={entry_step} outcome={outcome} ms={entry_ms}"
+        ));
         observer.ended(ConnectionEnd::TransportFailed);
         return None;
     };
+    if entry_ms >= LISTENER_POLL_REPORT.as_millis() {
+        operator_event(&format!("event=connection_entry_slow ms={entry_ms}"));
+    }
     // The owning authority's decision is never cancelled midway.
     if cast_observer::ingress(&frame) {
         if let Some(node) = authority.cast_node() {
@@ -165,8 +246,20 @@ where
         ));
         return None;
     }
+    let admit_started = tokio::time::Instant::now();
     let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
     drop(unit);
+    match &admitted {
+        Err(end) => operator_event(&format!(
+            "event=connection_admit_failed end={} ms={}",
+            connection_end_kind(end),
+            admit_started.elapsed().as_millis(),
+        )),
+        Ok(_) => operator_event(&format!(
+            "event=connection_admitted ms={}",
+            admit_started.elapsed().as_millis()
+        )),
+    }
     let (end, served) = match admitted {
         // A durably admitted or resumed session whose acceptance could not be delivered
         // still has a controller that is gone: it enters the loss lifecycle, never limbo.
@@ -195,6 +288,17 @@ where
             ),
         },
     };
+    operator_event(&format!(
+        "event=connection_served end={} served={served} ms={} detail={}",
+        connection_end_kind(&end),
+        admit_started.elapsed().as_millis(),
+        match &end {
+            ConnectionEnd::AdmissionRefused(r) => format!("{r:?}"),
+            ConnectionEnd::AdmittedThenClosed(_, e) | ConnectionEnd::ProtocolViolation(e) =>
+                format!("{e:?}"),
+            _ => String::from("-"),
+        },
+    ));
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)
