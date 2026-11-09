@@ -48,7 +48,7 @@ Before readiness:
 5. prepare all known task and PR closeout metadata;
 6. freeze and record the exact final head in immutable PR/task-tracker evidence;
 7. run mandatory full-diff self-review against that exact final head;
-8. run an independent review/audit on the same exact head when required by the risk policy, owner or governing contract;
+8. run an independent review/audit on the same exact head when required by the risk policy, owner or governing contract (the per-PR Codex review is not repeated per head; see `OWNER_FUNDED_AI_POLICY.md`);
 9. run required checks on the same unchanged head;
 10. verify no unresolved review threads/requested changes;
 11. reconcile related/superseded PRs;
@@ -63,7 +63,7 @@ After the freeze:
 - do not add a task/checkpoint/timestamp commit merely to record a review/audit verdict, run ID, CI state or merge readiness;
 - record review/audit and CI evidence in PR reviews, workflow runs, artifacts or another immutable evidence channel;
 - do not close/reopen, rewind, amend, force-push or replace the PR merely to regenerate a required check;
-- move the head only for a material repair, then repeat final diff self-review, applicable independent review and exact-head CI;
+- move the head only for a material repair, then repeat final diff self-review, applicable independent review (not the per-PR Codex review unless the owner's second-review condition applies) and exact-head CI;
 - treat absent events and unassigned runners as classified infrastructure states, not as justification for content churn.
 
 A commit cannot contain its own SHA. Do not create a self-referential follow-up commit merely to populate an exact-head field in the repository task record.
@@ -91,7 +91,7 @@ Record reviewer identity/method, exact head and material findings. `PASS` requir
 
 A second genuinely independent reviewer is required when the trusted-base risk policy, owner or owning contract requires it. This includes high-risk authority/security/protocol/durable-data/production changes, safety-reducing governance changes and cases where material uncertainty/complexity makes self-review insufficient.
 
-Independent review may be performed by a qualified human, a separate non-authoring agent/session, Codex or a dedicated independent audit workflow. Codex is not mandatory by name and should not be invoked routinely for low-risk work.
+Independent review may be performed by a qualified human, a separate non-authoring agent/session, Codex or a dedicated independent audit workflow. For Game PRs the owner's rule of 2026-11-09 (`OWNER_FUNDED_AI_POLICY.md`, *Owner review rule for every PR*) requires one Codex review of every PR, at most two; outside that rule Codex is not mandatory by name.
 
 A review by the same agent/session that implemented or materially authored the change is self-review, not independent review. If independence is required and no genuine independent mechanism is available, the task is blocked rather than silently downgraded.
 
