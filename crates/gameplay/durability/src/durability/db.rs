@@ -30,6 +30,57 @@ const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
 /// A semantic pass that keeps the single holder at least this long is reported on stderr
 /// (NBDIAG-3): every other owner's non-blocking checkout fails meanwhile.
 const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
+
+/// The call site that has the single holder checked out through a semantic pass, and since
+/// when (NBDIAG-4).
+type HolderOwner = Option<(&'static std::panic::Location<'static>, Instant)>;
+
+/// Records which semantic pass has the holder checked out, and reports a pass that drops it
+/// without finishing its operation: a cancelled caller or one that never ran the pass
+/// (NBDIAG-4).
+struct PassOwner {
+    slot: Arc<StdMutex<HolderOwner>>,
+    caller: &'static std::panic::Location<'static>,
+    issued: Instant,
+    finished: bool,
+}
+
+impl PassOwner {
+    fn checked_out(
+        slot: &Arc<StdMutex<HolderOwner>>,
+        caller: &'static std::panic::Location<'static>,
+        issued: Instant,
+    ) -> Self {
+        if let Ok(mut owner) = slot.lock() {
+            *owner = Some((caller, issued));
+        }
+        Self {
+            slot: Arc::clone(slot),
+            caller,
+            issued,
+            finished: false,
+        }
+    }
+}
+
+impl Drop for PassOwner {
+    fn drop(&mut self) {
+        if !self.finished {
+            eprintln!(
+                "DURABILITY_PASS_DROPPED caller={} held_ms={}",
+                self.caller,
+                self.issued.elapsed().as_millis()
+            );
+        }
+        if let Ok(mut owner) = self.slot.lock()
+            && owner.is_some_and(|(caller, issued)| {
+                std::ptr::eq(caller, self.caller) && issued == self.issued
+            })
+        {
+            *owner = None;
+        }
+    }
+}
 const WP3_RUNTIME_WORKER_THREADS: usize = 1;
 const WP3_RUNTIME_MAX_BLOCKING_THREADS: usize = 1;
 const WP3_RUNTIME_WORKER_STACK_BYTES: usize = 2 * 1024 * 1024;
@@ -845,6 +896,8 @@ pub struct DurabilityRoot {
     /// Signalled each time the holder is observed back in the idle pool (NODEBOOT-1).
     holder_returned: Arc<Notify>,
     maintenance: Arc<Mutex<()>>,
+    /// Which semantic pass has the holder checked out (NBDIAG-4).
+    holder_owner: Arc<StdMutex<HolderOwner>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
     /// `DB_PASS_DEADLINE` except while a [`BootPassDeadline`] guard lives.
     pass_deadline_millis: Arc<AtomicU64>,
@@ -912,6 +965,7 @@ impl DurabilityRoot {
             pool,
             runtime,
             ready_demand: Arc::new(AtomicBool::new(true)),
+            holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
@@ -941,6 +995,7 @@ impl DurabilityRoot {
                 .connect_lazy(database_url)?,
             runtime: RootRuntime::AmbientTestFixture,
             ready_demand: Arc::new(AtomicBool::new(true)),
+            holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
@@ -1039,6 +1094,7 @@ impl DurabilityRoot {
         while self.pool.size() > 0 && self.pool.num_idle() == 0 {
             let remaining = deadline.saturating_duration_since(Instant::now());
             if remaining.is_zero() {
+                self.report_stuck_holder();
                 return Err(DurabilityError::RootUnavailable);
             }
             let _ = tokio::time::timeout(
@@ -1085,6 +1141,18 @@ impl DurabilityRoot {
             }
             PoolConnectionReturnDisposition::RetiredClosed
             | PoolConnectionReturnDisposition::NoEvidence => Err(DurabilityError::RootUnavailable),
+        }
+    }
+
+    /// Names the pass that kept the holder through a whole recovery window (NBDIAG-4).
+    fn report_stuck_holder(&self) {
+        let owner = self.holder_owner.lock().ok().and_then(|owner| *owner);
+        match owner {
+            Some((caller, since)) => eprintln!(
+                "DURABILITY_HOLDER_STUCK caller={caller} held_ms={}",
+                since.elapsed().as_millis()
+            ),
+            None => eprintln!("DURABILITY_HOLDER_STUCK caller=none"),
         }
     }
 
@@ -1161,8 +1229,7 @@ impl DurabilityRoot {
             root: self.clone(),
             holder,
             deadline: issued + self.pass_deadline(),
-            issued,
-            caller,
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
         })
     }
 
@@ -1184,8 +1251,7 @@ impl DurabilityRoot {
             root: self.clone(),
             holder,
             deadline: bounded_pass_deadline(now, self.pass_deadline(), deadline),
-            issued: now,
-            caller,
+            owner: PassOwner::checked_out(&self.holder_owner, caller, now),
         })
     }
 }
@@ -1212,9 +1278,8 @@ pub struct IssuedSemanticPass {
     root: DurabilityRoot,
     holder: PoolConnection<Postgres>,
     deadline: Instant,
-    /// When the holder was checked out, and by which call site (NBDIAG-3).
-    issued: Instant,
-    caller: &'static std::panic::Location<'static>,
+    /// When the holder was checked out, and by which call site (NBDIAG-3, NBDIAG-4).
+    owner: PassOwner,
 }
 
 impl IssuedSemanticPass {
@@ -1265,13 +1330,14 @@ impl IssuedSemanticPass {
             Ok(result) => result,
             Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
         };
+        self.owner.finished = true;
 
-        let held = self.issued.elapsed();
+        let held = self.owner.issued.elapsed();
         let deadline_exceeded = matches!(&result, Err(DurabilityError::RootPassDeadlineExceeded));
         if deadline_exceeded || held >= SLOW_PASS_REPORT {
             eprintln!(
                 "DURABILITY_PASS_SLOW caller={} held_ms={} deadline_exceeded={deadline_exceeded}",
-                self.caller,
+                self.owner.caller,
                 held.as_millis(),
             );
         }
@@ -1279,7 +1345,7 @@ impl IssuedSemanticPass {
         if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
             eprintln!(
                 "DURABILITY_PASS_RETIRED caller={} reason=commit_outcome_unknown",
-                self.caller
+                self.owner.caller
             );
             self.holder.close_on_drop();
             self.root.request_ready();
@@ -1298,7 +1364,7 @@ impl IssuedSemanticPass {
             PoolConnectionReturnDisposition::RetiredClosed => {
                 eprintln!(
                     "DURABILITY_PASS_RETIRED caller={} reason=closed",
-                    self.caller
+                    self.owner.caller
                 );
                 self.root.request_ready();
                 result
@@ -1306,7 +1372,7 @@ impl IssuedSemanticPass {
             PoolConnectionReturnDisposition::NoEvidence => {
                 eprintln!(
                     "DURABILITY_PASS_RETIRED caller={} reason=no_evidence",
-                    self.caller
+                    self.owner.caller
                 );
                 Err(DurabilityError::InvalidStoredState)
             }

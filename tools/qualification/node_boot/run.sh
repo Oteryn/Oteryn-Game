@@ -466,6 +466,8 @@ stage() { # name prerequisite... -- function
     grep -oE 'DURABILITY_[A-Z_]+( caller=[^ ]+)?( reason=[a-z_]+)?' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- slowest durability passes"
     grep -oE 'DURABILITY_PASS_SLOW caller=[^ ]+ held_ms=[0-9]+ deadline_exceeded=[a-z]+' "$node_log" 2>/dev/null | sort -t= -k3 -n -r | head -n 25 || true
+    echo "--- holder kept or dropped by a pass"
+    grep -oE 'DURABILITY_(HOLDER_STUCK|PASS_DROPPED) caller=[^ ]+( held_ms=[0-9]+)?' "$node_log" 2>/dev/null | head -n 25 || true
     echo "--- node message kinds"
     sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- node admission and session events"
