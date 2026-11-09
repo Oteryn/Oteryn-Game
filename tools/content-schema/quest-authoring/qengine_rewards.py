@@ -391,6 +391,8 @@ def build():
         guard=[storage(royal,before,after,0 if bit==0 else before)]
         add('l4-royal-costume-'+name,'royal_costume_outfits_quest','percybald',['yes'],guard,
             take=[(22516,silver),(22721,gold)],outfit=('royal_costume',bit),topic=topic,next_topic=15)
+        if name == 'crown':
+            callbacks[-1]['completes'] = True
         offers.append({'npc':'oteryn:npc.percybald','keywords':[word],'topic':15,'next_topic':topic,
             'storage':guard,'reply':[f'The donation is {silver} silver tokens and {gold} gold tokens.']})
     for words,before,after in [(['outfit','addon','royal'],0,14),(['yes'],14,15)]:

@@ -17,6 +17,8 @@ ledger and branch instructions below are historical, not the current queue.
   The unmodified node-boot script was attempted; Docker config was redirected
   to `/tmp/qengine2-node-docker`; obsolete lane target artifacts were removed
   after the image build filled disk. Do not report every node-boot variant green.
+  Owner decision 2026-11-09: physical node-boot qualification runs in CI;
+  its absence in this container does not hold locally qualified pushes.
 - M02: reused SRV7/SRVWLD ordered Ground predicate and source Nomads window
   binding. Focused production observer PG case passed6.968s; current checked
   code is in e50df85aa and later heads. The shared fixture supports a small
@@ -29,6 +31,15 @@ ledger and branch instructions below are historical, not the current queue.
   The generic Premium+minimum_level API also serves Pits of Inferno; its exact
   hub binding is not authored here. Source evidence is in
   `docs/reference/content-prep/M03-time-machine-admission.md`.
+
+Royal Costume preserved slice restored (2026-11-09): only the final crown
+exchange now completes the quest. The real-dispatch story starts with no
+seeded progress, checks intermediate non-completion and one terminal receipt,
+and retains its exact-token, appearance and literal-replay assertions.
+PostgreSQL18.6 marker; PASS244.472750797s. An earlier155.17s run failed during
+fixture token minting with Unavailable(Database(RetryableStatement)); the
+unchanged isolated rerun passed, without retries or deadline changes. The new
+producer regression failed before the fix and passed afterward.
 
 All115 authoring unit modules, authoring checks and content-tree validation
 passed after the preflight update. No SQL migrations were added. Current qmech
