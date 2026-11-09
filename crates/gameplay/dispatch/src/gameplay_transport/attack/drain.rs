@@ -986,6 +986,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .filter(|n| *n > 0) else {
                             continue;
                         };
+                        let amount = if talisman.elite(&race_key) {
+                            amount / 2
+                        } else {
+                            amount
+                        };
+                        if amount == 0 {
+                            continue;
+                        }
                         let stream = format!(
                             "charm-attack:{}:{}",
                             swing.lineage.command_id().get(),
@@ -1077,6 +1085,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .filter(|amount| *amount > 0) else {
                                 continue;
                             };
+                            let amount =
+                                if runtime
+                                    .companion_snapshot(neighbour)
+                                    .is_ok_and(|candidate| {
+                                        talisman.elite(&candidate.state.policy.definition_key)
+                                    })
+                                {
+                                    amount / 2
+                                } else {
+                                    amount
+                                };
+                            if amount == 0 {
+                                continue;
+                            }
                             let stream = format!(
                                 "charm-carnage:{}:{}:{}",
                                 swing.lineage.command_id().get(),
