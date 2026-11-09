@@ -265,9 +265,24 @@ pub struct QuestStateCopy {
     // Definition defaults, recovered only from receipts matching the pinned profile.
     save_restart_defaults: BTreeMap<String, BTreeMap<String, i64>>,
     save_event_snapshot_valid: bool,
+    save_event_epoch: Option<u64>,
 }
 
 impl QuestStateCopy {
+    /// Whether this copy contains an explicitly save-scoped pinned profile.
+    #[must_use]
+    pub fn has_save_event_scope(&self) -> bool {
+        !self.save_restart_defaults.is_empty()
+    }
+
+    /// A journal observer must reload scoped facts after a World save or an
+    /// unqualified receipt delta; neither refreshes this snapshot's World epoch.
+    #[must_use]
+    pub fn save_event_scope_needs_refresh(&self, current_epoch: Option<u64>) -> bool {
+        self.has_save_event_scope()
+            && (!self.save_event_snapshot_valid || self.save_event_epoch != current_epoch)
+    }
+
     /// Save-qualified event history at admission. Counter-owned quests use
     /// `counter_quest_progress` instead. Any applied receipt invalidates this
     /// snapshot; reload it before interpreting current-save completion.

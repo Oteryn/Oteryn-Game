@@ -120,8 +120,9 @@ impl DurabilityRoot {
                     // root held FOR SHARE no quest relation of this Character can change between
                     // the reads below.
                     let root = sqlx::query(
-                        "SELECT character_revision::text FROM game_character_roots \
-                          WHERE character_id = encode($1,'hex')::uuid FOR SHARE",
+                        "SELECT r.character_revision::text, \
+                                (SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=r.world_id) AS save_event_epoch \
+                           FROM game_character_roots r WHERE r.character_id=encode($1,'hex')::uuid FOR SHARE OF r",
                     )
                     .bind(id)
                     .fetch_optional(&mut *tx)
@@ -253,6 +254,8 @@ impl DurabilityRoot {
                             })
                             .transpose()?,
                         save_event_snapshot_valid: true,
+                        save_event_epoch: root.as_ref().map(|row|row.try_get::<Option<String>,_>("save_event_epoch"))
+                            .transpose()?.flatten().map(|epoch|epoch.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)).transpose()?,
                         ..QuestStateCopy::default()
                     };
                     for row in &tracks {
