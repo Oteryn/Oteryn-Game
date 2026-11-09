@@ -15,7 +15,8 @@ use crate::quest::npc_rules::{
     NpcComparison, NpcKeywordMode, NpcRule, NpcRuleCatalog, NpcRuleEffect, NpcRuleError,
     NpcRuleGuard, NpcRuleInput, NpcRulePlan, NpcRuleProgram, NpcRuleTrigger,
 };
-use calendar::{YearMonth, can_cook, spends_bonus};
+pub use calendar::YearMonth;
+use calendar::{can_cook, spends_bonus};
 
 pub const QUEST: &str = "oteryn:quest.hot_cuisine_quest";
 pub const NPC: &str = "oteryn:npc.jean_pierre";
@@ -69,8 +70,8 @@ pub struct HotCuisineProgram {
 
 /// All dates use UTC, per coordinator ANSWER:
 /// https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205.
-/// The clock and saved dates come from one immutable snapshot. Physical exchanges
-/// remain disabled until the separate NPC exchange owner is approved.
+/// The clock and saved dates come from one immutable snapshot. The fenced NPC
+/// writer reevaluates this plan with locked inventory before applying its exchange.
 #[derive(Clone, Debug)]
 pub struct HotCuisineCalendar {
     pub current: YearMonth,
@@ -78,6 +79,53 @@ pub struct HotCuisineCalendar {
 }
 
 impl HotCuisineProgram {
+    /// Immutable recipe content is parsed before opening an owner transaction.
+    pub fn embedded() -> Result<&'static Self, NpcRuleError> {
+        static SOURCE: std::sync::OnceLock<Result<HotCuisineProgram, NpcRuleError>> =
+            std::sync::OnceLock::new();
+        SOURCE
+            .get_or_init(Self::load)
+            .as_ref()
+            .map_err(Clone::clone)
+    }
+
+    /// Source confirmation topics admitted by this immutable recipe document.
+    #[must_use]
+    pub fn is_recipe_topic(&self, topic: i32) -> bool {
+        self.recipes.iter().any(|recipe| recipe.topic == topic)
+    }
+
+    /// Preview proposes a source branch; only the locked inventory can admit it.
+    pub fn optimistic_inventory(
+        &self,
+    ) -> Result<crate::quest::npc_rules::NpcInventorySnapshot, NpcRuleError> {
+        use crate::quest::npc_rules::{NpcInventorySnapshot, NpcItemKey};
+        let mut inventory = NpcInventorySnapshot::default();
+        for recipe in &self.recipes {
+            for ingredient in &recipe.ingredients {
+                if let NpcRuleEffect::TakeItem {
+                    item,
+                    count,
+                    subtype,
+                    ..
+                } = ingredient
+                {
+                    let total = inventory
+                        .items
+                        .entry(NpcItemKey {
+                            item: item.clone(),
+                            subtype: *subtype,
+                        })
+                        .or_default();
+                    *total = total
+                        .checked_add(*count)
+                        .ok_or(NpcRuleError::LimitExceeded)?;
+                }
+            }
+        }
+        Ok(inventory)
+    }
+
     pub fn load() -> Result<Self, NpcRuleError> {
         let program: Self = serde_json::from_str(EMBEDDED)
             .map_err(|error| NpcRuleError::Json(error.to_string()))?;
@@ -121,10 +169,17 @@ impl HotCuisineProgram {
 
     /// M17: decode both current and saved dates from the owner's UTC epoch.
     /// M42's production cooking dispatch uses this instead of a caller-made year.
-    pub fn calendar_snapshot_utc(&self, input: &NpcRuleInput<'_>) -> Result<HotCuisineCalendar, NpcRuleError> {
+    pub fn calendar_snapshot_utc(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<HotCuisineCalendar, NpcRuleError> {
         self.calendar_snapshot(input, |seconds| {
-            crate::quest::npc_rules::NpcUtcCalendar::from_epoch(seconds).ok()
-                .map(|date| YearMonth { year: date.year, month: date.month })
+            crate::quest::npc_rules::NpcUtcCalendar::from_epoch(seconds)
+                .ok()
+                .map(|date| YearMonth {
+                    year: date.year,
+                    month: date.month,
+                })
         })
     }
 
@@ -160,8 +215,11 @@ impl HotCuisineProgram {
         input: &NpcRuleInput<'_>,
         calendar: &HotCuisineCalendar,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        if input.npc != NPC || input.trigger != NpcRuleTrigger::Say
-            || input.level < 35 || !input.premium_current {
+        if input.npc != NPC
+            || input.trigger != NpcRuleTrigger::Say
+            || input.level < 35
+            || !input.premium_current
+        {
             return Ok(None);
         }
         let Some(recipe) = self
@@ -211,8 +269,14 @@ impl HotCuisineProgram {
         let permitted = can_cook(calendar.current, last_date, bonus_year, bonus_used);
         let mut effects = Vec::new();
         let mut inventory_guards = Vec::new();
+        let mut completes = false;
         if permitted {
             let current_dish = read(&self.current_dish_track)?;
+            // The retained source dish-choice branch sets this before its topic.
+            // A mismatched topic cannot charge one recipe and grant another dish.
+            if current_dish != i64::from(recipe.index) {
+                return Ok(None);
+            }
             let ingredient_recipe = self
                 .recipes
                 .iter()
@@ -241,6 +305,7 @@ impl HotCuisineProgram {
                 .checked_add(1)
                 .ok_or_else(|| NpcRuleError::Arithmetic("Hot Cuisine cook count".into()))?;
             let mut all_twice = true;
+            let mut all_once = true;
             for candidate in &self.recipes {
                 let count = if candidate.index == recipe.index {
                     cooked_after
@@ -248,7 +313,9 @@ impl HotCuisineProgram {
                     read(&candidate.cook_count_track)?
                 };
                 all_twice &= count >= 2;
+                all_once &= count >= 1;
             }
+            completes = first_completion && recipe.completes_menu && all_once;
             effects.push(set(&recipe.last_track, input.now_epoch_seconds));
             effects.push(set(&recipe.cook_count_track, cooked_after));
             if spends_bonus(calendar.current, last_date) {
@@ -291,6 +358,7 @@ impl HotCuisineProgram {
         if permitted {
             selected.guards.extend(inventory_guards);
             selected.effects = effects;
+            selected.completes = completes;
             selected.effects.push(NpcRuleEffect::SetTopic { value: 0 });
             selected.reply = recipe.reply.clone();
             selected.inventory_failure_reply = self.missing_ingredients_reply.clone();
@@ -308,7 +376,7 @@ impl HotCuisineProgram {
         let json = serde_json::to_string(&document)
             .map_err(|error| NpcRuleError::Json(error.to_string()))?;
         let catalogue = NpcRuleCatalog::from_json_documents(&[&json])?;
-        let mut plan = catalogue.plan(input)?;
+        let mut plan = catalogue.plan_inventory(input)?;
         if let Some(plan) = &mut plan {
             plan.program_digest = self.program_digest(generic.digest);
         }

@@ -45,6 +45,7 @@ ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
 map_revision = "4b6cb9bf12cf8b14b66da82168c23b53f89c45dfeb5c5d666829d5c562a4d7cb"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 map_revision = "f63838b1758f9cd05082cf28bb14aaa293aa18485d8897eba7d25c8b3defa2e2"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "abe3e3fb07cd7fa82f1e90293174e51cbd5f5205c6356b969a160196376a17a3"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -58,6 +59,7 @@ enabled = true
 path = "<BASE>/world/world.otbundle"
 digest = "4b6cb9bf12cf8b14b66da82168c23b53f89c45dfeb5c5d666829d5c562a4d7cb"
 digest = "f63838b1758f9cd05082cf28bb14aaa293aa18485d8897eba7d25c8b3defa2e2"
+digest = "abe3e3fb07cd7fa82f1e90293174e51cbd5f5205c6356b969a160196376a17a3"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "seasonal-cake-creature-20261107-r1"

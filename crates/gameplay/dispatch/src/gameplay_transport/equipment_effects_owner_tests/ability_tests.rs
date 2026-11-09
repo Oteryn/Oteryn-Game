@@ -338,6 +338,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
     // Cake and Halloween donor locators/hashes); all have qualified speed0.
     ("SEASON-W05D", 35),
+    // Finite cookbook operands and exact corpse stages, refreshed by m42_hot_profile_inventory.py.
+    ("M42-HOT-CUISINE", 45),
 ];
 
 // qengine_reward_item_profiles.py: 53 shared identities, seven QUESTPC4 tools,

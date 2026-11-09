@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "input_sha256": "cd8ca5917c338d4cd362449bf2267a77446e5a2e03cb38bed114ed7c72c3dd80",
+  "input_sha256": "0442defd84ebe0aae5e0aacac8edd87588ec731147e07399757498bab6098a98",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2679,10 +2680,8 @@
     "oteryn:creature.barkless_devotee",
     "oteryn:creature.barkless_fanatic",
     "oteryn:creature.bashmu",
-    "oteryn:creature.bat",
     "oteryn:creature.bear",
     "oteryn:creature.behemoth",
-    "oteryn:creature.berserker_chicken",
     "oteryn:creature.betrayed_wraith",
     "oteryn:creature.biting_book",
     "oteryn:creature.black_sphinx_acolyte",

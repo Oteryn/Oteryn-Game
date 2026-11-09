@@ -682,16 +682,16 @@ pub(super) async fn consume_npc_inputs(
         return Ok(false);
     };
     use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
-    let mut remaining = std::collections::BTreeMap::<String, i64>::new();
+    let mut remaining = std::collections::BTreeMap::<(String, Option<u16>), i64>::new();
     for effect in &plan.effects {
         if let NpcRuleEffect::TakeItem {
             item,
             count,
-            subtype: None,
+            subtype,
             optional: false,
         } = effect
         {
-            let total = remaining.entry(item.clone()).or_default();
+            let total = remaining.entry((item.clone(), *subtype)).or_default();
             *total = total
                 .checked_add(i64::from(*count))
                 .ok_or(DurabilityError::InvalidStoredState)?;
@@ -703,11 +703,15 @@ pub(super) async fn consume_npc_inputs(
     if remaining.is_empty() {
         return Ok(true);
     }
-    if remaining.len() > 8 {
+    let cooking = plan.quest == oteryn_gameplay_quests::quest::hot_cuisine::QUEST
+        && plan.selected_rule_keys.first().is_some_and(|key| {
+            key.starts_with("oteryn:quest-npc/hot_cuisine_quest/jean_pierre/native-cook-")
+        });
+    if remaining.len() > if cooking { 16 } else { 8 } {
         return Ok(false);
     }
-    let keys: Vec<_> = remaining.keys().cloned().collect();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let keys: Vec<_> = remaining.keys().map(|(item, _)| item.clone()).collect();
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id) AS fluid_subtype FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
         return Ok(false);
@@ -715,7 +719,12 @@ pub(super) async fn consume_npc_inputs(
     let mut inputs = Vec::new();
     for row in rows {
         let key: String = row.try_get("definition_production_key")?;
-        let Some(required) = remaining.get_mut(&key) else {
+        let subtype = row
+            .try_get::<Option<i16>, _>("fluid_subtype")?
+            .map(u16::try_from)
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let Some(required) = remaining.get_mut(&(key, subtype)) else {
             continue;
         };
         let quantity: i64 = row.try_get("quantity")?;

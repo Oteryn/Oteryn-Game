@@ -141,6 +141,9 @@ fn scenario_case(
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"
                 | "nx6-wayfarer"
+                | "npc-item-exchanges"
+                | "m42-hot-typed"
+                | "m42-hot-final"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -518,7 +521,10 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if matches!(
+            name,
+            "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
+        ) || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -908,6 +914,20 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "npc-item-exchanges" {
+            super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name == "m42-hot-final" {
+            super::super::m42_hot_cuisine::exercise_final(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "m42-hot-typed" {
+            super::super::m42_hot_cuisine::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-xp" {
             super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
                 .await?;

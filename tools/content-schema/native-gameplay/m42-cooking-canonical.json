@@ -1,0 +1,122 @@
+{
+  "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+  "recipe_sha256": "191410317d0968dcc87e67234a0f4fcbcc3b7b933e7fc4ca8653314a3bfde732",
+  "schema": "OTERYN_M42_COOKING_CANONICAL/v1",
+  "shards": {
+    "content/items/definitions/items-00000-00499.json": {
+      "oteryn:item.tibia.i10329": "b0619f232e27940ca7d3fb9ae0b9c6cb19f90cf73f46e1f5561df63e24af8513"
+    },
+    "content/items/definitions/items-00500-00999.json": {
+      "oteryn:item.tibia.i10456": "775854157ffa9fefa31e994ed4395444aa12194f2c2fdb32e987b5d1cbeb083d"
+    },
+    "content/items/definitions/items-01500-01999.json": {
+      "oteryn:item.tibia.i11584": "7012e78b0ea294219b204b63e92256b32a2073d9612ff293b103f7eb4384e56a",
+      "oteryn:item.tibia.i11586": "67d81c946a37ae6c7ad4219316b72d2aa6ff2335326b700c24e3306a638558ed",
+      "oteryn:item.tibia.i11587": "04e97fb597ff83e060f835b41d3b1f8e9ad68f1f48409a334f5380bcf638e95d",
+      "oteryn:item.tibia.i11588": "511da275ecda0df95b2a469516db5711af320829066f575de528f71f64978593",
+      "oteryn:item.tibia.i11682": "1da395314411e04830fb5da4d6b3ec2c8257d9afc613ef331fb2a917b3082d0d"
+    },
+    "content/items/definitions/items-16500-16999.json": {
+      "oteryn:item.tibia.i2874": "bd48ccb35542fbef0bfda8639a7725f790626ff2dad0098a6b7a6751c019cfe4"
+    },
+    "content/items/definitions/items-18500-18999.json": {
+      "oteryn:item.tibia.i31590": "6d5f72cc612963a7816ac15becd30116288357b36619b157e90bb9bd8794c545"
+    },
+    "content/items/definitions/items-20500-20999.json": {
+      "oteryn:item.tibia.i33930": "203ce4f5bba5b901761ce12d7db8f4dbc1d0543ddf0d813cf81e7117b0a64418"
+    },
+    "content/items/definitions/items-21000-21499.json": {
+      "oteryn:item.tibia.i3577": "614dbd25d91366bcf39188cb4f4f680d3e3db3abd009396f540b6b533774dccb",
+      "oteryn:item.tibia.i3580": "d8bcc7f585024fbbff8afc48a2e72bd19438f7289793c45226a0e6ced7072e9e",
+      "oteryn:item.tibia.i3581": "a3ac1f39510a2ab87e1eedbaba0208b7bef14a0dd29aa74f8bcf5571748d885d",
+      "oteryn:item.tibia.i3582": "734519f592d9cc86eb70487fbeea8a6f1189bf66170b32bf2be13c621939f60d",
+      "oteryn:item.tibia.i3586": "3c81cd6a9451730865d2f27aaad149468f57cb79cf36859ae84f64f0c20acbf0",
+      "oteryn:item.tibia.i3587": "728080b2555661e1f32216e35d1c1ec016870964091113d736abea2cbb21ed9a"
+    },
+    "content/items/definitions/items-21500-21999.json": {
+      "oteryn:item.tibia.i3594": "c671c6552522b53515edb1fa61341ff59597c3da90f2c3469ee2b3b1424b4e74",
+      "oteryn:item.tibia.i3595": "1c20e10503b86b5ad8807b61eb38bbc2c939cdfe5b6706ffb06d09cc02f3a031",
+      "oteryn:item.tibia.i3596": "ac869cf9e2b804d692acfd4f1be4d5ea7f85a2db77dbeaa23174b89e23f0ef1e",
+      "oteryn:item.tibia.i3597": "1334aca9c84349a59132df1447b3ddd801b44fc5a6c58fd69c492e79a5f16b5a",
+      "oteryn:item.tibia.i3598": "fac4dfa87e7bd787f9c6b2a80e1f59ba37f9e429a5a35b602a8d917424bc3ba1",
+      "oteryn:item.tibia.i3599": "a8db71525b653c9a90476ce88fe98283944e9152e8afe613e91b15726e3338e1",
+      "oteryn:item.tibia.i3601": "14e49cb8d2f2135acbde36188c8496fc90a4ab142c0eaed7b4064b2f89d9ab73",
+      "oteryn:item.tibia.i3602": "fee879e32b398001475c5c5ac515e269c4356cc198463668460bb1962498a150",
+      "oteryn:item.tibia.i3603": "e85737f3b8cdfc87c2e832c1ff9c66d7ae585ea69d6bf2dd2714b9824f9746ea",
+      "oteryn:item.tibia.i3606": "9f0e4a1836a39a81a69902f458e8fa27492eaf5f8e78d04d19f9619ae42626ad",
+      "oteryn:item.tibia.i3607": "cdad9e9480b4a242b3ac948f97cea7763ce842655706b94d192c20f4493bc263"
+    },
+    "content/items/definitions/items-22000-22499.json": {
+      "oteryn:item.tibia.i3723": "e4a6b556d6b915aee99848a00fb1ca1e216401bf163cf94a316fd5689dc9f536",
+      "oteryn:item.tibia.i3724": "7350980ed26704a84bba97144881b0e3678a6e549ceeb67d10f69451b829c0eb",
+      "oteryn:item.tibia.i3725": "f506e51f9d6958de164b6081651a65e2b3dfcc4d0cd3d5d9b94f4118ddf0457e",
+      "oteryn:item.tibia.i3735": "9a8ca9b39d4527830dbe4119cfcfc3e15e7061d10caaad8dd20566dd2f6bbb34",
+      "oteryn:item.tibia.i3736": "5bf9be4b89767821682e241789d5688c05d4b162f935db64755eb16e7bbef315"
+    },
+    "content/items/definitions/items-22500-22999.json": {
+      "oteryn:item.tibia.i3737": "61c9d3b2f4c801dd85f0a2e8d3b5aa0c40865d6a65a76262245cfdeebb326d4d",
+      "oteryn:item.tibia.i3738": "a7b9239ae50d86b75e26477178dc3e1f1c11095de7af32e9af4f65122b81f32d",
+      "oteryn:item.tibia.i3739": "59e3479d076bb4991c09dde352b0bf691f698063beb519b65a0427e7a3547250",
+      "oteryn:item.tibia.i3740": "8be2650fc42274b20b55839e7ef9fcbc10d27b1584f7915f567d7445efd04f53",
+      "oteryn:item.tibia.i3741": "64ea7babc575be999a649962920cebfa00051e2f06ddbbf57e742f2a23f85f79"
+    },
+    "content/items/definitions/items-25000-25499.json": {
+      "oteryn:item.tibia.i4330": "0bcd35ee96bcc8256e08b92cb6672341edde1476aaf06d1f7859b35189f4b18a",
+      "oteryn:item.tibia.i4363": "76d7091df2177eba3c68b64989703b16ddcc9a581b224aa671be7166e6234898"
+    },
+    "content/items/definitions/items-26500-26999.json": {
+      "oteryn:item.tibia.i48273": "eee465f9e4781e350b20cc4919d1ce07adbed56dd03bbc286583a383549c2edf"
+    },
+    "content/items/definitions/items-27500-27999.json": {
+      "oteryn:item.tibia.i50334": "d626c18600da3af79f83caeb56ccacaa19f88bb62652a46b256885fce8e959bf"
+    },
+    "content/items/definitions/items-28000-28499.json": {
+      "oteryn:item.tibia.i5096": "e397039c6e95e115b1efd6f9c7bf4ebf2894ddb1f4007d5eb7edb8be72ba46f0"
+    },
+    "content/items/definitions/items-29500-29999.json": {
+      "oteryn:item.tibia.i5902": "a8424f9f50326c27591d3756c6b7c5c0f8d18cf5d8ccd0c796c32121211ead79",
+      "oteryn:item.tibia.i5942": "44b011d659a8200f3ee14e05d4f546119929fa5185f7167b521778721ecb3c84"
+    },
+    "content/items/definitions/items-30000-30499.json": {
+      "oteryn:item.tibia.i6393": "c6ea7b2936dfd0a1eb1e201c9ad5eb7dae25994d52d54b05088e4240635fe779",
+      "oteryn:item.tibia.i6500": "a6a89902fc9e8d42f123df71951dee4bda04245df9f9f00959662b808af0e1bd",
+      "oteryn:item.tibia.i6558": "4f87fa9d1a54deea138962be35cb69fe6e901c6ce39ca9c7246bcda6ec790925",
+      "oteryn:item.tibia.i6569": "4996184b9902ade48526b171ee7c9fda26782aca0154b804c6e7ed2fcb9a3298",
+      "oteryn:item.tibia.i6574": "79a892b3f0b71b3b2d806a63fc1c65480f622bcfe2ced2df5f96c27576696c36"
+    },
+    "content/items/definitions/items-31000-31499.json": {
+      "oteryn:item.tibia.i7158": "d840983cef6f63a7883a00e6d90ee9c791157c056d53109a79bb9cf2008f784d",
+      "oteryn:item.tibia.i7159": "c7981674aa7c7a98eb38facae3cbd0171164aadcd5e8fe752b89ba54af0d88b5",
+      "oteryn:item.tibia.i7250": "42d66ea556cc6e117218f6ff52813e585f6d514494129b3c04e303063f55f398"
+    },
+    "content/items/definitions/items-31500-31999.json": {
+      "oteryn:item.tibia.i8010": "049378fddb9362575af23329d17ccd0f4bf5ff45df00a1132eef5be54d948f79",
+      "oteryn:item.tibia.i8011": "6f51a7cda6500a01f04f8ca7a3d3894cbf028d0b76bfd7978b7f4eaf63d83ca7",
+      "oteryn:item.tibia.i8013": "bf1b6da1d88a58ac05e96e04e64fdb12af47d3b9aca3c4cbf6a35c7b806ecc14",
+      "oteryn:item.tibia.i8014": "86b47040ada0948c68c8fc15fc658772398fdd913d964fbb4e4b26e6bfe457a0",
+      "oteryn:item.tibia.i8015": "85d6f68a95d5219befa85bc1d241534ac6b9b2daeae25bc49bc4f1a4521fecc0",
+      "oteryn:item.tibia.i8016": "0755c7f723814bcc8a547c357c486b7aaa62667ead5f2ffdb2e5357483e372b7",
+      "oteryn:item.tibia.i8017": "da84d8f3a868b0378b50c52f08cabf84f13ba8979cfe7cc29c6a3e063aa6e9b8"
+    },
+    "content/items/definitions/items-32000-32499.json": {
+      "oteryn:item.tibia.i8197": "f2a5ca1cee26e753e1e806059d782af43c5ca49dc126d4c9ad150d16165df8e0",
+      "oteryn:item.tibia.i841": "e2a43348510538cd6b8e31c8eb8a4bfd4dc27e95ba1c1a8b1c46032e01448edd"
+    },
+    "content/items/definitions/items-32500-32999.json": {
+      "oteryn:item.tibia.i8758": "0fedc8474edab932ed8c3a47ccb34f6fbfb89c7fff1728220150c55ba62636ae"
+    },
+    "content/items/definitions/items-33000-33499.json": {
+      "oteryn:item.tibia.i9079": "34a86aafcecfb35ec668d4c88316abe6ce7a14ea7a11203dd4910440f0638d5c",
+      "oteryn:item.tibia.i9080": "5889fbf1e4b7c5b8f3e1c366e51627e047297bac00bd0f3ecdfc0e09cb2b460b",
+      "oteryn:item.tibia.i9081": "d12a112d5bd16a645294550214548d4ffe6c416f9b650dc56953971163a0955c",
+      "oteryn:item.tibia.i9082": "672038e425fcb335e02f63190336206c09ecf4864e39c29bc25eb47fc27a79c8",
+      "oteryn:item.tibia.i9083": "23762a5fd5743b808a79709aa51f50b5baabd715655929c466590414484013e0",
+      "oteryn:item.tibia.i9084": "57d0cad1dd21f3f92b79a3115c1618636641158a5159062f8eda754e10351dde",
+      "oteryn:item.tibia.i9085": "1fc4de2eec326d8ef829d9cdf4ce5e500a23c8c28e59b40f3a4752a9f4614e61",
+      "oteryn:item.tibia.i9086": "b92eb9fc0b0d64ed24a4ad46313e885fed1237f95d85ee101d9e56377edf4b84",
+      "oteryn:item.tibia.i9087": "89186c8d063cf47ba6b67f1c6660baf231f114374a0192aaef5a3bfc2bbe95a9",
+      "oteryn:item.tibia.i9088": "98d8744cdd95990a2803c8161391dec841389688e4d7eb3c80738c24f896102f"
+    }
+  },
+  "source_packet_sha256": "0e8acc827cc3d38a1b72f660f029a0ec53d6b69497f7071033c0550f049c61ed"
+}

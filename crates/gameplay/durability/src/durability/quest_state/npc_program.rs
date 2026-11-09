@@ -6,10 +6,13 @@ use oteryn_gameplay_quests::quest::npc_rules::{
 mod achievements;
 mod equipped;
 mod fathers_burden;
+pub(in crate::durability) mod hot_cuisine_m42;
 mod items;
 mod marlin_trophy;
 mod rewards;
 pub mod teleport;
+#[cfg(test)]
+mod hot_cuisine_m42_tests;
 
 /// Advisory for preview; the receipt owner reloads every fact under the Character fence.
 #[derive(Clone, Debug, Default)]
@@ -103,7 +106,8 @@ pub fn preview_with_player_name(
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    match evaluate_source(&source, request, tracks, catalogue, now, facts, None) {
+    let cooking_inventory = if hot_cuisine_m42::owns(request) { Some(hot_cuisine_m42::optimistic()?) } else { None };
+    match evaluate_source(&source, request, tracks, catalogue, now, facts, cooking_inventory.as_ref()) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
             request,
@@ -206,7 +210,9 @@ fn evaluate_source(
         sex: 0,
         outfits: &BTreeMap::new(),
     };
-    if inventory.is_some() && marlin_trophy::owns(request) {
+    if hot_cuisine_m42::owns(request) {
+        hot_cuisine_m42::plan(source, &input)
+    } else if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
     } else if inventory.is_some() && fathers_burden::owns(request) {
         source.plan_father_items(&input)
@@ -360,13 +366,17 @@ impl DurabilityRoot {
                 super::super::stag_beaks::overlay_locked(&mut tx, character, &mut effective_tracks).await?;
             }
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&mut **tx).await?;
+            let cooking_items = hot_cuisine_m42::owns(&request);
             let father_items = fathers_burden::owns(&request);
             let marlin_items = marlin_trophy::owns(&request);
             let plain_keys = source.item_exchange_keys(&request.npc);
-            let generic_items = !father_items && !marlin_items && plain_keys.is_some();
+            let generic_items = !cooking_items && !father_items && !marlin_items && plain_keys.is_some();
             let equipped_storage = source.equipped_storage_requirements(&request.npc).is_some();
-            let inventory_owned = father_items || marlin_items || generic_items || equipped_storage;
-            let inventory = if equipped_storage {
+            let inventory_owned = cooking_items || father_items || marlin_items || generic_items || equipped_storage;
+            let inventory = if cooking_items {
+                let keys = hot_cuisine_m42::keys().map_err(|_| DurabilityError::InvalidStoredState)?;
+                Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
+            } else if equipped_storage {
                 Some(equipped::inventory(&mut tx, &recovery, &node, fence, request.command, content.loop_content_digest()).await?)
             } else if marlin_items {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
@@ -440,7 +450,7 @@ impl DurabilityRoot {
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
             }
-            let item_action = father_items || marlin_items || (generic_items && items::changes_items(&plan));
+            let item_action = father_items || marlin_items || ((cooking_items || generic_items) && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -474,7 +484,7 @@ impl DurabilityRoot {
                 }
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
-                } else if generic_items {
+                } else if cooking_items || generic_items {
                     items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?
                 } else {
                     fathers_burden::apply(&mut tx, fence, &request, &plan, *content, &node).await?

@@ -550,6 +550,67 @@ impl NpcRuleCatalog {
         evaluate::plan(self, input, &BTreeMap::new(), true)
     }
 
+    /// Inventory recipes own exact carried items and UTC calendar facts. Other
+    /// effect/guard families remain refused until their durable owner participates.
+    pub fn plan_inventory(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        if self
+            .programs
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == input.npc && rule.trigger == input.trigger)
+            .flat_map(|rule| &rule.guards)
+            .any(|guard| {
+                !matches!(
+                    guard,
+                    NpcRuleGuard::Storage { .. }
+                        | NpcRuleGuard::StorageTime { .. }
+                        | NpcRuleGuard::Item { .. }
+                        | NpcRuleGuard::CalendarMonth { .. }
+                )
+            })
+        {
+            return Err(NpcRuleError::MissingNativeResolution(
+                "inventory recipe guard".into(),
+            ));
+        }
+        let plan = evaluate::plan(self, input, &BTreeMap::new(), false)?;
+        if plan.as_ref().is_some_and(|plan| {
+            (plan.track_changes.is_empty()
+                && plan.effects.iter().any(|effect| {
+                    matches!(
+                        effect,
+                        NpcRuleEffect::TakeItem { .. } | NpcRuleEffect::GiveItem { .. }
+                    )
+                }))
+                || plan.effects.iter().any(|effect| {
+                    !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                            | NpcRuleEffect::TakeItem { .. }
+                            | NpcRuleEffect::GiveItem { .. }
+                    ) && !matches!(effect, NpcRuleEffect::Achievement { name }
+                        if plan.quest == crate::quest::hot_cuisine::QUEST && name == "Culinary Master")
+                })
+                || plan
+                    .effects
+                    .iter()
+                    .filter(|effect| matches!(effect, NpcRuleEffect::GiveItem { .. }))
+                    .count()
+                    > 1
+        }) {
+            return Err(NpcRuleError::MissingNativeResolution(
+                "inventory recipe effect".into(),
+            ));
+        }
+        Ok(plan)
+    }
+
     /// Tereban's fixed material hand-ins have an inventory and quest-XP owner.
     /// Other NPCs and effect families retain their storage-only boundary.
     pub fn plan_father_items(
