@@ -5,6 +5,12 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    *(("oteryn:quest.grave_danger_quest", "s1", "source-approach:" + name,
+       "chosen-source/grave_danger_quest") for name in (
+           "grave-danger/dark-cathedral", "grave-danger/femor-hills", "grave-danger/ankrahmun",
+           "grave-danger/vengoth", "grave-danger/orclands", "grave-danger/ice-islands",
+           "grave-danger/kilmaresh", "grave-danger/duke-krule", "grave-danger/count-vlarkorth",
+           "grave-danger/earl-osam", "grave-danger/lord-azaram", "grave-danger/baeloc-nictros")),
     ('oteryn:quest.ferumbras_ascension_quest', 's1', 'source-approach:ferumbras-entrance', 'chosen-source/ferumbras_ascension_quest'),
     ('oteryn:quest.heart_of_destruction_quest', 's1', 'source-approach:heart-zao-breach', 'chosen-source/heart_of_destruction_quest'),
     ('oteryn:quest.dragon_corpse_quest', 's1', 'area-approach:oteryn:area.hunting_place.rookgaard_bear_cave', 'chosen-source/dragon_corpse_quest'),
@@ -98,7 +104,8 @@ def callbacks(root):
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
-        visit = area.rsplit('/', 1)[-1] if area.startswith('claim:') else 'entry'
+        named_visit = area.startswith('claim:') or (area.startswith('source-approach:') and '/' in area)
+        visit = area.rsplit('/', 1)[-1] if named_visit else 'entry'
         storage = stage_storage(quest, stage, recipe, track_tail, visit)
         anchors = [a for q, s, a, _ in BINDINGS if (q, s) == (quest, stage)]
         # Every counted visit needs a distinct explicit physical anchor; a partial

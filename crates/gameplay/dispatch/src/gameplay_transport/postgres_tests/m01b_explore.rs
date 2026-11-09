@@ -39,6 +39,9 @@ mod infernal_entry;
 #[path = "m01b_explore/breach_entry.rs"]
 mod breach_entry;
 
+#[path = "m01b_explore/grave_danger.rs"]
+mod grave_danger;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -310,6 +313,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name.starts_with("m01b/grave-danger/s1/") {
+        return grave_danger::world(native);
+    }
     if name == "m01b/ferumbras-ascension/s1/entry" {
         return infernal_entry::world(native);
     }
@@ -494,6 +500,12 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback
+        .key
+        .starts_with("oteryn:quest-callback/m01b/grave-danger/s1/")
+    {
+        return grave_danger::exercise(owner, admitted, h).await;
+    }
     if callback.quest == "oteryn:quest.koshei_the_deathless_quest" {
         return koshei::exercise(owner, admitted, h).await;
     }

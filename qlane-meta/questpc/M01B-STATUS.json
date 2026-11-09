@@ -29,9 +29,10 @@
       "Berserker Treasure Quest",
       "Dragon Corpse Quest",
       "Ferumbras' Ascension Quest",
-      "Heart of Destruction Quest"
+      "Heart of Destruction Quest",
+      "Grave Danger Quest"
     ],
-    "wired_explore_stages": 22,
+    "wired_explore_stages": 23,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -52,9 +53,11 @@
       "Minotaur Hell Quest",
       "Fishing Box Quest",
       "Berserker Treasure Quest",
-      "Dragon Corpse Quest"
+      "Dragon Corpse Quest",
+      "Ferumbras' Ascension Quest",
+      "Heart of Destruction Quest"
     ],
-    "wired_native_visit_anchors": 25
+    "wired_native_visit_anchors": 37
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -125,9 +128,14 @@
     "source_resolver_guards": "REDmissing Heart site0.191s;REDmissing sourceprefix0.206s;REDchanged source revision0.003s -> GREEN4focusedtests1.676s;foreign quest/alias/revision and nonadjacent floor guards",
     "two_source_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m21s",
     "two_source_profile": "GREEN5Rustprofiletests0.04s",
-    "two_source_postgres": "PENDING2ownnativecases building after strictClippy/profile;not claimed green"
+    "two_source_postgres": "GREEN2passed121.89s:Heart61.115204965s,Ferumbras60.778325746s;level150+CurrentPremium,freshonce,old replay no credit,revisit no farming",
+    "grave_resolver": "REDunsupportedsource0.189s -> GREEN twelve-site native-ground and distinct-flag proof8.768s",
+    "grave_activation": "RED0vs12callbacks6.563s -> GREEN42Python198.847s;12distinct flags,shared counter,max11,level250+CurrentPremium;laterCobra stage4 unwired",
+    "grave_postgres": "PENDING own12visit case and retainedKoshei4visit case building;package-only test debug symbols disabled to shorten build;test assertions unchanged",
+    "grave_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m11s",
+    "grave_profile": "GREEN5Rustprofiletests0.04s"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "22wired,20PG-proven;24routes/34stages unwired. FinishFerumbras/Heart nativePG;then next own EXPLORE route. M01b PARTIAL."
+  "continuation": "23wired stages in23routes,22PG-proven entry routes;37nativeanchors.23routes/33stages remain unwired,includingGraveDanger s4. Finish12visitPGcase. M01b PARTIAL."
 }

@@ -21,6 +21,46 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_grave_danger_twelve_visit_stage_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest'] == 'oteryn:quest.grave_danger_quest']
+        self.assertEqual(len(callbacks), 12, 'all twelve chosen grave visits are activated atomically')
+        self.assertEqual(len({c['key'] for c in callbacks}), 12)
+
+    def test_script_approach_distance_exception_is_bounded(self):
+        import questpc_source_approaches as source
+        key = 'grave-danger/kilmaresh'
+        quest, owner, script, origin, approach = source.SITES[key]
+        invalid = (origin[0] + 5, origin[1], origin[2], approach[3])
+        with mock.patch.dict(source.SITES, {key: (quest, owner, script, origin, invalid)}):
+            with mock.patch.dict(source.DISTANCES, {key: 5}):
+                with self.assertRaisesRegex(ValueError, 'declared distance'):
+                    source.resolve(ROOT, quest, 'source-approach:' + key)
+        invalid = (*approach[:2], approach[2] + 1, approach[3])
+        with mock.patch.dict(source.SITES, {key: (quest, owner, script, origin, invalid)}):
+            with self.assertRaisesRegex(ValueError, 'original floor'):
+                source.resolve(ROOT, quest, 'source-approach:' + key)
+
+    def test_grave_danger_twelve_distinct_native_visits_share_one_counter(self):
+        names = ('dark-cathedral', 'femor-hills', 'ankrahmun', 'vengoth', 'orclands',
+                 'ice-islands', 'kilmaresh', 'duke-krule', 'count-vlarkorth',
+                 'earl-osam', 'lord-azaram', 'baeloc-nictros')
+        bindings = tuple(('oteryn:quest.grave_danger_quest', 's1',
+                          'source-approach:grave-danger/' + name,
+                          'chosen-source/grave_danger_quest') for name in names)
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callbacks = explore.callbacks(ROOT)
+            self.assertEqual(len(callbacks), 12)
+            self.assertEqual(len({c['key'] for c in callbacks}), 12)
+            self.assertEqual(len({c['storage'][0]['track'] for c in callbacks}), 12)
+            for callback in callbacks:
+                self.assertEqual(callback['minimum_level'], 250)
+                self.assertEqual(callback['admission'], {'premium': True})
+                self.assertEqual(callback['storage'][1]['maximum'], 11)
+                self.assertEqual(callback['storage'][1]['track'],
+                                 'oteryn:quest-progress/chosen-source/grave_danger_quest/s1')
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_two_pinned_script_destination_entries_are_activated(self):
         callbacks = explore.callbacks(ROOT)
         for quest in ('oteryn:quest.ferumbras_ascension_quest',

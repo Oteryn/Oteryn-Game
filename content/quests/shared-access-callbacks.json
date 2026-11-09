@@ -964,6 +964,666 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/ankrahmun",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33376,
+          "y": 32805,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 418,
+        "native": {
+          "position": {
+            "x": 33376,
+            "y": 32805,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 418
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/ankrahmun",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/baeloc-nictros",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33425,
+          "y": 31413,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33425,
+            "y": 31413,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/baeloc-nictros",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_baeloc_nictros.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/count-vlarkorth",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33456,
+          "y": 31413,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33456,
+            "y": 31413,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/count-vlarkorth",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_count_vlarkorth_.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/dark-cathedral",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32645,
+          "y": 32394,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 32645,
+            "y": 32394,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/dark-cathedral",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/duke-krule",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33456,
+          "y": 31493,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33456,
+            "y": 31493,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/duke-krule",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_duke_krule.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/earl-osam",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33517,
+          "y": 31444,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33517,
+            "y": 31444,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/earl-osam",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_earl_osam.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/femor-hills",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32542,
+          "y": 31845,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 11417,
+        "native": {
+          "position": {
+            "x": 32542,
+            "y": 31845,
+            "floor": -6
+          },
+          "ordinal": 0,
+          "appearance": 11417
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/femor-hills",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/ice-islands",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32012,
+          "y": 31557,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32012,
+            "y": 31557,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/ice-islands",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/kilmaresh",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33813,
+          "y": 31628,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 469,
+        "native": {
+          "position": {
+            "x": 33813,
+            "y": 31628,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 469
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/kilmaresh",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/lord-azaram",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33423,
+          "y": 31493,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33423,
+            "y": 31493,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/lord-azaram",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_lord_azaram.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/orclands",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32777,
+          "y": 31817,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4409,
+        "native": {
+          "position": {
+            "x": 32777,
+            "y": 31817,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 4409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/orclands",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/vengoth",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32960,
+          "y": 31534,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7062,
+        "native": {
+          "position": {
+            "x": 32960,
+            "y": 31534,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 7062
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/vengoth",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
       "key": "oteryn:quest-callback/m01b/heart-of-destruction/s1/entry",
       "quest": "oteryn:quest.heart_of_destruction_quest",
       "trigger": "step_in",

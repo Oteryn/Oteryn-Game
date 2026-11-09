@@ -170,7 +170,7 @@ async fn counts(h: &Harness) -> TestResult<(i64, i64, i64)> {
         .bind(TRACK).bind(QUEST).fetch_one(&h.pool).await?)
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: u64,
@@ -199,7 +199,7 @@ async fn step(
 
 // Same fixture arrangement used by qengine_access::relocate. Disconnected source
 // floors are positioned by the server; each credit still requires a real STEP.
-async fn relocate(
+pub(super) async fn relocate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
