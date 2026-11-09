@@ -51,15 +51,15 @@ claiming the linked tomes and mission objects does not prove that completion.
 The existing alternative-group evaluator is retained. This slice adds no new alternative
 group declaration and does not claim the complete 26-quest M35 row is DONE.
 
-## Required regression checks
+## Runtime regression evidence
 
-The implementation regression `m35_alawar_dispatch_completes_only_on_last_chest` must drive literal wire USE for both
+The regression `m35_alawar_dispatch_completes_only_on_last_chest` drives literal wire USE for both
 source chests in both orders, with duplicate replay, a new-command repeat and reconstructed
 callers between chests, checking exact claim/receipt/consumed-obligation counts and durable
-completion only on the final chest. The catalogue test must exercise each declared group first
-and last, in forward and reverse rotations. The authoring test must retain an exact binding map.
+completion only on the final chest. The catalogue test exercises each declared group first
+and last, in forward and reverse rotations. The authoring test retains an exact binding map.
 
-Source qualification is complete; runtime validation is pending and this document is not a completion claim.
+The twenty-set slice is validated; the six remaining quests keep the full M35 row PARTIAL.
 
 ## Claim-set slice validation
 
@@ -73,6 +73,8 @@ Source qualification is complete; runtime validation is pending and this documen
 - World pin refresh completed with the same pin digest.
 - Affected claim-set tests: 3 passed, 0 failed.
 - Affected content `world_reward_claims` tests: 11 passed, 0 failed.
-- Live dispatch regression: RED on the base's missing Alawar binding; GREEN run pending.
+- Live dispatch regression: RED on the base's missing Alawar binding, then GREEN:
+  1 PostgreSQL case passed in 150.61 seconds, exercising both chest orders.
+  `M35_ALAWAR_POSTGRES_CASE_COMPLETED` confirms the database scenarios executed.
   The reconstructed caller must retain the Channel's command-ingress state while
   clearing its quest cache; a fresh ingress correctly refuses continuation at command 3.
