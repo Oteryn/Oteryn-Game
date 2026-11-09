@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
-BINDINGS_SHA = "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+BINDINGS_SHA = "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66"
 CRYSTAL_PIN = "ff7ede593c69d4c658b382c97443e8155926924a"
 CANARY_PIN = "99902524e052f37574194466c2949c576e4ab269"
 XML_PATH = "data/items/items.xml"
@@ -31,9 +31,36 @@ XML_SHA = {
 }
 
 
+
+def historical_binding_bytes(data: bytes, expected_sha: str) -> bytes:
+    """Prove an immutable predecessor after the one owner-approved additive Item.
+
+    Old capture packets retain their original whole-table digest. Every old
+    binding must remain byte-identical; only the exact approved48227 row may
+    be removed to reproduce that digest. No substitution or arbitrary suffix.
+    """
+    if hashlib.sha256(data).hexdigest() == expected_sha:
+        return data
+    from event_item_identity import CRYSTAL, DECISION, evidence
+    packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
+    approved = {'source_key': 'oteryn:source.crystalserver', 'source_revision': CRYSTAL,
+                'identity_namespace': 'ots/item_server_id', 'external_id': '48227',
+                'target': {'family': 'Item', 'key': 'oteryn:item.tibia.i48227', 'revision': 'definition-r1'},
+                'disposition': 'EXACT'}
+    document = json.loads(data)
+    rows = [r for r in document['bindings'] if r['external_id'] == '48227']
+    if (packet.get('decision') != DECISION or packet.get('sources') != evidence()['sources']
+            or packet.get('binding') != approved or rows != [approved]):
+        raise ValueError('Item binding table digest mismatch')
+    document['bindings'] = [r for r in document['bindings'] if r['external_id'] != '48227']
+    predecessor = (json.dumps(document, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
+    if hashlib.sha256(predecessor).hexdigest() != expected_sha:
+        raise ValueError('Item binding table digest mismatch')
+    return predecessor
+
+
 def binding_index(data: bytes, expected_sha: str = BINDINGS_SHA) -> dict:
-    if hashlib.sha256(data).hexdigest() != expected_sha:
-        raise ValueError("Item binding table digest mismatch")
+    historical_binding_bytes(data, expected_sha)
     document = json.loads(data)
     if set(document) != {"schema", "family", "bindings"} or document["schema"] != "OTERYN_SOURCE_IDENTITY_BINDINGS/v1" or document["family"] != "Item":
         raise ValueError("Invalid Item binding document")

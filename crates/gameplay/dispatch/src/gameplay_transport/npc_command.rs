@@ -38,6 +38,7 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
+mod cake_brutus;
 pub(super) mod catalogue;
 mod classic_quests;
 mod coin_exchange;
@@ -894,6 +895,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(context) = cake_brutus::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake_brutus::apply(admission, actor, command, intent, context).await;
     }
     if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

@@ -1616,6 +1616,40 @@ impl BundleFacts {
     }
 
     /// Removing a wall must alter the collision index as well as its visible stack.
+    /// Cake's donor bridge replaces the original ground and removes its stack.
+    /// Restore clears the movement override so the original terrain owns collision again.
+    pub fn install_cake_bridge_state(
+        &self,
+        key: u64,
+        revision: u64,
+        before: EntryFacts,
+        after: Option<EntryFacts>,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if pos.floor != -7
+            || !(33300..=33306).contains(&pos.x)
+            || !(32052..=32059).contains(&pos.y)
+            || after.is_some_and(|facts| {
+                facts != before && !matches!(facts.appearance_id, 48227 | 12113)
+            })
+            || !self.install_gathering_state(key, revision, before, after)
+        {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        if after.is_some_and(|facts| facts != before) {
+            states.passable.insert(key, true);
+        } else {
+            states.passable.remove(&key);
+        }
+        true
+    }
+
     pub fn quest_callback_blocked(
         &self,
         base: &super::super::WorldBase,
