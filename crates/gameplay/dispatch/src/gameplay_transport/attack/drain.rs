@@ -165,6 +165,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut pvp_permit) = self.spell_lane_permit().await else {
             return;
         };
+        // A failed native health callback retains its original occurrence.
+        // Resolve it under this same physical lane before spending another
+        // attacker's canonical clock or ordinal.
+        if !self.drain_cloak_blood_with_permit(&pvp_permit).await {
+            return;
+        }
         let sessions = self
             .states
             .attack

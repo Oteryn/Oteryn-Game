@@ -34,6 +34,14 @@ durable NoOp while first-stage blood exists. Seven native Cloak units passed in
 89.10 seconds. Workspace compilation passed in 5m40s; dispatch Clippy passed in
 2m26s, alongside formatting, equipment-pin verification, and migration checks.
 
+The follow-up ordering regression failed in 67.941 seconds: after a real failed
+receipt INSERT, a second due auto-attack consumed its canonical clock and ordinal
+before the original blood callback completed. Both auto-attacks and monster AI
+now recheck the retained callback under the same physical lane before fresh work;
+the latter also closes the gap after its map-bootstrap preflight. The regression
+passed in 68.409 seconds (execution marker 68.337201316 seconds), preserving the
+entire held attack state, HP, and the one pending event across the SQL failure.
+
 This slice implements pool creation. The donor's separate pool StepIn behavior
 (lines 830–855: Player damage, Cloak healing, and pool consumption) still requires
 its own production composition; the wider W11 row remains PARTIAL.

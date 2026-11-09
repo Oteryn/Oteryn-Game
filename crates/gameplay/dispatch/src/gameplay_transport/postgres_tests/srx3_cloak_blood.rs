@@ -185,6 +185,42 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
                 before_retry, 0,
                 "failed physical callback commits no receipt"
             );
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(3))
+                .ok_or("pending callback swing clock")?;
+            owner
+                .refresh_attack_weapon(player, admitted.game_session_id)
+                .await;
+            let held_attack = format!("{:?}", owner.states.attack.lock().await);
+            let health_before = owner
+                .runtime
+                .lock()
+                .await
+                .companion_snapshot_including_dead(image)
+                .map_err(debug)?
+                .health;
+            owner.drain_auto_attacks().await;
+            assert_eq!(
+                format!("{:?}", owner.states.attack.lock().await),
+                held_attack,
+                "an unresolved Cloak Item callback must not consume a later swing clock or ordinal"
+            );
+            {
+                let runtime = owner.runtime.lock().await;
+                assert_eq!(
+                    runtime
+                        .companion_snapshot_including_dead(image)
+                        .map_err(debug)?
+                        .health,
+                    health_before,
+                    "a later attack cannot overtake the pending physical callback"
+                );
+                assert_eq!(
+                    runtime.pending_cloak_blood_events(64).map_err(debug)?.len(),
+                    1
+                );
+            }
             sqlx::raw_sql("DROP TRIGGER boss2_cloak_mint_fault ON game_spell_item_receipts; DROP FUNCTION boss2_cloak_mint_fault();").execute(&h.pool).await?;
             owner.drain_monster_melee().await;
             assert!(
