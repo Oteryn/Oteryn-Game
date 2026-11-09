@@ -472,5 +472,20 @@
     "duplicate_migrations": "PASS; no SQL changes",
     "pg": "No new PG case claimed; SQL/arrival owners unchanged",
     "whole_M38": "PARTIAL; Targuna, last-port and other unfinished source bindings remain"
+  },
+  "return_port_policy_component": {
+    "state": "GREEN",
+    "api": "TravelReturnRequirement",
+    "scope": "A bounded unique inbound group (1..64 receipt routes), canonical route grammar, exact expected-port match; absent/ambiguous latest history stays closed",
+    "red": "2 positive policy cases failed before implementation; 2 denial cases passed",
+    "green": "4 focused content unit cases PASS",
+    "workspace": "PASS 12m27s",
+    "clippy": "PASS strict content all-target/all-feature 1m24s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged native inputs",
+    "duplicate_migrations": "PASS; no SQL change",
+    "reader_and_native_binding": "NEXT; component does not yet activate a return route",
+    "new_pg_proof": "none; no SQL changed",
+    "whole_M38": "PARTIAL"
   }
 }
