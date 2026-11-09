@@ -188,6 +188,7 @@ impl ItemLoopContent for NativeItemWeights<'_> {
 pub struct LoopGroundOverlay {
     overlay: ChannelOverlay,
     facts: HashMap<[u8; 16], EntryFacts>,
+    native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
 }
@@ -226,10 +227,20 @@ impl LoopGroundOverlay {
         let field_content = sha256_revision(field_pin.0);
         let mut overlay = ChannelOverlay::for_scope(base, scope);
         let mut facts = HashMap::new();
+        let mut native_pickup_cells = HashMap::new();
         for entry in items {
             let mut item = entry.item;
+            // A native MINT uses runtime coordinates. After an ordinary loop
+            // move, the same nonportable corpse uses the loop's map coordinates.
+            let native_axes = entry.field_collision.is_some()
+                || (entry.native_corpse && item.ground.map_revision == field_revision);
             if entry.field_collision.is_some() || entry.native_corpse {
-                if item.ground.map_revision != field_revision
+                let expected_map = if native_axes {
+                    &field_revision
+                } else {
+                    &revision
+                };
+                if &item.ground.map_revision != expected_map
                     || item.ground.content_revision != field_content
                     || item.ground.native_room_placement_context.as_slice()
                         != field_pin.1.as_slice()
@@ -257,7 +268,9 @@ impl LoopGroundOverlay {
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
             };
-            if entry.field_collision.is_some() || entry.native_corpse {
+            let native_cell =
+                (entry.native_corpse && native_axes).then(|| item.ground.spatial_position.clone());
+            if native_axes {
                 let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
                     &item.ground.spatial_position,
                 ) else {
@@ -271,11 +284,15 @@ impl LoopGroundOverlay {
             let id = item.item_instance_id;
             if overlay.add_ground(item).is_ok() {
                 facts.insert(id, entry_facts);
+                if let Some(cell) = native_cell {
+                    native_pickup_cells.insert(id, cell);
+                }
             }
         }
         Self {
             overlay,
             facts,
+            native_pickup_cells,
             field_pin,
             taken_sources: Default::default(),
         }
@@ -288,6 +305,24 @@ impl LoopGroundOverlay {
     /// Where a loop Ground item lies.
     pub fn ground_entry(&self, item: &[u8; 16]) -> Option<(TilePos, EntryId)> {
         self.overlay.ground_entry(item)
+    }
+
+    /// Preserve the durable source bytes while reach is checked in map coordinates.
+    /// The item owner independently rechecks this observation under its row lock.
+    pub fn pickup_cell(&self, item: &[u8; 16]) -> Option<Vec<u8>> {
+        let (position, _) = self.ground_entry(item)?;
+        Some(
+            self.native_pickup_cells
+                .get(item)
+                .cloned()
+                .unwrap_or_else(|| {
+                    ground_cell(
+                        i32::from(position.x),
+                        i32::from(position.y),
+                        i16::from(position.floor),
+                    )
+                }),
+        )
     }
 
     /// `inner` with the facts of these Ground items.
@@ -726,7 +761,9 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
     let pickup_cell = match (pickup, actor_at) {
-        (Some(cell), Some(at)) if in_reach(at, cell) => Some(ground_cell(cell.0, cell.1, cell.2)),
+        (Some(cell), Some(at)) if in_reach(at, cell) => {
+            ground.as_ref().and_then(|ground| ground.pickup_cell(&item))
+        }
         (Some(_), _) => return LoopMoveResult::TooFar,
         (None, _) => None,
     };
@@ -1310,6 +1347,28 @@ mod tests {
             project(item.clone()).overlay().has_added_item(tile),
             "accepted corpse history survives owner replacement"
         );
+        assert_eq!(
+            project(item.clone()).pickup_cell(&id(3)),
+            Some(ground_cell(1, 0, 7))
+        );
+        let mut moved = item.clone();
+        moved.item.ground.map_revision = map_revision(&base);
+        moved.item.ground.spatial_position = ground_cell(1, 0, -7);
+        assert!(
+            project(moved.clone()).overlay().has_added_item(tile),
+            "an ordinary ground move keeps the same corpse visible in map coordinates"
+        );
+        let moved_view = project(moved.clone());
+        assert_eq!(moved_view.pickup_cell(&id(3)), Some(ground_cell(1, 0, -7)));
+        assert!(
+            !moved_view
+                .facts
+                .get(&id(3))
+                .ok_or("moved corpse facts")?
+                .pickupable
+        );
+        moved.item.ground.native_room_placement_context = vec![9; 32];
+        assert!(!project(moved).overlay().has_added_item(tile));
         let mut foreign = item.clone();
         foreign.item.ground.native_room_placement_context = vec![9; 32];
         assert!(!project(foreign).overlay().has_added_item(tile));
