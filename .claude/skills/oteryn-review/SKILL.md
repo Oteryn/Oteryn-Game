@@ -80,7 +80,7 @@ with CI and never blocks or delays it.
   review still finds a P0/P1, the design of the change is wrong: stop and
   report to the owner instead of a third round.
 - How: the coordinator (the review-dispatch owner) starts it with `codex exec`
-  in a read-only sandbox, single agent, reasoning effort medium (an
+  in a read-only sandbox, single agent, model gpt-6.1-sol, reasoning effort high (an
   `@codex review` PR comment has gone unanswered since 2026-10-20, so it is not
   used), with the diff, `CODEX-CHECKLIST.md`, the risky areas of this diff
   (locks, retries, commit and fencing, tests that can pass without testing) and
