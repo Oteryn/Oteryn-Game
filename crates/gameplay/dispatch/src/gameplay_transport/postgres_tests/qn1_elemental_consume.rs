@@ -1,0 +1,368 @@
+//! Physical M49 successor: real MINT, carried custody, drop, retirement and replay.
+mod fixture {
+    pub(super) use crate::bestiary_postgres_harness::{
+        CHANNEL, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id, runtime, scope,
+    };
+    pub const BACKPACK: &str = "fixture:b3.backpack";
+    pub fn fence() -> TestResult<crate::durability::item_transfer::CurrentCharacterItemFence> {
+        crate::bestiary_postgres_harness::item_fence()
+    }
+    pub fn definition(family: &str, key: &str) -> crate::durability::item_mint::TypedDefinitionRef {
+        crate::durability::item_mint::TypedDefinitionRef {
+            family: family.into(),
+            production_key: key.into(),
+            revision_ref: "definition-r1".into(),
+        }
+    }
+    pub fn command(n: u64) -> TestResult<crate::foundation::CommandRef> {
+        Ok(crate::foundation::CommandRef::new(
+            crate::foundation::GameSessionId::decode(&id(SESSION)).map_err(debug)?,
+            crate::foundation::CommandId::new(n).map_err(debug)?,
+        ))
+    }
+    pub fn to_slot(
+        command: crate::foundation::CommandRef,
+        item: [u8; 16],
+        facts: crate::durability::item_transfer::ItemDefinitionFacts,
+    ) -> crate::durability::item_transfer::ItemTransferRequest {
+        crate::durability::item_transfer::ItemTransferRequest {
+            weight_generation_digest: [0xD1; 32],
+            command,
+            source_item_instance_id: item,
+            destination: crate::durability::item_transfer::ItemTransferDestination::ContainerSlot,
+            item: facts,
+            backpack: None,
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+        }
+    }
+    pub fn to_backpack(
+        command: crate::foundation::CommandRef,
+        item: [u8; 16],
+        facts: crate::durability::item_transfer::ItemDefinitionFacts,
+    ) -> crate::durability::item_transfer::ItemTransferRequest {
+        crate::durability::item_transfer::ItemTransferRequest {
+            destination: crate::durability::item_transfer::ItemTransferDestination::MainBackpack,
+            backpack: Some(super::facts(BACKPACK)),
+            ..to_slot(command, item, facts)
+        }
+    }
+}
+use crate::durability::item_loop_move::{
+    ElementalArrivalTarget, ItemLoopContent, LoopDestination, LoopGround, LoopMoveRequest,
+};
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::{
+    ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome, ItemWeightLookup, ItemWeightRefused,
+};
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use fixture as f;
+use oteryn_gameplay_quests::quest::elemental_arrival as rules;
+
+struct Content;
+impl ItemWeightLookup for Content {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xD1; 32]
+    }
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        if definition.family == "Item"
+            && definition.revision_ref == "definition-r1"
+            && matches!(
+                definition.production_key.as_str(),
+                f::BACKPACK | "oteryn:item.tibia.i8139"
+            )
+        {
+            Ok(1)
+        } else {
+            Err(ItemWeightRefused::Unknown)
+        }
+    }
+}
+impl ItemLoopContent for Content {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        [1; 32]
+    }
+    fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        matches!(
+            definition.production_key.as_str(),
+            f::BACKPACK | "oteryn:item.tibia.i8139"
+        )
+        .then(|| facts(&definition.production_key))
+    }
+}
+fn facts(key: &str) -> ItemDefinitionFacts {
+    ItemDefinitionFacts {
+        definition: f::definition("Item", key),
+        weight: Some(1),
+        stack: ItemStackClass::NonStackable,
+        container_capacity: if key == f::BACKPACK {
+            Some(20)
+        } else {
+            Some(14)
+        },
+        container_slot_equip_pattern: key == f::BACKPACK,
+    }
+}
+#[test]
+fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::TestResult {
+    let Some(admin) = f::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(move || -> Result<(), String> {
+            f::runtime()
+                .map_err(f::debug)?
+                .block_on(async {
+                    let start = std::time::Instant::now();
+                    let h = f::Harness::create(admin, "qn1_elemental_consume", true).await?;
+                    let result = exercise(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(start.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "QN1_ELEMENTAL_CONSUME_PG_EXECUTED duration={:?}",
+                        start.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(f::debug)
+        })?
+        .join()
+        .map_err(|_| "elemental consumption PG thread failed")?
+        .map_err(Into::into)
+}
+async fn exercise(h: &f::Harness) -> f::TestResult {
+    use crate::durability::character_equipment::{
+        assert_equipment_authority_in_transaction, initialize_equipment_in_transaction,
+    };
+    let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+        .fetch_one(&h.pool)
+        .await?;
+    eprintln!("QN1_ELEMENTAL_CONSUME_PG_READY PostgreSQL {version}");
+    let seal = h.recovery.seal_current().map_err(f::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(f::debug)?;
+    for (n, key) in [(1, f::BACKPACK), (2, "oteryn:item.tibia.i8139")] {
+        let item = mint(h, &authority, n, key).await?;
+        let request = if n == 1 {
+            f::to_slot(f::command(n)?, item, facts(key))
+        } else {
+            f::to_backpack(f::command(n)?, item, facts(key))
+        };
+        let mut candidate = h
+            .root
+            .freeze_item_transfer(&authority, &h.node, f::fence()?, request, &Content)
+            .await
+            .map_err(f::debug)?;
+        let outcome = h
+            .root
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope(f::scope()?)
+                    .await
+                    .map_err(f::debug)?,
+                &authority,
+                &h.node,
+                f::fence()?,
+                &mut candidate,
+                &Content,
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(outcome, ItemTransferOutcome::Committed(_)));
+    }
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).execute(&h.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).bind([1u8;32].as_slice()).bind([2u8;32].as_slice()).bind([3u8;32].as_slice()).execute(&h.pool).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let equipment = assert_equipment_authority_in_transaction(
+        &mut tx,
+        &h.root,
+        &authority,
+        &h.node,
+        &f::fence()?,
+        f::command(90)?,
+        [1; 32],
+    )
+    .await
+    .map_err(f::debug)?;
+    initialize_equipment_in_transaction(&mut tx, &equipment)
+        .await
+        .map_err(f::debug)?;
+    tx.commit().await?;
+    let (item,revision):(Vec<u8>,String)=sqlx::query_as("SELECT decode(replace(item_instance_id::text,'-',''),'hex'),state_revision::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i8139' AND lifecycle=1").fetch_one(&h.pool).await?;
+    let item: [u8; 16] = item.try_into().map_err(|_| "corpse identity")?;
+    let recipe = &rules::RECIPES[0];
+    let position = recipe.summon;
+    let target_key = crate::map::view::placement_key(
+        crate::map::overlay::TilePos {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        },
+        1,
+    )
+    .ok_or("altar key")?;
+    let target = rules::ObjectSnapshot {
+        key: target_key,
+        revision: 0,
+        position,
+        appearance: 7738,
+    };
+    let corpse = rules::CorpseArrival {
+        instance: item,
+        state_revision: revision.parse::<u64>()? + 1,
+        item: 8139,
+        quantity: 1,
+        position,
+    };
+    let cells: Vec<_> = recipe
+        .positions
+        .iter()
+        .zip(1..=8)
+        .map(|(position, key)| rules::ObjectSnapshot {
+            key,
+            revision: 0,
+            position: *position,
+            appearance: 2126,
+        })
+        .collect();
+    let plan = rules::prepare_arrival(
+        rules::ArrivalFence {
+            world: f::id(f::WORLD),
+            channel: f::id(f::CHANNEL),
+            scope_generation: 1,
+            map: [7; 32],
+            content: [1; 32],
+            reset_epoch: 0,
+        },
+        target,
+        corpse,
+        &cells,
+        false,
+    )
+    .ok_or("source ring")?;
+    let mut spatial = i32::from(position.x).to_be_bytes().to_vec();
+    spatial.extend(i32::from(position.y).to_be_bytes());
+    spatial.extend(i16::from(position.floor).to_be_bytes());
+    let request = LoopMoveRequest {
+        item,
+        count: None,
+        pickup_cell: None,
+        destination: LoopDestination::Ground(LoopGround {
+            spatial_position: spatial,
+            map_revision: format!("sha256:{}", "07".repeat(32)),
+            content_revision: format!("sha256:{}", "01".repeat(32)),
+            placement_context: vec![3; 32],
+        }),
+    };
+    let permit = SpellLanePermit::of_fresh_scope(f::scope()?)
+        .await
+        .map_err(f::debug)?;
+    let result = h
+        .root
+        .commit_item_loop_elemental_arrival(
+            &permit,
+            &authority,
+            &h.node,
+            f::fence()?,
+            f::command(100)?,
+            &Content,
+            request.clone(),
+            ElementalArrivalTarget::new(plan.clone()),
+        )
+        .await
+        .map_err(f::debug)?;
+    let receipt = result.map_err(|e| format!("arrival refused {e:?}"))?;
+    assert!(!receipt.replayed);
+    let state:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(state, (0, 2));
+    let counts:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_elemental_arrival_receipts),(SELECT count(*) FROM game_elemental_summon_intents),(SELECT count(*) FROM game_elemental_boss_leases)").fetch_one(&h.pool).await?;
+    assert_eq!(counts, (1, 1, 1));
+    let on_ground:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)").bind(item.as_slice()).fetch_one(&h.pool).await?;
+    assert!(!on_ground);
+    let replay = h
+        .root
+        .commit_item_loop_elemental_arrival(
+            &permit,
+            &authority,
+            &h.node,
+            f::fence()?,
+            f::command(100)?,
+            &Content,
+            request,
+            ElementalArrivalTarget::new(plan),
+        )
+        .await
+        .map_err(f::debug)?
+        .map_err(|e| format!("replay refused {e:?}"))?;
+    assert!(replay.replayed);
+    assert_eq!(replay.transaction_id, receipt.transaction_id);
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_elemental_summon_intents")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(count, 1);
+    Ok(())
+}
+
+async fn mint(
+    h: &f::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    n: u64,
+    key: &str,
+) -> f::TestResult<[u8; 16]> {
+    use crate::durability::item_mint::{
+        GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest,
+    };
+    use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+    let mut candidate = h
+        .root
+        .freeze_item_mint(
+            authority,
+            &h.node,
+            ItemMintRequest {
+                cause: ItemMintCause::for_test(
+                    WorldId::decode(&f::id(f::WORLD)).map_err(f::debug)?,
+                    ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?,
+                    ScopeOwnershipGeneration::new(1).map_err(f::debug)?,
+                    u32::try_from(n)?,
+                    1,
+                    f::definition("LootTable", "fixture:elemental"),
+                    "fixture:elemental".into(),
+                    0,
+                ),
+                item: f::definition("Item", key),
+                quantity: 1,
+                ground: GroundPlacement {
+                    spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
+                    corpse_ref: f::id(3).to_vec(),
+                    map_revision: "map-1".into(),
+                    content_revision: "content-1".into(),
+                    native_room_placement_context: f::id(6).to_vec(),
+                },
+                content_revision: "content-1".into(),
+                ruleset_revision: "ruleset-1".into(),
+                sim_revision: "sim-1".into(),
+            },
+        )
+        .await
+        .map_err(f::debug)?;
+    let permit = candidate.fresh_death_lane_permit().await;
+    match h
+        .root
+        .commit_item_mint(&permit, authority, &h.node, &mut candidate)
+        .await
+        .map_err(f::debug)?
+    {
+        ItemMintOutcome::Committed(committed) => Ok(committed.item_instance_id),
+        other => Err(format!("corpse fixture MINT {other:?}").into()),
+    }
+}

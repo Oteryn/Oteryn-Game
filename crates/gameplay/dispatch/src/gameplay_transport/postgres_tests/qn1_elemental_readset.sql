@@ -59,7 +59,7 @@ BEGIN
    RAISE EXCEPTION 'recipe mutation was admitted'; EXCEPTION WHEN check_violation THEN NULL; END;
  BEGIN DELETE FROM game_elemental_arrival_rules WHERE altar_id=7738;
    RAISE EXCEPTION 'recipe deletion was admitted'; EXCEPTION WHEN check_violation THEN NULL; END;
- BEGIN TRUNCATE game_elemental_arrival_rules;
+ BEGIN TRUNCATE game_elemental_arrival_rules CASCADE;
    RAISE EXCEPTION 'recipe truncation was admitted'; EXCEPTION WHEN check_violation THEN NULL; END;
 END $case$;
 COMMIT;

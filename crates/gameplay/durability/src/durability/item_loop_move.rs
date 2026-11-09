@@ -18,6 +18,9 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod elemental_arrival;
+pub use elemental_arrival::ElementalArrivalTarget;
+
 mod floor_assembly;
 pub(in crate::durability) mod floor_transform;
 pub use floor_assembly::FloorAssemblyTarget;
