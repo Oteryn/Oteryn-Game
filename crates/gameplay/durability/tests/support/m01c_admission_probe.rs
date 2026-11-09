@@ -17,3 +17,13 @@ pub async fn prerequisites_hold(
 ) -> StoredResult<bool> {
     authored_admission::prerequisites_hold(tx, character, catalogue, quest).await
 }
+
+/// Probe the exact production level predicate with explicit boundary samples.
+pub fn permits_level(catalogue: &QuestStateCatalogue, quest: &str, level: i64) -> bool {
+    authored_admission::permits_level(catalogue, quest, level)
+}
+
+/// Inspect the production binding's premium requirement.
+pub fn requires_premium(catalogue: &QuestStateCatalogue, quest: &str) -> bool {
+    authored_admission::requires_premium(catalogue, quest)
+}

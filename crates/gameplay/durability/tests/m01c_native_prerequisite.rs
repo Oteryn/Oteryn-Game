@@ -6,10 +6,7 @@ use oteryn_gameplay_durability::durability;
 use oteryn_gameplay_entities as foundation;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
-    authored_bindings::{
-        Bindings,
-        actor_admission::{ActorAdmission, QuestPrerequisite},
-    },
+    authored_bindings::{Bindings, actor_admission::QuestPrerequisite},
 };
 #[path = "support/m01c_admission_probe.rs"]
 mod admission_probe;
@@ -28,14 +25,18 @@ fn m01c_native_prerequisite_uses_its_registered_completion_owner_postgres() -> f
             let h=fixture::Harness::create(admin,"questpc3_m01c_native_prerequisite",true).await?;
             let version: String=sqlx::query_scalar("SHOW server_version_num").fetch_one(&h.pool).await?;
             eprintln!("M01C_NATIVE_PREREQUISITE POSTGRES_CONNECTED version={version}");
-            let mut bindings=Bindings::parse(include_bytes!("../../quests/src/quest/authored_bindings/fixtures/kill.json"))?;
-            bindings.quests[0].admission=Some(ActorAdmission { minimum_level:0,premium:false,prerequisites:vec![QuestPrerequisite {
-                requirement:"Rotten Blood journey".into(),quest:oteryn_gameplay_quests::quest::rotten_blood::QUEST.into(),
-            }] });
+            let loaded=oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("decaying-defender-pg").map_err(fixture::debug)?;
+            let production=loaded.catalogue().authored_bindings().and_then(|b|b.quests.iter().find(|q|q.quest=="oteryn:quest.decaying_defender_outfits_quest")).ok_or("production Decaying Defender binding")?;
+            let bindings=Bindings { schema:1,quests:vec![production.clone()] };
             let quest=bindings.quests[0].quest.clone();
             let catalogue=bindings.attach(&QuestStateCatalogue::empty("native-prerequisite-fixture").ok_or("catalogue")?)?;
+            assert!(!admission_probe::permits_level(&catalogue,&quest,249));
+            assert!(admission_probe::permits_level(&catalogue,&quest,250));
+            assert!(admission_probe::requires_premium(&catalogue,&quest));
+            eprintln!("M01C_DECAYING_DEFENDER production_binding level_boundary_probe249_250 premium_required native_prerequisite query_component_only");
             let character=fixture::id(fixture::CHARACTER);
             let mut tx=h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
             sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(character.as_slice()).execute(&mut *tx).await?;
             assert!(!admission_probe::prerequisites_hold(&mut tx,&character,&catalogue,&quest).await?);

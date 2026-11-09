@@ -184,7 +184,7 @@ def build_decaying_defender(root=ROOT):
 
 
 def content(check=False):
-    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale())]
+    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender())]
     for output, value in documents:
         path = ROOT / output
         if check:
@@ -193,7 +193,7 @@ def content(check=False):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
-    print('PASS M01c native entry bindings=4; completion/rewards remain held')
+    print(f'PASS M01c native entry bindings={len(documents)}; completion/rewards remain held')
 
 
 

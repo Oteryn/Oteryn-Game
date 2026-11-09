@@ -33,3 +33,10 @@ or falls back to one when the native owner says false. Other prerequisite keys
 retain the generic completed-CharacterRevision rule. The PG query component
 fixture rolls back its native rows with ownership guards enabled; it proves
 the read path, not a Native boss victory or playable Decaying Defender route.
+
+Decaying Defender's entry is one Bakragore victory gated by level 250, premium
+and the registered Rotten Blood completion owner. It advances only its first
+route phase and grants no outfit; Rotten Blood's existing victory owner keeps
+its base-outfit grant. The admission PG component reads the production binding
+and probes its level boundary, premium declaration and prerequisite matrix.
+It does not claim a live level-250 boss victory or full quest completion.

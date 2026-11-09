@@ -90,3 +90,51 @@ fn production_grimvale_collection_requires_its_premium_blossom_count() -> Result
     assert_eq!(collection.items[0].count, 5);
     Ok(())
 }
+
+#[test]
+fn production_decaying_defender_boss_entry_preserves_requirements_and_cannot_complete()
+-> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("decaying-defender-fixture")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let key = "oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore";
+    let transition = catalogue
+        .transition(key)
+        .ok_or("missing Decaying Defender entry")?;
+    let quest = catalogue
+        .authored_bindings()
+        .and_then(|b| b.quests.iter().find(|q| q.quest == transition.quest))
+        .ok_or("binding")?;
+    let admission = quest.admission.as_ref().ok_or("admission")?;
+    assert_eq!(admission.minimum_level, 250);
+    assert!(admission.premium);
+    assert_eq!(admission.prerequisites.len(), 1);
+    assert_eq!(
+        admission.prerequisites[0].requirement,
+        "Rotten Blood journey"
+    );
+    assert_eq!(
+        admission.prerequisites[0].quest,
+        crate::quest::rotten_blood::QUEST
+    );
+    let counter = crate::quest::native_kills::counter_for(catalogue, key).ok_or("counter")?;
+    assert_eq!(counter.creature, "oteryn:creature.bakragore");
+    let mut state = std::collections::BTreeMap::from([
+        (counter.gate.to_owned(), 0),
+        (counter.track.to_owned(), 0),
+    ]);
+    let changes = catalogue
+        .evaluate(transition, &state, 0)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(!catalogue.completes_after(transition, &changes));
+    for change in changes {
+        state.insert(change.track, change.after);
+    }
+    assert_eq!(state[counter.gate], 1);
+    assert_eq!(state[counter.track], 1);
+    assert_eq!(
+        catalogue.evaluate(transition, &state, 0),
+        Err(crate::quest::QuestRefusal::StageMismatch)
+    );
+    Ok(())
+}
