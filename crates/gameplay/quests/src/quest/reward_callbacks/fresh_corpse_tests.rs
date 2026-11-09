@@ -25,3 +25,46 @@ fn fresh_corpse_mode_is_explicit_bounded_and_reward_bound() -> Result<(), String
     );
     Ok(())
 }
+
+#[test]
+fn slug_sample_uses_registered_fresh_corpse_and_exact_gatherer() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-reward/goblin-merchant/slug-sample")
+        .ok_or("missing production Slug sample")?;
+    assert!(callback.fresh_corpse);
+    assert_eq!(
+        callback.creature_target.as_deref(),
+        Some("oteryn:creature.slug")
+    );
+    assert_eq!(
+        callback.carried_item.as_deref(),
+        Some("oteryn:item.tibia.i17670")
+    );
+    assert_eq!(callback.take.len(), 1);
+    assert_eq!(callback.take[0].item, "oteryn:item.tibia.i17670");
+    assert_eq!(callback.take[0].count, 1);
+    let output = callback.give.as_ref().ok_or("filled gatherer")?;
+    assert_eq!(output.item, "oteryn:item.tibia.i17672");
+    assert_eq!(output.count, 1);
+    assert!(
+        !callback.completes,
+        "one odour cannot finish the four-odour task"
+    );
+    assert_eq!(callback.storage.len(), 1);
+    assert_eq!(
+        callback.storage[0].track,
+        "oteryn:quest-progress/goblin_merchant/slug_sample"
+    );
+    assert_eq!(callback.storage[0].set, 1);
+    let loaded = super::super::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    let track = loaded
+        .catalogue()
+        .track(&callback.storage[0].track)
+        .ok_or("registered sample track")?;
+    assert_eq!(track.quest, callback.quest);
+    assert_eq!((track.initial, track.min, track.max), (0, 0, 1));
+    assert!(loaded.catalogue().transition(&callback.key).is_some());
+    Ok(())
+}

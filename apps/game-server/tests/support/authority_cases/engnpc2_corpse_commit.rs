@@ -25,7 +25,7 @@ fn engnpc2_corpse_sample_postgres_atomic_burn_mint_progress_and_replay() -> f::T
         f::runtime().map_err(f::debug)?.block_on(async {
             let started = std::time::Instant::now();
             let h = f::Harness::create(admin, "engnpc2_corpse_commit", true).await?;
-            let result = exercise(&h).await;
+            let result = exercise(&h, false).await;
             h.cleanup().await?;
             result?;
             assert!(started.elapsed().as_secs_f64() > 0.01);
@@ -35,41 +35,80 @@ fn engnpc2_corpse_sample_postgres_atomic_burn_mint_progress_and_replay() -> f::T
     })?.join().map_err(|_| "live target PG thread failed")?.map_err(Into::into)
 }
 
-async fn exercise(h: &f::Harness) -> f::TestResult {
-    let key = "oteryn:item.tibia.i2854";
-    let callback: RewardCallback = serde_json::from_value(serde_json::json!({
-        "key":"oteryn:quest-reward/engnpc2-corpse-sample", "quest":"oteryn:quest.corpse_sample_fixture",
-        "npc":"oteryn:npc.fixture", "keywords":["sample"],"topic":0,"next_topic":0,
-        "carried_item":key,"creature_target":"oteryn:creature.rotworm","fresh_corpse":true,
-        "storage":[{"track":"oteryn:quest-progress/engnpc2-corpse-sample","minimum":0,"maximum":0,"set":1}],
-        "take":[{"item":key,"count":1}],"give":{"item":"oteryn:item.tibia.i2814","count":1,"contents":[]},"outfit":null,"achievement":null,
-        "reply":["Sample admitted."],"sources":["engine live-target fixture"]
-    }))?;
-    // This immutable unregistered fixture owns a private track. Keep the global
-    // bound-operation registry closed; the tested live proof and input participant
-    // still run unchanged inside the real fenced Root transaction.
+#[test]
+fn engnpc2_slug_sample_postgres_production_burn_mint_progress_and_replay() -> f::TestResult {
+    let Some(admin) = f::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        f::runtime().map_err(f::debug)?.block_on(async {
+            let started = std::time::Instant::now();
+            let h = f::Harness::create(admin, "engnpc2_slug_sample", true).await?;
+            let result = exercise(&h, true).await;
+            h.cleanup().await?;
+            result?;
+            assert!(started.elapsed().as_secs_f64() > 0.01);
+            eprintln!("PG_EXECUTED engnpc2_slug_sample_postgres_production_burn_mint_progress_and_replay duration={:?}", started.elapsed());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }).map_err(f::debug)
+    })?.join().map_err(|_| "Slug sample PG thread failed")?.map_err(Into::into)
+}
+
+async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
+    let key = if production {
+        "oteryn:item.tibia.i17670"
+    } else {
+        "oteryn:item.tibia.i2854"
+    };
+    let callback: RewardCallback = if production {
+        reward_callbacks::load()
+            .map_err(f::debug)?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/goblin-merchant/slug-sample")
+            .ok_or("registered Slug sample")?
+    } else {
+        serde_json::from_value(serde_json::json!({
+            "key":"oteryn:quest-reward/engnpc2-corpse-sample", "quest":"oteryn:quest.corpse_sample_fixture",
+            "npc":"oteryn:npc.fixture", "keywords":["sample"],"topic":0,"next_topic":0,
+            "carried_item":key,"creature_target":"oteryn:creature.rotworm","fresh_corpse":true,
+            "storage":[{"track":"oteryn:quest-progress/engnpc2-corpse-sample","minimum":0,"maximum":0,"set":1}],
+            "take":[{"item":key,"count":1}],"give":{"item":"oteryn:item.tibia.i2814","count":1,"contents":[]},"outfit":null,"achievement":null,
+            "reply":["Sample admitted."],"sources":["engine live-target fixture"]
+        }))?
+    };
+    // Only the unregistered engine fixture uses an unbound private track. The
+    // production Slug callback retains its exact global bound operation.
     let mut transition = reward_callbacks::primary_transition(&callback).map_err(f::debug)?;
-    for effect in &mut transition.effects {
+    for effect in transition.effects.iter_mut().filter(|_| !production) {
         if let oteryn_gameplay_quests::quest::QuestEffectKind::SetWithBinding { value, .. } =
             effect.effect
         {
             effect.effect = oteryn_gameplay_quests::quest::QuestEffectKind::Set(value);
         }
     }
-    let catalogue = Arc::new(
-        QuestStateCatalogue::new(
-            "content-1",
-            vec![QuestTrack {
-                key: callback.storage[0].track.clone(),
-                quest: callback.quest.clone(),
-                initial: 0,
-                min: 0,
-                max: 1,
-            }],
-            vec![transition],
+    let catalogue = if production {
+        Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(f::debug)?
+                .catalogue()
+                .clone(),
         )
-        .map_err(f::debug)?,
-    );
+    } else {
+        Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![QuestTrack {
+                    key: callback.storage[0].track.clone(),
+                    quest: callback.quest.clone(),
+                    initial: 0,
+                    min: 0,
+                    max: 1,
+                }],
+                vec![transition],
+            )
+            .map_err(f::debug)?,
+        )
+    };
     let world = WorldId::decode(&f::id(f::WORLD)).map_err(f::debug)?;
     let channel = ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?;
     let session = GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?;
@@ -118,7 +157,13 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(f::debug)?;
-    let (operand, corpse_at) = mint_corpse(h, &authority, native).await?;
+    let (operand, corpse_at) = mint_corpse(
+        h,
+        &authority,
+        native,
+        callback.creature_target.as_deref().ok_or("corpse race")?,
+    )
+    .await?;
     let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
         f::fence(1)?.runtime_scope,
     )
@@ -247,8 +292,8 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     .await?;
     assert_eq!(quantity, 0);
     {
-        let output: (i64, i64) = sqlx::query_as("SELECT count(*), COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i2814' AND lifecycle=1")
-            .fetch_one(&h.pool).await?;
+        let output: (i64, i64) = sqlx::query_as("SELECT count(*), COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+            .bind(&callback.give.as_ref().ok_or("sample output")?.item).fetch_one(&h.pool).await?;
         assert_eq!(
             output,
             (1, 1),
@@ -282,7 +327,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             request,
             catalogue,
             replay_admission,
-            callback,
+            callback.clone(),
         )
         .await
         .map_err(f::debug)?;
@@ -298,6 +343,10 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             1,
             "replay must not remint perfume"
         );
+        let output: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 AND quantity=1")
+            .bind(&callback.give.as_ref().ok_or("sample output")?.item)
+            .fetch_one(&h.pool).await?;
+        assert_eq!(output, 1, "replay leaves exactly one physical sample");
     }
     Ok(())
 }
@@ -306,6 +355,7 @@ async fn mint_corpse(
     h: &f::Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    creature: &str,
 ) -> f::TestResult<(
     crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand,
     (i32, i32, i16),
@@ -356,17 +406,13 @@ async fn mint_corpse(
         .creature_profiles()
         .records
         .iter()
-        .find(|r| r.profile.target.key == "oteryn:creature.rotworm")
-        .ok_or("active Rotworm")?
+        .find(|r| r.profile.target.key == creature)
+        .ok_or("active corpse race")?
         .profile
         .target
         .revision;
-    let race = crate::domain::bestiary::BestiaryRace::new(
-        "oteryn:creature.rotworm",
-        revision,
-        vec![5, 50, 500],
-    )
-    .map_err(f::debug)?;
+    let race = crate::domain::bestiary::BestiaryRace::new(creature, revision, vec![5, 50, 500])
+        .map_err(f::debug)?;
     let cause = ItemMintCause::from_creature_death(
         death,
         definition.clone(),

@@ -3,8 +3,9 @@
 The Goblin Merchant perfume task calls for a recently dead Slug, not any Item
 with the same corpse appearance. Public description:
 https://www.tibiawiki.com.br/wiki/Task:Rafzan (perfume task, first ingredient).
-These slices supply the read and atomic quest participant; they do not claim
-the canonical Slug stage is wired.
+The read and atomic quest participant now serve the registered first Slug
+sample in `content/quests/npc-callbacks/m13-slug-sample.json`; see
+[the source derivation](slug-sample.md). This does not finish the four-odour task.
 
 `spell_item_transaction::corpse_target::read_current_fresh` reuses the existing
 scope owner's physical transaction, tile ordering and Item row locks. It checks

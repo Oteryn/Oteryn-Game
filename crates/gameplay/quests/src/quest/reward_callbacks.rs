@@ -288,6 +288,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
