@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let qm48 = name == "qm48/mammoth";
+    let elemental_pin = name == "qn1-elemental-world-pin";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
@@ -41,7 +42,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = elemental_pin
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -158,7 +160,8 @@ fn scenario_case(
             "rotten-blood/sacrifice"
         } else if monk {
             "monk-guidance"
-        } else if target_swap
+        } else if elemental_pin
+            || target_swap
             || reusable_tool
             || floor_profiles
             || floor_assembly
@@ -337,7 +340,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if elemental_pin {
+            super::super::qn1_elemental_world_pin::world(
+                generation.native_gameplay().ok_or("elemental policies")?,
+            )?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -649,7 +656,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m01b_explore {
+        if elemental_pin {
+            super::super::qn1_elemental_world_pin::exercise(&owner, &h).await?;
+        } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)

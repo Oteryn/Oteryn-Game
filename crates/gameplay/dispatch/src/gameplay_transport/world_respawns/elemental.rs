@@ -8,6 +8,7 @@ use crate::durability::item_loop_move::{
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::map::floor::{BundleDoors, CellBlocker};
 use oteryn_gameplay_entities::{CarrierError, ScopeRuntimeAssignmentBinding};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 fn local(clock: &ElementalSummonClock) -> MovementLocalPosition {
@@ -121,8 +122,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if runtime.binding().channel_id().is_none() {
                 return Ok(true);
             }
+            // Channel pins bind the revision string, as BundleWorld does at admission.
+            // Arrival readsets separately retain the underlying bundle digest below.
+            let map_digest: [u8; 32] =
+                Sha256::digest(crate::map::overlay::map_revision(map.overlay.base()).as_bytes())
+                    .into();
             if runtime.content_pin().server_artifact_digest() != native.source_digest()
-                || runtime.content_pin().map_revision_digest() != map.overlay.base().digest()
+                || runtime.content_pin().map_revision_digest() != map_digest
             {
                 return Err(RespawnExit::StaleOwner);
             }
