@@ -191,7 +191,7 @@
     "duplicate_migrations": "PASS"
   },
   "minzy_contact_slice": {
-    "state": "GREEN_LITERAL_API_LIVE_PG_RECHECK_PENDING",
+    "state": "GREEN_BASIC_CONTACT_LIVE_PG",
     "scope": "Published source-informed basic contact; favour exchanges and source-accurate off-event presence remain unqualified",
     "source_cell": [
       32743,
@@ -217,11 +217,17 @@
       "quest_authoring_checks": "PASS exit 0",
       "quest_authoring_unit_modules": 114,
       "quest_authoring_unit_exit": 0,
-      "workspace_all_targets": "PASS 15m30s"
+      "workspace_all_targets": "PASS 15m30s",
+      "pg_case": "npcfix_m38_minzy_basic_contact_and_stale_actor_are_fenced_postgres",
+      "pg_seconds": 116.972860194,
+      "pg_marker": "POSTGRES_CASE_COMPLETED NPCFIX_M38_MINZY",
+      "dispatch_clippy": "PASS all-targets all-features -D warnings",
+      "pg_story_fmt": "PASS",
+      "pg_story_pin_check": "PASS"
     },
     "pending": [
-      "live basic-contact PG story rerun",
-      "dialogue engine workspace check"
+      "dialogue engine workspace all-target recheck",
+      "full node-boot matrix remains pending for M38"
     ],
     "migrations": [],
     "dialogue_admission": {
@@ -239,7 +245,8 @@
       "clippy": "PASS npc all-targets -D warnings",
       "fmt": "PASS",
       "pin_check": "PASS",
-      "policy_revision_bound": true
+      "policy_revision_bound": true,
+      "api_commit": "4024aa021f8378144204ffbd609b68feaa6f7c54"
     }
   }
 }

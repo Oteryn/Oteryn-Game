@@ -127,6 +127,7 @@ fn scenario_case(
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
     let classic_npc = qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
+        || name == "npcfix-m38-minzy"
         || matches!(
             name,
             "engnpc-m04"
@@ -971,11 +972,17 @@ fn scenario_case(
             .await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "npcfix-m38-minzy" {
+            super::super::npcfix_m38_minzy::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("npcfix-m38-mistrock") {
             super::super::npcfix_m38_mistrock::exercise(
-                &mut owner, &mut admitted, &h, &authority,
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
                 !name.ends_with("-free"),
-            ).await?;
+            )
+            .await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,
