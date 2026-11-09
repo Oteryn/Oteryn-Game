@@ -12,10 +12,10 @@ pub(super) struct NativeTooltip {
     hover: HoverTooltip,
 }
 impl NativeTooltip {
-    unsafe fn info(&mut self) -> TOOLINFOW {
+    unsafe fn info(&mut self) -> TTTOOLINFOW {
         unsafe {
-            let mut info: TOOLINFOW = std::mem::zeroed();
-            info.cbSize = std::mem::size_of::<TOOLINFOW>() as u32;
+            let mut info: TTTOOLINFOW = std::mem::zeroed();
+            info.cbSize = std::mem::size_of::<TTTOOLINFOW>() as u32;
             info.hwnd = self.parent;
             info.uId = 1;
             info.uFlags = TTF_TRACK | TTF_ABSOLUTE;
