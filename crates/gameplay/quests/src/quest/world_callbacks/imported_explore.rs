@@ -68,6 +68,7 @@ pub(super) fn admitted(callback: &Callback) -> bool {
                 s.as_str(),
                 "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
                     | "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+                    | "OTERYN_CHOSEN_EXPLORE_ENTRY:native-layer-approach;first-cycle-only"
             )
         })
 }
@@ -83,6 +84,24 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::super::*;
+
+    #[test]
+    fn imported_explore_fury_layer_approach_is_admitted_and_city_bound() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/fury-gates-mini-world-change/s1/entry")
+            .ok_or("bound Fury survey")?;
+        assert!(super::admitted(&callback));
+        assert_eq!(callback.world_change.as_deref(), Some("fury_gates/thais"));
+        let binding = gated_binding(&callback)?;
+        assert!(binding.is_some());
+        for replacement in [None, Some("fury_gates"), Some("fury_gates/venore")] {
+            let mut altered = callback.clone();
+            altered.world_change = replacement.map(str::to_owned);
+            assert_ne!(gated_binding(&altered)?, binding);
+        }
+        Ok(())
+    }
 
     #[test]
     fn imported_explore_world_requirement_is_part_of_the_native_binding() -> Result<(), String> {
