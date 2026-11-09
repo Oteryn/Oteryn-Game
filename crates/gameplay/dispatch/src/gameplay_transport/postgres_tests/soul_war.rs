@@ -669,7 +669,7 @@ fn scenario() -> TestResult {
             floor: -10,
         };
         let world = super::quest_world_callbacks::world(
-            &Callback { character_requirements: None, required_completed_quests: Vec::new(),
+            &Callback { track_initials: Default::default(), character_requirements: None, required_completed_quests: Vec::new(),
                 admission: None, requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),

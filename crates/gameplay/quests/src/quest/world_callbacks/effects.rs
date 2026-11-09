@@ -25,6 +25,16 @@ impl MountReward {
     }
 }
 
+/// A source-authored, nonportable object distinct from the interaction target.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TargetTransform {
+    pub position: Position,
+    pub from: u16,
+    pub to: u16,
+    pub reset_after_ms: u32,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemDisguiseRequirement {
@@ -67,6 +77,8 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_transform: Option<TargetTransform>,
     /// Restore remote passage objects independently of the source object.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub passages_reset_after_ms: Option<u32>,
@@ -346,9 +358,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
                 && (1..=100).contains(&count)
         };
-        callback.trigger != Trigger::Use
+        (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
             || !callback.has_personal_state()
             || (!effects.item_reward_per_use
+                && !callback.has_fenced_regrowth_reward()
                 && (callback
                     .storage
                     .iter()
@@ -476,6 +489,31 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
         })
+        || effects.target_transform.as_ref().is_some_and(|target| {
+            !pos(target.position)
+                || target.from == 0
+                || target.to == 0
+                || target.from == target.to
+                || !(1..=3_600_000).contains(&target.reset_after_ms)
+                || callback.actor_kind != ActorKind::Player
+                || (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
+                || !callback.has_personal_state()
+                || (callback.item_on_target.is_none() && !callback.has_fenced_step_reward())
+                || callback
+                    .selector
+                    .native
+                    .as_ref()
+                    .is_none_or(|source| source.position == target.position)
+                || callback.lever.is_some()
+                || callback.reversible
+                || !callback.passages.is_empty()
+                || effects.transform.is_some()
+                || effects.reset_after_ms.is_some()
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
+        })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
         || effects
@@ -522,7 +560,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 && !super::personal_trial::admitted(callback)
                 && (!lever || callback.has_personal_state()))
                 || !callback.passages.is_empty()
-                || callback.teleport.is_some()))
+                || callback.teleport.is_some())
+            && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
     }

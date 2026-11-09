@@ -51,6 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 context: None,
                 flame: None,
                 ingress_settled: false,
+                projection_target: None,
                 flame_effect_sent: false,
             });
             pending.context.get_or_insert(context).clone()

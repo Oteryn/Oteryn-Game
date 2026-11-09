@@ -8,7 +8,8 @@
 // Without the capability domain 16 is never sent and command type 22 is refused as unsupported.
 //
 // The domain is computed from the session's quest copy and never stored. Quests and missions are
-// canonical uint32 indexes per content generation. Nothing else of quest state leaves the server:
+// canonical uint32 indexes per content generation. Committed personal map markers are also
+// projected. Nothing else of quest state leaves the server:
 // track keys, track values (other than the template counters filled into a journal text),
 // transitions, gates and claims never do. Search, sort, "Show completed" and "Show hidden" are
 // client features.
@@ -59,10 +60,10 @@ message QuestLineV1 {
 }
 
 // StateDomainSnapshot.payload of domain 16, snapshot type 1, and StateDelta.payload of domain 16,
-// delta type 1: the whole domain. At most 180,268 bytes (QUESTGATE0-RL-08-DOMAIN-BYTES). Every
+// delta type 1: the whole domain. At most 249,900 bytes (QUESTGATE0-RL-08-DOMAIN-BYTES). Every
 // admission, reconnect, resume and transfer sends a snapshot with no view and the tracked quests;
 // a delta follows each accepted query, and each committed receipt that changes the view or a
-// tracked quest.
+// tracked quest or personal map marker.
 message QuestLogV1 {
   // The last requested list or quest line; absent when none was requested on this connection or
   // the requested quest is no longer listed.
@@ -73,6 +74,9 @@ message QuestLogV1 {
   // The tracked quests in the order the client tracked them, at most 10 (QUESTGATE0-RL-06), each
   // with its visible missions. A tracked quest no longer listed is not shown.
   repeated QuestLineV1 tracked = 3;
+  // Current-World committed personal Cross markers, at most 256. Whole replacement,
+  // including when the log is closed; snapshots restore these on reconnect.
+  repeated QuestMapMarkV1 map_marks = 4;
 }
 
 // Request the quest list.
@@ -98,4 +102,13 @@ message QuestLogQueryV1 {
     QuestLogQuestV1 quest = 2;
     QuestLogTrackV1 track = 3;
   }
+}
+
+// Display facts only; no track, source key or client mutation. All fields required
+// on the wire (including zero coordinates/depth). Maximum element size 272 bytes.
+message QuestMapMarkV1 {
+  uint32 x = 1; // 0..65535
+  uint32 y = 2; // 0..65535
+  uint32 depth = 3; // 0..15, native floor = -depth
+  string text = 4; // nonblank, <=256 UTF-8 bytes / 128 characters, no controls
 }

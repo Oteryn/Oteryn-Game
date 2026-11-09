@@ -22,6 +22,15 @@ class AsuraEntryTests(unittest.TestCase):
         )
         self.assertFalse(stage["completes"])
 
+    def test_explicit_entry_is_the_only_owner_across_the_complete_callback_registry(self):
+        import qengine_access
+        binding = entry.entry_binding()
+        callback = binding["quests"][0]["stages"][0]["trigger"]["callback"]
+        callbacks = qengine_access.document()["callbacks"] + [callback]
+        peers = [row for row in callbacks
+                 if (row["trigger"], row["selector"]) == (callback["trigger"], callback["selector"])]
+        self.assertEqual(peers, [callback])
+
     def test_missing_or_changed_native_tile_refuses_authoring(self):
         for tiles in [[], [(32953, 32685, 0, 0, (), [])]]:
             with (

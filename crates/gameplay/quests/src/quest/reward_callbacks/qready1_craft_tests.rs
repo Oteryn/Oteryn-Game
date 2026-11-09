@@ -20,7 +20,9 @@ fn cursed_final_mixture_binds_both_directions_and_preserves_progress() -> Result
         .collect();
     assert_eq!(recipes.len(), 2);
     for callback in recipes {
-        assert!(!callback.is_paid_exchange());
+        // Crystal 201189f actions_MedusaOil.lua:50-61 consumes both inputs on
+        // every mixture; higher mission progress remains intact below.
+        assert!(callback.is_paid_exchange());
         assert_eq!(callback.storage.len(), 1);
         assert!(callback.storage[0].at_least);
         assert_eq!(callback.storage[0].set, 2);

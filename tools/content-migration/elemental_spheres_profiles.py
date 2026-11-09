@@ -11,8 +11,9 @@ import rafzane_elevator_profiles as pinned
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/elemental-spheres-item-profiles.json'
 SOILS = {940, 941, 944, 945}
+CORPSES = {8106, 8139, 8140, 8141}
 # The existing ordinary-field cohort already owns energy field 2126.
-IDS = SOILS | {7737, 7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748, 8106, 8139, 8140, 8141}
+IDS = SOILS | CORPSES | {7737, 7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748}
 SCHEMA = 'OTERYN_NATIVE_ELEMENTAL_SPHERES_PROFILES/v1'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
 
@@ -30,9 +31,9 @@ def capture(xml_path):
     records = []
     for item in sorted(IDS):
         row = native.profile(item, xml[item], objects[item], physical[item], bindings, None)
-        # These definitions remain nonportable. A corpse's own receipt admits
-        # Ground movement; its container capacity is never inventory admission.
-        if item not in SOILS:
+        # Crystal movements_summon_overlord.lua consumes these movable corpses
+        # through onAddItem. They remain Ground-only, never inventory-admitted.
+        if item not in SOILS | CORPSES:
             if row['admission'] != {'materializable': True, 'stack_class': 'NonStackable', 'legal_destinations': ['Ground']}:
                 raise ValueError('ELEMENTAL_SPHERES_GROUND_ONLY')
             row['admission']['materializable'] = False
@@ -54,7 +55,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         raise ValueError('ELEMENTAL_SPHERES_PROFILE_SET')
     for record in records:
         soil = record['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in SOILS}
-        expected = {'materializable': soil, 'stack_class': 'StackCapable' if soil else 'NonStackable',
+        corpse = record['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in CORPSES}
+        expected = {'materializable': soil or corpse, 'stack_class': 'StackCapable' if soil else 'NonStackable',
                     'legal_destinations': ['CharacterInventory', 'Ground'] if soil else ['Ground']}
         if record['admission'] != expected:
             raise ValueError('ELEMENTAL_SPHERES_ADMISSION')

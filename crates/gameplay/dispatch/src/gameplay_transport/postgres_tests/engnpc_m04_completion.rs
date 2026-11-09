@@ -335,5 +335,180 @@ pub(super) async fn exercise(
         ));
         assert_eq!(snapshot(h, &character, &quest, &track).await?, after);
     }
+    real_terminal_commands(owner, admitted, h).await
+}
+
+/// Prior stages are historical setup; every finale uses the production talk command.
+async fn real_terminal_commands(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let source = NpcRuleCatalog::runtime().map_err(debug)?;
+    // Chat installs its talk book once, just as production boot does. The
+    // bounded carrier below hosts these admitted NPCs one at a time.
+    let npc_catalogue = crate::content::NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .map_err(debug)?;
+    let model = npc_catalogue.service_model_for_project().map_err(debug)?;
+    owner.states.chat.install_npc_talk(Arc::new(
+        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+            &model,
+            &[
+                "oteryn:npc.tereban",
+                "oteryn:npc.malor",
+                "oteryn:npc.gabel",
+                "oteryn:npc.pemaret",
+                "oteryn:npc.costello",
+            ],
+        ),
+    ));
+    let catalogue = owner
+        .quest_catalogue
+        .as_ref()
+        .ok_or("native quest catalogue")?
+        .clone();
+    for (index, (npc, quest, prerequisites, prompt, input, output)) in [
+        (
+            "tereban",
+            "a_father_s_burden_quest",
+            vec![("/status", 1_i64), ("/progress", 8)],
+            "",
+            None,
+            Some("oteryn:item.tibia.i11701"),
+        ),
+        (
+            "malor",
+            "the_djinn_war_efreet_faction",
+            vec![("/mission02", 3), ("/mission03", 2)],
+            "mission",
+            None,
+            None,
+        ),
+        (
+            "gabel",
+            "the_djinn_war_marid_faction",
+            vec![("/mission02", 2), ("/mission03", 2)],
+            "mission",
+            None,
+            None,
+        ),
+        (
+            "pemaret",
+            "marlin_trophy_quest",
+            vec![],
+            "marlin",
+            Some("oteryn:item.tibia.i901"),
+            Some("oteryn:item.tibia.i902"),
+        ),
+        (
+            "costello",
+            "the_white_raven_monastery_quest",
+            vec![("/diary", 1)],
+            "diary",
+            Some("oteryn:item.tibia.i3212"),
+            Some("oteryn:item.tibia.i3214"),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let quest = format!("oteryn:quest.{quest}");
+        let npc_key = format!("oteryn:npc.{npc}");
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let character = fence.character_id.as_bytes().as_slice();
+        let program = source.program(&quest).ok_or("shipped terminal programme")?;
+        if !prerequisites.is_empty() {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)")
+                .bind(character).bind(&quest).bind(catalogue.content_revision()).bind(catalogue.definition_hash(&quest).ok_or("quest hash")?.as_slice()).bind(fence.expected_character_revision.get().to_string()).execute(&mut *tx).await?;
+            for (suffix, value) in prerequisites {
+                let track = program
+                    .document
+                    .tracks
+                    .iter()
+                    .find(|t| t.key.ends_with(suffix))
+                    .ok_or("prerequisite track")?;
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,quest_key,track_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric)")
+                    .bind(character).bind(&quest).bind(&track.key).bind(value).bind(fence.expected_character_revision.get().to_string()).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+        }
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        if let Some(input) = input {
+            let at = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+                .map_err(debug)?
+                .position();
+            super::quest_world_callbacks::input_item(
+                owner,
+                fence.item_fence(),
+                &Offering {
+                    position: Position {
+                        x: u16::try_from(at.x)?,
+                        y: u16::try_from(at.y)?,
+                        floor: -i8::try_from(at.floor)?,
+                    },
+                    item: input.into(),
+                    count: 1,
+                },
+                9700 + index as u64,
+                true,
+            )
+            .await?;
+        }
+        let [actor] = super::classic_quests::install(owner, admitted, [&npc_key]).await?;
+        let command = 9800 + index as u64 * 10;
+        super::classic_quests::talk(owner, admitted, actor, command, "hi").await?;
+        if !prompt.is_empty() {
+            super::classic_quests::talk(owner, admitted, actor, command + 1, prompt).await?;
+        }
+        let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND completes")
+            .bind(character).bind(&quest).fetch_one(&h.pool).await?;
+        assert_eq!(before, 0, "prompt must not complete {quest}");
+        let text = if npc == "tereban" { "mission" } else { "yes" };
+        let reply = super::classic_quests::talk(owner, admitted, actor, command + 2, text).await?;
+        assert!(!reply.is_empty(), "final source reply for {quest}");
+        let canonical: (i64, bool, bool) = sqlx::query_as("SELECT count(*),bool_and(s.completed_character_revision=q.committed_character_revision),bool_and(q.completes AND n.completes AND s.xmin=q.xmin AND q.xmin=n.xmin) FROM game_character_quest_states s JOIN game_character_quest_receipts q USING(character_id,quest_key) JOIN game_quest_npc_program_receipts n ON n.character_id=q.character_id AND n.game_session_id=q.cause_id::uuid AND n.command_id=q.cause_ordinal WHERE s.character_id=encode($1,'hex')::uuid AND s.quest_key=$2")
+            .bind(character).bind(&quest).fetch_one(&h.pool).await?;
+        assert_eq!(
+            canonical,
+            (1, true, true),
+            "real NPC terminal receipt: {quest}"
+        );
+        if let Some(output) = output {
+            let count: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                .bind(output).fetch_one(&h.pool).await?;
+            assert_eq!(count, 1, "exact source output for {quest}");
+        }
+        if let Some(input) = input {
+            let count: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+                .bind(input).fetch_one(&h.pool).await?;
+            assert_eq!(count, 0, "consumed source input for {quest}");
+        }
+        // The bounded fixture carrier has room for one source NPC at a time.
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_dynamic_npc(&npc_key)
+            .map_err(debug)?;
+        eprintln!("M04_REAL_NPC_TERMINAL_COMMAND_EXECUTED {quest}");
+    }
     Ok(())
 }

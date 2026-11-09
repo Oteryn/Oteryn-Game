@@ -23,7 +23,7 @@ class ElementalSpheresProfiles(unittest.TestCase):
         records = {r['production_definition']['production_key']: r for r in self.overlay()['records']}
         self.assertEqual(set(records), {f'oteryn:item.tibia.i{i}' for i in (940, 941, 944, 945, 7737, 7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748, 8106, 8139, 8140, 8141)})
         for key, record in records.items():
-            self.assertEqual(record['admission']['materializable'], key in {f'oteryn:item.tibia.i{i}' for i in (940, 941, 944, 945)})
+            self.assertEqual(record['admission']['materializable'], key in {f'oteryn:item.tibia.i{i}' for i in (940, 941, 944, 945, 8106, 8139, 8140, 8141)})
         for item, weight, capacity in ((8106, 40000, 15), (8139, 10000, 14), (8140, 10000, 14), (8141, 10000, 11)):
             body = records[f'oteryn:item.tibia.i{item}']
             self.assertEqual(body['admission']['legal_destinations'], ['Ground'])
@@ -48,6 +48,19 @@ class ElementalSpheresProfiles(unittest.TestCase):
         self.assertEqual(len({r['production_definition']['production_key'] for r in records}), 19)
         self.assertEqual(json.loads(generated['manifest'])['item_profiles']['sha256'], hashlib.sha256(generated['profiles']).hexdigest())
 
+    def test_floor_assembly_and_altar_profiles_share_exact_corpse_admission(self):
+        import floor_assembly_profiles as floor
+        generated = self.generated()
+        elemental.admit(ROOT, generated, 'profiles', 'manifest', registry.provider_order, registry.spell_import.canonical_bytes)
+        floor.admit(ROOT, generated, 'profiles', 'manifest', registry.provider_order, registry.spell_import.canonical_bytes)
+        records = json.loads(generated['profiles'])['records']
+        for item in elemental.CORPSES:
+            bodies = [r for r in records if r['production_definition']['production_key'] == f'oteryn:item.tibia.i{item}']
+            self.assertEqual(len(bodies), 1)
+            self.assertEqual(bodies[0]['admission'], {
+                'materializable': True, 'stack_class': 'NonStackable',
+                'legal_destinations': ['Ground']})
+
     def test_existing_profile_cannot_be_rebound(self):
         record = copy.deepcopy(self.overlay()['records'][0])
         record['production_binding']['target']['key'] = 'oteryn:item.tibia.i8141'
@@ -57,7 +70,7 @@ class ElementalSpheresProfiles(unittest.TestCase):
             elemental.admit(ROOT, generated, 'profiles', 'manifest', registry.provider_order, registry.spell_import.canonical_bytes)
 
     def test_missing_record_and_portable_corpse_fail_closed(self):
-        for operation in ('missing', 'portable'):
+        for operation in ('missing', 'portable', 'nonmaterializable'):
             with tempfile.TemporaryDirectory(prefix='.elemental-profile-test-', dir=ROOT) as directory:
                 root = Path(directory)
                 target = root / elemental.PATH
@@ -65,8 +78,10 @@ class ElementalSpheresProfiles(unittest.TestCase):
                 overlay = self.overlay()
                 if operation == 'missing':
                     overlay['records'].pop()
+                elif operation == 'portable':
+                    next(r for r in overlay['records'] if r['production_definition']['production_key'].endswith('.i8141'))['admission']['legal_destinations'] = ['CharacterInventory', 'Ground']
                 else:
-                    next(r for r in overlay['records'] if r['production_definition']['production_key'].endswith('.i8141'))['admission']['materializable'] = True
+                    next(r for r in overlay['records'] if r['production_definition']['production_key'].endswith('.i8141'))['admission']['materializable'] = False
                 target.write_text(json.dumps(overlay))
                 with self.assertRaises(ValueError):
                     elemental.admit(root, self.generated(), 'profiles', 'manifest', registry.provider_order, registry.spell_import.canonical_bytes)

@@ -145,16 +145,9 @@ fn goblin_rotworm_sample_binds_progress_tool_and_output() -> Result<(), String> 
 
 #[test]
 fn m56_self_target_is_explicit_and_bounded() -> Result<(), String> {
-    let mut document: serde_json::Value = serde_json::from_str(DOCUMENTS[2]).map_err(fail)?;
-    let row = &mut document["callbacks"][0];
-    row.as_object_mut()
-        .ok_or("callback")?
-        .remove("creature_target");
-    row["give"] = serde_json::Value::Null;
-    row["self_target"] = serde_json::json!({
-        "minimum": {"x":31938,"y":32932,"floor":-3},
-        "maximum": {"x":31946,"y":32940,"floor":-3}
-    });
+    let mut document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"
+    )).map_err(fail)?;
     assert!(
         parse(&document.to_string()).is_ok(),
         "self-target carried quest tool must parse"

@@ -8,6 +8,7 @@ use sha2::{Digest, Sha256};
 pub(crate) enum QuestMintClaim<'a> {
     Once,
     PaidExchange,
+    SourceUse,
     WorldUse,
     Cycle { track: &'a str, value: i64 },
 }
@@ -24,6 +25,17 @@ pub(super) fn key(
             "oteryn:quest-exchange/",
             Sha256::new()
                 .chain_update(b"oteryn:quest-exchange:v1\0")
+                .chain_update(character.as_bytes())
+                .chain_update(command.game_session_id().as_bytes())
+                .chain_update(command.command_id().get().to_string().as_bytes())
+                .chain_update(b":")
+                .chain_update(callback.as_bytes())
+                .finalize(),
+        ),
+        QuestMintClaim::SourceUse => (
+            "oteryn:quest-source-use/",
+            Sha256::new()
+                .chain_update(b"oteryn:quest-source-use:v1\0")
                 .chain_update(character.as_bytes())
                 .chain_update(command.game_session_id().as_bytes())
                 .chain_update(command.command_id().get().to_string().as_bytes())
@@ -73,6 +85,20 @@ mod tests {
     use super::*;
     use crate::foundation::{CommandId, GameSessionId};
 
+    #[test]
+    fn regrown_source_rewards_replay_one_use_but_allow_the_next_use() -> Result<(), String> {
+        use crate::foundation::{CommandId, GameSessionId};
+        let id = [41,2,3,4,5,6,0x70,8,0x80,10,11,12,13,14,15,41];
+        let character = CharacterId::from_bytes(id).map_err(|e| format!("{e:?}"))?;
+        let session = GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?;
+        let command = |n| CommandId::new(n).map(|id| CommandRef::new(session,id)).map_err(|e|format!("{e:?}"));
+        let first = key(character,command(1)?,"flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?;
+        assert_eq!(first,key(character,command(1)?,"flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?);
+        assert_ne!(first,key(character,command(2)?,"flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?);
+        assert_ne!(first,key(character,command(1)?,"other-flower",QuestMintClaim::SourceUse).map_err(|e|format!("{e:?}"))?);
+        assert_ne!(first,key(character,command(1)?,"flower",QuestMintClaim::PaidExchange).map_err(|e|format!("{e:?}"))?);
+        Ok(())
+    }
     #[test]
     fn world_cycle_keys_ignore_commands_but_bind_character_source_track_and_epoch()
     -> Result<(), String> {

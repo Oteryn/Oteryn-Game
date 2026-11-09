@@ -723,6 +723,102 @@ mod tests {
     }
 
     #[test]
+    fn qn1_environment_energy_field_step_commits_hit_only_with_movement() {
+        use super::super::{NonPlayerFieldContact, NonPlayerFieldOrigin};
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        let record = document["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|record| {
+                record["source"]["server"] == "crystal"
+                    && record["source"]["server_item_id"] == 2126
+            })
+            .unwrap();
+        let recipe: oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition =
+            serde_json::from_value(record.clone()).unwrap();
+        for (origin, blocked, accepted) in [
+            (NonPlayerFieldOrigin::Environment, false, true),
+            (NonPlayerFieldOrigin::Environment, true, false),
+            (NonPlayerFieldOrigin::Creature, false, false),
+        ] {
+            let (mut runtime, mut states, room, actor, session) = owner();
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    CharacterCastFacts {
+                        vocation: crate::spell::Vocation::Knight,
+                        level: 100,
+                        magic_level: 10,
+                        max_health: 1000,
+                        max_mana: 500,
+                        max_soul: 100,
+                    },
+                    (0, 0),
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .unwrap();
+            let before = states.get(&runtime, actor, session).unwrap().clone();
+            let position = at(&mut runtime, actor);
+            let mut blocking = std::collections::BTreeSet::new();
+            if blocked {
+                blocking.insert(LogicalCell {
+                    x: position.0 + 1,
+                    y: position.1,
+                    z: i32::from(position.2),
+                });
+            }
+            let contact = NonPlayerFieldContact {
+                origin,
+                source: "environment:field:fixture2126".into(),
+                definition: crate::foundation::ConditionDefinition::new(
+                    "native.field.i2126",
+                    1,
+                    recipe.condition_values().unwrap().unwrap(),
+                )
+                .unwrap(),
+                element: recipe.element().unwrap(),
+                content: runtime.content_pin().server_artifact_digest(),
+            };
+            let result = states.step_with_non_player_field_contact(
+                &mut runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &blocking,
+                None,
+                None,
+                Some(contact),
+            );
+            assert_eq!(result.is_ok(), accepted);
+            if accepted {
+                assert_eq!(
+                    at(&mut runtime, actor),
+                    (position.0 + 1, position.1, position.2)
+                );
+                assert_eq!(
+                    states
+                        .get(&runtime, actor, session)
+                        .unwrap()
+                        .vitals()
+                        .health,
+                    900
+                );
+            } else {
+                assert_eq!(at(&mut runtime, actor), position);
+                assert_eq!(states.get(&runtime, actor, session), Some(&before));
+            }
+        }
+    }
+
+    #[test]
     fn shared_cardinal_deltas_drive_baseline_and_initialized_steps() {
         for initialized in [false, true] {
             let (mut runtime, mut states, room, actor, session) = owner();
@@ -1289,7 +1385,7 @@ mod creature_field_step_tests {
             .unwrap();
         (runtime, states, room, actor, session)
     }
-    fn contact(runtime: &ChannelRuntimeV1) -> super::super::CreatureFieldContact {
+    fn contact(runtime: &ChannelRuntimeV1) -> super::super::NonPlayerFieldContact {
         // Real immutable qualified field recipe, actual Player/movement owner fixture.
         let catalog: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
@@ -1308,7 +1404,8 @@ mod creature_field_step_tests {
             .find(|r| r.source.server == "canary" && r.source.server_item_id == 2118)
             .unwrap();
         let values = recipe.condition_values().unwrap().unwrap();
-        super::super::CreatureFieldContact {
+        super::super::NonPlayerFieldContact {
+            origin: super::super::NonPlayerFieldOrigin::Creature,
             source: "creature:field:owner-component-fixture".into(),
             definition:
                 oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
@@ -1328,7 +1425,7 @@ mod creature_field_step_tests {
         let before = states.get(&runtime, actor, session).unwrap().clone();
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1362,7 +1459,7 @@ mod creature_field_step_tests {
         let position = runtime.read_actor_position(actor).unwrap();
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1386,7 +1483,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1405,7 +1502,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1438,7 +1535,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,
@@ -1459,7 +1556,7 @@ mod creature_field_step_tests {
         let field = contact(&runtime);
         assert!(
             states
-                .step_with_creature_field_contact(
+                .step_with_non_player_field_contact(
                     &mut runtime,
                     room.movement_cells(),
                     actor,

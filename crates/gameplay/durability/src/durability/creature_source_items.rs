@@ -6,6 +6,8 @@
 )]
 mod cloak_blood;
 pub use cloak_blood::CloakBloodCallback;
+mod cloak_blood_step;
+pub use cloak_blood_step::{CloakBloodPlayerStep, CloakBloodStepReceipt, cloak_blood_percentage};
 mod primal_pod;
 mod scoped_global;
 mod spite_global;
@@ -1754,6 +1756,8 @@ mod conservative_destroy_tests {
             expires_at_unix_ms: None,
             field_origin: None,
             creature_field_origin: None,
+            native_map_origin: false,
+            environment_field_origin: false,
         }
     }
     #[test]

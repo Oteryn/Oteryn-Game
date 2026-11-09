@@ -3,11 +3,15 @@ use super::{Callback, NativeRule, Position, Trigger};
 use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selection as dance};
 
 pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bool {
+    if let NativeRule::LionTrial { trial } = rule {
+        return super::super::lions_rock::callbacks().get(usize::from(trial)) == Some(callback);
+    }
     let (trigger, position, action, ranges, source): (_, _, _, &[(i64, i64)], _) = match rule {
         NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy => return false,
         NativeRule::IceSealPaint { seal } => {
             return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
         }
+        NativeRule::LionTrial { .. } => return false,
         NativeRule::BarbarianMead => (
             Trigger::Use,
             (32201, 31154, -7),
@@ -47,7 +51,11 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         }
     };
     callback.quest == rule.quest()
-        && callback.selector.native.is_none()
+        && callback.selector.native
+            == match rule {
+                NativeRule::BarbarianMead => Some(crate::quest::barbarian_mead::NATIVE),
+                _ => None,
+            }
         && callback.trigger == trigger
         && callback.selector.position
             == Some(Position {
@@ -141,7 +149,7 @@ impl Callback {
             }
             Some(NativeRule::IceSealPaint { .. }) => None,
             Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
-            None => self.success_message.as_deref(),
+            Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }
     }
 }

@@ -30,7 +30,7 @@ pub(super) fn admitted(callback: &Callback) -> bool {
             {"track":"oteryn:quest-progress/questpc7/feaster/programme","minimum":phase,"maximum":phase,"set":phase,"preserve":true},
             {"track":format!("oteryn:quest-progress/questpc7/feaster/{receipt}"),"minimum":-1,"maximum":-1,"set":1}
         ],
-        "minimum_level":250,"admission":if phase == 5 { Some(serde_json::json!({"premium":true})) } else { None },"requires_world_admission":true,
+        "minimum_level":250,"admission":{"premium":true},"requires_world_admission":true,
         "offerings":[],"item_on_target":null,"return_on_failure":false,"failure_message":null,"success_message":message,
         "sources":[
             "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c",

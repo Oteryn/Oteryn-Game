@@ -178,7 +178,7 @@
       },
       "return_on_failure": false,
       "failure_message": null,
-      "success_message": "You have purified a sacred pedestal with holy water.",
+      "success_message": "You have purified a sacret pedestal with holy water. You have now passed the last testto enter thge inner sanctum.",
       "effects": {
         "passages_reset_after_ms": 15000
       },

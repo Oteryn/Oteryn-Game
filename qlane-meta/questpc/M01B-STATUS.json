@@ -41,9 +41,11 @@
       "Hero of Rathleton Quest",
       "Lion Trophy Quest",
       "Deeplings World Change",
-      "Fire from the Earth Mini World Change"
+      "Fire from the Earth Mini World Change",
+      "Fury Gates Mini World Change",
+      "Horse Station World Change"
     ],
-    "wired_explore_stages": 35,
+    "wired_explore_stages": 39,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -78,22 +80,24 @@
       "Hero of Rathleton Quest",
       "Lion Trophy Quest",
       "Deeplings World Change",
-      "Fire from the Earth Mini World Change"
+      "Fire from the Earth Mini World Change",
+      "Fury Gates Mini World Change",
+      "Horse Station World Change"
     ],
-    "wired_native_visit_anchors": 49,
-    "pg_proven_explore_stages": 35
+    "wired_native_visit_anchors": 53,
+    "pg_proven_explore_stages": 39
   },
   "validation": {
-    "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
+    "quest_unit_tests": "GREEN381passed,0failed,0ignored,185.02s withstationbinding",
     "focused_profile_tests": "RED1failure0.02s,thenGREEN4passed0.03s",
-    "authoring_modules": "PASS112modules on entrance-batch snapshot;own15tests rerun after fragment planner",
-    "authoring_checks": "PASS run_checks.py --part checks on entrance-batch snapshot",
+    "authoring_modules": "GREEN119modules1218tests0failures aftervalidation-orderfix;existing skipsunchanged",
+    "authoring_checks": "GREEN currentrun_checks.py --part checks",
     "content_tree": "PASS full validation on entrance-batch snapshot",
-    "clippy": "quests+dispatch --all-targets strict PASS7m03s before final2Premium PG cases added",
+    "clippy": "GREEN quests+dispatchalltargets-Dwarnings7m10s",
     "postgres_catalogue": "PASS PostgreSQL18.6,8.262173426s",
     "postgres_native_step": "PASS Longsword60.462902524s,Geomancer60.816349711s",
-    "workspace_all_targets": "PASS7m46s --keep-going after four incoming constructor/test-export repairs",
-    "fmt": "PASS cargo fmt --all --check and explicit own-file rustfmt",
+    "workspace_all_targets": "GREEN currentstationactivation8m16s",
+    "fmt": "GREEN cargo fmt --all --check andexplicitownRustfiles",
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
     "post_merge_postgres": "No further merges permitted;all4cases executed on current mechanic Rust/data",
@@ -230,9 +234,39 @@
     "fire_earth_postgres": "GREEN m01b_fire_earth_native_survey_requires_current_eruption_and_premium, PostgreSQL18.6,71.863157833s on22f06bc007d1;real selected eruption days,Premium,current-reset/replay/freshonce;whole completion0",
     "fury_exact_layer": "RED selected-city assertion -> GREEN23World-change library tests0.03s;strictall-targetsClippy2.25s;exact compiled entry owner only,exit-only andepoch0refuse. No SQL change. Fury content wiring still pending.",
     "fury_approach_resolver": "RED missing module;RED canonical owner HELD rejection -> GREEN4focusedtests0.454s. Exact Crystal201189f layerblob/portal action9710/adjacentground verified;factory retainslevel60,Premium andfury_gates/thais. Inactive untilnativePG;nochangeinwiredcounts.",
-    "fury_authoring_checks": "PASS authoringchecks;1210tests/116modules0failures;content-tree/equipmentpin/duplicatechecks;generatedcallbackverifyunchanged;cargo fmt PASS;workspacealltargets PASS11m11s. Python-onlyresolver/factoryslice;noSQLchange/nativePGnotclaimed."
+    "fury_authoring_checks": "PASS authoringchecks;1210tests/116modules0failures;content-tree/equipmentpin/duplicatechecks;generatedcallbackverifyunchanged;cargo fmt PASS;workspacealltargets PASS11m11s. Python-onlyresolver/factoryslice;noSQLchange/nativePGnotclaimed.",
+    "fury_live_activation": "RED missing callback -> GREEN5focusedtests0.819s;strictquests+dispatchalltargetsClippy6m54s;nativePGbuilding,notyetqualified. One reviewedThaisapproach;noothercity/Furyosapromotion.",
+    "fury_live_publication": "WIPcadence:1211authoringtests/116modulesPASS;checks/tree/nativeproviderregeneration/pins/dupmigrations/fmtPASS;strictquests+dispatchClippy6m54s. NativePGstillbuilding,noPGqualificationclaimed. Latestworkspacecheck11m11swas062fresolverparentbeforelivecallback/testfixture.",
+    "fury_profile_marker": "RED Rustcallbackload0.02s andnativeattempt16.751ms beforedatabase;explicitnative-layer marker nowacceptedbyboundedM01bprofile. GREEN7profiletests0.07s;strictquestsClippy17.60s. Exactcity/generalFury/wrongcity/removalbindinghashregression included. NativePGretrypending;earlyfailureisNOTPGproof.",
+    "fury_catalogue_key": "NativePG RED70.03292385s InvalidEffect on1be1660da;fullcatalogueregressionRED0.33s. ExactFurycitysyntax helper preserveslegacygrammar,otherfamilies/doublepaths/malformednamesreject. GREEN380questunit tests94.15s;nativePGretryrequired aftercataloguefix.",
+    "cobra_inactive_resolver": "RED unsupportedArea0.53s -> GREEN1test1.561s includingretainedB3ground;stage4readonlyguards s1=12,s2=5,s3=1;level250/Premiumretained. Inactive,noactivebindingcountchange. Fullauthoringretry1212tests/117modulesPASS afteroneOOMSIGKILLtreechild;checksPASS;activeJSONunchanged.",
+    "fury_native_postgres": "GREEN80.739761441s m01b_fury_native_survey_requires_selected_city_and_premium onb338efe70;actualselectedThaisdays,currentreset/Premium/replay/freshonce/revisit,wholecompletion0. PriorRED70.03292385s InvalidEffect fixedviafullcataloguekeyvalidator. Actualentryphaseonly;Fury s2/othercities/Furyosa notqualified.",
+    "fury_final_prevention": "GREEN currentworkspacealltargets5m33s andcargo fmtallcheck;380questunits94.15s;strictquestsClippy10.81s;1212authoringtests/117modules,checks/tree/nativeproviderregeneration/pins/dupmigrationsPASS;FuryrealPG80.739761441s. Cobrahelperinactive/1focusedtest1.561s;noactiveJSONchange.",
+    "cobra_live_activation": "ActivationRED missing s4 -> GREEN1authoringtest1.196s;8Rustprofiletests8.11s includefullcatalogue/readguardbounds/bindinghash;strictquests+dispatchalltargetsClippy7m53s;1212authoringtests/117modules,checks/tree/nativeproviderregenPASS. NativePG2casesbuilding,notqualified. Currentworkspacecheckpending;prior5m33s checkpredatesactivation.",
+    "cobra_native_postgres": "GREEN2cases209.38s: m01b_cobra_visit96.714073058s; m01b_grave_danger_visits112.663183545s. Runtime/data5823d16a4. All12gravevisitsnativeSTEP;bossconditionsfixtureonly;partialboss/minlevel/Premium/refusedreplay/freshonce/revisit/wholecompletion0. Noexplorationcounts/rootrevisionseeded.",
+    "hero_fire_inactive_resolver": "RED unsupportedsource0.65s -> GREEN2tests1.657s;verifiedCanary04b83b51 movements_lava.lua arrival33552,32049,z15,cleareast33553,32049ground20537;stage1/2guards1/1,CurrentPremium,canonicalmin0. INACTIVE,noactivecallbackdatachange. Full118moduleauthoringrunnerpending.",
+    "hero_fire_publication": "Cadenceexception:inactiveHero2focusedtests1.657s andcurrentauthoringchecksPASS;full118moduleunitrunnerstillrunning onpush. ActiveCobra contentalready117modules/1212authoringtestsGREEN andownPG2cases209.38s. Currentworkspace/fmt/pins/tree PASS;HerochangesnoactiveJSON.",
+    "hero_active_premerge": "WIP Hero3:activationRED->GREEN2tests1.202s;381questunits86.70s;strictquests+dispatchClippy7m12s;fullauthoringcompletedbeforeownermerge. NativePGbuildinterrupted for explicit856a420d6 qmechmerge;noHero3PGqualificationclaimed. 35routes/37stagesPG-proven.",
+    "merge_correction": "Ownercorrection:qmechmergeABORTEDbeforecommit;nohardreset,noforeignmergepreserved. HeroWIPsourcekept;nativePGbuildinterruptedandwillrestartonunmergedbranch. 381questunits86.70s,strictClippy7m12s,118modules/1214authoringtestsPASS beforemerge;source/datarestoredexactly.",
+    "hero_fire_native_postgres": "GREEN2cases210.95s on7d7350fc6:Hero firstsurvey94.230475462s;fire-room116.711981393s. Real firstsurveySTEP,separateevidence-ownerpreconditiononly,CurrentPremium/refusedreplay/freshonce/revisit/wholecompletion0. Noexploration/rootrevisionseeding. Qmechmergeaborted;unmergedbranchproof.",
+    "area_coordinate_frame": "RED foreignframeaccepted -> GREEN2focusedtests1.312s plusfull118modules/1215tests;allAreaapproachesrequireglobal-target-2026-09-27. ActivecallbackJSONunchanged.",
+    "hero_final_validation": "HeroPG2cases210.95s:94.230475462sfirstsurvey,116.711981393sfire-room;381questunits86.70s;strictquests+dispatchClippy7m12s;currentworkspace9m52s/fmt;118authoringmodules1215tests/checks/tree/regen/pins/dupmigrationsPASS. Crystal201189f8 confirms33552,32049,z15andaction24866. Noqmech/mainmerge.",
+    "station_scoped_resolver": "RED held-owner rejection -> GREEN3focusedtests1.140s;119modules1218authoringtests0failures/checks,workspacealltargets7m04s/fmtPASS. INACTIVE:onlyexactHorseStation s1persistentpastureobjective;defaultwholeWorldownerstillHELD,otherstages/objectivechangesreject. Crystal201189bboxverified;target32442,32229,-7ground4521,startnorth4515. GeneratedactiveJSONunchanged;noWorldactivation.",
+    "station_activation": "ActivationRED missinglivecallback -> GREEN3tests;8Rustprofiletests4.12s includingfullcatalogue. FirstpersistentpasturesurveyACTIVE;escape/raid/tamingWorldownerstillHELD. NativeFACC/noPremium-provider/once/replay/revisit/noescapeactivationPGcasepending.",
+    "station_native_postgres": "GREEN70.018382489s m01b_horse_station_native_landmark_visit_never_activates_escape_state;realSTEPwithoutPremiumprovider,once/replay/revisit/wholecompletion0;horseescape stateabsentbefore/after. Firstpersistentlandmarkonly;globalescape/raid/tamingownerstillHELD.",
+    "station_validation_order": "Fullauthoringcollected2failures inoneexistingtest:stage-rejectiondiagnosticcamefromstationhelperbeforegenericstagevalidator. Movedgenericrecipe/stagevalidationbeforegeometry/Worldmode dispatch;testsUNCHANGED. GREEN65tests27.066s;generatedJSONunchanged;full119modulererunpending.",
+    "station_final_validation": "GREEN nativePG70.018382489s;381questunits185.02s;strictClippy7m10s;workspace8m16s/fmt;119modules1218authoringtests/checks/tree/nativeproviderregen/pins/dupmigrations. Genericstagevalidationbeforegeometryfix65tests27.066s;assertionsunchanged. Horsefirstsurveynativequalified,globalescape/raid/tamingHELDunchanged."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "34wiredroutes/35stages,33PG-proven routes/34stages,49anchors;12routes/21stages unwired. FireEarth nativePG pending. M01b PARTIAL."
+  "continuation": "34wiredroutes/35stages,33PG-proven routes/34stages,49anchors;12routes/21stages unwired. FireEarth nativePG pending. M01b PARTIAL.",
+  "native_anchor_generation": {
+    "state": "SLICE_GREEN",
+    "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
+    "red": "Two real callback-factory tests failed: changed ground and missing region were accepted.",
+    "focused": "4 new tests GREEN1.616s; all65 existing binding tests GREEN59.795s.",
+    "postgres": "m01b_horse_station_native_landmark_visit_never_activates_escape_state GREEN118.467654971s; real dispatch STEP, once/replay/revisit, no World escape activation.",
+    "remaining": "No new route qualification.36routes/39stages proven,10routes/17stages unwired.",
+    "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
+  }
 }

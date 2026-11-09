@@ -136,13 +136,17 @@ impl ChannelSpellStates {
                 occurrence: DecisionOccurrenceId::from_bytes(occurrence),
             };
             // Immune (a diving helmet) and every other refusal leave the step's state as is.
-            let _ = next.conditions.apply(
+            // Drowning is delayed: the STEP may install its condition but cannot
+            // consume a later HP tick belonging to the periodic damage owner.
+            if let Some((updated, _)) = next.stage_environment_field_contact(
+                DROWN_SOURCE.to_owned(),
                 &definition,
-                Some(DROWN_SOURCE.to_owned()),
-                ConditionSourceKind::Field,
-                &[],
                 &facts,
-            );
+                Some(DotElement::Drown),
+                |_, _, _, _| None,
+            ) {
+                next = updated;
+            }
         }
         if next == *state {
             return false;

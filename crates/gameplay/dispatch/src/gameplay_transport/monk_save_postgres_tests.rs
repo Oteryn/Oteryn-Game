@@ -7,8 +7,7 @@ pub(in crate::gameplay_transport) mod equipment_scenarios;
 mod first_vocation_vitals;
 #[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
 mod fixture;
-#[path = "monk_save_fresh_fixture.rs"]
-mod fresh_fixture;
+use crate::gameplay_transport::composed_test_owner::fresh_fixture;
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
 #[path = "kill_reward_postgres_e2e_tests.rs"]

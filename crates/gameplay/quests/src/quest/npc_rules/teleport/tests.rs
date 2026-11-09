@@ -92,6 +92,37 @@ fn m37_source_teleport_refuses_multiple_destinations_and_unowned_guards() -> Res
 }
 
 #[test]
+fn m37_source_teleport_rejects_destinations_outside_runtime_map() -> Result<(), String> {
+    for (x, y, floor) in [(0, 0, 0), (65535, 65535, -15)] {
+        let mut source = document();
+        source["rules"][0]["effects"][0]["position"] =
+            serde_json::json!({"x": x, "y": y, "floor": floor});
+        assert!(
+            plan(source, false)
+                .map_err(|error| format!("{error:?}"))?
+                .is_some()
+        );
+    }
+    for (x, y, floor) in [
+        (-1, 0, 0),
+        (65536, 0, 0),
+        (0, -1, 0),
+        (0, 65536, 0),
+        (0, 0, -16),
+        (0, 0, 1),
+    ] {
+        let mut source = document();
+        source["rules"][0]["effects"][0]["position"] =
+            serde_json::json!({"x": x, "y": y, "floor": floor});
+        assert!(
+            plan(source, false).is_err(),
+            "invalid destination {x},{y},{floor}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn m37_riddler_runtime_final_answer_preserves_two_track_progress() -> Result<(), NpcRuleError> {
     let native = crate::quest::loader::load_embedded_quest_state("content-1")
         .map_err(|e| NpcRuleError::Invalid(format!("native Riddler admission: {e:?}")))?;

@@ -34,8 +34,11 @@ class AcceptedOverlayTests(unittest.TestCase):
         # Match registration.outputs: the accepted Seven snapshot is followed
         # by the independently pinned W11 callback outfit provider.
         source_appearances.admit(ROOT,actual,appearance_path,registration.NATIVE_MANIFEST)
-        for path in overlay.ALLOWED_PATHS - {"content/creatures/definitions/spell-native-profiles.json", "content/spells.manifest.json"}:
-            self.assertEqual(actual[path],(ROOT/path).read_bytes(),path)
+        # This isolated stage retains the frozen presentation definitions.
+        # Current source composition and quest disguises run later; final bytes
+        # are checked independently for every accepted output below.
+        presentation_path = producer.PROVIDER_DESTINATIONS["presentation_profiles"]
+        self.assertEqual(actual[presentation_path], adopted[presentation_path])
         # Independently replay the complete registered successor after every owner.
         for path in overlay.ALLOWED_PATHS:
             self.assertEqual(self.current[path],(ROOT/path).read_bytes(),path)
@@ -61,18 +64,26 @@ class AcceptedOverlayTests(unittest.TestCase):
         # PREY-DIFF registers the generated tier and slot-value tables below;
         # C1 registers the Newhaven starting-loadout item profiles; SRX-1
         # registers the pinned item-profile supplement. QENGINE2 adds its
-        # source-qualified reward Item proof alongside the43 SEASON outputs.
-        self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
+        # source-qualified reward Item proof alongside the registered SEASON outputs.
+        successor_proofs = {
+            "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json",
+            "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json",
+            "tools/content-schema/native-gameplay/questpc5-parchment-profile.json",
+            "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json",
+            "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json",
+        }
+        self.assertTrue(successor_proofs.issubset(actual))
+        self.assertEqual(len(actual.keys() - {qengine.PROOF} - successor_proofs),43)
         self.assertIn(qengine.PROOF,actual)
-        # Independently rebuild the complete pinned64-identity packet (M12 root, QN4 ingredients, QN3 jar); a count
+        # Independently rebuild the complete pinned95-identity packet (including the merged quest lanes); a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
         self.assertEqual(actual[qengine.PROOF],expected_raw)
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
-        self.assertEqual(len(keys),64)
-        self.assertEqual(len(set(keys)),64)
+        self.assertEqual(len(keys),95)
+        self.assertEqual(len(set(keys)),95)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         self.assertTrue({'oteryn:item.tibia.i21291', 'oteryn:item.tibia.i21504',
                          'oteryn:item.tibia.i21505'}.issubset(keys))

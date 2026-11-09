@@ -7,7 +7,13 @@ fn documents(
     prefix: &str,
     maximum: usize,
 ) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
-    println!("cargo:rerun-if-changed={}", directory.display());
+    // Cargo treats a missing watched path as dirty on every invocation. Watching
+    // its nearest existing directory still detects the first optional document.
+    let watched = directory
+        .ancestors()
+        .find(|path| path.is_dir())
+        .ok_or("native binding registry has no existing ancestor")?;
+    println!("cargo:rerun-if-changed={}", watched.display());
     let mut paths = Vec::new();
     if directory.exists() {
         for entry in std::fs::read_dir(directory)? {

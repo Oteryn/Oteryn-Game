@@ -10,6 +10,7 @@ const NAME:&str="m07/machinery-ballista-01";
 const SOURCE:Position=Position{x:32824,y:31708,floor:-7};
 pub(super) fn start(name:&str)->Position {
     if name.starts_with("m07/machinery-catapult-") {return super::m07_machinery_catapults::start();}
+    if name.starts_with("m07/machinery-wheel-") {return super::m07_machinery_wheels::start();}
     Position{x:32824,y:31709,floor:-7}
 }
 
@@ -35,6 +36,7 @@ pub(super) fn run(name:&'static str,source:Position)->TestResult {
 pub(super) fn world(native:&NativeGameplayState,name:&str)->TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{NativeCrop,ExpectedTile,native_scene_with_appearances};
     if name.starts_with("m07/machinery-catapult-") {return super::m07_machinery_catapults::world(native);}
+    if name.starts_with("m07/machinery-wheel-") {return super::m07_machinery_wheels::world(native);}
     native_scene_with_appearances(native,vec![NativeCrop{
         bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z07-x128-y123.b3")),
         region:(7,128,123),bounds:(32822,31706,32827,31711),start:(32824,31709),

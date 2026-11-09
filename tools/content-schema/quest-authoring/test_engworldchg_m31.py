@@ -12,6 +12,17 @@ KEYS = {
 
 
 class NativeWorldChangeJournals(unittest.TestCase):
+    def test_fury_has_a_safe_admitted_return_and_completion_egress(self):
+        program = next(p for p in json.loads(PROFILE.read_text())["programs"] if p["key"] == "fury_gates")
+        callbacks = {c["key"].rsplit("/", 1)[-1]: c for c in program["world_callbacks"]}
+        entry, seal, egress = (callbacks[k] for k in ("entry", "seal", "egress"))
+        self.assertEqual(program["egress_callbacks"], [egress["key"]])
+        self.assertEqual(seal["teleport"], entry["selector"]["position"])
+        self.assertEqual(egress["teleport"], entry["selector"]["position"])
+        self.assertEqual(egress["selector"]["position"], entry["teleport"])
+        self.assertIsNone(egress["minimum_level"])
+        self.assertEqual(egress["storage"], [{"track":program["phase_track"],"minimum":1,"maximum":7,"set":1,"at_least":True}])
+
     def test_fire_has_a_native_fifty_kill_goal_and_achievement(self):
         program = next(p for p in json.loads(PROFILE.read_text())["programs"]
                        if p["key"] == "fire_from_the_earth")
@@ -45,7 +56,7 @@ class NativeWorldChangeJournals(unittest.TestCase):
                 self.assertEqual(program["requires_premium"], recipe["requirements"]["premium"])
                 self.assertEqual(program["minimum_level"], recipe["requirements"]["min_level"])
                 for callback in program["world_callbacks"]:
-                    self.assertEqual(callback.get("minimum_level", 0), recipe["requirements"]["min_level"])
+                    self.assertEqual(callback.get("minimum_level", 0), None if callback["key"] in program.get("egress_callbacks", []) else recipe["requirements"]["min_level"])
                 self.assertEqual(program["repeat"], "once")
                 self.assertEqual(program["mode"], "personal_on_demand")
                 self.assertTrue(program["sources"])

@@ -40,6 +40,7 @@ impl TerrainTool {
             "oteryn:item.tibia.i940" => Self::ElementalSoil(940),
             "oteryn:item.tibia.i941" => Self::ElementalSoil(941),
             "oteryn:item.tibia.i944" => Self::ElementalSoil(944),
+            "oteryn:item.tibia.i945" => Self::ElementalSoil(945),
             "oteryn:item.tibia.i3457" | "oteryn:item.tibia.i5710" => Self::Shovel,
             "oteryn:item.tibia.i3456" => Self::Pick,
             // Crystal register_actions.lua:864-885 routes each Secret Agent multi-tool
@@ -323,6 +324,15 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             }
         }),
     );
+    // Crystal soils1.lua: energy adds a field; it neither replaces nor decays the altar.
+    bindings.push(TerrainToolBinding {
+        tool: TerrainTool::ElementalSoil(945),
+        target: 7737,
+        required_action: None,
+        transformed: 7737,
+        yield_item: None,
+        decay: Vec::new(),
+    });
     bindings
 }
 

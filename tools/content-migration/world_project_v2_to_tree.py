@@ -285,6 +285,8 @@ def main() -> int:
     extend_boss_movement_references(item_records, ROOT)
     from boss_corpse_terminal_reference import extend_records as extend_corpse_terminal_reference
     extend_corpse_terminal_reference(item_records, ROOT)
+    from qready1_cradle_item_profiles import extend_records as extend_cradle_references
+    extend_cradle_references(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman

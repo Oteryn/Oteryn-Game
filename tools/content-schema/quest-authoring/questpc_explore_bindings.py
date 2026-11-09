@@ -5,6 +5,10 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.horse_station_world_change', 's1', 'station-approach:palomino-pasture', 'chosen-source/horse_station_world_change'),
+    ('oteryn:quest.hero_of_rathleton_quest', 's3', 'source-approach:hero-into-the-fire', 'chosen-source/hero_of_rathleton_quest'),
+    ('oteryn:quest.grave_danger_quest', 's4', 'area-approach:oteryn:area.hunting_place.cobra_bastion', 'chosen-source/grave_danger_quest'),
+    ('oteryn:quest.fury_gates_mini_world_change', 's1', 'fury-approach:thais', 'chosen-source/fury_gates_mini_world_change'),
     ('oteryn:quest.authored.fire_from_the_earth_mini_world_change', 's1', 'spawn-approach:oteryn:spawn.x32072_y32603_z2#0', 'authored/fire_from_the_earth_mini_world_change'),
     ('oteryn:quest.deeplings_worldchange', 's1', 'source-approach:deeplings-navigator-hub', 'chosen-source/deeplings_worldchange'),
     ('oteryn:quest.lion_trophy_quest', 's1', 'oteryn:area.hunting_place.formorgar_mines', 'chosen-source/lion_trophy_quest'),
@@ -59,13 +63,12 @@ BINDINGS = (
      'oteryn:area.hunting_place.dusalk_s_troll_clan_cave', 'chosen-source/longsword_quest'),
     ('oteryn:quest.geomancer_quest', 's1',
      'oteryn:area.hunting_place.mount_sternum_undead_cave', 'chosen-source/geomancer_quest'),
-    ('oteryn:quest.authored.chakoya_iceberg_mini_world_change', 's1',
-     'oteryn:area.hunting_place.chakoya_iceberg', 'authored/chakoya_iceberg_mini_world_change'),
+    # M31: Chakoya EXPLORE remains unbound while chakoya_iceberg is HELD.
+    # Geometry, creature membership and activation need World-owner admission.
     ('oteryn:quest.authored.asura_palace_quest', 's1',
      'oteryn:area.hunting_place.asura_palace', 'authored/asura_palace_quest'),
 )
 ANCHORS = {
-    'oteryn:area.hunting_place.chakoya_iceberg': (32623, 32584, -7, 799),
     'oteryn:area.hunting_place.edron_goblin_cave': (33108, 31850, -7, 355),
     'oteryn:area.hunting_place.lion_s_rock': (33138, 32358, -7, 4399),
     'oteryn:area.hunting_place.formorgar_mines': (32146, 31120, -9, 6685),
@@ -108,6 +111,8 @@ def stage_storage(quest, stage, recipe, track_tail, visit='entry'):
 
 
 def callbacks(root):
+    from questpc_native_anchors import NativeAnchors
+    native_anchors = NativeAnchors(root)
     import questpc_completed_quests
     import questpc_world_requirements
     world_owners = questpc_world_requirements.catalogue(root)
@@ -123,19 +128,25 @@ def callbacks(root):
         if len(definitions) != 1:
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
         definition = definitions[0]
-        fury_approach = None
-        if area.startswith('fury-approach:'):
-            import questpc_fury_approaches
-            fury_approach = questpc_fury_approaches.resolve(root, quest, area)
-            world_change = fury_approach[3]
-        else:
-            world_change = questpc_world_requirements.requirement(quest, world_owners)
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
         named_visit = area.startswith('claim:') or (area.startswith('source-approach:') and '/' in area)
         visit = area.rsplit('/', 1)[-1] if named_visit else 'entry'
         storage = stage_storage(quest, stage, recipe, track_tail, visit)
+        fury_approach = None
+        station_approach = None
+        if area.startswith('station-approach:'):
+            import questpc_station_approaches
+            station_approach = questpc_station_approaches.resolve(
+                quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('fury-approach:'):
+            import questpc_fury_approaches
+            fury_approach = questpc_fury_approaches.resolve(root, quest, area)
+            world_change = fury_approach[3]
+        else:
+            world_change = questpc_world_requirements.requirement(quest, world_owners)
         anchors = [a for q, s, a, _ in BINDINGS if (q, s) == (quest, stage)]
         # Every counted visit needs a distinct explicit physical anchor; a partial
         # fragment set cannot make the selected four-visit stage completable.
@@ -145,7 +156,9 @@ def callbacks(root):
         requirements = recipe['requirements']
         completed_quests = questpc_completed_quests.resolve(quest, requirements['prerequisites'],
             [d for group in by_quest.values() for d in group])
-        if fury_approach is not None:
+        if station_approach is not None:
+            at, appearance, sources = station_approach
+        elif fury_approach is not None:
             at, appearance, sources = fury_approach[:3]
         elif area.startswith('door-approach:'):
             import questpc_door_approaches
@@ -190,6 +203,7 @@ def callbacks(root):
                    + '&oldid=' + binding['source_revision'])
             sources = [AREA + '#/records/' + str(index), url,
                        'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']
+        native_anchors.validate(at, appearance)
         slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
         result.append(dict(
             key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/' + visit, quest=quest,

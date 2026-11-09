@@ -73,48 +73,11 @@ impl KillCounter {
                 return Err("authored encounter counter roster/bounds".into());
             }
         }
-        if let Some(source) = &self.encounter_source {
-            let encounter = quest
-                .stages
-                .iter()
-                .find_map(|stage| match &stage.trigger {
-                    super::Trigger::MapUse { callback } if callback.key == *source => {
-                        callback.effects.encounter.as_ref()
-                    }
-                    _ => None,
-                })
-                .ok_or("authored encounter counter source")?;
-            let defenders = encounter
-                .monsters
-                .iter()
-                .filter(|monster| monster.creature == self.creature)
-                .count();
-            if self.minimum != 0
-                || self.advance_gate_to.is_some()
-                || encounter.timing.is_some()
-                || encounter.players.is_empty()
-                || encounter.players.len() > 8
-                || encounter.monsters.is_empty()
-                || encounter.monsters.len() > 8
-                || i64::try_from(defenders) != Ok(self.maximum)
-            {
-                return Err("authored encounter counter roster/bounds".into());
-            }
-        }
         Ok(())
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
         if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
-            // The source/epoch owner checks the gate without rewriting its revision
-            // for every death queued from the same admission.
-            return vec![QuestEffect {
-                track: self.track.clone(),
-                from: QuestComparison::Between(self.minimum, self.maximum - 1),
-                effect: QuestEffectKind::Add(1),
-            }];
-        }
-        if self.encounter_source.is_some() {
             // The source/epoch owner checks the gate without rewriting its revision
             // for every death queued from the same admission.
             return vec![QuestEffect {

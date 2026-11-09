@@ -151,6 +151,7 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         (6, 0, 7),
         Some(Tile {
             admits: true,
+            ground_clear: true,
             solid: false,
             // This explicit open ground/trap fixture has no immutable solid barrier.
             source_spawn_admits: true,

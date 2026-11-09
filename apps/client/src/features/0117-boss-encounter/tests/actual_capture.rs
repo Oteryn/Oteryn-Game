@@ -66,6 +66,34 @@ async fn m25_gesture(capture: &Capture, entering: bool) -> Result<(), Error> {
             StepDirection::SouthWest => StepDir::SouthWest,
             StepDirection::NorthWest => StepDir::NorthWest,
         };
+        // A real arrow gesture follows presentation of the initial Instance.
+        // Scope publication deliberately discards inputs queued before that
+        // presentation, just as it discards unsent actions from a retired scope.
+        let initial_session: [u8; 16] =
+            replay::hex(&capture.value["exit_admission"]["game_session_id"])?
+                .try_into()
+                .map_err(|_| "actual exit admission session length")?;
+        tokio::time::timeout(Duration::from_secs(10), async {
+            loop {
+                view.tick(&link)
+                    .map_err(|error| format!("actual initial Ahau presentation: {error:?}"))?;
+                let presented = {
+                    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+                    !mailbox.scope_pending
+                        && mailbox
+                            .activity_scope
+                            .as_ref()
+                            .is_some_and(|scope| scope.session == initial_session)
+                };
+                if presented {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+            Ok::<(), Error>(())
+        })
+        .await
+        .map_err(|_| "actual initial Ahau Instance was not presented before input")??;
         assert_eq!(
             capture.value["exit_trigger_source_position"],
             serde_json::json!([34002, 31706, 10])
@@ -215,9 +243,12 @@ async fn render_until(
     })
     .await
     .map_err(|_| {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
         format!(
-            "actual native scope not rendered: {text}; wanted={at:?}/{floor}, actual={:?}/{}, action={:?}",
-            view.own(), view.floor, view.action_line
+            "actual native scope not rendered: {text}; wanted={at:?}/{floor}, actual={:?}/{}, action={:?}, ended={:?}, in_flight={}, queued={}, scope_pending={}, scope_initialize={}, dead={}, death_reset={}",
+            view.own(), view.floor, view.action_line, view.logout_line,
+            view.in_flight, view.inputs.len(), mailbox.scope_pending,
+            mailbox.scope_initialize, mailbox.death.dead, mailbox.death_reset_commands
         )
     })??;
     assert!(!view.scene().sprites().is_empty());

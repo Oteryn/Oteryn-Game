@@ -75,3 +75,86 @@ action/storage ID or third room in the teleport alcove is introduced here.
 M30a's named Child of Destiny spear/rune bindings and native hit pipeline already
 exist. The mounted `engenc_combat_credit` PostgreSQL cases cover successful hit
 settlement, exact source checks, retained queued outcomes, fencing and replay.
+
+
+## Crystal 201189f8 follow-up
+
+The complete, non-truncated Git tree and all 3,209 Lua files under
+`data-global/scripts`, `data-crystal/scripts` and `data/scripts` were checked at
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`.
+Neither `greater fire elemental` nor `greater energy elemental` occurs in these
+scripts, case-insensitively. The complete tree also contains no monster definition
+for either name. This is a bounded search of that exact donor revision, not a
+claim that no other source can supply the missing associations.
+
+The relevant executable door source is
+[actions_doors.lua](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_doors.lua),
+SHA256 `d14bc25d03361937d29e4f3345bcc88604a1b17bd0b0224bedf9c6b539a99950`.
+It registers action 4911 for two exact positions:
+
+- `(32959,32679,2)` requires Secret Library Asuras Questline storage >= 1.
+- `(32962,32674,2)` requires Flaming Orchid storage >= 1 and level >= 250.
+
+Neither handler spawns or admits a defender pair, counts their deaths, or selects
+the lower Destroyer room's two exits. These are Secret Library access predicates;
+copying them would not implement the chosen Asura Palace s2/s3/s4 recipe.
+The sibling `movements_elemental_portals.lua` describes timed boss encounters
+for Diamond Blossom, Lily of Night and Blazing Rose at different underground
+coordinates. It does not define the two Greater Elemental pairs required here.
+Thus Crystal confirms exact existing access-door positions but does not supply
+the missing s2 exit selection, s3 elemental entry/pair, or s4 entry/pair/door.
+
+## Owner-authored chamber identities (2026-11-09)
+
+The standing owner rule now explicitly authorizes filling missing content with
+Tibia-faithful authored choices. The MediaWiki API request for page
+`Asura Palace Quest`, with an honest Oteryn research User-Agent, returned HTTP
+402; no current revid was received. The repository's pinned spoiler receipt is
+page 75336, revid 1138350 (the absent local body described above). Neither this
+receipt nor the failed request is presented as newly retrieved page content.
+
+`samples/engenc/asura-chambers.json` under `tools/content-schema/quest-authoring`
+is the machine-readable authoring input for the remaining three chambers.
+All otherwise unresolved associations are **authored per owner rule**:
+
+- s2 retains the two canonical Destroyer positions and selects the southern exit
+  `(32963,32677,4)`. The northern exit is not a quest-controlled passage.
+- s3 uses the eastern/central floor-2 chamber, with two new Greater Fire Elemental
+  placements at `(32958,32677,2)` and `(32958,32680,2)`; its existing east door is
+  `(32959,32679,2)`.
+- s4 uses the western floor-2 chamber, with two new Greater Energy Elemental
+  placements at `(32944,32677,2)` and `(32945,32680,2)`; its existing east door is
+  `(32947,32679,2)`. This adapts the recipe's unlocated “lower chamber” to an
+  existing enclosure rather than inventing another floor or using the teleport
+  alcove as a two-defender room.
+
+The input also fixes each entry tile, landing and room bounds. Its unit check
+verifies distinct defender positions, enclosure bounds, existing native tiles,
+and the exact door appearance at ordinal 1. It does not claim these authoring
+inputs are runtime bindings or PostgreSQL-qualified routes yet. Remaining work
+is encounter callback generation, missing elemental native policy admission,
+participant-scoped death/door wiring and real-caller PostgreSQL qualification.
+
+The chamber generator now emits three exact native map-USE encounter callbacks,
+each with two defenders and a distinct entered/count/opened track, followed by
+its counter and personal door callback. The southern Destroyer door opens to
+5737; the floor-2 doors open to 1675. Entry requires the preceding chamber's
+opened track (s2 requires s1), and the door requires entered=1 and count=2.
+No chamber transition completes the quest. Native encounter minimum level is 1,
+the engine's positive minimum, so it excludes no playable character.
+
+These are owner-authored callbacks, not counterfeit Crystal receipts. A closed
+admission matcher accepts only the exact generated Asura callbacks, including
+their native selectors, storage and rosters. Existing donor callback admission
+is unchanged. The shared effect validator permits personal encounter data only
+for these exact callbacks; completing their dispatch transaction remains a
+separate runtime step. Unit checks cover one-shot doors, sequential chambers,
+unchanged admission epochs and rejection of rebound native selectors. These
+checks do not replace real-caller PostgreSQL qualification.
+
+The mounted server PostgreSQL entry case now also executes the authored s2
+admission through `commit_character_world_callback_with_items`, refusing the
+s2 door and s3 entry beforehand, then checking s2 replay, entered=1, exactly two
+total receipts including s1, and no quest completion. This qualifies the durable
+server-writer route. It does not qualify physical encounter publication or
+ordinary-combat defender deaths; those still require the dispatch scenario.

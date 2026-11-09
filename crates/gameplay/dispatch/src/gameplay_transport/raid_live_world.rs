@@ -2,6 +2,8 @@
 //! current Channel creature owner. No detached map snapshot grants a spawn.
 mod cake;
 mod feroxa_map;
+mod feroxa_spectators;
+pub(in crate::gameplay_transport) use feroxa_spectators::FeroxaSpectators;
 
 use super::ComposedFreshAdmission;
 use crate::durability::DurabilityError;

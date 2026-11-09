@@ -56,6 +56,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: crate::durability::spell_owner_commit::SpellLanePermit,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
+        // Another owner turn may have retained a health callback between the
+        // map-bootstrap preflight and acquisition of this physical lane.
+        if !self.drain_cloak_blood_with_permit(&permit).await {
+            return;
+        }
         if !self
             .drive_spite_global_due(now.get())
             .await

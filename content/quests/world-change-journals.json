@@ -376,6 +376,9 @@
           "transition": "oteryn:quest-transition/native-kills/m31/fury_gates/fury"
         }
       ],
+      "egress_callbacks": [
+        "oteryn:quest-callback/worldchg-m31/fury_gates/egress"
+      ],
       "journal": {
         "name": "Fury Gates Mini World Change",
         "objectives": [
@@ -580,7 +583,55 @@
             }
           ],
           "success_message": "Your personal journal has been updated.",
-          "teleport": null,
+          "teleport": {
+            "floor": -7,
+            "x": 32265,
+            "y": 32164
+          },
+          "trigger": "use"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/fury_gates/egress",
+          "lever": null,
+          "minimum_level": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.fury_gates_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 10549,
+            "position": {
+              "floor": -13,
+              "x": 33290,
+              "y": 31786
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76237&oldid=1099676",
+            "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
+          ],
+          "storage": [
+            {
+              "at_least": true,
+              "maximum": 7,
+              "minimum": 1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/phase"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": {
+            "floor": -7,
+            "x": 32265,
+            "y": 32164
+          },
           "trigger": "use"
         }
       ]

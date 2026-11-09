@@ -94,6 +94,7 @@ pub mod npc_shop;
 pub mod party;
 pub mod party_effects;
 pub mod party_skull;
+pub mod personal_map_marks;
 pub mod player_report;
 pub mod player_trade;
 pub mod player_typing;
@@ -2735,5 +2736,3 @@ pub fn decode_framed_envelope(
     }
     decode_wire_envelope(body)
 }
-
-pub mod personal_map_marks;

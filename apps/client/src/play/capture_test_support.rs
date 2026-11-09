@@ -184,6 +184,10 @@ pub(crate) async fn epoch(
                     expected.payload.as_slice(),
                     "native gesture must encode the actual production request"
                 );
+                eprintln!(
+                    "NATIVE_CAPTURE_COMMAND_RECEIVED kind={}",
+                    actual.command_type
+                );
                 break;
             }
         } else {
@@ -195,6 +199,10 @@ pub(crate) async fn epoch(
         for frame in &subsequent {
             oteryn_session::write_frame(&mut server, frame).await?;
         }
+        eprintln!(
+            "NATIVE_CAPTURE_RESPONSE_DELIVERED frames={}",
+            subsequent.len()
+        );
         control
             .recv()
             .await

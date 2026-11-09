@@ -9,7 +9,7 @@ fn m03_production_entrances_bind_live_requirements_and_real_stage_counters() -> 
     let book = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
     let entry = callbacks
         .iter()
-        .find(|c| c.key == "oteryn:quest-callback/m03/time-machine-entry-4")
+        .find(|c| c.key == "oteryn:quest-callback/qm03/anniversary-25095")
         .ok_or("M03 time machine production entry")?;
     assert_eq!(entry.minimum_level, Some(20));
     let requirements = entry.character_requirements.as_ref().ok_or("live guards")?;
@@ -18,9 +18,7 @@ fn m03_production_entrances_bind_live_requirements_and_real_stage_counters() -> 
     assert_eq!(
         callbacks
             .iter()
-            .filter(|c| c
-                .key
-                .starts_with("oteryn:quest-callback/m03/time-machine-entry-"))
+            .filter(|c| c.key.starts_with("oteryn:quest-callback/qm03/anniversary"))
             .count(),
         9
     );

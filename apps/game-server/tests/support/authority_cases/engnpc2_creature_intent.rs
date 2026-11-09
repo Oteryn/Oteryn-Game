@@ -26,7 +26,7 @@ fn engnpc2_live_creature_postgres_exact_intent_burn_and_replay() -> f::TestResul
         f::runtime().map_err(f::debug)?.block_on(async {
             let started = std::time::Instant::now();
             let h = f::Harness::create(admin, "engnpc2_creature_intent", true).await?;
-            let result = exercise(&h, false).await;
+            let result = exercise(&h, false, false).await;
             h.cleanup().await?;
             result?;
             assert!(started.elapsed().as_secs_f64() > 0.01);
@@ -45,7 +45,7 @@ fn engnpc2_rotworm_perfume_postgres_production_exchange() -> f::TestResult {
         f::runtime().map_err(f::debug)?.block_on(async {
             let started = std::time::Instant::now();
             let h = f::Harness::create(admin, "engnpc2_rotworm_perfume", true).await?;
-            let result = exercise(&h, true).await;
+            let result = exercise(&h, true, false).await;
             h.cleanup().await?;
             result?;
             assert!(started.elapsed().as_secs_f64() > 0.01);
@@ -55,7 +55,7 @@ fn engnpc2_rotworm_perfume_postgres_production_exchange() -> f::TestResult {
     })?.join().map_err(|_| "perfume PG thread failed")?.map_err(Into::into)
 }
 
-async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
+async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestResult {
     let key = if production {
         "oteryn:item.tibia.i17673"
     } else {
@@ -65,7 +65,8 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
         "key":"oteryn:quest-reward/engnpc2-live-intent", "quest":"oteryn:quest.live_intent_fixture",
         "npc":"oteryn:npc.fixture", "keywords":["sample"],"topic":0,"next_topic":0,
         "carried_item":key,"creature_target":"oteryn:creature.rotworm",
-        "storage":[{"track":"oteryn:quest-progress/engnpc2-live-intent","minimum":0,"maximum":0,"set":1}],
+        "capture_creature":capture,
+        "storage":[{"track":"oteryn:quest-progress/engnpc2-live-intent","minimum":0,"maximum":if capture {1} else {0},"set":1}],
         "take":[{"item":key,"count":1}],"give":null,"outfit":null,"achievement":null,
         "reply":["Sample admitted."],"sources":["engine live-target fixture"]
     }))?;
@@ -126,7 +127,7 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
         .await?;
     let bag_key = "oteryn:item.tibia.i2854";
     let bag_revision = index.revision(bag_key).ok_or("bag revision")?;
-    for seed in [91, 92] {
+    for seed in [91, 92, 93].into_iter().take(if capture { 3 } else { 2 }) {
         let (stock_key, stock_revision) = if seed == 91 {
             (bag_key, bag_revision)
         } else {
@@ -137,8 +138,10 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
     }
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(91).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(f::id(111).as_slice()).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
-        .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(91).as_slice()).bind(f::id(92).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(f::id(112).as_slice()).execute(&mut *tx).await?;
+    for seed in [92, 93].into_iter().take(if capture { 2 } else { 1 }) {
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
+            .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(91).as_slice()).bind(f::id(seed).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(i64::from(seed-91)).bind(f::id(seed+20).as_slice()).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).execute(&h.pool).await?;
@@ -331,10 +334,96 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
             "perfume BURN, MINT and progress share one transaction"
         );
     }
+    let mut capture_refusal = None;
+    if capture {
+        assert_eq!(h.count("game_quest_creature_captures").await?, 1);
+        let atomic:i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_creature_captures c JOIN game_character_quest_receipts q USING(character_id,cause_id,cause_ordinal,transition_key) JOIN game_quest_callback_consumptions i USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.created_xact_id=q.created_xact_id AND i.created_xact_id=q.created_xact_id").fetch_one(&h.pool).await?;
+        assert_eq!(atomic, 1, "capture, input and progress are one commit");
+        let next = CommandRef::new(session, CommandId::new(10101).map_err(f::debug)?);
+        let next_fence = f::fence(2)?;
+        let repeated = QuestCreatureUseProof::read_current(
+            &runtime, actor, next_fence, next, &callback, &intent,
+        )
+        .ok_or("same live target remains independently valid")?;
+        let spare = QuestCarriedUse {
+            source: f::id(93),
+            recipe_target: None,
+            intent: good.intent.clone(),
+        };
+        let refused = h
+            .root
+            .commit_fixture_quest_reward(
+                &authority,
+                &h.node,
+                next_fence,
+                QuestTransitionRequest {
+                    transition_key: callback.key.clone(),
+                    cause: QuestCause::Command(next),
+                },
+                catalogue.clone(),
+                QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                    fee_payment: None,
+                    actor_conditions: None,
+                    carried_use: Some(&spare),
+                    creature_use: Some(&repeated),
+                    peer_use: None,
+                },
+                callback.clone(),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(
+            matches!(refused, QuestTransitionOutcome::Refused(_)),
+            "fresh command cannot recapture the same occurrence: {refused:?}"
+        );
+        assert_eq!(h.root_revision().await?, "2");
+        let spare_quantity:i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(f::id(93).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            spare_quantity, 1,
+            "duplicate capture cannot charge another tool"
+        );
+        assert_eq!(h.count("game_quest_creature_captures").await?, 1);
+        let mut tx = h.pool.begin().await?;
+        // The shared custody owner binds one capture to each receipt. Supply
+        // every required field so this negative reaches that exact guard.
+        let error = sqlx::query("INSERT INTO game_quest_creature_captures(target_identity,character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,target_generation,creature_key,source_item,ingress) SELECT $1,character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,target_generation,creature_key,source_item,ingress FROM game_quest_creature_captures")
+            .bind([201u8;16].as_slice()).execute(&mut *tx).await
+            .expect_err("historical receipt cannot create a detached capture");
+        let database_error = error.as_database_error().ok_or("capture database error")?;
+        assert_eq!(database_error.code().as_deref(), Some("23505"));
+        assert_eq!(database_error.constraint(), Some("game_quest_creature_captures_pkey"));
+        tx.rollback().await?;
+        assert_eq!(h.count("game_quest_creature_captures").await?, 1);
+        capture_refusal = Some(refused);
+    }
     drop(proof);
-    runtime
-        .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
+    if let Some(refused) = capture_refusal.as_ref() {
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::finish_capture(
+            &mut runtime,
+            creature,
+            "oteryn:creature.rotworm",
+            refused,
+        )
         .map_err(f::debug)?;
+        runtime
+            .check_mount_taming_subject(creature, "oteryn:creature.rotworm")
+            .map_err(f::debug)?;
+    }
+    if capture {
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::finish_capture(
+            &mut runtime,
+            creature,
+            "oteryn:creature.rotworm",
+            &committed,
+        )
+        .map_err(f::debug)?;
+    } else {
+        runtime
+            .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
+            .map_err(f::debug)?;
+    }
     assert!(
         QuestCreatureUseProof::read_current(
             &runtime,
@@ -381,5 +470,33 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
             "replay must not remint perfume"
         );
     }
+    if capture {
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::cancel_capture(
+            &mut runtime,
+        );
+        assert!(
+            runtime.read_actor_position(actor).is_err(),
+            "ambiguous capture retires the Channel owner"
+        );
+    }
     Ok(())
+}
+
+#[test]
+fn engnpc2_capture_postgres_claim_shares_the_quest_transaction() -> f::TestResult {
+    let Some(admin) = f::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        f::runtime().map_err(f::debug)?.block_on(async {
+            let started = std::time::Instant::now();
+            let h = f::Harness::create(admin, "engnpc2_capture_claim", true).await?;
+            let result = exercise(&h, false, true).await;
+            h.cleanup().await?;
+            result?;
+            assert!(started.elapsed().as_secs_f64() > 0.01);
+            eprintln!("PG_EXECUTED engnpc2_capture_postgres_claim_shares_the_quest_transaction duration={:?}", started.elapsed());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }).map_err(f::debug)
+    })?.join().map_err(|_| "capture PG thread failed")?.map_err(Into::into)
 }

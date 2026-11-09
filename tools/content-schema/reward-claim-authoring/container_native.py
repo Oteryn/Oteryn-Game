@@ -23,6 +23,7 @@ ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
 # exact quest claims; neither global Item definitions nor other quests change.
 CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
+    'canary:reward-claim/kv/fireaxe1': 3085,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
     'canary:reward-claim/kv/trollcave1': 3083,
@@ -75,8 +76,45 @@ def native_charge_item(item, profile):
     return qualified
 
 
+def native_water_vial(item, profile):
+    """Use the existing native empty-vial definition, scoped to Dreamer's source claim."""
+    if item is None or profile is None:
+        return item
+    identity = item['identity']
+    semantics = profile['semantics']
+    if (identity['key'] != 'oteryn:item.tibia.i2874'
+            or profile['production_definition'] != {
+                'family': 'Item', 'production_key': identity['key'], 'revision_ref': identity['revision']}
+            or profile['production_binding']['target'] != identity
+            or profile['production_binding']['disposition'] != 'EXACT'
+            or profile['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+                                        'legal_destinations': ['CharacterInventory', 'Ground']}
+            or semantics['fluid'] != {'state': 'KNOWN', 'value': {'fluid_type': {'state': 'NOT_APPLICABLE'}}}
+            or any(semantics[group] != {'state': 'NOT_APPLICABLE'}
+                   for group in ('container', 'charges', 'temporal'))):
+        return item
+
+    def agrees(accepted, observed):
+        if isinstance(accepted, dict):
+            return accepted.get('state') == 'UNKNOWN' or isinstance(observed, dict) and all(
+                field in observed and agrees(value, observed[field]) for field, value in accepted.items())
+        return accepted == observed
+
+    if (not all(agrees(item['semantics'][group], semantics[group])
+                for group in ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal'))
+            or any(fact({'semantics': semantics}, 'physical', field) is not True
+                   for field in ('movable', 'pickupable'))
+            or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
+        return item
+    qualified = copy.deepcopy(item)
+    qualified['materializable'] = True
+    qualified['semantics']['fluid'] = copy.deepcopy(semantics['fluid'])
+    return qualified
+
+
 def claim_items(pilot_key, items):
-    item = CHARGED_QUEST_CLAIMS.get(pilot_key)
+    water = pilot_key == 'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine'
+    item = 2874 if water else CHARGED_QUEST_CLAIMS.get(pilot_key)
     if item is None:
         return items
     key = f'oteryn:item.tibia.i{item}'
@@ -85,7 +123,8 @@ def claim_items(pilot_key, items):
     matches = [p for p in profiles['records'] if p['production_definition']['production_key'] == key]
     if len(matches) != 1:
         return items
-    return {**items, key: native_charge_item(items.get(key), matches[0])}
+    qualify = native_water_vial if water else native_charge_item
+    return {**items, key: qualify(items.get(key), matches[0])}
 
 
 def source():
@@ -277,9 +316,15 @@ def derive(definition, items, stack_problem):
                 return None
             # A source fluid argument is a subtype, never a stack count. The
             # immutable source compiler records those separately; do not erase it.
-            if known(item.get('semantics', {}).get('fluid')) is not None:
+            fluid = known(item.get('semantics', {}).get('fluid')) is not None
+            if fluid and (source_id != 2874 or raw_count != 1 or count != 1
+                          or ids[0] not in (6197, 6198, 6199, 6200)
+                          or completion != {'kind': 'storage', 'key': 'Storage.Quest.U7_9.DreamersChallenge.ChestsWine'}):
                 return None
             child = copy.deepcopy(quantity)
+            if fluid:
+                child['fluid_subtype'] = 1  # Pinned createItem subtype 1 is WATER, not the quest name.
+
             if source_id in key_ids and key_number is not None:
                 if count != 1:
                     return None

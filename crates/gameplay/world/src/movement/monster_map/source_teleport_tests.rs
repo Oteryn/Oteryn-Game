@@ -68,6 +68,7 @@ pub(super) fn fixture() -> Result<
     map.tiles.insert(
         (101, 100, 13),
         Some(Tile {
+            ground_clear: false,
             admits: false,
             solid: true,
             source_spawn_admits: false,

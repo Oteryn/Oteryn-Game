@@ -16,6 +16,7 @@ mod movement_attack;
 pub mod movement_goal;
 pub(crate) mod native_profile;
 pub mod profile_schedule;
+mod source_target;
 pub mod summon_plan;
 #[cfg(any(test, feature = "test-support"))]
 mod summon_plan_test_support;
@@ -343,16 +344,15 @@ impl CreatureAiTable {
         if !entry.state.profile.is_native() {
             return None;
         }
-        let selected = entry
-            .state
-            .schedule
-            .native_melee_selected(entry.sequence, entry_index);
         Some(NativeMeleeSelection {
             occurrence: ThinkOccurrence {
                 actor,
                 sequence: entry.sequence,
             },
-            target: entry.state.target.filter(|_| selected),
+            target: entry
+                .state
+                .schedule
+                .native_melee_target(entry.sequence, entry_index),
         })
     }
 

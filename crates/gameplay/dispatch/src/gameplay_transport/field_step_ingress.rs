@@ -58,7 +58,7 @@ impl StepIngressRead<'_, '_> {
         blocking: &dyn crate::map::floor::CellBlocker,
     ) -> Result<
         (
-            Option<super::CreatureFieldContact>,
+            Option<super::NonPlayerFieldContact>,
             Option<super::player_field::PlayerFieldContact>,
         ),
         MovementError,
@@ -123,7 +123,7 @@ impl StepIngressRead<'_, '_> {
         // SQL rows are the actual ordered destination items. An expired row is
         // not silently erased here: only the durable expiry writer may remove it.
         let mut first_magic_field = true;
-        let mut creature_contact = None;
+        let mut non_player_contact = None;
         let mut player_contact = None;
         for item in self.read.items() {
             if item.blocks_movement {
@@ -153,6 +153,34 @@ impl StepIngressRead<'_, '_> {
                     let values = recipe
                         .condition_values()
                         .map_err(|_| MovementError::NotQualified)?;
+                    if (item.native_map_origin || item.environment_field_origin)
+                        && (item.field_origin.is_some() || item.creature_field_origin.is_some())
+                    {
+                        return Err(MovementError::NotQualified);
+                    }
+                    // Receipt joins prove this exact native or scripted field; an
+                    // absent caster alone cannot bypass player-field policy.
+                    // M49's 2126 has one entry hit and no residual DOT schedule.
+                    if let Some(values) = values
+                        && !tile.flags().protection_zone
+                        && (item.native_map_origin || item.environment_field_origin)
+                        && item.definition.production_key == "oteryn:item.tibia.i2126"
+                    {
+                        let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                            "native.field.i2126", 1, values,
+                        ).ok_or(MovementError::NotQualified)?;
+                        non_player_contact = Some(super::NonPlayerFieldContact {
+                            origin: super::NonPlayerFieldOrigin::Environment,
+                            source: format!(
+                                "environment:field:{}",
+                                super::hex(&item.item_instance_id)
+                            ),
+                            definition,
+                            element: recipe.element().map_err(|_| MovementError::NotQualified)?,
+                            content: source.source_digest(),
+                        });
+                        continue;
+                    }
                     if let Some(values) = values
                         && !tile.flags().protection_zone
                         && let Some(historical) = &item.creature_field_origin
@@ -179,7 +207,8 @@ impl StepIngressRead<'_, '_> {
                             values,
                         )
                         .ok_or(MovementError::NotQualified)?;
-                        creature_contact = Some(super::CreatureFieldContact {
+                        non_player_contact = Some(super::NonPlayerFieldContact {
+                            origin: super::NonPlayerFieldOrigin::Creature,
                             source: historical
                                 .condition_source_key()
                                 .ok_or(MovementError::NotQualified)?,
@@ -278,7 +307,7 @@ impl StepIngressRead<'_, '_> {
                 }
             }
         }
-        Ok((creature_contact, player_contact))
+        Ok((non_player_contact, player_contact))
     }
 }
 #[allow(clippy::too_many_arguments)]
@@ -464,8 +493,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Some(item) = removal {
                         crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,None,None,None).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     }
+                    let blood=read.items().iter().any(|item|crate::durability::creature_source_items::cloak_blood_percentage(&item.definition.production_key).is_some());
+                    if !blood { states.cloak_blood_cells.remove(&(destination.x,destination.y,destination.floor)); }
+                    if blood {
+                        if !source.qualifies_soul_war_callbacks(source.source_digest()) || states.cloak_blood_steps.len()>=32 {return Err(crate::durability::DurabilityError::Unavailable)}
+                        states.cloak_blood_steps.try_reserve(1).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    *outcome=Some(states.step_with_non_player_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    if blood && let Some(Ok((committed,_)))=outcome.as_ref() {
+                        super::super::soul_war_cloak_blood::step::stage(runtime,states,room,source,&read,actor,session,*committed,now_us)?;
+                    }
                     if let Some(mut pending)=player.take() && outcome.as_ref().is_some_and(Result::is_ok) {
                         pending.retain_step_cooldowns(runtime,states);
                         let mut window=permit.open_commit_window(pending,super::player_field::park);

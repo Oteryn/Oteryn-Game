@@ -10,6 +10,17 @@ import engclaim_native as native
 INDEX='content/world/placements/index.json'
 SUMMARY='tools/content-schema/world-authoring/samples/world-base-capture-v1.json'
 
+def donor_delta(summary):
+    """M34 adds eight items, no tiles (9af2c9fcfd versus its parent)."""
+    declared = summary.get('source', {}).get('engclaim')
+    if declared is None:
+        return 0
+    path = 'tools/content-schema/reward-claim-authoring/engclaim_native.py'
+    expected = {'path': path, 'sha256': hashlib.sha256((ROOT / path).read_bytes()).hexdigest()}
+    if declared != expected:
+        raise ValueError('ENGCLAIM_PLACEMENT_SOURCE_CHANGED')
+    return 8
+
 def overlay_outputs(outputs):
     index=json.loads(outputs[INDEX]); palette=index['palette']
     ids={p['source_item_id']:i for i,p in enumerate(palette)}

@@ -175,6 +175,9 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_summons: crate::monster_summon::NativeSummonOwner,
     pub(super) soul_war_callbacks: super::soul_war_callbacks::SoulWarCallbacks,
+    pub(super) cloak_blood_steps: Vec<std::sync::Arc<super::soul_war_cloak_blood::step::PendingBloodStep>>,
+    /// Routing hint only; SQL re-proves the actual pool and its source at entry.
+    pub(super) cloak_blood_cells: std::collections::BTreeSet<(i32,i32,i16)>,
     pub(super) spite_global: super::spite_global::SpiteGlobalState,
     pub(super) primal_callbacks: super::primal_callbacks::PrimalCallbacks,
     pub(super) rotten_blood_callbacks: super::rotten_blood_callbacks::RottenBloodCallbacks,
@@ -350,6 +353,8 @@ impl Default for ChannelSpellStates {
             monster_composed: Default::default(),
             monster_summons: Default::default(),
             soul_war_callbacks: Default::default(),
+            cloak_blood_steps: Vec::new(),
+            cloak_blood_cells: Default::default(),
             spite_global: Default::default(),
             primal_callbacks: Default::default(),
             rotten_blood_callbacks: Default::default(),
@@ -1330,6 +1335,57 @@ impl ChannelSpellStates {
             analyser_source,
             false,
             public_cause,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "routing reuses native movement preflight without granting movement or Item authority"
+    )]
+    pub(super) fn cloak_blood_ingress_needed(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: crate::foundation::MovementPositionSnapshot,
+        direction: crate::movement::CardinalStep,
+        blocking: &dyn crate::map::floor::CellBlocker,
+    ) -> bool {
+        !self.cloak_blood_cells.is_empty()
+            && field_step_ingress::destination(
+                runtime, cells, actor, session, origin, direction, blocking,
+            )
+            .is_ok_and(|p| self.cloak_blood_cells.contains(&(p.x, p.y, p.floor)))
+    }
+
+    /// Crystal's blood MoveEvent uses addHealth with ENERGY and a null attacker.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source-qualified direct Lua health loss retains the existing HP/shield/death owner"
+    )]
+    pub(super) fn apply_soul_war_blood_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        if !super::soul_war_callbacks::qualifies_source(runtime, native) {
+            return None;
+        }
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            session,
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Energy,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            true,
+            None,
         )
     }
 
@@ -2813,8 +2869,15 @@ impl ChannelSpellStates {
 #[path = "actor_spell_source_creature_dot_owner_tests.rs"]
 mod source_creature_dot_owner_tests;
 
+#[derive(Debug, Clone, Copy)]
+pub(in crate::gameplay_transport) enum NonPlayerFieldOrigin {
+    Creature,
+    Environment,
+}
+
 #[derive(Debug)]
-pub(in crate::gameplay_transport) struct CreatureFieldContact {
+pub(in crate::gameplay_transport) struct NonPlayerFieldContact {
+    pub(in crate::gameplay_transport) origin: NonPlayerFieldOrigin,
     pub(in crate::gameplay_transport) source: String,
     pub(in crate::gameplay_transport) definition:
         oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
@@ -2826,7 +2889,7 @@ impl ChannelSpellStates {
     /// Real STEP and field initial HP/DOT are staged before movement. This is an
     /// owner method, not a callback that can mutate the stores during preflight.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::gameplay_transport) fn step_with_creature_field_contact(
+    pub(in crate::gameplay_transport) fn step_with_non_player_field_contact(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         cells: &crate::content::NativeEntryMovementCells,
@@ -2837,7 +2900,7 @@ impl ChannelSpellStates {
         blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
-        contact: Option<CreatureFieldContact>,
+        contact: Option<NonPlayerFieldContact>,
     ) -> actor_movement::StepInChannel {
         let Some(contact) = contact else {
             return actor_movement::step_in_channel_with_source_step(
@@ -2897,26 +2960,35 @@ impl ChannelSpellStates {
                 runtime, cells, actor, session, expected, direction, blocking,
             )?
         };
-        let (mut next, _damage) = before
-            .stage_creature_field_contact(
+        let stage_hit = |state: &PlayerSpellState, amount, element, now| {
+            crate::spell::actor_conditions::stage_typed_hit_at_position(
+                runtime,
+                actor,
+                destination,
+                state,
+                amount,
+                crate::player_lethal::PlayerHitKind::from_dot(element),
+                now,
+            )
+            .ok()
+        };
+        let staged = match contact.origin {
+            NonPlayerFieldOrigin::Creature => before.stage_creature_field_contact(
                 contact.source,
                 &contact.definition,
                 &facts,
                 contact.element,
-                |state, amount, element, now| {
-                    crate::spell::actor_conditions::stage_typed_hit_at_position(
-                        runtime,
-                        actor,
-                        destination,
-                        state,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_dot(element),
-                        now,
-                    )
-                    .ok()
-                },
-            )
-            .ok_or(crate::movement::MovementError::NotQualified)?;
+                stage_hit,
+            ),
+            NonPlayerFieldOrigin::Environment => before.stage_environment_field_contact(
+                contact.source,
+                &contact.definition,
+                &facts,
+                contact.element,
+                stage_hit,
+            ),
+        };
+        let (mut next, _damage) = staged.ok_or(crate::movement::MovementError::NotQualified)?;
         let changed = next != *before;
         let death = if next.vitals().health == 0 {
             self.deaths

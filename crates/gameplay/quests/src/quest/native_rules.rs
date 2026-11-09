@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 pub enum NativeRule {
     BarbarianMead,
     CultsSymbol { symbol: u8 },
+    LionTrial { trial: u8 },
     UnnaturalDance { tile: u8 },
     IceSealPaint { seal: u16 },
     SoulWarRemorse,
@@ -24,6 +25,7 @@ pub enum NativeRule {
 impl NativeRule {
     pub const fn quest(self) -> &'static str {
         match self {
+            Self::LionTrial { .. } => super::lions_rock::QUEST,
             Self::BarbarianMead => barbarian_mead::QUEST,
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
@@ -35,6 +37,9 @@ impl NativeRule {
     pub fn tracks(self) -> Vec<&'static str> {
         match self {
             Self::BarbarianMead => barbarian_mead::NATIVE_TRACKS.to_vec(),
+            Self::LionTrial { trial: 0 } => super::lions_rock::TRACKS[0].to_vec(),
+            Self::LionTrial { trial: 1 } => super::lions_rock::TRACKS[1].to_vec(),
+            Self::LionTrial { .. } => super::lions_rock::TRACKS[2].to_vec(),
             Self::CultsSymbol { .. } => vec![
                 cults_of_tibia::MISSION,
                 cults_of_tibia::TEMP,
@@ -51,6 +56,7 @@ impl NativeRule {
     pub fn encode(self, out: &mut Vec<u8>) {
         match self {
             Self::BarbarianMead => out.push(3),
+            Self::LionTrial { trial } => out.extend_from_slice(&[4, trial]),
             Self::CultsSymbol { symbol } => out.extend_from_slice(&[1, symbol]),
             Self::UnnaturalDance { tile } => out.extend_from_slice(&[2, tile]),
             Self::IceSealPaint { seal } => {
@@ -65,6 +71,7 @@ impl NativeRule {
     const fn valid_id(self) -> bool {
         match self {
             Self::BarbarianMead => true,
+            Self::LionTrial { trial } => trial < 3,
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
             Self::IceSealPaint { seal } => seal < ice_islands_seals::targets::TARGET_COUNT,
@@ -109,6 +116,9 @@ impl NativeRule {
         }
         let read = |key: &str| values.get(key).copied().ok_or(QuestRefusal::NotSupported);
         let next = match self {
+            Self::LionTrial { .. } => {
+                super::lions_rock::apply(read(tracks[0])?, read(tracks[1])?)?.to_vec()
+            }
             Self::BarbarianMead => {
                 let before = [
                     read(barbarian_mead::TRACKS[0])?,

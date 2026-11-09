@@ -660,6 +660,29 @@ fn next(
     let (dx,dy)=step.delta();
     at.x+=dx;
     at.y+=dy;
+    use oteryn_protocol_oteryn::world_spatial::StepDirection as D;
+    match step {
+        D::North => at.y -= 1,
+        D::East => at.x += 1,
+        D::South => at.y += 1,
+        D::West => at.x -= 1,
+        D::NorthEast => {
+            at.x += 1;
+            at.y -= 1;
+        }
+        D::SouthEast => {
+            at.x += 1;
+            at.y += 1;
+        }
+        D::SouthWest => {
+            at.x -= 1;
+            at.y += 1;
+        }
+        D::NorthWest => {
+            at.x -= 1;
+            at.y -= 1;
+        }
+    }
     at
 }
 

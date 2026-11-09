@@ -6,6 +6,9 @@ import unittest
 from pathlib import Path
 
 import quest_completion_import as tool
+from test_chosen_source_binding_plan import REGISTERED_TALK_STAGES
+from native_talk_binding_evidence import canonical_definitions
+from quest_native_binding_preflight import verify_stage_runtime
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -18,6 +21,8 @@ class CompletionImportTests(unittest.TestCase):
         transitions = {t['key']: t for q in state['quests'] for t in q['transitions']}
         self.assertEqual(plan['counts'], {'quests': 304, 'stages': 1887})
         native = {}
+        bound = {(q['quest'], s['stage_key']) for q in plan['records'] for s in q['stages'] if s['native_dispatch_binding'] is not None}
+        self.assertEqual(REGISTERED_TALK_STAGES | {('oteryn:quest.adventures_of_galthen_quest', 's5'), ('oteryn:quest.adventures_of_galthen_quest', 's8')}, bound)
         for quest in plan['records']:
             self.assertFalse(quest['runtime_enabled'])
             self.assertIsNone(quest['native_reward_delivery_binding'])
@@ -39,11 +44,9 @@ class CompletionImportTests(unittest.TestCase):
                     })
                     self.assertFalse(transition['completes'])
                     native[stage['stage_key']] = stage['native_dispatch_binding']
-                elif (quest['quest'], stage['stage_key']) == ('oteryn:quest.authored.a_pirate_s_death_to_me', 's1'):
+                elif (quest['quest'], stage['stage_key']) in REGISTERED_TALK_STAGES:
                     self.assertTrue(stage['runtime_enabled'])
-                    self.assertEqual(stage['native_dispatch_binding'], {
-                        'kind': 'npc_dialogue', 'document': 'content/quests/authored-bindings/m01a-a-pirates-death-to-me.json',
-                        'stage': 's1', 'callback': 'oteryn:quest-reward/native-talk/a-pirates-death-to-me/s1'})
+                    verify_stage_runtime(ROOT, canonical_definitions(ROOT)[quest['quest']], stage)
                 else:
                     self.assertIsNone(stage['native_dispatch_binding'])
                     self.assertFalse(stage['runtime_enabled'])

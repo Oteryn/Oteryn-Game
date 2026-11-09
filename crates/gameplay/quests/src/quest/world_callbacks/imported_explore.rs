@@ -68,6 +68,7 @@ pub(super) fn admitted(callback: &Callback) -> bool {
                 s.as_str(),
                 "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
                     | "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+                    | "OTERYN_CHOSEN_EXPLORE_ENTRY:native-layer-approach;first-cycle-only"
             )
         })
 }
@@ -76,7 +77,28 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
     if let Some(initial) = super::character_requirements::entry_initial(callback, storage) {
         return initial;
     }
-    if admitted(callback) && !storage.track.is_empty() {
+    let chosen_entry = callback
+        .quest
+        .strip_prefix("oteryn:quest.")
+        .is_some_and(|quest| {
+            storage.track == format!("oteryn:quest-progress/chosen-source/{quest}/s1")
+                && callback.selector.native.is_some()
+                && callback.requires_world_admission
+                && callback.actor_kind == ActorKind::Player
+                && !callback.reversible
+                && storage.minimum <= 0
+                && storage.maximum >= 0
+                && storage.at_least
+                && storage.set == 1
+                && !storage.preserve
+                && !storage.increment
+                && callback.sources.iter().any(|source| {
+                    source == "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only"
+                })
+        });
+    if (chosen_entry && callback.key != "oteryn:quest-callback/qm03/pits")
+        || (admitted(callback) && !storage.track.is_empty())
+    {
         0
     } else {
         -1
@@ -86,6 +108,64 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::super::*;
+
+    #[test]
+    fn imported_explore_cobra_preserves_predecessor_bounds_and_binds_the_guards()
+    -> Result<(), String> {
+        let state = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/grave-danger/s4/entry")
+            .ok_or("bound Cobra investigation")?;
+        assert!(super::admitted(&callback));
+        for (stage, maximum) in [("s1", 12), ("s2", 5), ("s3", 1), ("s4", 1)] {
+            let track = state
+                .catalogue()
+                .track(&format!(
+                    "oteryn:quest-progress/chosen-source/grave_danger_quest/{stage}"
+                ))
+                .ok_or("Cobra predecessor track")?;
+            assert_eq!((track.initial, track.min, track.max), (0, 0, maximum));
+        }
+        assert_eq!(callback.storage.iter().filter(|s| s.preserve).count(), 3);
+        let bound = gated_binding(&callback)?;
+        let mut stripped = callback;
+        let guard = stripped
+            .storage
+            .iter_mut()
+            .find(|s| s.track.ends_with("/s3"))
+            .ok_or("King Zelos guard")?;
+        guard.minimum = 0;
+        guard.maximum = 0;
+        guard.set = 0;
+        assert_ne!(
+            gated_binding(&stripped)?,
+            bound,
+            "boss guards belong to native authority"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn imported_explore_fury_layer_approach_is_admitted_and_city_bound() -> Result<(), String> {
+        crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/fury-gates-mini-world-change/s1/entry")
+            .ok_or("bound Fury survey")?;
+        assert!(super::admitted(&callback));
+        assert_eq!(callback.world_change.as_deref(), Some("fury_gates/thais"));
+        let binding = gated_binding(&callback)?;
+        assert!(binding.is_some());
+        for replacement in [None, Some("fury_gates"), Some("fury_gates/venore")] {
+            let mut altered = callback.clone();
+            altered.world_change = replacement.map(str::to_owned);
+            assert_ne!(gated_binding(&altered)?, binding);
+        }
+        Ok(())
+    }
 
     #[test]
     fn imported_explore_world_requirement_is_part_of_the_native_binding() -> Result<(), String> {
@@ -140,9 +220,14 @@ mod tests {
 
     #[test]
     fn asura_explore_binding_cannot_strip_current_premium() -> Result<(), String> {
-        let callback = load()?
-            .into_iter()
+        let bindings = crate::quest::authored_bindings::Bindings::parse(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/quests/authored-bindings/engenc-asura-palace.json"
+        )))?;
+        let callback = bindings
+            .world_callbacks()
             .find(|c| c.key == "oteryn:quest-callback/m01b/asura-palace/s1/entry")
+            .cloned()
             .ok_or("bound Asura entry")?;
         assert!(callback.admission.as_ref().is_some_and(|a| a.premium));
         assert!(super::admitted(&callback));
@@ -192,12 +277,23 @@ mod tests {
     }
 
     #[test]
-    fn qm55_chakoya_premium_entry_credits_the_canonical_stage_once() -> Result<(), String> {
+    fn qm55_held_chakoya_and_admitted_premium_entry_credit_once() -> Result<(), String> {
         let callbacks = load()?;
-        let callback = callbacks
-            .iter()
-            .find(|c| c.quest == "oteryn:quest.authored.chakoya_iceberg_mini_world_change")
-            .ok_or("bound Chakoya entry")?;
+        assert!(
+            !callbacks
+                .iter()
+                .any(|c| c.quest == "oteryn:quest.authored.chakoya_iceberg_mini_world_change"),
+            "M31: the HELD World owner cannot supply an EXPLORE callback"
+        );
+        let bindings = crate::quest::authored_bindings::Bindings::parse(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/quests/authored-bindings/engenc-asura-palace.json"
+        )))?;
+        let callback = bindings
+            .world_callbacks()
+            .find(|c| c.quest == "oteryn:quest.authored.asura_palace_quest")
+            .ok_or("bound Asura Palace entry")?;
+        assert!(!callbacks.iter().any(|other| other.key == callback.key));
         assert!(super::admitted(callback));
         assert!(callback.admission.as_ref().is_some_and(|gate| gate.premium));
         let catalogue = extend_callbacks(
@@ -209,7 +305,7 @@ mod tests {
             .ok_or("entry transition")?;
         assert!(!transition.completes);
         assert!(transition.experience.is_none());
-        let track = "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1";
+        let track = "oteryn:quest-progress/authored/asura_palace_quest/s1";
         assert_eq!(catalogue.track(track).ok_or("canonical stage")?.initial, 0);
         let changes = catalogue
             .evaluate(transition, &std::collections::BTreeMap::new(), 0)

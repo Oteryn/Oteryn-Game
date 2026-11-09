@@ -10,6 +10,9 @@ a distinct subset of its candidate cells; it cannot introduce coordinates or byp
 Optional block_solid_contacts explicitly admits source-backed contacts occupying solid objects;
 the compiler still checks walls, floor changes and other terrain hazards.
 The source is OTS_HYPOTHESIS_ONLY migration evidence: only
+a distinct subset of its candidate cells; it cannot introduce coordinates or bypass holds.
+Explicit placement_adjustments may select adjacent clear native ground as an Oteryn choice,
+retaining donor cells in provenance; source sharing holds and compiler admission still apply. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
 normalized facts are written. Fails closed on an unadmitted key or an out-of-range position.
 
     python convert_placements.py [--check]
@@ -33,6 +36,7 @@ CANDIDATES = HERE / "samples/promotion-candidates-v1.json"
 SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
+from chosen_placement_adjustments import choose_cell
 SHARD_SIZE = 500
 SOURCES = {
     "canary": ("opentibiabr/canary", "47dfd51f45280a59a1d3e50ba7edd573d7234446", "oteryn:source.canary"),
@@ -144,6 +148,13 @@ def convert() -> dict[str, str]:
             sys.exit(f"{npc}: placement selection is not a distinct subset of source cells")
         selected_cells[npc] = selected
 
+    adjustments = scope.get("placement_adjustments", {})
+    if not isinstance(adjustments, dict) or not set(adjustments) <= set(npcs):
+        sys.exit("placement_adjustments names an unscoped NPC")
+    if any(len(candidates[npc]["placements"]) != 1 for npc in adjustments):
+        sys.exit("chosen adjacent placement requires a unique retained source cell")
+    adjusted_cells = set()
+
     # Every candidate placement counts for cell sharing, scoped or not.
     occupancy = defaultdict(list)
     for key, candidate in candidates.items():
@@ -179,9 +190,15 @@ def convert() -> dict[str, str]:
                 if entry not in held:
                     held.append(entry)
                 continue
+            choice_evidence = None
+            if npc in adjustments:
+                cell, choice_evidence = choose_cell(ROOT, cell, adjustments[npc], set(occupancy) | adjusted_cells)
+                adjusted_cells.add(cell)
             x, y, z = cell
             key = f"oteryn:npc_placement.{local_name(npc)}.x{x}_y{y}_z{z}"
             rows = provenance(candidate, placement)
+            if choice_evidence is not None:
+                rows.append(choice_evidence)
             if key in records:
                 existing = records[key]["declaration"]
                 if existing["direction"] != direction:

@@ -51,27 +51,24 @@ USE can grant again. It neither creates a daily epoch nor weakens once-only
 or preserved-epoch reward modes. Original DefaultStart is not a proven lowered
 alias, so the callback uses its separate Crystal namespace as for the trial flags.
 
-### Chosen Beauty input: retained duration, no invented decay
+### Chosen Beauty input: donor duration and absolute deadline
 
-The selected Lion recipe in `samples/completion242/recipes.json` requires one
-flower and explicitly does not certify original schedules. Pinned XML item21389
-has duration3600 and weight100 but no decayto/stopduration. Preserve the canonical
-known duration3600000; do not silently erase it or infer a retirement deadline.
+QMP2D applies the owner's donor-first parity decision: Crystal
+`201189f871d23597b82caf88fd611454a2ddefb8` `data/items/items.xml:42586-42590`
+sets item21389 duration3600 and weight100, without a decay target. Both native
+profile producers therefore publish duration3600000 with
+`DURABLE_ABSOLUTE_DEADLINE` and no replacement item. This supersedes the earlier
+inactive-consumption annotation; the owner explicitly selects a deadline when
+the donor declares a duration. The finite qualifier still rejects changed
+source duration/weight and any new instance mechanism.
 
-The pinned Crystal201189 implementation confirms that duration alone does not
-activate decay: [items.hpp:302](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/items/items.hpp#L302)
-initializes decayTo=-1 (file SHA256 `06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca`);
-[item_parse.cpp:370-375](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/items/functions/item/item_parse.cpp#L370)
-sets only decayTime for duration (SHA256 `08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7`);
-[item.cpp:3377-3394](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/items/item.cpp#L3377)
-refuses decayTo<0 (SHA256 `e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b`).
-
-Decision: qualify only this exact source-pinned portable flower with the known
-duration annotation and inactive consumption/decay target. This finite exception
-rejects changed duration/weight and any new instance mechanism. Every other timed
-item retains the shared importer's owner-required guard. Native runtime validation
-and item-profile tests must pass before publication; no whole-source timer fidelity
-or complete Beauty trial is claimed by the profile alone.
+Crystal `data-global/scripts/quests/lions_rock/actions_lions_rock.lua:13-79`
+consumes each trial input once, increments `max(old questline, 1) + 1`, and resets
+the shared pagoda after15seconds. Lines80-94 grant the flower and reset its plant
+after60seconds; that plant timer is separate from the carried flower's lifetime.
+The canonical selectors are the three `m07/lion-*` offerings; the native-rule and
+M44 registrations are retired. Their dispatch tests use those canonical
+selectors, retaining progress, replay, uncertain-commit and timed-reset coverage.
 
 ### Beauty offering and both source flower pickers
 

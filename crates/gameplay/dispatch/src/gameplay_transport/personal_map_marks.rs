@@ -125,16 +125,20 @@ mod tests {
         use crate::gameplay_transport::capabilities::{
             BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
         };
-        let incomplete =
-            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 6, 18, 450])
-                .ok_or("bounded selection")?;
+        let incomplete = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[3, 6, 18, CAPABILITY_PERSONAL_MAP_MARKS_V1],
+        )
+        .ok_or("bounded selection")?;
         assert!(!incomplete.contains(18));
-        assert!(!incomplete.contains(450));
-        let complete =
-            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 4, 6, 18, 450])
-                .ok_or("bounded selection")?;
+        assert!(!incomplete.contains(CAPABILITY_PERSONAL_MAP_MARKS_V1));
+        let complete = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[3, 4, 6, 18, CAPABILITY_PERSONAL_MAP_MARKS_V1],
+        )
+        .ok_or("bounded selection")?;
         assert!(complete.contains(18));
-        assert!(complete.contains(450));
+        assert!(complete.contains(CAPABILITY_PERSONAL_MAP_MARKS_V1));
         Ok(())
     }
     #[test]

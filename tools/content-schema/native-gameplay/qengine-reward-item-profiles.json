@@ -12506,7 +12506,8 @@
           "state": "KNOWN",
           "value": {
             "consumption_mode": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "DURABLE_ABSOLUTE_DEADLINE"
             },
             "duration": {
               "state": "KNOWN",

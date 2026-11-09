@@ -137,6 +137,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        if goblin_elevator::owns(&callback.key) {
+            if callback.selector.appearance != Some(after.appearance_id) {
+                return UseDisposition::NothingToUse;
+            }
+            return self.execute_goblin_elevator(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                optional_pvp,
+            );
+        }
         if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
             callback,
             after.appearance_id,
@@ -188,10 +202,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 restore: before,
             });
         }
+        if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+            let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
+                projection
+            else {
+                return UseDisposition::Rejected;
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedEntrance {
+                due,
+                restore,
+                position: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE),
+                destination: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
+            });
+        }
         projection = match super::conditional_cells::prepare(map, callback, projection) {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        let projection_target = match &projection {
+            Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
+                key, ..
+            }) => Some(*key),
+            _ => None,
+        };
+        if let Some(target) =
+            projection_target.or_else(|| callback.has_fenced_regrowth_reward().then_some(key))
+            && !self
+                .states
+                .quest_callbacks
+                .source_target_available(actor, session, &cause, key, target)
+        {
+            return UseDisposition::Rejected;
+        }
         if callback
             .item_on_target
             .as_ref()
@@ -216,12 +258,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+        let closes_source = callback
+            .passages
+            .iter()
+            .any(|p| p.replacement_passable == Some(false));
+        let closing_position = if closes_source {
+            Some(pos)
+        } else if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
             position,
             create: Some(_),
             ..
         }) = &projection
         {
+            Some(*position)
+        } else {
+            None
+        };
+        if let Some(position) = closing_position {
             let Some(at) = runtime
                 .read_actor_position(actor)
                 .ok()
@@ -229,7 +282,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::Rejected;
             };
-            if super::super::map_door::doorway_occupied(runtime, actor, at, *position) {
+            if super::super::map_door::doorway_occupied(runtime, actor, at, position) {
                 return UseDisposition::Occupied;
             }
         }
@@ -238,7 +291,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for passage_definition in &callback.passages {
             let passage = passage_definition;
             let p = tile(passage.position);
-            if close
+            if (close || passage_definition.replacement_passable == Some(false))
                 && super::super::map_door::doorway_occupied(
                     runtime,
                     actor,
@@ -329,7 +382,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return UseDisposition::Rejected;
                 };
-                replacements.push((*passage, facts, !close));
+                replacements.push((
+                    *passage,
+                    facts,
+                    passage_definition.replacement_passable.unwrap_or(!close),
+                ));
             } else {
                 passages.push(*passage);
             }
@@ -346,6 +403,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        let projection_target = match &projection {
+            Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
+                key, ..
+            }) => Some(*key),
+            Some(crate::map::facts::QuestCallbackProjection::TimedPassages { entries, .. })
+                if entries.len() == 1 =>
+            {
+                entries.first().map(|entry| entry.key)
+            }
+            _ => None,
+        };
+        if let Some(target) = projection_target
+            && !self
+                .states
+                .quest_callbacks
+                .source_target_available(actor, session, &cause, key, target)
+        {
+            return UseDisposition::Exhausted;
+        }
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return UseDisposition::Rejected;
         };
@@ -411,6 +487,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     flame: None,
                     ingress_settled: false,
                     flame_effect_sent: false,
+                    projection_target: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -553,6 +630,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     flame: None,
                     ingress_settled: false,
                     flame_effect_sent: false,
+                    projection_target: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -683,13 +761,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        let durable = callback.has_personal_state() && !(close && callback.opening_only);
+        let durable = callback.requires_durable_commit() && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
             None
         };
+        let mut success_preface = None;
         if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
         }
@@ -767,7 +846,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     flame: None,
                     ingress_settled: false,
                     flame_effect_sent: false,
+                    projection_target: None,
                 });
+                record.projection_target = projection_target;
                 record.context.get_or_insert(context).clone()
             } else {
                 return UseDisposition::Rejected;
@@ -891,6 +972,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fresh_effects = fresh;
                     if fresh {
                         success_message = callback.committed_message(&committed.changes).map(str::to_owned);
+                        // Crystal action_mead.lua:8-11 says both lines on the winning sip.
+                        if callback.native_rule == Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead)
+                            && committed.changes.iter().any(|change|
+                                change.track == oteryn_gameplay_quests::quest::barbarian_mead::TRACKS[0]
+                                    && change.before == 2 && change.after == 3)
+                        {
+                            success_preface = Some("The world seems to spin but you manage to stay on your feet.");
+                        }
                     }
                     #[cfg(test)]
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
@@ -984,6 +1073,78 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 record.flame_effect_sent = true;
             }
         } else {
+            // Durable admission may wait on PostgreSQL. Start source reset/regrowth
+            // at publication, so commit latency cannot consume its visible lifetime.
+            // Readset projections carry the same timer for the Children lever owner.
+            if !close && let Some(delay) = callback.effects.reset_after_ms {
+                let Some(published_due) =
+                    self.owner_now().get().checked_add(u64::from(delay) * 1_000)
+                else {
+                    return UseDisposition::Exhausted;
+                };
+                match projection.as_mut() {
+                    Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                        due,
+                        ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
+                        reset: Some((due, _)),
+                        ..
+                    }) => *due = published_due,
+                    _ => {}
+                }
+            }
+            if let Some(target) = &callback.effects.target_transform
+                && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
+                    due,
+                    ..
+                }) = projection.as_mut()
+            {
+                let Some(published_due) = self
+                    .owner_now()
+                    .get()
+                    .checked_add(u64::from(target.reset_after_ms) * 1_000)
+                else {
+                    return UseDisposition::Exhausted;
+                };
+                *due = published_due;
+            }
+            // Crystal actions_lions_rock.lua:69: start the shared reset after
+            // durable success. Commit latency must not shorten its visible lifetime.
+            if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
+                due,
+                source_reset,
+                ..
+            }) = &mut projection
+            {
+                let Some(delay) = callback.effects.passages_reset_after_ms else {
+                    return UseDisposition::Rejected;
+                };
+                let published = self.owner_now().get();
+                let Some(deadline) = published.checked_add(u64::from(delay) * 1_000) else {
+                    return UseDisposition::Exhausted;
+                };
+                *due = deadline;
+                if let Some((source_due, _)) = source_reset {
+                    let Some(delay) = callback.effects.reset_after_ms else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Some(deadline) = published.checked_add(u64::from(delay) * 1_000) else {
+                        return UseDisposition::Exhausted;
+                    };
+                    *source_due = deadline;
+                }
+            }
+            if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+                && let Some(crate::map::facts::QuestCallbackProjection::TimedEntrance {
+                    due, ..
+                }) = &mut projection
+            {
+                let Some(deadline) = self.owner_now().get().checked_add(300_000_000) else {
+                    return UseDisposition::Exhausted;
+                };
+                *due = deadline;
+            }
             if !map.facts.apply_quest_callback(
                 key,
                 expected_revision,
@@ -998,9 +1159,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if matches!(
             projection,
-            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+            Some(
+                crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
+            )
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()
+            || callback.effects.target_transform.is_some()
             || callback
                 .effects
                 .portals
@@ -1103,11 +1269,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
         }
+        if fresh_effects && callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+        {
+            for (x, y) in oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_POSITIONS {
+                map.facts.emit_movement_effect(
+                    crate::map::overlay::TilePos { x, y, floor: -9 },
+                    oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_EFFECT,
+                );
+            }
+        }
         for effect in &callback.effects {
             // Presentation uses the existing bounded movement occurrence stream;
             // it cannot turn a committed movement into a failed command.
             map.facts
                 .emit_movement_effect(tile(effect.position), effect.effect);
+        }
+        if let Some(message) = success_preface {
+            self.states.chat.push_quest_feedback(session, message);
         }
         if fresh_effects && let Some(speech) = &callback.effects.player_speech {
             self.states

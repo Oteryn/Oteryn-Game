@@ -22,13 +22,27 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m07_too_hot = name.starts_with("m07/too-hot-column-");
+    let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
     let m07_realm = name.starts_with("m07/realm-");
+    let lion_trial = matches!(name, "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears");
     let m07_lion = name.starts_with("m07/lion-");
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
+    let m49 = name.starts_with("m49-");
+    let qm03 = name.starts_with("qm03/");
+    let qm47 = name == "barbarian-test-mead-native";
+    let m44_flower = name.starts_with("m44-lions-flower-0/");
+    let m44_amphora = name == "m44-lions-amphora-1";
+    let m44_lions = name.starts_with("m44-lions-strength/");
+    let m44_children = name == "qn1-children-lever-1/ordinary";
+    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let elemental_pin = name.starts_with("qn1-elemental-");
+    let qm50 = name == "goblin-merchant-elevator-upper";
+    let m03_pits = name == super::super::qengine_m03_pits::NAME;
+    let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
     let qready_craft = name == super::super::qready1_crafting::NAME;
     let qready_workbench = super::super::qready1_workbenches::matches(name);
@@ -50,7 +64,25 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = last_creep || elemental_pin || m07_machinery || m07_realm || m07_lion || m07_dreamer || qready_workbench || qready_craft || qm48 || m01b_explore
+    let native_crop = m49
+        || qm03
+        || qm47
+        || qm50
+        || m44
+        || m07_too_hot
+        || last_creep
+        || elemental_pin
+        || m07_machinery
+        || m07_realm
+        || m07_lion
+        || lion_trial
+        || m07_dreamer
+        || qready_workbench
+        || qready_craft
+        || m03_pits
+        || nomads_window
+        || qm48
+        || m01b_explore
         || small_ruby
         || mead
         || spirit
@@ -65,14 +97,32 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m07_machinery {
+    let start = if m07_too_hot {
+        super::super::m07_too_hot_columns::start()
+    } else if m07_repair {
+        super::super::m07_machinery_repairs::start()
+    } else if m07_machinery {
         super::super::m07_machinery_burn::start(name)
     } else if m07_realm {
         super::super::m07_realm_trials::start()
+    } else if lion_trial {
+        super::super::m07_lion_offerings::start(match name {
+            "lions-rock-beauty" => "m07/lion-beauty",
+            "lions-rock-tears" => "m07/lion-tears",
+            _ => "m07/lion-strength",
+        })
     } else if m07_lion {
         super::super::m07_lion_offerings::start(name)
     } else if m07_dreamer {
-        Position { x:32762,y:32289,floor:-14 }
+        Position { x: 32762, y: 32289, floor: -14 }
+    } else if m44_flower {
+        Position { x: trigger.x + 1, ..trigger }
+    } else if m44_amphora {
+        Position { y: trigger.y - 1, ..trigger }
+    } else if m03_pits {
+        Position { x: 32791, y: 32332, floor: -10 }
+    } else if nomads_window {
+        Position { x: 33217, y: 32854, floor: -9 }
     } else if qready_workbench {
         super::super::qready1_workbenches::start(name)?
     } else if qready_craft {
@@ -81,6 +131,12 @@ fn scenario_case(
             y: 32907,
             floor: -7,
         }
+    } else if qm50 {
+        Position {
+            x: 33051,
+            y: 32098,
+            floor: -6,
+        }
     } else if name.starts_with("qengine-rewards-m39-tomes") {
         super::super::m39_tomes_journey::world::start()?
     } else if last_creep {
@@ -88,10 +144,22 @@ fn scenario_case(
     } else if name == "unnatural-selection-dance-2" {
         let (x, y, floor) = oteryn_gameplay_quests::quest::unnatural_selection::TILES[7];
         Position { x, y, floor }
-    } else if qm48 {
+    } else if m49 {
+        super::super::m49_elemental_arrival::start(name)?
+    } else if qm03 || qm47 || m44_children {
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
+    } else if m44_lions {
+        Position {
+            x: trigger.x - 1,
+            ..trigger
+        }
+    } else if qm48 || m44 {
         Position {
             x: trigger.x,
-            y: trigger.y - 1,
+            y: if m44 { trigger.y + 1 } else { trigger.y - 1 },
             ..trigger
         }
     } else if m01b_explore {
@@ -153,13 +221,16 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let classic_npc = name.starts_with("engoutfit-") || qengine_reward
+    let classic_npc = name.starts_with("engoutfit-")
+        || qengine_reward
         || name.starts_with("npcfix-m38-mistrock")
         || name == "npcfix-m38-minzy"
         || name == "npcfix-m38-rascalio"
         || matches!(
             name,
             "engnpc-m04"
+                | "m05-gnomus"
+                | "m16-marker"
                 | "catalogue-npc"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
@@ -175,12 +246,18 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if name == "unnatural-selection-dance-native" {
+    let mut callback = if m03_pits {
+        callback("qm03/pits")?
+    } else if nomads_window {
+        callback(super::super::qengine_m02_use::NAME)?
+    } else if name == "unnatural-selection-dance-native" {
         callback("unnatural-selection-dance-2")?
     } else if name.starts_with("qengine-rewards-m39-bone") {
         callback("bone-pit-collect")?
     } else if last_creep {
         callback("last-creep-native-start")?
+    } else if qm03 {
+        super::super::qm03_world_admission::callback(name)?
     } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
@@ -188,7 +265,13 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if name == "triangle-tower-wall" {
+        callback(if m44_flower { "m44-lions-flower-0" } else if m44_lions || name == "lions-rock-strength-first" {
+            "m07/lion-strength"
+        } else if name == "lions-rock-beauty" {
+            "m07/lion-beauty"
+        } else if name == "lions-rock-tears" {
+            "m07/lion-tears"
+        } else if name == "triangle-tower-wall" {
             "triangle-tower-lever"
         } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
@@ -198,18 +281,24 @@ fn scenario_case(
             "rotten-blood/sacrifice"
         } else if monk {
             "monk-guidance"
+        } else if m07_too_hot {
+            name.strip_suffix("-level79").unwrap_or(name)
         } else if m07_machinery {
             name.strip_suffix("-level49").unwrap_or(name)
-        } else if elemental_pin || target_swap
+        } else if elemental_pin
+            || target_swap
             || reusable_tool
             || floor_profiles
             || floor_assembly
+            || m49
             || room_raise
             || carried_step
             || shared_switch
             || shared_gate
         {
             "fish-napping-key"
+        } else if qm47 {
+            "barbarian-test-mead"
         } else {
             name.strip_suffix("-expiry").unwrap_or(name)
         })?
@@ -339,10 +428,19 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    if name.starts_with("qengine-rewards-qworld-phase-") { callback = super::super::qworld_phase_steps::geometry(callback, name)?; }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        callback = super::super::qworld_phase_steps::geometry(callback, name)?;
+    }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" || name.starts_with("m09-treasure-") || name.starts_with("engoutfit-") || name == "engitem-targuna-selected-tool" || name == "engitem-native-seal-paint" {
+        let h = if qengine_reward
+            || outfit_world
+            || name == "srv7-reliable-ram"
+            || name.starts_with("m09-treasure-")
+            || name.starts_with("engoutfit-")
+            || name == "engitem-targuna-selected-tool"
+            || name == "engitem-native-seal-paint"
+        {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -350,16 +448,35 @@ fn scenario_case(
             )
             .await
         } else {
-            Harness::create_with_admission_seed(admin, "quest_world_callbacks", m07_realm || (m07_machinery && !m07_machinery_level49), false).await
+            Harness::create_with_admission_seed(
+                admin,
+                "quest_world_callbacks",
+                m07_realm || (m07_machinery && !m07_machinery_level49),
+                false,
+            )
+            .await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if m07_machinery_level49 {
+        if m07_machinery_level49 || m07_too_hot {
             // Seed a separate historical character, as the shared harness does;
             // never bypass the progression owner's typed successor guard.
-            sqlx::query("INSERT INTO game_character_progression_state VALUES \
-                (encode($1,'hex')::uuid,1,49,999,'profile-1','ruleset-1','content-1',\
-                 'simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
-                .bind(id(41).as_slice()).execute(&h.pool).await?;
+            sqlx::query(
+                "INSERT INTO game_character_progression_state VALUES \
+                (encode($1,'hex')::uuid,1,$2,999,'profile-1','ruleset-1','content-1',\
+                 'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+            )
+            .bind(id(41).as_slice())
+            .bind(if m07_too_hot {
+                if name.ends_with("-level79") {
+                    79_i64
+                } else {
+                    80_i64
+                }
+            } else {
+                49_i64
+            })
+            .execute(&h.pool)
+            .await?;
         }
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
@@ -391,9 +508,22 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if elemental_pin {
+        let world = if m03_pits {
+            super::super::qengine_m03_pits::world(
+                generation.native_gameplay().ok_or("Pits native policies")?,
+            )?
+        } else if m44_flower {
+            super::super::m44_flower_lifecycle::world(generation.native_gameplay().ok_or("flower policies")?)?
+        } else if m44_amphora {
+            super::super::m44_amphora_lifecycle::world(
+                generation.native_gameplay().ok_or("amphora policies")?,
+            )?
+        } else if nomads_window {
+            super::super::qengine_m02_use::world(generation.native_gameplay().ok_or("Nomads native policies")?)?
+        } else if elemental_pin {
             super::super::qn1_elemental_world_pin::world(
                 generation.native_gameplay().ok_or("elemental policies")?,
+                name == "qn1-elemental-energy-soil",
             )?
         } else if qready_workbench {
             super::super::qready1_workbenches::world(
@@ -409,9 +539,45 @@ fn scenario_case(
                     .ok_or("grinder native policies")?,
             )?
         } else if name.starts_with("qengine-rewards-m39-tomes") {
-            super::super::m39_tomes_journey::world::build(generation.native_gameplay().ok_or("Tomes native profiles")?)?
+            super::super::m39_tomes_journey::world::build(
+                generation
+                    .native_gameplay()
+                    .ok_or("Tomes native profiles")?,
+            )?
         } else if last_creep {
-            super::super::m23_last_creep::world(generation.native_gameplay().ok_or("Last Creep native")?)?
+            super::super::m23_last_creep::world(
+                generation.native_gameplay().ok_or("Last Creep native")?,
+            )?
+        } else if m49 {
+            super::super::m49_elemental_arrival::world(
+                generation.native_gameplay().ok_or("Elemental policies")?,
+                name,
+            )?
+        } else if qm03 {
+            super::super::qm03_world_admission::world(
+                name,
+                generation.native_gameplay().ok_or("M03 native policies")?,
+            )?
+        } else if qm47 {
+            super::super::qm47_mead_dispatch::world(
+                generation.native_gameplay().ok_or("mead policies")?,
+            )?
+        } else if qm50 {
+            super::super::qm50_elevator::world(
+                generation.native_gameplay().ok_or("elevator policies")?,
+            )?
+        } else if m44_lions {
+            super::super::m44_lions_lifecycle::world(
+                generation.native_gameplay().ok_or("lions policies")?,
+            )?
+        } else if m44_children {
+            super::super::m44_children_lifecycle::world(
+                generation.native_gameplay().ok_or("children policies")?,
+            )?
+        } else if m44 {
+            super::super::m44_source_lifecycle::world(
+                generation.native_gameplay().ok_or("source policies")?,
+            )?
         } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
@@ -499,14 +665,30 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if m07_too_hot {
+            super::super::m07_too_hot_columns::world(generation.native_gameplay().ok_or("Too Hot policies")?)?
+        } else if m07_repair {
+            super::super::m07_machinery_repairs::world(generation.native_gameplay().ok_or("Machinery repair policies")?)?
         } else if m07_machinery {
-            super::super::m07_machinery_burn::world(generation.native_gameplay().ok_or("Machinery policies")?,name)?
+            super::super::m07_machinery_burn::world(
+                generation.native_gameplay().ok_or("Machinery policies")?,
+                name,
+            )?
         } else if m07_realm {
-            super::super::m07_realm_trials::world(generation.native_gameplay().ok_or("Realm policies")?)?
-        } else if m07_lion {
-            super::super::m07_lion_offerings::world(generation.native_gameplay().ok_or("native Lion policies")?,name)?
+            super::super::m07_realm_trials::world(
+                generation.native_gameplay().ok_or("Realm policies")?,
+            )?
+        } else if m07_lion || lion_trial {
+            super::super::m07_lion_offerings::world(
+                generation.native_gameplay().ok_or("native Lion policies")?,
+                callback.key.strip_prefix("oteryn:quest-callback/").ok_or("Lion callback key")?,
+            )?
         } else if m07_dreamer {
-            super::super::m07_dreamer_levers::world(generation.native_gameplay().ok_or("native Dreamer policies")?)?
+            super::super::m07_dreamer_levers::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native Dreamer policies")?,
+            )?
         } else if mead {
             super::super::l6_mead::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
@@ -564,6 +746,8 @@ fn scenario_case(
             "runtime-scope-assignment:1",
             if name == "qengine-rewards-qnpcfx-m10-inquisition" {
                 7 // One player and the six source NPCs for the full interview story.
+            } else if qm50 {
+                8
             } else if name.starts_with("qengine-rewards-l12-") {
                 128
             } else if native_story || (native_upper && name.ends_with("-complete")) {
@@ -589,11 +773,15 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium)) || matches!(
-            name,
-            "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
-        ) || name.contains("l6-beggar-")
+        let premium = if m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+            || matches!(
+                name,
+                "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
+            )
+            || name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
+            || name == "qengine-rewards-m01a-sven"
+            || (qm03 && name.ends_with("-premium"))
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -628,7 +816,7 @@ fn scenario_case(
         };
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-        if mead || m07_lion || m07_realm {
+        if mead || m07_lion || lion_trial || m44_lions || m07_realm || m07_too_hot {
             h.root
                 .latch_premium_activation(
                     &activation.activation_id,
@@ -647,7 +835,7 @@ fn scenario_case(
             );
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
-        if mead || m07_lion || m07_realm {
+        if mead || m07_lion || lion_trial || m44_lions || m07_realm || m07_too_hot {
             owner.premium_coordinator = Some(&mead_premium);
         }
         owner.active_generation = Some(generation);
@@ -661,6 +849,32 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if m44_flower {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::m44_flower_lifecycle::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("flower catalogue")?, &callback, name.ends_with("/later"))?));
+        } else if m44_amphora {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::m44_source_lifecycle::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("amphora catalogue")?,
+                    &callback,
+                )?,
+            ));
+        } else if m44_lions {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::m44_lions_lifecycle::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("lions catalogue")?,
+                    &callback,
+                    name.ends_with("/later"),
+                )?,
+            ));
+        } else if m44 {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::m44_source_lifecycle::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
+                    &callback,
+                )?,
+            ));
+        }
         if qm48 {
             owner.quest_catalogue =
                 Some(std::sync::Arc::new(super::super::qm48_mammoth::catalogue(
@@ -742,11 +956,27 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium)) || m07_lion || m07_realm || name == "npcfix-m38-mistrock" {
+        if qm03
+            || m07_too_hot
+            || mead
+            || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+            || m07_lion
+            || lion_trial
+            || m44_lions
+            || m07_realm
+            || name == "npcfix-m38-mistrock"
+        {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if elemental_pin {
+        if m03_pits {
+            super::super::qengine_m03_pits::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if nomads_window {
+            super::super::qengine_m02_use::exercise(
+                &mut owner, &mut admitted, &h, &callback, name.ends_with("-wrong-order"),
+            ).await?;
+        } else if elemental_pin {
             super::super::qn1_elemental_world_pin::exercise(
                 &owner,
                 &h,
@@ -766,18 +996,64 @@ fn scenario_case(
         ) {
             super::super::qready1_world_clocks::exercise(&owner, &mut admitted, &h, &callback)
                 .await?;
+        } else if qm47 {
+            super::super::qm47_mead_dispatch::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            )
+            .await?;
         } else if name == "barbarian-test-mead" {
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
+        } else if qm03 {
+            super::super::qm03_world_admission::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                name,
+            )
+            .await?;
+        } else if qm50 {
+            super::super::qm50_elevator::exercise(&owner, &mut admitted).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if m07_too_hot {
+            Box::pin(super::super::m07_too_hot_columns::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+        } else if m07_repair {
+            Box::pin(super::super::m07_machinery_repairs::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_machinery {
-            Box::pin(super::super::m07_machinery_burn::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+            Box::pin(super::super::m07_machinery_burn::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            ))
+            .await?;
         } else if m07_realm {
-            Box::pin(super::super::m07_realm_trials::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+            Box::pin(super::super::m07_realm_trials::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            ))
+            .await?;
         } else if m07_lion {
-            Box::pin(super::super::m07_lion_offerings::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+            Box::pin(super::super::m07_lion_offerings::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            ))
+            .await?;
         } else if m07_dreamer {
-            super::super::m07_dreamer_levers::exercise(&mut owner,&mut admitted,&h,&callback).await?;
+            super::super::m07_dreamer_levers::exercise(&mut owner, &mut admitted, &h, &callback)
+                .await?;
         } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;
@@ -877,6 +1153,34 @@ fn scenario_case(
                 source_id,
             )
             .await?;
+        } else if m49 {
+            super::super::m49_elemental_arrival::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                name,
+                deps.actor,
+            )
+            .await?;
+        } else if m44_flower {
+            super::super::m44_flower_lifecycle::exercise(&owner, &mut admitted, &h, name.ends_with("/later"), name.ends_with("/uncertain")).await?;
+        } else if m44_amphora {
+            super::super::m44_amphora_lifecycle::exercise(&owner, &mut admitted, &h).await?;
+        } else if m44_lions {
+            super::super::m44_lions_lifecycle::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+                name.ends_with("-uncertain"),
+                name.ends_with("/later"),
+            )
+            .await?;
+        } else if m44_children {
+            super::super::m44_children_lifecycle::exercise(&owner, &mut admitted, &h).await?;
+        } else if m44 {
+            super::super::m44_source_lifecycle::exercise(&owner, &mut admitted, &h).await?;
         } else if qm48 {
             super::super::qm48_mammoth::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "l6-stag-item-profile" {
@@ -1003,12 +1307,22 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name == "m05-gnomus" {
+            super::super::m05_gnomus::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "engoutfit-rock-steady" {
-            super::super::engoutfit::exercise_rock(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::engoutfit::exercise_rock(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name.starts_with("engoutfit-source") {
             super::super::engoutfit::exercise_source(
-                &mut owner, &mut admitted, &h, &authority, name.ends_with("-fault"),
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name.ends_with("-fault"),
+            )
+            .await?;
+        } else if name == "m16-marker" {
+            super::super::m16_personal_map_marker::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "engnpc-m04" {
             super::super::engnpc_m04_completion::exercise(
                 &mut owner,
@@ -1041,9 +1355,23 @@ fn scenario_case(
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "engitem-native-seal-paint" {
-            super::super::engitem_seal_paint::exercise(&mut owner,&mut admitted,&h,&callback,trigger).await?;
+            super::super::engitem_seal_paint::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if name == "engitem-targuna-selected-tool" {
-            super::super::srv7_reliable_ram::exercise_selected(&mut owner, &mut admitted, &h, &callback, trigger).await?;
+            super::super::srv7_reliable_ram::exercise_selected(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if name == "srv7-reliable-ram" {
             super::super::srv7_reliable_ram::exercise(
                 &mut owner,
@@ -1066,8 +1394,13 @@ fn scenario_case(
             .await?;
         } else if name.starts_with("m09-treasure-") {
             super::super::m09_treasure_rewards::exercise(
-                &mut owner, &mut admitted, &h, &callback, trigger,
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if qengine_reward {
             super::super::qengine_rewards::exercise(
                 &mut owner,
@@ -1077,6 +1410,19 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if lion_trial {
+            super::super::m07_trials::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+            super::super::m07_dreamer_fire_bug::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger).await?;
         } else if callback.effects != Default::default()
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {

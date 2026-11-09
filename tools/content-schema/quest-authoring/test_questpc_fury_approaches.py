@@ -47,3 +47,8 @@ class FuryApproachTests(unittest.TestCase):
         self.assertEqual(callback['admission'], {'premium': True})
         self.assertEqual(callback['selector']['native'], dict(
             position=dict(x=32264,y=32165,floor=-7), ordinal=0, appearance=7066))
+
+    def test_fury_first_survey_is_live(self):
+        callbacks = [c for c in explore.callbacks(ROOT) if c['quest'] == fury.QUEST]
+        self.assertEqual(len(callbacks), 1)
+        self.assertEqual(callbacks[0]['world_change'], 'fury_gates/thais')

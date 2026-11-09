@@ -15,6 +15,7 @@ pub use npc_keys::native_dialogue_npcs;
 pub mod kills;
 mod progress_storage;
 mod state_operations;
+pub mod task_board_use;
 pub mod terrain_use;
 pub use kills::KillCounter;
 
@@ -66,6 +67,9 @@ pub enum Trigger {
     },
     TerrainUse {
         usage: Box<terrain_use::TerrainUse>,
+    },
+    TaskBoardUse {
+        usage: Box<task_board_use::TaskBoardUse>,
     },
     DoorUse {
         usage: Box<door_use::DoorUse>,
@@ -234,6 +238,13 @@ impl Bindings {
                     }
                     continue;
                 }
+                if let Trigger::TaskBoardUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if stage.completes || !transitions.insert(&usage.key) {
+                        return Err("authored Task Board entry collision/completion".into());
+                    }
+                    continue;
+                }
                 if let Trigger::DoorUse { usage } = &stage.trigger {
                     usage.validate(quest)?;
                     if !transitions.insert(&usage.key) {
@@ -272,7 +283,8 @@ impl Bindings {
                     | Trigger::Collect { .. }
                     | Trigger::TerrainUse { .. }
                     | Trigger::DoorUse { .. }
-                    | Trigger::Hit { .. } => {
+                    | Trigger::Hit { .. }
+                    | Trigger::TaskBoardUse { .. } => {
                         continue;
                     }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
@@ -358,13 +370,35 @@ impl Bindings {
         let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
         for quest in &self.quests {
             for t in &quest.tracks {
-                tracks.push(QuestTrack {
+                let declared = QuestTrack {
                     key: t.key.clone(),
                     quest: quest.quest.clone(),
                     initial: t.initial,
                     min: t.minimum,
                     max: t.maximum,
-                });
+                };
+                if let Some(existing) = tracks.iter().find(|track| track.key == declared.key) {
+                    if existing.quest != declared.quest
+                        || existing.initial != declared.initial
+                        || existing.min != declared.min
+                        || existing.max != declared.max
+                    {
+                        return Err(format!(
+                            "conflicting authored track {}: existing=({},{},{},{}), declared=({},{},{},{})",
+                            declared.key,
+                            existing.quest,
+                            existing.initial,
+                            existing.min,
+                            existing.max,
+                            declared.quest,
+                            declared.initial,
+                            declared.min,
+                            declared.max
+                        ));
+                    }
+                } else {
+                    tracks.push(declared);
+                }
             }
             if let Some(occurrence) = &quest.occurrence {
                 transitions.push(occurrence.transition()?);
@@ -492,6 +526,7 @@ impl Stage {
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
             Trigger::TerrainUse { usage } => usage.transition(quest, self.completes)?,
             Trigger::DoorUse { usage } => usage.transition(quest, self.completes)?,
+            Trigger::TaskBoardUse { usage } => usage.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
         Ok(transition)
@@ -551,3 +586,6 @@ mod door_use_tests;
 
 #[cfg(test)]
 mod collector_delivery_tests;
+
+#[cfg(test)]
+mod task_board_use_tests;

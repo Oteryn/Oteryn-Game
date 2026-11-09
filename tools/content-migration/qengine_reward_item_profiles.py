@@ -42,7 +42,7 @@ IDS |= {9106}
 IDS |= {27654}
 IDS |= qmech_m39.ITEMS
 IDS |= {21504, 21505}
-# Lion trials: exact holy-water vessel plus separately qualified inactive flower duration.
+# Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
 IDS |= {21466, 21389}
 # M07 retained Realm key and source bricklayers kit for the assigned repair stages.
 IDS |= {14682, 7785}
@@ -54,6 +54,8 @@ IDS |= {36543, 36544, 36545}
 # a gatherer and mint its next variant. Only physical custody is qualified
 # here; the exact corpse/live-target callbacks remain the use authority.
 IDS |= {17670, 17672, 17673, 17674}
+# Rafzan supplies this plain quest bow; capture policy remains a separate owner.
+IDS |= {17669}
 # Siflind grants one plain paint vial; the World owner controls its use.
 IDS |= {7253}
 # M22: Star Herb and Antlers already have native owners; qualify only the missing Talisman.
@@ -62,6 +64,8 @@ IDS |= {22008}
 IDS |= {2973}
 # M01c Grimvale: harvested blossoms, distinct from either planted nightshade.
 IDS |= {22082}
+# M44: source flower harvest and the two remaining native pagoda offerings.
+IDS |= {21389, 21466}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -122,7 +126,7 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
         'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
-        'records':[r for r in records if int(r['production_binding']['external_id']) in IDS],
+        'records':[r for r in records if int(r['production_binding']['external_id']) in selected_ids],
         'custody_promotions':[r for r in records if int(r['production_binding']['external_id']) in CUSTODY_PROMOTIONS]}
 
 

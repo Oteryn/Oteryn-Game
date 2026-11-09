@@ -190,19 +190,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // A field-enabled World reads dynamic Ground Items before committing its step.
+        // Environmental StepIn callbacks survive both a missing optional field
+        // capability and loss of volatile MINT hints on owner reconstruction.
+        // The reader and Item writer still prove actual scoped Ground custody.
+        let native_blood_listener = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some_and(|native| super::soul_war_callbacks::qualifies_source(&runtime, native));
         let origin = runtime.read_actor_position(actor).ok();
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
         let outcome = if self.bundle_map().is_some()
+            && !native_blood_listener
+            && !origin.is_some_and(|origin| {
+                states.cloak_blood_ingress_needed(
+                    &runtime,
+                    self.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    cardinal,
+                    blocking,
+                )
+            })
             && self
                 .required_capabilities
                 .effective()
                 .binary_search(&30)
                 .is_err()
         {
-            states.step_with_creature_field_contact(
+            states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),
                 actor,
@@ -282,6 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 drop(states);
                 drop(runtime);
+                let _ = self.resolve_cloak_blood_steps(&permit).await;
                 self.resolve_rotten_movement_callbacks(&permit).await;
                 super::soul_war_world::committed_step(self, actor, session, origin, snapshot, now)
                     .await;

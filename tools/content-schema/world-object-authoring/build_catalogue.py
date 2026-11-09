@@ -427,6 +427,20 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        import elemental_ground
+
+        files[elemental_ground.SHARD] = elemental_ground.output()
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += elemental_ground.NOTE
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
+        import feroxa_static
+
+        files[feroxa_static.SHARD] = feroxa_static.outputs()[feroxa_static.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += feroxa_static.NOTE
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -482,6 +496,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08614-08692.json",
             "content/world/terrain/terrain-08614-08668.json",
             "content/world/terrain/terrain-08693-08693.json",
+            "content/world/terrain/terrain-08749-08749.json",
             "content/world/objects/objects-12917-12931.json",
         )
         if (path := ROOT / relative).exists()

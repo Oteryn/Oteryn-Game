@@ -118,6 +118,7 @@ fn content() -> QuestLogLines {
 
 fn source(facts: Facts, version: u64) -> QuestLogSource {
     QuestLogSource {
+        map_marks: Vec::new(),
         content: content(),
         copy: Arc::new(facts),
         version,
@@ -290,6 +291,7 @@ fn the_snapshot_has_no_view_and_the_carried_tracked_quests() {
     assert_eq!(
         shown(&domain),
         QuestLog {
+            map_marks: Vec::new(),
             view: None,
             tracked: vec![rats_line("Hunt the rats.", false)],
         }
@@ -682,6 +684,7 @@ mod connection {
 
     fn list_view() -> QuestLog {
         QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::List(vec![QuestListEntry {
                 quest_index: RATS_INDEX,
                 completed: false,
@@ -794,6 +797,7 @@ mod connection {
             )
             .await?;
             let tracked = QuestLog {
+                map_marks: Vec::new(),
                 view: list_view().view,
                 tracked: vec![rats_line("Hunt the rats.", false)],
             };
@@ -823,6 +827,7 @@ mod connection {
             )
             .await?;
             let reconnect = QuestLog {
+                map_marks: Vec::new(),
                 view: None,
                 tracked: tracked.tracked.clone(),
             };
@@ -848,10 +853,12 @@ mod connection {
                 ..selected(&[CAPABILITY_QUEST_LOG_V1])
             };
             let before = QuestLog {
+                map_marks: Vec::new(),
                 view: None,
                 tracked: vec![rats_line("Hunt the rats.", false)],
             };
             let after = QuestLog {
+                map_marks: Vec::new(),
                 view: None,
                 tracked: vec![rats_line("Hunt the rats.", true)],
             };

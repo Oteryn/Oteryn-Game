@@ -10,6 +10,8 @@ pub mod elder_bloodjaw_think;
 pub mod ichgahal_think;
 pub mod murcion_think;
 pub mod mushroom_think;
+pub mod native_bloodjaw;
+pub mod native_mushroom;
 pub mod native_wave_spawn;
 pub mod pillar_of_dark_energy_think;
 pub mod summon_wave;

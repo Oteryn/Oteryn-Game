@@ -151,26 +151,26 @@
       ]
     },
     {
-      "key": "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry",
-      "quest": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "key": "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
       "trigger": "step_in",
       "selector": {
         "position": {
-          "x": 32623,
-          "y": 32584,
-          "floor": -7
+          "x": 32187,
+          "y": 31623,
+          "floor": -8
         },
         "unique": null,
         "action": null,
-        "appearance": 799,
+        "appearance": 409,
         "native": {
           "position": {
-            "x": 32623,
-            "y": 32584,
-            "floor": -7
+            "x": 32187,
+            "y": 31623,
+            "floor": -8
           },
           "ordinal": 0,
-          "appearance": 799
+          "appearance": 409
         }
       },
       "lever": null,
@@ -179,13 +179,13 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1/visited/entry",
+          "track": "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1/visited/entry",
           "minimum": 0,
           "maximum": 0,
           "set": 1
         },
         {
-          "track": "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1",
+          "track": "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1",
           "minimum": 0,
           "maximum": 0,
           "set": 1,
@@ -197,13 +197,939 @@
       "failure_message": null,
       "requires_world_admission": true,
       "sources": [
-        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/48",
-        "https://tibia.fandom.com/index.php?curid=75507&oldid=1117033",
+        "content/quests/world-callbacks.json#/callbacks/0",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:671-677",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/bear-room/s1/entry",
+      "quest": "oteryn:quest.bear_room_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32145,
+          "y": 32102,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 355,
+        "native": {
+          "position": {
+            "x": 32145,
+            "y": 32102,
+            "floor": -11
+          },
+          "ordinal": 0,
+          "appearance": 355
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/bear_room_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/bear_room_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/doors/gates.json#/gates/31",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/behemoth/s1/entry",
+      "quest": "oteryn:quest.behemoth_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33235,
+          "y": 31695,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 499,
+        "native": {
+          "position": {
+            "x": 33235,
+            "y": 31695,
+            "floor": -12
+          },
+          "ordinal": 0,
+          "appearance": 499
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/behemoth_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/behemoth_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/spawns/spawns-42000-43999.json#/records/110/declaration/points/3",
+        "content/world/placements/region-z12-x129-y123.b3",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 80
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/berserk-potion/s1/entry",
+      "quest": "oteryn:quest.berserk_potion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31179,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6593,
+        "native": {
+          "position": {
+            "x": 32479,
+            "y": 31179,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 6593
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserk_potion_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserk_potion_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/190",
+        "https://tibia.fandom.com/index.php?curid=16009&oldid=855143",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/berserker-treasure/s1/white_pearls",
+      "quest": "oteryn:quest.berserker_treasure_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33198,
+          "y": 31923,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 353,
+        "native": {
+          "position": {
+            "x": 33198,
+            "y": 31923,
+            "floor": -11
+          },
+          "ordinal": 0,
+          "appearance": 353
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserker_treasure_quest/s1/visited/white_pearls",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserker_treasure_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/211",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/deeplings-worldchange/s1/entry",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33641,
+          "y": 31379,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8287,
+        "native": {
+          "position": {
+            "x": 33641,
+            "y": 31379,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 8287
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/deeplings_worldchange/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/deeplings_worldchange/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/deeplings_worldchange/actions_golden_anchor.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "world_change": "deeplings",
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/dragon-corpse/s1/entry",
+      "quest": "oteryn:quest.dragon_corpse_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32147,
+          "y": 32207,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4409,
+        "native": {
+          "position": {
+            "x": 32147,
+            "y": 32207,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/343",
+        "https://tibia.fandom.com/index.php?curid=1219&oldid=1113674",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/dragon-tower/s1/entry",
+      "quest": "oteryn:quest.dragon_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33075,
+          "y": 32169,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 33075,
+            "y": 32169,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/357",
+        "https://tibia.fandom.com/index.php?curid=1545&oldid=1113770",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/edron-goblin/s1/entry",
+      "quest": "oteryn:quest.edron_goblin_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33108,
+          "y": 31850,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 355,
+        "native": {
+          "position": {
+            "x": 33108,
+            "y": 31850,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 355
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/109",
+        "https://tibia.fandom.com/index.php?curid=27120&oldid=748545",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
       ],
       "admission": {
         "premium": true
       }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/elvenbane/s1/entry",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32590,
+          "y": 31645,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32590,
+            "y": 31645,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/118",
+        "https://tibia.fandom.com/index.php?curid=4498&oldid=1113998",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/elvenbane/s2/entry",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32591,
+          "y": 31645,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32591,
+            "y": 31645,
+            "floor": -5
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s2/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/spawns/spawns-02000-03999.json#/records/1440/declaration/points/0",
+        "content/world/placements/region-z05-x127-y123.b3",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/emperor-s-cookies/s1/id3800",
+      "quest": "oteryn:quest.emperor_s_cookies_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32605,
+          "y": 31907,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32605,
+            "y": 31907,
+            "floor": -3
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/emperor_s_cookies_quest/s1/visited/id3800",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/emperor_s_cookies_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/163",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/ferumbras-ascension/s1/entry",
+      "quest": "oteryn:quest.ferumbras_ascension_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33276,
+          "y": 32390,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 33276,
+            "y": 32390,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/ferumbras_ascension_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/ferumbras_ascension_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/ferumbras_ascension/movements_entrance.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 150
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/fire-axe/s1/entry",
+      "quest": "oteryn:quest.fire_axe_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33098,
+          "y": 31703,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4408,
+        "native": {
+          "position": {
+            "x": 33098,
+            "y": 31703,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/fire_axe_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/fire_axe_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/107",
+        "https://tibia.fandom.com/index.php?curid=19176&oldid=1114456",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/fire-from-the-earth-mini-world-change/s1/entry",
+      "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32072,
+          "y": 32604,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4401,
+        "native": {
+          "position": {
+            "x": 32072,
+            "y": 32604,
+            "floor": -2
+          },
+          "ordinal": 0,
+          "appearance": 4401
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/fire_from_the_earth_mini_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/fire_from_the_earth_mini_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/spawns/spawns-00000-01999.json#/records/636/declaration/points/0",
+        "content/world/placements/region-z02-x125-y127.b3",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "world_change": "fire_from_the_earth",
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/fishing-box/s1/fishing_box",
+      "quest": "oteryn:quest.fishing_box_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32016,
+          "y": 31409,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6587,
+        "native": {
+          "position": {
+            "x": 32016,
+            "y": 31409,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 6587
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/fishing_box_quest/s1/visited/fishing_box",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/fishing_box_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/269",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/frost-dragon/s1/okolnir",
+      "quest": "oteryn:quest.frost_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32146,
+          "y": 31431,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4407,
+        "native": {
+          "position": {
+            "x": 32146,
+            "y": 31431,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 4407
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/frost_dragon_quest/s1/visited/okolnir",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/frost_dragon_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/273",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/fury-gates-mini-world-change/s1/entry",
+      "quest": "oteryn:quest.fury_gates_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32264,
+          "y": 32165,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7066,
+        "native": {
+          "position": {
+            "x": 32264,
+            "y": 32165,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 7066
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/fury_gates_mini_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/fury_gates_mini_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world_changes/fury_gates/thais.otbm",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:native-layer-approach;first-cycle-only"
+      ],
+      "world_change": "fury_gates/thais",
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 60
     },
     {
       "key": "oteryn:quest-callback/m01b/geomancer/s1/entry",
@@ -258,6 +1184,1632 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/ghoul-room/s1/entry",
+      "quest": "oteryn:quest.ghoul_room_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32507,
+          "y": 32175,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409,
+        "native": {
+          "position": {
+            "x": 32507,
+            "y": 32175,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/ghoul_room_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/ghoul_room_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/doors/gates.json#/gates/17",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/goblin-temple/s1/goblintemple",
+      "quest": "oteryn:quest.goblin_temple_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32210,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 502,
+        "native": {
+          "position": {
+            "x": 31973,
+            "y": 32210,
+            "floor": -12
+          },
+          "ordinal": 0,
+          "appearance": 502
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/goblin_temple_quest/s1/visited/goblintemple",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/goblin_temple_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/62",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/ankrahmun",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33376,
+          "y": 32805,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 418,
+        "native": {
+          "position": {
+            "x": 33376,
+            "y": 32805,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 418
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/ankrahmun",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/baeloc-nictros",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33425,
+          "y": 31413,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33425,
+            "y": 31413,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/baeloc-nictros",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_baeloc_nictros.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/count-vlarkorth",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33456,
+          "y": 31413,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33456,
+            "y": 31413,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/count-vlarkorth",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_count_vlarkorth_.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/dark-cathedral",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32645,
+          "y": 32394,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 32645,
+            "y": 32394,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/dark-cathedral",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/duke-krule",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33456,
+          "y": 31493,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33456,
+            "y": 31493,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/duke-krule",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_duke_krule.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/earl-osam",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33517,
+          "y": 31444,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33517,
+            "y": 31444,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/earl-osam",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_earl_osam.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/femor-hills",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32542,
+          "y": 31845,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 11417,
+        "native": {
+          "position": {
+            "x": 32542,
+            "y": 31845,
+            "floor": -6
+          },
+          "ordinal": 0,
+          "appearance": 11417
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/femor-hills",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/ice-islands",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32012,
+          "y": 31557,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32012,
+            "y": 31557,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/ice-islands",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/kilmaresh",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33813,
+          "y": 31628,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 469,
+        "native": {
+          "position": {
+            "x": 33813,
+            "y": 31628,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 469
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/kilmaresh",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/lord-azaram",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33423,
+          "y": 31493,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 429,
+        "native": {
+          "position": {
+            "x": 33423,
+            "y": 31493,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 429
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/lord-azaram",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_lord_azaram.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/orclands",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32777,
+          "y": 31817,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4409,
+        "native": {
+          "position": {
+            "x": 32777,
+            "y": 31817,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 4409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/orclands",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s1/vengoth",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32960,
+          "y": 31534,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7062,
+        "native": {
+          "position": {
+            "x": 32960,
+            "y": 31534,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 7062
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1/visited/vengoth",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grave-danger/s4/entry",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33301,
+          "y": 32648,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "native": {
+          "position": {
+            "x": 33301,
+            "y": 32648,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 231
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s4/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s1",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s2",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grave_danger_quest/s3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/55",
+        "https://tibia.fandom.com/index.php?curid=88996&oldid=1117096",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/grimvale-mini-world-change/s1/entry",
+      "quest": "oteryn:quest.grimvale_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33335,
+          "y": 31690,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4515,
+        "native": {
+          "position": {
+            "x": 33335,
+            "y": 31690,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4515
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grimvale_mini_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grimvale_mini_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/176",
+        "https://tibia.fandom.com/index.php?curid=75277&oldid=1117030",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "world_change": "grimvale",
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/heart-of-destruction/s1/entry",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32118,
+          "y": 31355,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 23054,
+        "native": {
+          "position": {
+            "x": 32118,
+            "y": 31355,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 23054
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/heart_of_destruction_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/heart_of_destruction_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 150
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/hero-of-rathleton/s1/entry",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33533,
+          "y": 31951,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 20545,
+        "native": {
+          "position": {
+            "x": 33533,
+            "y": 31951,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 20545
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json#/candidates/941",
+        "https://tibia.fandom.com/index.php?curid=69693&oldid=1116848",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/hero-of-rathleton/s3/entry",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33553,
+          "y": 32049,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 20537,
+        "native": {
+          "position": {
+            "x": 33553,
+            "y": 32049,
+            "floor": -15
+          },
+          "ordinal": 0,
+          "appearance": 20537
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s3/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/hero_of_rathleton_quest/s2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/hero_of_rathleton/movements_lava.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/horse-station-world-change/s1/entry",
+      "quest": "oteryn:quest.horse_station_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32442,
+          "y": 32229,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4521,
+        "native": {
+          "position": {
+            "x": 32442,
+            "y": 32229,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4521
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/horse_station_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/horse_station_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/globalevents/spawn/horse_station_world_change.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only",
+        "OTERYN_PERMANENT_LANDMARK_SURVEY:horse-station/s1;no-escape-activation"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/inukaya/s1/inukaya",
+      "quest": "oteryn:quest.inukaya_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32484,
+          "y": 31109,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6684,
+        "native": {
+          "position": {
+            "x": 32484,
+            "y": 31109,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 6684
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/inukaya_quest/s1/visited/inukaya",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/inukaya_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/272",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/iron-helmet/s1/ironhelmet",
+      "quest": "oteryn:quest.iron_helmet_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32770,
+          "y": 32225,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4516,
+        "native": {
+          "position": {
+            "x": 32770,
+            "y": 32225,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4516
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/iron_helmet_quest/s1/visited/ironhelmet",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/iron_helmet_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/74",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/katana/s1/id4603",
+      "quest": "oteryn:quest.katana_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32177,
+          "y": 32132,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 355,
+        "native": {
+          "position": {
+            "x": 32177,
+            "y": 32132,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 355
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/katana_quest/s1/visited/id4603",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/katana_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/170",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part1",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33195,
+          "y": 32458,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 33195,
+            "y": 32458,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/277",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part2",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33304,
+          "y": 32277,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 33304,
+            "y": 32277,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/278",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part3",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33211,
+          "y": 32593,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "native": {
+          "position": {
+            "x": 33211,
+            "y": 32593,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 231
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/279",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/koshei-the-deathless/s1/koshei_amulet_part4",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33054,
+          "y": 32468,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409,
+        "native": {
+          "position": {
+            "x": 33054,
+            "y": 32468,
+            "floor": -11
+          },
+          "ordinal": 0,
+          "appearance": 409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/280",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/lion-trophy/s1/entry",
+      "quest": "oteryn:quest.lion_trophy_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32146,
+          "y": 31120,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6685,
+        "native": {
+          "position": {
+            "x": 32146,
+            "y": 31120,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 6685
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/lion_trophy_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/lion_trophy_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/149",
+        "https://tibia.fandom.com/index.php?curid=17206&oldid=1114444",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "required_completed_quests": [
+        "oteryn:quest.the_ice_islands_quest"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/lions-rock/s1/entry",
+      "quest": "oteryn:quest.lions_rock",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33138,
+          "y": 32358,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4399,
+        "native": {
+          "position": {
+            "x": 33138,
+            "y": 32358,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4399
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/lions_rock/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/lions_rock/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/242",
+        "https://tibia.fandom.com/index.php?curid=69447&oldid=1192599",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/longsword/s1/entry",
       "quest": "oteryn:quest.longsword_quest",
       "trigger": "step_in",
@@ -310,6 +2862,568 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/mad-mage-room/s1/entry",
+      "quest": "oteryn:quest.mad_mage_room_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32396,
+          "y": 32138,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 32396,
+            "y": 32138,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/mad_mage_room_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/mad_mage_room_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json#/candidates/30",
+        "https://tibia.fandom.com/index.php?curid=5361&oldid=1114111",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "minimum_level": 40
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/medusa-shield/s1/the_medusa_quest",
+      "quest": "oteryn:quest.medusa_shield_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33050,
+          "y": 32398,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 410,
+        "native": {
+          "position": {
+            "x": 33050,
+            "y": 32398,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 410
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/medusa_shield_quest/s1/visited/the_medusa_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/medusa_shield_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/231",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/minotaur-hell/s1/minohell1",
+      "quest": "oteryn:quest.minotaur_hell_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32131,
+          "y": 32066,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 351,
+        "native": {
+          "position": {
+            "x": 32131,
+            "y": 32066,
+            "floor": -12
+          },
+          "ordinal": 0,
+          "appearance": 351
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/minotaur_hell_quest/s1/visited/minohell1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/minotaur_hell_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/89",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/pits-of-inferno-entry",
+      "quest": "oteryn:quest.the_pits_of_inferno_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32795,
+          "y": 32335,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 32795,
+            "y": 32335,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 354
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 354
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/the_pits_of_inferno_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "content/quests/definitions/quests-00000-00099.json#/records/89",
+        "https://www.tibiawiki.com.br/wiki/Pits_of_Inferno_Quest",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:pits-of-inferno;first-stage-counter"
+      ],
+      "minimum_level": 80,
+      "character_requirements": {
+        "premium": true
+      },
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-0",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33452,
+          "y": 31027,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33452,
+            "y": 31027,
+            "floor": -8
+          },
+          "ordinal": 2,
+          "appearance": 25091
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25091
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-1",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33453,
+          "y": 31027,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33453,
+            "y": 31027,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25092
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25092
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-2",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33454,
+          "y": 31027,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33454,
+            "y": 31027,
+            "floor": -8
+          },
+          "ordinal": 2,
+          "appearance": 25093
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25093
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-3",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33452,
+          "y": 31028,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33452,
+            "y": 31028,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25094
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25094
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-4",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33453,
+          "y": 31028,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33453,
+            "y": 31028,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25095
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25095
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-5",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33454,
+          "y": 31028,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33454,
+            "y": 31028,
+            "floor": -8
+          },
+          "ordinal": 2,
+          "appearance": 25096
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25096
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-6",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33452,
+          "y": 31029,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33452,
+            "y": 31029,
+            "floor": -8
+          },
+          "ordinal": 2,
+          "appearance": 25097
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25097
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-7",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33453,
+          "y": 31029,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33453,
+            "y": 31029,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25098
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25098
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m03/time-machine-return-8",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33454,
+          "y": 31029,
+          "floor": -8
+        },
+        "native": {
+          "position": {
+            "x": 33454,
+            "y": 31029,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25099
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25099
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32430,
+        "y": 32167,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/qm03/anniversary",
       "quest": "oteryn:quest.25_years_of_tibia_quest",
       "trigger": "use",
@@ -349,7 +3463,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
-          "minimum": -1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "at_least": true
@@ -357,13 +3471,587 @@
       ],
       "requires_world_admission": true,
       "offerings": [],
-      "return_on_failure": false,
+      "return_on_failure": true,
       "failure_message": "You do not meet the entrance requirements.",
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
         "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
-        "OTERYN_SOURCE_USE:retained-time-machine-counterpart"
-      ]
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25091",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32429,
+          "y": 32164,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25091,
+        "native": {
+          "position": {
+            "x": 32429,
+            "y": 32164,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25091
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25092",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32430,
+          "y": 32164,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25092,
+        "native": {
+          "position": {
+            "x": 32430,
+            "y": 32164,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25092
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25093",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32431,
+          "y": 32164,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25093,
+        "native": {
+          "position": {
+            "x": 32431,
+            "y": 32164,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25093
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25094",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32429,
+          "y": 32165,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25094,
+        "native": {
+          "position": {
+            "x": 32429,
+            "y": 32165,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25094
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25095",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32430,
+          "y": 32165,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25095,
+        "native": {
+          "position": {
+            "x": 32430,
+            "y": 32165,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25095
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25097",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32429,
+          "y": 32166,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25097,
+        "native": {
+          "position": {
+            "x": 32429,
+            "y": 32166,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25097
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25098",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32430,
+          "y": 32166,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25098,
+        "native": {
+          "position": {
+            "x": 32430,
+            "y": 32166,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25098
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/qm03/anniversary-25099",
+      "quest": "oteryn:quest.25_years_of_tibia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32431,
+          "y": 32166,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25099,
+        "native": {
+          "position": {
+            "x": 32431,
+            "y": 32166,
+            "floor": -8
+          },
+          "ordinal": 1,
+          "appearance": 25099
+        }
+      },
+      "admission": {
+        "regular_blessings": true,
+        "promotion": true,
+        "premium": true
+      },
+      "minimum_level": 20,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33453,
+        "y": 31030,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "requires_world_admission": true,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You do not meet the entrance requirements.",
+      "sources": [
+        "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+        "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+        "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+        "content/quests/definitions/quests-00200-00299.json#/records/67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+      ],
+      "character_requirements": {
+        "premium": true,
+        "promoted": true,
+        "blessings": [
+          "oteryn:blessing.the_embrace_of_tibia",
+          "oteryn:blessing.the_fire_of_the_suns",
+          "oteryn:blessing.the_spark_of_the_phoenix",
+          "oteryn:blessing.the_spiritual_shielding",
+          "oteryn:blessing.the_wisdom_of_solitude"
+        ]
+      }
     },
     {
       "key": "oteryn:quest-callback/qm03/pits",
@@ -399,7 +4087,7 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/chosen-source/the_pits_of_inferno_quest/s1",
-          "minimum": -1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1,
           "at_least": true
@@ -413,7 +4101,10 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_pits_of_inferno_quest/movements_holy_tible_tile.lua:1-4",
         "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
         "OTERYN_CHOSEN_ENTRANCE:retained-source-destination"
-      ]
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/chosen-source/the_pits_of_inferno_quest/s1": 0
+      }
     },
     {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",

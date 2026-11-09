@@ -114,11 +114,14 @@ mod tests {
 
     #[test]
     fn srv7_m02_mutable_ground_projection_requires_durable_world_admission() -> Result<(), String> {
-        let mut callback = super::super::load()?
+        let mut callback = super::super::parse(super::super::EMBEDDED)?
             .into_iter()
             .find(|c| c.key.ends_with("/behemoth"))
             .ok_or("callback template")?;
         callback.key = "oteryn:quest-callback/srv7-m02-readonly-fixture".into();
+        // Use the raw legacy shape: catalogue augmentation adds unrelated entry policy.
+        callback.lever = None;
+        callback.passages.clear();
         callback.storage.clear();
         callback.state_ops.clear();
         callback.effects = Default::default();

@@ -1115,5 +1115,14 @@
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
   "m01b_latest_batch": "Deeplings PG GREEN64.396295735s. WIP FireEarth survey:strictClippy5m15s,6profile0.06s,115modules/1206authoringtests/checks/tree/fmt/pins PASS. OwnnativePG building;NOTqualified.34wiredroutes35stages,33PG-provenroutes34stages;M01b PARTIAL.",
-  "m01b_latest_slice": "Fury first-survey resolver/factory tested;livebindingandnativePGpending.34PG-proven routes/35stages. No merges."
+  "m01b_latest_slice": "HorseStation s1QUALIFIED nativePG70.018382489s;globalWorldHELDunchanged.36routes39stages53anchorsPG-proven;10routes17stagesunwired.381questunits/119modules1218authoringtests,workspace8m16s/Clippy/fmt/pinsPASS. M01bPARTIAL.",
+  "native_anchor_generation": {
+    "state": "SLICE_GREEN",
+    "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
+    "red": "Two real callback-factory tests failed: changed ground and missing region were accepted.",
+    "focused": "4 new tests GREEN1.616s; all65 existing binding tests GREEN59.795s.",
+    "postgres": "m01b_horse_station_native_landmark_visit_never_activates_escape_state GREEN118.467654971s; real dispatch STEP, once/replay/revisit, no World escape activation.",
+    "remaining": "No new route qualification.36routes/39stages proven,10routes/17stages unwired.",
+    "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
+  }
 }

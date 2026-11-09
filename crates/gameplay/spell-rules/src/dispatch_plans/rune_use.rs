@@ -31,7 +31,12 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                             && profile.condition.as_ref().is_some_and(|c| c.kind == "paralyze"))
                 })
         }
-        (Carrier::Rune { item: 3174, .. }, Execution::Effects(effects)) => {
+        (
+            Carrier::Rune {
+                item: 3174 | 17512, ..
+            },
+            Execution::Effects(effects),
+        ) => {
             !has_world_geometry(spell)
                 && !effects.is_empty()
                 && effects.iter().all(|effect| {
@@ -92,5 +97,24 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                     }
         }
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::dispatch_plans::ordinary_combat::test_source;
+
+    #[test]
+    fn engenc_training_missile_is_direct_only_with_qualified_damage_effects() {
+        let mut spell = test_source("candidate:spell/rune/lightest_magic_missile_rune");
+        assert!(direct_rune(&spell));
+        spell.execution = Execution::Effects(Vec::new());
+        assert!(!direct_rune(&spell));
+        let mut other = test_source("candidate:spell/rune/lightest_magic_missile_rune");
+        if let Carrier::Rune { item, .. } = &mut other.carrier {
+            *item = 17513;
+        }
+        assert!(!direct_rune(&other));
     }
 }

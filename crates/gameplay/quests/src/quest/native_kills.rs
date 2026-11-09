@@ -249,12 +249,13 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
 pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Counter>, String> {
     Ok(COUNTERS
         .iter()
+        .chain(fugue::COUNTERS)
         .chain(qworld::counters()?)
         .chain(super::world_change_journals::counters()?))
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let mut tracks = catalogue.tracks;
+    let mut tracks = catalogue.tracks.clone();
     let quest = "oteryn:quest.the_first_dragon_quest";
     for (key, maximum) in [
         (
@@ -287,7 +288,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     }
     let mut tracks: Vec<_> = tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
-    let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
+    let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for counter in registered_counters()? {
         let exact = counter.transition();
         if let Some(existing) = transitions
@@ -308,8 +309,30 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             transitions.push(exact);
         }
     }
-    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-        .map_err(|error| format!("{error:?}"))
+    let mut extended =
+        QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+            .map_err(|error| format!("{error:?}"))?;
+    for (quest, hash) in &catalogue.hashes {
+        let unchanged_tracks = extended
+            .tracks
+            .values()
+            .filter(|t| &t.quest == quest)
+            .all(|track| catalogue.tracks.get(&track.key) == Some(track));
+        let unchanged_transitions = extended
+            .transitions
+            .values()
+            .filter(|t| &t.quest == quest)
+            .all(|transition| catalogue.transitions.get(&transition.key) == Some(transition));
+        if unchanged_tracks && unchanged_transitions {
+            extended.hashes.insert(quest.clone(), *hash);
+        }
+    }
+    extended.npc_legacy = catalogue.npc_legacy;
+    extended.predecessors = catalogue.predecessors;
+    extended.authored_bindings = catalogue.authored_bindings;
+    extended.native_recipe_evidence = catalogue.native_recipe_evidence;
+    extended.completion_sets = catalogue.completion_sets;
+    Ok(extended)
 }
 #[cfg(test)]
 mod tests {

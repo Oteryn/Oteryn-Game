@@ -335,3 +335,172 @@ fn cleanup_excludes_population_repairs_and_requires_a_live_scope_owner() {
         Err(NativeWaveSpawnError::StaleOwner)
     );
 }
+
+#[test]
+fn mushroom_current_owner_removes_orphan_without_a_death() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.ichgahal");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("wave owner");
+    let stamp = runtime.issue_owner_work().expect("current owner");
+    let child = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &effect(2), &mut map())
+        .expect("native Mushroom")
+        .child;
+    let content = runtime.content_pin().server_artifact_digest();
+    assert_eq!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content),
+        Ok(false)
+    );
+    assert!(runtime.read_actor_position(child).is_ok());
+    runtime.remove_test_actor(boss).expect("boss leaves");
+    assert_eq!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content),
+        Ok(true)
+    );
+    assert!(runtime.read_actor_position(child).is_err());
+}
+
+#[test]
+fn mushroom_cleanup_rejects_wrong_pin_identity_and_retired_owner() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.murcion");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("wave owner");
+    let stamp = runtime.issue_owner_work().expect("current owner");
+    let child = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &effect(1), &mut map())
+        .expect("native Mushroom")
+        .child;
+    let content = runtime.content_pin().server_artifact_digest();
+    assert!(super::super::native_mushroom::remove_orphan(&mut runtime, child, [0; 32]).is_err());
+    assert!(super::super::native_mushroom::remove_orphan(&mut runtime, boss, content).is_err());
+    assert!(runtime.read_actor_position(child).is_ok());
+    runtime.remove_test_actor(boss).expect("boss leaves");
+    runtime.retire_owner_cycle();
+    assert!(super::super::native_mushroom::remove_orphan(&mut runtime, child, content).is_err());
+}
+
+#[test]
+fn elder_bloodjaw_population_repair_despawns_after_its_boss_leaves() {
+    for key in ["oteryn:creature.ichgahal", "oteryn:creature.murcion"] {
+        let (mut runtime, boss, _, _) = setup(key);
+        let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("source wave owner");
+        let stamp = runtime.issue_owner_work().expect("current owner");
+        let repair = SummonWaveEffect::Spawn {
+            creature_key: "oteryn:creature.elder_bloodjaw",
+            around: RoomPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            placement: SummonPlacement::Close { offset_tiles: 2 },
+        };
+        let child = owner
+            .spawn_current(&mut runtime, stamp, 1, 0, &repair, &mut map())
+            .expect("native population repair")
+            .child;
+        let content = runtime.content_pin().server_artifact_digest();
+        assert_eq!(
+            super::super::native_bloodjaw::remove_orphan(&mut runtime, child, content),
+            Ok(false)
+        );
+        assert!(runtime.read_actor_position(child).is_ok());
+        assert_eq!(
+            owner.retire_wave_child(&mut runtime, stamp, child),
+            Err(NativeWaveSpawnError::UnownedChild)
+        );
+        runtime.remove_test_actor(boss).expect("boss departure");
+        assert_eq!(
+            super::super::native_bloodjaw::remove_orphan(&mut runtime, child, content),
+            Ok(true)
+        );
+        assert!(runtime.read_actor_position(child).is_err());
+    }
+}
+
+#[test]
+fn bloodjaw_and_mushroom_use_their_distinct_current_boss_presence_lists() {
+    for key in ["oteryn:creature.chagorz", "oteryn:creature.vemiath"] {
+        let (mut runtime, boss, _, _) = setup(key);
+        let mut children = Vec::new();
+        for (x, key) in [
+            (101, "oteryn:creature.mushroom"),
+            (102, "oteryn:creature.elder_bloodjaw"),
+        ] {
+            let child = runtime
+                .admit_pinned_monster_lab_creature(
+                    MovementLocalPosition {
+                        x,
+                        y: 100,
+                        floor: 7,
+                    },
+                    key,
+                    20,
+                )
+                .expect("current native fixture child");
+            runtime
+                .install_creature_policy(child, key)
+                .expect("real installed policy");
+            children.push(child);
+        }
+        let content = runtime.content_pin().server_artifact_digest();
+        assert_eq!(
+            super::super::native_mushroom::remove_orphan(&mut runtime, children[0], content),
+            Ok(true)
+        );
+        assert_eq!(
+            super::super::native_bloodjaw::remove_orphan(&mut runtime, children[1], content),
+            Ok(false)
+        );
+        assert!(runtime.read_actor_position(children[1]).is_ok());
+        runtime.remove_test_actor(boss).expect("boss departure");
+        assert_eq!(
+            super::super::native_bloodjaw::remove_orphan(&mut runtime, children[1], content),
+            Ok(true)
+        );
+        assert!(runtime.read_actor_position(children[1]).is_err());
+    }
+}
+
+#[test]
+fn orphan_cleanup_withholds_removal_when_a_nearby_creature_policy_is_unavailable() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.ichgahal");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("wave owner");
+    let stamp = runtime.issue_owner_work().expect("current owner");
+    let child = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &effect(2), &mut map())
+        .expect("native Mushroom")
+        .child;
+    let content = runtime.content_pin().server_artifact_digest();
+    runtime
+        .remove_test_actor(boss)
+        .expect("original boss leaves");
+    let unresolved = runtime
+        .admit_pinned_monster_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            "oteryn:creature.ichgahal",
+            20,
+        )
+        .expect("identity admitted before policy installation");
+    assert!(runtime.companion_snapshot(unresolved).is_err());
+    assert!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content).is_err(),
+        "an unreadable native identity is not proof of boss absence"
+    );
+    assert!(runtime.read_actor_position(child).is_ok());
+    runtime
+        .install_creature_policy(unresolved, "oteryn:creature.ichgahal")
+        .expect("policy becomes current");
+    assert_eq!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content),
+        Ok(false)
+    );
+    runtime
+        .remove_test_actor(unresolved)
+        .expect("resolved boss leaves");
+    assert_eq!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content),
+        Ok(true)
+    );
+}

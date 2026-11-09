@@ -201,7 +201,7 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "7fe45f79c905dc61df5c5b8579e027b5c35d82bee5c0fc0e3d747f98054a5776"
+      "sha256": "735cf0285a0f79476fbd9434e9250d5a3e22f8c80434aa5dcf2bb6e44302efc3"
     }
   ],
   "canonical_inputs": [
@@ -353,7 +353,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "e10bcc68e943f55d951cc8d570ce352df23b79b40c5e970d76b465bfe656adc4"
+      "sha256": "8f37279c3dc69fc5e7c750742061f7f806583ff7e83c4374c98758faa3645511"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -29099,9 +29099,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {

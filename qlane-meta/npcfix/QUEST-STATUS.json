@@ -401,6 +401,107 @@
     "fmt": "PASS",
     "pins": "PASS unchanged inputs",
     "migration": "none",
-    "remaining": "Authored four-name data repairs and other M38 bindings remain unfinished; node boot delegated to CI by owner."
+    "remaining": "Four native data repairs now restored and locally checked; other M38 bindings remain unfinished."
+  },
+  "preserved_display_name_data": {
+    "state": "GREEN",
+    "count": 4,
+    "keys": [
+      "oteryn:npc.ferryman_kamil_meluna",
+      "oteryn:npc.harlow_vengoth",
+      "oteryn:npc.junkar_mines",
+      "oteryn:npc.maris_mistrock"
+    ],
+    "red": "Two new materializer tests failed before correction implementation",
+    "green": "Two correction tests and repaired existing Quest fixture pass",
+    "authoring_checks": "PASS full checks rerun",
+    "authoring_units": {
+      "modules": 114,
+      "cases": 1145,
+      "state": "PASS full rerun after generated packet fixes"
+    },
+    "content_tree": "PASS; no declarations added or removed; only four display-name fields changed",
+    "workspace_check": "PASS 14m30s",
+    "clippy": "PASS strict changed materializer target 10m26s",
+    "fmt": "PASS",
+    "pins": "PASS after isolated repository pin-refresh",
+    "duplicate_migrations": "PASS; no SQL changed",
+    "validation_limits": "Broader materializer example suite and generator broad integration-check phase were stopped for focused checks, not reported green. No new PG case claimed; no SQL change. Node boot delegated to CI by owner.",
+    "deployment_handoff": {
+      "coordinator_refresh_required": true,
+      "path": "deploy/synology-game/preprod-topology.toml",
+      "action": "coordinator runs pin-refresh after integration; no deployment file changed in lane checkout"
+    },
+    "whole_M38": "PARTIAL"
+  },
+  "node_boot_execution": {
+    "owner_decision": "CI runs node boot; unavailable container qualification is not a blocker",
+    "local": "NOT_RUN",
+    "coordinator_action": "Refresh deployment manifest digest during integration; protected deployment path unchanged by this lane."
+  },
+  "travel_prompt_component": {
+    "state": "GREEN",
+    "capability": "Captured route and context; one or two confirmations; single-use exclusive 60-second deadline",
+    "red": "2 failing expiry cases; 2 passing context/route cases",
+    "green": "4 focused NPC unit cases PASS",
+    "production_wiring": "GREEN: Anna and Seagull use the captured route; explicit Targuna remains disabled pending atomic relocation/citizenship.",
+    "workspace": "PASS 10m44s",
+    "clippy": "PASS strict NPC and quests all-target/all-feature 4m04s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged content inputs",
+    "sql": "unchanged; no new PG claim",
+    "reuse_check": "QENGINE2 97cb9db791482391e77049c8a27fefd659003669 and qmech 0326dc2e5517435bbbe599df2007d835a7ee3477 lack captured travel prompt; no merges",
+    "whole_M38": "PARTIAL"
+  },
+  "optional_binding_watch_fix": {
+    "state": "GREEN",
+    "cause": "Missing optional content/quests/authored-bindings was always watched, forcing repeated Cargo rebuilds",
+    "fix": "Watch nearest existing ancestor until optional directory is created; keep registry scope/limits unchanged",
+    "red": "Real Cargo rebuilt unchanged fixture twice; expected once",
+    "green": "Cargo integration regression PASS 0.47s; unchanged builds cached and first new binding detected"
+  },
+  "travel_prompt_wiring": {
+    "state": "GREEN",
+    "caller": "crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs",
+    "scope": "Existing Anna/Seagull confirmations; captured route used for destination and receipt, ordinary-message validity reads do not consume a confirmation",
+    "tests": "5 focused prompt cases PASS; existing expiry RED carried from component slice",
+    "workspace": "PASS 12m34s",
+    "clippy": "PASS strict NPC/dispatch all-target/all-feature 10m54s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged inputs",
+    "duplicate_migrations": "PASS; no SQL changes",
+    "pg": "No new PG case claimed; SQL/arrival owners unchanged",
+    "whole_M38": "PARTIAL; Targuna, last-port and other unfinished source bindings remain"
+  },
+  "return_port_policy_component": {
+    "state": "GREEN",
+    "api": "TravelReturnRequirement",
+    "scope": "A bounded unique inbound group (1..64 receipt routes), canonical route grammar, exact expected-port match; absent/ambiguous latest history stays closed",
+    "red": "2 positive policy cases failed before implementation; 2 denial cases passed",
+    "green": "4 focused content unit cases PASS",
+    "workspace": "PASS 12m27s",
+    "clippy": "PASS strict content all-target/all-feature 1m24s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged native inputs",
+    "duplicate_migrations": "PASS; no SQL change",
+    "reader_and_native_binding": "NEXT; component does not yet activate a return route",
+    "new_pg_proof": "none; no SQL changed",
+    "whole_M38": "PARTIAL"
+  },
+  "m38_return_receipt_reader": {
+    "state": "PG_GREEN_CHECKS_RUNNING",
+    "migration": "2140_npc_travel_completed_origin.sql",
+    "sql_red_seconds": 0.288316,
+    "sql_green_seconds": 0.147351,
+    "pg_test": "npcfix_m38_travel_return_remembers_only_completed_inbound_ports_postgres",
+    "pg_green_seconds": 23.878212218,
+    "scope": "Fenced read of completed inbound receipt groups; pending/replay/clock repair/stale-session checks. Quote/commit gate and native Petros return wiring remain unfinished.",
+    "publication_checks": {
+      "fmt": "PASS",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS",
+      "workspace_all_targets": "RUNNING at owner push-now instruction",
+      "clippy": "QUEUED behind workspace; not claimed passed"
+    }
   }
 }

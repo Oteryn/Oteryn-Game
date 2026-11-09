@@ -11,6 +11,9 @@ class LionTearsBindingTests(unittest.TestCase):
         callback = next((c for c in callbacks if c['key'] == 'oteryn:quest-callback/m07/lion-tears'), None)
         self.assertIsNotNone(callback, 'native Lion Tears offering missing')
         self.assertEqual(callback['quest'], 'oteryn:quest.tibia_tales')
+        # Crystal actions_lions_rock.lua:35-36, including Lua's \z whitespace join.
+        self.assertEqual(callback['success_message'],
+                         "You have purified a sacret pedestal with holy water. You have now passed the last testto enter thge inner sanctum.")
         self.assertTrue(callback['requires_world_admission'])
         self.assertEqual(callback['selector']['native'], {
             'position': {'x': 33154, 'y': 32279, 'floor': -8}, 'ordinal': 2, 'appearance': 21391})

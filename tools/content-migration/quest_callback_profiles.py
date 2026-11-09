@@ -140,7 +140,7 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
+def requested_keys(root, extra_keys=()):
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'content-schema/reward-claim-authoring'))
@@ -152,6 +152,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # M07's Rust-authored Lion trials need the same native physical Item owner.
+    import lion_trial_item_profiles
+    keys.update(f'oteryn:item.tibia.i{i}' for i in lion_trial_item_profiles.SOURCE_RECORDS)
+    # Crystal 201189f movements_lions_rock.lua:54-108: the native STEP
+    # amphora grants this canonical scroll; it is authored in Rust, not JSON.
+    keys.add('oteryn:item.tibia.i21467')
     keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
@@ -176,6 +182,22 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             # Crystal201189f chest.lua:556: UID5024 grants the already-canonical
             # silver key3700. KEY owns its native numbered instance; the claim's
             # historical waiting_implementation flag is not an Item hold.
+            # Crystal 201189f chest.lua: UID5018 is the Fanfare access key.
+            # It grants a numbered key but never a canonical quest transition.
+            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3520':
+                placements = definition['placements']
+                key = 'oteryn:item.tibia.i2973'
+                expected = {'items': [{'count': 1, 'item': {
+                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
+                    'key_binding': 'canary:door-key/3520'}
+                if (len(placements) != 1 or placements[0]['reward'] != expected
+                        or placements[0].get('quest_transition') is not None
+                        or placements[0]['source_binding']['project_position'] !=
+                            {'x': 32376, 'y': 31802, 'z': 7}
+                        or {'server': 'crystalserver', 'unique_id': 5018} not in
+                            placements[0]['source_binding']['legacy_unique_ids']):
+                    raise ValueError('FANFARE_ACCESS_KEY_CLAIM_CHANGED')
+                keys.add(key)
             if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3700':
                 placements = definition['placements']
                 key = 'oteryn:item.tibia.i2971'
@@ -203,6 +225,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         # and admission. Shop Items with unqualified facts are a separate input.
         keys.update(f"oteryn:item.tibia.i{task['item']['source_id']}"
                     for task in grizzly['tasks'] if task.get('item'))
+    return keys
+
+
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
+    keys = requested_keys(root, extra_keys)
+    import container_native
+    import lion_trial_item_profiles
     document = json.loads(generated[profile_path])
     present = {row['production_definition']['production_key']: row for row in document['records']}
     if len(present) != len(document['records']):
@@ -223,15 +252,27 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
     source_items = ET.fromstring(raw).findall('item')
+    lion_records = lion_trial_item_profiles.records(root, raw, definitions)
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     for key, definition in sorted(definitions.items()):
+        if key in lion_records:
+            record = lion_records[key]
+            if key in present:
+                if present[key] != record:
+                    raise ValueError('LION_TRIAL_NATIVE_PROFILE_DRIFT')
+            else:
+                document['records'].append(record)
+            continue
         # These exact source-qualified Items retain their canonical identity;
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
         if key in {f'oteryn:item.tibia.i{item}' for item in container_native.CHARGED_QUEST_CLAIMS.values()}:
             definition = container_native.native_charge_item(definition, present.get(key))
+        if key == 'oteryn:item.tibia.i2874':
+            # Only an agreeing, already-admitted native empty-vial profile closes this hold.
+            definition = container_native.native_water_vial(definition, present.get(key))
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']
@@ -243,6 +284,24 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
                        for field in ('movable', 'pickupable'))):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
+        if key == 'oteryn:item.tibia.i2955' and key not in present:
+            # Fanfare already belongs to the retained House provider. Seed its
+            # exact source profile before this earlier callback pass can create
+            # a poorer canonical-only record that would shadow that owner.
+            import house_decoration_actions as house
+            packet = json.loads((root / house.PROFILES).read_bytes())
+            if (packet['schema'] != 'OTERYN_HOUSE_DECORATION_PROFILES/v1'
+                    or packet['crystal_commit'] != house.PIN
+                    or packet['canary_commit'] != house.CANARY
+                    or packet['catalogue_sha256'] != hashlib.sha256(
+                        (root / house.CATALOGUE).read_bytes()).hexdigest()):
+                raise ValueError('FANFARE_NATIVE_SOURCE_DRIFT')
+            candidates = [row for row in packet['records']
+                          if row['production_definition']['production_key'] == key]
+            if len(candidates) != 1:
+                raise ValueError('FANFARE_NATIVE_SOURCE_ITEM')
+            present[key] = copy.deepcopy(candidates[0])
+            document['records'].append(present[key])
         if key in present:
             complete_native_stack(root, present[key], definition, matches[0])
             continue

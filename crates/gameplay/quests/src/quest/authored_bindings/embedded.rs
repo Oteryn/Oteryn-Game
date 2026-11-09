@@ -138,6 +138,7 @@ impl RecipeEvidence {
                     )
                 ) && !(selected.original_source_gaps
                     && entry["code"].as_str() == Some("reported_source_gap"))
+                    && !selected.resolves_original_level(entry)
             });
             // A missing legacy delivery owner must not prevent a safe first step.
             // Every other data hold remains authoritative, as do nontrivial actor gates.
@@ -221,6 +222,8 @@ impl RecipeEvidence {
                 matches!(
                     stage.trigger,
                     super::Trigger::TerrainUse { .. }
+                        | super::Trigger::DoorUse { .. }
+                        | super::Trigger::TaskBoardUse { .. }
                         | super::Trigger::Collect { .. }
                         | super::Trigger::Kill { .. }
                 )

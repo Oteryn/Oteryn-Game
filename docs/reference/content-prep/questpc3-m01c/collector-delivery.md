@@ -42,3 +42,14 @@ collector for this added delivery. The selected reward is the existing
 `oteryn:achievement/trail_of_the_ape_god`, not guaranteed tusks. Five native
 Terrified Elephant death receipts are required before this one-time achievement
 and quest completion commit together in the existing reward owner.
+
+All eight contacts have unique retained candidates in
+`tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:1`.
+The world compiler rejected Edala's 32697,31718,2 cell as `BlockSolid` (Item 3667)
+and Humphrey's 32358,31687,6 cell as `BlockSolid` (Item 1855). Those donor cells
+remain unchanged in the candidate data and in the new placement provenance.
+Chosen Oteryn cells are one step east for Edala (32698,31718,2) and one step south
+for Humphrey (32358,31688,6). Each contains only retained native ground. The
+converter records the exact map-region hash automatically and still rejects
+shared cells; the compiler's walkability/obstruction checks remain mandatory.
+This is a game placement choice, not a correction to the donor coordinates.

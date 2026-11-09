@@ -668,8 +668,8 @@ fn validate_document_with_capacity(
             || c.corpse_target
                 .as_ref()
                 .is_some_and(|target| !target.valid(c))
-            || (c.capture_creature && c.creature_target.is_none())
             || (c.fresh_corpse && c.creature_target.is_none())
+            || (c.capture_creature && (c.fresh_corpse || c.creature_target.is_none()))
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -1530,7 +1530,7 @@ mod tests {
             (
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 binds four source counters plus the durable roll; absence stays -1.
-                "a23884420cacf0330e359241e5fb30715e768051cd3ffd4b11985cb19ed3b3af",
+                "80dc73861594fa37edd7c46c38a7734cc9c84889fa2bcc89e9af08a49ff002f0",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
@@ -1572,13 +1572,17 @@ mod tests {
     -> Result<(), String> {
         let legacy = parse(DOCUMENTS[0])?;
         for callback in &legacy {
-            assert!(!callback.completes);
-            assert!(
-                serde_json::to_value(callback)
-                    .map_err(|e| e.to_string())?
-                    .get("completes")
-                    .is_none()
+            // The source crown exchange is the one terminal Royal Costume donation.
+            let crown = callback.key == "oteryn:quest-reward/l4-royal-costume-crown";
+            assert_eq!(callback.completes, crown);
+            assert_eq!(
+                serde_json::to_value(callback).map_err(|e| e.to_string())?
+                    .get("completes").is_some(), crown
             );
+            if crown {
+                assert_eq!(callback.quest, "oteryn:quest.royal_costume_outfits_quest");
+                assert_eq!((callback.storage[0].minimum, callback.storage[0].set), (2, 3));
+            }
         }
         let callbacks = load()?;
         let completion = callbacks

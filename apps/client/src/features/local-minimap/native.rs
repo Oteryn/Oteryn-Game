@@ -252,9 +252,10 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
             }
             SetWindowTextW(status, wide(&format!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: remembered ground. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
             SetWindowTextW(feedback, wide(&map.feedback).as_ptr());
-            if held != map.markers {
+            let displayed = map.displayed_markers();
+            if held != displayed {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                for marker in &map.markers {
+                for marker in &displayed {
                     SendMessageW(
                         list,
                         LB_ADDSTRING,
@@ -266,7 +267,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                         .as_ptr() as isize,
                     );
                 }
-                held = map.markers.clone();
+                held = displayed;
             }
             drop(map);
             std::thread::sleep(std::time::Duration::from_millis(30));

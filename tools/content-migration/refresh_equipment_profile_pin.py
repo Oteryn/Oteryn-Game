@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import copy
 import importlib
-import questpc4_treasure_reward_equipment_pin
 import first_dragon_item_profiles
 import json
 import os
@@ -13,7 +12,6 @@ import re
 import tempfile
 from pathlib import Path
 
-import qengine_reward_equipment_pin
 import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
@@ -97,6 +95,36 @@ def source_coowners(root):
     return [(owner.COHORT_NAME, registered_source_document(root, document), expected)]
 
 
+def merged_source_duplicates(root):
+    """Closed source intersections introduced by the mechanic integration."""
+    import elemental_spheres_profiles as elemental
+    import floor_assembly_profiles as floor
+    import qengine_reward_item_profiles as engine
+    import quest_callback_profiles as callbacks
+    floor_keys = {f'oteryn:item.tibia.i{i}' for i in floor.IDS}
+    elemental_keys = {f'oteryn:item.tibia.i{i}' for i in elemental.IDS}
+    expected_floor = {f'oteryn:item.tibia.i{i}' for i in
+                      (7738,7739,7740,7741,7742,7743,7744,7745,7746,7748,8106,8139,8140,8141)}
+    if floor_keys & elemental_keys != expected_floor:
+        raise ValueError('merged Elemental/Floor source intersection differs')
+    # These named cohorts also occur in QENGINE's exact IDS witness. M05's jar
+    # is counted here for its separate ENGNPC-M05 row, in addition to the
+    # independently checked QENGINE/QNPCFX pair below.
+    engine_shared = {f'oteryn:item.tibia.i{i}' for i in
+                     (5467,21389,21466,22008,27654,12526,12533,12534,12535,21506,21507)}
+    if not engine_shared <= {f'oteryn:item.tibia.i{i}' for i in engine.IDS}:
+        raise ValueError('merged QENGINE source intersection differs')
+    # The frozen pre-pass3 provider a2e337c72e already admits these four
+    # M35 claim items and the access key. Certificate6498 is new and is
+    # deliberately NOT subtracted. Retain both source witnesses.
+    claim_shared = {f'oteryn:item.tibia.i{i}' for i in (645,3014,3210,3602,2973)}
+    if not claim_shared <= callbacks.requested_keys(root):
+        raise ValueError('merged claim/callback source intersection differs')
+    if expected_floor & engine_shared or expected_floor & claim_shared or engine_shared & claim_shared:
+        raise ValueError('ambiguous merged source intersection')
+    return expected_floor | engine_shared | claim_shared
+
+
 def coowner_equivalent(source, qualified):
     """Two guarded captures may name their own revision of the SAME candidate."""
     normalized = copy.deepcopy(source)
@@ -132,7 +160,7 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coowners=()):
+def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coowners=(), engine_npc_shared=(), duplicate_keys=()):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -149,23 +177,35 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
     extra = re.search(r"cohorts add (\d+) \+ (\d+) keys", source)
     if extra is None:
         raise ValueError("missing independently declared floor/callback cohorts")
+    engine_keys, npc_keys = keys(qengine), keys(npc)
+    shared = engine_keys & npc_keys
+    # M05's source jar is independently captured by both Item producers.
+    # Count it once only when the complete source-owned records agree.
+    engine_rows = {r['production_definition']['production_key']: r for r in qengine['records']}
+    npc_rows = {r['production_definition']['production_key']: r for r in npc['records']}
+    if shared != set(engine_npc_shared) or any(engine_rows[k] != npc_rows[k] for k in shared):
+        raise ValueError("QENGINE/NPC shared source identity or facts differ")
     registered_engine = counts.get("QENGINE-REWARDS", 0)
     if registered_engine:
         subtraction = re.search(r"additions\.len\(\)\s*-\s*([0-9_]+)", source)
         if (subtraction is None
-                or int(subtraction[1].replace("_", "")) != registered_engine
+                or int(subtraction[1].replace("_", "")) not in (registered_engine, registered_engine + len(shared))
                 or registered_engine > len(qengine["records"])):
             raise ValueError("registered QENGINE cohort differs from its explicit subtraction")
     declared = (
         original
         + sum(counts.values())
-        + len(qengine["records"]) - registered_engine
+        + len(qengine["records"]) - registered_engine - len(shared)
         + sum(map(int, extra.groups()))
     )
     actual = keys(base) | keys(updates) | keys(starting or {"records": []})
     engine_keys, npc_keys = keys(qengine), keys(npc)
-    if engine_keys & npc_keys or not (engine_keys | npc_keys) <= actual:
+    if not (engine_keys | npc_keys) <= actual:
         raise ValueError("source proof keys are overlapping or absent")
+    duplicate_keys = set(duplicate_keys)
+    if not duplicate_keys <= actual:
+        raise ValueError('merged source duplicate identity absent')
+    declared -= len(duplicate_keys)
     actual_rows = {
         row["production_definition"]["production_key"]: row
         for document in (base, updates, starting or {"records": []})
@@ -211,6 +251,27 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
         )
+    if duplicate_keys:
+        block = '    // Closed intersections of the independently captured mechanic cohorts.\n'
+        block += '    const MERGED_PROFILE_DUPLICATE_KEYS: &[&str] = &[\n'
+        block += ''.join(f'        "{key}",\n' for key in sorted(duplicate_keys))
+        block += '    ];\n'
+        marker = r'    // Closed intersections of the independently captured mechanic cohorts\.\n    const MERGED_PROFILE_DUPLICATE_KEYS:.*?    ];\n'
+        if 'const MERGED_PROFILE_DUPLICATE_KEYS:' in source:
+            source, count = re.subn(marker, lambda _: block, source, flags=re.S)
+            if count != 1:
+                raise ValueError('ambiguous merged source duplicate witness')
+        else:
+            position = source.index('    assert_eq!(\n        profiles.records.len(),')
+            source = source[:position] + block + source[position:]
+        term = '            - MERGED_PROFILE_DUPLICATE_KEYS.len()\n'
+        if term not in source:
+            position = source.index('    assert_eq!(\n        profiles.records.len(),')
+            position = source.index('\n    );', position)
+            source = source[:position] + '\n' + term.rstrip('\n') + source[position:]
+    if registered_engine:
+        source = re.sub(r"additions\.len\(\)\s*-\s*[0-9_]+",
+                        f"additions.len() - {registered_engine + len(shared)}", source)
     # Pin the independent admission packet, never the generated runtime union.
     # New shared quest inputs must retain the exact-key/raw-speed checks below.
     engine_pin = r"assert_eq!\(added_keys\.len\(\),\s*[0-9_]+\);"
@@ -286,15 +347,13 @@ def main():
     source = qengine_equipment_cohort.refresh(
         source, json.loads((ROOT / paths[2]).read_bytes())
     )
+    import qengine_reward_equipment_pin
+    source = qengine_reward_equipment_pin.refresh(source, json.loads((ROOT / paths[2]).read_bytes()))
     from m41_equipment_cohort import register
     # A stale preceding owner already determines --check; refuse without touching
     # its file or requiring unrelated owner inputs to be admitted first.
     if args.check and source != original:
         raise SystemExit("equipment cohort pin is stale")
-    import qengine_reward_equipment_pin
-    source = qengine_reward_equipment_pin.refresh(
-        source, json.loads((ROOT / paths[2]).read_bytes())
-    )
     from qnpcfx_item_profiles import cohort_receipt, profile_identity_receipt
     packet = json.loads((ROOT / paths[3]).read_bytes())
     source = profile_identity_receipt(cohort_receipt(source, packet), packet)
@@ -310,12 +369,15 @@ def main():
         source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-cradle-item-profiles.json").read_bytes()),
     )
-    source = qengine_reward_equipment_pin.refresh(
-        source, json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
+    import engnpc2_slug_corpse_profiles
+    source = engnpc2_slug_corpse_profiles.refresh_cohort(
+        source,
+        json.loads((ROOT / engnpc2_slug_corpse_profiles.PATH).read_bytes()),
     )
     generated, count = regenerate(
         register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
-        coowners=source_coowners(ROOT),
+        coowners=source_coowners(ROOT), engine_npc_shared=("oteryn:item.tibia.i27654",),
+        duplicate_keys=merged_source_duplicates(ROOT),
     )
     if args.check and generated != original:
         raise SystemExit("equipment cohort pin is stale")

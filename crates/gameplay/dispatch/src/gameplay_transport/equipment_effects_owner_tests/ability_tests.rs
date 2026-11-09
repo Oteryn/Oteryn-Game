@@ -68,12 +68,12 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    ("ENGNPC2-SLUG-CORPSES", 4),
     // M41 source operands: sculpture 31574, beak 52632 and corpse stages 52677..=52680.
     // Regenerated from m41_quest_item_profiles.IDS, independently of the profile union.
     ("M41", 6),
-    // Eight fixed elevator scenery profiles; qm50_elevator_profiles.py.
-    ("QM50-ELEVATOR", 8),
-    ("ENGNPC-M05", 1),
+    // Nine fixed elevator/evacuation scenery profiles; qm50_elevator_profiles.py.
+    ("QM50-ELEVATOR", 9),
     // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
     ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
@@ -91,6 +91,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Brass Armor3359 and Hatchet3276 already belong to the existing union.
     // Exact physical facts: tools/content-migration/engclaim_item_profiles.py.
     ("ENGCLAIM-M34", 5),
+    // M04: Crystal 201189f marlin901, trophy902 and blessed Ankh3214.
+    // The marlin retains its independently sealed NonStackable native core.
+    // Diary3212 already exists: its physical admission adds no profile count.
+    ("ENGNPC-M04", 3),
+    ("ENGNPC-M05", 1),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
     ("FORGECREATURE", 1),
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
@@ -142,11 +147,22 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
+    // M07: retained Fire Bug 5467 uses the exact pinned source physical owner.
+    ("M07-FIRE-BUG", 1),
+    // M07: source-qualified flower 21389 (one-hour retirement) and water 21466.
+    // lion_trial_item_profiles.py retains their exact Crystal 201189f records.
+    ("M07-LION-TRIALS", 2),
     // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
     ("M09-GATHER", 28),
+    // M30a: mean paladin spear 17110, source-qualified by engenc_training_profiles.py.
+    // Its pinned XML has no speed attribute; the native source default is zero.
+    ("M30A-HIT-SOURCE", 1),
     // M22 adds only antler talisman 22008; herb/antlers retain their existing owners.
     ("M22-TAINTED-TALISMAN", 1),
+    // M44: Crystal 201189f movements_lions_rock.lua:54-108 grants scroll 21467.
+    // quest_callback_profiles.py qualifies its exact portable definition; speed_bonus=0.
+    ("M44-LIONS-AMPHORA", 1),
     // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
     // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
     // their content-only profiles. None of them is equipment.
@@ -172,14 +188,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QM49-ELEMENTAL-SPHERES", 20),
     // QNPCFX: generated from qnpcfx_item_profiles.py KEYS and pinned source proofs.
     // Koshei pieces/amulet, Hallowed Axe and tender venison; existing equipment owner.
-    ("QNPCFX", 7),
+    ("QNPCFX", 8),
     // M49 soils, four altars, inactive/charged states and corpses from pinned
     // Crystal 201189f XML/client, qualified by elemental_spheres_profiles.py.
     ("QMECH-M49", 19),
-    // QMECH M50: nine stationary elevator/landing profiles, captured from Crystal
-    // 201189f items.xml and the pinned client bank by rafzane_elevator_profiles.py.
-    // None has a speed override or portable admission.
-    ("QMECH-M50", 9),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     ("QUESTPC4-TREASURE-REWARDS", 5),
@@ -362,7 +374,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // qengine-reward-item-profiles.json (pinned Canary items.xml/appearance).
+    // QENGINE2 captures 95 source-qualified Items (qengine_reward_item_profiles.IDS).
     // The exact packet carries speed_bonus=0 for every record, checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -372,6 +384,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Finite cookbook operands and exact corpse stages, refreshed by m42_hot_profile_inventory.py.
     ("M42-HOT-CUISINE", 45),
     ("M18-FIRST-DRAGON", 4),
+    // M35 quest callback closure: blue legs 645, star amulet 3014,
+    // hat of the mad 3210, Dreamer bread 3602 and certificate 6498. Canonical
+    // definitions and quest_callback_profiles.py qualify every identity.
+    ("M35-CLAIM-SETS", 5),
+    // Crystal UID5018 Fanfare access key; exact numbered-key claim qualification.
+    ("M35-FANFARE-KEY", 1),
 ];
 
 #[test]
@@ -380,6 +398,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
     // QENGINE2: generated witness of the producer's explicit IDS set.
+    // QENGINE2 adds exactly the 95 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -407,7 +426,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 63);
+    assert_eq!(added_keys.len(), 95);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
@@ -418,11 +437,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i11701",
             "oteryn:item.tibia.i12413",
             "oteryn:item.tibia.i12517",
+            "oteryn:item.tibia.i12526",
+            "oteryn:item.tibia.i12533",
+            "oteryn:item.tibia.i12534",
+            "oteryn:item.tibia.i12535",
             "oteryn:item.tibia.i12599",
             "oteryn:item.tibia.i12601",
+            "oteryn:item.tibia.i12785",
             "oteryn:item.tibia.i12803",
+            "oteryn:item.tibia.i131",
             "oteryn:item.tibia.i133",
             "oteryn:item.tibia.i139",
+            "oteryn:item.tibia.i14021",
+            "oteryn:item.tibia.i14022",
+            "oteryn:item.tibia.i14023",
+            "oteryn:item.tibia.i14682",
             "oteryn:item.tibia.i15698",
             "oteryn:item.tibia.i16103",
             "oteryn:item.tibia.i16128",
@@ -430,15 +459,29 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i16165",
             "oteryn:item.tibia.i16167",
             "oteryn:item.tibia.i16242",
+            "oteryn:item.tibia.i17669",
+            "oteryn:item.tibia.i17670",
+            "oteryn:item.tibia.i17672",
+            "oteryn:item.tibia.i17673",
+            "oteryn:item.tibia.i17674",
+            "oteryn:item.tibia.i17675",
             "oteryn:item.tibia.i20275",
             "oteryn:item.tibia.i20276",
             "oteryn:item.tibia.i21291",
+            "oteryn:item.tibia.i21389",
+            "oteryn:item.tibia.i21466",
             "oteryn:item.tibia.i21504",
             "oteryn:item.tibia.i21505",
+            "oteryn:item.tibia.i21506",
+            "oteryn:item.tibia.i21507",
+            "oteryn:item.tibia.i22008",
+            "oteryn:item.tibia.i22082",
             "oteryn:item.tibia.i22516",
             "oteryn:item.tibia.i22721",
+            "oteryn:item.tibia.i27654",
             "oteryn:item.tibia.i28792",
             "oteryn:item.tibia.i28793",
+            "oteryn:item.tibia.i2973",
             "oteryn:item.tibia.i30168",
             "oteryn:item.tibia.i30169",
             "oteryn:item.tibia.i3244",
@@ -448,10 +491,15 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i3589",
             "oteryn:item.tibia.i3590",
             "oteryn:item.tibia.i3593",
+            "oteryn:item.tibia.i36543",
+            "oteryn:item.tibia.i36544",
+            "oteryn:item.tibia.i36545",
             "oteryn:item.tibia.i37002",
             "oteryn:item.tibia.i37003",
             "oteryn:item.tibia.i3723",
+            "oteryn:item.tibia.i4852",
             "oteryn:item.tibia.i4867",
+            "oteryn:item.tibia.i5467",
             "oteryn:item.tibia.i5886",
             "oteryn:item.tibia.i5903",
             "oteryn:item.tibia.i5921",
@@ -468,12 +516,15 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i6102",
             "oteryn:item.tibia.i6107",
             "oteryn:item.tibia.i6126",
+            "oteryn:item.tibia.i7253",
             "oteryn:item.tibia.i7289",
             "oteryn:item.tibia.i768",
             "oteryn:item.tibia.i769",
             "oteryn:item.tibia.i770",
+            "oteryn:item.tibia.i7785",
             "oteryn:item.tibia.i875",
             "oteryn:item.tibia.i9041",
+            "oteryn:item.tibia.i9106",
         ])
     );
     // QENGINE2 identities: generated end
@@ -485,7 +536,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .as_array()
         .ok_or("NPC source profiles")?;
     // QNPCFX identities: generated begin
-    assert_eq!(npc_additions.len(), 7);
+    assert_eq!(npc_additions.len(), 8);
     let npc_keys = npc_additions
         .iter()
         .map(|row| {
@@ -497,6 +548,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     assert_eq!(
         npc_keys,
         std::collections::BTreeSet::from([
+            "oteryn:item.tibia.i27654",
             "oteryn:item.tibia.i52636",
             "oteryn:item.tibia.i7528",
             "oteryn:item.tibia.i7529",
@@ -516,6 +568,21 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
     // QNPCFX identities: generated end
+    assert_eq!(
+        npc_additions[7]["production_definition"]["production_key"],
+        "oteryn:item.tibia.i52636"
+    );
+    assert_eq!(
+        npc_additions[0]["production_definition"]["production_key"],
+        "oteryn:item.tibia.i919"
+    );
+    let jar = profiles
+        .records
+        .iter()
+        .find(|row| row.production_definition.production_key == "oteryn:item.tibia.i27654")
+        .ok_or("missing M05 surprise jar profile")?;
+    assert!(jar.admission.materializable);
+    assert_eq!(jar.attributes.speed_bonus, Some(0));
     let venison = profiles
         .records
         .iter()
@@ -566,15 +633,49 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ("M25-GALTHEN-THRONE", 2),
         ("M25-GALTHEN-YIELDS", 19),
     ];
+    // Closed intersections of the independently captured mechanic cohorts.
+    const MERGED_PROFILE_DUPLICATE_KEYS: &[&str] = &[
+        "oteryn:item.tibia.i12526",
+        "oteryn:item.tibia.i12533",
+        "oteryn:item.tibia.i12534",
+        "oteryn:item.tibia.i12535",
+        "oteryn:item.tibia.i21389",
+        "oteryn:item.tibia.i21466",
+        "oteryn:item.tibia.i21506",
+        "oteryn:item.tibia.i21507",
+        "oteryn:item.tibia.i22008",
+        "oteryn:item.tibia.i27654",
+        "oteryn:item.tibia.i2973",
+        "oteryn:item.tibia.i3014",
+        "oteryn:item.tibia.i3210",
+        "oteryn:item.tibia.i3602",
+        "oteryn:item.tibia.i5467",
+        "oteryn:item.tibia.i645",
+        "oteryn:item.tibia.i7738",
+        "oteryn:item.tibia.i7739",
+        "oteryn:item.tibia.i7740",
+        "oteryn:item.tibia.i7741",
+        "oteryn:item.tibia.i7742",
+        "oteryn:item.tibia.i7743",
+        "oteryn:item.tibia.i7744",
+        "oteryn:item.tibia.i7745",
+        "oteryn:item.tibia.i7746",
+        "oteryn:item.tibia.i7748",
+        "oteryn:item.tibia.i8106",
+        "oteryn:item.tibia.i8139",
+        "oteryn:item.tibia.i8140",
+        "oteryn:item.tibia.i8141",
+    ];
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-            + (additions.len() - 53)
+            + (additions.len() - 54)
             + SRX3_SOURCE_COHORTS.iter().map(|(_, n)| n).sum::<usize>()
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
             + 26
             + 23
+            - MERGED_PROFILE_DUPLICATE_KEYS.len()
     );
     // Independently replay the closed source packets' zero-speed facts;
     // the unchanged per-row raw-ability and unknown-speed checks below still
@@ -582,7 +683,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 63),
+        ("qengine-reward-item-profiles.json", 95),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

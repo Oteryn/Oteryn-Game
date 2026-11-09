@@ -45,8 +45,8 @@ mod chat_relay;
 mod coin_use;
 mod combat_lock_fact;
 mod composed_admission;
-#[cfg(test)]
-mod composed_test_owner;
+#[cfg(any(test, feature = "test-support"))]
+pub mod composed_test_owner;
 mod condition_persistence;
 mod condition_snapshots;
 mod connection;
@@ -167,6 +167,7 @@ mod quest_admission;
 mod quest_batch3_c;
 mod quest_callbacks;
 mod quest_collections;
+mod quest_door_uses;
 mod quest_hits;
 mod quest_kills;
 mod quest_log_source;

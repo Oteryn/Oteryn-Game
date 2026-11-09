@@ -7,7 +7,7 @@ PACKET = "tools/content-schema/native-gameplay/qready1-cradle-item-profiles.json
 IDS = {40016, 40598, 40601, 40603}
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+def source_records(root):
     packet = json.loads((root / PACKET).read_bytes())
     keys = {f"oteryn:item.tibia.i{i}" for i in IDS}
     records = packet["records"]
@@ -28,6 +28,26 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         != hashlib.sha256((root / "imports/tibiawiki/facts/items-stats.json").read_bytes()).hexdigest()
     ):
         raise ValueError("QREADY1_CRADLE_SOURCE_DRIFT")
+    return records
+
+
+def extend_records(records, root):
+    """Register only the four qualified identities; native profiles own custody."""
+    from boss_conditional_item_reference import definition
+    existing = {row['identity']['key']: row for row in records}
+    for source in source_records(root):
+        key = source['production_definition']['production_key']
+        expected = definition(key)
+        if key in existing:
+            if existing[key] != expected:
+                raise ValueError('QREADY1_CRADLE_REFERENCE_CHANGED:' + key)
+        else:
+            records.append(expected)
+            existing[key] = expected
+
+
+def admit(root, generated, profile_path, manifest_path, order, canonical):
+    records = source_records(root)
     document = json.loads(generated[profile_path])
     existing = {
         row["production_definition"]["production_key"]: row for row in document["records"]

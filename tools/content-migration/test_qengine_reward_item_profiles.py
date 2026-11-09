@@ -45,6 +45,19 @@ class NativeFactJoin(unittest.TestCase):
                     authoring={'item': 'established'}, attributes={'blocks': None},
                     semantics={'charges': {'state': 'UNKNOWN'}})
 
+    def test_m44_flower_and_holy_water_keep_exact_portable_source_facts(self):
+        rows = {r['production_definition']['production_key']: r
+                for r in q.capture(ids={21389, 21466})['records']}
+        for item, weight in ((21389, 100), (21466, 1750)):
+            row = rows[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(row['production_binding']['external_id'], str(item))
+            self.assertEqual(row['admission'], dict(materializable=True,
+                stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], weight)
+        temporal = rows['oteryn:item.tibia.i21389']['semantics']['temporal']['value']
+        self.assertEqual(temporal['duration'], {'state': 'KNOWN', 'value': 3600000})
+        self.assertEqual(temporal['decay_target'], {'state': 'NOT_APPLICABLE'})
+
     def test_daily_roots_source_profile_is_portable_and_bounded(self):
         records = q.capture()['records']
         record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21291'), None)
@@ -105,7 +118,8 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 1750)
 
-    def test_lion_flower_preserves_inactive_source_duration_without_inventing_expiry(self):
+    def test_lion_flower_preserves_source_duration_as_absolute_deadline(self):
+        """Crystal 201189f8 data/items/items.xml:42586-42590 sets duration=3600."""
         record = next((r for r in q.capture()['records']
                        if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21389'), None)
         self.assertIsNotNone(record, 'Lion Beauty requires its exact portable flower')
@@ -114,7 +128,8 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 100)
         temporal = record['semantics']['temporal']['value']
         self.assertEqual(temporal['duration'], {'state': 'KNOWN', 'value': 3600000})
-        self.assertEqual(temporal['consumption_mode'], {'state': 'NOT_APPLICABLE'})
+        self.assertEqual(temporal['consumption_mode'],
+                         {'state': 'KNOWN', 'value': 'DURABLE_ABSOLUTE_DEADLINE'})
         self.assertEqual(temporal['decay_target'], {'state': 'NOT_APPLICABLE'})
 
     def test_lion_flower_exception_is_finite_and_rejects_new_instance_mechanisms(self):

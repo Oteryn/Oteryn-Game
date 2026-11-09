@@ -2,6 +2,7 @@
 #[cfg(test)]
 mod movement_script_tests;
 mod prepared;
+mod source_close_spawn;
 #[cfg(test)]
 mod source_solid_tests;
 #[cfg(test)]
@@ -33,6 +34,7 @@ struct Tile {
     admits: bool,
     solid: bool,
     source_spawn_admits: bool,
+    ground_clear: bool,
     projectile: bool,
     speed: u16,
     field: Option<oteryn_gameplay_domain::domain::condition::DotElement>,
@@ -809,6 +811,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 admits: false,
                 solid: true,
                 source_spawn_admits: false,
+                ground_clear: false,
                 projectile: true,
                 speed: 0,
                 field: None,
@@ -961,6 +964,7 @@ fn merge_current_tile(
         }
     }
     Some(Tile {
+        ground_clear: tile.ground_present() && !solid,
         solid,
         source_placement_proven,
         source_placement: SourcePlacementTerrain {

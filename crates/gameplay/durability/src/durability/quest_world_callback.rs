@@ -22,6 +22,7 @@ pub async fn test_ground_stack_matches_in_transaction(
 }
 
 pub mod shared_count;
+mod shared_input;
 pub mod shared_switch;
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
@@ -41,6 +42,8 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+#[path = "quest_world_callback/repair_inputs.rs"]
+mod repair_inputs;
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
 #[path = "quest_world_callback/reward_inventory.rs"]
@@ -419,7 +422,19 @@ async fn consume_inputs(
 ) -> Result<bool, DurabilityError> {
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
-    if let Some(required) = &callback.item_on_target {
+    let solid_repair = callback
+        .passages
+        .iter()
+        .any(|p| p.replacement_passable == Some(false));
+    if solid_repair {
+        let Some(required) = &callback.item_on_target else {
+            return Ok(false);
+        };
+        let Some(resolved) = repair_inputs::collect(tx, fence, required).await? else {
+            return Ok(false);
+        };
+        inputs.extend(resolved);
+    } else if let Some(required) = &callback.item_on_target {
         let accepted: Vec<&str> = std::iter::once(required.item.as_str())
             .chain(required.alternatives.iter().map(String::as_str))
             .collect();
@@ -489,6 +504,11 @@ async fn consume_inputs(
         // Retained tools still require a positive quantity, live custody and the
         // same location lock. The enclosing Quest receipt binds this read to the
         // action without inventing an item consumption or changing its identity.
+        if required.reusable
+            && oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
+        {
+            shared_input::retain(tx, fence, request, callback, context, &input).await?;
+        }
         let consume = match callback.native_rule {
             Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint {
                 seal,
@@ -545,6 +565,7 @@ async fn consume_inputs(
                 return Ok(false);
             }
             lock_location(tx, &input).await?;
+
             inputs.push(input);
         }
     }

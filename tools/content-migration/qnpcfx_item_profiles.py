@@ -8,12 +8,12 @@ import json
 import re
 from pathlib import Path
 
-import quest_batch3_item_profiles as batch
 import qengine_reward_item_profiles as shared
+import quest_batch3_item_profiles as batch
 
 PATH = 'tools/content-schema/native-gameplay/qnpcfx-item-profiles.json'
 SCHEMA = 'OTERYN_QNPCFX_ITEM_PROFILES/v1'
-KEYS = {'oteryn:item.tibia.i52636'} | {f'oteryn:item.tibia.i{i}' for i in range(7528, 7533)} | {'oteryn:item.tibia.i919'}
+KEYS = {'oteryn:item.tibia.i27654', 'oteryn:item.tibia.i52636'} | {f'oteryn:item.tibia.i{i}' for i in range(7528, 7533)} | {'oteryn:item.tibia.i919'}
 
 
 def capture(source_root):

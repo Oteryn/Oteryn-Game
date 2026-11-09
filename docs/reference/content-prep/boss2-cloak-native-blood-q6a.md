@@ -34,6 +34,64 @@ durable NoOp while first-stage blood exists. Seven native Cloak units passed in
 89.10 seconds. Workspace compilation passed in 5m40s; dispatch Clippy passed in
 2m26s, alongside formatting, equipment-pin verification, and migration checks.
 
-This slice implements pool creation. The donor's separate pool StepIn behavior
-(lines 830–855: Player damage, Cloak healing, and pool consumption) still requires
-its own production composition; the wider W11 row remains PARTIAL.
+The follow-up ordering regression failed in 67.941 seconds: after a real failed
+receipt INSERT, a second due auto-attack consumed its canonical clock and ordinal
+before the original blood callback completed. Both auto-attacks and monster AI
+now recheck the retained callback under the same physical lane before fresh work;
+the latter also closes the gap after its map-bootstrap preflight. The regression
+passed in 68.409 seconds (execution marker 68.337201316 seconds), preserving the
+entire held attack state, HP, and the one pending event across the SQL failure.
+
+The Player StepIn slice uses Crystal mechanics lines 830–855 and
+[Soul War constants](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/lib/quests/soul_war.lua):14,20–24:
+33854/34006/34007 deal 20/15/10% maximum HP. Crystal
+`src/lua/functions/creatures/creature_functions.cpp:591–610` sends the energy
+health change through `combatChangeHealth` with a null attacker. The existing
+direct Lua HP/shield/death owner handles it without another mitigation pass.
+
+Migration 2174 admits only retirement backed by the original scoped native Cloak
+MINT, preserving the source creator, body, scope generation, content, map, frame,
+and physical position. Retained delivery resolves before later lane work. The
+source Item reader supplies the actual destination pools; unrelated Item origins
+are not granted this cause. A sparse cell hint, registered only after a genuine
+MINT, routes environmental entry through that reader even without optional field
+capability 30. The hint grants no Item or HP authority and is removed on consumption
+or an authoritative empty read.
+
+The native Player STEP regression was red in 69.605 seconds (HP stayed 30065
+instead of 24052), then passed in 80.015 seconds (execution marker
+79.945571675 seconds), including physical retirement after the creator disappears.
+Both role grants and a real SQL rejection of a MINT presented as consumption were
+also exercised. No new protocol messages or capability numbers were allocated.
+
+The focused rerun preserves that healthy case and adds
+`srx3_cloak_blood_step_unknown_commit_delivers_hp_once_postgres`: a real failed
+retirement keeps the actual committed movement contact queued; the production
+writer then commits without HP installation, and ordinary lane recovery reuses
+that receipt and installs damage exactly once. The healthy and recovery cases
+passed in 88.061 and 86.716 seconds respectively (execution markers
+87.998849662 and 86.630097938 seconds). Both original HP and physical-consumption
+assertions remain in each case, with one retirement receipt after reconciliation.
+
+W11 remains PARTIAL: Cloak healing, consumption by other creatures, unrelated
+pool origins, and a native-client play test of this new StepIn slice remain.
+
+### Native listener after volatile hint loss (integration 856a420d6)
+
+The movement fast path must not interpret an absent in-memory MINT hint as an
+absent durable pool. With the qualified native Soul War listener, ordinary STEP
+uses the existing scoped Ground reader even without optional field capability
+30. The healthy PG regression now explicitly excludes capability 30 and clears
+the volatile hints after its real attack/MINT, before entering the actual pool.
+The recovery regression retains its original delivery checks.
+
+Post-integration execution is **not qualified**: both focused cases stopped at
+`RevisionMismatch("native gameplay input digest")` before creating their PG
+fixture. `python3 tools/content-migration/register_spell_families.py --check`
+then failed with `ValueError: FLOOR_ASSEMBLY_PROFILE_CONFLICT`. Its first
+conflict is `oteryn:item.tibia.i8106`: Elemental Spheres admits only
+`materializable=false`, while the floor-assembly packet and
+`test_elemental_arrival_profiles.py` require `true`. The canonical Item
+definition is also nonmaterializable. This slice does not alter either
+provider, their tests, or any generated hash. Earlier PG durations above refer
+to the previously qualified head, not this integration.

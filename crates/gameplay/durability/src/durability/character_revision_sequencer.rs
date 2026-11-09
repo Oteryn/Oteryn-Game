@@ -34,6 +34,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod grizzly;
+mod native_doors;
 mod native_kills;
 mod native_hits;
 mod npc_marriage;

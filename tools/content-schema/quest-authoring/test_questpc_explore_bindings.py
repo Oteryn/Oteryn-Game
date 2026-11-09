@@ -247,8 +247,10 @@ class ExploreBindingsTests(unittest.TestCase):
                     resolver.resolve(ROOT, quest, reference, definition=foreign)
 
     def test_grave_danger_twelve_visit_stage_is_activated(self):
-        callbacks = [c for c in explore.callbacks(ROOT)
-                     if c['quest'] == 'oteryn:quest.grave_danger_quest']
+        quest_callbacks = [c for c in explore.callbacks(ROOT)
+                           if c['quest'] == 'oteryn:quest.grave_danger_quest']
+        callbacks = [c for c in quest_callbacks if '/s1/' in c['key']]
+        self.assertEqual(len(quest_callbacks), 13, 'twelve graves plus one guarded Cobra visit')
         self.assertEqual(len(callbacks), 12, 'all twelve chosen grave visits are activated atomically')
         self.assertEqual(len({c['key'] for c in callbacks}), 12)
 
@@ -731,16 +733,36 @@ class ExploreBindingsTests(unittest.TestCase):
         self.assertEqual((counter['minimum'], counter['maximum'], counter['set']), (0, 0, 1))
         self.assertTrue(counter['increment'])
 
-    def test_qm55_chakoya_entry_preserves_premium_and_once_only_progress(self):
+    def test_qm55_held_chakoya_preserves_recipe_without_an_entry_binding(self):
+        import questpc_world_requirements as world
+        quest = 'oteryn:quest.authored.chakoya_iceberg_mini_world_change'
+        owners = world.catalogue(ROOT)
+        self.assertEqual([(row['key'], row['status']) for row in owners[quest]],
+                         [('chakoya_iceberg', 'HELD')])
+        self.assertFalse(any(c['quest'] == quest for c in explore.callbacks(ROOT)))
+        with self.assertRaisesRegex(ValueError, 'needs one admitted World owner'):
+            world.requirement(quest, owners)
+        recipe = canonical_recipe(quest)
+        self.assertTrue(recipe['requirements']['premium'])
+        visit, counter = explore.stage_storage(
+            quest, 's1', recipe, 'authored/chakoya_iceberg_mini_world_change')
+        track = 'oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1'
+        self.assertEqual(visit['track'], track + '/visited/entry')
+        self.assertEqual((visit['minimum'], visit['maximum'], visit['set']), (0, 0, 1))
+        self.assertEqual(counter['track'], track)
+        self.assertEqual((counter['minimum'], counter['maximum'], counter['set']), (0, 0, 1))
+        self.assertTrue(counter['increment'])
+
+    def test_qm55_admitted_premium_entry_preserves_once_only_progress(self):
         callback = next(c for c in explore.callbacks(ROOT)
-                        if c['quest'] == 'oteryn:quest.authored.chakoya_iceberg_mini_world_change')
+                        if c['quest'] == 'oteryn:quest.authored.asura_palace_quest')
         self.assertEqual(callback['admission'], {'premium': True})
         self.assertEqual(callback['selector']['native'], {
-            'position': {'x': 32623, 'y': 32584, 'floor': -7},
-            'ordinal': 0, 'appearance': 799})
+            'position': {'x': 32953, 'y': 32685, 'floor': -7},
+            'ordinal': 0, 'appearance': 923})
         self.assertTrue(callback['requires_world_admission'])
         visit, counter = callback['storage']
-        track = 'oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1'
+        track = 'oteryn:quest-progress/authored/asura_palace_quest/s1'
         self.assertEqual(visit['track'], track + '/visited/entry')
         self.assertEqual((visit['minimum'], visit['maximum'], visit['set']), (0, 0, 1))
         self.assertEqual(counter['track'], track)
@@ -754,5 +776,5 @@ class ExploreBindingsTests(unittest.TestCase):
         guarded = (('oteryn:quest.fury_gates_mini_world_change', 's1',
                     'oteryn:area.hunting_place.fury_gate', 'chosen-source/fury_gates_mini_world_change'),)
         with mock.patch.object(explore, 'BINDINGS', guarded):
-            with self.assertRaisesRegex(ValueError, 'additional authoritative guards'):
+            with self.assertRaisesRegex(ValueError, 'World-change EXPLORE needs one admitted World owner: oteryn:quest.fury_gates_mini_world_change'):
                 explore.callbacks(ROOT)

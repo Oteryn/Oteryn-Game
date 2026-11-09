@@ -9,7 +9,7 @@ pub(super) fn stateless_observation_required(callback: &Callback) -> bool {
 }
 
 pub(super) fn character_fence_required(callback: &Callback) -> bool {
-    callback.has_personal_state()
+    callback.requires_durable_commit()
         || carried_step::recipe(&callback.key).is_some()
         || shared_switches::recipe(&callback.key).is_some()
         || shared_switches::gate(&callback.key).is_some()

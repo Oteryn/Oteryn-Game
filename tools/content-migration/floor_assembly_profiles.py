@@ -17,6 +17,8 @@ PROJECTION_IDS = {430, 431, 1772, 1791, 1947, 1948, 2772, 2773,
                   7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748, 9125, 9126}
 # Include each source decay successor, not only the four altar operands.
 ELEMENTAL_CORPSES = {8105, 8106, 8107, 8108, 8136, 8137, 8138, 8139, 8140, 8141}
+# M03: retained Temporal Tides landing, including its walkable machine piece.
+PROJECTION_IDS |= {15534, 15620, 25100}
 IDS = set(range(3222, 3231)) | set(range(3235, 3242)) | PROJECTION_IDS | ELEMENTAL_CORPSES
 XML_SHA = '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509'
 CLIENT = 'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
@@ -68,9 +70,8 @@ def capture(xml_path):
         definition = definitions[f'oteryn:item.tibia.i{item}']
         row = native.profile(item, xml[item], objects[item], physical[item], bindings, None)
         if item in PROJECTION_IDS:
-            # These canonical client stubs are stationary World operands, not MINT
-            # authority. Keep their nonmaterializable admission while qualifying
-            # exact collision/appearance facts for native map projections.
+            # Stationary World projections retain canonical nonmaterializable admission.
+            # Elemental corpses have a separate native Ground reservation owner.
             if (definition.get('materializable') is not False
                     or row['admission'] != {'materializable': True,
                         'stack_class': 'NonStackable', 'legal_destinations': ['Ground']}):

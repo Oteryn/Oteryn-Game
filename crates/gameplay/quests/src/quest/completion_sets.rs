@@ -283,6 +283,62 @@ mod tests {
     }
 
     #[test]
+    fn every_declared_set_requires_all_groups_in_any_order() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = lowered.catalogue();
+        assert_eq!(catalogue.completion_sets.len(), 23);
+        for (quest, rule) in &catalogue.completion_sets {
+            if quest == "oteryn:quest.fanfare_quest" {
+                // Crystal chest.lua:1680-1687: the access key is not final loot.
+                assert_eq!(
+                    rule.groups,
+                    vec![vec!["oteryn:quest-progress/kv/fanfare/claimed".to_owned()]]
+                );
+            } else {
+                assert!(
+                    rule.groups.len() >= 2,
+                    "{quest}: independent treasure claims"
+                );
+            }
+            // Exercise every group as the first and the last claim. Each group is
+            // independently necessary.
+            for shift in 0..rule.groups.len() {
+                for reverse in [false, true] {
+                    let mut stored = BTreeMap::new();
+                    for index in 0..rule.groups.len() {
+                        let position = if reverse {
+                            (shift + rule.groups.len() - index) % rule.groups.len()
+                        } else {
+                            (shift + index) % rule.groups.len()
+                        };
+                        let track = &rule.groups[position][0];
+                        let marker = track
+                            .strip_prefix("oteryn:quest-progress/")
+                            .and_then(|key| key.strip_suffix("/claimed"))
+                            .ok_or("claim track")?;
+                        let key = format!("oteryn:quest-transition/{marker}/chest");
+                        let transition = catalogue.transition(&key).ok_or("claim transition")?;
+                        assert_eq!(&transition.quest, quest);
+                        let changes = catalogue
+                            .evaluate(transition, &stored, 0)
+                            .map_err(|e| format!("{e:?}"))?;
+                        assert_eq!(
+                            catalogue.completes_after_claim_sets(transition, &stored, &changes),
+                            index + 1 == rule.groups.len(),
+                            "{quest}: {key}"
+                        );
+                        for change in changes {
+                            stored.insert(change.track, change.after);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn unordered_claims_complete_only_after_all_groups() -> Result<(), String> {
         let catalogue = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;

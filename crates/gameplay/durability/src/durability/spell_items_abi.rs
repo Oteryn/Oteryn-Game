@@ -253,6 +253,11 @@ pub struct DurableTileItem {
     pub expires_at_unix_ms: Option<i64>,
     pub field_origin: Option<DurableFieldOrigin>,
     pub creature_field_origin: Option<DurableCreatureFieldOrigin>,
+    /// Positive receipt evidence for this exact current native-map placement.
+    /// Missing player or creature attribution alone is never environmental proof.
+    pub native_map_origin: bool,
+    /// Positive script-created field provenance; current tile ownership is checked separately.
+    pub environment_field_origin: bool,
 }
 
 /// Historical creation source only. A field tick must independently resolve

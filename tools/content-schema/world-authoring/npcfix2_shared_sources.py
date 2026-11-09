@@ -16,6 +16,17 @@ PACKET = 'tools/content-schema/world-authoring/samples/npcfix2-shared-sources.js
 REGION = 'content/world/placements/region-z07-x127-y125.b3'
 SPECS = ((32609, 32244, 3301, 2970), (32617, 32250, 3302, 2969), (32651, 32244, 3303, 2970))
 
+def donor_delta(summary):
+    """Exclude the three qualified chest children from the unchanged donor pin."""
+    declared = summary.get('source', {}).get('npcfix2_shared_sources')
+    if declared is None:
+        return 0
+    raw = registry.canonical(capture())
+    expected = {'path': PACKET, 'sha256': hashlib.sha256(raw).hexdigest(), 'items': len(SPECS)}
+    if declared != expected:
+        raise ValueError('NPCFIX2_SOURCE_CAPTURE_DRIFT')
+    return len(SPECS)
+
 
 def capture(root=ROOT):
     recipes = json.loads((root / 'tools/content-schema/quest-authoring/samples/completion242/recipes.json').read_bytes())

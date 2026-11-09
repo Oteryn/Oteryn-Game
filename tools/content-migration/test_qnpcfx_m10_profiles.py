@@ -10,7 +10,9 @@ class M10Profiles(unittest.TestCase):
         return json.loads((npc.batch.ROOT / npc.PATH).read_bytes())
 
     def test_source_cohort_is_explicit_and_all_required_physical_items_are_qualified(self):
-        expected = {f'oteryn:item.tibia.i{i}' for i in (919, 7528, 7529, 7530, 7531, 7532, 52636)}
+        # Preserve the shared Gnomus report jar (Crystal gnomus.lua:88-97)
+        # alongside the seven M10 inputs; qnpcfx_item_profiles.KEYS owns their union.
+        expected = {f'oteryn:item.tibia.i{i}' for i in (919, 7528, 7529, 7530, 7531, 7532, 27654, 52636)}
         self.assertEqual(npc.KEYS, expected)
         packet = self.packet()
         self.assertEqual({r['production_definition']['production_key'] for r in packet['records']}, expected)
@@ -25,7 +27,7 @@ class M10Profiles(unittest.TestCase):
     assert_eq!(item.attributes.speed_bonus, Some(0));
 '''
         result = npc.cohort_receipt(source, self.packet())
-        self.assertIn('(\"QNPCFX\", 7)', result)
+        self.assertIn('(\"QNPCFX\", 8)', result)
         self.assertIn('(\"ANOTHER-OWNER\", 42)', result)
         self.assertIn('assert_eq!(item.attributes.speed_bonus, Some(0));', result)
         self.assertEqual(npc.cohort_receipt(result, self.packet()), result)
@@ -39,7 +41,7 @@ class M10Profiles(unittest.TestCase):
     assert_eq!(venison.attributes.speed_bonus, Some(0));
 '''
         result = npc.profile_identity_receipt(source, self.packet())
-        self.assertIn('assert_eq!(npc_additions.len(), 7);', result)
+        self.assertIn('assert_eq!(npc_additions.len(), 8);', result)
         for key in npc.KEYS:
             self.assertIn(f'"{key}"', result)
         self.assertIn('assert_eq!(venison.attributes.speed_bonus, Some(0));', result)
@@ -47,7 +49,7 @@ class M10Profiles(unittest.TestCase):
 
     def test_cohort_receipt_rejects_missing_foreign_or_duplicate_source_records(self):
         original = self.packet()
-        source = '    // QNPCFX: source.\n    ("QNPCFX", 7),'
+        source = '    // QNPCFX: source.\n    ("QNPCFX", 8),'
         for mode in ('missing', 'foreign', 'duplicate'):
             packet = copy.deepcopy(original)
             if mode == 'missing':

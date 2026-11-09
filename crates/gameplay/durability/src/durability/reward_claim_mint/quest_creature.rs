@@ -5,6 +5,7 @@ use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+mod capture;
 #[derive(Clone, Copy, Debug)]
 enum Target {
     FreshCorpse,
@@ -191,31 +192,11 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             },
         })
     }
-
-    pub(super) async fn record_capture(
-        &self,
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        carried: &super::QuestCarriedUse,
-    ) -> Result<bool, crate::durability::DurabilityError> {
-        let Target::Live { entity: target, .. } = self.target else {
-            return Ok(false);
-        };
-        let crate::foundation::RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } = self.fence.runtime_scope
-        else {
-            return Ok(false);
-        };
-        Ok(sqlx::query("INSERT INTO game_quest_creature_captures(character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,target_identity,target_generation,creature_key,source_item,ingress) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,$8,$9::text::numeric,$10,encode($11,'hex')::uuid,$12) ON CONFLICT DO NOTHING")
-            .bind(self.fence.character_id.as_bytes().as_slice())
-            .bind(self.command.game_session_id().as_bytes().as_slice())
-            .bind(self.command.command_id().get().to_string()).bind(&self.callback)
-            .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
-            .bind(self.fence.scope_ownership_generation.get().to_string())
-            .bind(target.identity.as_slice()).bind(target.generation.to_string())
-            .bind(&self.key).bind(carried.source.as_slice()).bind(&carried.intent)
-            .execute(&mut **tx).await?.rows_affected() == 1)
+    /// Exact server actor checked by the live runtime owner. Capture retirement
+    /// can retain this identity instead of reconstructing it from a client handle.
+    /// The proof still borrows that runtime; this accessor grants no mutation.
+    pub fn live_target(&self) -> Option<ExactActorRef> {
+        self.target_actor()
     }
 
     pub(super) fn permits(

@@ -4,7 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 #[cfg(test)]
 mod m39_sample_tests;
 
@@ -31,12 +31,16 @@ pub enum Trigger {
 
 #[cfg(test)]
 mod admission_tests;
-mod clear_area;
-pub use clear_area::ClearArea;
+mod asura_authored;
 mod character_requirements;
 pub use character_requirements::CharacterRequirements;
+mod clear_area;
+pub use clear_area::ClearArea;
 mod clock;
 mod completed_quests;
+mod counter_initials;
+#[cfg(test)]
+mod counter_initials_tests;
 mod counterparts;
 mod craft_epoch;
 mod effects;
@@ -54,13 +58,16 @@ pub mod personal_trial;
 pub mod phase;
 #[cfg(test)]
 mod selected_tool_tests;
+#[cfg(test)]
+mod solid_repair_tests;
+mod solid_repairs;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, Portal, PortalPair,
+    MagicEffect, MountReward, Portal, PortalPair, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -96,6 +103,9 @@ pub struct Passage {
     pub if_present: bool,
     #[serde(default)]
     pub replacement: Option<u16>,
+    /// Explicit solid projection, admitted only for exact native consuming repairs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replacement_passable: Option<bool>,
     /// Source-asymmetric lever: remove `appearance`, then create this different wall.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub create_on_close: Option<u16>,
@@ -284,6 +294,9 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "CallbackEffectSet::is_empty")]
     pub effects: CallbackEffectSet,
     pub storage: Vec<Storage>,
+    /// Explicit defaults for newly declared, writable progress tracks. Legacy callbacks omit this.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub track_initials: BTreeMap<String, i64>,
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
@@ -448,7 +461,16 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m07-machinery-catapults.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-repairs.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-wheels.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m07-realm-trial.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-too-hot-columns.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
@@ -480,8 +502,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.extend(super::fire_feathered_native::callbacks());
+    callbacks.extend(super::goblin_merchant::callbacks()?);
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.extend(super::dreamer_fire_bug::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(nomads_land::callback()?);
     callbacks.extend(super::ice_seal_paint::callbacks()?);
@@ -490,6 +514,8 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::source_world_objects::uneasy_crystal());
     callbacks.extend(flames);
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
+    callbacks.extend(super::source_world_objects::lions_amphora());
+    callbacks.extend(super::source_world_objects::lions_flowers());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err(format!(
@@ -571,6 +597,13 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
         if !completed_quests::valid(callback)
+            || (callback.key == super::dreamer_fire_bug::IGNITE
+                && !super::dreamer_fire_bug::callbacks().contains(callback))
+            || (matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/questpc7-feaster-entry"
+                    | "oteryn:quest-callback/questpc7-feaster-purification-entry"
+            ) && !feaster_routes::admitted(callback))
             || (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
             || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
@@ -602,6 +635,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .any(|r| r.ground.is_some())
                 && !callback.has_personal_state())
             || !effects::valid(callback)
+            || !solid_repairs::valid(callback)
             || callback
                 .effects
                 .teleport_effect
@@ -657,10 +691,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 !r.valid()
                     || (r.ground.is_none()
                         && r.appearance == 0
-                        && !(r.ground_stack.is_some()
-                            && ((callback.has_personal_state()
-                                && callback.requires_world_admission)
-                                || nomads_window::exact(callback))))
+                        && !(r.ground_stack.is_some() && ((callback.has_personal_state() && callback.requires_world_admission && callback.trigger != Trigger::Use) || nomads_window::exact(callback))))
                     || r.ground_stack.as_ref().is_some_and(|stack| {
                         callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })
@@ -717,6 +748,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.success_message.is_some()
                 })
             })
+            || !counter_initials::valid(callback)
             || callback.storage.len() > MAX_EFFECTS
             || callback
                 .minimum_level
@@ -761,7 +793,10 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && !imported_explore::admitted(callback))
             || ((callback
                 .key
-                .starts_with("oteryn:quest-callback/m03/time-machine-entry-")
+                .starts_with("oteryn:quest-callback/qm03/anniversary")
+                || callback
+                    .key
+                    .starts_with("oteryn:quest-callback/m03/time-machine-entry-")
                 || callback.key == "oteryn:quest-callback/m03/pits-of-inferno-entry")
                 && !character_requirements::entry_admitted(callback))
             || callback.sources.is_empty()
@@ -769,6 +804,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 || treasure_source::admitted(callback)
                 || feaster_routes::admitted(callback)
                 || character_requirements::entry_admitted(callback)
+                || asura_authored::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     (source == "oteryn-native:world-change-journal:v1"
@@ -800,7 +836,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         && (item.target_replacement.is_some()
                             || callback.effects.transform.is_some()))
                     || (item.replacement.is_some() && item.count != 1)
-                    || !callback.has_personal_state()
+                    || !callback.requires_durable_commit()
                     || callback.trigger != Trigger::Use
                     || (item.selected_instance && !callback.requires_world_admission)
                     || item.count == 0
@@ -881,7 +917,7 @@ fn extend_callbacks(
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     super::ice_islands_seals::catalogue::declare(&mut tracks, callbacks)?;
-    for callback in callbacks.iter().filter(|c| c.has_personal_state()) {
+    for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
                 storage
@@ -893,6 +929,7 @@ fn extend_callbacks(
             };
             let mead = callback.native_rule == Some(NativeRule::BarbarianMead);
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
+                counter_initials::check_existing(callback, track)?;
                 // Sven resets only total sips. A fresh streak retains source absence=-1.
                 if mead && track.key == super::barbarian_mead::TRACKS[2] {
                     track.initial = -1;
@@ -917,7 +954,11 @@ fn extend_callbacks(
                 {
                     0
                 } else {
-                    imported_explore::initial(callback, storage)
+                    callback
+                        .track_initials
+                        .get(&storage.track)
+                        .copied()
+                        .unwrap_or_else(|| imported_explore::initial(callback, storage))
                 };
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),

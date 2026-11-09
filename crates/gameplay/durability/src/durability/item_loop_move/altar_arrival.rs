@@ -1,5 +1,7 @@
 //! M49: retire the exact arriving corpse and retain a pending boss in the move's transaction.
+mod fields;
 mod lifecycle;
+pub use fields::AltarFieldRead;
 pub use lifecycle::PendingAltarRealization;
 
 use super::*;
@@ -17,6 +19,7 @@ pub struct AltarArrivalTarget {
     pub rule: String,
     pub readset: Vec<(u64, u64)>,
     pub reset_epoch: i64,
+    pub field_reads: Vec<AltarFieldRead>,
 }
 impl AltarArrivalTarget {
     pub fn new(rule: &str, readset: Vec<(u64, u64)>, reset_epoch: i64) -> Self {
@@ -24,10 +27,16 @@ impl AltarArrivalTarget {
             rule: rule.into(),
             readset,
             reset_epoch,
+            field_reads: Vec::new(),
         }
     }
+    pub fn with_field_reads(mut self, fields: Vec<AltarFieldRead>) -> Self {
+        self.field_reads = fields;
+        self
+    }
     fn valid(&self) -> bool {
-        self.reset_epoch >= 0
+        fields::valid(self)
+            && self.reset_epoch >= 0
             && self.readset.len() == 8
             && self
                 .readset
@@ -108,6 +117,7 @@ impl DurabilityRoot {
                     .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&target.rule).bind(target.reset_epoch).fetch_one(&mut **tx).await?;
                 if busy {return Ok(AltarArrivalReceipt{moved,summon:None});}
                 let authority=assert_spell_item_authority_with_recovery(&mut tx,permit,&root,&record,&node,&fence,command,content.loop_content_digest()).await.map_err(spell_error)?;
+                let Some(field_reads)=fields::read(&mut tx,&authority,ground,&target,content.loop_content_digest()).await? else {return Ok(AltarArrivalReceipt{moved,summon:None});};
                 let revision:String=sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                     .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
                 let revision=revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?;
@@ -123,7 +133,7 @@ impl DurabilityRoot {
                 let inputs_intent=serde_json::to_vec(&inputs).map_err(|_|DurabilityError::InvalidStoredState)?;
                 let hash:[u8;32]=Sha256::digest(&inputs_intent).into();
                 let tuple=tx.tuple();
-                let proof=json!({"rule":target.rule,"move":moved.transaction_id,"corpse":corpse.item_instance_id,"inputs_sha256":hash,"readset":target.readset,"reset_epoch":target.reset_epoch,"content_digest":content.loop_content_digest()});
+                let proof=json!({"rule":target.rule,"move":moved.transaction_id,"corpse":corpse.item_instance_id,"inputs_sha256":hash,"readset":target.readset,"field_reads":field_reads,"reset_epoch":target.reset_epoch,"content_digest":content.loop_content_digest()});
                 let envelope=crate::durability::item_craft::audit::encode_map_harvest(fence,command,proof,&transaction,&event,occurred,tuple.tuple())?;
                 sqlx::query("SET CONSTRAINTS ALL DEFERRED").execute(&mut **tx).await?;
                 sqlx::query("INSERT INTO game_elemental_altar_receipts(transaction_id,event_id,move_transaction_id,rule,reset_epoch,readset,inputs,inputs_intent,inputs_sha256,occurred_at,envelope_sha256) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9,$10,sha256($11))")

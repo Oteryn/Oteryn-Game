@@ -169,9 +169,15 @@ pub(super) async fn check(
             },
             tick_now,
         );
-        let prepared_names = owner.capture_native_health_names(&runtime).map_err(|_| "capture names")?;
-        let read_names = owner.read_prepared_native_health_names(&permit, prepared_names).await;
-        let names = owner.seal_native_health_names(&runtime, read_names).map_err(|_| "seal names")?;
+        let prepared_names = owner
+            .capture_native_health_names(&runtime)
+            .map_err(|_| "capture names")?;
+        let read_names = owner
+            .read_prepared_native_health_names(&permit, prepared_names)
+            .await;
+        let names = owner
+            .seal_native_health_names(&runtime, read_names)
+            .map_err(|_| "seal names")?;
         let (_, reported) = owner
             .drive_monster_profiles(
                 &mut runtime,
@@ -219,6 +225,84 @@ pub(super) async fn check(
                 "source Game.createMonster remains masterless"
             );
         }
+        if tick > 0 {
+            let bloodjaws = runtime.positioned_melee_census().map_err(debug)?;
+            for (bloodjaw, _, _) in bloodjaws {
+                if runtime.companion_snapshot(bloodjaw).is_ok_and(|row| {
+                    row.state.policy.definition_key == "oteryn:creature.elder_bloodjaw"
+                }) {
+                    assert_eq!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .state(bloodjaw)
+                            .ok_or("native Bloodjaw AI")?
+                            .target(),
+                        Some(player),
+                        "source onThink selects the real participant independently of generic target search"
+                    );
+                    assert!(
+                        states.monster_melee.creature_ai.due(bloodjaw).is_some(),
+                        "source setTarget keeps the native think clock awake"
+                    );
+                    let stamp = runtime.issue_owner_work().map_err(debug)?;
+                    let binding = runtime.binding();
+                    let generation = crate::foundation::ScopeOwnershipGeneration::new(
+                        binding
+                            .scope_generation()
+                            .get()
+                            .checked_add(1)
+                            .ok_or("scope generation overflow")?,
+                    )
+                    .map_err(debug)?;
+                    let (_, foreign_stamp) = crate::foundation::crystal_timer_fixture(
+                        binding.runtime_scope(),
+                        generation,
+                    )
+                    .map_err(debug)?;
+                    assert!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .set_current_bloodjaw_target(
+                                &runtime,
+                                foreign_stamp,
+                                bloodjaw,
+                                player,
+                                tick_now
+                            )
+                            .is_err(),
+                        "foreign owner generation refused"
+                    );
+
+                    assert!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .set_current_bloodjaw_target(&runtime, stamp, boss, player, tick_now)
+                            .is_err(),
+                        "wrong source creature refused"
+                    );
+                    assert!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .set_current_bloodjaw_target(&runtime, stamp, bloodjaw, boss, tick_now)
+                            .is_err(),
+                        "non-player target refused"
+                    );
+                    assert_eq!(
+                        states
+                            .monster_melee
+                            .creature_ai
+                            .state(bloodjaw)
+                            .ok_or("native Bloodjaw AI after refusals")?
+                            .target(),
+                        Some(player)
+                    );
+                }
+            }
+        }
     }
     assert!(
         first_wave
@@ -236,8 +320,88 @@ pub(super) async fn check(
         !states.rotten_waves.wave_children(boss).is_empty(),
         "the replacement wave is runnable"
     );
+    let mushrooms = runtime
+        .positioned_melee_census()
+        .map_err(debug)?
+        .into_iter()
+        .filter_map(|(actor, _, _)| {
+            runtime
+                .companion_snapshot(actor)
+                .ok()
+                .filter(|row| row.state.policy.definition_key == "oteryn:creature.mushroom")
+                .map(|_| actor)
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        !mushrooms.is_empty(),
+        "live source population before boss departure"
+    );
+    let bloodjaws = runtime
+        .positioned_melee_census()
+        .map_err(debug)?
+        .into_iter()
+        .filter_map(|(actor, _, _)| {
+            runtime
+                .companion_snapshot(actor)
+                .ok()
+                .filter(|row| row.state.policy.definition_key == "oteryn:creature.elder_bloodjaw")
+                .map(|_| actor)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        bloodjaws.len(),
+        2,
+        "untainted source population has two native Bloodjaws"
+    );
+    runtime.remove_test_actor(boss).map_err(debug)?;
+    states.monster_melee.creature_ai.remove(boss);
+    let tick_now = now + 11_000_000;
+    states.monster_melee.creature_ai.wake(
+        position,
+        |actor| {
+            runtime
+                .read_actor_position(actor)
+                .ok()
+                .map(|row| row.position())
+        },
+        tick_now,
+    );
+    let prepared_names = owner
+        .capture_native_health_names(&runtime)
+        .map_err(|_| "capture names")?;
+    let read_names = owner
+        .read_prepared_native_health_names(&permit, prepared_names)
+        .await;
+    let names = owner
+        .seal_native_health_names(&runtime, read_names)
+        .map_err(|_| "seal names")?;
+    owner
+        .drive_monster_profiles(
+            &mut runtime,
+            &mut states,
+            &mut attack,
+            room,
+            native,
+            &permit,
+            &revisions,
+            &[],
+            tick_now,
+            &names,
+        )
+        .await
+        .map_err(|_| "production orphan cleanup drive")?;
+    for minion in mushrooms.into_iter().chain(bloodjaws) {
+        assert!(
+            runtime.read_actor_position(minion).is_err(),
+            "current native source minion disappears when its source boss leaves"
+        );
+        assert!(
+            states.monster_melee.creature_ai.state(minion).is_none(),
+            "administrative despawn also retires native AI"
+        );
+    }
     eprintln!(
-        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true"
+        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true bloodjaw_cleanup=true source_bloodjaw_target=true"
     );
     Ok(())
 }

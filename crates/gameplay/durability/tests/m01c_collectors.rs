@@ -293,11 +293,14 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
         .active()
         .and_then(|a| a.native_gameplay())
         .ok_or("native content")?;
+    let frame_binding = pin.frame_binding().digest();
+    let client_artifact = pin.identity().client_artifact_digest();
+    prove_stampede_native_spawn(native, pin.into_channel_pin())?;
     let weights = reward_fixture::Weights(native);
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
-        .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).bind(native.source_digest().as_slice()).bind([2_u8;32].as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).bind(native.source_digest().as_slice()).bind(client_artifact.as_slice()).bind(frame_binding.as_slice()).execute(&h.pool).await?;
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
         .root
@@ -369,7 +372,7 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
                 .map(|b| format!("{b:02x}"))
                 .collect::<String>()
         ),
-        placement_context: pin.frame_binding().digest().to_vec(),
+        placement_context: frame_binding.to_vec(),
         reset_epoch: 0,
         actor_placement: f::id(17),
         movement_revision: 1,
@@ -522,5 +525,67 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
     eprintln!(
         "M01C_STAMPEDE native_entry kills5 early_refused achievement_once completed8 replay_stable"
     );
+    Ok(())
+}
+
+fn prove_stampede_native_spawn(
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    pin: foundation::ChannelContentPin,
+) -> f::TestResult {
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    let mut runtime = foundation::ChannelRuntimeV1::from_committed_assignment(
+        f::scope()?.world_id(),
+        foundation::ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?,
+        foundation::NodeId::decode(&f::id(98)).map_err(f::debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        16,
+        pin,
+    )
+    .map_err(f::debug)?;
+    native
+        .install_companion_policies(&mut runtime)
+        .map_err(f::debug)?;
+    let key = "oteryn:creature.terrified_elephant";
+    let health = runtime
+        .companion_policy(key)
+        .map_err(f::debug)?
+        .maximum_health;
+    assert!(
+        health > 0,
+        "trial creature needs an admitted native health policy"
+    );
+    let monsters: Vec<_> = [
+        (32850, 32673),
+        (32851, 32672),
+        (32852, 32673),
+        (32853, 32672),
+        (32854, 32673),
+    ]
+    .into_iter()
+    .map(|(x, y)| {
+        (
+            key,
+            health,
+            foundation::MovementLocalPosition { x, y, floor: 7 },
+        )
+    })
+    .collect();
+    let actors = runtime
+        .commit_quest_creature_spawn(&monsters)
+        .map_err(f::debug)?;
+    assert_eq!(actors.len(), 5);
+    for (actor, (_, _, position)) in actors.into_iter().zip(monsters) {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(f::debug)?
+                .position(),
+            position
+        );
+    }
+    eprintln!("M01C_STAMPEDE native_factory_spawned5 artifact_policies_admitted");
     Ok(())
 }

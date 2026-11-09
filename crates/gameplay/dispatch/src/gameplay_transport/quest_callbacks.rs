@@ -14,6 +14,7 @@ mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
+mod goblin_elevator;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
@@ -25,6 +26,7 @@ mod rewards;
 mod rotten_flame;
 mod shared_gate;
 mod soul_war_reward;
+mod source_transforms;
 mod timed_encounter;
 mod timed_passages;
 
@@ -61,6 +63,7 @@ struct Pending {
     context: Option<QuestWorldContext>,
     flame: Option<crate::durability::quest_state::rotten_flame::RottenFlameUse>,
     ingress_settled: bool,
+    projection_target: Option<u64>,
     flame_effect_sent: bool,
 }
 
@@ -78,6 +81,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
@@ -848,6 +852,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        let source_trial = selected
+            .iter()
+            .any(|c| c.effects.target_transform.is_some());
+        self.select_source_phase(&mut selected, actor, &command)
+            .await;
+        if source_trial && selected.is_empty() {
+            return Some(UseOutcome::rejected());
+        }
         if selected.len() > 1
             && selected.iter().all(|callback| {
                 callback
@@ -1213,6 +1225,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         context: None,
                         flame: None,
                         ingress_settled: false,
+                        projection_target: None,
                         flame_effect_sent: false,
                     });
                     pending.origin = Some(origin);

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_swan",
@@ -17,6 +17,7 @@
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.cael",
     "oteryn:npc.carlos",
+    "oteryn:npc.chip",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cranky_lizard_crone",
@@ -46,6 +47,7 @@
     "oteryn:npc.palimuth",
     "oteryn:npc.paulie",
     "oteryn:npc.percybald",
+    "oteryn:npc.queen_eloise",
     "oteryn:npc.raymond_striker",
     "oteryn:npc.razan",
     "oteryn:npc.santiago",
@@ -59,7 +61,15 @@
     "oteryn:npc.yalahari",
     "oteryn:npc.zarifan",
     "oteryn:npc.zethra",
-    "oteryn:npc.zirella"
+    "oteryn:npc.zirella",
+    "oteryn:npc.edala",
+    "oteryn:npc.eremo",
+    "oteryn:npc.guide_jonathan",
+    "oteryn:npc.guide_tiko",
+    "oteryn:npc.humphrey",
+    "oteryn:npc.kawill",
+    "oteryn:npc.norf",
+    "oteryn:npc.pydar"
   ],
   "position_conflicts": [],
   "placement_cells": {
@@ -89,6 +99,35 @@
     "oteryn:npc.zarifan"
   ],
   "native_contacts": [
+    "oteryn:npc.chip",
     "oteryn:npc.minzy"
-  ]
+  ],
+  "placement_adjustments": {
+    "oteryn:npc.edala": {
+      "source": {
+        "x": 32697,
+        "y": 31718,
+        "z": 2
+      },
+      "target": {
+        "x": 32698,
+        "y": 31718,
+        "z": 2
+      },
+      "reason": "M01c collector route: original source cell contains BlockSolid item 3667; chosen adjacent native ground retains the donor position as provenance."
+    },
+    "oteryn:npc.humphrey": {
+      "source": {
+        "x": 32358,
+        "y": 31687,
+        "z": 6
+      },
+      "target": {
+        "x": 32358,
+        "y": 31688,
+        "z": 6
+      },
+      "reason": "M01c collector route: original source cell contains BlockSolid item 1855; chosen adjacent native ground retains the donor position as provenance."
+    }
+  }
 }

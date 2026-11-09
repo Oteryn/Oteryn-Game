@@ -5,6 +5,10 @@ use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::movement::monster_map::{CurrentMonsterMap, MonsterMap};
 use oteryn_gameplay_encounters::bosses::rotten_blood::{
     RoomPosition,
+    elder_bloodjaw_think::ELDER_BLOODJAW_KEY,
+    mushroom_think::MUSHROOM_KEY,
+    native_bloodjaw::remove_orphan as remove_orphan_bloodjaw,
+    native_mushroom::remove_orphan,
     native_wave_spawn::{NativeWaveSpawnMap, NativeWaveSpawnOwner},
     summon_wave::{
         SummonNeighbour, SummonPlacement, SummonWaveEffect, SummonWaveFacts, SummonWaveOwner,
@@ -17,6 +21,11 @@ use std::collections::BTreeMap;
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct RoomWaveStates {
     owners: BTreeMap<[u8; 16], RoomWave>,
+}
+impl RoomWaveStates {
+    pub(super) fn has_attempts(&self) -> bool {
+        !self.owners.is_empty()
+    }
 }
 impl std::fmt::Debug for RoomWaveStates {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -144,9 +153,13 @@ impl NativeWaveSpawnMap for WaveMap<'_> {
                 return None;
             }
             let allowed = self.map.admits(at);
-            if !close || allowed {
-                return Some((at, allowed));
+            // Source getClosePosition uses Tile:isWalkable(), whose projectile
+            // refusal is independent of movement. Random placement and the
+            // unconditional source-centre fallback retain creation admission.
+            if close && !self.map.admits_close_spawn_candidate(runtime, at)? {
+                continue;
             }
+            return Some((at, allowed));
         }
         let at = MovementLocalPosition {
             x: around.x,
@@ -198,6 +211,18 @@ impl RoomWaveStates {
         }
         // An attack-schedule refusal does not cancel a committed source onThink.
         // The map and spawn owners independently prove this callback's current work.
+        if matches!(key, MUSHROOM_KEY | ELDER_BLOODJAW_KEY) && !report.over_budget {
+            let removed = if key == MUSHROOM_KEY {
+                remove_orphan(runtime, actor, native.source_digest())
+            } else {
+                remove_orphan_bloodjaw(runtime, actor, native.source_digest())
+            }
+            .map_err(|_| ())?;
+            if removed {
+                table.remove(actor);
+            }
+            return Ok(());
+        }
         if !supports(key) || report.over_budget {
             return Ok(());
         }

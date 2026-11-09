@@ -10,15 +10,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         since: Option<u64>,
     ) -> QuestLogObservation {
-        if self
-            .runtime
-            .lock()
-            .await
-            .player_control_facts(actor, session)
-            .is_err()
-        {
-            return QuestLogObservation::Unavailable;
-        }
+        let world = {
+            let runtime = self.runtime.lock().await;
+            if runtime.player_control_facts(actor, session).is_err() {
+                return QuestLogObservation::Unavailable;
+            }
+            runtime.binding().runtime_scope().world_id()
+        };
         let Some(content) = self.quest_log_content.as_ref() else {
             return QuestLogObservation::Unavailable;
         };
@@ -112,6 +110,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return QuestLogObservation::Unchanged;
         }
         QuestLogObservation::Changed(QuestLogSource {
+            map_marks: if entry.map_marks_world == Some(world) {
+                entry.map_marks.clone()
+            } else {
+                Vec::new()
+            },
             content: content.clone(),
             copy: std::sync::Arc::new(copy.clone()),
             version: entry.version,

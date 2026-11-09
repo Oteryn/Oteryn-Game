@@ -36,6 +36,11 @@ impl PlayView {
         self.project_arena_hazards(link, std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;
         link.arena_refresh(std::time::Instant::now());
+        let marks_changed = super::feature_local_minimap::state::lock(&self.minimap)
+            .replace_quest_markers(&link.quest_panel().state.log.map_marks);
+        if marks_changed {
+            self.rebuild().map_err(|_error| UNAVAILABLE)?;
+        }
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;

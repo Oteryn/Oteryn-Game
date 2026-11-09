@@ -231,7 +231,7 @@ mod additional_source_tests {
             ("maximum", json!(3)),
             ("maximum", json!(1)),
             ("creature", json!("oteryn:creature.dragon")),
-            ("advance_gate_to", json!(5)),
+            ("advance_gate_to", json!(99)),
         ] {
             let mut bad = value.clone();
             bad["quests"][0]["stages"][1]["trigger"]["counter"][field] = invalid;

@@ -100,7 +100,10 @@ pub struct QuestRewardAdmission<'a> {
 pub(crate) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
-    owner: (&super::super::DurabilityRoot, &crate::character_recovery_fence::CharacterRecoveryFenceV1),
+    owner: (
+        &super::super::DurabilityRoot,
+        &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    ),
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
@@ -140,6 +143,17 @@ pub(crate) async fn apply(
         }
         (true, Some(proof), Some(carried)) if !callback.fresh_corpse && proof.corpse().is_some() == callback.corpse_target.is_some() && proof.permits(fence, request, callback, carried) => {}
         _ => return Ok(false),
+    }
+    if callback.capture_creature {
+        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
+            return Ok(false);
+        };
+        if !proof
+            .claim_capture(tx, fence, request, callback, carried)
+            .await?
+        {
+            return Ok(false);
+        }
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
@@ -433,14 +447,6 @@ pub(crate) async fn apply(
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else { return Ok(false); };
         if !super::quest_corpse::record(tx, fence, request, callback, carried, proof, admission.native).await? {
-            return Ok(false);
-        }
-    }
-    if callback.capture_creature {
-        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
-            return Ok(false);
-        };
-        if !proof.record_capture(tx, carried).await? {
             return Ok(false);
         }
     }

@@ -38,7 +38,7 @@ def capture_xml(source):
 
 def build(source=None,root=ROOT):
     proof = capture_xml(source) if source else json.loads((root/CAPTURE).read_bytes())
-    if proof['revision'] != PIN or {int(key):row['name'] for key,row in proof['records'].items()} != NAMES:
+    if proof['revision'] != PIN or {int(identifier):row['name'] for identifier,row in proof['records'].items()} != NAMES:
         raise ValueError('LAST_CREEP_CAPTURE_IDENTITY_DRIFT')
     forms = [{'slug':slug,'condition':'quest.last_creep.'+slug.replace('-','_'),
               'appearance':item,'order':index+1,

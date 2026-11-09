@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.grimvale_mini_world_change",
+      "recipe_sha256": "0fa6d26ca4c398832ca4930fb96fe824b0bd1f3fa93294c28b050d5e8aefb970",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/qn5/grimvale-entry",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/qn5/grimvale-encounter-entry",
+              "quest": "oteryn:quest.grimvale_mini_world_change",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33420,
+                  "y": 31539,
+                  "floor": -10
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 104,
+                "native": {
+                  "position": {
+                    "x": 33420,
+                    "y": 31539,
+                    "floor": -10
+                  },
+                  "ordinal": 0,
+                  "appearance": 104
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/qn5/grimvale-entry",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "world_requirements": [
+                {
+                  "position": {
+                    "x": 33430,
+                    "y": 31537,
+                    "floor": -11
+                  },
+                  "appearance": 22761
+                }
+              ],
+              "admission": {
+                "premium": true
+              },
+              "world_change": "grimvale",
+              "offerings": [],
+              "item_on_target": null,
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "Chosen Oteryn recipe s1 only: Reach Grimvale during the authored full-moon encounter; not original-source quest completion.",
+                "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua; encounter ingress 22761 at 33430,31537,11. This chosen personal stage is an Oteryn adaptation.",
+                "Existing native island landing-adjacent ground 104 at 33420,31539,10; no fabricated marker, cure, reward or completion."
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "Chosen Oteryn recipe s1 only: Reach Grimvale during the authored full-moon encounter; not original-source quest completion.",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua; encounter ingress 22761 at 33430,31537,11. This chosen personal stage is an Oteryn adaptation.",
+        "Existing native island landing-adjacent ground 104 at 33420,31539,10; no fabricated marker, cure, reward or completion."
+      ]
+    }
+  ]
+}

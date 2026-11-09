@@ -2,6 +2,8 @@
 mod cake_creature_admission;
 #[path = "support/item_fx_audio_raw_import.rs"]
 mod item_fx_audio_raw_import;
+#[path = "npc_materializer/preserved_display_names.rs"]
+mod preserved_display_names;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -3104,6 +3106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
         cake_creature_admission::apply(&mut draft)?;
+        preserved_display_names::apply(&mut draft.state.declarations)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.
@@ -3413,6 +3416,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     promote_beds(&mut draft)?;
     apply_official_creature_balance(&mut draft)?;
     cake_creature_admission::apply(&mut draft)?;
+    preserved_display_names::apply(&mut draft.state.declarations)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -3824,6 +3828,7 @@ mod npc_r5_guard_tests {
             .clone();
         let quest = ProjectV2Declaration::Quest {
             identity,
+            visibility: Default::default(),
             fields: vec![],
         };
         assert!(!npc_repair_scope_allowed(&quest, &quest));

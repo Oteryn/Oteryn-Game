@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'tools/content-migration'))
 import qengine_reward_item_profiles as shared
 
-SHARD = 'content/world/terrain/terrain-08693-08693.json'
+SHARD = 'content/world/terrain/terrain-08749-08749.json'
 IDENTIFIER = 17970
 KEY = 'oteryn:terrain.tibia.i17970'
 MARKER_NOTE = ' Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.'

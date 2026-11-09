@@ -123,6 +123,7 @@ pub struct BoundPlacement {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardContainerItem {
+    pub fluid_subtype: Option<u8>,
     pub item: TypedDefinitionRef,
     pub count: u32,
     pub key_number: Option<u16>,
@@ -638,8 +639,10 @@ fn candidate_container_placement(
     }
     result.achievement = achievement;
     for (row, source) in rows.iter().zip(source_rows) {
-        if !only(row, &["item", "count", "key_number", "text"])
-            || !only(source, &["item", "count"])
+        if !only(
+            row,
+            &["item", "count", "key_number", "text", "fluid_subtype"],
+        ) || !only(source, &["item", "count"])
             || row.get("item") != source.get("item")
             || row.get("count") != source.get("count")
         {
@@ -698,7 +701,25 @@ fn candidate_container_placement(
                 Some(body.to_owned())
             }
         };
+        let expected_fluid = (matches!(result.crystal_unique_id, Some(6197..=6200))
+            && child.item.key().as_str() == "oteryn:item.tibia.i2874")
+            .then_some(1);
+        let fluid_subtype = match row.get("fluid_subtype") {
+            None => None,
+            Some(value) => {
+                let Some(fluid) = value.as_u64().and_then(|n| u8::try_from(n).ok()) else {
+                    return Ok(None);
+                };
+                Some(fluid)
+            }
+        };
+        if fluid_subtype != expected_fluid
+            || fluid_subtype.is_some() && (child.count != 1 || number.is_some() || text.is_some())
+        {
+            return Ok(None);
+        }
         result.contents.push(RewardContainerItem {
+            fluid_subtype,
             item: child.item,
             count: child.count,
             key_number: number,
@@ -1128,6 +1149,37 @@ mod container_tests {
             "oteryn:item.tibia.i3056"
         );
         assert_eq!(power.placements[0].count, 1);
+    }
+
+    #[test]
+    fn wine_projection_requires_the_exact_source_water_subtype() -> Result<(), String> {
+        let source = authored("quest.u7_9.dreamers_challenge.chests_wine").ok_or("wine source")?;
+        let parsed = candidate(source.as_object().ok_or("definition")?, &|_| true)
+            .map_err(|e| format!("{e:?}"))?
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(parsed.placements.len(), 4);
+        for placement in &parsed.placements {
+            assert_eq!(placement.contents.len(), 3);
+            assert_eq!(placement.contents[1].fluid_subtype, Some(1));
+        }
+        for subtype in [None, Some(0), Some(15)] {
+            let mut changed = source.clone();
+            let child = &mut changed["native_contents"]["placements"][0]["contents"][1];
+            if let Some(subtype) = subtype {
+                child["fluid_subtype"] = serde_json::json!(subtype);
+            } else {
+                child
+                    .as_object_mut()
+                    .ok_or("child")?
+                    .remove("fluid_subtype");
+            }
+            assert!(
+                candidate(changed.as_object().ok_or("definition")?, &|_| true)
+                    .map_err(|e| format!("{e:?}"))?
+                    .is_err()
+            );
+        }
+        Ok(())
     }
 
     #[test]

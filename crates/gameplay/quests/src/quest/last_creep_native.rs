@@ -105,6 +105,7 @@ fn callback(
     destination: Position,
 ) -> Callback {
     Callback {
+        track_initials: Default::default(),
         character_requirements: None,
         required_completed_quests: Vec::new(),
         requires_premium: false,

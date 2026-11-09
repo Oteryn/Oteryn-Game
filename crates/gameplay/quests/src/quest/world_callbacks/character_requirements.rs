@@ -46,12 +46,16 @@ pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
     };
     let (route, source, shape) = match callback.quest.as_str() {
         "oteryn:quest.25_years_of_tibia_quest" => {
-            let Some(part) = callback
-                .key
-                .strip_prefix("oteryn:quest-callback/m03/time-machine-entry-")
-                .and_then(|part| part.parse::<u8>().ok())
-                .filter(|part| *part < 9)
-            else {
+            let Some(part) = (if callback.key == "oteryn:quest-callback/qm03/anniversary" {
+                Some(5)
+            } else {
+                callback
+                    .key
+                    .strip_prefix("oteryn:quest-callback/qm03/anniversary-")
+                    .and_then(|part| part.parse::<u16>().ok())
+                    .and_then(|appearance| appearance.checked_sub(25091))
+                    .filter(|part| *part < 9 && *part != 5)
+            }) else {
                 return false;
             };
             let regular = [
@@ -75,12 +79,12 @@ pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
                     })
                     && native.position
                         == Position {
-                            x: 32429 + u16::from(part % 3),
-                            y: 32164 + u16::from(part / 3),
+                            x: 32429 + part % 3,
+                            y: 32164 + part / 3,
                             floor: -8,
                         }
                     && native.ordinal == 1
-                    && native.appearance == 25091 + u16::from(part)
+                    && native.appearance == 25091 + part
                     && callback.teleport
                         == Some(Position {
                             x: 33453,

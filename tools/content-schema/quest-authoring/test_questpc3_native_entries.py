@@ -4,6 +4,18 @@ import questpc3_native_entries as source
 
 
 class NativeEntries(unittest.TestCase):
+    def test_task_board_entries_preserve_requirements_and_never_complete(self):
+        for slug, quest, level in [('falconer', 'oteryn:quest.falconer_outfits_quest', 100), ('feral-trappers', 'oteryn:quest.feral_trappers_quest', 0)]:
+            bound = source.build_task_board(slug)['quests'][0]
+            self.assertEqual(bound['quest'], quest)
+            self.assertEqual(bound['admission'], {'minimum_level':level})
+            self.assertEqual(len(bound['stages']), 1)
+            stage = bound['stages'][0]
+            self.assertFalse(stage['completes'])
+            self.assertEqual(stage['trigger']['kind'], 'task_board_use')
+            self.assertEqual(stage['trigger']['usage']['programme'], 'weekly')
+            self.assertEqual(stage['trigger']['usage']['storage'][0]['set'], 1)
+
     def test_dead_archer_entry_is_exact_and_cannot_complete_or_grant(self):
         document = source.build()
         quest = document['quests'][0]
@@ -63,6 +75,17 @@ class NativeEntries(unittest.TestCase):
         counter = stage['trigger']['counter']
         self.assertEqual(counter['creature'], 'oteryn:creature.bakragore')
         self.assertEqual((counter['gate_value'],counter['minimum'],counter['maximum'],counter['advance_gate_to']), (0,0,1,1))
+
+    def test_illuminator_shell_entry_preserves_level_premium_and_parent(self):
+        quest = source.build_illuminator()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.illuminator_outfits_quest')
+        self.assertEqual(quest['admission'], {'minimum_level':200,'premium':True,
+            'prerequisites':[{'requirement':'Between the Lines Quest','quest':'oteryn:quest.between_the_lines_quest'}]})
+        self.assertEqual(len(quest['stages']), 1)
+        self.assertFalse(quest['stages'][0]['completes'])
+        collection = quest['stages'][0]['trigger']['collection']
+        self.assertEqual(collection['items'], [{'item':'oteryn:item.tibia.i51656','count':1}])
+        self.assertEqual(collection['storage'][0]['set'], 1)
 
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()

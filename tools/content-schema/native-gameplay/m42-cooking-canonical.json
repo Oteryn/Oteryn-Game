@@ -1,5 +1,5 @@
 {
-  "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+  "baseline": "856a420d64cc0ea5c9e8cb2a54742b45c49b9914",
   "recipe_sha256": "191410317d0968dcc87e67234a0f4fcbcc3b7b933e7fc4ca8653314a3bfde732",
   "schema": "OTERYN_M42_COOKING_CANONICAL/v1",
   "shards": {
@@ -118,5 +118,5 @@
       "oteryn:item.tibia.i9088": "98d8744cdd95990a2803c8161391dec841389688e4d7eb3c80738c24f896102f"
     }
   },
-  "source_packet_sha256": "0e8acc827cc3d38a1b72f660f029a0ec53d6b69497f7071033c0550f049c61ed"
+  "source_packet_sha256": "541dc880b9678dfa84bd92f809e2ee7ee3f5f6ed2a1990d803719a8423511cb5"
 }

@@ -138,3 +138,34 @@ fn production_decaying_defender_boss_entry_preserves_requirements_and_cannot_com
     );
     Ok(())
 }
+
+#[test]
+fn production_illuminator_shell_entry_preserves_all_actor_requirements() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue
+        .transition("oteryn:quest-collection/m01c-illuminator-shell")
+        .ok_or("Illuminator native collection missing")?;
+    assert!(!transition.completes);
+    let quest = catalogue
+        .authored_bindings()
+        .and_then(|b| b.quests.iter().find(|q| q.quest == transition.quest))
+        .ok_or("Illuminator binding")?;
+    let admission = quest.admission.as_ref().ok_or("actor admission")?;
+    assert_eq!(admission.minimum_level, 200);
+    assert!(admission.premium);
+    assert_eq!(admission.prerequisites.len(), 1);
+    assert_eq!(
+        admission.prerequisites[0].quest,
+        "oteryn:quest.between_the_lines_quest"
+    );
+    let super::Trigger::Collect { collection } = &quest.stages[0].trigger else {
+        return Err("collection".into());
+    };
+    assert_eq!(
+        (collection.items[0].item.as_str(), collection.items[0].count),
+        ("oteryn:item.tibia.i51656", 1)
+    );
+    Ok(())
+}

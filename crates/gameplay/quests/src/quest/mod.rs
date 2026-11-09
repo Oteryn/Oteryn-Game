@@ -38,6 +38,7 @@ pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
 pub mod distinct_targets;
+pub mod dreamer_fire_bug;
 pub mod elemental_arrival;
 pub mod elemental_spheres;
 pub mod fire_feathered_native;
@@ -54,6 +55,7 @@ pub mod ice_seal_paint;
 pub mod isle_of_evil;
 pub mod item_disguises;
 pub mod last_creep_native;
+pub mod lions_rock;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
@@ -83,6 +85,7 @@ pub mod timers;
 pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod world_change_journals;
+mod world_requirement_key;
 pub mod wrath_sleeping_dragon;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -427,6 +430,7 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
+                && !dreamer_fire_bug::shared_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
                     && transition.quest == "oteryn:quest/worldchange/benevola")
                     || transition.key.starts_with("oteryn:quest-reward/"))
@@ -434,13 +438,11 @@ impl QuestStateCatalogue {
             {
                 return Err(E::InvalidEffect(transition.key));
             }
-            if transition.world_change.as_ref().is_some_and(|key| {
-                key.is_empty()
-                    || key.len() > 100
-                    || !key
-                        .bytes()
-                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
-            }) {
+            if transition
+                .world_change
+                .as_ref()
+                .is_some_and(|key| !world_requirement_key::valid(key))
+            {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition

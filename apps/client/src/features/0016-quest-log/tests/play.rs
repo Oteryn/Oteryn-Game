@@ -7,6 +7,7 @@ use oteryn_session::GatedSnapshot;
 #[test]
 fn quest_replacement_resets_cached_list_and_revision_before_new_base_delta() -> Result<(), String> {
     let log = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(vec![QuestListEntry {
             quest_index: 1,
             completed: false,

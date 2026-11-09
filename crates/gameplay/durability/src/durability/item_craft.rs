@@ -23,6 +23,7 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 pub(crate) mod audit;
+mod elemental_energy;
 mod enchanting;
 mod event_containers;
 mod harvest;
@@ -312,7 +313,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .collect::<Option<Vec<_>>>();
         outputs.map(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: if soil_is_qualified {
+                recipe: if soil_is_qualified
+                    && definition.production_key == "oteryn:item.tibia.i945"
+                {
+                    "oteryn:elemental_energy_soil.crystal"
+                } else if soil_is_qualified {
                     "oteryn:elemental_soil.crystal"
                 } else if seed_is_qualified {
                     "oteryn:planting.crystal"
@@ -655,6 +660,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
             event.as_bytes(),
         )
         .await?;
+    }
+    if conversion.recipe == "oteryn:elemental_energy_soil.crystal" {
+        elemental_energy::create(tx, fence, request, native, &transaction, occurred).await?;
     }
     Ok(UseDisposition::Committed)
 }

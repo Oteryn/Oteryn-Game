@@ -4,6 +4,7 @@ from pathlib import Path
 
 SOURCE = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 APPROACHES = {
+    'oteryn:area.hunting_place.cobra_bastion': ((33301, 32647, -7), (33301, 32648, -7, 231)),
     'oteryn:area.hunting_place.grimvale': ((33333, 31690, -7), (33335, 31690, -7, 4515)),
     'oteryn:area.hunting_place.rookgaard_bear_cave': ((32147, 32208, -7), (32147, 32207, -7, 4409)),
     'oteryn:area.hunting_place.edron_dragon_lair': ((33098, 31701, -7), (33098, 31703, -7, 4408)),
@@ -24,6 +25,8 @@ def resolve(root, reference):
     index, record = matches[0]
     source = record['declaration']['position']
     origin, (x, y, floor, appearance) = APPROACHES[key]
+    if source is not None and source.get('coordinate_frame') != 'global-target-2026-09-27':
+        raise ValueError('Pinned Area coordinate frame changed: ' + key)
     if source is None or (source['x'], source['y'], -source['floor']) != origin:
         raise ValueError('Pinned Area marker changed: ' + key)
     if floor != origin[2] or abs(x - origin[0]) + abs(y - origin[1]) != DISTANCES.get(key, 1):

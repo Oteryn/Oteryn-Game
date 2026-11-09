@@ -19,6 +19,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_grizzly_kill(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_grizzly_transition(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_monk_state_save(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_native_quest_door(", "durability/character_revision_sequencer/native_doors.rs"),
     (".commit_character_native_quest_hit(", "durability/character_revision_sequencer/native_hits.rs"),
     (".commit_character_native_quest_kill(", "durability/character_revision_sequencer/native_kills.rs"),
     (".commit_character_npc_teleport(", "durability/character_revision_sequencer/npc_program.rs"),

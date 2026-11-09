@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 
-BASE = 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb'
+BASE = '856a420d64cc0ea5c9e8cb2a54742b45c49b9914'
 PACKET = 'tools/content-schema/native-gameplay/quest-batch3-item-profiles.json'
 RECIPE = 'content/quests/hot-cuisine-batch3.json'
 WITNESS = 'tools/content-schema/native-gameplay/m42-cooking-canonical.json'
@@ -28,10 +28,13 @@ def capture(root):
     shards = {}
     for d in json.loads(raw)['canonical_inputs']:
         previous = subprocess.check_output(['git', 'show', f"{BASE}:{d['path']}"], cwd=root)
-        if digest(previous) != d['sha256']:
-            raise ValueError('M42_CAPTURE_PREDECESSOR_PIN')
+        current = (root / d['path']).read_bytes()
+        # The packet names today's whole shard. The immutable predecessor
+        # independently proves only the recipe rows consumed by this witness.
+        if digest(current) != d['sha256']:
+            raise ValueError('M42_CAPTURE_CURRENT_PIN')
         accepted = selected(previous, keys)
-        if selected((root / d['path']).read_bytes(), keys) != accepted:
+        if selected(current, keys) != accepted:
             raise ValueError('M42_CAPTURE_SELECTED_CANONICAL_DRIFT')
         if accepted:
             shards[d['path']] = accepted

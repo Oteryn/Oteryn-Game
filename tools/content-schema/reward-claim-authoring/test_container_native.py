@@ -16,6 +16,51 @@ class ContainerNativeTests(unittest.TestCase):
                     for r in json.loads(p.read_text())['records']]
         cls.bear = next(d for d in cls.rows if d['identity']['key'] == 'oteryn:reward-claim.kv.bear_chest1')
 
+    def test_fire_axe_bag_preserves_the_full_definition_charge_necklace(self):
+        claim = next(d for d in self.rows if d['identity']['key'] ==
+                     'oteryn:reward-claim.kv.fireaxe1')
+        items = container_native.claim_items(claim['provenance']['pilot_key'], self.items)
+        recipe = container_native.derive(claim, items, plain.stack_problem)
+        self.assertIsNotNone(recipe)
+        self.assertEqual(recipe['placements'][0]['unique_id'], 6067)
+        self.assertEqual([(c['item']['key'], c['count']) for c in recipe['placements'][0]['contents']],
+                         [('oteryn:item.tibia.i3098', 1), ('oteryn:item.tibia.i3085', 1),
+                          ('oteryn:item.tibia.i3028', 7), ('oteryn:item.tibia.i3320', 1)])
+        self.assertFalse(self.items['oteryn:item.tibia.i3085']['materializable'])
+        self.assertEqual(items['oteryn:item.tibia.i3085']['semantics']['charges']['value']['count']['value'], 200)
+        changed = copy.deepcopy(claim)
+        changed['placements'][0]['reward']['items'][1]['count'] = 199
+        self.assertIsNone(container_native.derive(changed, items, plain.stack_problem))
+
+    def test_dreamer_wine_keeps_source_water_in_all_alternatives(self):
+        claim = next(d for d in self.rows if d['identity']['key'] ==
+                     'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine')
+        items = container_native.claim_items(claim['provenance']['pilot_key'], self.items)
+        recipe = container_native.derive(claim, items, plain.stack_problem)
+        self.assertIsNotNone(recipe)
+        self.assertEqual([p['unique_id'] for p in recipe['placements']], [6197, 6198, 6199, 6200])
+        for placement in recipe['placements']:
+            self.assertEqual([c.get('fluid_subtype') for c in placement['contents']], [None, 1, None])
+            self.assertEqual([c['count'] for c in placement['contents']], [1, 1, 1])
+        self.assertFalse(self.items['oteryn:item.tibia.i2874']['materializable'])
+        changed = copy.deepcopy(claim)
+        changed['placements'][0]['reward']['items'][1]['count'] = 15
+        self.assertIsNone(container_native.derive(changed, items, plain.stack_problem))
+
+    def test_water_vial_requires_an_agreeing_native_profile_and_exact_claim(self):
+        key = 'oteryn:item.tibia.i2874'
+        original = self.items[key]
+        profiles = json.loads((plain.ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        profile = next(p for p in profiles['records'] if p['production_definition']['production_key'] == key)
+        self.assertTrue(container_native.native_water_vial(original, profile)['materializable'])
+        self.assertIs(container_native.claim_items('canary:reward-claim/other', self.items), self.items)
+        for change in ('weight', 'admission', 'fluid'):
+            changed = copy.deepcopy(profile)
+            if change == 'weight': changed['semantics']['physical']['value']['weight']['value'] += 1
+            elif change == 'admission': changed['admission']['materializable'] = False
+            else: changed['semantics']['fluid']['value']['fluid_type'] = {'state': 'KNOWN', 'value': 1}
+            self.assertIs(container_native.native_water_vial(original, changed), original)
+
     def test_bear_room_bag_keeps_both_rewards_and_source_storage(self):
         recipe = container_native.derive(self.bear, self.items, plain.stack_problem)
         self.assertEqual(recipe['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')

@@ -11404,5 +11404,171 @@
     "source": "imports/canary/items-xml/items.xml:67140-67151; same pinned SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2;weight850each",
     "pending": "Native Too Hot target bindings follow; fullM07 remainsPARTIAL",
     "resource_recovery": "Pin process exit-9 during workspace build; succeeded serially after build completion"
+  },
+  "m07_machinery_wheels": {
+    "status": "QUALIFIED_SLICE",
+    "scope": "Six captured7775/7776 wheel pairs, each credited once; aggregate bounded to6; existing retained5467/level50/60second-fire engine reused",
+    "red": "Binding file absent:2geometry/contract tests failed before source authoring",
+    "green": {
+      "machine_geometry_tests": "6/6 0.596s across wheels/ballistae/catapults",
+      "model_tests": "13/13 4.372s",
+      "workspace_all_targets_seconds": 447.318,
+      "authoring_checks_seconds": 553.685,
+      "authoring_unit_modules": 120,
+      "authoring_unit_seconds": 818.44,
+      "content_tree_seconds": 227.722,
+      "postgresql_version": "18.6",
+      "postgres_level49_seconds": 71.94992161,
+      "postgres_level50_seconds": 71.156241312,
+      "focused_native_tests": "4/4 PASS 143.567s; module registration and exact source-witness coverage included",
+      "clippy_seconds": 273.724,
+      "fmt_seconds": 18.974,
+      "pin_verification_seconds": 35.27,
+      "duplicate_migrations": "PASS"
+    },
+    "source": {
+      "path": "content/world/placements/region-z07-x128-y124.b3",
+      "sha256": "bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66",
+      "lefts": [
+        [
+          32964,
+          31814,
+          1
+        ],
+        [
+          32961,
+          31817,
+          1
+        ],
+        [
+          32964,
+          31817,
+          2
+        ],
+        [
+          32964,
+          31820,
+          1
+        ],
+        [
+          32961,
+          31823,
+          1
+        ],
+        [
+          32964,
+          31823,
+          2
+        ]
+      ]
+    },
+    "pending": "RemainingM07 repair,pillow puzzle andTooHot bindings; fullM07 stillPARTIAL",
+    "sql_changed": false
+  },
+  "m07_too_hot_columns": {
+    "status": "QUALIFIED_SLICE",
+    "scope": "Three captured36541 columns, retained36543, level80/premium, personal once-per-site credits bounded3; no commission/completion admission",
+    "red": "2 tests missing sidecar; duration0.251s exit1",
+    "green": {
+      "data_tests": "2/2 0.155s",
+      "model_tests": "12/12 4.039s",
+      "workspace_all_targets_seconds": 438.354,
+      "authoring_checks_seconds": 543.908,
+      "authoring_unit_modules": 121,
+      "authoring_unit_seconds": 801.353,
+      "content_tree_seconds": 220.345,
+      "postgresql_version": "18.6",
+      "postgres_level79_seconds": 80.909246103,
+      "postgres_level80_seconds": 84.909181151,
+      "wheel_level49_regression_seconds": 84.467387486,
+      "focused_native_tests": "5/5 PASS 250.781s; module registration and exact source-witness coverage included",
+      "clippy_seconds": 355.564,
+      "fmt_seconds": 22.551,
+      "pin_verification_seconds": 41.846,
+      "duplicate_migrations": "PASS"
+    },
+    "pending": "FullM07 remainsPARTIAL: Machinery repair groups,Dreamer remaining puzzle,TooHot cleaning/floor and journey admission",
+    "sql_changed": false
+  },
+  "m07_machinery_repairs": {
+    "status": "WIP_COMPILES_PG_MIGRATION_BLOCKED",
+    "scope": "6 native sites/44 segments; exact7/8 kit budgets from separate plain instances; solid collision andpre-consumption occupancy guards",
+    "red": "m07_solid_repairs_admit_exact_fenced_native_consuming_trials rejected unknown replacement_passable;0.012s",
+    "green": {
+      "initial_model_tests": "14/14 4.675s before final source inclusion guard",
+      "geometry_tests": "2/2 1.105s",
+      "model_tests": "14/14 5.065s",
+      "workspace_all_targets_seconds": 463.18,
+      "authoring_checks_seconds": 585.923,
+      "authoring_unit_modules": 122,
+      "authoring_unit_seconds": 845.515,
+      "content_tree_seconds": 224.136,
+      "changed_crate_clippy_seconds": 317.657,
+      "fmt_seconds": 19.984,
+      "postmerge_workspace_all_targets_seconds": 345.616
+    },
+    "pending": "WIP pushed5a703e41da469a6845f803bd2a48cb1de445877a. Workspace/clippy/fmt/models pass; realPG fails in foreign published migration2020 before repair gameplay. Own2060-2069 migrations cannot run before2020.",
+    "sql_changed": true,
+    "new_migrations": [],
+    "postmerge_pg_red": {
+      "command": "bash /tmp/questpc4-run-focused-dispatch.sh 'test(m07_machinery_postgres_repair_)' /tmp/questpc4-repairs-postmerge-pg.log",
+      "error": "callback harness: while executing migration 2020: error returned from database: quest reward quantity variable requires exact guard anchor: actual BIGINT; at line 3909",
+      "case_seconds": 6.705731223,
+      "build_seconds": 819.135,
+      "migration": "apps/game-server/migrations/2020_quest_reward_quantity_variable.sql",
+      "introduced_by": "5e04fba53",
+      "own_range": "2060-2069"
+    }
+  },
+  "qm50_stationary_overlap_fix": {
+    "status": "QUALIFIED_SLICE",
+    "red": "elevator overlap regression failed: stationary scenery admitted materializable",
+    "green": "2 profile-overlap tests PASS; QM50 capture regenerated with repo tool; py_compile PASS",
+    "scope": "Fixed-source elevator scenery only; no claim that repair PG or full postmerge gates are green"
+  },
+  "m42_witness_refresh_integration": {
+    "status": "QUALIFIED_SLICE",
+    "red": "Refresh rejected unrelated canonical shard changes and accepted a stale current-input pin",
+    "green": "Regression tests pass: unchanged selected cookbook records accepted; selected changes and stale current pins rejected; capture --refresh and verify PASS",
+    "scope": "No cookbook records changed; immutable predecessor selected-record hashes retained"
+  },
+  "native_authored_track_composition": {
+    "status": "QUALIFIED_SLICE",
+    "red": "DuplicateKey chosen-source/25_years_of_tibia_quest/s1; exact reuse regression failed",
+    "green": "16/16 focused composition and M07 tests7.234s; questsClippy14.095s;fmt23.801s",
+    "scope": "Exact owned track declarations reuse; conflicting owner/initial/bounds reject; explicitly marked native chosen-entry s1 counters initialize0; legacy donor defaults unchanged"
+  },
+  "explicit_item_capture_subset": {
+    "status": "QUALIFIED_SLICE",
+    "red": "capture(ids={2833}) returned zero records after filtering with global IDS; test3.411s failed",
+    "green": "Exact requested parchment profile returned; regression3.242s PASS",
+    "scope": "Use selected_ids for explicit capture result filtering; default cohort and custody promotions unchanged"
+  },
+  "crafting_accepted_fact_overlap": {
+    "status": "QUALIFIED_SLICE",
+    "red": "Crafting and reward captures disagreed on accepted description punctuation and known trade facts",
+    "green": "3 profile overlap tests PASS; 7 crafting unit tests1.373s PASS; source builder --check PASS",
+    "scope": "Reuse accepted-first policy with physical/stack/container/temporal conflict guards; source capture regenerated; no operative/custody fact changes"
+  },
+  "m07_dense_ground_pattern_slice": {
+    "state": "PARTIAL",
+    "scope": "Bounded complete 6x6 single-item Ground readsets retain typed instance/revision/quantity witnesses. Legacy eight-tile stack bounds unchanged.",
+    "red": "Two new dense-pattern tests returned LimitExceeded before implementation; /tmp/questpc4-dense-pattern-red.log.",
+    "pending": "Native Dreamer callback, qualified pillow profiles and real PostgreSQL puzzle wiring are not implemented in this slice. Repair PG remains blocked by foreign migration 2020 exact guard anchor error.",
+    "sql_changed": false,
+    "validation": {
+      "focused_tests": 22,
+      "focused_seconds": 6.248,
+      "clippy_seconds": 12.12,
+      "fmt": "PASS",
+      "pg": "Not run: model-only slice; no SQL or runtime wiring changed.",
+      "workspace_all_targets_seconds": 277.76,
+      "pin_verify": {
+        "command": "oteryn-world-bundle-compiler pin-check . /tmp/questpc4-dense-pin-verify",
+        "error": "key: unknown key oteryn:world-object.tibia.i10736",
+        "seconds": 8.634,
+        "exit": 1
+      }
+    }
   }
 }

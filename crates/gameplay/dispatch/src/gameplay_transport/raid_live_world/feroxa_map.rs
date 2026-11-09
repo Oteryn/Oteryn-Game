@@ -37,7 +37,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let (owner, runtime, permit, room, native) = context;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
                 let binding = runtime.binding();
-                let _authority = assert_spell_item_scope_in_transaction(
+                let authority = assert_spell_item_scope_in_transaction(
                     &mut tx, permit, owner.root, owner.character, owner.holder,
                     binding.runtime_scope(), binding.scope_generation().get(),
                 ).await.map_err(|_| DurabilityError::Unavailable)?;
@@ -68,6 +68,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         pickupable: false, bound: false, count: 1, sub_type: 0,
                     }))
                 }).ok_or(DurabilityError::Unavailable)?;
+                let frame = crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+                    room, runtime, MovementLocalPosition { x: 33415, y: 31522, floor: 11 },
+                ).map_err(|_| DurabilityError::Unavailable)?;
+                let cleared = crate::durability::raid_runner::clear_feroxa_ground_batch(
+                    &mut tx, &authority, identity, phase, now_ms, &frame,
+                    runtime.content_pin().server_artifact_digest(),
+                ).await?;
+                // Durable removal/audit commits first. An interrupted publication
+                // resumes from the phase's replay barrier without deleting later drops.
+                crate::durability::spell_item_transaction::commit_creature_item_owner_transaction(tx, deadline).await?;
+                if !cleared { return Err(DurabilityError::Unavailable); }
+                let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
+                let _publication_authority = assert_spell_item_scope_in_transaction(
+                    &mut tx, permit, owner.root, owner.character, owner.holder,
+                    binding.runtime_scope(), binding.scope_generation().get(),
+                ).await.map_err(|_| DurabilityError::Unavailable)?;
+                crate::durability::raid_runner::feroxa_map_elapsed_in_transaction(
+                    &mut tx, owner.holder, identity, owner.world_id, owner.reset_epoch,
+                    map.overlay.base().digest(), now_ms,
+                ).await?;
+                if !crate::durability::world_event::changes::callbacks::require(
+                    &mut tx, owner.world_id, owner.reset_epoch,
+                    "oteryn:quest-callback/grimvale-full-moon-entry",
+                ).await? { return Err(DurabilityError::Unavailable); }
                 // An ACKed final wave already ejected its original spectators.
                 // Recover its open entry without repeating those actor effects.
                 let entry_open: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_effects WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND action_kind=2 AND state=2)")
@@ -78,8 +102,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || (entry_open && !project_grimvale_portal(map, true))
                 { return Err(DurabilityError::Unavailable); }
                 drop(objects);
-                // Only current durable reads; publication happened while every
-                // World/Channel/firing/physical Item guard was still retained.
+                // The publication pass is read-only; all independently current
+                // World/Channel/firing/physical Item fences remain held here.
                 tx.rollback().await?;
                 Ok(())
             })

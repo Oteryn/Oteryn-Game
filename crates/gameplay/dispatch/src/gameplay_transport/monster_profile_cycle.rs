@@ -6,6 +6,7 @@ use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
+mod bloodjaw_targeting;
 pub(super) mod native_callbacks;
 pub(super) mod physical_spell;
 pub(in crate::gameplay_transport) mod rotten_area;
@@ -166,9 +167,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     });
                     physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, required).await
                 } else { Default::default() };
-                let wave_enabled = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
-                    && room.source_world().is_some() && rotten_waves::has_boss(runtime);
-                let wave_taints = if wave_enabled {
+                let source_instance = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+                    && room.source_world().is_some();
+                let wave_boss_present = source_instance && rotten_waves::has_boss(runtime);
+                let wave_enabled = source_instance
+                    && (wave_boss_present || states.rotten_waves.has_attempts());
+                let wave_taints = if wave_enabled && wave_boss_present {
                     let sessions = runtime.positioned_actor_census()
                         .map_err(|_| crate::durability::DurabilityError::Unavailable)?
                         .into_iter().filter_map(|(_, _, session)| session).collect::<Vec<_>>();
@@ -193,6 +197,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Ok((Some(now), Vec::new(), Vec::new()));
                 }
                 let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+                let bloodjaw_players = if wave_enabled {
+                    bloodjaw_targeting::current_players(runtime, states)
+                } else { None };
                 let table = &mut states.monster_melee.creature_ai;
                 let empty = std::collections::BTreeSet::new();
                 let doors = if matches!(
@@ -404,6 +411,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             } else { proposals.extend(selected); }
                             summons
                                 .consume_report(runtime, table, native, actor, report, reader, now);
+                            if wave_enabled && !report.over_budget && bloodjaw_targeting::retarget(runtime, table,
+                                actor, bloodjaw_players.as_deref(), now).is_err() {
+                                eprintln!("oteryn-game-server event=bloodjaw_target_refused current_owner=true");
+                            }
                             if wave_enabled && waves.consume(runtime, table, native, actor, report,
                                 reader.map.view(), room, &wave_taints, now).is_err() {
                                 eprintln!("oteryn-game-server event=rotten_wave_refused current_owner=true");

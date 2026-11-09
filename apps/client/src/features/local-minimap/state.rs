@@ -40,6 +40,7 @@ pub struct Minimap {
     pub markers: Vec<Marker>,
     /// Current Character facts; never serialized into the World-only local cache.
     pub quest_marks: oteryn_client_ui::personal_map_marks::PersonalMapMarks,
+    pub quest_markers: Vec<Marker>,
     pub x: i32,
     pub y: i32,
     pub floor: i16,
@@ -62,6 +63,7 @@ impl Default for Minimap {
             cells: BTreeMap::new(),
             markers: Vec::new(),
             quest_marks: Default::default(),
+            quest_markers: Vec::new(),
             x: 0,
             y: 0,
             floor: -7,
@@ -79,9 +81,41 @@ impl Default for Minimap {
     }
 }
 impl Minimap {
+    /// Server display facts are connection-local and never saved in the shared local map.
+    pub fn replace_quest_markers(
+        &mut self,
+        marks: &[oteryn_session::quest_log::QuestMapMark],
+    ) -> bool {
+        let next = marks
+            .iter()
+            .map(|m| Marker {
+                x: i32::from(m.x),
+                y: i32::from(m.y),
+                floor: i16::from(m.floor),
+                label: m.text.clone(),
+                color: 0,
+            })
+            .collect::<Vec<_>>();
+        if self.quest_markers == next {
+            return false;
+        }
+        self.quest_markers = next;
+        true
+    }
+
+    #[cfg(windows)]
+    pub fn displayed_markers(&self) -> Vec<Marker> {
+        self.markers
+            .iter()
+            .chain(&self.quest_markers)
+            .cloned()
+            .collect()
+    }
+
     pub fn bind_world(&mut self, world: &str) {
         // Native admission calls this even when another Character enters the same World.
         self.quest_marks = Default::default();
+        self.quest_markers.clear();
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
@@ -92,6 +126,7 @@ impl Minimap {
             if let Err(error) = self.save() {
                 self.feedback = error.to_string();
             }
+            self.quest_markers.clear();
             self.world = Some(world.into());
             self.quest_marks = Default::default();
             self.binding = None;
@@ -223,6 +258,14 @@ impl Minimap {
         label: String,
         color: u8,
     ) -> io::Result<()> {
+        if self
+            .quest_markers
+            .iter()
+            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
+        {
+            return Err(io::Error::other("Quest markers are supplied by the server"));
+        }
+
         if !(0..=65_535).contains(&x)
             || !(0..=65_535).contains(&y)
             || !(-15..=0).contains(&floor)
@@ -260,6 +303,13 @@ impl Minimap {
     // Invoked by native Windows controls; the headless tests exercise the same state.
     #[cfg_attr(not(windows), allow(dead_code))]
     pub fn remove_marker(&mut self, x: i32, y: i32, floor: i16) -> io::Result<()> {
+        if self
+            .quest_markers
+            .iter()
+            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
+        {
+            return Err(io::Error::other("Quest markers are supplied by the server"));
+        }
         self.markers
             .retain(|m| (m.x, m.y, m.floor) != (x, y, floor));
         self.dirty = true;
@@ -497,7 +547,19 @@ mod quest_mark_tests {
         map.bind_world("11111111-1111-4111-8111-111111111111");
         map.binding = Some(([1; 32], [2; 32], 1));
         assert!(map.replace_quest_marks(treasure()));
+        assert!(
+            map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {
+                x: 31948,
+                y: 31924,
+                floor: -7,
+                text: "Treasure".into(),
+            }])
+        );
         map.bind_world("11111111-1111-4111-8111-111111111111");
+        assert!(
+            map.quest_markers.is_empty(),
+            "admission also clears legacy Character facts"
+        );
         assert!(
             map.quest_marks.0.is_empty(),
             "a new admission to the same World clears Character facts"

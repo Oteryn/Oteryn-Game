@@ -135,18 +135,31 @@ expected_items = source_qualified_item_references(reference, ROOT)
 legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
 assert len(legacy_items) == 34111, "legacy package count remains unchanged"
 assert [row["identity"]["key"] for row in expected_items[len(legacy_items):]] == [
-    f"oteryn:item.tibia.i{item}" for item in (43860, 43589, 43590, 42851, 42853, 43625)
+    f"oteryn:item.tibia.i{item}" for item in (43860, 43589, 43590, 42851, 42853, 43625, 40016, 40598, 40601, 40603)
 ], "only the exact source-qualified reference extensions are admitted"
 # Replaying an extension with a changed semantic fact must refuse, not normalize it.
 tampered = copy.deepcopy(reference)
 tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items):]))
-tampered["records"][-1]["materializable"] = True
+next(row for row in tampered["records"]
+     if row["identity"]["key"] == "oteryn:item.tibia.i43625")["materializable"] = True
 try:
     source_qualified_item_references(tampered, ROOT)
 except ValueError as error:
     assert str(error) == "BOSS_MOVEMENT_REFERENCE_CHANGED", error
 else:
     raise AssertionError("changed source-qualified reference accepted")
+# Official Cradle references retain UNKNOWN semantics and reject changed custody.
+for item in (40016, 40598, 40601, 40603):
+    tampered = copy.deepcopy(reference)
+    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items):]))
+    next(row for row in tampered["records"]
+         if row["identity"]["key"] == f"oteryn:item.tibia.i{item}")["materializable"] = True
+    try:
+        source_qualified_item_references(tampered, ROOT)
+    except ValueError as error:
+        assert str(error) == f"QREADY1_CRADLE_REFERENCE_CHANGED:oteryn:item.tibia.i{item}", error
+    else:
+        raise AssertionError("changed Cradle reference accepted")
 # Match the materializer's source-proven, exact Primal empty-loot admission.
 # Its witness rejects changed identities and every nonempty or unrelated Loot.
 from primal_reference_overlay import apply_reference
@@ -154,12 +167,17 @@ apply_reference(reference['records'], ROOT)
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1_864
+# The two accepted M22 source handlers extend the frozen129 conversion cohort.
+conversion_keys = {row['identity']['key'] for row in
+                   json.loads((ROOT / 'content/craft/recipes.json').read_bytes())['records']}
+assert {'oteryn:item-conversion.tainted-antler-talisman',
+        'oteryn:item-conversion.tainted-souls-antler-talisman'} <= conversion_keys
 assert lock["family_counts"] == {
     "Item": len(expected_items), "Mount": 252,  # Exact source-qualified extensions above.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10, "Encounter": 108, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
+    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 131,
     **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_864, "Encounter": 108, "NPC": 2747}

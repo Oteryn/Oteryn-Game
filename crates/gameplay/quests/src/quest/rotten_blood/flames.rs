@@ -62,7 +62,7 @@ pub fn by_inactive(id: u16) -> Option<&'static FlameSource> {
 }
 
 pub(crate) fn callbacks() -> Vec<Callback> {
-    FLAMES.iter().map(|source| Callback { character_requirements: None, required_completed_quests: Vec::new(), requires_premium: false,
+    FLAMES.iter().map(|source| Callback { track_initials: Default::default(), character_requirements: None, required_completed_quests: Vec::new(), requires_premium: false,
         admission: None,
         world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,

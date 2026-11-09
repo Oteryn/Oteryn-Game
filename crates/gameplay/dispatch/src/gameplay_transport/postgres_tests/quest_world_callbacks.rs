@@ -11,6 +11,14 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == "m01b/asura-palace/s1/entry" {
+        let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("asura-dispatch")
+            .map_err(debug)?;
+        return oteryn_gameplay_quests::quest::world_callbacks::load_for(loaded.catalogue())?
+            .into_iter()
+            .find(|callback| callback.key.ends_with(name))
+            .ok_or_else(|| "authored Asura callback".into());
+    }
     if name == "engitem-native-seal-paint" {
         return oteryn_gameplay_quests::quest::ice_seal_paint::callbacks().map_err(|e| -> Box<dyn std::error::Error> {e.into()})?.into_iter().next().ok_or_else(||"seal callback".into());
     }
@@ -266,6 +274,11 @@ pub(super) fn world(
         }
     }
     let mut effect_positions = Vec::new();
+    if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+        effect_positions.push(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION);
+        effect_positions.extend(oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_POSITIONS
+            .into_iter().map(|(x,y)|Position{x,y,floor:-9}));
+    }
     if let Some(pair) = &callback.effects.portals {
         for portal in &pair.portals {
             effect_positions.extend([portal.position, portal.destination]);
@@ -371,7 +384,9 @@ pub(super) fn world(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
-                unique: callback.selector.unique,
+                unique: if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+                    None // Retained B3 has the bare ashes at the source's literal position.
+                } else { callback.selector.unique },
                 action: callback.selector.action,
                 ..Default::default()
             },

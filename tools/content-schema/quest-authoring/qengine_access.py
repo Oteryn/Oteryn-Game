@@ -72,11 +72,38 @@ def document():
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
     import qm03_world_admission
-    rows.extend(qm03_world_admission.callbacks(ROOT))
+    for entrance in qm03_world_admission.callbacks(ROOT):
+        if entrance['quest'] == 'oteryn:quest.the_pits_of_inferno_quest':
+            entrance['storage'][0]['minimum'] = 0
+            entrance['track_initials'] = {entrance['storage'][0]['track']: 0}
+        rows.append(entrance)
     import questpc_explore_bindings
-    rows.extend(questpc_explore_bindings.callbacks(ROOT))
+    # Asura's explicit authored binding owns the same native entry and tracks.
+    # Verify equivalent behaviour before leaving registration to that owner.
+    import engenc_asura_entry
+    for row in questpc_explore_bindings.callbacks(ROOT):
+        if row['key'] == engenc_asura_entry.ENTRY:
+            asura = json.loads((ROOT / engenc_asura_entry.OUTPUT).read_bytes())['quests'][0]['stages'][0]['trigger']['callback']
+            if ({key: value for key, value in row.items() if key != 'sources'}
+                    != {key: value for key, value in asura.items() if key != 'sources'}):
+                raise ValueError('Asura entry owners disagree')
+        else:
+            rows.append(row)
     import qmech_m03_entry_bindings
-    rows.extend(qmech_m03_entry_bindings.callbacks(ROOT))
+    # QM03 owns the nine machine entrances. Retain M03's exact Character
+    # requirements and initial counter on that same callback, plus its returns
+    # and separate tomb entrance. Never register a second selector for a tile.
+    entrances = {row['key']: row for row in rows if row['key'].startswith('oteryn:quest-callback/qm03/')}
+    for row in qmech_m03_entry_bindings.callbacks(ROOT):
+        if row['key'] in entrances:
+            owner = entrances[row['key']]
+            if any(owner[field] != row[field] for field in ('quest', 'trigger', 'selector', 'teleport', 'minimum_level')):
+                raise ValueError('M03 entrance owners disagree')
+            owner.update(character_requirements=row['character_requirements'],
+                         storage=row['storage'], return_on_failure=row['return_on_failure'])
+            owner['sources'] = sorted(set(owner['sources'] + row['sources']))
+        else:
+            rows.append(row)
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 

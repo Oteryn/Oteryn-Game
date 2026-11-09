@@ -248,7 +248,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(super::native_events::NativeQuestEvent::Death(death)),
+            Some(death.into()),
             None,
         None, None, None,)
         .await
@@ -287,7 +287,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(super::native_events::NativeQuestEvent::Death(death)),
+            Some(death.into()),
             None,
             None,
             None,

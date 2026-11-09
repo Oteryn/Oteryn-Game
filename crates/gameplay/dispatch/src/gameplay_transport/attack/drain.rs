@@ -165,6 +165,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut pvp_permit) = self.spell_lane_permit().await else {
             return;
         };
+        // A failed native health callback retains its original occurrence.
+        // Resolve it under this same physical lane before spending another
+        // attacker's canonical clock or ordinal.
+        if !self.drain_cloak_blood_with_permit(&pvp_permit).await {
+            return;
+        }
         let sessions = self
             .states
             .attack
@@ -970,7 +976,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Ok(mut cache) = kills.1.lock() else {
                         continue;
                     };
-                    let item = selected.weapon.item_key.as_deref().unwrap_or("");
+                    let item = selected.weapon.ranged.as_ref().map_or_else(
+                        || selected.weapon.item_key.as_deref().unwrap_or(""),
+                        |loadout| loadout.weapon.definition.production_key.as_str(),
+                    );
                     let creature = if extension { "" } else { race_key.as_str() };
                     let Ok(mut hits) = cache.hits.prepare(
                         &runtime,

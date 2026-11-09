@@ -5,6 +5,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[path = "qn1_elemental_world_pin/arrival.rs"]
 mod arrival;
+#[path = "qn1_elemental_world_pin/energy.rs"]
+mod energy;
 #[path = "qn1_elemental_world_pin/soil.rs"]
 mod soil;
 
@@ -23,6 +25,11 @@ fn qn1_elemental_soil_use_consumes_one_replays_and_recovers_decay() -> TestResul
     run("qn1-elemental-soil")
 }
 
+#[test]
+fn qn1_elemental_energy_soil_creates_field_without_replacing_altar() -> TestResult {
+    run("qn1-elemental-energy-soil")
+}
+
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -33,10 +40,18 @@ fn run(name: &'static str) -> TestResult {
         .spawn(move || {
             super::quest_world_callbacks::scenario(
                 name,
-                Position {
-                    x: 33199,
-                    y: 32103,
-                    floor: -13,
+                if name == "qn1-elemental-energy-soil" {
+                    Position {
+                        x: 33094,
+                        y: 32189,
+                        floor: -13,
+                    }
+                } else {
+                    Position {
+                        x: 33199,
+                        y: 32103,
+                        floor: -13,
+                    }
                 },
                 false,
             )
@@ -54,6 +69,7 @@ fn run(name: &'static str) -> TestResult {
 
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
+    energy: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene_with_appearances};
     native_scene_with_appearances(
@@ -64,11 +80,23 @@ pub(super) fn world(
                 "/../../../content/world/placements/region-z13-x129-y125.b3"
             )),
             region: (13, 129, 125),
-            bounds: (33195, 32101, 33205, 32111),
-            start: (33198, 32103),
+            bounds: if energy {
+                (33090, 32187, 33101, 32199)
+            } else {
+                (33195, 32101, 33205, 32111)
+            },
+            start: if energy {
+                (33093, 32189)
+            } else {
+                (33198, 32103)
+            },
             expected: vec![ExpectedTile {
-                position: (33199, 32103),
-                ids: vec![7739],
+                position: if energy {
+                    (33095, 32194)
+                } else {
+                    (33199, 32103)
+                },
+                ids: vec![if energy { 7738 } else { 7739 }],
                 counted_entry: None,
             }],
         }],
@@ -117,6 +145,10 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut runtime)
         .map_err(super::fixture::debug)?;
+    if name == "qn1-elemental-energy-soil" {
+        drop(runtime);
+        return energy::exercise(owner, harness, actor, fence).await;
+    }
     if name == "qn1-elemental-soil" {
         drop(runtime);
         return soil::exercise(owner, harness, actor, fence).await;

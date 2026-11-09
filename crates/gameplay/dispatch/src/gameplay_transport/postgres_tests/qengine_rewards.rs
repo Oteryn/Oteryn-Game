@@ -560,6 +560,9 @@ pub(super) async fn wire_conversation(
         Ok::<_, String>((result.ok_or("no reward result")?, catalogues, last))
     });
     let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    if let ConnectionEnd::AdmittedThenClosed(_, error) = &end {
+        eprintln!("qengine reward wire last_command={last} closed={error:?}");
+    }
     drop(server);
     if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
         end
@@ -837,6 +840,12 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-authored-imported-talk-group" {
         return super::qengine_m01a_imported_talk::exercise_group(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-m01a-sven" {
+        return super::qengine_m01a_sven::exercise(owner, admitted, h, authority).await;
+    }
+    if name == "qengine-rewards-m01a-starter-routes" {
+        return super::qengine_m01a_starter_routes::exercise(owner, admitted, h, authority).await;
     }
     if name == "qengine-rewards-m01a-production-pirate-talk" {
         return super::qengine_m01a_production_talk::exercise(owner, admitted, h).await;

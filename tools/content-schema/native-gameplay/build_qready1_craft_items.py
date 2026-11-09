@@ -3,12 +3,16 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import build_source_item_profiles as native
 import build_world_change_item_profiles as sources
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools/content-migration"))
+import grizzly_shop_profiles as accepted
+
 IDS = frozenset({8997, 9108, 9109, 21506, 21507, 21573})
 OUTPUT = Path(__file__).with_name("qready1-craft-item-profiles.json")
 
@@ -28,6 +32,24 @@ def build(root=ROOT):
         native.profile(i, xml[i], objects[i], physical[i], bindings, None)
         for i in sorted(IDS)
     ]
+    # Preserve accepted canonical facts shared with other native item cohorts.
+    # The older donor XML differs in presentation punctuation, not custody.
+    keys = {f"oteryn:item.tibia.i{i}" for i in IDS}
+    definitions = {
+        row["definition"]["identity"]["key"]: row["definition"]
+        for path in sorted((root / "content/items/definitions").glob("items-*.json"))
+        for row in json.loads(path.read_bytes())["records"]
+        if row["definition"]["identity"]["key"] in keys
+    }
+    if definitions.keys() != keys:
+        raise ValueError("QREADY1_CRAFT_ITEM_CANONICAL_SET")
+    for item, record in zip(sorted(IDS), records, strict=True):
+        key = f"oteryn:item.tibia.i{item}"
+        semantics = definitions[key].get("semantics", {})
+        for group in ("physical", "stack", "container", "temporal"):
+            if accepted.known_conflict(semantics.get(group, native.U), record["semantics"][group]):
+                raise ValueError("QREADY1_CRAFT_ITEM_CANONICAL_CONFLICT:" + key)
+        record["semantics"] = accepted.accepted_first(semantics, record["semantics"])
     document = native.bind_profiles(
         {"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": records}, bindings, IDS
     )

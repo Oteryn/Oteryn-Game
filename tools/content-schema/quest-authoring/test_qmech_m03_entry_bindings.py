@@ -13,15 +13,30 @@ class M03EntryTests(unittest.TestCase):
     def test_committed_access_packet_includes_generated_m03_bindings(self):
         committed = json.loads((ROOT / 'content/quests/shared-access-callbacks.json').read_text())
         self.assertEqual(committed, qengine_access.document())
-        rows = {row['key']: row for row in committed['callbacks'] if '/m03/' in row['key']}
+        rows = {row['key']: row for row in committed['callbacks'] if '/m03/' in row['key'] or '/qm03/anniversary' in row['key']}
         self.assertEqual(len(rows), 19)
-        entry = rows['oteryn:quest-callback/m03/time-machine-entry-4']
+        entry = rows['oteryn:quest-callback/qm03/anniversary-25095']
         guards = entry['character_requirements']
         self.assertTrue(guards['premium'] and guards['promoted'])
         self.assertEqual(len(guards['blessings']), 5)
         self.assertNotIn('oteryn:blessing.twist_of_fate', guards['blessings'])
         self.assertNotIn('oteryn:blessing.heart_of_the_mountain', guards['blessings'])
         self.assertEqual(entry['minimum_level'], 20)
+
+    def test_machine_has_one_owner_per_selector_and_keeps_both_guard_profiles(self):
+        rows = qengine_access.document()['callbacks']
+        entrances = [row for row in rows if row['key'].startswith('oteryn:quest-callback/qm03/anniversary')]
+        self.assertEqual(len(entrances), 9)
+        for entry in entrances:
+            peers = [row for row in rows if (row['trigger'], row['selector']) ==
+                     (entry['trigger'], entry['selector'])]
+            self.assertEqual(peers, [entry])
+            self.assertEqual(entry['admission'], dict(premium=True, promotion=True, regular_blessings=True))
+            self.assertTrue(entry['character_requirements']['premium'])
+            self.assertTrue(entry['character_requirements']['promoted'])
+            self.assertEqual(len(entry['character_requirements']['blessings']), 5)
+            self.assertEqual(entry['storage'][0]['minimum'], 0)
+            self.assertTrue(entry['return_on_failure'])
 
     def test_return_retains_actual_bare_stack_ordinal_and_needs_no_entitlement(self):
         rows = {row['key']: row for row in entries.callbacks(ROOT)}

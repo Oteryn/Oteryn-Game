@@ -1187,9 +1187,10 @@ def build(
     import qready1_clock_landmarks
 
     qready1_clock_landmarks.overlay_outputs(out)
-    import engclaim_placements
-    engclaim_placements.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
+        import engclaim_placements
+
+        engclaim_placements.overlay_outputs(out)
         import quest_startup_bindings
 
         access = json.loads((ROOT / quest_access_bindings.CAPTURE).read_bytes())
@@ -1251,6 +1252,8 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
     from qready1_clock_landmarks import donor_delta
+    from engclaim_placements import donor_delta as engclaim_delta
+    from npcfix2_shared_sources import donor_delta as shared_source_delta
 
     authored_clock_items = donor_delta(summary)
 
@@ -1260,6 +1263,8 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     return {
         "items": totals["items"]
         - authored_clock_items
+        - engclaim_delta(summary)
+        - shared_source_delta(summary)
         - count(fill, "items_added")
         - count(replace, "items_added")
         - count(rework, "items_added")

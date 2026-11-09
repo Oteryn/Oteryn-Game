@@ -36,7 +36,8 @@ struct MovementDecay {
 struct DynamicPortal {
     owner: u64,
     destination: TilePos,
-    entry: EntryId,
+    entry: Option<EntryId>,
+    owner_revision: Option<u64>,
     expires: Option<u64>,
 }
 
@@ -44,6 +45,29 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// A source glyph and its native portal share one revision-fenced deadline.
+    TimedEntrance {
+        due: u64,
+        restore: EntryFacts,
+        position: TilePos,
+        destination: TilePos,
+    },
+    /// Change a separate shared object and restore only that committed revision.
+    TimedRemoteTransform {
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        restore: EntryFacts,
+        due: u64,
+    },
+    /// A separately selected source object; its own revision fences restoration.
+    TimedTargetTransform {
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        restore: EntryFacts,
+        due: u64,
+    },
     /// Restore a bounded remote group independently of the source lever deadline.
     TimedPassages {
         due: u64,
@@ -80,6 +104,7 @@ type ScopedMovementEffect = (u64, Option<EffectScope>, TilePos, u16);
 pub(super) struct CallbackStates {
     pub(super) feroxa_phase: Option<Arc<super::feroxa_map_phases::FeroxaMapPhase>>,
     pub(super) reserved: BTreeSet<u64>,
+    pub(super) reserved_positions: BTreeSet<TilePos>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) actions: BTreeMap<u64, Option<u16>>,
     pub(super) hidden: BTreeSet<u64>,
@@ -99,13 +124,21 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
-    fn position_reserved(&self, position: TilePos) -> bool {
-        self.reserved.iter().any(|key| {
-            view::placement_of(*key)
+    fn key_reserved(&self, key: u64) -> bool {
+        self.reserved.contains(&key)
+            || view::placement_of(key)
                 .map(|(pos, _)| pos)
-                .or_else(|| self.movement_item(*key).map(|(pos, _)| pos))
-                == Some(position)
-        })
+                .or_else(|| self.movement_item(key).map(|(pos, _)| pos))
+                .is_some_and(|position| self.reserved_positions.contains(&position))
+    }
+    fn position_reserved(&self, position: TilePos) -> bool {
+        self.reserved_positions.contains(&position)
+            || self.reserved.iter().any(|key| {
+                view::placement_of(*key)
+                    .map(|(pos, _)| pos)
+                    .or_else(|| self.movement_item(*key).map(|(pos, _)| pos))
+                    == Some(position)
+            })
     }
 
     fn remove_portals(&mut self, owner: u64) {
@@ -113,8 +146,10 @@ impl CallbackStates {
             if portal.owner != owner {
                 return true;
             }
-            if let Some(entries) = self.movement_items.get_mut(pos) {
-                entries.retain(|entry| entry.source != view::EntrySource::Added(portal.entry));
+            if let Some(id) = portal.entry
+                && let Some(entries) = self.movement_items.get_mut(pos)
+            {
+                entries.retain(|entry| entry.source != view::EntrySource::Added(id));
                 if entries.is_empty() {
                     self.movement_items.remove(pos);
                 }
@@ -140,6 +175,100 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedEntrance {
+                due,
+                restore,
+                position,
+                destination,
+            } => {
+                if close
+                    || view::placement_of(owner).map(|(pos, _)| pos) != Some(*position)
+                    || self
+                        .portals
+                        .get(position)
+                        .is_some_and(|portal| portal.owner != owner)
+                {
+                    return false;
+                }
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(r, _)| *r)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                self.remove_portals(owner);
+                self.movement_decays.insert(
+                    (*due, owner),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                        overlay: None,
+                    },
+                );
+                self.portals.insert(
+                    *position,
+                    DynamicPortal {
+                        owner,
+                        destination: *destination,
+                        entry: None,
+                        owner_revision: Some(revision),
+                        expires: Some(*due),
+                    },
+                );
+            }
+            QuestCallbackProjection::TimedRemoteTransform {
+                key,
+                expected,
+                after,
+                restore,
+                due,
+            } => {
+                if *key == owner
+                    || *expected == u64::MAX
+                    || self.hidden.contains(key)
+                    || self.changed.get(key).map_or(0, |(revision, _)| *revision) != *expected
+                {
+                    return false;
+                }
+                let revision = expected + 1;
+                self.changed.insert(*key, (revision, *after));
+                self.movement_decays.insert(
+                    (*due, *key),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                        overlay: None,
+                    },
+                );
+            }
+            QuestCallbackProjection::TimedTargetTransform {
+                key,
+                expected,
+                after,
+                restore,
+                due,
+            } => {
+                if *key == owner
+                    || self.hidden.contains(key)
+                    || self.changed.get(key).map_or(0, |(r, _)| *r) != *expected
+                {
+                    return false;
+                }
+                let Some(revision) = expected.checked_add(1) else {
+                    return false;
+                };
+                self.changed.insert(*key, (revision, *after));
+                self.movement_decays.insert(
+                    (*due, *key),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                        overlay: None,
+                    },
+                );
+            }
             QuestCallbackProjection::TimedPassages {
                 due,
                 entries,
@@ -235,7 +364,8 @@ impl CallbackStates {
                         DynamicPortal {
                             owner,
                             destination,
-                            entry,
+                            entry: Some(entry),
+                            owner_revision: None,
                             expires: *expires,
                         },
                     );
@@ -345,6 +475,7 @@ impl CallbackStates {
             + self.reserved.len()
             + self.arena_pillars.len()
             + self.arena_recreated.len()
+            + self.reserved_positions.len()
             + self.changed.len()
             + self.actions.len()
             + self.hidden.len()
@@ -378,6 +509,25 @@ impl BundleFacts {
         let result = publish();
         drop(states);
         Some(result)
+    }
+
+    /// Bind a protected movement-created Item to the callback which owns its
+    /// presence. Readsets fence the owner's revision, including removal/expiry,
+    /// rather than treating a volatile entry id as an immutable base placement.
+    pub fn quest_callback_presence_readset(
+        &self,
+        position: TilePos,
+        entry: EntryId,
+    ) -> Option<(u64, u64)> {
+        let states = self.callbacks.lock().ok()?;
+        let (&owner, _) = states
+            .presences
+            .iter()
+            .find(|(_, (pos, id))| *pos == position && *id == entry)?;
+        let revision = states.changed.get(&owner).map_or(0, |(rev, _)| *rev);
+        states
+            .readset_matches([(owner, revision)])
+            .then_some((owner, revision))
     }
 
     /// A transformed/removed callback entry changes floor routing with its visible stack.
@@ -514,7 +664,7 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if states.reserved.contains(&key) {
+        if states.key_reserved(key) {
             return false;
         }
         let Some(revision) = states
@@ -546,7 +696,7 @@ impl BundleFacts {
         states
             .movement_decays
             .iter()
-            .find(|((_, key), _)| !states.reserved.contains(key))
+            .find(|((_, key), _)| !states.key_reserved(*key))
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
@@ -574,7 +724,7 @@ impl BundleFacts {
         let due: Vec<_> = states
             .movement_decays
             .range(..=(now, u64::MAX))
-            .filter(|((_, key), _)| !states.reserved.contains(key))
+            .filter(|((_, key), _)| !states.key_reserved(*key))
             .map(|(key, _)| *key)
             .collect();
         for at in due {
@@ -1123,10 +1273,16 @@ impl BundleFacts {
             .unwrap_or_default()
     }
 
-    /// Only live paired portals resolve; the timer and explicit removal retire both ends.
+    /// Only live, current portals resolve; the timer and explicit removal retire both ends.
     pub fn quest_portal_destination(&self, pos: TilePos, now: u64) -> Option<TilePos> {
         let states = self.callbacks.lock().ok()?;
         let portal = states.portals.get(&pos)?;
+        if portal.owner_revision.is_some_and(|revision| {
+            states.hidden.contains(&portal.owner)
+                || states.changed.get(&portal.owner).map_or(0, |(r, _)| *r) != revision
+        }) {
+            return None;
+        }
         portal
             .expires
             .is_none_or(|due| due > now)
@@ -1223,7 +1379,7 @@ impl BundleFacts {
                 .map_or_else(|| s.phase_revision(key).unwrap_or(0), |(r, _)| *r)
                 == expected
                 && expected < u64::MAX
-                && !s.reserved.contains(&key)
+                && !s.key_reserved(key)
                 && passages <= 8
                 && s.has_capacity(passages)
         })
@@ -1319,15 +1475,15 @@ impl BundleFacts {
             .get(&key)
             .map_or_else(|| states.phase_revision(key).unwrap_or(0), |(r, _)| *r)
             != expected
-            || states.reserved.contains(&key)
-            || passages.iter().any(|key| states.reserved.contains(key))
+            || states.key_reserved(key)
+            || passages.iter().any(|key| states.key_reserved(*key))
             || replacements
                 .iter()
-                .any(|(key, _, _)| states.reserved.contains(key))
+                .any(|(key, _, _)| states.key_reserved(*key))
             || projection.is_some_and(|projection| match projection {
-                QuestCallbackProjection::ReadsetTransforms { entries, .. } => entries
-                    .iter()
-                    .any(|(key, _, _)| states.reserved.contains(key)),
+                QuestCallbackProjection::ReadsetTransforms { entries, .. } => {
+                    entries.iter().any(|(key, _, _)| states.key_reserved(*key))
+                }
                 QuestCallbackProjection::ItemPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
@@ -1338,6 +1494,13 @@ impl BundleFacts {
                 QuestCallbackProjection::TimedPassages { entries, .. } => entries
                     .iter()
                     .any(|entry| states.reserved.contains(&entry.key)),
+                QuestCallbackProjection::TimedRemoteTransform { key, .. }
+                | QuestCallbackProjection::TimedTargetTransform { key, .. } => {
+                    states.key_reserved(*key)
+                }
+                QuestCallbackProjection::TimedEntrance { position, .. } => {
+                    states.position_reserved(*position)
+                }
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
@@ -1408,7 +1571,7 @@ impl BundleFacts {
             return false;
         };
         let revision = states.changed.get(&wall).map_or(0, |(r, _)| *r);
-        if states.reserved.contains(&key) || states.reserved.contains(&wall) {
+        if states.key_reserved(key) || states.key_reserved(wall) {
             return false;
         }
         if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
@@ -1594,6 +1757,73 @@ mod lifecycle_tests {
     use super::*;
 
     #[test]
+    fn remote_source_reset_is_atomic_and_fences_the_target_revision() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 2074,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let active = EntryFacts {
+            appearance_id: 2075,
+            ..original
+        };
+        let timer = |expected, due| QuestCallbackProjection::TimedTargetTransform {
+            key: 2,
+            expected,
+            after: active,
+            restore: original,
+            due,
+        };
+        assert!(facts.apply_quest_callback(
+            1,
+            0,
+            original,
+            &[],
+            &[],
+            false,
+            Some(&timer(0, 15_000_000))
+        ));
+        assert_eq!((facts.object_revision(1), facts.object_revision(2)), (1, 1));
+        assert_eq!(facts.expire_movement_items(14_999_999), 0);
+        assert!(facts.apply_quest_callback(2, 1, active, &[], &[], false, None));
+        assert_eq!(facts.expire_movement_items(15_000_000), 0);
+        assert!(facts.apply_quest_callback(
+            1,
+            1,
+            original,
+            &[],
+            &[],
+            false,
+            Some(&timer(2, 30_000_000))
+        ));
+        assert!(!facts.apply_quest_callback(
+            1,
+            2,
+            original,
+            &[],
+            &[],
+            false,
+            Some(&timer(1, 31_000_000))
+        ));
+        assert_eq!((facts.object_revision(1), facts.object_revision(2)), (2, 3));
+        assert_eq!(facts.next_movement_decay_time(), Some(30_000_000));
+        assert_eq!(facts.expire_movement_items(30_000_000), 1);
+        assert_eq!((facts.object_revision(1), facts.object_revision(2)), (2, 4));
+        let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+        assert_eq!(
+            state.changed.get(&2).map(|(_, value)| value.appearance_id),
+            Some(2074)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn source_reset_deadline_cannot_overwrite_a_newer_transform() {
         let facts = BundleFacts::default();
         let original = EntryFacts {
@@ -1629,6 +1859,133 @@ mod lifecycle_tests {
 #[cfg(test)]
 mod readset_tests {
     use super::*;
+    #[test]
+    fn shared_entrance_traversal_keeps_the_source_deadline_and_revision() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let source = TilePos {
+            x: 32849,
+            y: 32233,
+            floor: -9,
+        };
+        let destination = TilePos {
+            x: 32857,
+            y: 32234,
+            floor: -11,
+        };
+        let owner = placement_key(source, 1).ok_or("source key")?;
+        let ashes = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 3134,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let portal = EntryFacts {
+            appearance_id: 1949,
+            ..ashes
+        };
+        let entrance = QuestCallbackProjection::TimedEntrance {
+            due: 20,
+            restore: ashes,
+            position: source,
+            destination,
+        };
+        assert!(facts.apply_quest_callback(owner, 0, portal, &[], &[], false, Some(&entrance)));
+        assert_eq!(
+            facts.quest_portal_destination(source, 10),
+            Some(destination)
+        );
+        assert_eq!(
+            facts.quest_portal_destination(source, 19),
+            Some(destination)
+        );
+        assert_eq!(facts.object_revision(owner), 1);
+        {
+            let states = facts.callbacks.lock().map_err(|_| "facts lock")?;
+            assert!(
+                !states.movement_items.contains_key(&source),
+                "the base glyph is the only rendered portal"
+            );
+        }
+        assert_eq!(facts.expire_movement_items(19), 0);
+        assert_eq!(facts.quest_portal_destination(source, 20), None);
+        assert_eq!(facts.expire_movement_items(20), 2);
+        assert_eq!(facts.object_revision(owner), 2);
+        assert_eq!(facts.quest_portal_destination(source, 0), None);
+        let next = QuestCallbackProjection::TimedEntrance {
+            due: 30,
+            restore: ashes,
+            position: source,
+            destination,
+        };
+        assert!(facts.apply_quest_callback(owner, 2, portal, &[], &[], false, Some(&next)));
+        let changed = EntryFacts {
+            appearance_id: 1948,
+            ..ashes
+        };
+        assert!(facts.apply_quest_callback(owner, 3, changed, &[], &[], false, None));
+        assert_eq!(
+            facts.quest_portal_destination(source, 25),
+            None,
+            "a stale source cannot teleport"
+        );
+        assert_eq!(
+            facts.expire_movement_items(30),
+            1,
+            "the stale reset cannot overwrite a newer source"
+        );
+        assert_eq!(facts.object_revision(owner), 4);
+        Ok(())
+    }
+
+    #[test]
+    fn remote_trial_reset_is_atomic_and_revision_fenced() {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 2074,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let lit = EntryFacts {
+            appearance_id: 2075,
+            ..original
+        };
+        let reset = QuestCallbackProjection::TimedRemoteTransform {
+            key: 11,
+            expected: 0,
+            after: lit,
+            restore: original,
+            due: 15_000_000,
+        };
+        assert!(facts.apply_quest_callback(10, 0, original, &[], &[], false, Some(&reset)));
+        // A second trial source cannot publish against the earlier shared revision.
+        assert!(!facts.apply_quest_callback(12, 0, original, &[], &[], false, Some(&reset)));
+        assert_eq!(facts.object_revision(12), 0);
+        assert_eq!(facts.expire_movement_items(14_999_999), 0);
+        assert_eq!(facts.expire_movement_items(15_000_000), 1);
+        assert_eq!(facts.object_revision(11), 2);
+        let next = QuestCallbackProjection::TimedRemoteTransform {
+            key: 11,
+            expected: 2,
+            after: lit,
+            restore: original,
+            due: 30_000_000,
+        };
+        assert!(facts.apply_quest_callback(12, 0, original, &[], &[], false, Some(&next)));
+        // An intervening edit owns the newer revision; an old reset cannot overwrite it.
+        assert!(facts.apply_quest_callback(11, 3, lit, &[], &[], false, None));
+        assert_eq!(facts.expire_movement_items(30_000_000), 0);
+        assert_eq!(facts.object_revision(11), 4);
+    }
+
     #[test]
     fn m49_arrival_readset_holds_all_eight_cells_without_mutating_charges() -> Result<(), String> {
         let facts = BundleFacts::default();

@@ -39,7 +39,13 @@ def callbacks(root=ROOT):
         return dict(position=dict(x=x, y=y, floor=-z), ordinal=matches[0], appearance=appearance)
 
     def entry(name, quest, binding, trigger, *, destination=None, requirements=None, level=None, source):
-        row = dict(key='oteryn:quest-callback/m03/' + name, quest='oteryn:quest.' + quest,
+        key = 'oteryn:quest-callback/m03/' + name
+        if name.startswith('time-machine-entry-'):
+            appearance = binding['appearance']
+            key = 'oteryn:quest-callback/qm03/anniversary'
+            if appearance != 25096:
+                key += '-' + str(appearance)
+        row = dict(key=key, quest='oteryn:quest.' + quest,
                    trigger=trigger, selector=dict(position=binding['position'], native=binding,
                    unique=None, action=None, appearance=binding['appearance']),
                    lever=None, reversible=False, passages=[], teleport=destination,

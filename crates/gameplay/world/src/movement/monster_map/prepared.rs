@@ -90,6 +90,7 @@ impl ReadPreparedMonsterMap {
             let tile = match cell.qualified_tile() {
                 Some(tile) => merge_current_tile(room, content, at, tile, cell.items())?,
                 None => Tile {
+                    ground_clear: false,
                     admits: false,
                     solid: true,
                     source_spawn_admits: false,
