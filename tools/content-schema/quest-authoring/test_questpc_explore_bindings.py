@@ -21,6 +21,33 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_world_entry_owner_cannot_be_missing_held_or_ambiguous(self):
+        import questpc_world_requirements as world
+        quest = 'oteryn:quest.grimvale_mini_world_change'
+        for owners in ({}, {quest: [{'status': 'HELD', 'key': 'grimvale'}]},
+                       {quest: [{'status': 'QUALIFIED', 'key': 'grimvale'}] * 2}):
+            with self.subTest(owners=owners):
+                with self.assertRaises(ValueError):
+                    world.requirement(quest, owners)
+        self.assertIsNone(world.requirement('oteryn:quest.longsword_quest', {}))
+
+    def test_grimvale_moon_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest'] == 'oteryn:quest.grimvale_mini_world_change']
+        self.assertEqual(len(callbacks), 1, 'current-moon entry is activated')
+        self.assertEqual(callbacks[0]['world_change'], 'grimvale')
+
+    def test_grimvale_explore_requires_the_current_full_moon_world_owner(self):
+        binding = (('oteryn:quest.grimvale_mini_world_change', 's1',
+                    'area-approach:oteryn:area.hunting_place.grimvale',
+                    'chosen-source/grimvale_mini_world_change'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback.get('world_change'), 'grimvale')
+            self.assertEqual(callback['admission'], {'premium': True})
+            self.assertEqual(callback['selector']['position'], dict(x=33335,y=31690,floor=-7))
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_emperor_cookie_passage_entry_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT)
                      if c['quest'] == 'oteryn:quest.emperor_s_cookies_quest']

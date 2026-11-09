@@ -31,9 +31,10 @@
       "Ferumbras' Ascension Quest",
       "Heart of Destruction Quest",
       "Grave Danger Quest",
-      "Emperor's Cookies Quest"
+      "Emperor's Cookies Quest",
+      "Grimvale Mini World Change"
     ],
-    "wired_explore_stages": 24,
+    "wired_explore_stages": 25,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -57,9 +58,10 @@
       "Dragon Corpse Quest",
       "Ferumbras' Ascension Quest",
       "Heart of Destruction Quest",
-      "Grave Danger Quest"
+      "Grave Danger Quest",
+      "Emperor's Cookies Quest"
     ],
-    "wired_native_visit_anchors": 38
+    "wired_native_visit_anchors": 39
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -140,9 +142,15 @@
     "cookie_activation": "ResolverREDunsupported0.169s ->GREEN0.506s;activationREDmissing0.296s ->GREEN45Python14.636s;pre-key3800 passage,native436ground verified",
     "cookie_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m12s",
     "cookie_profile": "GREEN5Rustprofiletests0.04s",
-    "cookie_postgres": "PENDING own native STEP case building;no reward or completion claimed"
+    "cookie_postgres": "GREEN59.662843413s nativeSTEP,firstonce,replay/revisit,wholecompletion0;compiled data95db51bcb",
+    "grimvale_world_requirement": "REDmissingworldpredicate0.203s ->GREEN0.511s;reuse existing callback.world_change and current-World fenced writer;missing/held/ambiguous owners rejected",
+    "grimvale_activation": "REDmissingentry0.332s ->GREEN48Python15.834s;canonicalArea origin unchanged,clear east-distance2 ground4515,CurrentPremium retained",
+    "grimvale_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m20s",
+    "grimvale_profile": "GREEN6Rustprofiletests0.06s,including World-predicate stripping changes native binding",
+    "grimvale_postgres": "PENDING ownnative case building:inactive/active/currentreset,stale retained moon,Premium refusal,old replay,once/revisit",
+    "authoring_cookie_snapshot": "Full authoring unit runner GREEN1180tests924.761s,8preexisting skips;World48focused rerun separately;content-tree running"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "24wired stages/routes,23PG-proven entry routes,38nativeanchors;22routes/32stages unwired. FinishCookies nativePG,then reuse existing fenced world_change predicate for event entries. M01b PARTIAL."
+  "continuation": "25wiredstage/routes,24PG-proven entry routes,39nativeanchors;21routes/31stages unwired. FinishGrimvale nativePG;reuse qualified existingWorld owners for next event entries. M01b PARTIAL."
 }

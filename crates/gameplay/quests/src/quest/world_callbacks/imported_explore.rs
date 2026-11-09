@@ -85,6 +85,25 @@ mod tests {
     use super::super::*;
 
     #[test]
+    fn imported_explore_world_requirement_is_part_of_the_native_binding() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/grimvale-mini-world-change/s1/entry")
+            .ok_or("bound current-moon entry")?;
+        assert!(super::admitted(&callback));
+        assert_eq!(callback.world_change.as_deref(), Some("grimvale"));
+        let required = gated_binding(&callback)?.ok_or("native World-bound occurrence")?;
+        let mut stripped = callback;
+        stripped.world_change = None;
+        assert_ne!(
+            gated_binding(&stripped)?,
+            Some(required),
+            "the admitted native occurrence cannot lose its current-World predicate"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn alawar_source_approach_is_bound_without_changing_its_teleport() -> Result<(), String> {
         let callbacks = load()?;
         let approach = callbacks

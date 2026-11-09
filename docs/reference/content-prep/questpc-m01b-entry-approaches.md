@@ -108,3 +108,18 @@ The Key3800 chest is at32605,31908,z3 (appearance2472). The selected entry
 is its clear northern neighbour32605,31907,z3,ground436;the eastern starting
 tile32606,31907,z3 also has only436. This visits the western secret passage
 before the later Key3800 chamber step. It grants no key,cookies or completion.
+
+## Grimvale current-moon surface entry
+
+Canonical source: content/world/areas/hunting-places/hunting-places-00000-00444.json,
+`oteryn:area.hunting_place.grimvale`;the generator carries its exact pinned
+TibiaWiki URL. The canonical marker33333,31690,z7 retains tree objects.
+Use the clear eastern approach33335,31690,z7,ground4515,with starting
+tile33336,31690,z7 also4515. Source placements and collision rules remain intact.
+
+World authority is reused from the qualified `grimvale` entry in
+content/encounters/world-changes/owner-catalogue.json and the existing
+crates/gameplay/durability/src/durability/world_event.rs current-reset reader.
+The predicate is `callback.world_change=grimvale`,not a retained UI moon snapshot.
+This counts a first-cycle surface visit during the committed full-moon day;
+it neither spawns Feroxa nor manufactures the encounter-owned portal.

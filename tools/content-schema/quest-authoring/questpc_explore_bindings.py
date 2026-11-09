@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.grimvale_mini_world_change', 's1', 'area-approach:oteryn:area.hunting_place.grimvale', 'chosen-source/grimvale_mini_world_change'),
     ('oteryn:quest.emperor_s_cookies_quest', 's1', 'claim:canary:reward-claim/quest/key/id3800', 'chosen-source/emperor_s_cookies_quest'),
     *(("oteryn:quest.grave_danger_quest", "s1", "source-approach:" + name,
        "chosen-source/grave_danger_quest") for name in (
@@ -92,6 +93,8 @@ def stage_storage(quest, stage, recipe, track_tail, visit='entry'):
 
 
 def callbacks(root):
+    import questpc_world_requirements
+    world_owners = questpc_world_requirements.catalogue(root)
     areas = json.loads((Path(root) / AREA).read_text())['records']
     by_quest = {}
     for path in (Path(root) / 'content/quests/definitions').glob('quests-*.json'):
@@ -104,6 +107,7 @@ def callbacks(root):
         if len(definitions) != 1:
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
         definition = definitions[0]
+        world_change = questpc_world_requirements.requirement(quest, world_owners)
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
@@ -166,6 +170,8 @@ def callbacks(root):
             offerings=[], return_on_failure=False, failure_message=None,
             requires_world_admission=True,
             sources=sources))
+        if world_change is not None:
+            result[-1]['world_change'] = world_change
         if requirements['premium']:
             result[-1]['admission'] = {'premium': True}
         if requirements['min_level']:

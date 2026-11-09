@@ -1676,6 +1676,62 @@
       "minimum_level": 250
     },
     {
+      "key": "oteryn:quest-callback/m01b/grimvale-mini-world-change/s1/entry",
+      "quest": "oteryn:quest.grimvale_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33335,
+          "y": 31690,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4515,
+        "native": {
+          "position": {
+            "x": 33335,
+            "y": 31690,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4515
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/grimvale_mini_world_change/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/grimvale_mini_world_change/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/176",
+        "https://tibia.fandom.com/index.php?curid=75277&oldid=1117030",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "world_change": "grimvale",
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/heart-of-destruction/s1/entry",
       "quest": "oteryn:quest.heart_of_destruction_quest",
       "trigger": "step_in",

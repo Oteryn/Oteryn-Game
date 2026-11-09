@@ -45,6 +45,9 @@ mod grave_danger;
 #[path = "m01b_explore/cookie_entry.rs"]
 mod cookie_entry;
 
+#[path = "m01b_explore/moon_entry.rs"]
+mod moon_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -316,6 +319,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/grimvale-mini-world-change/s1/entry" {
+        return moon_entry::world(native);
+    }
     if name == "m01b/emperor-s-cookies/s1/id3800" {
         return cookie_entry::world(native);
     }
@@ -506,6 +512,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/grimvale-mini-world-change/s1/entry" {
+        return moon_entry::exercise(owner, admitted, h).await;
+    }
     if callback
         .key
         .starts_with("oteryn:quest-callback/m01b/grave-danger/s1/")
