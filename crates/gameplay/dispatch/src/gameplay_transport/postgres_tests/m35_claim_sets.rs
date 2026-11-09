@@ -1,7 +1,7 @@
 //! Crystal 201189f8 chest.lua:917-931: both independent Alawar claims, in either order.
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks::{
-    source_world_choices, source_world_objects, wire_use_targets_retained,
+    source_world_choices, source_world_objects, source_world_spatial, wire_use_targets_retained,
 };
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -65,6 +65,7 @@ enum Case {
     Koshei,
     BlackKnight,
     FireAxeBag,
+    FireAxeAll,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -84,6 +85,24 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_fire_axe_two_floor_rewards_complete_only_after_both_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::FireAxeAll).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 two-floor Fire Axe scenario panicked")??;
+    println!("M35_FIRE_AXE_TWO_FLOOR_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1078-1087: complete bag, not a 200-item necklace stack.
@@ -160,6 +179,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::FireAxeAll => (
+            (33078, 31656, -11),
+            2472,
+            "oteryn:quest.fire_axe_quest",
+            &[(33078, 6067), (33084, 6036)],
+        ),
         Case::FireAxeBag => (
             (33078, 31656, -11),
             2472,
@@ -216,7 +241,15 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 );
             }
         }
-        let world = if matches!(case, Case::Koshei) {
+        let world = if matches!(case, Case::FireAxeAll) {
+            source_world_spatial(
+                chest,
+                &[
+                    (33078, 31656, -11, 6067, 2472),
+                    (33084, 31650, -12, 6036, 4024),
+                ],
+            )?
+        } else if matches!(case, Case::Koshei) {
             source_world_objects(
                 chest,
                 &[(33261, 32444, 6240, 2472), (33261, 32448, 6241, 2480)],
@@ -239,7 +272,10 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(case, Case::Alawar | Case::Koshei | Case::BlackKnight) {
+            if matches!(
+                case,
+                Case::Alawar | Case::Koshei | Case::BlackKnight | Case::FireAxeAll
+            ) {
                 2
             } else {
                 1
@@ -271,25 +307,33 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             world.map_revision_digest(),
             (at.x, at.y, at.floor),
         );
-        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-            deps.admitted.world_id,
-            deps.admitted.channel_id,
-            crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
-            1,
-            1,
-            1,
-            "runtime-scope-assignment:1",
-            2,
-            pin,
-        )
-        .map_err(debug)?;
-        let reservation = runtime
-            .reserve_fresh_session(deps.admitted.game_session_id)
+        let world_id = deps.admitted.world_id;
+        let channel_id = deps.admitted.channel_id;
+        let game_session_id = deps.admitted.game_session_id;
+        let runtime_at = |position| -> TestResult<_> {
+            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                world_id,
+                channel_id,
+                crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                2,
+                pin.clone(),
+            )
             .map_err(debug)?;
-        deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime
-            .initialize_pinned_test_position(deps.actor, at)
-            .map_err(debug)?;
+            let reservation = runtime
+                .reserve_fresh_session(game_session_id)
+                .map_err(debug)?;
+            let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(actor, position)
+                .map_err(debug)?;
+            Ok((runtime, actor))
+        };
+        let (runtime, actor) = runtime_at(at)?;
+        deps.actor = actor;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
@@ -345,11 +389,31 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 index
             };
             let x = choices[position_index].0;
-            let y = if matches!(case, Case::Koshei) {
+            let y = if matches!(case, Case::FireAxeAll) {
+                if position_index == 0 { 31656 } else { 31650 }
+            } else if matches!(case, Case::Koshei) {
                 chest.1 + 4 * u16::try_from(position_index)?
             } else {
                 chest.1
             };
+            let floor = if matches!(case, Case::FireAxeAll) && position_index == 1 {
+                -12
+            } else {
+                chest.2
+            };
+            let destination = MovementLocalPosition {
+                x: i32::from(x) - 1,
+                y: i32::from(y),
+                floor: -i16::from(floor),
+            };
+            if matches!(case, Case::FireAxeAll) {
+                // Fixture admission at each literal source endpoint; travel is not
+                // under test. Keep the same SQL session fence and command stream.
+                let (runtime, actor) = runtime_at(destination)?;
+                deps.actor = actor;
+                deps.runtime = tokio::sync::Mutex::new(runtime);
+                position = destination;
+            }
             // Rebuild the caller while retaining the Channel's command-stream truth.
             // Drop its quest cache so admission must reload the durable claim tracks.
             let mut owner = deps.owner(&h, &authority);
@@ -372,15 +436,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 &mut admitted,
                 &mut command,
                 &mut position,
-                MovementLocalPosition {
-                    x: i32::from(x) - 1,
-                    y: i32::from(y),
-                    ..at
-                },
+                destination,
             )
             .await?;
             let key =
-                oteryn_world_bundle::bundle::placement_key(chest.2, x, y, 1).ok_or("placement")?;
+                oteryn_world_bundle::bundle::placement_key(floor, x, y, 1).ok_or("placement")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             let target = WorldObjectTarget {
@@ -451,40 +511,50 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
-                        || matches!(case, Case::Alawar | Case::Koshei | Case::BlackKnight)
-                            && index == 1
+                        || matches!(
+                            case,
+                            Case::Alawar | Case::Koshei | Case::BlackKnight | Case::FireAxeAll
+                        ) && index == 1
                 );
             }
-            if matches!(case, Case::FireAxeBag) {
+            if matches!(case, Case::FireAxeBag | Case::FireAxeAll) {
+                let bag_claimed = matches!(case, Case::FireAxeBag) || !reverse || index == 1;
+                let axe_claimed = matches!(case, Case::FireAxeAll) && (reverse || index == 1);
                 let children: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
                      JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 5")
                     .fetch_all(&h.pool).await?;
-                assert_eq!(
-                    children,
+                let expected_children = if bag_claimed {
                     vec![
                         ("oteryn:item.tibia.i3028".to_owned(), 7),
                         ("oteryn:item.tibia.i3085".to_owned(), 1),
                         ("oteryn:item.tibia.i3098".to_owned(), 1),
-                        ("oteryn:item.tibia.i3320".to_owned(), 1)
+                        ("oteryn:item.tibia.i3320".to_owned(), 1),
                     ]
-                );
+                } else {
+                    Vec::new()
+                };
+                assert_eq!(children, expected_children);
                 let roots: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
-                     JOIN game_item_instances i USING(item_instance_id) LIMIT 2")
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
                     .fetch_all(&h.pool).await?;
-                assert_eq!(roots, vec![("oteryn:item.tibia.i2853".to_owned(), 1)]);
-                assert_eq!(
-                    snapshot
-                        .tracks()
-                        .get("oteryn:quest-progress/kv/fireaxe1/claimed"),
-                    Some(&1)
-                );
-                assert!(
-                    !snapshot
-                        .tracks()
-                        .contains_key("oteryn:quest-progress/kv/fireaxe2/claimed")
-                );
+                let mut expected_roots = Vec::new();
+                if bag_claimed {
+                    expected_roots.push(("oteryn:item.tibia.i2853".to_owned(), 1));
+                }
+                if axe_claimed {
+                    expected_roots.push(("oteryn:item.tibia.i3320".to_owned(), 1));
+                }
+                assert_eq!(roots, expected_roots);
+                for (track, claimed) in [("fireaxe1", bag_claimed), ("fireaxe2", axe_claimed)] {
+                    let key = format!("oteryn:quest-progress/kv/{track}/claimed");
+                    if claimed {
+                        assert_eq!(snapshot.tracks().get(&key), Some(&1));
+                    } else {
+                        assert!(!snapshot.tracks().contains_key(&key));
+                    }
+                }
             }
             if matches!(case, Case::Koshei | Case::BlackKnight) {
                 let rewards: Vec<(String, i64)> = sqlx::query_as(

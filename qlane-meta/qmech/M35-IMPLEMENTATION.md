@@ -293,3 +293,23 @@ with `-D warnings`; content decoder12 tests; container authoring15 tests;
 variant authoring13; callback generator14; existing chest authoring29; native-only
 regeneration and its reproducibility check. Generated files came from their
 existing generators. Local node boot remains skipped per owner.
+
+## Fire Axe combined two-floor caller proof
+
+The source fixture can now preserve individual floors as well as appearances:
+UID6067's bag at(33078,31656,11), appearance2472, and UID6036's separate axe
+at(33084,31650,12), appearance4024. A test-only runtime factory re-admits the
+same fenced character at each source endpoint, retaining the command stream
+and reloading quest state from PostgreSQL. This qualifies reward completion;
+it does not claim to qualify travel between the endpoints.
+
+The combined case exercises both orders: neither first chest completes; the
+second does. It checks the bag's four exact children, the independent axe root,
+both claimed tracks, exactly two consumed obligations/receipts, replay and fresh
+repeat refusal. The earlier single-bag test retains its exact expectations.
+
+Fresh dispatch all-features/all-target clippy with `-D warnings` and formatting
+passed. Both live Fire Axe tests passed in184.12 seconds, with
+`M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED` and
+`M35_FIRE_AXE_TWO_FLOOR_POSTGRES_CASE_COMPLETED`. This closes the previously
+recorded combined Fire Axe caller-proof gap. No production pins or data changed.
