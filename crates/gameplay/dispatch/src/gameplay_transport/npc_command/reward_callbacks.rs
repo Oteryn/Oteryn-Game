@@ -280,7 +280,7 @@ fn prepare_with_sources(
     // programme planner reads that copy. Eligible callbacks and offers retain
     // precedence; only the ineligible keyword fallback may defer.
     if fallback
-        && super::catalogue::has_eligible_program(admission, actor, command, intent, runtime)
+        && super::catalogue::has_eligible_program(admission, actor, command, intent, runtime, level)
     {
         None
     } else {

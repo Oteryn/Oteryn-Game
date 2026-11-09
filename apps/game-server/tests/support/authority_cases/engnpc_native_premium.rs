@@ -71,7 +71,7 @@ impl GrizzlyPremiumGate for Gate {
     }
 }
 
-struct NoItems;
+pub(super) struct NoItems;
 impl ItemWeightLookup for NoItems {
     fn generation_digest(&self) -> [u8; 32] {
         crate::durability::item_weight_lookup::TEST_WEIGHTS.generation_digest()
@@ -109,8 +109,13 @@ fn catalogues() -> TestResult<(NpcRuleCatalog, Arc<QuestStateCatalogue>)> {
         }
         documents.push(document.to_string());
     }
-    let source =
-        NpcRuleCatalog::from_json_documents(&[&documents[0], &documents[1]]).map_err(debug)?;
+    bound_catalogue(&[&documents[0], &documents[1]])
+}
+
+pub(super) fn bound_catalogue(
+    documents: &[&str],
+) -> TestResult<(NpcRuleCatalog, Arc<QuestStateCatalogue>)> {
+    let source = NpcRuleCatalog::from_json_documents(documents).map_err(debug)?;
     let mut tracks = Vec::new();
     let mut bindings = Vec::new();
     for program in source.programs() {

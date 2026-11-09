@@ -824,7 +824,8 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
-    let offer_level = if reward_callbacks::needs_level(admission, actor, command, &intent, &runtime)
+    let npc_level = if reward_callbacks::needs_level(admission, actor, command, &intent, &runtime)
+        || catalogue::needs_level(admission, actor, command, &intent, &runtime)
     {
         let context = admission.states.npc_conversations.current_npc(
             &admission.states.chat,
@@ -861,7 +862,7 @@ pub(super) async fn npc_bank_talk(
         None
     };
     if let Some(step) =
-        reward_callbacks::prepare(admission, actor, command, &intent, &runtime, offer_level)
+        reward_callbacks::prepare(admission, actor, command, &intent, &runtime, npc_level)
     {
         drop(runtime);
         drop(_trade_permit);
@@ -908,8 +909,9 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
+    if let Some(step) = catalogue::prepare(
+        admission, actor, command, &intent, &runtime, &ordinary, npc_level,
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;

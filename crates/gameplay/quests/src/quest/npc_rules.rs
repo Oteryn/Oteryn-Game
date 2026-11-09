@@ -689,6 +689,8 @@ pub fn legacy_defaults<'a>(
 }
 
 #[cfg(test)]
+mod level_tests;
+#[cfg(test)]
 mod premium_tests;
 #[cfg(test)]
 mod tests;

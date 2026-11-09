@@ -49,6 +49,42 @@ pub(super) struct CommitStep {
     fallback_lines: Vec<String>,
 }
 
+fn npc_needs_level(source: &NpcRuleCatalog, npc: &str) -> bool {
+    source.programs().iter().any(|program| {
+        program.document.rules.iter().any(|rule| {
+            rule.npc == npc
+                && rule.guards.iter().any(|guard| {
+                    matches!(
+                        guard,
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Level { .. }
+                    )
+                })
+        })
+    })
+}
+
+pub(super) fn needs_level(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    if admission.quest_catalogue.is_none() {
+        return false;
+    }
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    NpcRuleCatalog::runtime().is_ok_and(|source| npc_needs_level(source, &context.2))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -56,8 +92,11 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
+    level: Option<u32>,
 ) -> Option<Step> {
-    prepare_inner(admission, actor, command, intent, runtime, ordinary, true)
+    prepare_inner(
+        admission, actor, command, intent, runtime, ordinary, true, level,
+    )
 }
 
 /// Probe the same planner without advancing a source topic. A held commit still
@@ -68,6 +107,7 @@ pub(super) fn has_eligible_program(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
+    level: Option<u32>,
 ) -> bool {
     matches!(
         prepare_inner(
@@ -78,11 +118,16 @@ pub(super) fn has_eligible_program(
             runtime,
             &NpcTalkOutcome::only(NpcIntentDisposition::Ok),
             false,
+            level,
         ),
         Some(Step::Reply { .. } | Step::Commit(_) | Step::Held)
     )
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the observed level joins the existing exact NPC context, reply and topic mode"
+)]
 fn prepare_inner(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -91,6 +136,7 @@ fn prepare_inner(
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
     advance_topic: bool,
+    level: Option<u32>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -129,6 +175,9 @@ fn prepare_inner(
     let state = sessions.get_mut(&command.game_session_id)?;
     if matches!(state.catalogue, Some(Pending::Commit { .. })) {
         return Some(Step::Held);
+    }
+    if npc_needs_level(source, &context.2) && level.is_none() {
+        return Some(Step::Refused);
     }
     let previous = match &state.catalogue {
         Some(Pending::Topic(p))
@@ -173,7 +222,7 @@ fn prepare_inner(
         .duration_since(std::time::UNIX_EPOCH)
         .ok()
         .and_then(|d| i64::try_from(d.as_secs()).ok())?;
-    let plan = match npc_program::preview(&request, &tracks, catalogue, now) {
+    let plan = match npc_program::preview(&request, &tracks, catalogue, now, level.unwrap_or(0)) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
             if greeting && advance_topic {

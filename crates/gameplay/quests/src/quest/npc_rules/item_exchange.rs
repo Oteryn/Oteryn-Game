@@ -16,7 +16,9 @@ impl NpcRuleCatalog {
         {
             for guard in &rule.guards {
                 match guard {
-                    NpcRuleGuard::Storage { .. } | NpcRuleGuard::CalendarMonth { .. } => {}
+                    NpcRuleGuard::Storage { .. }
+                    | NpcRuleGuard::CalendarMonth { .. }
+                    | NpcRuleGuard::Level { .. } => {}
                     NpcRuleGuard::Item {
                         item,
                         count: 1..=100,
