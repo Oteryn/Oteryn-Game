@@ -505,6 +505,8 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::goblin_merchant::callbacks()?);
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.push(super::dreamer_carrot::callback());
+    callbacks.push(super::dreamer_death_ring::reset_callback());
     callbacks.extend(super::dreamer_fire_bug::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(nomads_land::callback()?);
@@ -604,6 +606,10 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 "oteryn:quest-callback/questpc7-feaster-entry"
                     | "oteryn:quest-callback/questpc7-feaster-purification-entry"
             ) && !feaster_routes::admitted(callback))
+            || (callback.key == super::dreamer_death_ring::RESET
+                && !super::dreamer_death_ring::shared_reset(callback))
+            || (callback.key == super::dreamer_carrot::KEY
+                && !super::dreamer_carrot::shared_input(callback))
             || (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
             || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
@@ -682,7 +688,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.mount_reward.is_some()
                     || callback.teleport.is_some()
                     || callback.effects.encounter.is_some()))
-            || (callback.requires_premium && !callback.has_personal_state())
+            || (callback.requires_premium && !callback.requires_durable_commit())
             || (callback.has_ground_stack_requirements()
                 && callback.has_personal_state()
                 && !callback.supports_ground_stack_guard())
@@ -841,7 +847,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                             || callback.effects.transform.is_some()))
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.requires_durable_commit()
-                    || callback.trigger != Trigger::Use
+                    || (callback.trigger != Trigger::Use
+                        && !super::dreamer_carrot::shared_input(callback))
                     || (item.selected_instance && !callback.requires_world_admission)
                     || item.count == 0
                     || item.count > 100

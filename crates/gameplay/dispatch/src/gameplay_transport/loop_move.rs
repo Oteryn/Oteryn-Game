@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod dreamer_ring;
 pub(super) mod elemental_arrival;
 mod floor_assembly;
 mod house_container;
@@ -776,7 +777,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox, seed_target, assembly_target) = {
+    let (native, pins, index, mailbox, ring_target, seed_target, assembly_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -789,6 +790,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         let content_revision = sha256_revision(content_digest);
         let placement_context = pin.frame_binding_digest().to_vec();
         let mut mailbox = None;
+        let mut ring_target = None;
         let mut seed_target = None;
         let mut assembly_target = None;
         let pins =
@@ -802,6 +804,8 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     )
                 {
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
+                    ring_target =
+                        dreamer_ring::target(at.map, *to, content_digest, admission.reset_epoch);
                     seed_target =
                         seed_drop::target(at.map, *to, content_digest, admission.reset_epoch);
                     assembly_target =
@@ -814,7 +818,15 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     placement_context,
                 )
             });
-        (native, pins, index, mailbox, seed_target, assembly_target)
+        (
+            native,
+            pins,
+            index,
+            mailbox,
+            ring_target,
+            seed_target,
+            assembly_target,
+        )
     };
     let Some(native) = native else {
         return refused(LoopMoveRefusal::Rejected);
@@ -933,24 +945,53 @@ pub(super) async fn move_loop_item_with_house_capacity(
             ground.as_deref(),
         )
         .await;
-    let seed_result = match (elemental_result, seed_target) {
-        (Some(result), _) => result.map(Some),
-        (None, Some(target)) => {
+    let mut ring_opened = false;
+    let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
+        (true, Some(prepared)) => {
             admission
                 .root
-                .commit_item_loop_seed_drop(
+                .commit_item_loop_dreamer_ring(
                     &permit,
                     admission.character,
                     admission.holder,
                     fence,
-                    CommandRef::new(command.game_session_id, command_id),
+                    command_ref,
                     &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
                     loop_request.clone(),
-                    target,
+                    prepared.target.clone(),
                 )
                 .await
         }
-        (None, None) => Ok(None),
+        _ => Ok(None),
+    };
+    let seed_result = match elemental_result {
+        Some(result) => result.map(Some),
+        None => match ring_result {
+        Ok(Some(Ok((receipt, opened)))) => {
+            ring_opened = opened;
+            Ok(Some(Ok(receipt)))
+        }
+        Ok(Some(Err(refusal))) => Ok(Some(Err(refusal))),
+        Err(error) => Err(error),
+        Ok(None) => match seed_target {
+            Some(target) => {
+                admission
+                    .root
+                    .commit_item_loop_seed_drop(
+                        &permit,
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                        loop_request.clone(),
+                        target,
+                    )
+                    .await
+            }
+            None => Ok(None),
+        },
+    },
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
@@ -1017,6 +1058,14 @@ pub(super) async fn move_loop_item_with_house_capacity(
         }
         Err(error) => Err(error),
     };
+    if ring_opened
+        && let Some(prepared) = ring_target.as_ref()
+        && !admission
+            .bundle_map()
+            .is_some_and(|map| dreamer_ring::publish(map, prepared))
+    {
+        return LoopMoveResult::Unknown;
+    }
     if elemental_definition.is_some() && !matches!(committed, Ok(Err(_))) {
         admission.realize_elemental_altar_bosses(&permit).await;
     }

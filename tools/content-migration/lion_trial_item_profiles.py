@@ -1,7 +1,7 @@
-"""Closed physical/temporal qualification for M07's held trial inputs and retained Fire Bug.
+"""Closed physical/temporal qualification for M07's held trial inputs and Dreamer entrance tools.
 
 Crystal 201189f8 items.xml and the retained Canary XML have byte-identical
-21389/21466/5467 records (including their serialized XML tails). Native publication
+21389/21466/5467/3595 records (including their serialized XML tails). Native publication
 must still select these records and regenerate the provider; this module does
 not change admission or invent decay rules from item descriptions.
 """
@@ -13,6 +13,7 @@ import grizzly_shop_profiles as owner
 # Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml,
 # complete file SHA256 8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509.
 SOURCE_RECORDS = {
+    3595: '6c756e98369225f43afdda2044254cd3004d32c841ce83cebd78897e36704180',
     5467: '6e788b59b3e1c3b5b68d0decc30a210007db94c63d4346f5352036562d94d3a4',
     21389: '593dda554a3c255633ad5c3278098f566447472a45c760561bf70ff5171408b6',
     21466: 'f5c7ba16e4b6941ff450ade217b079c4e42da9985e771fa10a86c3d1b978ee01',
@@ -43,7 +44,8 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
         'duration': source.K(3_600_000), 'stop_duration': source.K(False),
         'decay_target': source.NA,
     }) if item_id == 21389 else source.NA)
-    if (record['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+    stack_class = 'StackCapable' if item_id == 3595 else 'NonStackable'
+    if (record['admission'] != {'materializable': True, 'stack_class': stack_class,
                                 'legal_destinations': ['CharacterInventory', 'Ground']}
             or record['semantics']['charges'] != source.NA
             or record['semantics']['container'] != source.NA
@@ -56,8 +58,8 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
             raise ValueError('LION_TRIAL_ITEM_CANONICAL_CONFLICT:' + group)
     # Fire Bug's accepted definition still has incomplete admission. Its exact
     # pinned source/appearance pair supplies native custody, as for QENGINE inputs.
-    if definition['stack_class'] not in (('NonStackable', 'Unknown') if item_id == 5467
-                                          else ('NonStackable',)):
+    if definition['stack_class'] not in ((stack_class, 'Unknown') if item_id == 5467
+                                          else (stack_class,)):
         raise ValueError('LION_TRIAL_ITEM_STACK')
     record['semantics'] = owner.accepted_first(definition['semantics'], record['semantics'])
     return source.bind_profiles(

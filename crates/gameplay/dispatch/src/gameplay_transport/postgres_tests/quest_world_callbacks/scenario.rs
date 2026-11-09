@@ -22,6 +22,8 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let carrot = name.starts_with("m07-carrot-");
+    let ring_offering = name == "m07-ring-offering";
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
@@ -265,7 +267,7 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if m44_flower { "m44-lions-flower-0" } else if m44_lions || name == "lions-rock-strength-first" {
+        callback(if ring_offering { "dreamers-challenge-death-ring-reset" } else if carrot { "dreamers-challenge-carrot-entry" } else if m44_flower { "m44-lions-flower-0" } else if m44_lions || name == "lions-rock-strength-first" {
             "m07/lion-strength"
         } else if name == "lions-rock-beauty" {
             "m07/lion-beauty"
@@ -773,7 +775,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+        let premium = if name == "m07-carrot-premium" || m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
             || matches!(
                 name,
                 "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
@@ -1410,6 +1412,12 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if ring_offering {
+            super::super::m07_dreamer_ring_offering::exercise(&mut owner,&mut admitted,&h,fence).await?;
+        } else if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
+            super::super::m07_dreamer_ring_reset::exercise(&mut owner,&mut admitted,&callback,trigger).await?;
+        } else if carrot {
+            super::super::m07_dreamer_carrot::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,origin,name == "m07-carrot-premium").await?;
         } else if lion_trial {
             super::super::m07_trials::exercise(
                 &mut owner,

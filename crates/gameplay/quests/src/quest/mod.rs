@@ -37,6 +37,8 @@ pub mod completion_sets;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
+pub mod dreamer_carrot;
+pub mod dreamer_death_ring;
 pub mod distinct_targets;
 pub mod dreamer_fire_bug;
 pub mod elemental_arrival;
@@ -323,6 +325,10 @@ pub struct QuestTransition {
 pub enum QuestRefusal {
     /// A `from` comparison does not hold on the locked value.
     StageMismatch,
+    /// A source entrance proved absence of its carried offering.
+    SourceOfferingMissing,
+    /// A carried source offering exists, but current Premium admission denied entry.
+    SourceOfferingPremiumRequired,
     /// The quest state is pinned to another definition hash (§6).
     RevisionMismatch,
     /// A result leaves the track's bounds, or `ADD` overflows.
@@ -338,7 +344,9 @@ impl QuestRefusal {
     #[must_use]
     pub const fn code(self) -> &'static str {
         match self {
-            Self::StageMismatch => "STAGE_MISMATCH",
+            Self::StageMismatch
+            | Self::SourceOfferingMissing
+            | Self::SourceOfferingPremiumRequired => "STAGE_MISMATCH",
             Self::RevisionMismatch => "REVISION_MISMATCH",
             Self::OutOfRange => "OUT_OF_RANGE",
             Self::NotSupported => "NOT_SUPPORTED",
@@ -431,6 +439,7 @@ impl QuestStateCatalogue {
             if transition.effects.is_empty()
                 && !transition.completes
                 && !dreamer_fire_bug::shared_transition(&transition)
+                && !dreamer_carrot::shared_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
                     && transition.quest == "oteryn:quest/worldchange/benevola")
                     || transition.key.starts_with("oteryn:quest-reward/"))

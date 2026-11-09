@@ -11,6 +11,7 @@ mod clear_area;
 mod committed_copy;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod dreamer_carrot;
 mod effects;
 mod encounter;
 mod execute;
@@ -85,6 +86,8 @@ pub(super) struct PendingCallbacks {
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
+    carrot_refusal:
+        std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
     #[cfg(test)]
@@ -1286,6 +1289,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, entered.position()),
                 underwater(map, snapshot.position()),
             );
+            self.punish_carrot_refusal(runtime, states, actor, session, entered, snapshot);
             if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
                 oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
                     .map(|gate| gate.effect)

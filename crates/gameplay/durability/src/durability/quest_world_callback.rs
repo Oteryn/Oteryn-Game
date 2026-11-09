@@ -1,5 +1,6 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
+pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;

@@ -32,6 +32,10 @@ class LionTrialItemProfiles(unittest.TestCase):
                                 for r in json.loads((ROOT / 'content/items/definitions/'
                                                      'items-29000-29499.json').read_bytes())['records']})
 
+        cls.definitions.update({r['definition']['identity']['key']:r['definition']
+                                for r in json.loads((ROOT / 'content/items/definitions/'
+                                                     'items-21500-21999.json').read_bytes())['records']})
+
     def values(self, item_id):
         return copy.deepcopy([item_id, self.nodes[item_id], self.appearances[item_id],
                               self.physical[item_id], self.bindings,
@@ -45,6 +49,15 @@ class LionTrialItemProfiles(unittest.TestCase):
             'decay_target': owner.source.NA}))
         self.assertEqual(record['production_definition']['production_key'],
                          'oteryn:item.tibia.i21389')
+
+    def test_carrot_is_a_bounded_plain_stack_for_the_source_offering(self):
+        record = profiles.qualify(*self.values(3595))
+        self.assertEqual(record['admission'],{'materializable':True,'stack_class':'StackCapable',
+                                             'legal_destinations':['CharacterInventory','Ground']})
+        self.assertEqual(record['semantics']['stack'],owner.source.K({
+            'stackable':owner.source.K(True),'stack_max':owner.source.K(100)}))
+        self.assertEqual(record['semantics']['charges'],owner.source.NA)
+        self.assertEqual(record['semantics']['temporal'],owner.source.NA)
 
     def test_fire_bug_is_a_reusable_uncharged_portable_instance(self):
         record = profiles.qualify(*self.values(5467))
@@ -126,7 +139,7 @@ class LionTrialItemProfiles(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'CANONICAL_CONFLICT'):
                 profiles.qualify(*values)
             values = self.values(item_id)
-            values[4][str(item_id)]['target']['key'] = 'oteryn:item.tibia.i3595'
+            values[4][str(item_id)]['target']['key'] = 'oteryn:item.tibia.i3031'
             with self.assertRaisesRegex(ValueError, 'LION_TRIAL_ITEM_BINDING'):
                 profiles.qualify(*values)
 

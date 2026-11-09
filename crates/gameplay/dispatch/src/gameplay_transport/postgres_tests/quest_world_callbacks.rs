@@ -391,6 +391,12 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
+        // Synthetic literal UID2244; no production-map position correspondence is claimed.
+        cells.entry((trigger.floor,trigger.x-1,trigger.y+1)).or_default().push(sector::Item {
+            palette:1,depth:0,attrs:sector::Attrs {unique:Some(2244),..Default::default()}
+        });
+    }
     if callback.key.starts_with("oteryn:quest-callback/unnatural-selection-dance-") {
         for (x,y,floor) in oteryn_gameplay_quests::quest::unnatural_selection::TILES {
             if (x,y,floor)==(trigger.x,trigger.y,trigger.floor) { continue; }

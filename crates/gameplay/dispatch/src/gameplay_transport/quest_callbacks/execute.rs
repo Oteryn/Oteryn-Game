@@ -157,7 +157,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
-        let close = callback.trigger == Trigger::StepOut
+        let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
+        let close = tree_reset
+            || callback.trigger == Trigger::StepOut
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
@@ -286,12 +288,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
         }
+        let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
         for passage_definition in &callback.passages {
             let passage = passage_definition;
             let p = tile(passage.position);
             if (close || passage_definition.replacement_passable == Some(false))
+                && !tree_reset
                 && super::super::map_door::doorway_occupied(
                     runtime,
                     actor,
@@ -388,6 +392,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     passage_definition.replacement_passable.unwrap_or(!close),
                 ));
             } else {
+                if tree_reset && map.facts.base_hidden(*passage) {
+                    restored_trees.push(p);
+                }
                 passages.push(*passage);
             }
         }
@@ -963,6 +970,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             };
+            if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
+                && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
+                    oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing
+                    | oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingPremiumRequired)))
+            {
+                if matches!(
+                    &outcome,
+                    Ok(QuestTransitionOutcome::Refused(
+                        oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingPremiumRequired
+                    ))
+                ) {
+                    self.states.chat.publish_quest_speech(
+                        runtime,
+                        actor,
+                        session,
+                        oteryn_gameplay_quests::quest::dreamer_carrot::PREMIUM_SPEECH,
+                    );
+                }
+                if let Ok(mut refusal) = self.states.quest_callbacks.carrot_refusal.lock() {
+                    *refusal = Some((actor, session, expected));
+                }
+            }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(
@@ -1277,6 +1306,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_EFFECT,
                 );
             }
+        }
+        for position in restored_trees {
+            map.facts.emit_movement_effect(position, 13);
         }
         for effect in &callback.effects {
             // Presentation uses the existing bounded movement occurrence stream;

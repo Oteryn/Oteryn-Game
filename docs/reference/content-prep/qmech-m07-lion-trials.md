@@ -1,8 +1,8 @@
 # M07 Lion trial slice
 
-M07 remains PARTIAL: Dreamer's Challenge's carrot and Death Ring entrance
-and shared tree restoration still require their native callers and durable item
-participation. The Fire Bug owner is covered in
+M07's shared offering/trial/reset owners are implemented. The UID2244 Death Ring
+ADDITEM debit and UID9234 shared tree reset are covered in
+[their separate slice](qmech-m07-dreamer-death-ring.md). The Fire Bug owner is covered in
 [its separate slice](qmech-m07-dreamer-fire-bug.md). This slice addresses the three Lion offerings and pagoda resets;
 it does not qualify either full quest or the Lion treasure cache.
 
@@ -51,10 +51,9 @@ The unchanged `published_ungated_quest_hash_baseline` test still has the previou
 reproduced Ice Islands mismatch (`ca68476c…` observed, `ce91fb47…` expected), also
 with the base loader and callback registry restored. Its assertion is unchanged.
 
-Remaining M07 work is Dreamer's Challenge's carrot and Death Ring offering
-and tree reset caller. In particular, Death Ring 6299 is an AddItem offering at UID2244, not a
-surrogate USE: it removes trees 3636 at (32857,32231..32233,z11). UID9234 restores
-missing trees and teleports to (32819,32347,z9). The carrot entry retains its live
+Dreamer's Challenge's Death Ring 6299 is an AddItem offering at UID2244, not a
+surrogate USE: it removes trees 3636 at (32857,32231..32233,z11). The implemented UID9234 reset restores
+missing trees and teleports to (32819,32347,z9). The [carrot entry](qmech-m07-dreamer-carrot.md) implements its live
 Premium and carried-item requirements; the Fire Bug entrance retains its shared
 1949/3134 lifecycle. The generic full-route registration remains M01's boundary.
 
@@ -89,3 +88,21 @@ minutes. This literal source position corroborates the retained bare B3 ashes;
 it does not bind the separate Death Ring AddItem tile. The shared-input writer and five-minute native portal lifecycle are now implemented
 and qualified in [the Fire Bug slice](qmech-m07-dreamer-fire-bug.md). The separate
 UID2243 movement handler is not assigned to the newly created, unkeyed teleport.
+
+## Final M07 owner verification
+
+At implementation head `d76b00cd5124dfe1b3cfa3e62c83fbac839ec3a4`, the complete
+`m07_` dispatch filter passes9/9 with PostgreSQL enabled: eight mounted real-caller
+PostgreSQL cases plus the existing area-census unit. The cases cover both Carrot
+accounts, shared Fire Bug ignition/traversal/reset, Death Ring ADDITEM debit and
+STEP restoration, and all three Lion offerings and pagoda resets. The route-less
+filter also passes9/9. The final durability/dispatch checks and all-target,
+all-feature Clippy pass; formatting is checked. Builds use two jobs with
+incremental compilation disabled.
+
+The full Quest unit sweep has410 passes and only the unchanged, pre-existing
+`quest::reward_callbacks::tests::published_ungated_quest_hash_baseline` failure
+for Ice Islands (`ca68476c…` observed, `ce91fb47…` expected). Its assertion is
+unchanged. Local node boot remains skipped as instructed. This completes M07's
+assigned shared offering/trial/reset owner boundary; generic authored routes
+remain M01 and NPC finales remain M04, without a full-quest completion claim.
