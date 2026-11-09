@@ -334,6 +334,7 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
             "perfume BURN, MINT and progress share one transaction"
         );
     }
+    let mut capture_refusal = None;
     if capture {
         assert_eq!(h.count("game_quest_creature_captures").await?, 1);
         let atomic:i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_creature_captures c JOIN game_character_quest_receipts q USING(character_id,cause_id,cause_ordinal,transition_key) JOIN game_quest_callback_consumptions i USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.created_xact_id=q.created_xact_id AND i.created_xact_id=q.created_xact_id").fetch_one(&h.pool).await?;
@@ -393,11 +394,34 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
             error.as_database_error().and_then(|e| e.code()).as_deref(),
             Some("23514")
         );
+        capture_refusal = Some(refused);
     }
     drop(proof);
-    runtime
-        .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
+    if let Some(refused) = capture_refusal.as_ref() {
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::finish_capture(
+            &mut runtime,
+            creature,
+            "oteryn:creature.rotworm",
+            refused,
+        )
         .map_err(f::debug)?;
+        runtime
+            .check_mount_taming_subject(creature, "oteryn:creature.rotworm")
+            .map_err(f::debug)?;
+    }
+    if capture {
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::finish_capture(
+            &mut runtime,
+            creature,
+            "oteryn:creature.rotworm",
+            &committed,
+        )
+        .map_err(f::debug)?;
+    } else {
+        runtime
+            .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
+            .map_err(f::debug)?;
+    }
     assert!(
         QuestCreatureUseProof::read_current(
             &runtime,
@@ -442,6 +466,15 @@ async fn exercise(h: &f::Harness, production: bool, capture: bool) -> f::TestRes
             h.count("game_reward_claim_mint_receipts").await?,
             1,
             "replay must not remint perfume"
+        );
+    }
+    if capture {
+        oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::cancel_capture(
+            &mut runtime,
+        );
+        assert!(
+            runtime.read_actor_position(actor).is_err(),
+            "ambiguous capture retires the Channel owner"
         );
     }
     Ok(())

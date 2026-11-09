@@ -1,4 +1,5 @@
 //! USE cosmetic items through the shared item-action transaction and existing Premium owner.
+pub(super) mod capture_commit;
 pub(super) mod quest_targets;
 
 use super::ComposedFreshAdmission;
@@ -544,12 +545,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lane -> Character sequence -> runtime is retained through COMMIT.
         // The proof's borrow prevents detaching a live target snapshot.
         let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
-        let creature_runtime = if callback.creature_target.is_some() {
+        let mut creature_runtime = if callback.creature_target.is_some() {
             Some(self.runtime.lock().await)
         } else {
             None
         };
-        let creature = if let Some(runtime) = creature_runtime.as_ref() {
+        let mut capture_guard = creature_runtime.as_mut().map(|runtime| {
+            capture_commit::CaptureCommitGuard::new(runtime, callback.capture_creature)
+        });
+        let creature = if let Some(guard) = capture_guard.as_ref() {
+            let runtime = guard.runtime();
             use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
             let proof = if let Some(operand) = corpse_operand {
                 QuestCreatureUseProof::read_corpse(
@@ -588,6 +593,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source,
             intent: encoded,
         };
+        let capture_target = creature.as_ref().and_then(|proof| proof.live_target());
+        let capture_key = callback.creature_target.clone();
+        if let Some(guard) = capture_guard.as_ref() {
+            guard.arm();
+        }
         let result = sequence
             .commit_quest_reward(
                 self.root,
@@ -613,6 +623,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?;
         drop(creature);
+        if let Some(guard) = capture_guard.as_mut() {
+            guard.finish(&result, capture_target, capture_key.as_deref())?;
+        }
+        drop(capture_guard);
         drop(creature_runtime);
         drop(sequence);
         drop(permit);

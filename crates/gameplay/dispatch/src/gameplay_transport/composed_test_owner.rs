@@ -134,3 +134,24 @@ mod fixture {
 )]
 #[path = "monk_save_fresh_fixture.rs"]
 pub mod fresh_fixture;
+
+/// Exercise the dispatch guard after the fixture's real Root capture transaction.
+pub fn finish_capture(
+    runtime: &mut ChannelRuntimeV1,
+    target: crate::foundation::ExactActorRef,
+    key: &str,
+    outcome: &crate::durability::quest_state::QuestTransitionOutcome,
+) -> Result<(), String> {
+    let mut guard =
+        super::cosmetic_item_use::capture_commit::CaptureCommitGuard::new(runtime, true);
+    guard.arm();
+    guard
+        .finish(outcome, Some(target), Some(key))
+        .map_err(|_| "capture retirement failed".into())
+}
+
+/// Dropping an armed commit is the same path used by cancellation or an unknown DB result.
+pub fn cancel_capture(runtime: &mut ChannelRuntimeV1) {
+    let guard = super::cosmetic_item_use::capture_commit::CaptureCommitGuard::new(runtime, true);
+    guard.arm();
+}
