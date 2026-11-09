@@ -110,6 +110,7 @@ pub mod recovery;
 pub mod refusal_detail;
 mod registered_capabilities;
 pub mod rest_status;
+pub mod server_modal;
 pub mod server_save_countdown;
 pub mod skill_display;
 pub mod skill_progress;

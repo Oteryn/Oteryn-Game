@@ -106,3 +106,5 @@ pub use oteryn_protocol_oteryn::{bosstiary_slots, hazard};
 pub use oteryn_protocol_oteryn::{party_skull, timed_item};
 #[path = "features/0057-cyclopedia-map/protocol.rs"]
 pub mod cyclopedia_map;
+
+pub use oteryn_protocol_oteryn::server_modal;

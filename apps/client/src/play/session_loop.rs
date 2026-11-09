@@ -22,8 +22,14 @@ pub async fn run_session<T: Stepper>(
     if !session_initialize::initialize(&session, &outbox) {
         return;
     }
+    let mut modal =
+        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     loop {
+        if let Err(error) = modal.poll(&mut session).await {
+            outbox.end(public_class(&error));
+            return;
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {

@@ -4,8 +4,10 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub memorial: super::MemorialPanel,
     pub selected: bool,
     pub open: bool,
+    pub preview_open: bool,
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 5],
@@ -125,6 +127,34 @@ impl Panel {
             return false;
         }
         self.fields[1] = (addons ^ bit).to_string();
+        true
+    }
+}
+
+impl Panel {
+    pub fn cycle_mount(&mut self, forward: bool) -> bool {
+        if self.pending || !self.selected {
+            return false;
+        }
+        let Some(catalogue) = &self.catalogue else {
+            return false;
+        };
+        let count = catalogue.mounts.len() + 1;
+        let current = catalogue
+            .mounts
+            .iter()
+            .position(|key| key == &self.fields[2])
+            .map_or(0, |index| index + 1);
+        let next = if forward {
+            (current + 1) % count
+        } else {
+            (current + count - 1) % count
+        };
+        self.fields[2] = if next == 0 {
+            String::new()
+        } else {
+            catalogue.mounts[next - 1].clone()
+        };
         true
     }
 }

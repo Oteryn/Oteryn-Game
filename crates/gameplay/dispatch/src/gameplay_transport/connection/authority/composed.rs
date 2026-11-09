@@ -435,6 +435,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn server_messages_left(&self, admitted: AdmittedSession) {
+        self.states.server_modals.leave((
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        ));
         self.states.server_messages.leave(
             admitted.game_session_id,
             admitted.continuity.connection_generation,

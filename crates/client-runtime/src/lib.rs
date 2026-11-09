@@ -329,3 +329,6 @@ pub mod cui3 {
         item_view, store,
     };
 }
+
+#[path = "features/0450-server-modal/protocol.rs"]
+pub mod server_modal;
