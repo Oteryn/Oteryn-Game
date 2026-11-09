@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 
 pub const MAX_STACK_ITEMS: usize = 64;
 
+pub mod alternatives;
 mod dense_pattern;
 
 /// One required mutable stack entry, in bottom-to-top append order.

@@ -1,6 +1,6 @@
 use super::*;
 
-fn pattern() -> (Vec<GroundStackRequirement>, Vec<GroundStackSnapshot>) {
+pub(super) fn pattern() -> (Vec<GroundStackRequirement>, Vec<GroundStackSnapshot>) {
     let mut requirements = Vec::new();
     let mut snapshots = Vec::new();
     for row in 0_u8..6 {

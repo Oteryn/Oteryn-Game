@@ -11675,5 +11675,42 @@
     "ordering_evidence": "quest_callbacks/execute.rs preflights teleport at498-516, commits fenced world callback at881, applies source step at1071-1073. gated_binding hashes the full callback including destination and Ground predicates.",
     "pending": "Native Dreamer portal wiring, row/column shifts and pillow reset remain. Full M07 not qualified.",
     "checked_facts": "Current spell-native-profiles already admits i2394 as materializable with inventory/Ground destinations and definition-r1. Did not invent a revision mismatch or alter profiles."
+  },
+  "m07_coherent_ground_patterns_slice": {
+    "state": "PARTIAL",
+    "scope": "Read-only matcher for two complete dense Ground configurations over the same cells, preserving the selected branch and borrowed physical instance witnesses. Never combines per-cell alternatives.",
+    "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua:53: all nine yellow cells are 2397 OR all nine are 900.",
+    "red": "Both new matcher tests failed before the alternative/configuration validation implementation; /tmp/questpc4-coherent-pattern-red.log.",
+    "validation": {
+      "focused_tests": 29,
+      "focused_seconds": 6.196,
+      "clippy_seconds": 12.439,
+      "workspace": {
+        "seconds": 296.026,
+        "exit": 0
+      },
+      "sql_changed": false,
+      "pg": "No SQL or durable integration changed in this slice.",
+      "fmt": {
+        "seconds": 20.899,
+        "exit": 0
+      },
+      "pin_verify": {
+        "seconds": 8.596,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      },
+      "duplicates": "PASS"
+    },
+    "pending": "Native callback data, durable alternative-branch integration, rotation/reset and complete quest story remain unqualified.",
+    "safety": "Rejects malformed unused alternatives, duplicate/ambiguous plans, different footprints/floors, mixed observations, reused instance identities and missing cells. Returns read evidence only, no mutation or completion authority."
+  },
+  "m07_migration_conflict_current": {
+    "tested_head": "e0e8bd3e071b804863ddc3cb5cc8d3b0a7e71b86",
+    "case_seconds": 6.027891459,
+    "error": "callback harness: while executing migration 2020: error returned from database: quest reward quantity variable requires exact guard anchor: actual BIGINT; at line 3909",
+    "root": "1830_native_authored_reward_claims.sql:36-42 already renames actual to native_consumed_count; 2020_quest_reward_quantity_variable.sql:9-16 requires the old literal.",
+    "command": "bash /tmp/questpc4-run-focused-dispatch.sh 'test(m07_machinery_postgres_repair_)' /tmp/questpc4-current-repair-pg-confirm.log",
+    "decision": "No foreign migration edit, migration reordering, main/qmech merge or harness bypass. Own 2060-2069 forward migrations cannot execute before 2020."
   }
 }
