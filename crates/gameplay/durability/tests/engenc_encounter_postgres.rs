@@ -1216,3 +1216,195 @@ async fn exercise_dispatch_hit_queue(h: &fixture::Harness) -> fixture::TestResul
     assert_eq!(receipts, 1);
     Ok(())
 }
+
+#[test]
+fn engenc_direct_rune_hit_requires_exact_spell_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create(admin, "engenc_direct_rune_hit", true).await?;
+                    let result = exercise_direct_rune_hit(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_DIRECT_RUNE_HIT_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC direct rune PG worker panicked")?
+        .map_err(Into::into)
+}
+
+async fn exercise_direct_rune_hit(h: &fixture::Harness) -> fixture::TestResult {
+    use dispatcher_hit_queue::{HitQueue, Snapshot, direct_damage_target};
+    use durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use foundation::runtime_actor_spell_types::{OwnerCombatChange, OwnerCombatEffect};
+    use oteryn_gameplay_quests::quest::authored_bindings::{Trigger, hits::HitSource};
+    let original = hit_catalogue()?;
+    let mut bindings = original.authored_bindings().ok_or("bindings")?.clone();
+    let Trigger::Hit { objective } = &mut bindings.quests[0].stages[0].trigger else {
+        return Err("hit objective".into());
+    };
+    objective.source = HitSource::Rune {
+        item: "oteryn:item.training_rune".into(),
+        spell: "candidate:spell/rune/training".into(),
+    };
+    let base = QuestStateCatalogue::empty("content-1").ok_or("base")?;
+    let catalogue = Arc::new(bindings.attach(&base)?);
+    let fence = fixture::fence(1)?;
+    let (mut runtime, actor, target, command) = native_hit_runtime(1)?;
+    let lease = runtime
+        .bound_attacker_lease(actor, fence.game_session_id)
+        .map_err(fixture::debug)?;
+    let effect = OwnerCombatEffect {
+        target,
+        sub_ordinal: 0,
+        change: OwnerCombatChange::Damage {
+            target_atom: "engenc:training".into(),
+            magnitude: 5,
+        },
+    };
+    assert_eq!(
+        direct_damage_target(std::slice::from_ref(&effect)),
+        Some((target, 0))
+    );
+    let other = runtime
+        .admit_monster_lab_creature(
+            foundation::MovementLocalPosition {
+                x: 3,
+                y: 1,
+                floor: 7,
+            },
+            "engenc:other-rune-target",
+            100,
+        )
+        .map_err(fixture::debug)?;
+    let mut area = effect.clone();
+    area.target = other;
+    assert_eq!(direct_damage_target(&[effect.clone(), area]), None);
+    let heal = OwnerCombatEffect {
+        target,
+        sub_ordinal: 0,
+        change: OwnerCombatChange::Heal {
+            target_atom: "engenc:training".into(),
+            magnitude: 5,
+        },
+    };
+    assert_eq!(direct_damage_target(&[heal]), None);
+    let mut queue = HitQueue::default();
+    assert!(queue.install(
+        &runtime,
+        fence.game_session_id,
+        Snapshot::new(
+            Arc::clone(&catalogue),
+            actor,
+            fence.game_session_id,
+            lease,
+            1,
+            &Default::default()
+        )
+    ));
+    {
+        let mut capture = queue
+            .prepare(
+                &runtime,
+                actor,
+                target,
+                command,
+                0,
+                "oteryn:creature.rat",
+                "oteryn:item.training_rune",
+                Some("candidate:spell/rune/training"),
+            )
+            .map_err(fixture::debug)?;
+        let mut native = runtime.borrow_exact_actor_commit();
+        native
+            .commit_damage_for_bound_attacker(
+                target,
+                actor,
+                command,
+                0,
+                foundation::OwnerDamageCommand {
+                    target: b"engenc:training",
+                    occurrence: &[],
+                    binding: b"engenc:rune-hit",
+                    damage: 5,
+                },
+            )
+            .map_err(fixture::debug)?;
+        let witness = native
+            .committed_hit_for_bound_attacker(target, actor, command, 0)
+            .map_err(fixture::debug)?
+            .ok_or("rune damage")?;
+        assert_eq!(
+            capture.capture(
+                witness,
+                "oteryn:creature.rat",
+                "oteryn:item.training_rune",
+                None
+            ),
+            0
+        );
+        assert_eq!(
+            capture.capture(
+                witness,
+                "oteryn:creature.rat",
+                "oteryn:item.training_rune",
+                Some("candidate:spell/rune/other")
+            ),
+            0
+        );
+        assert_eq!(
+            capture.capture(
+                witness,
+                "oteryn:creature.rat",
+                "oteryn:item.training_rune",
+                Some("candidate:spell/rune/training")
+            ),
+            1
+        );
+    }
+    let pending = queue.pending().remove(0);
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(fence.character_id).await;
+    let committed = slot
+        .commit_native_quest_hit(
+            &h.root,
+            &authority,
+            &h.node,
+            fence,
+            &pending.hit,
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    assert!(queue.acknowledge(&pending));
+    assert!(!queue.has_pending());
+    assert_eq!(h.root_revision().await?, "2");
+    let phase: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(PHASE)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(phase, 5);
+    Ok(())
+}

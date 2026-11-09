@@ -2886,9 +2886,35 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
             let mut attack=owner.states.attack.lock().await;
-            // Phase 2: no awaited work, allocation, new random draw or fallible branch.
-            let mut attempt=window.install();
-            let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            // Prepare hit metadata before the physical install; this last fallible span
+            // still borrows the retained original attempt, including the exact Rune use.
+            let (attempt,batch)={
+                let mut cache=attack.kills().1.lock().map_err(|_|DurabilityError::Unavailable)?;
+                let source=if window.attempt().rune.is_some() {
+                    match spell.carrier {
+                        crate::spell::Carrier::Rune {item,..}=>content.item_policy_for_source_id(item)
+                            .and_then(|policy|super::super::quest_hits::queue::direct_damage_target(&window.attempt().prepared.batch().effects)
+                                .and_then(|(target,ordinal)|runtime.companion_snapshot(target).ok().map(|snapshot|
+                                    (target,ordinal,policy.record().production_definition.production_key.as_str(),snapshot.state.policy.definition_key.clone())))),
+                        _=>None,
+                    }
+                } else {None};
+                let mut hits=if let Some((target,ordinal,item,creature))=&source {
+                    Some(cache.hits.prepare(&runtime,actor,*target,command,*ordinal,creature,item,Some(spell.key.as_str()))
+                        .map_err(|_|DurabilityError::Unavailable)?)
+                } else {None};
+                // Phase 2: no awaited work, allocation, new random draw or fallible branch.
+                let mut attempt=window.install();
+                let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+                if batch.applied && let (Some(hits),Some((target,ordinal,item,creature)))=(&mut hits,&source)
+                    && batch.effects.iter().any(|effect|effect.target==*target && effect.sub_ordinal==*ordinal
+                        && effect.health.is_some_and(|health|health.committed_health_loss().is_some()))
+                    && let Ok(Some(witness))=runtime.borrow_exact_actor_commit()
+                        .committed_hit_for_bound_attacker(*target,actor,command,*ordinal) {
+                    hits.capture(witness,creature,item,Some(spell.key.as_str()));
+                }
+                (attempt,batch)
+            };
             if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
@@ -2928,6 +2954,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             leftover,
             parked,
         );
+        drop(states);
+        let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
             Err(_) => NativeCastDispatch::Pending,

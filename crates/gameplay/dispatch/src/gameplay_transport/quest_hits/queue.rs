@@ -341,3 +341,21 @@ impl Drop for PreparedHits<'_> {
         }
     }
 }
+
+/// A direct rune may credit its primary creature damage. Area/chain batches with
+/// distinct damage targets require their own target-selection owner.
+pub(crate) fn direct_damage_target(
+    effects: &[crate::foundation::runtime_actor_spell_types::OwnerCombatEffect],
+) -> Option<(ExactActorRef, u16)> {
+    use crate::foundation::runtime_actor_spell_types::OwnerCombatChange;
+    let mut damage = effects.iter().filter(|effect| {
+        matches!(
+            effect.change,
+            OwnerCombatChange::Damage { .. } | OwnerCombatChange::DamageWithHealing { .. }
+        )
+    });
+    let first = damage.next()?;
+    damage
+        .all(|effect| effect.target == first.target)
+        .then_some((first.target, first.sub_ordinal))
+}
