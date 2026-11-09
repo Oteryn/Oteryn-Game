@@ -2236,3 +2236,17 @@ SET LOCAL ROLE and prove reservation/read/release, control write denial and
 runtime TRUNCATE denial. Migration uniqueness:14.791s; clippy:78.272s PASS.
 Fmt and engine-only pin identity verification PASS. M51 remains PARTIAL pending
 silent-death publication and complete source reset closure.
+
+## M51: typed native death receipt origin (migration2183)
+
+Allocated2183_svargrond_native_death_origin.sql within2180-2189. Rename
+the existing binding column to native_origin_binding without losing any STEP
+receipt or constraint. NativeArenaOrigin distinguishes real STEP from real DEATH;
+the latter binds the sealed creature death key, actor, session, scope generation,
+epoch, run and pit, and requires that exact victory when writing. Native writes
+still require current durable pit custody. Client command replay stays separate.
+Source: Crystal201189f creaturescripts_arena_kill.lua:2-38 and
+movements_arena_pit.lua:24-64. This SDK slice does not yet mount the death poller.
+Seven M51 durability tests PASS:126.678s including compilation; real PG origin
+4.977148183s, custody5.285750185s, runtime role4.988332058s. Durability/dispatch
+clippy -D warnings PASS115.057s. M51 remains PARTIAL: producer and reset closure.

@@ -449,7 +449,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 MatchTransition {
-                    native_step: None,
+                    native_origin: None,
                     command,
                     payload: payload.to_vec(),
                     before: before.clone(),

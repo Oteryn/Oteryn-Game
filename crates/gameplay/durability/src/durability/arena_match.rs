@@ -19,7 +19,11 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 pub mod donor;
+mod native_death;
+mod native_origin;
 mod native_step;
+pub use native_death::NativeArenaDeath;
+pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 mod pit_lease;
 
@@ -115,7 +119,7 @@ pub struct MatchRead {
 }
 
 pub struct MatchTransition {
-    pub native_step: Option<NativeArenaStep>,
+    pub native_origin: Option<NativeArenaOrigin>,
     pub command: CommandRef,
     pub payload: Vec<u8>,
     pub before: MatchState,
@@ -146,20 +150,35 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         step: &NativeArenaStep,
     ) -> Result<MatchRead, CharacterProgressionError> {
-        if step.command().game_session_id() != fence.game_session_id {
+        self.read_arena_native_origin(
+            authority,
+            node,
+            fence,
+            &NativeArenaOrigin::Step(step.clone()),
+        )
+        .await
+    }
+
+    pub async fn read_arena_native_origin(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        origin: &NativeArenaOrigin,
+    ) -> Result<MatchRead, CharacterProgressionError> {
+        if origin.command().game_session_id() != fence.game_session_id {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
-        let payload = oteryn_protocol_oteryn::arena::encode_match_request(
-            oteryn_protocol_oteryn::arena::ArenaAction::Advance,
-        )
-        .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let payload = origin
+            .payload()
+            .ok_or(CharacterProgressionError::AuthorityRejected)?;
         self.read_arena_match_origin(
             authority,
             node,
             fence,
-            step.command(),
+            origin.command(),
             &payload,
-            Some(step.binding().to_vec()),
+            Some(origin.binding().to_vec()),
         )
         .await
     }
@@ -220,18 +239,16 @@ impl DurabilityRoot {
         if request.command.game_session_id() != fence.game_session_id {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
-        if let Some(step) = &request.native_step {
-            let advance = oteryn_protocol_oteryn::arena::encode_match_request(
-                oteryn_protocol_oteryn::arena::ArenaAction::Advance,
+        if let Some(origin) = &request.native_origin
+            && !origin.validates(
+                &request.before,
+                fence,
+                request.command,
+                &request.payload,
+                request.victory,
             )
-            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
-            if step.command() != request.command
-                || !step.validates(&request.before, fence)
-                || request.payload != advance
-                || request.victory.is_some()
-            {
-                return Err(CharacterProgressionError::AuthorityRejected);
-            }
+        {
+            return Err(CharacterProgressionError::AuthorityRejected);
         }
         let recovery = authority
             .record_for(self)
@@ -243,13 +260,13 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             let root=match assert_gameplay_fence(&mut tx,&fence,&node).await? {Ok(root)=>root,Err(error)=>return Ok(Err(error))};
             if let Some(bytes)=replay_origin(&mut tx,fence,request.command,&request.payload,
-                request.native_step.as_ref().map(NativeArenaStep::binding)).await? {
+                request.native_origin.as_ref().map(NativeArenaOrigin::binding)).await? {
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
             }
             let prior=load_state(&mut tx,fence).await?;
             if prior!=request.before {return Ok(Err(CharacterProgressionError::ConflictingOccurrence));}
             let now_ms=now(&mut tx).await?;
-            if request.native_step.is_some()
+            if request.native_origin.is_some()
                 && !pit_lease::owned(&mut tx,fence,&prior,now_ms).await? {
                 return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
             }
@@ -316,7 +333,7 @@ impl DurabilityRoot {
             }
             if !matches!(after.phase,1|2) { pit_lease::release(&mut tx,fence).await?; }
             save_origin(&mut tx,fence,request.command,&request.payload,&prior,&after,&bytes,
-                request.native_step.as_ref().map(NativeArenaStep::binding)).await?;
+                request.native_origin.as_ref().map(NativeArenaOrigin::binding)).await?;
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?
     }
@@ -375,12 +392,12 @@ pub(super) async fn replay_origin(
     payload: &[u8],
     origin: Option<&[u8]>,
 ) -> Result<Option<Vec<u8>>, DurabilityError> {
-    let row=sqlx::query("SELECT payload,reply,native_step_binding FROM game_arena_match_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid")
+    let row=sqlx::query("SELECT payload,reply,native_origin_binding FROM game_arena_match_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     if let Some(row) = row {
         if row.try_get::<Vec<u8>, _>("payload")? != payload
             || row
-                .try_get::<Option<Vec<u8>>, _>("native_step_binding")?
+                .try_get::<Option<Vec<u8>>, _>("native_origin_binding")?
                 .as_deref()
                 != origin
         {
@@ -418,7 +435,7 @@ pub(super) async fn save_origin(
 ) -> Result<(), DurabilityError> {
     let before = serde_json::to_value(before).map_err(|_| DurabilityError::InvalidStoredState)?;
     let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply,native_step_binding) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
+    sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply,native_origin_binding) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
         .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut **tx).await?;

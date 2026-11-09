@@ -353,7 +353,7 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
         assert_eq!(victories, 10);
         if native_portals {
             let native_receipts: i64 = sqlx::query_scalar(
-                "SELECT count(*) FROM game_arena_match_receipts WHERE native_step_binding IS NOT NULL",
+                "SELECT count(*) FROM game_arena_match_receipts WHERE native_origin_binding IS NOT NULL",
             ).fetch_one(&harness.pool).await?;
             assert_eq!(
                 native_receipts, 10,

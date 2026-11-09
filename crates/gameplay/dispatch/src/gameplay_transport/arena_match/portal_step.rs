@@ -133,7 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 MatchTransition {
-                    native_step: Some(step),
+                    native_origin: Some(durable::NativeArenaOrigin::Step(step)),
                     command,
                     payload: wire::encode_match_request(A::Advance).ok()?,
                     before: before.clone(),
