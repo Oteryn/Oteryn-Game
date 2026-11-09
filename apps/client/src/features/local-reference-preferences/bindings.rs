@@ -11,10 +11,12 @@ pub struct PreferenceBinding {
 }
 
 pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> {
-    Ok(REGISTERED_BINDINGS
+    let mut bindings: Vec<_> = REGISTERED_BINDINGS
         .iter()
         .map(|&(id, default_chord)| PreferenceBinding { id, default_chord })
-        .collect())
+        .collect();
+    bindings.extend(super::bar_hotkeys::extra_bindings());
+    Ok(bindings)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -106,12 +108,18 @@ impl ReferencePreferences {
     }
 
     pub fn binding_chord<'a>(&'a self, binding: &'a PreferenceBinding) -> &'a str {
+        if let Some(slot) = super::bar_hotkeys::extra_slot(binding.id) {
+            return self.bar_slot_chord(slot);
+        }
         self.keybindings
             .get(binding.id)
             .map_or(binding.default_chord, String::as_str)
     }
 
     pub fn rebind(&mut self, id: &str, chord: &str) -> Result<(), PreferenceError> {
+        if let Some(slot) = super::bar_hotkeys::extra_slot(id) {
+            return self.rebind_bar_slot(slot, chord);
+        }
         parse(chord)?;
         let mut candidate = self.clone();
         candidate

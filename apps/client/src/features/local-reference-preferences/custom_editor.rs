@@ -27,6 +27,7 @@ pub(super) fn profile_action(action: usize, parent: HWND, shared: &Arc<Mutex<Sha
 
 fn kind(action: &CustomAction) -> usize {
     match action {
+        CustomAction::ActionBar { .. } => 8,
         CustomAction::Text { send, .. } => usize::from(*send),
         CustomAction::Object { target, .. } => match target {
             ObjectTarget::Use => 2,
@@ -81,6 +82,7 @@ fn action_from(kind: usize, text: String, source: Option<&CustomAction>) -> Opti
                 ObjectTarget::Equip,
             ][kind - 2],
         }),
+        (8, CustomAction::ActionBar { slot }) => Some(CustomAction::ActionBar { slot: *slot }),
         (7, CustomAction::Passive { cast_index }) => Some(CustomAction::Passive {
             cast_index: *cast_index,
         }),
@@ -154,6 +156,7 @@ fn run(parent: HWND, shared: &Arc<Mutex<Shared>>) {
             "Object: use on current target",
             "Object: equip / unequip",
             "Passive ability: track server cooldown (never casts)",
+            "Action bar slot",
         ] {
             SendMessageW(types, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }

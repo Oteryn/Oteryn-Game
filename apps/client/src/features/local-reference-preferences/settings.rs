@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 
+#[path = "bar_hotkeys.rs"]
+mod bar_hotkeys;
 #[path = "bindings.rs"]
 mod bindings;
 #[path = "custom_actions.rs"]

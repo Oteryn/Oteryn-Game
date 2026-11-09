@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "bar_hotkeys.rs"]
+mod bar_hotkeys;
+
 #[path = "options.rs"]
 mod options;
 #[path = "contexts.rs"]

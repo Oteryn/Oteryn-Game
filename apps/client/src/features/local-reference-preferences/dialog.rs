@@ -317,7 +317,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 for binding in &bindings {
                     let label = format!(
                         "{}: {}",
-                        binding.id,
+                        binding.label(),
                         state.preferences.binding_chord(binding)
                     );
                     SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
@@ -370,7 +370,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Use New / edit to assign object, text and read-only ability cooldown actions."
                 }
                 SettingsPage::BarHotkeys => {
-                    "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
+                    "Configure all three action bar rows (12 slots each). Empty chords clear slots 5–36. The first four slots retain their legacy defaults until rebound."
                 }
                 SettingsPage::Graphics => {
                     "Renderer and window options use the supported native renderer. Additional controls are not available yet."

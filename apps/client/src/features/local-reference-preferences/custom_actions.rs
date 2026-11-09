@@ -15,6 +15,9 @@ pub enum ObjectTarget {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CustomAction {
+    ActionBar {
+        slot: u32,
+    },
     Text {
         text: String,
         send: bool,
@@ -32,6 +35,9 @@ pub enum CustomAction {
 impl CustomAction {
     pub(super) fn valid(&self) -> bool {
         match self {
+            Self::ActionBar { slot } => usize::try_from(*slot).is_ok_and(|slot| {
+                (1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS).contains(&slot)
+            }),
             Self::Text { text, .. } => {
                 !text.trim().is_empty() && text.len() <= 1020 && !text.contains('\0')
             }
@@ -46,6 +52,12 @@ impl ReferencePreferences {
         chord: &str,
         action: CustomAction,
     ) -> Result<(), PreferenceError> {
+        if self
+            .custom_hotkeys
+            .contains_key(&chord.trim().to_ascii_uppercase())
+        {
+            return Err(PreferenceError);
+        }
         let mut candidate = self.clone();
         candidate
             .custom_hotkeys

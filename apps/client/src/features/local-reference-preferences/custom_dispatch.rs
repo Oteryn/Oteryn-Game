@@ -45,6 +45,18 @@ impl PlayLink {
                 },
             ));
         }
+        for slot in 1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
+            if let Ok(number) = u32::try_from(slot) {
+                choices.push((
+                    format!(
+                        "Action bar row {} / slot {}",
+                        (slot - 1) / 12 + 1,
+                        (slot - 1) % 12 + 1
+                    ),
+                    CustomAction::ActionBar { slot: number },
+                ));
+            }
+        }
         choices
     }
 
@@ -53,6 +65,22 @@ impl PlayLink {
             return false;
         }
         match action {
+            CustomAction::ActionBar { slot } => {
+                let Some(slot) = std::num::NonZeroU32::new(*slot) else {
+                    return false;
+                };
+                {
+                    let mailbox = lock(&self.mailbox);
+                    if mailbox.quest_shutdown
+                        || mailbox.world_input_blocked()
+                        || mailbox.spell_bar.bar.spell(slot).is_none()
+                    {
+                        return false;
+                    }
+                }
+                self.cast_spell_slot(slot);
+                true
+            }
             CustomAction::Text { text, send } => {
                 use oteryn_client_ui::chat::{ComposerMode, Mode};
                 let mut mailbox = lock(&self.mailbox);

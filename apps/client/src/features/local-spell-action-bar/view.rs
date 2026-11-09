@@ -1,6 +1,12 @@
 use crate::play::PlayView;
 use crate::spell::SPELL_SLOTS;
 
+impl crate::play::PlayLink {
+    pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {
+        super::input::send_cast(self, slot);
+    }
+}
+
 impl PlayView {
     #[must_use]
     pub const fn actor_vitals(&self) -> Option<&oteryn_session::ActorVitals> {
@@ -68,19 +74,14 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
         link,
         Form {
             title: "Spell action bar",
-            labels: &[
-                "Slot 1 cast index",
-                "Slot 2 cast index",
-                "Slot 3 cast index",
-                "Slot 4 cast index",
-            ],
-            buttons: &["Apply", "Cast 1", "Cast 2", "Cast 3", "Cast 4"],
+            labels: &["Slot (1–36)", "Server cast index (see spellbook)"],
+            buttons: &["Bind", "Clear", "Cast"],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_bar;
                 (
                     panel.open,
                     false,
-                    panel.bar.fields(),
+                    vec!["1".into(), String::new()],
                     format!(
                         "{}\r\n{}",
                         oteryn_client_ui::spell_action_bar::panel_text(
@@ -93,7 +94,7 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
             },
             set_open: |mailbox, open| mailbox.spell_bar.open = open,
             submit: |mailbox, commands, action, fields| {
-                super::input::submit(mailbox, commands, action, &fields)
+                super::input::edit_slot(mailbox, commands, action, &fields)
             },
         },
     );

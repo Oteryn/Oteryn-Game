@@ -250,10 +250,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Action Bar Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:77 + action_bar_hotkeys_route_every_supported_slot; Blocked on T042/T044 row-slot interface: crates/client-ui/src/features/local-spell-action-bar/input.rs:8 defines SPELL_SLOTS = 4; all four executable slots configurable, additional rows owned by other lanes."
+  "evidence": "apps/client/src/features/local-reference-preferences/bar_hotkeys.rs:85 + action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch; All three rows and 36 slots are selectable in Options, with atomic conflict checks, clearable extra-slot chords and restart persistence. Reuses cg-options 252372ef3 runtime slot API; native slot selection and shell hotkeys dispatch through the existing cast caller, including slot 36 and the death gate."
  },
  {
   "id": "T049",

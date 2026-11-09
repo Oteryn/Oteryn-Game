@@ -1,12 +1,17 @@
 use crate::play::{Input, PlayView};
-use crate::spell::SPELL_SLOTS;
+use oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
 use std::num::NonZeroU32;
+#[cfg(any(windows, test))]
+#[path = "slot_editor.rs"]
+mod slot_editor;
+#[cfg(any(windows, test))]
+pub(in crate::play) use slot_editor::edit_slot;
 
 impl PlayView {
     /// A spell hotkey: casts the locally bound server spell index. Entries past the bar are ignored and
     /// at most one press per bar slot waits for the next tick.
     pub fn cast(&mut self, spell: NonZeroU32) {
-        if spell.get() <= u32::from(SPELL_SLOTS) {
+        if usize::try_from(spell.get()).is_ok_and(|slot| slot <= ACTION_BAR_SLOTS) {
             self.cursor_spell = None;
             self.queue(Input::Cast(spell));
         }
@@ -45,7 +50,7 @@ pub(in crate::play) fn configure(
     panel: &mut oteryn_client_ui::spell_action_bar::ActionBarPanel,
     fields: &[String],
 ) -> bool {
-    if fields.len() != 4 {
+    if !matches!(fields.len(), 4 | 12 | ACTION_BAR_SLOTS) {
         return false;
     }
     let mut next = panel.bar.clone();
