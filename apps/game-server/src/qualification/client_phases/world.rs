@@ -240,6 +240,22 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
+    // Character 1 is still untouched here. Later packets move it and may fail
+    // before their return route; a fresh admission must then retain that saved cell.
+    let mut client = connect_world(clients, 0x70).await?;
+    let entered_at = tile(client.world_spatial().actor_position)?;
+    if entered_at != TOWN {
+        return Err(format!(
+            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+        )
+        .into());
+    }
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("first town entry logout refused".into());
+    }
+    drop(client);
     // Keep the high-level fixture on the other Character: the original
     // progression/death journey must retain its ordinary starter build.
     full_e2ef7::run_packet(clients).await;
@@ -261,13 +277,6 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
             );
         }
     }
-    let entered_at = tile(client.world_spatial().actor_position)?;
-    if entered_at != TOWN {
-        return Err(format!(
-            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
-        )
-        .into());
-    }
     let snapshot = client
         .session_mut()
         .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
@@ -277,6 +286,13 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
+    // Resume from the saved packet position and travel normally to the town
+    // phases' starting tile; this is separate from the first-entry assertion.
+    let back = route(&world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("world packets have no return route to town")?;
+    walk(&mut client, &world, &back).await?;
     client = character_core(client, clients, &world).await?;
     client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, &world).await?;
@@ -691,6 +707,35 @@ async fn shop_journey(
         return Ok(());
     };
     client_npc_shop::transact(client, target.entity, clients).await
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResult {
+    let source = include_str!("world.rs");
+    let (_, journey) = source
+        .split_once("pub(super) async fn journeys(")
+        .ok_or("missing world journey")?;
+    let (journey, _) = journey
+        .split_once("async fn profile_journey(")
+        .ok_or("missing profile journey boundary")?;
+    let entry_check = journey
+        .find("if entered_at != TOWN {")
+        .ok_or("missing strict Platform-created town assertion")?;
+    for packet in [
+        "full_e2ef7::run_packet(clients)",
+        "include!(\"full_e2ef6_mount.rs\")",
+        "full_e2ef5::run(clients",
+        "include!(\"full_e2ef4_mount.rs\")",
+        "profile_journey(clients",
+    ] {
+        let packet_start = journey.find(packet).ok_or("missing mutating packet")?;
+        assert!(
+            entry_check < packet_start,
+            "town entry checked after {packet}"
+        );
+    }
+    Ok(())
 }
 
 #[cfg(test)]
