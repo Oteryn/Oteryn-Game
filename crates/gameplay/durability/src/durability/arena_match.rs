@@ -30,6 +30,7 @@ pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
 mod pit_lease;
+pub(in crate::durability) mod pit_reset;
 pub(in crate::durability) mod terminal;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]

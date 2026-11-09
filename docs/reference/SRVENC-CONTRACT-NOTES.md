@@ -2527,3 +2527,23 @@ An initial build was stopped before cleaning inactive own caches; no compiler
 was active during the successful cleanup. This code does not yet select or
 retire a Ground Item. M51 remains PARTIAL until current pit custody, original
 native top-Thing capture and the shared physical retirement writer are composed.
+
+### M51 deciding pit-reset custody admission
+Crystal201189f lib/quests/svargrond_arena.lua:193-246 and
+movements_arena_enter.lua:22-30 require exclusive pit custody before reset.
+Added the fenced reset preflight and shared transaction helper: lock the exact
+persisted arena state and existing pit lease, match the full expected state,
+Character/session/run/scope/deadline, require fighting phase and no later death,
+and read the PostgreSQL clock after the row locks. This never claims, refreshes
+or releases a lease. A successful detached read is explicitly only a snapshot;
+the physical writer must invoke the helper again in its deciding transaction.
+A real PG regression first failed because a saved phase without a lease was
+accepted (PG5.10s, total43.083s). GREEN seven own PG cases43.576s total;
+new reset case11.344s proves current custody succeeds, missing/released custody
+is never reclaimed, changed run/deadline is refused and an exact retained lease
+is refused after its original deadline. Other own cases6.948-14.190s.
+Durability clippy --all-targets -D warnings PASS25.948s; fmt PASS15.975s.
+Engine-only bundle identity matches; no migration or numeric allocation.
+This slice reads/locks existing SQL rows only. M51 remains PARTIAL: native
+original top-Thing capture and the shared physical Item retirement transaction
+still need composition with the reset cause and this deciding custody helper.
