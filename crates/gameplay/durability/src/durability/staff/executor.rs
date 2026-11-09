@@ -19,7 +19,8 @@ async fn retained(
     trust: &StaffTrust,
     auth: &Authenticated,
 ) -> Result<Option<Option<Vec<u8>>>, DurabilityError> {
-    let row=sqlx::query("SELECT l.*,o.outcome,o.outcome_sha256 FROM game_staff_control_links l JOIN game_staff_operations o USING(environment,operation_id) WHERE l.environment=$1 AND l.operation_id=$2::uuid AND l.kind=$3")
+    // Select only consumed columns: created_xact_id (xid8) is outside WP3's type profile.
+    let row=sqlx::query("SELECT l.principal,l.canonical,l.signature,l.roster_sha256,l.key_fingerprint,l.link_sha256,l.control_seq,o.outcome,o.outcome_sha256 FROM game_staff_control_links l JOIN game_staff_operations o USING(environment,operation_id) WHERE l.environment=$1 AND l.operation_id=$2::uuid AND l.kind=$3")
         .bind(trust.environment()).bind(auth.operation()).bind(match auth.message {Message::Request(_)=>"REQUEST",Message::Receipt(_)=>"RECEIPT"}).fetch_optional(&mut *tx).await?;
     let Some(row) = row else {
         return Ok(None);
@@ -49,7 +50,7 @@ async fn retained(
         )?)));
     }
     if let Message::Request(request) = &auth.message {
-        let mirror=sqlx::query("SELECT o.*,a.payload FROM game_staff_operations o LEFT JOIN game_staff_action_outbox a USING(environment,operation_id) WHERE o.environment=$1 AND o.operation_id=$2::uuid").bind(trust.environment()).bind(auth.operation()).fetch_one(&mut *tx).await?;
+        let mirror=sqlx::query("SELECT o.result,o.starts_at_ms,o.kind,o.duration_ms,o.requires_receipt,a.payload FROM game_staff_operations o LEFT JOIN game_staff_action_outbox a USING(environment,operation_id) WHERE o.environment=$1 AND o.operation_id=$2::uuid").bind(trust.environment()).bind(auth.operation()).fetch_one(&mut *tx).await?;
         if !operation_matches(tx, trust, request, &mirror, &auth.envelope, &outcome).await? {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -93,7 +94,7 @@ pub(super) async fn verify_chain(
     let mut previous = "0".repeat(64);
     let mut pending: Option<String> = None;
     while seq < head_seq {
-        let rows=sqlx::query("SELECT *,replace(operation_id::text,'-','') AS operation_hex FROM game_staff_control_links WHERE environment=$1 AND control_seq>$2 AND control_seq<=$3 ORDER BY control_seq LIMIT 64")
+        let rows=sqlx::query("SELECT control_seq,kind,principal,canonical,signature,previous_link_sha256,link_sha256,activation_sha256,roster_sha256,key_fingerprint,replace(operation_id::text,'-','') AS operation_hex FROM game_staff_control_links WHERE environment=$1 AND control_seq>$2 AND control_seq<=$3 ORDER BY control_seq LIMIT 64")
             .bind(trust.environment()).bind(seq).bind(head_seq).fetch_all(&mut *tx).await?;
         if rows.is_empty() {
             return Ok(false);
@@ -159,7 +160,7 @@ pub(super) async fn verify_chain(
                     {
                         return Ok(false);
                     }
-                    let mirror=sqlx::query("SELECT o.*,a.payload,a.expires_at_ms FROM game_staff_operations o LEFT JOIN game_staff_action_outbox a USING(environment,operation_id) WHERE o.environment=$1 AND o.operation_id=$2::uuid AND o.control_seq=$3")
+                    let mirror=sqlx::query("SELECT o.outcome,o.outcome_sha256,o.result,o.starts_at_ms,o.kind,o.duration_ms,o.requires_receipt,a.payload FROM game_staff_operations o LEFT JOIN game_staff_action_outbox a USING(environment,operation_id) WHERE o.environment=$1 AND o.operation_id=$2::uuid AND o.control_seq=$3")
                         .bind(trust.environment()).bind(&r.operation_id).bind(next).fetch_optional(&mut *tx).await?;
                     let Some(mirror) = mirror else {
                         return Ok(false);

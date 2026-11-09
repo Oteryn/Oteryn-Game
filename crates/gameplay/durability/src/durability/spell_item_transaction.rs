@@ -3508,6 +3508,33 @@ pub async fn apply_physical_item_line(
     Ok(())
 }
 
+/// Empty-cell projection for a read-only creature pass holding the scope Item lock.
+/// Occupied cells still require the complete current Item qualification below.
+/// The SQL projection retains at most 257 occupied addresses for 256 requested cells.
+pub async fn read_creature_empty_tiles_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    positions: &[Vec<u8>],
+) -> Result<Vec<Vec<u8>>> {
+    if positions.len() > 256 || positions.iter().any(|position| position.len() != 10) {
+        return Err(SpellItemError::Rejected("creature empty-cell read bound"));
+    }
+    check_scope_transaction(tx, authority).await?;
+    let (scope_kind, channel, instance) =
+        super::item_mint::ground_scope_columns(authority.runtime_scope());
+    // An opaque live placement invalidates emptiness everywhere, just as in
+    // locked_tile_rows_for_scope. With <=256 distinct requested addresses,
+    // LIMIT 257 cannot hide an opaque address behind requested cells.
+    Ok(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
+        .bind(authority.world.as_slice())
+        .bind(channel.map(|id| id.to_vec()))
+        .bind(positions)
+        .bind(scope_kind)
+        .bind(instance.map(|id| id.to_vec()))
+        .fetch_all(&mut **tx)
+        .await?)
+}
+
 pub async fn read_creature_scope_tile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
