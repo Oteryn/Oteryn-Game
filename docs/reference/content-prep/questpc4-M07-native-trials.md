@@ -27,3 +27,14 @@ non-fluid portable-item admission checks. Qualify this exact existing identity
 through the shared source importer; do not invent a fluid subtype or evaporation
 timer from descriptive prose. This input qualification alone does not implement
 the well producer or the Tears offering.
+
+### Lion Tears native offering
+
+Crystal201189 `actions_lions_rock.lua:30-79` consumes one21466 at
+33154,32279,z8, sets LionsTears, advances the existing questline by
+`max(old+1,2)`, and transforms the pagoda at33156,32279 from2074 to2075
+for15 seconds. Current B3 `region-z08-x129-y126.b3` preserves pedestal
+21391 at ordinal2 above19272/6481, and pagoda2074 at ordinal1 above499.
+The PG crop starts on actual ground499 at33155,32278; no donor UID is
+invented. A fresh Crystal-namespaced Tears flag follows the Strength
+namespace decision; the original TibiaTales questline remains its owner.

@@ -11125,7 +11125,29 @@
       "fmt": "PASS",
       "equipment_profile_pin": "PASS 5796",
       "focused_importer_tests": "4 passed; red missing21466 before implementation",
-      "equipment_rust_regression": "compiling; publication cadence exception, result pending"
+      "equipment_rust_regression": "PASS 68.529s; no longer pending"
     }
+  },
+  "m07_lion_tears": {
+    "status": "PARTIAL",
+    "binding": "oteryn:quest-callback/m07/lion-tears",
+    "quest_owner": "oteryn:quest.tibia_tales",
+    "source": "Crystal201189 actions_lions_rock.lua:30-79; B3 pedestal ordinal2/21391 and pagoda ordinal1/2074",
+    "red": "test_native_tears_offering_consumes_exact_vessel_and_resets_pagoda: native Lion Tears offering missing",
+    "green": {
+      "postgres_version": "18.6",
+      "tears_seconds": 62.824823324,
+      "strength_regression_seconds": 62.064119198,
+      "authoring_checks_seconds": 410.535,
+      "authoring_unit_modules": 116,
+      "authoring_unit_seconds": 587.74,
+      "content_tree_seconds": 207.702,
+      "clippy_dispatch_seconds": 242.466,
+      "workspace_all_targets_seconds": 243.461,
+      "fmt": "PASS",
+      "pin_check": "PASS",
+      "duplicate_migrations": "PASS"
+    },
+    "remaining": "Offering slice qualified; repeatable well producer, Beauty and other assigned M07 trial/puzzle wiring remain"
   }
 }

@@ -22,7 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
-    let m07_lion = name == "m07/lion-strength";
+    let m07_lion = name.starts_with("m07/lion-");
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
@@ -60,7 +60,7 @@ fn scenario_case(
         || native_story
         || native_upper;
     let start = if m07_lion {
-        Position { x:33136,y:32291,floor:-8 }
+        super::super::m07_lion_offerings::start(name)
     } else if m07_dreamer {
         Position { x:32762,y:32289,floor:-14 }
     } else if qm48 {
@@ -431,7 +431,7 @@ fn scenario_case(
                     .ok_or("native Spirit policies")?,
             )?
         } else if m07_lion {
-            super::super::m07_lion_offerings::world(generation.native_gameplay().ok_or("native Lion policies")?)?
+            super::super::m07_lion_offerings::world(generation.native_gameplay().ok_or("native Lion policies")?,name)?
         } else if m07_dreamer {
             super::super::m07_dreamer_levers::world(generation.native_gameplay().ok_or("native Dreamer policies")?)?
         } else if mead {
