@@ -504,7 +504,8 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if name == "qengine-rewards-m01a-sven"
+            || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")

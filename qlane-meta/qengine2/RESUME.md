@@ -4,6 +4,18 @@ Work branch: `claude/happy-davinci-ijz3wy-qm-qengine2`. Push only this branch;
 no qmech/main merge, no force/rebase, no shared CLAIMS.md edits. Earlier outfit
 ledger and branch instructions below are historical, not the current queue.
 
+M01a Sven slice (2026-11-09): the chosen Barbarian Test starter now binds
+its real Sven caller and retains Premium. Authoring regression and real PG
+ran RED before binding. PostgreSQL18.6 production transport PASS147.394634101s:
+wrong NPC and absent Premium owner leave no quest track/receipt; existing
+Premium delivery admits one nonterminal advancement; literal replay is exact,
+fresh repeat refuses, refresh retains value1. The common fixture explicitly
+registers this case with its existing delivered-Premium coordinator. No seeded
+quest progress, new entitlement source, migration or whole-quest promotion.
+All116 authoring-unit modules, all12 authored-binding units, authoring checks,
+content-tree validation, fmt, architecture and pin verification pass. Clippy
+continues after the owner-directed immediate push; do not call it green yet.
+
 M01a starter slice (2026-11-09): production Rafzan/Goblin Merchant,
 Baxter/Machinery of War and Emilie/Annual Autumn Vintage briefings are bound.
 Replies derive from the selected recipe's next objective. Native focus without

@@ -163,6 +163,61 @@
         "content/quests/definitions/quests-00200-00299.json: selected recipe s1",
         "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
       ]
+    },
+    {
+      "quest": "oteryn:quest.barbarian_test",
+      "recipe_sha256": "022dfe6496e1e40c7571b07557cf62313a43d1be3621445d8e697e5645c0c1de",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/barbarian_test/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/barbarian_test/s1",
+              "quest": "oteryn:quest.barbarian_test",
+              "npc": "oteryn:npc.sven",
+              "keywords": [
+                "barbarian test"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/barbarian_test/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Offer a Honeycomb and complete the chosen ten-sip mead test."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ],
+              "requires_premium": true
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
     }
   ]
 }

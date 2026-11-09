@@ -14,6 +14,7 @@ REGISTERED_TALK_QUESTS = {
     "oteryn:quest.goblin_merchant_quest",
     "oteryn:quest.machinery_of_war_quest",
     "oteryn:quest.authored.annual_autumn_vintage",
+    "oteryn:quest.barbarian_test",
 }
 
 

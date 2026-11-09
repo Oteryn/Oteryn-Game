@@ -9,11 +9,23 @@ ROOT = Path(__file__).resolve().parents[3]
 DOCUMENT = ROOT / 'content/quests/authored-bindings/m01a-starter-talk-routes.json'
 
 class StarterTalkRoutes(unittest.TestCase):
+    def test_sven_starter_retains_premium_requirement(self):
+        rows = {row['quest']: row for row in json.loads(DOCUMENT.read_text())['quests']}
+        row = rows['oteryn:quest.barbarian_test']
+        callback = row['stages'][0]['trigger']['callback']
+        self.assertEqual(callback['npc'], 'oteryn:npc.sven')
+        self.assertTrue(callback['requires_premium'])
+        self.assertEqual(callback['keywords'], ['barbarian test'])
+        self.assertEqual(callback['storage'][0]['minimum'], 0)
+        self.assertEqual(callback['storage'][0]['maximum'], 0)
+        self.assertEqual(callback['storage'][0]['set'], 1)
+
     def test_every_selected_route_has_a_real_nonterminal_callback(self):
         rows = {row['quest']: row for row in json.loads(DOCUMENT.read_text())['quests']}
         for slug, npc, minimum in [('goblin_merchant_quest', 'rafzan', None),
                                    ('machinery_of_war_quest', 'baxter', 50),
-                                   ('authored.annual_autumn_vintage', 'emilie', None)]:
+                                   ('authored.annual_autumn_vintage', 'emilie', None),
+                                   ('barbarian_test', 'sven', None)]:
             with self.subTest(quest=slug):
                 row = rows['oteryn:quest.' + slug]
                 stage = row['stages'][0]

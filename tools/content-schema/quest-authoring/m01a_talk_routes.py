@@ -14,6 +14,7 @@ ROUTES = [
     ('goblin_merchant_quest', 'rafzan', 'six jobs'),
     ('machinery_of_war_quest', 'baxter', 'orc-war commission'),
     ('authored.annual_autumn_vintage', 'emilie', 'cellar assignment'),
+    ('barbarian_test', 'sven', 'barbarian test'),
 ]
 
 def build():
