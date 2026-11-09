@@ -1,7 +1,10 @@
 //! Crystal bakragore.lua:312-611: Bakragore's summons, room tracking and the one-shot echo spawn.
 //! Agony stacks and the centre teleport cycle are the shared Chagorz owners (chagorz_think.rs).
 
-use super::RoomPosition;
+use super::{
+    RoomPosition,
+    chagorz_think::{CentreTeleport, TeleportCycle},
+};
 
 pub const BAKRAGORE_KEY: &str = "oteryn:creature.bakragore";
 pub const MUSHROOM_KEY: &str = "oteryn:creature.mushroom";
@@ -23,6 +26,7 @@ pub const SUMMON_OFFSET_TILES: u8 = 1;
 pub const SUMMON_FLOOR: u8 = 4;
 pub const FINAL_TAINT_LEVEL: u8 = 5;
 pub const ECHO_CHECK_RANGE_TILES: u16 = 15;
+pub const TELEPORT_CENSUS_RANGE_TILES: u16 = 15;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Essence {
@@ -136,6 +140,8 @@ pub const ESSENCES: [Essence; 4] = [
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BakragoreEffect {
     StartTeleportCycle,
+    /// Passed to the native Item owner; this request alone mints no Item.
+    CreateCentreTeleport(CentreTeleport),
     Spawn {
         creature_key: &'static str,
         around: RoomPosition,
@@ -172,6 +178,10 @@ pub struct EchoPlayer {
 
 #[derive(Clone, Copy, Debug)]
 pub struct BakragoreThinkFacts<'a> {
+    pub now_ms: u64,
+    pub teleport_paused: bool,
+    /// Elder Bloodjaw in the source centre spectator box (15 tiles, same floor).
+    pub teleport_bloodjaw_present: bool,
     pub boss: RoomPosition,
     pub mechanics_disabled: bool,
     pub bloodjaw_spawn_paused: bool,
@@ -194,18 +204,41 @@ pub fn in_agony_room(position: RoomPosition) -> bool {
     AGONY_ROOM_CENTRE.in_range(position, AGONY_ROOM_RANGE_TILES)
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BakragoreThinkOwner {
     initialized: bool,
     echoes_checked: bool,
+    teleport: TeleportCycle,
+}
+
+impl Default for BakragoreThinkOwner {
+    fn default() -> Self {
+        Self {
+            initialized: false,
+            echoes_checked: false,
+            teleport: TeleportCycle::new(BAKRAGORE_ROOM_CENTRE),
+        }
+    }
 }
 
 impl BakragoreThinkOwner {
     pub fn think(&mut self, facts: &BakragoreThinkFacts<'_>) -> Vec<BakragoreEffect> {
         let mut effects = Vec::new();
         if !self.initialized {
+            self.teleport.start(facts.now_ms);
             effects.push(BakragoreEffect::StartTeleportCycle);
             self.initialized = true;
+        }
+        // The source pause branch rearms before reading the centre census.
+        let boss_in_centre = facts.teleport_paused
+            || BAKRAGORE_ROOM_CENTRE.in_range(facts.boss, TELEPORT_CENSUS_RANGE_TILES);
+        if let Some(teleport) = self.teleport.due(
+            facts.now_ms,
+            boss_in_centre,
+            facts.teleport_paused,
+            facts.teleport_bloodjaw_present,
+        ) {
+            effects.push(BakragoreEffect::CreateCentreTeleport(teleport));
         }
 
         if !facts.mechanics_disabled {
