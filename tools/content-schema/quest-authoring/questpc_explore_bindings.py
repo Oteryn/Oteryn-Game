@@ -109,6 +109,8 @@ def stage_storage(quest, stage, recipe, track_tail, visit='entry'):
 
 
 def callbacks(root):
+    from questpc_native_anchors import NativeAnchors
+    native_anchors = NativeAnchors(root)
     import questpc_completed_quests
     import questpc_world_requirements
     world_owners = questpc_world_requirements.catalogue(root)
@@ -199,6 +201,7 @@ def callbacks(root):
                    + '&oldid=' + binding['source_revision'])
             sources = [AREA + '#/records/' + str(index), url,
                        'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']
+        native_anchors.validate(at, appearance)
         slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
         result.append(dict(
             key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/' + visit, quest=quest,

@@ -259,5 +259,14 @@
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "34wiredroutes/35stages,33PG-proven routes/34stages,49anchors;12routes/21stages unwired. FireEarth nativePG pending. M01b PARTIAL."
+  "continuation": "34wiredroutes/35stages,33PG-proven routes/34stages,49anchors;12routes/21stages unwired. FireEarth nativePG pending. M01b PARTIAL.",
+  "native_anchor_generation": {
+    "state": "SLICE_GREEN",
+    "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
+    "red": "Two real callback-factory tests failed: changed ground and missing region were accepted.",
+    "focused": "4 new tests GREEN1.616s; all65 existing binding tests GREEN59.795s.",
+    "postgres": "m01b_horse_station_native_landmark_visit_never_activates_escape_state GREEN118.467654971s; real dispatch STEP, once/replay/revisit, no World escape activation.",
+    "remaining": "No new route qualification.36routes/39stages proven,10routes/17stages unwired.",
+    "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
+  }
 }
