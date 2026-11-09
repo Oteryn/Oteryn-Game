@@ -236,3 +236,5 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
     assert_eq!(derived, expected);
     Ok(())
 }
+
+include!("session_tests_coin_history.rs");
