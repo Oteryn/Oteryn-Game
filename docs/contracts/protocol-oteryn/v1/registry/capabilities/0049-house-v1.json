@@ -1,13 +1,13 @@
 {
   "id": 49,
   "name": "HOUSE_V1",
-  "owner_decision": "HOUSE-WIRE-1 owner allocation 2026-10-23; OWN0 \u00a711; commands 56/57, capability 49; B-2026-11-09-T135 ownership disposition command 6126",
+  "owner_decision": "HOUSE-WIRE-1 owner allocation 2026-10-23; OWN0 \u00a711; commands 56/57, capability 49; B-2026-11-09-T135 ownership disposition command 6129",
   "owner": "World-global House management",
   "requires": [],
   "command_types": [
     56,
     57,
-    6126
+    6129
   ],
   "state_domains": [],
   "offered": true,

@@ -21,7 +21,7 @@
     "id": "0049-house-ownership",
     "status": "supported",
     "commands": [
-      6126
+      6129
     ],
     "direction": "client_to_server",
     "capability": 49,

@@ -1,5 +1,5 @@
 name=house_sale
-commands=6126
+commands=6129
 transport=house_sale
 composed=house_sale
 authority=house_sale

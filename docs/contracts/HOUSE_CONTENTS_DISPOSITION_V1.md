@@ -120,7 +120,7 @@ contents-disposition event. No actor or session is fabricated for that job.
 
 ## Request
 
-House capability 49 also owns command 6126. Version 1 is a bounded binary record
+House capability 49 also owns command 6129. Version 1 is a bounded binary record
 in this exact order: version byte `1`, action byte (0 catalogue, 1 move-out,
 2 cancel move-out, 3 offer, 4 cancel transfer, 5 accept, 6 reject), house text,
 expected property revision (u64), date (nonnegative i64 milliseconds), recipient

@@ -4,7 +4,7 @@ mod codec;
 mod reply;
 pub use reply::{HouseSaleReply, HouseSaleRow, decode_reply, encode_reply};
 pub const CAPABILITY: u32 = crate::house::CAPABILITY_HOUSE_V1;
-pub const COMMAND: u32 = 6126;
+pub const COMMAND: u32 = 6129;
 pub const PAGE_SIZE: usize = 20;
 pub const MAX_GOLD: u64 = 999_999_999_999;
 /// 0 catalogue, 1 schedule move-out, 2 cancel move-out, 3 offer transfer,
