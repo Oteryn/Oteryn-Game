@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 from build_spell_item_identities import BINDINGS, binding_index, bind_profiles
-from event_item_identity import DECISION as BRIDGE_IDENTITY_DECISION, evidence as bridge_source_evidence, source_evidence
+from event_item_identity import (HISTORICAL_DECISION as BRIDGE_IDENTITY_DECISION,
+                                 historical_evidence as bridge_source_evidence,
+                                 historical_source_evidence as source_evidence)
 sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
 from build_world_change_layers import BLOBS as WORLD_LAYER_BLOBS
 from build_world_change_layers import PREFIX as WORLD_LAYER_PREFIX

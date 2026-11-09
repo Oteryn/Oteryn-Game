@@ -287,6 +287,8 @@ def main() -> int:
     extend_corpse_terminal_reference(item_records, ROOT)
     from qready1_cradle_item_profiles import extend_records as extend_cradle_references
     extend_cradle_references(item_records, ROOT)
+    from cake_bridge_reference import extend_records as extend_cake_bridge_reference
+    extend_cake_bridge_reference(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
@@ -788,6 +790,11 @@ def main() -> int:
         packet_path=condition_potion_profiles.PATH,
         keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
     refresh_bestiary_inventory(ROOT)
+    # Reference-only source successors (including the approved Cake bridge) must
+    # enter the sorted native lookup without implying an inventory Item policy.
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/native-gameplay/build_full_spell_artifact.py"),
+                    "--refresh-item-keys"], cwd=ROOT, check=True)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty

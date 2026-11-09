@@ -60,6 +60,14 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
             .install_companion_policies(&mut runtime).map_err(debug)?;
         let creature="oteryn:creature.dragon";
         let health=runtime.companion_policy(creature).map_err(debug)?.maximum_health;
+        let area=callback.effects.clear_area.as_ref().ok_or("Realm clearance area")?;
+        let outside_x=area.minimum.x.checked_sub(1).ok_or("outside Realm area")?;
+        let outside=MovementLocalPosition{x:i32::from(outside_x),y:i32::from(area.minimum.y),floor:-i16::from(area.minimum.floor)};
+        assert!(!area.contains(Position{x:outside_x,y:area.minimum.y,floor:area.minimum.floor}));
+        for _ in 0..4_097 {
+            let unrelated=runtime.admit_encounter_actor(creature,health,outside).map_err(debug)?;
+            runtime.install_creature_policy(unrelated,creature).map_err(debug)?;
+        }
         let actor=runtime.admit_encounter_actor(creature,health,MovementLocalPosition{x:33088,y:32583,floor:5}).map_err(debug)?;
         runtime.install_creature_policy(actor,creature).map_err(debug)?;actor
     };
@@ -67,7 +75,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(phase(owner,fence,callback).await?,Some(1));
     assert_eq!(receipts(harness).await?,1);assert_eq!(key_count(harness).await?,1);
     assert!(owner.runtime.lock().await.kill_creature_for_test(blocker));
-    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,1,0)).await?,UseDisposition::Committed);
+    assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,1,0)).await?,UseDisposition::Committed,"cleared trial commits despite >4096 live creatures outside its area");
     assert_eq!(phase(owner,fence,callback).await?,Some(2));
     assert_eq!(receipts(harness).await?,2);assert_eq!(key_count(harness).await?,1,"both native uses retain the exact key");
     assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,1,0)).await?,UseDisposition::Committed,"historical command replays without another write");

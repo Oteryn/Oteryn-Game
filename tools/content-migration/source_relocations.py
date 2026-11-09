@@ -17,6 +17,15 @@ from pathlib import Path
 
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
+    # M57 adds only owner-approved Cake bridge Item48227. The identity generator
+    # reproduces every predecessor binding byte after removing that exact row.
+    (
+        "imports/crystalserver/bindings/items.json",
+        "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    ): (
+        "imports/crystalserver/bindings/items.json",
+        "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66",
+    ),
     # QMINT3 offline re-key: 10 newly admitted Item IDs gained canonical keys.
     # All 13,826 observations are byte-equivalent by item_id; no source facts changed.
     (

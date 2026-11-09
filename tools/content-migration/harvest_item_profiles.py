@@ -13,6 +13,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as native
+from build_spell_item_identities import PRE_CAKE_BINDINGS_SHA, historical_binding_bytes
 
 PATH = 'tools/content-schema/native-gameplay/harvest-item-profiles.json'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
@@ -46,7 +47,7 @@ def build_sources(sources):
             'source_revision': REVISION,
             'source_files': [{'path': path, 'sha256': hashlib.sha256(raw).hexdigest()}
                              for path, raw in sources],
-            'binding_table_sha256': hashlib.sha256(native.BINDINGS.read_bytes()).hexdigest(),
+            'binding_table_sha256': hashlib.sha256(historical_binding_bytes(native.BINDINGS.read_bytes(), PRE_CAKE_BINDINGS_SHA)).hexdigest(),
             'records': bound['records']}
 
 
@@ -58,7 +59,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or overlay['source_revision'] != REVISION
             or len(keys) != len(IDS) or set(keys) != {f'oteryn:item.tibia.i{i}' for i in IDS}
             or overlay['binding_table_sha256'] != hashlib.sha256(
-                (root / 'imports/crystalserver/bindings/items.json').read_bytes()).hexdigest()):
+                historical_binding_bytes((root / 'imports/crystalserver/bindings/items.json').read_bytes(),
+                                         overlay['binding_table_sha256'])).hexdigest()):
         raise ValueError('HARVEST_ITEM_PROFILE_SET')
     document = json.loads(generated[profile_path])
     if {row['production_definition']['production_key'] for row in document['records']} & set(keys):

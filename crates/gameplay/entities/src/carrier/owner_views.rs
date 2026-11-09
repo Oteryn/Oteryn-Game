@@ -533,6 +533,12 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
+    /// Complete current census, bounded by this owner's admitted carrier capacity.
+    /// Unrelated creatures never exhaust a caller-selected perception budget.
+    pub fn current_live_creature_census(&self) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.current_live_creature_candidates(self.carrier.slots.len())
+    }
+
     /// Read the existing current carrier, not timer enrollment. The explicit candidate budget
     /// refuses a partial census; geometry/hostility qualification still belongs to perception.
     pub fn current_live_creature_candidates(

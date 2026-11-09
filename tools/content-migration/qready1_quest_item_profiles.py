@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from source_relocations import read_pinned
 from pathlib import Path
 
 PACKET = "tools/content-schema/native-gameplay/qready1-quest-item-profiles.json"
@@ -20,10 +21,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         != "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
         or packet["appearance_sha256"]
         != "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
-        or packet["binding_sha256"]
-        != hashlib.sha256(
-            (root / "imports/crystalserver/bindings/items.json").read_bytes()
-        ).hexdigest()
+        or read_pinned(root, "imports/crystalserver/bindings/items.json", packet["binding_sha256"]) is None
     ):
         raise ValueError("QREADY1_QUEST_ITEM_SOURCE_DRIFT")
     document = json.loads(generated[profile_path])

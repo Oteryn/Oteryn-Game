@@ -135,7 +135,7 @@ expected_items = source_qualified_item_references(reference, ROOT)
 legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
 assert len(legacy_items) == 34111, "legacy package count remains unchanged"
 assert [row["identity"]["key"] for row in expected_items[len(legacy_items):]] == [
-    f"oteryn:item.tibia.i{item}" for item in (43860, 43589, 43590, 42851, 42853, 43625, 40016, 40598, 40601, 40603)
+    f"oteryn:item.tibia.i{item}" for item in (43860, 43589, 43590, 42851, 42853, 43625, 40016, 40598, 40601, 40603, 48227)
 ], "only the exact source-qualified reference extensions are admitted"
 # Replaying an extension with a changed semantic fact must refuse, not normalize it.
 tampered = copy.deepcopy(reference)

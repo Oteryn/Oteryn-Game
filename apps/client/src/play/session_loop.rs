@@ -14,6 +14,26 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
 
+fn publish_scope_transition<T: Stepper>(
+    error: &oteryn_session::SessionError,
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
+) -> bool {
+    if matches!(
+        error,
+        oteryn_session::SessionError::ScopeChanged
+            | oteryn_session::SessionError::ActivityScopeChanged
+    ) {
+        // Publish the destination and discard unsent source actions through the
+        // same scope barrier, whether a command or an automatic query saw it.
+        publish(session, outbox, held);
+        true
+    } else {
+        false
+    }
+}
+
 fn initialize<T: Stepper>(
     session: &T,
     outbox: &Outbox,
@@ -41,8 +61,6 @@ pub async fn run_session<T: Stepper>(
     let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
     outbox.scope_receiver(&commands);
     if let Err(error) = initialize(&session, &outbox) {
-        #[cfg(test)]
-        eprintln!("native initial projection failed: {error:?}");
         outbox.end(public_class(&error));
         return;
     }
@@ -72,6 +90,10 @@ pub async fn run_session<T: Stepper>(
                     publish(&mut session, &outbox, &mut held);
                 }
                 Err(error) => {
+                    if publish_scope_transition(&error, &mut session, &outbox, &mut held) {
+                        personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+                        continue;
+                    }
                     outbox.end(public_class(&error));
                     return;
                 }
@@ -82,8 +104,6 @@ pub async fn run_session<T: Stepper>(
         if outbox.scope_needs_initialize()
             && let Err(error) = initialize(&session, &outbox)
         {
-            #[cfg(test)]
-            eprintln!("native successor projection failed: {error:?}");
             outbox.end(public_class(&error));
             return;
         }
@@ -431,18 +451,9 @@ pub async fn run_session<T: Stepper>(
                 Err(error) => error,
             },
         };
-        if matches!(ended, oteryn_session::SessionError::ActivityScopeChanged) {
-            // A shared activity moves every participant, including one awaiting a source
-            // command. Never replay queued source actions against the fresh destination.
-            publish(&mut session, &outbox, &mut held);
+        if publish_scope_transition(&ended, &mut session, &outbox, &mut held) {
             continue;
         }
-        if matches!(ended, oteryn_session::SessionError::ScopeChanged) {
-            publish(&mut session, &outbox, &mut held);
-            continue;
-        }
-        #[cfg(test)]
-        eprintln!("native session task ended: {ended:?}");
         outbox.end(public_class(&ended));
         return;
     }

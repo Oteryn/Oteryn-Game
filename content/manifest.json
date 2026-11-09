@@ -44,7 +44,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34121
+      "records": 34122
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -594,7 +594,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34120.json"
+      "path": "content/items/definitions/items-34000-34121.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -718,6 +718,9 @@
     },
     {
       "path": "content/quests/definitions/quests-00300-00351.json"
+    },
+    {
+      "path": "content/quests/native-reward-callbacks/engclaim.json"
     },
     {
       "path": "content/services/bank/bank-00000-00001.json"

@@ -16,6 +16,8 @@ from xml.parsers import expat
 
 import grizzly_shop_profiles as grizzly
 import quest_reward_item_semantics as reward
+from source_relocations import read_pinned
+from build_spell_item_identities import historical_binding_bytes, PRE_CAKE_BINDINGS_SHA
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/quest-batch3-item-profiles.json'
@@ -257,7 +259,9 @@ def capture(source_root, root=ROOT, *, additional_inputs=()):
             {'path': reward.CLIENT, 'sha256': reward.CLIENT_SHA, 'bytes': reward.CLIENT_BYTES},
         ],
         'authoring_inputs': inputs, 'canonical_inputs': canonical_inputs,
-        'binding_input': descriptor(root, binding_path),
+        'binding_input': {'path': binding_path.relative_to(root).as_posix(),
+                          'sha256': hashlib.sha256(historical_binding_bytes(binding_path.read_bytes(),
+                                                                           PRE_CAKE_BINDINGS_SHA)).hexdigest()},
         'accepted_inputs': [descriptor(root, root / path) for path in
                             (NATIVE, reward.PACKET, reward.EXTRA_PACKET)],
         'records': records, 'classification': classification,
@@ -312,7 +316,7 @@ def admit_recipes(root, generated, profile_path, manifest_path, order, canonical
     for descriptor in packet['canonical_inputs']:
         m42_cooking_canonical.verify(root, descriptor, selected_keys)
     descriptor = packet['binding_input']
-    if hashlib.sha256((root / descriptor['path']).read_bytes()).hexdigest() != descriptor['sha256']:
+    if read_pinned(root, descriptor['path'], descriptor['sha256']) is None:
         raise ValueError('NPC_RECIPE_BINDING_DRIFT')
     document = json.loads(generated[profile_path])
     present = {row['production_definition']['production_key']: row for row in document['records']}

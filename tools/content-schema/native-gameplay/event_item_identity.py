@@ -43,6 +43,25 @@ def evidence():
     }
 
 
+# Historical event profiles are a frozen pre-admission capture. M57's separate
+# owner-approved map identity must not rewrite that receipt or grant inventory.
+HISTORICAL_DECISION = 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114'
+
+
+def historical_evidence():
+    record = evidence()
+    record.update(schema='OTERYN_UNAVAILABLE_ITEM_SOURCE_EVIDENCE/v1',
+                  reason='EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
+                  decision=HISTORICAL_DECISION,
+                  status='Unavailable until the canonical Item identity/map owner supplies an admitted definition; no source suffix')
+    return record
+
+
+def historical_source_evidence(canary, crystal):
+    source_evidence(canary, crystal)
+    return historical_evidence()
+
+
 def _contains_item(raw, item_id):
     return any(int(row.get('id', row.get('fromid', '0'))) <= item_id
                <= int(row.get('id', row.get('toid', '0'))) for row in ET.fromstring(raw))
@@ -107,7 +126,7 @@ def generate(canary, crystal):
         document['bindings'].sort(key=lambda r: r['external_id'])
         path.write_text(json.dumps(document, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n')
     binder = root / 'tools/content-schema/native-gameplay/build_spell_item_identities.py'
-    text, count = re.subn(r'BINDINGS_SHA = "[0-9a-f]{64}"',
+    text, count = re.subn(r'(?m)^BINDINGS_SHA = "[0-9a-f]{64}"',
                          'BINDINGS_SHA = "' + hashlib.sha256(path.read_bytes()).hexdigest() + '"',
                          binder.read_text())
     if count != 1:

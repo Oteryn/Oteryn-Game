@@ -8,6 +8,8 @@ from pathlib import Path
 import build_source_item_profiles as native
 import build_world_change_item_profiles as sources
 
+from build_spell_item_identities import historical_binding_bytes, PRE_CAKE_BINDINGS_SHA
+
 ROOT = Path(__file__).resolve().parents[3]
 IDS = frozenset({5953, 11982, 12023, 25783})
 OUTPUT = Path(__file__).with_name("qready1-quest-item-profiles.json")
@@ -35,7 +37,7 @@ def build(root=ROOT):
         "schema": "OTERYN_QREADY1_QUEST_ITEM_PROFILES/v1",
         "xml_sha256": sources.XML_SHA256,
         "appearance_sha256": sources.APPEARANCES_SHA256,
-        "binding_sha256": hashlib.sha256(binding_raw).hexdigest(),
+        "binding_sha256": hashlib.sha256(historical_binding_bytes(binding_raw, PRE_CAKE_BINDINGS_SHA)).hexdigest(),
         "records": document["records"],
     }
 
