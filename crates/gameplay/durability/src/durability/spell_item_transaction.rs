@@ -6,6 +6,9 @@
     reason = "spell import candidate; awaits its production owner caller"
 )]
 
+mod movement_read;
+pub use movement_read::read_player_step_tile_in_transaction;
+
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -195,6 +198,7 @@ impl DurabilityRoot {
                         &fence,
                         content_digest,
                         &target,
+                        false,
                     )
                     .await
                     {
@@ -932,6 +936,7 @@ pub async fn read_standing_player_tile_in_transaction(
         fence,
         content_digest,
         target,
+        false,
     )
     .await
 }
@@ -946,6 +951,7 @@ async fn read_standing_player_tile_with_recovery(
     fence: &CurrentCharacterItemFence,
     content_digest: [u8; 32],
     target: &SpellGroundTarget,
+    allow_forced_grace: bool,
 ) -> Result<StandingTileRead> {
     if content_digest == [0; 32] {
         return Err(SpellItemError::Rejected(
@@ -964,7 +970,9 @@ async fn read_standing_player_tile_with_recovery(
     let session = super::fresh_admission::FreshAdmissionStore::from_root(root.clone())
         .current_session_in_transaction(tx, fence.game_session_id)
         .await?;
-    if session.session_state() != crate::foundation::GameSessionState::Active
+    if (session.session_state() != crate::foundation::GameSessionState::Active
+        && !(allow_forced_grace
+            && session.session_state() == crate::foundation::GameSessionState::Reconnectable))
         || session.current_connection_generation() != fence.connection_generation
         || session.current_character_lease().generation() != fence.character_lease_generation
         || session.current_runtime_scope() != fence.runtime_scope

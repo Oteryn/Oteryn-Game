@@ -919,19 +919,20 @@ pub async fn collect_current_source_step<'room>(
             room, runtime, position,
         )
         .map_err(|_| MovementError::NotQualified)?;
-        let read =
-            crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(
-                tx,
-                permit,
-                root,
-                recovery,
-                node,
-                fence,
-                runtime.content_pin().server_artifact_digest(),
-                &target,
-            )
-            .await
-            .map_err(|_| MovementError::NotQualified)?;
+        let read = crate::durability::spell_item_transaction::read_player_step_tile_in_transaction(
+            tx,
+            permit,
+            root,
+            recovery,
+            node,
+            fence,
+            runtime.content_pin().server_artifact_digest(),
+            &target,
+            runtime,
+            actor,
+        )
+        .await
+        .map_err(|_| MovementError::NotQualified)?;
         let logical = LogicalCell {
             x: position.x,
             y: position.y,

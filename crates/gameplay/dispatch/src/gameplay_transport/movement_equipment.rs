@@ -41,9 +41,10 @@ impl MovementEquipmentRead {
                 != runtime.content_pin().server_artifact_digest()
             || runtime.read_actor_position(actor).ok()? != self.position
             || self.position.context() != runtime.pinned_movement_context()
-            || !runtime
+            || !(runtime
                 .player_control_facts(actor, session)
                 .is_ok_and(|facts| facts.control_loss.is_none())
+                || runtime.forced_player_step_current(actor, session))
             || states.has_pending_spell_commit(actor, session)
             || states.get(runtime, actor, session)? != &self.before
         {
@@ -64,13 +65,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<MovementEquipmentRead> {
         let source = self.active_generation?.native_gameplay()?;
-        let (position, before, digest, scope, generation) = {
+        let (position, before, digest, scope, generation, forced) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.has_pending_spell_commit(actor, session)
-                || !runtime
+                || !(runtime
                     .player_control_facts(actor, session)
                     .is_ok_and(|facts| facts.control_loss.is_none())
+                    || runtime.forced_player_step_current(actor, session))
             {
                 return None;
             }
@@ -86,11 +88,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.content_pin().server_artifact_digest(),
                 runtime.binding().runtime_scope(),
                 runtime.binding().scope_generation(),
+                runtime.forced_player_step_current(actor, session),
             )
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let current = store.current_session_at(session).await.ok()?.0;
-        if current.session_state() != GameSessionState::Active {
+        if current.session_state() != GameSessionState::Active
+            && !(forced && current.session_state() == GameSessionState::Reconnectable)
+        {
             return None;
         }
         let fence = CurrentCharacterItemFence {
@@ -121,7 +126,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The SQL reader already locked the current fence. A separately fresh
         // admission observation also rejects handover while that read awaited.
         let after = store.current_session_at(session).await.ok()?.0;
-        if after.session_state() != GameSessionState::Active
+        if (after.session_state() != GameSessionState::Active
+            && !(forced && after.session_state() == GameSessionState::Reconnectable))
             || after.commit().character_id() != current.commit().character_id()
             || after.current_connection_generation() != fence.connection_generation
             || after.current_character_lease().generation() != fence.character_lease_generation

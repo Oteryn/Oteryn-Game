@@ -37,13 +37,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
         if !self.resume_dawnport_departure(actor, session).await {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         if !self.ensure_source_map_initialized().await {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
         if self.states.spell_states.lock().await.is_dead(actor) {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         use crate::movement::{CardinalStep, MovementError};
@@ -51,9 +57,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Take the lane before those reads so a concurrent field turn cannot
         // exhaust the holder or invalidate their player-state predecessor.
         let Some(mut permit) = self.spell_lane_permit().await else {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         };
         if !self.refresh_pvp_locks(actor, session).await {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         let equipment = self.read_movement_equipment(actor, session).await;
@@ -66,6 +76,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // field entry must not predate the condition predecessor it observes.
         let now = self.owner_now().get();
         if runtime.note_rotten_movement_time(now).is_err() {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
@@ -84,9 +96,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.borrow_movement_position().read(actor) != Ok(expected)
             })
         {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         if states.has_pending_spell_commit(actor, session) {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
             return (StepOutcome::rejected(), None);
         }
         let cardinal = match direction {
@@ -101,7 +117,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Resolve steering before any direction-dependent field/floor read. Pass
         // this same frozen `now` to the common movement owner after preflight.
-        let cardinal = match states.drome_step_direction(&runtime, actor, session, now, cardinal) {
+        let cardinal = match if runtime.forced_player_step_current(actor, session) {
+            Ok(cardinal)
+        } else {
+            states.drome_step_direction(&runtime, actor, session, now, cardinal)
+        } {
             Ok(direction) => direction,
             Err(MovementError::Blocked) => {
                 return (
@@ -124,8 +144,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             CardinalStep::SouthWest => StepDirection::SouthWest,
             CardinalStep::NorthWest => StepDirection::NorthWest,
         };
-        let (direction, hicks) =
-            drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now);
+        let (direction, hicks) = if runtime.forced_player_step_current(actor, session) {
+            (direction, false)
+        } else {
+            drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now)
+        };
         let cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,
@@ -216,6 +239,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         {
             drunk::speech(self, &runtime, actor, session, origin);
+        }
+        #[cfg(test)]
+        if let Err(error) = &outcome {
+            eprintln!("M25 movement commit error={error:?}");
         }
         match outcome {
             Ok((snapshot, duration)) => {

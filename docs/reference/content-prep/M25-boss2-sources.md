@@ -196,3 +196,28 @@ gives tier3 speed and paralysis protection; Crystal's robe at 85407 omits energy
 protection present in [Canary at 84001](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml#L84001).
 The Crystal spelling `paralysis removal` maps to the existing canonical
 `PARALYSIS_REMOVAL` family, like Canary's `paralysis deflection`.
+
+## Physical pushes preserve disconnected-player control loss
+
+Canary's [`Game::playerMoveCreature`, lines 1796–1901](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/game/game.cpp#L1796)
+checks the pusher's action availability, adjacency, the pushed creature's
+pushability, destination distance, occupancy and protection-zone boundaries,
+then invokes `internalMoveCreature` on the pushed creature. The pushed creature
+does not need its own input command. Oteryn's reconnect grace remains a distinct
+control-loss state: a scoped physical-step witness retains both exact actors,
+sessions, leases and predecessor positions, plus one cardinal destination. It
+does not clear control loss or authorize casts, damage or client commands. Drop
+and cancellation revoke the witness; a changed pusher, target or write fence
+invalidates it. Ordinary STEP, ropes and callback teleports retain their input
+control checks. Native PUSH coordinates are unprojected through the same pinned
+wire frame as ordinary movement before checking destination distance.
+
+The destination field read uses `read_player_step_tile_in_transaction`, which
+checks the exact live push witness, actor/session, Character lease, runtime scope,
+ownership generation and Content pin before and after SQL. The existing standing
+and command readers retain their active-session requirement. This closes the
+observed durable-reader rejection without granting a disconnected player input.
+The actual two-player Ahau PG case was red with `NotPossible`/`Rejected` and now
+passes in **234.26252329 s**, including preserved grace, one participant returned,
+one destination effect and the real durable return receipt. Its filter is
+`m25_ahau_player_push_exit_returns_only_pushed_participant_postgres`.
