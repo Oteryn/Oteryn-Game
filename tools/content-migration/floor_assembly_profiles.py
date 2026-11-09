@@ -67,16 +67,16 @@ def capture(xml_path):
     for item in sorted(IDS):
         definition = definitions[f'oteryn:item.tibia.i{item}']
         row = native.profile(item, xml[item], objects[item], physical[item], bindings, None)
-        if item in PROJECTION_IDS:
-            # These canonical client stubs are stationary World operands, not MINT
-            # authority. Keep their nonmaterializable admission while qualifying
-            # exact collision/appearance facts for native map projections.
+        if item in PROJECTION_IDS or item in ELEMENTAL_CORPSES:
+            # Physical source facts retain canonical nonmaterializable admission.
+            # Corpse creation belongs to its existing qualified death receipt;
+            # its container capacity does not grant general MINT authority.
             if (definition.get('materializable') is not False
                     or row['admission'] != {'materializable': True,
                         'stack_class': 'NonStackable', 'legal_destinations': ['Ground']}):
                 raise ValueError('FLOOR_PROJECTION_MUST_REMAIN_STATIONARY')
             row['admission']['materializable'] = False
-        else:
+        if item not in PROJECTION_IDS:
             accepted = definition.get('semantics')
             if accepted is None:
                 # These exact canonical references have no semantic facts yet.

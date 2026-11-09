@@ -18,8 +18,11 @@ class ElementalArrivalProfiles(unittest.TestCase):
         self.assertNotIn('oteryn:item.tibia.i2126', records)
         for item in corpses | scenery:
             row = records[f'oteryn:item.tibia.i{item}']
-            self.assertEqual(row['admission']['materializable'], item in corpses)
-            self.assertIn('Ground', row['admission']['legal_destinations'])
+            self.assertEqual(row['admission'], {
+                'materializable': False,
+                'stack_class': 'NonStackable',
+                'legal_destinations': ['Ground'],
+            })
         for item, capacity in [(8139, 14), (8140, 14), (8141, 11), (8106, 15)]:
             row = records[f'oteryn:item.tibia.i{item}']
             self.assertEqual(row['semantics']['container']['value']['capacity']['value'], capacity)

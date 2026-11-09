@@ -2,6 +2,39 @@ use super::*;
 use oteryn_session::EntityRef;
 
 impl Scene {
+    #[cfg(test)]
+    pub(crate) fn native_name_fragment_rendered(&self, text: &str) -> bool {
+        let mut cache = self.cache.clone();
+        let expected = cache.name(text);
+        !expected.is_empty()
+            && self.names.iter().any(|(_, cells)| {
+                cells
+                    .windows(expected.len())
+                    .any(|part| part == expected.as_slice())
+            })
+    }
+    #[cfg(test)]
+    pub(crate) fn native_item_rendered_at(
+        &self,
+        at: oteryn_session::ActorPosition,
+        reference: u32,
+    ) -> bool {
+        (self.world.native_item_resolved_at(at, reference)
+            && self
+                .world
+                .tile(at.x, at.y)
+                .is_some_and(|tile| !tile.under.is_empty() || !tile.over.is_empty())
+            || self.object_draws.iter().any(|(position, item, draws)| {
+                *position == at && *item == reference && !draws.is_empty()
+            }))
+            && (at.x - self.own.x).abs() <= 8
+            && (at.y - self.own.y).abs() <= 6
+            && !self.tiles.is_empty()
+    }
+    #[cfg(test)]
+    pub(crate) fn drome_hazard_tiles(&self) -> usize {
+        self.drome_hazards.len()
+    }
     pub(crate) fn native_own_state(&self) -> (Option<[u8; 16]>, Option<usize>) {
         (self.own_identity, self.own_draws.as_ref().map(Vec::len))
     }

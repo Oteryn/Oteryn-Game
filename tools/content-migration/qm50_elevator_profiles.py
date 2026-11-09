@@ -22,13 +22,27 @@ def capture(root=ROOT):
     objects = source.engine_items.load_appearance_objects(appearances)
     physical = source.policies(appearances, xml, IDS)
     bindings = source.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    keys = {f'oteryn:item.tibia.i{i}' for i in IDS}
+    definitions = {}
+    for path in (root / 'content/items/definitions').glob('items-*.json'):
+        for row in json.loads(path.read_bytes())['records']:
+            definition = row['definition']
+            if definition['identity']['key'] in keys:
+                definitions[definition['identity']['key']] = definition
     records = []
     for facts in physical:
         identifier = facts['server_item_id']
         if facts['movable'] or facts['pickupable']:
             raise ValueError('QM50_FIXED_SCENERY_REQUIRED')
-        records.append(source.profile(identifier, nodes[identifier], objects[identifier],
-                                      facts, bindings, None))
+        row = source.profile(identifier, nodes[identifier], objects[identifier],
+                             facts, bindings, None)
+        definition = definitions.get(f'oteryn:item.tibia.i{identifier}')
+        if (definition is None or definition.get('materializable') is not False
+                or row['admission'] != {'materializable': True,
+                    'stack_class': 'NonStackable', 'legal_destinations': ['Ground']}):
+            raise ValueError('QM50_CANONICAL_STATIONARY_ADMISSION')
+        row['admission']['materializable'] = False
+        records.append(row)
     bound = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
                                  'records': records}, bindings, IDS)
     return {'schema': SCHEMA, 'producer': 'tools/content-migration/qm50_elevator_profiles.py',

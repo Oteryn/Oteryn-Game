@@ -11,7 +11,7 @@ def refresh(source, packet):
     patterns = [
         r'assert_eq!\(added_keys\.len\(\),\s*[0-9_]+\);',
         r'\("qengine-reward-item-profiles\.json",\s*[0-9_]+\)',
-        r'// QENGINE2 captures [^\n]+',
+        r'// (?:QENGINE2 captures [^\n]+|qengine-reward-item-profiles\.json \(pinned Canary items\.xml/appearance\)\.)',
     ]
     replacements = [
         f'assert_eq!(added_keys.len(), {len(IDS)});',
