@@ -351,9 +351,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Game Window: target/PvP frame, banner, loot highlight",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Cel jest wybierany; brak konfiguracji ramek/banerów/kolorowania loot.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/actor_hud.rs:94 + t057_pvp_frames_follow_exact_server_entity_generation + t057_loot_highlight_tracks_live_corpse_visibility; apps/client/src/features/0092-zones-nologout/view.rs:29 + t057_banner_filter_retains_server_notice; apps/client/src/scene/tests.rs + t057_hiding_target_frame_preserves_selection"
  },
  {
   "id": "T058",

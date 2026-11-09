@@ -250,3 +250,57 @@ fn t057_target_frame_setting_keeps_target_selected() -> Result<(), Box<dyn std::
     assert_eq!(play.scene().target(), target);
     Ok(())
 }
+
+#[test]
+fn t057_pvp_frames_follow_exact_server_entity_generation() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let entity = oteryn_session::EntityRef { identity: [8;16], generation: 2 };
+    play.entities.push(oteryn_session::WorldSpatialEntity {
+        entity, display_name: None, kind: oteryn_session::EntityKind::Creature,
+        position: oteryn_session::ActorPosition { x:101,y:200,floor:0 },
+        detail: oteryn_session::EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref:1, health_percent:50 },
+    });
+    play.party_icons = vec![oteryn_client_runtime::party_skull::PartyIcon {entity, shield:0, skull:4}];
+    play.rebuild()?;
+    let baseline = play.scene().sprites().len();
+    let mut preferences = play.preferences().clone();
+    preferences.game_window.pvp_frame = true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().sprites().len(), baseline + 4);
+    play.party_icons[0].entity.generation += 1;
+    play.rebuild()?;
+    let mut preferences = play.preferences().clone();
+    preferences.game_window.pvp_frame = false;
+    play.set_preferences(preferences)?;
+    let without = play.scene().sprites().len();
+    let mut preferences = play.preferences().clone();
+    preferences.game_window.pvp_frame = true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().sprites().len(), without);
+    Ok(())
+}
+
+#[test]
+fn t057_loot_highlight_tracks_live_corpse_visibility() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.entities.push(oteryn_session::WorldSpatialEntity {
+        entity: oteryn_session::EntityRef { identity: [9;16],generation:1 },
+        display_name:None,kind:oteryn_session::EntityKind::Corpse,
+        position:oteryn_session::ActorPosition {x:101,y:200,floor:0},
+        detail:oteryn_session::EntityDetail::Object {item_definition_ref:1,quantity:1,item_handle:None},
+    });
+    play.rebuild()?;
+    let baseline=play.scene().sprites().len();
+    let mut preferences=play.preferences().clone();
+    preferences.game_window.loot_highlight=true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().sprites().len(),baseline+4);
+    play.entities[0].position.floor=1;
+    play.rebuild()?;
+    let hidden=play.scene().sprites().len();
+    let mut preferences=play.preferences().clone();
+    preferences.game_window.loot_highlight=false;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().sprites().len(),hidden);
+    Ok(())
+}
