@@ -2,179 +2,200 @@
 
 ```yaml
 task_id: OTV2-20261109-node-boot-repair
-title: Repair the failing real-World Node boot qualification
+title: Repair and qualify the real-World Node boot path
 mode: REPAIR
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: codex/node-boot-repair-20261109
+branch: codex/node-boot-world-followup-20261109
 pr: null
-base_sha: 88445eb587c6d8bea0bc1fcf3c3e4aaf2c6ce43c
+base_sha: fb031b8ddf0bf1349ef7944b0584c744a17dd34b
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: codex-node-boot-repair-20261109
 created_at: 2026-11-09T13:00:08Z
+updated_at: 2026-11-09T16:51:10Z
 execution_policy: continuous_progress
 owned_paths:
-  - crates/gameplay/world/src/movement/monster_map.rs
-  - crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_current_map.rs
+  - .github/workflows/merge-authority-audit.yml
+  - .github/workflows/merge-group-gate.yml
+  - .github/workflows/node-boot-qualification.yml
+  - .github/workflows/pr-postgres-harness.yml
+  - apps/game-server/Cargo.toml
+  - apps/game-server/src/qualification/client_phases/full_e2ef7.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/creature_field.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/creature_field_bundle.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/pass_cost.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/item_scope.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/summon_transaction.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/inbound.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/inbound_tests.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/poll.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/setup.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/activity_transfer.rs
-  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/house_transfer.rs
-  - crates/gameplay/dispatch/mechanics/0010-loop_training.mechanic
-  - crates/gameplay/dispatch/mechanics/0020-bed.mechanic
-  - docs/contracts/logging/events/durability.json
+  - crates/gameplay/world/src/movement/monster_map.rs
   - tools/qualification/node_boot/run.sh
-  - apps/game-server/migrations/2702_spell_parameter_result_row_lock.sql
-  - apps/game-server/tests/support/authority_cases/spell_parameter_result_runtime_lock.rs
-  - apps/game-server/src/qualification/client_phases/world.rs
+  - tools/qualification/node_boot/test_diagnostics.py
+  - tools/repository/test_heavy_gate.py
+  - tools/repository/test_validate_merge_group_pg_sim.py
+  - tools/repository/validate_repository_policy_core.py
   - docs/agents/tasks/OTV2-20261109-node-boot-repair.md
-public_contracts:
-  - docs/contracts/logging/events/durability.json
+public_contracts: []
 depends_on: []
 blocks: []
 ```
 
-## Outcome and scope
+## Outcome and current generation
 
-Repair the current Node boot failure without relaxing transaction budgets,
-liveness, immutable result semantics, runtime fences or qualification assertions.
-The owner requested this repair and maximum available parallel diagnosis. One
-canonical branch has one writer; three independent workers prepare bounded patches
-or review evidence outside the writable checkout.
+Complete the owner's requested Node boot repair, with one canonical writer and
+three parallel evidence/implementation workers. The actual Node boot leaf and
+its full-World final `NODE_BOOT_RESULT=NODE_BOOT_PASS` are required. Informational
+aggregate success cannot close this task.
 
-The scheduler repair reuses concurrent PR #3066 at exact commit
-`42d8b2a6953e69c37d42f2bd01637bf33fcafea4` through a normal local merge into this
-candidate. Its source branch is untouched. The unpublished combat-only prototype
-was superseded before publication. The combined candidate adds the independent
-Map/SQL repairs and qualifies the complete tree together. Review also identified
-two small logging compatibility repairs: the Node boot report must recognize
-the new structured durability events, and `pass_dropped` must register level
-`warn`, matching the emitter.
+PROVEN: prior PR #3069 head `b029df4a40b4c74996c0a6eada3c766ee2627b16`
+passed Rust (9,800 tests), all 24 PostgreSQL partitions (5,216 executed tests),
+focused checks and independent review. Node boot job `129207003632`, run
+`42631014207`, passed only its basic seam and was cancelled after about 60 minutes.
+Full World hit S11's 180-second journey deadline, then transport/cleanup errors;
+its final result and runtime node log were absent. No full Node boot PASS exists
+for that candidate. The exact cancellation actor/mechanism remains UNKNOWN.
 
-## Verified baseline
+PROVEN: GitHub shows #3069 merged outside this repair session at 15:07:33 UTC,
+as `f4249e005c9ab6a7b6b54adced7ac3546092b672`. The coordinator did not initiate
+that merge. This task returned explicitly to AUTHORING on a new branch from
+`91786a1013c129daa579a5f436f8adf5d321ab20`. A normal fast-forward then incorporated
+main `fb031b8ddf0bf1349ef7944b0584c744a17dd34b`, whose sole change from that base
+reverts the client rodio update and its lockfile entries. Earlier validation is
+historical and does not qualify this new
+candidate. The original SQL grant, immutable-result test and scheduler repair
+remain intact on main.
 
-- PROVEN: admission `main` was `8f2e0f12bb6faa4480617a0abe2bc067cfc2c938` (#3057).
-- PROVEN: current integration base is `88445eb587c6d8bea0bc1fcf3c3e4aaf2c6ce43c`
-  (#3067/#3068). Its logging changes already match the imported #3066, except
-  for this candidate's corrected warning level. Its heavy aggregate treats Node
-  boot as informational; closure of this repair still requires the actual Node
-  boot job and `NODE_BOOT_RESULT=NODE_BOOT_PASS`, independently of aggregate green.
-- PROVEN: final #3057 head `72e8572bef391edcf16189590b467881c1fde83a`
-  failed Node boot in run `42609864506`, job `129135376988`. Fixture seam passed;
-  real-World seam failed after successful, idempotent World epoch initialization.
-- PROVEN: the PostgreSQL log repeatedly reports transaction timeout, while the
-  server reports 57 retired passes at `monster_profile_cycle.rs:29`.
-- PROVEN: the same job reports denied access to `game_spell_parameter_results`;
-  migration 0044 grants SELECT/INSERT while production replay uses FOR SHARE.
-- DERIVED: per-chunk empty-tile reads amplify a geographically dispersed creature
-  census. The existing dense 512-creature test does not cover that distribution.
-- PROVEN: the failed job reports an unusable session during the E2EF4 return
-  journey, then aborted profile rows before the final town assertion. The
-  harness reuses Character 1; fresh admission does not reset its saved position.
-- UNKNOWN: the failed job did not report the actual town-assertion position or
-  the deferred profile error. The repair adds both diagnostics while retaining
-  the original assertions and error propagation.
+## Accepted findings and bounded repair
 
-## Authority and execution
+1. PROVEN: ordinary passive creatures are rejected by native AI admission but
+   still consumed by `tick_creature_fields`. AI-only prefetch misses their cells.
+   Prefetch the whole field census without changing which creatures receive
+   condition ticks. Add a sparse 512-creature mixed rat/deer cost case with the
+   unchanged Ground-scan bound and explicit passive AI refusal.
+2. PROVEN: pickupable stacks deliberately make spell tile facts Unknown, while
+   retained PZ remains independently known. The field consumer currently refuses
+   the whole pass on that lookup. Existing logout code and WorldBase contracts
+   already qualify retained zones independently. Read only PZ through the same
+   pinned Map/static-owner boundary; leave Unknown collision/spell facts and
+   mutable-source receipt requirements unchanged. Cover Bundle PZ true/false,
+   real residual condition damage/cursors, Source mutable stacks, clipping,
+   independent pin mismatch, absent cells and invalidated transactions.
+3. PROVEN: raw Light/PvP/Forge clients omit the boot-required capability closure.
+   Selecting that closure requires map domain 17 instead of legacy domain 2 and
+   inventory/container domains. Decode them with existing native codecs and
+   accept only correlated, bounded replacement snapshots. Preserve all journey
+   assertions. Exercise real capability selection and encoded positive/negative
+   snapshot/delta transfers.
+   Light no longer declares the deliberately unoffered presentation capability
+   23; its EntityLights, mana, cooldown, decay and relog oracles are unchanged.
+   The static boot-offer test accounts only for Forge's exact dynamic 25/104
+   additions, which the existing appearance owner selects at session admission.
+   Declare Tokio macros and paused-time support as server test dependencies so
+   standalone package tests do not rely on workspace feature unification.
+4. PROVEN: the 3,600-second job limit is shorter than the serial clock/light
+   scenario envelopes (3,750 + 3,300 seconds), before build/basic/World setup.
+   Set the three orchestration jobs to 240 minutes. No runtime, connection,
+   transaction or individual scenario deadline changes. This is a practical
+   healthy-run budget, not a claim that every report-only failure envelope fits.
+5. PROVEN: the old harness removes the detached node log during cleanup, and
+   reproduced process-group cancellation loses its stage failure diagnostics.
+   The b029 cancellation mechanism and cleanup execution remain UNKNOWN.
+   Stream bounded, allowlisted event evidence independently;
+   flush before a single EXIT cleanup, preserve INT/TERM exit codes, and tag
+   basic/full-World context. Retain S11's last logical query and progress outside
+   its timed future. Exit-code/cleanup tests deliver signals to the harness.
+   GitHub entry-shell cancellation or SIGKILL can retain only already-streamed
+   evidence; a final cleanup marker is not guaranteed at that separate boundary.
 
-META policy 3.1.0 is bound to `Oteryn/Oteryn` commit
-`1bfb5ff98c8aa156e73669a14e083a1d464c29fb`. Game's explicit local integration
-override uses squash merge and the full post-merge gate. Work remains AUTHORING
-until the final bounded delta is published and frozen. No deployment, live-data,
-workflow, protection, protocol, dependency or external-repository changes.
+DERIVED: repeated refusal of field passes can keep periodic work due and delay
+client input. UNKNOWN: the cancelled b029 log does not identify the first S11
+stall or prove the runtime contribution of either Map defect. Fresh physical
+qualification must establish the repaired behavior.
 
-Execution uses the isolated workspace and existing GitHub CI. Rust 1.99.1 was
-installed for local checks. Docker is unavailable and system package installation
-fails on sandbox UID/group operations; PostgreSQL 18.6 and full Node boot must run
-in the existing repository CI. No Remote Desktop fallback is used.
+## Authority and review
 
-The normal Git publication attempt could not authenticate; live readback confirmed
-the canonical remote task branch was absent. The root controller explicitly
-selects the connector-compatible Git Data route in the bound publication policy
-for a NEW candidate on `codex/node-boot-repair-20261109`. This is a fresh,
-single-writer allocation owned only by this task's root; workers remain read-only
-and the source PR branch is untouched. No atomic expected-head commit primitive
-is exposed. The complete 20-path delta will form one commit with the live branch
-predecessor as its sole parent, based on that predecessor's exact tree, followed
-by one non-force ref update and immediate live head verification. Any drift or
-ambiguous result stops publication for reconciliation. Local candidate
-`07cc40a94a6bcb3aa41a26fbb5634d2887895825` and its history remain separate evidence;
-all candidate-specific checks and independent review must bind to the NEW remote
-head. This committed record is an authoring snapshot; the PR will bind the final
-SHA and qualification evidence without moving the frozen head for metadata.
+META 3.1.0 remains bound to `Oteryn/Oteryn` commit
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb`. Game's integration override is normal
+squash followed by the full post-merge gate and protected-main readback.
 
-Migration number 2702 was selected after checking current main and all changed
-filenames of the open PRs; 2102 is already held by #3056 and the highest observed
-claim is 2701 in #3042. At 13:20:45 UTC the new #3066 had no migration and the
-other eight heads were unchanged; 2702 remained free.
+The complete follow-up includes a PROPOSED one-line audit pin rotation from
+`a652e0a5e1e045c546d739e7e543df79b43e7dd3` to the exact new merge-group workflow
+blob `24c8b5f32a5e086d40bfd2c863e721146d920730`. It is not active on protected main.
+The audit's self-modification rejection, other pins, exact-head/base checks,
+required fragments, forbidden behavior and rulesets remain unchanged. Its
+expected rejection is not product-test success or permission to bypass controls.
+Integration requires current explicit owner approval for this rotation and one
+independent deep review of the frozen candidate. No such rotation approval is
+claimed; first finish the concrete proposal, deterministic checks and review.
 
-## Authority and failure qualification
+Map zone evidence is immutable geometry, not permission to use mutable collision
+or Item facts. Its consumers retain current runtime scope/generation, content,
+frame/map pins and physical-transaction validation. Negative tests vary clipped
+cell, map pin, absent data, missing initialization receipts and SQL abortion
+independently. Existing stale/foreign scope and transaction regressions remain.
+No new authority grant, persisted schema, wire version or recovery interpretation
+is introduced. Retry/deadline relaxation and test-result suppression are excluded.
 
-Applicable boundary: exact-cell observations feed existing fenced creature
-decisions. Each SQL batch retains the existing physical-transaction check and
-256-address bound. Runtime scope, scope generation, pinned Map and content must
-match independently; cached emptiness never survives the borrowed transaction.
-The existing `validate_transaction` still runs before runtime publication.
+Finding-family sweep covers AI and passive field consumers, Bundle and Source
+Unknown tiles, both zone outcomes, map replacement framing and all three raw
+observers, all Node boot entry points and both catchable cancellation signals.
+The report-only character-state dependencies (partial S08 to S16a and P21 to
+C19a) are separate fixture issues, not proven causes of the hard town failure.
+Keep the hard town assertion and `profile_result` error propagation intact.
 
-Negative operators use real independent facts: a different physical transaction,
-an aborted transaction, a new committed Item on a formerly empty tile, a runtime
-role attempting an identity/payload update or delete, and a concurrent exclusive
-row lock. Existing `loop_monster/item_scope.rs` and `summon_transaction.rs` now
-exercise exact-cell prefetch before their unchanged refusal/invalidation checks.
-The new parameter-result test independently selects the runtime role, checks
-column privileges and immutability, replays a committed row twice, and proves
-shared-lock contention. These database scenarios remain pending CI execution.
+## Publication and validation
 
-Time/generation facts, controller installation, recovery interpretation and wire
-versions are unchanged. The family review covered current creature and summon
-Map readers, the empty-cell SQL projection, parameter-result read/write/replay,
-the analogous immutable temporal-row grant, and transport polling/setup/ACK
-validation, both production callers of `poll::next`, and CHASE-1 ordering.
-No sibling authority bypass was found. Scheduling tests inherited from #3066
-use real `serve_admitted_actor`, six liveness probes, a command result and
-controllable owner delays. They do not derive negative authority from the record
-under test. No deadline, hard qualification assertion or negative test is weakened.
+Normal Git push lacks configured authentication in this session. The root selects
+the bound policy's API-native NEW-candidate route on the fresh canonical branch
+`codex/node-boot-world-followup-20261109`: one writer, live predecessor/tree,
+complete bounded delta, one commit with that predecessor as sole parent, one
+non-force ref update and immediate readback. No evidence transfers from a prior
+candidate. Any drift/ambiguous mutation stops for reconciliation. No deployment,
+live-data, credentials, direct-main writes or external-repository mutations.
 
-## Acceptance and validation
+The committed record is a truthful authoring snapshot. The PR will bind the
+actual freeze SHA, run evidence and review without moving the frozen head for
+metadata. Complete archive closeout only after authorized merge and post-merge
+qualification, under the existing archive-only exception when required.
 
-- [ ] Sparse creature census uses bounded exact-cell reads within the existing pass.
-- [ ] Runtime parameter-result replay obtains its shared lock; result mutation and
-  deletion remain denied and a concurrent exclusive row lock remains blocked.
-- [ ] Transport fairness regressions prove ACK/command progress across periodic
-  work with unchanged timer intervals and a bounded single input turn.
-- [ ] Formatting, affected-package strict Clippy and tests pass.
-- [ ] Governance validation and tests pass for this record.
-- [ ] Exact-head PostgreSQL and Node boot CI pass, including the real-World pass.
-- [ ] Independent review of the complete frozen candidate is resolved.
+- PASS: workflow budget regression demonstrated RED at 3,600 < 7,050 seconds in
+  all three entry points, then GREEN; 12 heavy-gate tests passed.
+- PASS: actual shell cancellation fixture, INT and TERM, retained bounded safe
+  evidence before cleanup and final FAIL after an earlier basic PASS; 2 tests.
+- PASS: capability regression failed on the old declarations with
+  `MissingSupport([4, 11, 15, 18, 30])`, then passed after the repair. A subsequent
+  full server-library run found the independently unoffered Light 23 declaration;
+  the corrected focused module passed all 27 tests, including the S11 deadline
+  and native map framing regressions. The earlier 502/503 server result is not
+  represented as a successful final suite.
+- PASS: World library tests, 234 passed and one PostgreSQL case excluded by name.
+  This does not qualify the new configured-PostgreSQL scenarios.
+- PASS: strict Clippy for World, dispatch and server with all targets/features;
+  workspace architecture check; workspace formatting and explicit formatting of
+  build-mounted test files. Debug information and incremental compilation were
+  disabled for the 8 GiB local environment.
+- PASS: repository policy (23 files/68 workflows), native PowerShell failure
+  propagation and 47 workflow mutation canaries; governance (22 documents/9 lanes)
+  and all 129 governance tests; complete owned diff and partition reviews.
+- RESOURCE LIMIT: local dispatch-library test code generation was killed by the
+  8 GiB cgroup OOM limit. That execution is not a test PASS; CI must run its suite.
+- PENDING: fresh exact-head validation after API publication, independent
+  frozen-head review and actual Node boot.
+- NOT RUN locally: configured PostgreSQL 18.6 and full Docker/Platform Node boot;
+  Docker is unavailable and package installation cannot perform UID/group setup.
+  Existing CI is required. Unconfigured PostgreSQL early returns are not evidence.
 
-Reference parity: NOT_APPLICABLE; this is a regression repair, not a new mechanic.
-Focused/component/E2E results remain pending. Unconfigured PostgreSQL tests that
-return early do not count as executed database validation.
+## Acceptance
 
-## Context checkpoint
+- [ ] Both Map regression families pass against configured PostgreSQL 18.6.
+- [x] Actual raw observer support, framing and S11 diagnostics regressions pass locally.
+- [x] Final integrated affected Clippy/architecture checks and governance pass locally.
+- [ ] Required independent review completes on the frozen head.
+- [ ] Actual full-World Node boot finishes with PASS.
+- [ ] Owner approves the exact proposed audit rotation before integration.
+- [ ] Normal authorized squash, full post-merge gate and main readback pass.
 
-Current stage: AUTHORING. Before integrating #3066, local Map/AI suites passed:
-143 monster-AI and 234 World tests, with five pre-existing ignored tests unchanged.
-Baseline server/Character-authority test compilation passed. On the integrated
-tree, formatting, shell/JSON syntax, logging-event architecture validation,
-diagnostic selector/aggregation checks, governance validation and all 129
-governance tests passed. Two dispatch
-lib-test builds and two all-targets Clippy attempts were resource-blocked by the
-8 GiB memory limit; the integrated Clippy attempt reached the dispatch lib-test
-before SIGKILL. No runtime RED/GREEN result is claimed for the superseded
-prototype. PostgreSQL checks were not executed locally. Full candidate-specific
-Rust, PostgreSQL and Node boot validation remains pending CI.
-Independent bounded reviews accepted the scheduler semantics and found the two
-logging issues listed above. Next: finish available checks on the integrated
-tree, publish and freeze the remote SHA, then obtain exact-head CI and review.
-The final SHA and run results belong in immutable PR/check evidence after the
-last authoring commit; do not move a frozen head merely to update this record.
+Reference parity: NOT_APPLICABLE; this repairs existing runtime/qualification
+contracts and adds no mechanic. Next: complete integrated validation, freeze a
+reviewable candidate and obtain exact-head evidence before requesting integration
+approval for the protected audit rotation.
