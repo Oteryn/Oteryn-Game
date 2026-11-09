@@ -670,9 +670,13 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.outfit_and_addon_quests",
         "oteryn:quest.the_first_dragon_quest",
+        "oteryn:quest.the_djinn_war_efreet_faction",
+        "oteryn:quest.the_djinn_war_marid_faction",
         "oteryn:quest.the_dream_courts_quest",
+        "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.the_hidden_city_of_beregar_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
+        "oteryn:quest.the_white_raven_monastery_quest",
         "oteryn:quest.tibia_tales",
         "oteryn:quest.tower_defence_quest",
     ]);
@@ -754,6 +758,9 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     }
     // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
     assert_eq!(defaults, BTreeMap::from([(-1, 204), (0, 54)]));
+    // M04 adds seven -1 defaults: three per Djinn faction and one monastery diary.
+    // Dream Courts, Tamoril, Gnomus and Julius source defaults remain registered.
+    assert_eq!(defaults, BTreeMap::from([(-1, 211), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()

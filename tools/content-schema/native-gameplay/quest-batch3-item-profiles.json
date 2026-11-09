@@ -29,7 +29,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
-      "sha256": "af1367a098447ed4db829695b9219a38047864fa79584df0e1d68ab8543f9078"
+      "sha256": "3e61e951d10057e71e8090fcd12865dbbee2718a6c7771d536a5ba258df9214b"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/hot_cuisine.json",
@@ -184,6 +184,10 @@
       "sha256": "e530a62ea2ef8759a34bd49dac210caa6581162e42530145c983a0624e75f3bb"
     },
     {
+      "path": "content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json",
+      "sha256": "4c07dd0864182b0d99152e1c9d25f9c2aa4774af2e7014e64a17fe3003ff9deb"
+    },
+    {
       "path": "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json",
       "sha256": "ac18e35eb65368db8bf7d06affc1cda615abc17ca45ab3beca0f2c0e8dc09d37"
     },
@@ -198,6 +202,7 @@
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
       "sha256": "fdd0125ef000da9e10e2d6dd799092b995c35054e00df32bf52fc3620e4d3a76"
+      "sha256": "735cf0285a0f79476fbd9434e9250d5a3e22f8c80434aa5dcf2bb6e44302efc3"
     }
   ],
   "canonical_inputs": [
@@ -236,6 +241,10 @@
     {
       "path": "content/items/definitions/items-10500-10999.json",
       "sha256": "6b608a2af22526ec4ae80f7764092082a701142ad9d79156814a348679e75f85"
+    },
+    {
+      "path": "content/items/definitions/items-15500-15999.json",
+      "sha256": "1e982f7fa709710cd04c73ef9fe7f96d4127ce78f9dfbcd43775b0bb8d0ce73d"
     },
     {
       "path": "content/items/definitions/items-16000-16499.json",
@@ -346,6 +355,7 @@
     {
       "path": "content/items/definitions/spell-native-profiles.json",
       "sha256": "5a815878dbbf6bd4f6f9768b4710b6209b52570589b44e330829f754ec0f1954"
+      "sha256": "9d03cd20b2e1fe1e8ce27a53b01792166bf05387e1590f1ed100635202c248f3"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -21610,6 +21620,167 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "candidate:item/27654",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "surprise jar"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "27654",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i27654",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i27654",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/31590",
           "revision": "spell-p2-r21"
         }
@@ -28912,6 +29083,24 @@
         }
       ],
       "canonical_materializable": true,
+      "existing_native_profile": true,
+      "holds": [],
+      "classification": "EXISTING_NATIVE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i27654",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:52778",
+      "uses": [
+        {
+          "path": "content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json",
+          "pointer": "/rules/0/effects/1/item",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
       "existing_native_profile": false,
       "holds": [],
       "classification": "QUALIFIED_PLAIN_PORTABLE",

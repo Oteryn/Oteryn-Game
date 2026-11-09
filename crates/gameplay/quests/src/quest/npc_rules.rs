@@ -510,6 +510,9 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_djinn_war_efreet_faction"
+                                | "oteryn:quest.the_djinn_war_marid_faction"
+                                | "oteryn:quest.the_white_raven_monastery_quest"
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
@@ -683,6 +686,7 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     let mut legacy = catalogue.npc_legacy.clone();
+    let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
         if quest != "oteryn:quest.the_order_of_the_stag_quest"
@@ -774,6 +778,8 @@ pub(super) fn extend(
     )
     .map_err(|e| format!("{e:?}"))?;
     active.npc_legacy = legacy;
+    active.predecessors = predecessors;
+    completion_predecessors::register(&mut active, source)?;
     Ok(active)
 }
 
@@ -826,3 +832,8 @@ mod draconia_source_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod engnpc_finales;
+
+mod completion_predecessors;

@@ -68,6 +68,7 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    ("ENGNPC-M05", 1),
     // Eight fixed elevator scenery profiles; qm50_elevator_profiles.py.
     ("QM50-ELEVATOR", 8),
     // M41 source operands: sculpture 31574, beak 52632 and corpse stages 52677..=52680.
