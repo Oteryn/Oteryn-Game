@@ -17,7 +17,7 @@ pub(super) async fn inspect(
     drop(runtime);
     project(owner.active_generation?.native_gameplay()?, index, query)
 }
-fn category(record: &ItemProfileRecord) -> &str {
+fn native_category(record: &ItemProfileRecord) -> &str {
     record
         .authoring
         .taxonomy
@@ -61,8 +61,12 @@ fn records<'a>(
 }
 fn template(record: &ItemProfileRecord, reference: u32) -> Option<InspectedItem> {
     Some(InspectedItem {
-        slot: 0, definition_ref: reference, count: 1, tier: 0,
-        name: name(record)?.into(), attributes: vec![("Category".into(), category(record).into())],
+        slot: 0,
+        definition_ref: reference,
+        count: 1,
+        tier: 0,
+        name: name(record)?.into(),
+        attributes: vec![("Category".into(), native_category(record).into())],
     })
 }
 fn project(
@@ -80,7 +84,7 @@ fn project(
         } => {
             let categories: Vec<_> = records
                 .iter()
-                .map(|(_, r)| category(r))
+                .map(|(_, r)| native_category(r))
                 .collect::<BTreeSet<_>>()
                 .into_iter()
                 .collect();
@@ -100,7 +104,7 @@ fn project(
                 .iter()
                 .filter(|(reference, record)| {
                     *reference > after
-                        && selected.is_none_or(|selected| *selected == category(record))
+                        && selected.is_none_or(|selected| *selected == native_category(record))
                         && name(record).is_some_and(|name| name.to_lowercase().contains(&search))
                 })
                 .take(oteryn_protocol_oteryn::inspection::MAX_ITEMS + 1)
@@ -172,6 +176,7 @@ fn project(
         }
     }
     let reply = Reply {
+        catalogue: None,
         status: 1,
         items,
         requests: Vec::new(),
@@ -260,3 +265,9 @@ mod tests {
             .map_err(|_| "item catalogue test thread panicked")?
     }
 }
+
+#[path = "page_catalogue.rs"]
+mod page_catalogue;
+#[cfg(test)]
+pub(super) use page_catalogue::project_page;
+pub(super) use page_catalogue::{category, query};

@@ -88,3 +88,5 @@ fn as_uuid(bytes: &[u8]) -> Result<[u8; 16], StoreWireError> {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+pub mod browse;

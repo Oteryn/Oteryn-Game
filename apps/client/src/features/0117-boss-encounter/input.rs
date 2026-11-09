@@ -16,6 +16,15 @@ impl PlayLink {
         );
     }
 
+    pub fn boss_slot_select_boss(&self, previous: bool) {
+        lock(&self.mailbox)
+            .boss_encounter
+            .select_slot_boss(previous);
+    }
+    pub fn boss_slot_select_slot(&self) {
+        lock(&self.mailbox).boss_encounter.select_slot();
+    }
+
     pub fn boss_encounter_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).boss_encounter, field, value);
     }

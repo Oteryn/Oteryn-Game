@@ -255,3 +255,9 @@ mod tests {
         Ok(())
     }
 }
+
+#[path = "region_page.rs"]
+mod region_page;
+pub(super) fn page(table: &oteryn_world_bundle::subarea::Table, after: u32) -> Option<Vec<u8>> {
+    region_page::page(table, after)
+}

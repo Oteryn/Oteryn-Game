@@ -158,9 +158,16 @@ impl PlayLink {
     pub fn screenshot_facts(&self) -> crate::screenshots::Facts {
         let mailbox = lock(&self.mailbox);
         crate::screenshots::Facts {
-            level: mailbox.skill_progress.complete.as_ref().map(|value| value.level),
+            level: mailbox
+                .skill_progress
+                .complete
+                .as_ref()
+                .map(|value| value.level),
             deaths: mailbox.death.deaths,
-            achievement: mailbox.achievement_notices.watermark.map(|value| value.fact_count),
+            achievement: mailbox
+                .achievement_notices
+                .watermark
+                .map(|value| value.fact_count),
         }
     }
 }

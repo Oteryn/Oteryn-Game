@@ -2,6 +2,7 @@ use super::*;
 
 pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.discovery_initialize(session);
+    outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
     if let Err(error) = outbox
@@ -30,6 +31,8 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
     outbox.wheel_initialize(session.wheel_selected());
+    outbox.gem_presentation_initialize(session.feature_selected(148));
+    outbox.wheel_presentation_initialize(session.feature_selected(148));
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
     outbox.spellbook_details_initialize(session.feature_selected(449));
@@ -99,6 +102,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));

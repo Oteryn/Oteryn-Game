@@ -113,10 +113,9 @@ fn scenario() -> TestResult {
             .await
             .ok_or("current spell lane")?;
         let request = SoulpitEntryRequest {
-            source_definition: crate::durability::item_mint::TypedDefinitionRef {family:"Item".into(),production_key:core.clone(),revision_ref:"definition-r1".into()},
+            funding: crate::durability::soulpit::SoulpitFunding::Core { source: id(71), definition: crate::durability::item_mint::TypedDefinitionRef {family:"Item".into(),production_key:core.clone(),revision_ref:"definition-r1".into()} },
             handoff_id: id(92),
             command: CommandRef::new(fence.game_session_id, CommandId::new(1).map_err(debug)?),
-            source: id(71),
             intent: vec![1, 2, 3],
             started_at_micros: 0,
             participants: vec![SoulpitParticipantFact {
@@ -172,9 +171,8 @@ fn scenario() -> TestResult {
         // admitted Canary variant has no exact Crystal MonsterType and must retain its
         // core, including its complete custody row, before the transaction is rolled back.
         let purple_request = SoulpitEntryRequest {
-            source_definition: crate::durability::item_mint::TypedDefinitionRef {family:"Item".into(),production_key:purple_core.into(),revision_ref:"definition-r1".into()},
+            funding: crate::durability::soulpit::SoulpitFunding::Core { source: id(72), definition: crate::durability::item_mint::TypedDefinitionRef {family:"Item".into(),production_key:purple_core.into(),revision_ref:"definition-r1".into()} },
             command: CommandRef::new(fence.game_session_id, CommandId::new(2).map_err(debug)?),
-            source: id(72),
             intent: vec![4, 7, 4, 9, 0],
             ..request.clone()
         };

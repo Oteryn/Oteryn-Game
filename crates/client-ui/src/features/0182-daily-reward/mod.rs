@@ -22,3 +22,16 @@ pub use returner::{ReturnerOffer, ReturnerRewardPanel};
 #[path = "state/details.rs"]
 mod details;
 pub use details::{apply_details, details_text};
+
+#[path = "state/picker.rs"]
+mod picker;
+pub use picker::{apply_picker, picker_text};
+pub use protocol::request_picker;
+
+#[path = "state/picker_names.rs"]
+mod picker_names;
+
+#[path = "state/returner_wire.rs"]
+mod returner_wire;
+pub use protocol::request_returner;
+pub use returner_wire::apply_returner;

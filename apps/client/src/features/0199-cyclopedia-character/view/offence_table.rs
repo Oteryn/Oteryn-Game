@@ -45,7 +45,7 @@ pub(super) fn hide(hwnd: HWND, offence: bool) {
         for id in 181..=185 {
             ShowWindow(GetDlgItem(hwnd, id), SW_HIDE);
         }
-        for id in 145..=151 {
+        for id in 145..=155 {
             ShowWindow(GetDlgItem(hwnd, id), SW_SHOW);
         }
     }
@@ -59,7 +59,7 @@ pub(super) unsafe fn paint(
 ) {
     let [output, stamina, training, heading, detail, list] = handles;
     unsafe {
-        for id in (145..=151).chain(114..=116) {
+        for id in (145..=155).chain(114..=116) {
             ShowWindow(GetDlgItem(hwnd, id), SW_HIDE);
         }
         for id in 180..=185 {

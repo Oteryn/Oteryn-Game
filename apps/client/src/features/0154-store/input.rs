@@ -30,6 +30,20 @@ pub(in crate::play) fn gift_submit(
 }
 
 impl PlayLink {
+    pub fn store_browse(&self, category: &str, search: &str, sort: u8, step: i8) {
+        let mut mailbox = lock(&self.mailbox);
+        if let Some(command) =
+            oteryn_client_ui::store::browse(&mut mailbox.store, category, search, sort, step)
+            && self
+                .commands
+                .send(PlayCommand::ServerMechanic(command))
+                .is_err()
+        {
+            mailbox.store.pending = false;
+            mailbox.store.feedback = Some("The session has ended".into());
+        }
+    }
+
     pub fn store_category(&self, key: &str) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let Some(command) = oteryn_client_ui::store::select_category(&mut mailbox.store, key)
@@ -90,5 +104,37 @@ impl crate::play::PlayLink {
             from,
             until,
         )
+    }
+}
+
+#[cfg(any(windows, test))]
+impl PlayLink {
+    /// Called only after the native confirmation, with the exact displayed quote.
+    pub fn store_confirm_purchase(
+        &self,
+        expected: &oteryn_client_runtime::cui3::store::StoreCataloguePage,
+        name: &str,
+        sex: &str,
+        identity: &str,
+    ) -> bool {
+        let mut m = lock(&self.mailbox);
+        if m.store.catalogue.as_ref() != Some(expected) || m.store.pending {
+            return false;
+        }
+        super::view::native::customization(&mut m.store, name, sex, identity);
+        let Some(command) = super::view::native::purchase(&mut m.store, 0, true) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            m.store.pending = false;
+            m.store.feedback =
+                Some("The session has ended; retain the original request for retry".into());
+            return false;
+        }
+        true
     }
 }

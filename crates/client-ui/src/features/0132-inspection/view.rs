@@ -19,6 +19,12 @@ pub fn panel_text(panel: &Panel) -> String {
         }
         text.push_str(&lfmt!("\r\nPermission requests: {}", reply.requests.len()));
     }
+    if panel.catalogue_next.is_some() {
+        text.push_str("Next catalogue page available\r\n");
+    }
+    if panel.catalogue_drop_next.is_some() {
+        text.push_str("More drop sources available\r\n");
+    }
     text
 }
 
@@ -46,6 +52,9 @@ pub fn catalogue_text(panel: &Panel) -> String {
                     .any(|category| category.eq_ignore_ascii_case(&panel.category)))
     }) {
         matched += 1;
+        if panel.catalogue_definition == item.definition_ref.to_string() {
+            text.push_str("> ");
+        }
         let _ = lwrite!(
             text,
             "{}: {} (tier {})\r\n",
@@ -60,8 +69,37 @@ pub fn catalogue_text(panel: &Panel) -> String {
             }
         }
     }
+    if panel.catalogue_source_definition != 0
+        && panel.catalogue_definition.parse::<u32>().ok() == Some(panel.catalogue_source_definition)
+    {
+        text.push_str("Creature loot sources for the selected item:\r\n");
+        for name in &panel.catalogue_sources {
+            let _ = write!(text, "  Dropped by: {name}\r\n");
+        }
+        if panel.catalogue_sources.is_empty() {
+            text.push_str("No matching creatures on this page.\r\n");
+        }
+        text.push_str(if panel.catalogue_source_next.is_some() {
+            "Next loot sources continues the creature scan.\r\n"
+        } else {
+            "End of known creature loot sources.\r\n"
+        });
+    }
+    if let Some(page) = &panel.catalogue_page {
+        text.push_str(if page.next.is_some() {
+            "Next catalogue page available (continues the filtered scan).\r\n"
+        } else {
+            "End of catalogue.\r\n"
+        });
+    }
     if matched == 0 && !panel.catalogue.is_empty() {
         text.push_str(tr!("No items match the selected name and category.\r\n"));
+    }
+    if panel.catalogue.is_empty() && panel.catalogue_loaded {
+        text.push_str("No items match the selected name and category.\r\n");
+    }
+    if panel.catalogue.is_empty() && !panel.catalogue_loaded {
+        text.push_str("Browse the catalogue to load public item statistics and sources.\r\n");
     }
     if panel.catalogue_next.is_some() {
         text.push_str("Next catalogue page available\r\n");

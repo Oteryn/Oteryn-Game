@@ -111,8 +111,9 @@ mod package_checks;
 fn installation_report(install_dir: &Path) -> String {
     let status = match active_client(install_dir) {
         Ok(client) => format!(
-            "Active client: {}\r\n{}",
-            client.display(),
+            "{}\r\n{}: {}",
+            lfmt!("Ready to launch: {}", client.display()),
+            tr!("Active client"),
             package_checks::status(&client)
         ),
         Err(error) => lfmt!("Installation check failed: {error}", error = error),

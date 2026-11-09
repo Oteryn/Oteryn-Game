@@ -149,6 +149,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         let mut private = PrivateControls::new(hwnd);
         let mut font = console_font::ConsoleFont::default();
+        let mut console = console_controls::Controls::new(hwnd);
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
@@ -185,10 +186,13 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.0) {
+                if console.action(action, &mut mailbox, &commands, transcript) {
+                    continue;
+                }
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
                 }
-                use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
+                use oteryn_client_ui::chat::ConsoleTab;
                 match action {
                     IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
                         use oteryn_client_ui::chat::CommunicationList;
@@ -198,73 +202,47 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             BLOCK => CommunicationList::Blacklist,
                             _ => CommunicationList::Ignore,
                         };
-                        if action == CLEAR_LISTS {
-                            for list in [
-                                CommunicationList::Ignore,
-                                CommunicationList::Whitelist,
-                                CommunicationList::Blacklist,
-                            ] {
-                                mailbox.chat.console.communication.edit(list, &name, false);
-                            }
-                        } else {
-                            mailbox.chat.console.communication.edit(list, &name, true);
-                        }
-                        mailbox.chat_private.communication =
-                            mailbox.chat.console.communication.clone();
-                        mailbox.chat_party_room.communication =
-                            mailbox.chat.console.communication.clone();
-                        mailbox.chat.feedback = Some(lfmt!(
-                            "Ignore: {:?}; whitelist: {:?}; blacklist: {:?}",
-                            mailbox.chat.console.communication.ignored,
-                            mailbox.chat.console.communication.whitelist,
-                            mailbox.chat.console.communication.blacklist
-                        ));
+                        console::edit_lists(
+                            &mut mailbox,
+                            if action == CLEAR_LISTS {
+                                None
+                            } else {
+                                Some(list)
+                            },
+                            &name,
+                            action != CLEAR_LISTS,
+                        );
                         continue;
                     }
                     SAVE | APPEND => {
                         let path = read_text(log_path);
-                        let snapshot = mailbox.chat.clone();
                         drop(mailbox);
-                        let result = std::fs::OpenOptions::new()
-                            .create(true)
-                            .write(true)
-                            .append(action == APPEND)
-                            .truncate(action == SAVE)
-                            .open(path)
-                            .and_then(|mut file| {
-                                oteryn_client_ui::chat::write_log(&snapshot, &mut file)
-                            });
+                        let _ = console::save_log(
+                            &shared,
+                            std::path::Path::new(&path),
+                            action == APPEND,
+                        );
                         mailbox = lock(&shared);
-                        mailbox.chat.feedback = Some(match result {
-                            Ok(()) => tr!("Channel log written").into(),
-                            Err(error) => {
-                                lfmt!("Could not write channel log: {error}", error = error)
-                            }
-                        });
                         continue;
                     }
                     TAB => {
-                        mailbox
-                            .chat
-                            .console
-                            .select(match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
+                        console::select(
+                            &mut mailbox,
+                            match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
                                 1 => ConsoleTab::Local,
                                 2 => ConsoleTab::Private,
                                 3 => ConsoleTab::Guild,
                                 _ => ConsoleTab::All,
-                            });
+                            },
+                        );
                         continue;
                     }
                     FILTER => {
-                        mailbox.chat.console.show_messages = !mailbox.chat.console.show_messages;
+                        console::toggle_filter(&mut mailbox);
                         continue;
                     }
                     CHAT_MODE => {
-                        mailbox.chat.console.mode = match mailbox.chat.console.mode {
-                            ComposerMode::On => ComposerMode::Off,
-                            ComposerMode::Off => ComposerMode::Temporary,
-                            ComposerMode::Temporary => ComposerMode::On,
-                        };
+                        console::cycle_mode(&mut mailbox);
                         continue;
                     }
                     _ => {}
@@ -290,7 +268,8 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
-            font.update(transcript, mailbox.local_preferences.console_font_px);
+            console.tick(&mut mailbox, &commands, transcript);
+            font.update(transcript, mailbox.chat.console.display.font_px);
             private.render(&mailbox.chat_private);
             let text = format!(
                 "{}\n{}",

@@ -1,9 +1,9 @@
-#[path = "protocol/decode.rs"]
-mod decode;
-use decode::{decode_badges, decode_general, decode_history, decode_store, decode_tab};
 #[path = "protocol/blessings.rs"]
 mod blessings;
 pub use blessings::{BlessingsPanel, request_blessings};
+#[path = "protocol/decode.rs"]
+mod decode;
+use decode::{decode_badges, decode_general, decode_history, decode_store, decode_tab};
 #[path = "protocol/stamina.rs"]
 mod stamina;
 use super::CyclopediaCharacterPanel;
@@ -23,6 +23,7 @@ pub enum Intent {
     GalleryPrevious,
     Achievements,
     Badges,
+    SetBadgeVisibility { badge: u8, public: bool },
     ProfileBadges,
     ProfileInspection,
     SpellAugments(super::AugmentIntent),
@@ -114,7 +115,25 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         | Intent::GalleryNext
         | Intent::GalleryPrevious
         | Intent::Achievements => return None,
-        Intent::Badges => (387, Vec::new()),
+        Intent::Badges => (
+            387,
+            cyclopedia_character::badge_visibility::Request::Query(p.target).encode(),
+        ),
+        Intent::SetBadgeVisibility { badge, public } => {
+            if p.target.is_some()
+                || !p.badge_visibility_known
+                || !p.badges.as_ref().is_some_and(|ids| ids.contains(&badge))
+            {
+                p.feedback =
+                    Some("Only your earned badges with confirmed visibility can be changed");
+                return None;
+            }
+            let badge = cyclopedia_character::Badge::from_id(badge)?;
+            (
+                387,
+                cyclopedia_character::badge_visibility::Request::Set { badge, public }.encode(),
+            )
+        }
         Intent::Tab
         | Intent::SelectTab(_)
         | Intent::Next
@@ -234,11 +253,25 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         return true;
     }
     let text = if p.command_kind == 387 {
-        let decoded = decode_badges(&r.payload);
-        if decoded.is_some() {
-            p.badges = Some(r.payload[1..].to_vec());
+        if r.payload.first() == Some(&cyclopedia_character::badge_visibility::PREFIX) {
+            match cyclopedia_character::badge_visibility::Reply::decode(&r.payload) {
+                Ok(reply) => {
+                    p.badges = Some(reply.earned.iter().map(|badge| badge.id()).collect());
+                    p.server_hidden_badges = reply.hidden.iter().map(|badge| badge.id()).collect();
+                    p.badge_visibility_known = true;
+                    Some("Server-confirmed badge visibility".into())
+                }
+                Err(_) => None,
+            }
+        } else {
+            let decoded = decode_badges(&r.payload);
+            if decoded.is_some() {
+                p.badges = Some(r.payload[1..].to_vec());
+                p.server_hidden_badges.clear();
+                p.badge_visibility_known = false;
+            }
+            decoded
         }
-        decoded
     } else {
         tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit))
     };

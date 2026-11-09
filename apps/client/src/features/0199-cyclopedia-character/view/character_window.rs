@@ -25,7 +25,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=119 | 140 | 145..=150 | 180..=185)
+                && matches!(id, 101..=119 | 140 | 145..=150 | 152..=155 | 180..=185)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -67,7 +67,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             740,
-            740,
+            780,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -115,6 +115,15 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let mut analytics = false;
             let mut browser = None;
             for action in std::mem::take(&mut actions.0) {
+                if action == 153 {
+                    let badge = read_text(badge_id);
+                    if let Some(command) = submit(&mut mailbox.cyclopedia_character, 153, [&badge, "", ""])
+                        && commands.send(PlayCommand::Feature(command)).is_err() {
+                        mailbox.cyclopedia_character.pending = false;
+                        mailbox.cyclopedia_character.feedback = Some("The session has ended");
+                    }
+                    continue;
+                }
                 if action == 150 {
                     super::profile_table::toggle_badge(&mut mailbox.cyclopedia_character, badge_id);
                     continue;
@@ -199,11 +208,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         drop(actions);
     }
 }
-fn close(weak: &WeakMailbox) {
-    if let Some(shared) = weak.upgrade() {
-        lock(&shared).cyclopedia_character.open = false;
-    }
-}
 
 #[path = "character_widgets.rs"]
 mod character_widgets;
+
+
+fn close(weak: &WeakMailbox) {
+    if let Some(shared) = weak.upgrade() { lock(&shared).cyclopedia_character.open = false; }
+}

@@ -149,7 +149,7 @@ pub use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INT
 pub use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatLine, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode,
     ChatWireError, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
-    encode_chat_intent,
+    console as chat_console, encode_chat_intent,
 };
 /// The capability-4 item types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
@@ -166,7 +166,7 @@ pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
 pub use oteryn_protocol_oteryn::{
     arena, boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
-    weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,
+    premium_overview, weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,
 };
 mod vip_presence;
 pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};
@@ -397,3 +397,9 @@ pub use error::SessionError;
 use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;
+
+/// Optional server-executed Gem modifier presentation.
+pub use oteryn_protocol_oteryn::gem_presentation;
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_protocol_oteryn::wheel_presentation;

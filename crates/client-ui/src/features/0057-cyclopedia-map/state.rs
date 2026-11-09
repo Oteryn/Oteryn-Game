@@ -2,6 +2,8 @@
 pub enum Intent {
     Query,
     Atlas,
+    RegionAtlas,
+    AtlasNext,
     Start,
     Shuffle,
     Find,
@@ -17,6 +19,8 @@ pub struct Panel {
     pub atlas_cell: usize,
     pub section: Section,
     pub map: Option<oteryn_client_runtime::cyclopedia_map::MapResult>,
+    pub region_atlas: Option<oteryn_client_runtime::cyclopedia_map::region_atlas::Page>,
+    pub atlas_after: u32,
     pub floor: i8,
     pub hide_pois: bool,
     pub selected: bool,
@@ -99,6 +103,12 @@ impl Panel {
             .iter()
             .flat_map(|map| &map.visible)
             .map(|point| point.2)
+            .chain(
+                self.region_atlas
+                    .iter()
+                    .flat_map(|a| &a.runs)
+                    .map(|r| r.floor),
+            )
             .collect::<std::collections::BTreeSet<_>>()
             .into_iter()
             .collect();
@@ -122,6 +132,8 @@ impl Panel {
 impl Panel {
     pub fn invalidate_atlas(&mut self) {
         self.geometry = Default::default();
+        self.region_atlas = None;
+        self.atlas = None;
         self.map = None;
         self.summary.clear();
     }

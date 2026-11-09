@@ -27,208 +27,20 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let list_style = LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER;
-        let combo_style = CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP;
-        let title = control(
-            hwnd,
-            "STATIC",
-            tr!("Edit points and vessels, then Save Wheel. Atelier operations apply immediately."),
-            120,
-            [10, 10, 760, 22],
-            0,
-        );
-        let presets = control(
-            hwnd,
-            "BUTTON",
-            tr!("Build presets"),
-            PRESETS,
-            [790, 6, 170, 28],
-            WS_TABSTOP,
-        );
-        let slots = control(hwnd, "LISTBOX", "", SLOTS, [10, 40, 300, 330], list_style);
-        let points = control(
-            hwnd,
-            "EDIT",
-            "0",
-            POINTS,
-            [10, 380, 120, 26],
-            ES_NUMBER as u32 | WS_TABSTOP | WS_BORDER,
-        );
-        let apply = control(
-            hwnd,
-            "BUTTON",
-            tr!("Set slot points"),
-            APPLY,
-            [140, 380, 170, 28],
-            WS_TABSTOP,
-        );
-        let save = control(
-            hwnd,
-            "BUTTON",
-            tr!("Save Wheel"),
-            SAVE,
-            [10, 414, 145, 28],
-            WS_TABSTOP,
-        );
-        let reset = control(
-            hwnd,
-            "BUTTON",
-            tr!("Reset all points"),
-            RESET,
-            [165, 414, 145, 28],
-            WS_TABSTOP,
-        );
-        let gems = control(hwnd, "LISTBOX", "", GEMS, [330, 40, 630, 230], list_style);
-        let modifiers = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            MODIFIERS,
-            [330, 280, 340, 160],
-            list_style,
-        );
-        let quality = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            QUALITY,
-            [690, 280, 270, 200],
-            combo_style,
-        );
-        let reveal = control(
-            hwnd,
-            "BUTTON",
-            tr!("Reveal gem"),
-            REVEAL,
-            [690, 312, 270, 28],
-            WS_TABSTOP,
-        );
-        let lock_button = control(
-            hwnd,
-            "BUTTON",
-            tr!("Lock / Unlock"),
-            LOCK,
-            [690, 346, 130, 28],
-            WS_TABSTOP,
-        );
-        let switch = control(
-            hwnd,
-            "BUTTON",
-            tr!("Switch domain"),
-            SWITCH,
-            [830, 346, 130, 28],
-            WS_TABSTOP,
-        );
-        let dismantle = control(
-            hwnd,
-            "BUTTON",
-            tr!("Dismantle selected gem"),
-            DISMANTLE,
-            [690, 380, 270, 28],
-            WS_TABSTOP,
-        );
-        let grade = control(
-            hwnd,
-            "BUTTON",
-            tr!("Upgrade selected modifier"),
-            GRADE,
-            [690, 414, 270, 28],
-            WS_TABSTOP,
-        );
-        let domain = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            DOMAIN,
-            [10, 455, 300, 200],
-            combo_style,
-        );
-        let socket = control(
-            hwnd,
-            "BUTTON",
-            tr!("Socket selected gem"),
-            SOCKET,
-            [330, 455, 165, 28],
-            WS_TABSTOP,
-        );
-        let unsocket = control(
-            hwnd,
-            "BUTTON",
-            tr!("Clear chosen vessel"),
-            UNSOCKET,
-            [505, 455, 165, 28],
-            WS_TABSTOP,
-        );
-        let refresh = control(
-            hwnd,
-            "BUTTON",
-            tr!("Refresh"),
-            REFRESH,
-            [690, 455, 130, 28],
-            WS_TABSTOP,
-        );
-        let retry = control(
-            hwnd,
-            "BUTTON",
-            tr!("Retry last request"),
-            RETRY,
-            [830, 455, 130, 28],
-            WS_TABSTOP,
-        );
-        let description = control(
-            hwnd,
-            "EDIT",
-            "",
-            119,
-            [10, 500, 950, 190],
-            ES_MULTILINE as u32
-                | ES_READONLY as u32
-                | ES_AUTOVSCROLL as u32
-                | WS_VSCROLL
-                | WS_BORDER
-                | WS_TABSTOP,
-        );
-        if [
-            title,
-            slots,
-            points,
-            apply,
-            save,
-            reset,
-            gems,
-            modifiers,
-            quality,
-            reveal,
-            lock_button,
-            switch,
-            dismantle,
-            grade,
-            presets,
-            domain,
-            socket,
-            unsocket,
-            refresh,
-            retry,
-            description,
-        ]
-        .iter()
-        .any(|h| h.is_null())
-        {
+        let Some(controls) = layout::create(hwnd) else {
             DestroyWindow(hwnd);
             close(&weak);
             return;
-        }
-        for name in [tr!("Lesser gem"), tr!("Regular gem"), tr!("Greater gem")] {
-            SendMessageW(quality, CB_ADDSTRING, 0, wide(name).as_ptr() as isize);
-        }
-        for value in 0..4 {
-            SendMessageW(
-                domain,
-                CB_ADDSTRING,
-                0,
-                wide(&format!("{} vessel", domain_name(value))).as_ptr() as isize,
-            );
-        }
+        };
+        let layout::Controls {
+            slots,
+            points,
+            gems,
+            modifiers,
+            quality,
+            domain,
+            ..
+        } = controls;
         let mut held: Option<WheelPanel> = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -249,6 +61,18 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == VISUAL_ATELIER {
+                    drop(mailbox);
+                    super::super::gem_native::open(&shared, &commands);
+                    mailbox = lock(&shared);
+                    continue;
+                }
+                if action == WHEEL_DIAGRAM {
+                    drop(mailbox);
+                    super::super::wheel_native::open(&shared, &commands);
+                    mailbox = lock(&shared);
+                    continue;
+                }
                 if action == PRESETS {
                     drop(mailbox);
                     super::super::presets::open_shared(&shared, &commands);
@@ -334,55 +158,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             let panel = &mailbox.wheel;
             if held.as_ref() != Some(panel) {
-                SendMessageW(slots, LB_RESETCONTENT, 0, 0);
-                for slot in 0..36 {
-                    SendMessageW(
-                        slots,
-                        LB_ADDSTRING,
-                        0,
-                        wide(&slot_label(panel, slot)).as_ptr() as isize,
-                    );
-                }
-                SendMessageW(slots, LB_SETCURSEL, panel.slot, 0);
-                SetWindowTextW(points, wide(&panel.points[panel.slot].to_string()).as_ptr());
-                SendMessageW(gems, LB_RESETCONTENT, 0, 0);
-                if let Some(atelier) = &panel.confirmed_atelier {
-                    for (row, gem) in atelier.gems.iter().enumerate() {
-                        SendMessageW(
-                            gems,
-                            LB_ADDSTRING,
-                            0,
-                            wide(&gem_label(gem)).as_ptr() as isize,
-                        );
-                        if Some(gem.id) == panel.gem {
-                            SendMessageW(gems, LB_SETCURSEL, row, 0);
-                        }
-                    }
-                }
-                SendMessageW(modifiers, LB_RESETCONTENT, 0, 0);
-                for (row, (kind, id)) in panel.modifiers().into_iter().enumerate() {
-                    SendMessageW(
-                        modifiers,
-                        LB_ADDSTRING,
-                        0,
-                        wide(&modifier_label(panel, kind, id)).as_ptr() as isize,
-                    );
-                    if panel.modifier == Some((kind, id)) {
-                        SendMessageW(modifiers, LB_SETCURSEL, row, 0);
-                    }
-                }
-                SendMessageW(quality, CB_SETCURSEL, usize::from(panel.quality), 0);
-                SendMessageW(domain, CB_SETCURSEL, usize::from(panel.domain), 0);
-                SetWindowTextW(
-                    lock_button,
-                    wide(if panel.selected_gem().is_some_and(|gem| gem.locked) {
-                        tr!("Unlock gem")
-                    } else {
-                        tr!("Lock gem")
-                    })
-                    .as_ptr(),
-                );
-                SetWindowTextW(description, wide(&panel_text(panel)).as_ptr());
+                controls.paint(panel);
                 held = Some(panel.clone());
             }
             drop(mailbox);

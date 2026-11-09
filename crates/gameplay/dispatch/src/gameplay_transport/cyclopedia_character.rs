@@ -9,6 +9,7 @@ macro_rules! authority_methods {
         fn cyclopedia_character_command(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _command_id: u64,
             _command_type: u32,
             _payload: &[u8],
         ) -> impl std::future::Future<Output = Result<Vec<u8>, ()>> {
@@ -23,10 +24,11 @@ macro_rules! composed_methods {
         async fn cyclopedia_character_command(
             &self,
             admitted: connection::AdmittedSession,
+            command_id: u64,
             command_type: u32,
             payload: &[u8],
         ) -> Result<Vec<u8>, ()> {
-            self.cyclopedia_character_wire(admitted, command_type, payload)
+            self.cyclopedia_character_wire(admitted, command_id, command_type, payload)
                 .await
         }
     };
@@ -37,6 +39,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn cyclopedia_character_wire(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
         command_type: u32,
         payload: &[u8],
     ) -> Result<Vec<u8>, ()> {
@@ -56,6 +59,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = super::character_info::unix_now_ms();
         match command_type {
             wire::COMMAND_TYPE_CYCLOPEDIA_BADGES => {
+                if payload.first() == Some(&wire::badge_visibility::PREFIX) {
+                    let request=wire::badge_visibility::Request::decode(payload).map_err(|_| ())?;
+                    self.root.refresh_account_badges(self.character,self.holder,fence,now).await.map_err(|_| ())?;
+                    return self.root.account_badge_visibility(self.character,self.holder,fence,command_id,request)
+                        .await.map_err(|_| ())?.encode().map_err(|_| ());
+                }
                 wire::decode_badges_request(payload).map_err(|_| ())?;
                 let badges = self
                     .root

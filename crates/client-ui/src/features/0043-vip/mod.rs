@@ -20,10 +20,19 @@ pub enum Intent {
     Withdraw(u64),
     Status(u64),
     Query(u64),
+    MainCharacter,
+    FriendInvite(String),
+    FriendAccept(u64),
+    FriendRevoke(u64),
+    FriendsQuery(u64),
+    FriendReject(u64),
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct VipPanel {
+    pub account_view: Option<String>,
+    pub account_open: bool,
+    pub account_fields: [String; 2],
     pub friends_filter: FriendsFilter,
     pub selected: bool,
     pub open: bool,
@@ -63,6 +72,47 @@ pub fn request(panel: &mut VipPanel, intent: Intent) -> Option<VipCommand> {
         Intent::Withdraw(n) => (vip::Operation::Withdraw, n, String::new(), 0, false, vec![]),
         Intent::Status(n) => (vip::Operation::Status, n, String::new(), 0, false, vec![]),
         Intent::Query(n) => (vip::Operation::Query, n, String::new(), 0, false, vec![]),
+        Intent::MainCharacter => (
+            vip::Operation::MainCharacter,
+            0,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendInvite(text) => (vip::Operation::FriendInvite, 0, text, 0, false, vec![]),
+        Intent::FriendAccept(n) => (
+            vip::Operation::FriendAccept,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendRevoke(n) => (
+            vip::Operation::FriendRevoke,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendsQuery(n) => (
+            vip::Operation::FriendsQuery,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
+        Intent::FriendReject(n) => (
+            vip::Operation::FriendReject,
+            n,
+            String::new(),
+            0,
+            false,
+            vec![],
+        ),
     };
     let command = VipCommand::new(&vip::Request {
         operation,
@@ -85,7 +135,14 @@ pub fn apply_result(panel: &mut VipPanel, response: &VipResponse) {
     panel.pending = false;
     panel.revision = response.result.revision;
     if !response.result.view.is_empty() {
-        panel.view = Some(response.result.view.clone());
+        if serde_json::from_str::<serde_json::Value>(&response.result.view)
+            .ok()
+            .is_some_and(|value| value.get("account_friends").is_some())
+        {
+            panel.account_view = Some(response.result.view.clone());
+        } else {
+            panel.view = Some(response.result.view.clone());
+        }
     }
     panel.feedback = (response.result.code != 1).then(|| {
         match response.result.code {

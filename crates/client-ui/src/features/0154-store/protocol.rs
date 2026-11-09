@@ -5,13 +5,13 @@ use oteryn_client_runtime::server_mechanic::{
 };
 
 pub fn command(command_type: u32, payload: Vec<u8>) -> Option<ServerMechanicCommand> {
-    (183..=186)
-        .contains(&command_type)
-        .then_some(ServerMechanicCommand {
+    ((183..=186).contains(&command_type) || command_type == store::browse::COMMAND_TYPE).then_some(
+        ServerMechanicCommand {
             capability: 154,
             command_type,
             payload,
-        })
+        },
+    )
 }
 fn encoded(
     panel: &mut StorePanel,
@@ -147,6 +147,11 @@ pub fn request(
     Some(command)
 }
 pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
+    if panel.pending_action == store::browse::COMMAND_TYPE {
+        super::browser::apply_browse(panel, result);
+        return;
+    }
+
     panel.pending = false;
     let coin_history = std::mem::take(&mut panel.coin_history.pending);
     if !matches!(
@@ -182,6 +187,17 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         .err()
         .map(|_| tr!("The server returned invalid store data").into());
 }
+
+pub fn browse_request(
+    panel: &mut StorePanel,
+    category: &str,
+    search: &str,
+    sort: u8,
+    step: i8,
+) -> Option<ServerMechanicCommand> {
+    super::browser::browse(panel, category, search, sort, step)
+}
+
 #[cfg(test)]
 // Direct fixture construction keeps the wire assertions readable.
 #[allow(clippy::unwrap_used)]

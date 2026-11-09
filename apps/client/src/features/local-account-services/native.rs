@@ -178,7 +178,6 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
             10 => return Some(Action::Retry),
             11 => return Some(Action::Status),
             13 => return Some(Action::CoinShop),
-            14 => return Some(Action::Premium),
             99 => return Some(Action::Back),
             _ => {}
         }

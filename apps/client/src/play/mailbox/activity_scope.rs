@@ -9,6 +9,12 @@ impl Mailbox {
         self.animus.pending = Default::default();
         self.arena.pending = Default::default();
         self.boss_encounter.pending = Default::default();
+        self.boss_encounter.pending_catalogue = None;
+        self.boss_encounter.catalogue_query = None;
+        self.boss_encounter.catalogue = None;
+        self.boss_encounter.boss_names.clear();
+        self.boss_encounter.slots = None;
+        self.boss_encounter.pending_kind = 0;
         self.chat_public.pending = Default::default();
         self.daily_reward.pending = Default::default();
         self.containers.pending = Default::default();
@@ -29,6 +35,8 @@ impl Mailbox {
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();
+        self.wheel.gems.invalidate();
+        self.wheel.diagram.invalidate();
         self.exiva.pending = Default::default();
         self.mechanics_status.pending = Default::default();
         self.condition_status.pending = Default::default();
@@ -40,6 +48,8 @@ impl Mailbox {
         self.stash.pending = Default::default();
         self.guild.pending = Default::default();
         self.task_board.pending = Default::default();
+        self.task_board.fights = Default::default();
+        self.task_board.soulseals_open = false;
         self.npc_shop.pending = Default::default();
         self.npc_shop.live.pending = false;
         self.dialogue.pending = false;
@@ -57,6 +67,11 @@ impl Mailbox {
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
         self.discovery.inspection.invalidate_catalogue();
+        self.discovery.inspection.invalidate_catalogue();
+        self.properties.cyclopedia_map.region_atlas = None;
+        self.properties.cyclopedia_map.atlas_after = 0;
+        self.properties.cyclopedia_map.map = None;
+        self.properties.cyclopedia_map.summary.clear();
         self.discovery.leader.pending = Default::default();
         self.discovery.teams.pending = Default::default();
         self.discovery.history.pending = Default::default();

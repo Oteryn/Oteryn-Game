@@ -8,13 +8,13 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
     }
     let presentation = &panel.console.presentation;
-    for line in panel.lines.iter().skip(
+    for (index, line) in panel.lines.iter().enumerate().skip(
         panel
             .lines
             .len()
             .saturating_sub(usize::from(presentation.limit)),
     ) {
-        if !presentation.shows(line) {
+        if !presentation.shows(line) || !panel.console.filters.visible(panel.console.tab, line) {
             continue;
         }
         if !panel.console.communication.visible(line) {
@@ -29,11 +29,18 @@ pub fn panel_text(panel: &ChatPanel) -> String {
             (ConsoleTab::All, _)
                 | (ConsoleTab::Local, ChatLine::Local { .. })
                 | (ConsoleTab::Private, ChatLine::Private { .. })
+                | (ConsoleTab::Private, ChatLine::PrivateChannel(_))
                 | (ConsoleTab::Guild, ChatLine::Guild(_))
                 | (_, ChatLine::Dropped)
         ) {
             continue;
         }
+        if let ChatLine::Guild(line) = line
+            && !matches!(&panel.guild, oteryn_client_runtime::chat_guild_room::GuildRoomState::Member { guild_id, .. } if *guild_id == line.guild_id)
+        {
+            continue;
+        }
+        text.push_str(&panel.console.metadata.prefix(panel.console.display, index));
         match line {
             ChatLine::Local {
                 speaker_name,
@@ -41,6 +48,15 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 text: message,
                 ..
             } => {
+                let speaker_name =
+                    if *mode == oteryn_client_runtime::chat::ChatSpeechMode::MonsterSay {
+                        speaker_name.clone()
+                    } else {
+                        panel
+                            .console
+                            .metadata
+                            .name(panel.console.display, speaker_name)
+                    };
                 if presentation.mode_labels {
                     let _ = writeln!(text, "[{mode:?}] {speaker_name}: {message}");
                 } else {
@@ -51,6 +67,10 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 speaker_name,
                 text: message,
             } => {
+                let speaker_name = panel
+                    .console
+                    .metadata
+                    .name(panel.console.display, speaker_name);
                 if presentation.mode_labels {
                     let _ = lwriteln!(
                         text,
@@ -74,7 +94,11 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 } else {
                     ""
                 };
-                let _ = writeln!(text, "{label}{}: {}", line.speaker_name, line.text);
+                let name = panel
+                    .console
+                    .metadata
+                    .name(panel.console.display, &line.speaker_name);
+                let _ = writeln!(text, "{label}{name}: {}", line.text);
             }
             ChatLine::Dropped => text.push_str(tr!("[Some chat lines were dropped]\n")),
             ChatLine::Party {
@@ -87,13 +111,53 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 } else {
                     ""
                 };
+                let speaker_name = panel
+                    .console
+                    .metadata
+                    .name(panel.console.display, speaker_name);
                 let _ = writeln!(text, "{label}{speaker_name}: {message}");
+            }
+            ChatLine::Room {
+                room,
+                speaker_name,
+                text: message,
+            } => {
+                let name = panel
+                    .console
+                    .metadata
+                    .name(panel.console.display, speaker_name);
+                if presentation.mode_labels {
+                    let _ = writeln!(text, "[{room:?}] {name}: {message}");
+                } else {
+                    let _ = writeln!(text, "{name}: {message}");
+                }
+            }
+            ChatLine::PrivateChannel(line) => {
+                let name = panel
+                    .console
+                    .metadata
+                    .name(panel.console.display, &line.speaker_name);
+                let label = if presentation.mode_labels {
+                    "[Private channel] "
+                } else {
+                    ""
+                };
+                let _ = writeln!(text, "{label}{name}: {}", line.text);
             }
             _ => {}
         }
     }
+    if panel.console.show_messages && panel.console.tab == crate::chat::ConsoleTab::All {
+        text.push_str(
+            &panel
+                .console
+                .notices
+                .text(panel.console.filters, panel.console.display),
+        );
+    }
     if let Some(feedback) = &panel.feedback
         && presentation.feedback
+        && panel.console.filters.information
     {
         let _ = writeln!(text, "{feedback}");
     }

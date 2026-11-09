@@ -5,6 +5,7 @@ pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat}
 /// What the shell asks of the session task.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayCommand {
+    HudStamina,
     BrowseFieldMove(oteryn_session::ItemMoveIntent),
     Depot(oteryn_session::DepotIntent),
     DepotContainer(oteryn_session::ItemHandle),

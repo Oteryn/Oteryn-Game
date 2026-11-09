@@ -123,3 +123,21 @@ restricted to the existing same-floor viewport visibility result. Query executio
 reuses the current Character/session/node/recovery/equipment fences and exploration
 read owner. The atlas is cleared at activity handoff. Client pan, zoom, floors and
 layer toggles do not mutate discovery, position, Premium, or donation authority.
+
+### Read-only native atlas pages
+
+Intent operation 5 retains the nine-byte request layout (`operation=5`, legacy
+area alias `1`, `amount=after`). Zero starts a fresh atlas; the continuation is
+an offset into the admitted world's ordered subarea runs. It has no donation,
+Premium, progress or inventory effect. The normal admission, activity scope,
+owner fence and character control checks apply before reading the atlas.
+
+The reply is `ATL1`, `next:u32` (zero means end), `area_count:u16`,
+`run_count:u16`, then areas (`id:u32`, `parent:u32` with zero for regions,
+`name_bytes:u16`, UTF-8 name), then runs (`subarea:u32`, `begin:u16`, `end:u16`,
+`y:u16`, `floor:i8`). All integers are little endian. Ends are half-open.
+A page carries at most 64 exact runs, their subareas and parent regions (at most
+128 areas), names of at most 256 bytes, and at most 40,000 bytes total. Unknown
+coverage stays empty; the client must not fill gaps between runs. This atlas
+contains static region geometry, independently of the viewport-restricted
+exploration POIs in the existing result. A new activity scope clears cursors.

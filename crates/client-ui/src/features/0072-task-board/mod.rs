@@ -1,4 +1,6 @@
 //! Server-owned weekly Task Board panel.
+#[path = "state/fights.rs"]
+pub mod fights;
 mod input;
 #[path = "view/soulseals.rs"]
 mod soulseals;
@@ -29,6 +31,7 @@ pub enum Intent {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TaskBoardPanel {
+    pub fights: fights::FightPanel,
     pub selected: bool,
     pub open: bool,
     pub soulseals_open: bool,

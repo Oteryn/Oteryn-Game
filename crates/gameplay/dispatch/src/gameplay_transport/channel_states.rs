@@ -98,6 +98,8 @@ pub struct ChannelSessionStates {
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
     pub(super) soul_kills: super::soul_kill_live::SoulKills,
     pub(super) source_volatile_items: super::source_volatile_items::SourceVolatileItems,
+    /// Single-use Soulseal entry quotes, bound to the exact session and content pin.
+    pub(super) soulseal_quotes: super::task_board::soulseals::Quotes,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,

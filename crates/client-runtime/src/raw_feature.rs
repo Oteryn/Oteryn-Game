@@ -17,7 +17,23 @@ pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     command: &FeatureCommand,
 ) -> Result<GatedCommandResult, SessionError> {
-    session
+    let result = session
         .gated_command(command.capability, command.kind, &command.payload)
-        .await
+        .await?;
+    // Older capability-199 servers accept only the empty self query. Never downgrade
+    // a visibility mutation or a query for another character into a self request.
+    if command.capability == 199
+        && command.kind == 387
+        && command.payload
+            == [
+                oteryn_session::cyclopedia_character::badge_visibility::PREFIX,
+                0,
+            ]
+        && result.status == CommandStatus::Rejected
+    {
+        return session
+            .gated_command(command.capability, command.kind, &[])
+            .await;
+    }
+    Ok(result)
 }

@@ -37,3 +37,13 @@ impl super::PlayView {
 
 
 }
+
+impl super::ReferencePreferences {
+    pub fn effective_hud_layout(&self) -> crate::play::HudLayout {
+        let mut layout = self.hud_layout.clone();
+        if layout == crate::play::HudLayout::default() && self.hud_bounds != super::default_hud_bounds() {
+            layout.legacy(self.hud_bounds);
+        }
+        layout
+    }
+}

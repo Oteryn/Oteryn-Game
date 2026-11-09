@@ -116,6 +116,8 @@ impl PlayView {
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         if pushed.scope_changed {
+            self.party_icons.clear();
+            self.party_icons_refresh = None;
             self.inputs.clear();
             self.cursor_spell = None;
             self.in_flight = false;

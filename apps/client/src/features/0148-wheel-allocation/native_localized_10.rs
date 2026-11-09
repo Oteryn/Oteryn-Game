@@ -31,6 +31,8 @@ pub(super) unsafe extern "system" fn window_proc(
                             | GRADE
                             | RETRY
                             | PRESETS
+                            | VISUAL_ATELIER
+                            | WHEEL_DIAGRAM
                     ) && notification == BN_CLICKED as usize))
             {
                 (*actions).0.push(id);

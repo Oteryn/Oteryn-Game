@@ -1,7 +1,7 @@
 # Game launcher consumer of Platform update origin v1
 
 Authority: accepted `OTERYN_V2_CLIENT_UPDATE_ORIGIN_CONTRACT.md`, copied from
-Platform PR 1795, commit 3f7425341722c2a0dd1d3ea6e14924021a8f2c13.
+Platform PR 1795, commit a1858bc0a78d4aaf57133ae355c098ea897d165b.
 
 The launcher accepts `--check-updates`, `--verify-release`, `--update`, `--repair`,
 and a Windows `--updates` dialog. Stable is default; explicit `--beta` selects beta

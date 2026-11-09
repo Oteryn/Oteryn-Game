@@ -42,6 +42,9 @@ pub fn apply(panel: &mut ItemForgePanel, command: &FeatureCommand, result: &Gate
     ) {
         panel.preview.quote = None;
         panel.preview.feedback = Some("Forge preview refused; refresh current items".into());
+        if matches!(request.selection, wire::Selection::Resource(_)) {
+            panel.resource_dialog.message("The server could not provide a current resource review. Refresh before trying again.");
+        }
         return;
     }
     let Some(reply) =
@@ -49,9 +52,40 @@ pub fn apply(panel: &mut ItemForgePanel, command: &FeatureCommand, result: &Gate
     else {
         panel.preview.quote = None;
         panel.preview.feedback = Some("Invalid Forge preview".into());
+        if matches!(request.selection, wire::Selection::Resource(_)) {
+            panel
+                .resource_dialog
+                .message("The resource review could not be decoded. Nothing was submitted.");
+        }
         return;
     };
     match (request.selection, reply.payload) {
+        (wire::Selection::Effects(handle), wire::Payload::Effects(e))
+            if e.item.handle == handle
+                && panel.first_item == handle.get()
+                && panel
+                    .preview
+                    .item(handle.get())
+                    .is_some_and(|i| i.definition_ref == e.item.definition_ref) =>
+        {
+            panel.tier_effects.retain(|old| old.item.handle != handle);
+            if panel.tier_effects.len() >= 2 {
+                panel.tier_effects.remove(0);
+            }
+            panel.tier_effects.push(e.clone());
+            panel.resource_dialog.reset();
+            panel.resource_dialog.content =
+                Some(crate::item_forge::resource_dialog::Content::Effects(e));
+        }
+        (wire::Selection::Resource(operation), wire::Payload::Resource(quote))
+            if quote.operation == operation =>
+        {
+            panel.resource_dialog.offer(operation, Some(quote));
+            panel.preview.feedback = None;
+        }
+        (wire::Selection::Resource(_), wire::Payload::Refused) => {
+            panel.resource_dialog.message("This resource conversion is unavailable with your current resources or dust limit.");
+        }
         (wire::Selection::Browse { after }, wire::Payload::Page(page)) if page.after == after => {
             for item in &page.items {
                 if !panel.preview.remember(item.clone()) {

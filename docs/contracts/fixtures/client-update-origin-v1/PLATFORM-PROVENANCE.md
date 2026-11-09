@@ -1,1 +1,1 @@
-Public synthetic fixtures copied byte-for-byte from Oteryn/Oteryn-Platform at 3f7425341722c2a0dd1d3ea6e14924021a8f2c13, PR #1795. No production trust keys or credentials.
+Public synthetic fixtures copied byte-for-byte from Oteryn/Oteryn-Platform merged main commit a1858bc0a78d4aaf57133ae355c098ea897d165b. Contract: docs/contracts/OTERYN_V2_CLIENT_UPDATE_ORIGIN_CONTRACT.md. Verified every Git blob against that commit. No production trust keys or credentials.

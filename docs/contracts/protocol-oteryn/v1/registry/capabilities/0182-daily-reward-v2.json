@@ -6,7 +6,11 @@
   "command_types": [
     354,
     355,
-    738
+    738,
+    6122,
+    6123,
+    6124,
+    6125
   ],
   "state_domains": [],
   "offered": false,

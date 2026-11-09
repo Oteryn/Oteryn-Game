@@ -6,7 +6,7 @@ mod view;
 pub use input::open_key;
 pub use protocol::{apply_result, request};
 pub use state::{Action, HighscoresPanel};
-pub use view::panel_text;
+pub use view::{panel_text, parse_world, world_text};
 // Categories 13 (Loyalty), 15 (Taint), and 16 (Phosphorus) are reserved; Game filters preserve explicit wire IDs.
 pub const CATEGORY_IDS: [u32; 14] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17];
 pub const CATEGORIES: [&str; 14] = [

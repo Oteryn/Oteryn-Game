@@ -107,6 +107,11 @@ fn room_line(text: &str) -> ChatLine {
 #[test]
 fn the_advertised_set_carries_chat_and_stays_closed() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
+    // Soulseal fight command 6120 uses existing capability 72.
+    // Daily picker and returner commands 6122..=6125 use existing capability 182.
+    // Store browse command 6118 uses existing capability 154.
+    // Wheel presentation queries 6119 and 6121 use existing capability 148.
+    // Chat console command 6117 uses existing capability 7; no new advertised capability.
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
     // Capability 272 adds live Atelier balances and retains its prerequisite 148.
     // pkg4 adds 92 (zones_nologout raid messages), 168 (animus mastery) and 274 (loyalty skills).

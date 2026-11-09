@@ -13,7 +13,7 @@ pub(super) unsafe fn paint(
     held: &mut Vec<ProfileRow>,
 ) {
     use oteryn_client_runtime::cyclopedia_character::CharacterTab;
-    if p.tab != CharacterTab::Inspection {
+    if p.tab != CharacterTab::Inspection || p.command_kind == 387 {
         held.clear();
         return;
     }
@@ -82,6 +82,10 @@ pub(super) fn badge_controls(hwnd: HWND) -> HWND {
         WS_TABSTOP,
     );
 
+    for (id, label, x, y) in [
+        (152, "Public badges", 10, 690), (155, "Hidden publicly", 185, 690),
+        (154, "Public visibility", 360, 690), (153, "Hide / show publicly", 430, 655),
+    ] { control(hwnd, "BUTTON", label, id, [x, y, 165, 25], WS_TABSTOP); }
     badge_id
 }
 pub(super) fn toggle_badge(p: &mut CyclopediaCharacterPanel, edit: HWND) {

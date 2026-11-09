@@ -178,6 +178,7 @@ fn run(
                 let full_refresh = manual || !mailbox.skill_progress.selected;
                 drop(mailbox);
                 let link = PlayLink {
+                    owns_session: false,
                     mailbox: Arc::clone(&shared),
                     commands: commands.clone(),
                 };

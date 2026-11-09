@@ -9,8 +9,8 @@ capability selected, its commands are refused.
 
 ## Badges request
 
-Command type 387 has an empty payload. It names the requesting session's
-account; no other account can be read.
+The legacy command-type-387 request has an empty payload. It names the
+requesting session's account; this legacy request cannot read another account.
 
 ## Badges reply
 
@@ -206,6 +206,27 @@ No native owner currently records these facts:
 Command 388 also accepts opt-in selector 128: `128:u8, page:u8`, optionally followed by the 16-byte target Character. Pages are zero-based, 64 rows each, with a maximum complete list of 16,384 earned facts. Legacy tab request/reply grammars and their bounds are unchanged.
 
 The rich reply is `128:u8, character:[u8;16], name_bytes:u8, name:UTF-8`, followed by the existing AccountAchievementsResult codec. The name is 2–29 bytes. Metadata and earned timestamps come from the activated catalogue and immutable grant-request provenance. The same recovery/session-generation fence and foreign-target VIP consent apply. The total command result budget is 32,836 bytes; legacy replies remain bounded at 16,384 bytes. Unsupported, over-limit or unreadable target data is refused without an invented empty list.
+
+## Account badge visibility extension (T027)
+
+The empty command-387 request and its legacy reply remain unchanged. Prefix
+`f0` selects the bounded visibility extension: `f0 00` queries self;
+`f0 01 <target:16 bytes>` queries another character under the existing accepted
+VIP consent rule; `f0 02 <earned badge:u8> <public:0|1>` sets the requesting
+account's visibility. Extra bytes and unknown badge ids are rejected.
+
+The reply is `f0 <earned-count:u8> <earned ids> <hidden-count:u8> <hidden ids>`.
+Each list is ascending, unique and bounded by the 20 admitted badges. Hidden
+ids must be a subset of earned ids. Other-character queries contain only public
+badges and an empty hidden list. Mutations cannot target another account or an
+unearned badge. Visibility never changes the permanent award rows. Mutations
+are session-fenced and receipted by the command id; replay returns its original
+reply without overwriting later visibility edits.
+
+A new client retries only a refused extension self query once as the legacy empty
+self query. A legacy reply leaves visibility editing unavailable; mutations and
+other-character queries never downgrade. Command-387 bounds are 18 request bytes
+and 43 reply bytes when this extension is supported.
 
 ## Appearance gallery
 

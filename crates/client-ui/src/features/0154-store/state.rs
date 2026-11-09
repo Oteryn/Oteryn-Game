@@ -11,6 +11,7 @@ pub enum StorePage {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StorePanel {
+    pub browser: super::Browser,
     pub coin_history: super::CoinHistory,
     pub gift_open: bool,
     pub gift_fields: [String; 2],
@@ -19,6 +20,7 @@ pub struct StorePanel {
     pub sort: StoreSort,
     pub selected: bool,
     pub open: bool,
+    pub classic_open: bool,
     pub pending: bool,
     pub pending_action: u32,
     pub page: StorePage,

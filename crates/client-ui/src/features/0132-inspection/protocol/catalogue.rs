@@ -12,6 +12,11 @@ fn value<'a>(item: Option<&'a InspectedItem>, key: &str) -> Result<Option<&'a st
     Ok(result)
 }
 pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static str> {
+    if matches!(panel.last_request, Some(Request::CatalogueQuery(_))) {
+        panel.catalogue_query = None;
+        panel.catalogue_page = None;
+        panel.clear_sources();
+    }
     match panel.last_request {
         Some(Request::CatalogueQuery(Query::Items {
             after, category, ..
@@ -22,7 +27,7 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
                 .map_err(|_| "Invalid catalogue cursor")?;
             let categories: Vec<String> = value(reply.items.first(), "Catalogue categories")?
                 .map(|names| names.split('|').map(str::to_owned).collect())
-                .unwrap_or_else(|| panel.catalogue_categories.clone());
+                .unwrap_or_else(|| panel.catalogue_query_categories.clone());
             if categories.len() > 64
                 || categories
                     .iter()
@@ -48,7 +53,7 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
             }
             panel.catalogue_loaded = true;
             panel.catalogue.clear();
-            panel.catalogue_categories = categories;
+            panel.catalogue_query_categories = categories;
             panel.catalogue_next = next;
             panel.catalogue_drop_next = None;
             panel.catalogue_market = None;

@@ -100,6 +100,7 @@ pub(super) fn run(
         else {
             return;
         };
+        control(hwnd, "STATIC", "Account Friends and main character: Ctrl+Alt+F", 205, [10,635,615,20], 0);
         let mut held: Option<oteryn_client_ui::vip::VipPanel> = None;
         let mut message: MSG = std::mem::zeroed();
         loop {

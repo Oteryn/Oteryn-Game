@@ -33,6 +33,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             manual,
             console,
             layout,
+            resources,
             battle_filters,
             mixer,
             stability,
@@ -196,6 +197,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
                 }
             }
+            resources.show(state.page == SettingsPage::Interface);
             for (index, handle) in hud_checks.iter().enumerate() {
                 let page = if index < 3 {
                     SettingsPage::Interface
@@ -329,6 +331,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
+                            resources.apply(&mut preferences.resource_hud);
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
@@ -379,6 +382,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 refresh_scale_volume(scale, volume, &state.preferences);
                 set_checked(mute, state.preferences.audio.muted);
                 refresh_hud_checks(&hud_checks, &state.preferences);
+                resources.sync(&state.preferences.resource_hud);
                 refresh_input_controls(mouse_preset, delay, rotation, &state.preferences);
                 selected = -1;
                 held = Some(state.preferences.clone());

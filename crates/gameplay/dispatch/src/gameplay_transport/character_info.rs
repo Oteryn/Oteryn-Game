@@ -46,6 +46,7 @@ pub fn decode(payload: &[u8]) -> Result<CharacterInfoOperation, DecodeError> {
     };
     let title = |raw| CharacterTitle::from_id(raw).ok_or(DecodeError);
     match (tag, rest) {
+        (5, []) => Ok(CharacterInfoOperation::QueryPremium),
         (0, bytes) => Ok(CharacterInfoOperation::QuerySelf(page(bytes)?)),
         (1, bytes) if bytes.len() == 19 => {
             let mut character = [0; 16];
@@ -178,6 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let character = fence.character_id;
         let now = unix_now_ms();
         match operation {
+            CharacterInfoOperation::QueryPremium => super::premium_overview::query(self, admitted).await,
             CharacterInfoOperation::Unlock(title) => {
                 // Read native qualification and persist the title under one session fence.
                 // A client can name a title, never supply its proof or expiry.
@@ -329,6 +331,7 @@ mod tests {
         let mut look = vec![4];
         look.extend_from_slice(&[1; 16]);
         for payload in [
+            vec![5],
             vec![0, 0, 0, 50],
             visible,
             vec![2, 1],

@@ -1,6 +1,8 @@
 use oteryn_client_runtime::cui3::item_forge::Operation;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemForgePanel {
+    pub tier_effects: Vec<oteryn_client_runtime::forge_preview::Effects>,
+    pub resource_dialog: super::resource_dialog::ResourceDialog,
     pub preview: super::PreviewState,
     pub retry: Option<oteryn_client_runtime::cui3::item_forge::Request>,
     pub submitted: Option<oteryn_client_runtime::cui3::item_forge::Request>,
@@ -22,6 +24,8 @@ pub struct ItemForgePanel {
 impl Default for ItemForgePanel {
     fn default() -> Self {
         Self {
+            tier_effects: Vec::new(),
+            resource_dialog: Default::default(),
             preview: Default::default(),
             retry: None,
             submitted: None,

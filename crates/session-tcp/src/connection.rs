@@ -17,19 +17,7 @@ pub async fn admit(
     admission: Admission<'_>,
     root: &CertificateDer<'static>,
 ) -> Result<Session<TcpTlsStream>, Option<u32>> {
-    admit_optimized(host, port, server_name, admission, root, false).await
-}
-
-/// Admission with optional low-latency TCP delivery; authorization and retry rules are unchanged.
-pub async fn admit_optimized(
-    host: &str,
-    port: u16,
-    server_name: &str,
-    admission: Admission<'_>,
-    root: &CertificateDer<'static>,
-    optimized: bool,
-) -> Result<Session<TcpTlsStream>, Option<u32>> {
-    admit_detailed_optimized(host, port, server_name, admission, root, optimized)
+    admit_detailed(host, port, server_name, admission, root)
         .await
         .map_err(|refusal| refusal.map(|refusal| refusal.code))
 }
@@ -50,6 +38,20 @@ pub async fn admit_detailed(
     root: &CertificateDer<'static>,
 ) -> Result<Session<TcpTlsStream>, Option<AdmissionRefusalInfo>> {
     admit_detailed_optimized(host, port, server_name, admission, root, false).await
+}
+
+/// Admission with optional low-latency TCP delivery; authorization and retry rules are unchanged.
+pub async fn admit_optimized(
+    host: &str,
+    port: u16,
+    server_name: &str,
+    admission: Admission<'_>,
+    root: &CertificateDer<'static>,
+    optimized: bool,
+) -> Result<Session<TcpTlsStream>, Option<u32>> {
+    admit_detailed_optimized(host, port, server_name, admission, root, optimized)
+        .await
+        .map_err(|refusal| refusal.map(|refusal| refusal.code))
 }
 
 /// Preserves both authenticated queue metadata and the caller's TCP delivery preference.

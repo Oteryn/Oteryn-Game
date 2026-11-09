@@ -110,6 +110,18 @@ unsafe extern "system" fn menu_proc(
             open(Arc::clone(shared));
             return 0;
         }
+        if msg == WM_COMMAND && (25440..25444).contains(&(w & 0xffff)) {
+            let shared = &*(data as *const Arc<Mutex<Shared>>);
+            if let Some(panel) = oteryn_client::play::HudPanel::ALL.get((w & 0xffff) - 25440) {
+                lock(shared).request_hud_toggle(*panel);
+            }
+            return 0;
+        }
+        if msg == WM_COMMAND && w & 0xffff == 25300 {
+            let shared = &*(data as *const Arc<Mutex<Shared>>);
+            lock(shared).request_magical_archive();
+            return 0;
+        }
         if msg == WM_COMMAND && w & 0xffff == 25200 {
             let shared = &*(data as *const Arc<Mutex<Shared>>);
             let mut state = lock(shared);

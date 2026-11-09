@@ -12,6 +12,7 @@ impl Outbox {
 
     /// Delivers validated session events to the native view (also used by the headless harness).
     pub fn push(&self, events: Vec<SessionEvent>) {
+        self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);
         self.appearance_events(&events);
@@ -116,6 +117,10 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.task_board = Default::default();
+        mailbox.premium_game = Default::default();
+        mailbox.end_wheel_visuals();
+        mailbox.item_forge.resource_dialog.reset();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -123,6 +128,7 @@ impl Outbox {
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
+        mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.bar_actions = Default::default();
         mailbox.boss_encounter_end();
@@ -166,6 +172,10 @@ impl Outbox {
         }
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.task_board = Default::default();
+        mailbox.premium_game = Default::default();
+        mailbox.end_wheel_visuals();
+        mailbox.item_forge.resource_dialog.reset();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -173,6 +183,7 @@ impl Outbox {
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
+        mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.bar_actions = Default::default();
         mailbox.boss_encounter_end();
@@ -210,6 +221,7 @@ impl Outbox {
 /// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
 #[derive(Debug)]
 pub struct PlayLink {
+    pub(in crate::play) owns_session: bool,
     pub(in crate::play) commands: UnboundedSender<PlayCommand>,
     pub(in crate::play) mailbox: SharedMailbox,
 }
@@ -237,6 +249,13 @@ impl PlayLink {
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
+        #[cfg(windows)]
+        super::super::feature_0148_wheel_allocation::view::poll_gems(&self.mailbox, &self.commands);
+        #[cfg(windows)]
+        super::super::feature_0152_item_forge::view::poll_resource_dialog(
+            &self.mailbox,
+            &self.commands,
+        );
         #[cfg(windows)]
         super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
         let mut mailbox = lock(&self.mailbox);
@@ -272,6 +291,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
     let mailbox = SharedMailbox::default();
     (
         PlayLink {
+            owns_session: true,
             commands,
             mailbox: Arc::clone(&mailbox),
         },
@@ -282,12 +302,19 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 
 impl Drop for PlayLink {
     fn drop(&mut self) {
+        if !self.owns_session {
+            return;
+        }
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
         mailbox.properties.end();
+        mailbox.task_board = Default::default();
+        mailbox.premium_game = Default::default();
+        mailbox.end_wheel_visuals();
+        mailbox.item_forge.resource_dialog.reset();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -295,6 +322,7 @@ impl Drop for PlayLink {
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
+        mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.bar_actions = Default::default();
         mailbox.boss_encounter_end();
@@ -328,3 +356,7 @@ impl Drop for PlayLink {
         mailbox.boss_rewards_shutdown = true;
     }
 }
+
+#[cfg(test)]
+#[path = "window_lifetime_tests.rs"]
+mod window_lifetime_tests;

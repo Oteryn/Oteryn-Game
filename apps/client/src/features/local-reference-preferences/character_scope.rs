@@ -46,6 +46,7 @@ impl SettingsState {
         self.item_hotkeys_edit = self.battle_edit;
         self.bar_actions_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
+        self.hud_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
     }

@@ -338,3 +338,5 @@ pub fn append_boss_taints(payload: &mut Vec<u8>, taints: BossTaints) -> Result<(
     );
     Ok(())
 }
+
+pub mod catalogue;

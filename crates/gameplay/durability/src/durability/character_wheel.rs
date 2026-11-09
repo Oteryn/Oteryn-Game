@@ -54,6 +54,9 @@ const BINDING_VERSION: u8 = 1;
 
 pub use oteryn_gameplay_progression::wheel::*;
 
+#[path = "character_wheel/presentation.rs"]
+mod presentation;
+pub use presentation::{WheelPointBudget, WheelPresentationRead};
 #[path = "character_wheel/capacity.rs"]
 mod capacity;
 #[path = "character_wheel/gift.rs"]
@@ -432,28 +435,18 @@ impl DurabilityRoot {
                     {
                         return refuse(WheelRefusal::RulesetNotCurrent);
                     }
-                    let gem_points = atelier.as_ref().map_or(0, |state| {
-                        if state.grade_ruleset_revision.as_deref() == Some(ruleset.revision()) {
-                            state.grades.values().filter(|grade| **grade == 3).count() as u32
-                        } else {
-                            0
-                        }
-                    });
-                    let pilgrimage_complete: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=1)")
-                        .bind(fence.character_id.as_bytes().as_slice())
-                        .bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK)
-                        .fetch_one(&mut *tx).await?;
-                    let task_points = super::task_board::read_promotion_points_in_transaction(
-                        &mut tx, fence.character_id,
-                    ).await?;
-                    // Crystal getWheelPoints includes task promotion points alongside level
-                    // and pilgrimage points to unlock rings; Grade-IV gem bonuses are added after.
-                    let unlock_points = available_points(level)
-                        .checked_add(task_points)
-                        .and_then(|points| points.checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 }))
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    let available = unlock_points.checked_add(gem_points)
-                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let WheelPointBudget {
+                        available,
+                        unlock_points,
+                    } = presentation::read_budget(
+                        &mut tx,
+                        fence.character_id,
+                        level,
+                        atelier.as_ref(),
+                        ruleset.revision(),
+                        pilgrimage_points,
+                    )
+                    .await?;
                     if let Err(refusal) = ruleset.validate_with_unlock_points(
                         &before,
                         &request.slots,

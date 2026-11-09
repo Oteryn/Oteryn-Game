@@ -42,6 +42,7 @@ fn equipment_tracker_reads_real_inspection_commands_and_prunes_unequipped_items(
                 server_sequence: number + 1,
                 status: CommandStatus::Accepted,
                 payload: encode_reply(&Reply {
+                    catalogue: None,
                     status: 1,
                     requests: vec![],
                     items: vec![InspectedItem {
@@ -131,6 +132,7 @@ fn equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed() 
                 server_sequence: number + 1,
                 status: CommandStatus::Accepted,
                 payload: encode_reply(&Reply {
+                    catalogue: None,
                     status: 1,
                     requests: vec![],
                     items: vec![InspectedItem {
@@ -199,6 +201,7 @@ fn equipment_tracker_discards_an_inflight_reply_after_unequip() -> Result<(), St
             server_sequence: 1,
             status: CommandStatus::Accepted,
             payload: encode_reply(&Reply {
+                catalogue: None,
                 status: 1,
                 requests: vec![],
                 items: vec![InspectedItem {

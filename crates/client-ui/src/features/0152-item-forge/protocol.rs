@@ -71,6 +71,7 @@ pub fn request(p: &mut ItemForgePanel, c: ServerMechanicCommand) -> Option<Serve
     Some(c)
 }
 pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
+    let was_pending = p.pending;
     p.pending = false;
     let submitted = p.submitted.take();
     if matches!(
@@ -87,15 +88,38 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
                 {
                     p.feedback =
                         Some("Outcome did not match the attempt; retry the same occurrence".into());
+                    if oteryn_client_runtime::forge_preview::resource_operation(attempt.operation) {
+                        p.resource_dialog.message("The reply did not match this operation. Check Forge history before retrying the same unresolved attempt.");
+                    }
                     return;
+                }
+                if let super::reply::Reply::Result(receipt) = &reply
+                    && attempt.operation.requires_pair()
+                {
+                    super::exaltation::show_result(p, attempt, receipt.clone());
                 }
                 p.retry = None;
                 p.preview.invalidate();
+            }
+            if was_pending
+                && (submitted.is_some_and(|r| {
+                    r.operation == oteryn_client_runtime::cui3::item_forge::Operation::QueryHistory
+                        || oteryn_client_runtime::forge_preview::resource_operation(r.operation)
+                }) || matches!(reply, super::reply::Reply::CurrentDust { .. }))
+            {
+                p.resource_dialog.result(reply.clone());
             }
             p.decoded = Some(reply);
             p.feedback = None;
         } else {
             p.feedback = Some(tr!("Invalid forge reply; refresh to retry").into());
+            if was_pending
+                && submitted.is_some_and(|r| {
+                    oteryn_client_runtime::forge_preview::resource_operation(r.operation)
+                })
+            {
+                p.resource_dialog.message("The operation result could not be confirmed. Check Forge history; no new operation was submitted.");
+            }
         }
     } else {
         if r.status == CommandStatus::Rejected
@@ -107,7 +131,14 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
             p.retry = None;
             p.preview.invalidate();
         }
-        p.feedback = Some(lfmt!("Server refused forge action: {:?}", r.status))
+        p.feedback = Some(lfmt!("Server refused forge action: {:?}", r.status));
+        if was_pending
+            && submitted.is_some_and(|r| {
+                oteryn_client_runtime::forge_preview::resource_operation(r.operation)
+            })
+        {
+            p.resource_dialog.message("The server refused the resource operation. Refresh your resources before another attempt.");
+        }
     }
 }
 /// Read-only projection through the existing Forge capability.

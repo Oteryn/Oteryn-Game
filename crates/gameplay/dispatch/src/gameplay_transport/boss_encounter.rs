@@ -2,6 +2,8 @@
 use super::connection::FreshAdmissionAuthority;
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::boss_encounter as wire;
+#[path = "boss_encounter/catalogue.rs"]
+mod catalogue;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn boss_cooldowns_wire(
@@ -18,6 +20,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return GuildReply::Rejected;
         };
+        let catalogue_query = if kind == wire::COMMAND_TYPE_BOSS_COOLDOWNS {
+            wire::catalogue::Query::decode(payload)
+        } else {
+            None
+        };
+        let mut catalogue_page = None;
         if id == 0
             || !matches!(
                 kind,
@@ -29,7 +37,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .selected_capabilities
                 .contains(wire::CAPABILITY_BOSS_ENCOUNTER_V1)
             || (kind == wire::COMMAND_TYPE_BOSS_COOLDOWNS
-                && wire::decode_cooldown_query(payload).is_err())
+                && catalogue_query.is_none() && wire::decode_cooldown_query(payload).is_err())
             || (kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN
                 && (wire::decode_reward_chest_query(payload).is_err()
                     || (!payload.is_empty()
@@ -57,8 +65,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return GuildReply::Rejected;
             }
+            if let Some(query) = &catalogue_query {
+                catalogue_page = catalogue::project(self, query, &runtime);
+                if catalogue_page.is_none() {
+                    return GuildReply::Rejected;
+                }
+            }
         }
-        let result = if kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN {
+        let result = if let Some(page) = catalogue_page {
+            self.root
+                .read_boss_catalogue_page(self.character, self.holder, fence, page)
+                .await
+        } else if kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN {
             self.root
                 .read_boss_reward_chest_page(self.character, self.holder, fence, payload)
                 .await
