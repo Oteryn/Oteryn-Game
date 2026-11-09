@@ -461,6 +461,13 @@ stage() { # name prerequisite... -- function
     # Which node events dominate, and what admission reported, beyond the tail above.
     echo "--- node event counts"
     grep -oE 'event=[a-z_]+' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
+    # Which semantic passes kept the single holder long or retired it (NBDIAG-3).
+    echo "--- durability holder reports"
+    grep -oE 'DURABILITY_[A-Z_]+( caller=[^ ]+)?( reason=[a-z_]+)?' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
+    echo "--- slowest durability passes"
+    grep -oE 'DURABILITY_PASS_SLOW caller=[^ ]+ held_ms=[0-9]+ deadline_exceeded=[a-z]+' "$node_log" 2>/dev/null | sort -t= -k3 -n -r | head -n 25 || true
+    echo "--- node message kinds"
+    sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- node admission and session events"
     grep -iE 'admission|admit|refus|serve_|session_' "$node_log" 2>/dev/null | grep -v quest_log_excluded | tail -n 60 || true
     echo "--- postgres sessions"
