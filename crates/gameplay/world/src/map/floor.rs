@@ -463,6 +463,18 @@ pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
     }
 }
 
+/// Current callback ground uses its donor speed; ordinary Bundle ground keeps
+/// the existing Engineering pacing policy in the caller.
+pub fn callback_ground_speed(cells: &NativeEntryMovementCells, cell: LogicalCell) -> Option<u16> {
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return None;
+    };
+    index
+        .map()
+        .facts
+        .cake_bridge_ground_speed(pos(cell.x, cell.y, cell.z)?)
+}
+
 fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<TilePos> {
     use crate::map::view::{MapFacts, placement_key};
     let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {

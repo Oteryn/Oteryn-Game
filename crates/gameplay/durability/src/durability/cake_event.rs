@@ -274,3 +274,39 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+impl DurabilityRoot {
+    /// A bounded read by the same live Channel owner that will project the map.
+    /// Presence survives stage-three completion and ends only at the donor cleanup.
+    pub async fn cake_bridge_present(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CorpseDecayFence,
+        bundle: [u8; 32],
+        scope: TerrainScope,
+    ) -> Result<bool, DurabilityError> {
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Err(DurabilityError::Unavailable);
+        };
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !fence_is_live(&mut tx, &fence, &node).await? {
+                return Err(DurabilityError::Unavailable);
+            }
+            let present: Option<bool> = sqlx::query_scalar("SELECT coalesce((SELECT p.stage IN (2,3) AND NOT p.event_end_cleaned_up FROM game_cake_world_progress w LEFT JOIN game_cake_phases p USING(world_id,event_year) WHERE w.world_id=a.world_id ORDER BY w.event_year DESC LIMIT 1),false) FROM game_world_reset_active a JOIN game_world_reset_epochs r USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid AND a.reset_epoch=$2::text::numeric AND game_world_reset_map_epoch_current(a.world_id,a.reset_epoch) AND r.target_digest=$5 AND r.map_revision=$6 AND EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=a.world_id AND c.channel_id=encode($3,'hex')::uuid AND c.activation_sequence=(SELECT max(z.activation_sequence) FROM game_content_activations z WHERE z.world_id=c.world_id AND z.channel_id=c.channel_id) AND c.server_artifact_digest=$7) AND EXISTS(SELECT 1 FROM game_runtime_scope_assignments s JOIN game_durability_admission_runtime_guards g USING(scope_key) WHERE s.world_id=a.world_id AND s.channel_id=encode($3,'hex')::uuid AND s.scope_kind=1 AND s.state=1 AND s.ownership_generation=$4::text::numeric AND g.ready AND g.ownership_generation=s.ownership_generation)")
+                .bind(world_id.as_bytes().as_slice()).bind(scope.reset_epoch.to_string())
+                .bind(channel_id.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
+                .bind(bundle.as_slice()).bind(scope.map_revision).bind(scope.content_generation.as_slice())
+                .fetch_optional(&mut *tx).await?;
+            let present = present.ok_or(DurabilityError::Unavailable)?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(present)
+        })).await
+    }
+}

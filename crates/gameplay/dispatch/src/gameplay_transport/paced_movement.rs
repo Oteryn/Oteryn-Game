@@ -41,6 +41,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.ensure_source_map_initialized().await {
             return (StepOutcome::rejected(), None);
         }
+        if !self.refresh_cake_bridge_near_actor(actor).await {
+            return (StepOutcome::rejected(), None);
+        }
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
         if self.states.spell_states.lock().await.is_dead(actor) {
             return (StepOutcome::rejected(), None);

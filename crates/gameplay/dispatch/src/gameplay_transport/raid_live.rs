@@ -612,6 +612,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let now = crate::world_clock::now_utc_ms().and_then(|now| i64::try_from(now).ok());
             if let Some(now_ms) = now {
+                if !self.refresh_cake_bridge().await {
+                    super::operator_event("cake_bridge_projection_retry");
+                }
                 if self.publish_raid_activity(now_ms).await.is_err() {
                     super::operator_event("raid_activity_projection_retry");
                 }

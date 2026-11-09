@@ -347,7 +347,10 @@ fn plan_with_house<F: MapFacts>(
         let start = pool.len();
         let stored =
             view::compose_into(source.overlay.base(), overlay, source.facts, pos, &mut pool)?;
-        let ground_speed = crate::map::boot::view_ground_speed(pos, stored);
+        let ground_speed = source
+            .facts
+            .ground_speed_override(pos)
+            .unwrap_or_else(|| crate::map::boot::view_ground_speed(pos, stored));
         append_house(pos, &mut pool);
         *slot = Slot {
             start,

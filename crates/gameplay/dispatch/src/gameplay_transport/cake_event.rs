@@ -15,6 +15,9 @@ use crate::map::view::{self, MapEntryKey};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[path = "cake_bridge.rs"]
+mod bridge;
+
 fn hex(bytes: impl IntoIterator<Item = u8>) -> String {
     bytes.into_iter().map(|b| format!("{b:02x}")).collect()
 }

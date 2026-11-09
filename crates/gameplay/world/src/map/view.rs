@@ -58,6 +58,10 @@ pub struct EntryFacts {
 /// The bundle and content facts of a map view, held by the owner of the bundle palette and the
 /// content generation.
 pub trait MapFacts {
+    /// Source ground created by a current Channel callback, independent of the base tile.
+    fn ground_speed_override(&self, _pos: TilePos) -> Option<u16> {
+        None
+    }
     /// Resolve a movement-created volatile item in this exact fact snapshot.
     fn movement_item(&self, _id: u64) -> Option<(TilePos, EntryId)> {
         None
@@ -287,7 +291,7 @@ pub fn compose_into(
         }
     }
     out.extend(facts.movement_items(pos));
-    Ok(ground_speed)
+    Ok(facts.ground_speed_override(pos).unwrap_or(ground_speed))
 }
 
 /// The composed stack of `pos` (contract §2): `None` when the tile is empty.

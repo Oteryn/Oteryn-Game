@@ -1124,6 +1124,9 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn ground_speed_override(&self, pos: TilePos) -> Option<u16> {
+        self.cake_bridge_ground_speed(pos)
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.lock().ok()?.movement_item(id)
     }
@@ -1195,6 +1198,9 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn ground_speed_override(&self, pos: TilePos) -> Option<u16> {
+        self.callbacks.as_ref()?.projected_ground_speed(pos)
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.as_ref()?.movement_item(id)
     }

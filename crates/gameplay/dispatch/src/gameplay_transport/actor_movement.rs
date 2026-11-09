@@ -23,6 +23,14 @@ use std::time::Duration;
 /// A committed step and its SPEED-1 duration (CONDITIONS-0 §4.2), or why nothing moved.
 pub type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
 
+struct BundleCallbackGroundSpeed<'a>(&'a NativeEntryMovementCells);
+impl GroundSpeedSource for BundleCallbackGroundSpeed<'_> {
+    fn ground_speed(&self, cell: LogicalCell) -> u16 {
+        crate::map::floor::callback_ground_speed(self.0, cell)
+            .unwrap_or_else(|| EngineeringGroundSpeed.ground_speed(cell))
+    }
+}
+
 impl ChannelSpellStates {
     /// Resolve Drome control before field/floor preflight. The common movement owner
     /// repeats this pure decision with the same frozen time/position, so a prepared
@@ -464,7 +472,7 @@ fn bundle_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
+    let duration = duration_onto(&BundleCallbackGroundSpeed(cells), onto, speed, direction)?;
     runtime
         .commit_source_step(proof)
         .map(|snapshot| (snapshot, duration))

@@ -1,6 +1,9 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
 
+#[path = "cake_bridge.rs"]
+mod cake_bridge;
+
 #[path = "quest_item_batch.rs"]
 mod item_batch;
 pub use item_batch::QuestMapItemMove;
@@ -45,6 +48,7 @@ pub enum QuestCallbackProjection {
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
+    cake_bridge: Option<cake_bridge::BridgeProjection>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
@@ -60,6 +64,9 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
+    pub(super) fn projected_ground_speed(&self, pos: TilePos) -> Option<u16> {
+        self.cake_bridge.as_ref()?.ground_speed(pos)
+    }
     fn remove_portals(&mut self, owner: u64) {
         self.portals.retain(|pos, portal| {
             if portal.owner != owner {
