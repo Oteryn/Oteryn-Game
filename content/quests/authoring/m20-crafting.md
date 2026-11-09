@@ -62,7 +62,7 @@ visual feedback parity or a complete quest route.
 | 3 | BLOCKED: the conservation-jar and goldfish-feed consequences have no implementation in the pinned donor. |
 | 4 | PASS for value/state semantics: `content/quests/npc-callbacks/m20-cursed-crystal-wax.json:6`, registered in `crates/gameplay/quests/src/quest/reward_callbacks.rs:343`; unit boundary/stage proof in `reward_callbacks/recipe_tests.rs:4`; real self-use, stale-entity rejection, one-item debit, replay and later-command rejection in `postgres_tests/m20_cursed_crystal.rs:9`. Visual feedback remains outside this qualification. |
 | 5 | PASS: the mounted PostgreSQL cases return `Ok(())` without the admin URL and ran against the retained PostgreSQL 18.6 cluster. Wax: 60.683295796 s; existing first-mixture atomic debit/grant: 61.763047947 s. Both passed with real owner calls and no ignored tests. |
-| 6 | PARTIAL: Cursed Crystal self-use is wired. Cradle and Scatterbrained content remain blocked. Authoring checks/unit tests and content-tree validation pass; full regeneration hits the baseline failure below. |
+| 6 | PARTIAL: Cursed Crystal self-use is wired. Cradle and Scatterbrained content remain blocked. Authoring checks/unit tests and content-tree validation pass; regeneration and its registered checks now complete after the cohort repair below. |
 
 Local results on the published source tree:
 
@@ -77,19 +77,35 @@ Local results on the published source tree:
 - World `pin-check`: passed, unchanged world digest `7b680a6007b27dff037ef35cfdb4bd97deec63b32e47c88cc597a603cd28a41c`. No pin refresh is required.
 - Duplicate migration-number check: clean. No new migrations or receipt system.
 
-Full `regenerate_content.py --resolve --no-stage` materialized the content and
-passed content-tree validation, then failed in the existing migration-tool test:
+## Resolved cohort-count regression
 
-```text
-FAIL: test_registration_replays_all_current_outputs
-File "tools/content-migration/test_monster_seven_spell_overlay.py", line 54
-self.assertEqual(len(keys),63)
-AssertionError: 64 != 63
-```
+The old `64 != 63` failure came from M56 commit
+`16502921d10e41ee48101afe600a64927cdedffe`, which added Molten Wax 9106 to
+`qengine_reward_item_profiles.IDS` and the generated 64-profile packet before the
+QM20 task base. The overlay replay test and two equipment-test expectations
+still asserted the preceding 63-profile cohort. QM20 did not add a profile.
 
-The task base already contains 64 QENGINE reward Item profiles. Regeneration also
-updates the same stale expected count at
-`crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs:364,430`.
-That automatic edit was restored because existing equipment tests and migration
-tools are outside this lane's ownership. No failed check was weakened or skipped,
-and no unrelated generated changes are included.
+The overlay test now asserts exactly 64 entries and 64 unique entries, explicitly
+requires wax 9106, and retains exact equality with the full generator ID set,
+byte-for-byte capture replay, production bindings, semantics and raw attributes.
+It was red at line 54 before repair; all 12 tests passed after repair (113.949 s).
+
+`regenerate_content.py --resolve --no-stage` regenerated the equipment-test
+counts to 64. Its run passed the previously failing overlay check, content-tree
+validation, materialized-tree validation and item-reference checks. A later item
+test ran out of disk space; task-created incremental build artifacts were removed,
+recovering 23 GB. The failed test and every remaining registered check were then
+rerun through the same `regenerate_content.CHECKS` list and passed. The five
+repository World tests also passed. No check was removed, weakened or skipped
+for this repair.
+
+World pins were refreshed with `oteryn-world-bundle-compiler pin-refresh .`;
+the previous and resulting World digest are both
+`7b680a6007b27dff037ef35cfdb4bd97deec63b32e47c88cc597a603cd28a41c`.
+The generated equipment expectations are retained, and their focused Rust test
+`equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes`
+passed (1 test, 73.67 s). The generator and registered validation sequence are
+complete, including the resumed disk-interrupted stage.
+
+M20 remains partial only for the mechanic/content gaps described above, including
+Cradle/Scatterbrained donor actions, final-mix Item admission and wax presentation.
