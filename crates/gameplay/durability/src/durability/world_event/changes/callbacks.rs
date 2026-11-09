@@ -52,6 +52,32 @@ impl DurabilityRoot {
         context: QuestWorldContext,
         callback: String,
     ) -> Result<bool, DurabilityError> {
+        self.observe_world_callback_gate_input(authority,node,permit,fence,context,callback,None).await
+    }
+
+    /// Source portals retain their exact reusable tool through the fenced read pass.
+    #[allow(clippy::too_many_arguments, reason="source admission binds the same fence, World snapshot and command")]
+    pub async fn observe_source_portal_use(
+        &self, authority:&ReconciledCharacterAuthority<'_, '_>, node:&NodeIncarnationProof,
+        permit:&SpellLanePermit, fence:CurrentCharacterGameplayFence, context:QuestWorldContext,
+        callback:String, command:crate::foundation::CommandRef,
+    ) -> Result<bool,DurabilityError> {
+        self.observe_world_callback_gate_input(authority,node,permit,fence,context,callback,Some(command)).await
+    }
+
+    #[allow(clippy::too_many_arguments, reason="shared observation keeps source custody and current authority in one pass")]
+    async fn observe_world_callback_gate_input(
+        &self, authority:&ReconciledCharacterAuthority<'_, '_>, node:&NodeIncarnationProof,
+        permit:&SpellLanePermit, fence:CurrentCharacterGameplayFence, context:QuestWorldContext,
+        callback:String, source_use:Option<crate::foundation::CommandRef>,
+    ) -> Result<bool,DurabilityError> {
+        let source = if let Some(command)=source_use {
+            if command.game_session_id() != fence.game_session_id { return Ok(false); }
+            let Some(source)=oteryn_gameplay_quests::quest::world_callbacks::load()
+                .map_err(|_|DurabilityError::InvalidStoredState)?.into_iter()
+                .find(|c| c.key == callback && c.effects.source_portal.is_some()) else { return Ok(false); };
+            Some((source,command))
+        } else { None };
         let crate::foundation::RuntimeScopeRefV1::Channel {
             world_id,
             channel_id,
@@ -67,9 +93,9 @@ impl DurabilityRoot {
         let ground = oteryn_gameplay_quests::quest::world_callbacks::stateless_ground_requirements(
             &callback,
         );
-        let mut lane = permit;
+        let mut lane = (permit,source);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut lane, move |holder, deadline, lane| {
+            .run_with_context(&mut lane, move |holder, deadline, (lane,source)| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -89,6 +115,16 @@ impl DurabilityRoot {
                         .await?
                     {
                         return Ok(false);
+                    }
+                    if let Some((source,command)) = source.as_ref() {
+                        let request=crate::durability::quest_state::QuestTransitionRequest {
+                            transition_key:source.key.clone(),
+                            cause:crate::durability::quest_state::QuestCause::Use(*command),
+                        };
+                        // SourcePortal validation permits exactly one retained input,
+                        // no offering, replacement, personal effect or value write.
+                        if !crate::durability::quest_world_callback::consume(&mut tx,lane,fence,
+                            &request,source,&context,(&recovery,&node)).await? { return Ok(false); }
                     }
                     if let Some(requirements) = &ground
                         && !crate::durability::quest_world_callback::ground_stack::matches_requirements(

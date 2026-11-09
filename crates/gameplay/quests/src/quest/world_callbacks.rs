@@ -30,6 +30,8 @@ pub enum Trigger {
 #[cfg(test)]
 mod admission_tests;
 mod clear_area;
+#[cfg(test)]
+mod source_portal_tests;
 pub use clear_area::ClearArea;
 mod clock;
 mod counterparts;
@@ -41,7 +43,7 @@ pub mod phase;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
-    TargetTransform,
+    SourcePortal, TargetTransform,
 };
 pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
@@ -348,6 +350,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
+    callbacks.push(super::source_world_objects::dreamer_entrance());
     callbacks.extend(super::source_world_objects::lions_pagodas());
     callbacks.extend(super::source_world_objects::lions_amphora());
     callbacks.extend(super::source_world_objects::lions_flowers());
@@ -453,6 +456,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.item_cycle.is_some()
                     || !callback.passages.is_empty()))
             || ((callback.requires_world_admission || callback.opening_only)
+                && callback.effects.source_portal.is_none()
                 && (callback.storage.iter().all(|state| state.preserve)
                     || callback.native_rule.is_some()))
             || (callback.opening_only
@@ -579,7 +583,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     .collect();
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
-                    || !callback.has_personal_state()
+                    || (!callback.has_personal_state() && callback.effects.source_portal.is_none())
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100

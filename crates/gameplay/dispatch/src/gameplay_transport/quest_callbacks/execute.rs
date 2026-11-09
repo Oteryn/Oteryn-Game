@@ -100,10 +100,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
-            Ok(projection) => projection,
-            Err(result) => return result,
-        };
+        let mut projection =
+            match self.prepare_quest_projection(map, callback, key, close, &mut after) {
+                Ok(projection) => projection,
+                Err(result) => return result,
+            };
         if !close && let Some(delay) = callback.effects.reset_after_ms {
             let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
@@ -749,6 +750,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => {}
             }
         }
+        if let Some(portal) = &callback.effects.source_portal
+            && let Some(crate::map::facts::QuestCallbackProjection::SourcePortal {
+                expires, ..
+            }) = projection.as_mut()
+        {
+            let Some(due) = self.owner_now().get().checked_add(portal.lifetime_us) else {
+                return UseDisposition::Exhausted;
+            };
+            *expires = due;
+        }
         if let Some(target) = &callback.effects.target_transform
             && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
                 due,
@@ -780,6 +791,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.target_transform.is_some()
+            || callback.effects.source_portal.is_some()
             || callback
                 .effects
                 .portals

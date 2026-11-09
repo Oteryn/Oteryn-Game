@@ -35,6 +35,70 @@ pub struct TargetTransform {
     pub reset_after_ms: u32,
 }
 
+/// A retained tool opens one shared, source-fenced entrance without personal progress.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SourcePortal {
+    pub position: Position,
+    pub destination: Position,
+    pub appearance: u16,
+    pub lifetime_us: u64,
+    pub restore_source: bool,
+    pub group: String,
+}
+impl SourcePortal {
+    fn valid(&self, c: &Callback) -> bool {
+        (-15..=0).contains(&self.position.floor)
+            && (-15..=0).contains(&self.destination.floor)
+            && self.position != self.destination
+            && self.appearance != 0
+            && (1..=3_600_000_000).contains(&self.lifetime_us)
+            && self.group.len() <= 128
+            && self.group.starts_with("oteryn:quest-source/")
+            && super::super::valid_quest_key(&self.group)
+            && c.actor_kind == ActorKind::Player
+            && c.trigger == Trigger::Use
+            && c.requires_world_admission
+            && !c.has_personal_state()
+            && c.selector
+                .native
+                .as_ref()
+                .is_some_and(|s| s.position == self.position)
+            && c.item_on_target.as_ref().is_some_and(|i| {
+                i.reusable
+                    && i.count == 1
+                    && i.alternatives.is_empty()
+                    && i.replacement.is_none()
+                    && i.target_replacement.is_none()
+            })
+            && c.lever.is_none()
+            && !c.reversible
+            && !c.opening_only
+            && c.passages.is_empty()
+            && c.world_requirements.is_empty()
+            && c.offerings.is_empty()
+            && c.teleport.is_none()
+            && c.native_rule.is_none()
+            && c.experience.is_none()
+            && c.monk_reward.is_none()
+            && c.admission.is_none()
+            && !c.requires_premium
+            && c.effects.transform.is_none()
+            && c.effects.reset_after_ms.is_none()
+            && c.effects.target_transform.is_none()
+            && c.effects.portals.is_none()
+            && c.effects.item_presence.is_none()
+            && c.effects.item_cycle.is_none()
+            && c.effects.encounter.is_none()
+            && c.effects.clear_area.is_none()
+            && c.effects.item_reward.is_none()
+            && c.effects.outfit_reward.is_none()
+            && c.effects.mount_reward.is_none()
+            && c.effects.quest_completion.is_none()
+            && !c.effects.completes_quest
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -65,6 +129,8 @@ pub struct CallbackEffects {
     pub reset_after_ms: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target_transform: Option<TargetTransform>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_portal: Option<SourcePortal>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -240,6 +306,13 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .source_portal
+        .as_ref()
+        .is_some_and(|portal| !portal.valid(callback))
+    {
+        return false;
+    }
     if effects.player_speech.as_ref().is_some_and(|text| {
         callback.actor_kind != ActorKind::Player
             || text.is_empty()

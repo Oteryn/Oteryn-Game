@@ -22,11 +22,12 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m44_dreamer = name == "m44-dreamer-entrance";
     let m44_flower = name.starts_with("m44-lions-flower-0/");
     let m44_amphora = name == "m44-lions-amphora-1";
     let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
+    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower || m44_dreamer;
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -65,7 +66,7 @@ fn scenario_case(
         || native_upper;
     let start = if m44_flower {
         Position { x: trigger.x + 1, ..trigger }
-    } else if m44_amphora {
+    } else if m44_amphora || m44_dreamer {
         Position {
             y: trigger.y - 1,
             ..trigger
@@ -370,7 +371,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m44_flower {
+        let world = if m44_dreamer {
+            super::super::m44_dreamer_lifecycle::world(generation.native_gameplay().ok_or("dreamer policies")?)?
+        } else if m44_flower {
             super::super::m44_flower_lifecycle::world(generation.native_gameplay().ok_or("flower policies")?)?
         } else if m44_amphora {
             super::super::m44_amphora_lifecycle::world(
@@ -640,7 +643,7 @@ fn scenario_case(
                     &callback,
                 )?,
             ));
-        } else if m44 {
+        } else if m44 && callback.has_personal_state() {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
@@ -836,6 +839,8 @@ fn scenario_case(
                 source_id,
             )
             .await?;
+        } else if m44_dreamer {
+            super::super::m44_dreamer_lifecycle::exercise(&owner, &mut admitted, &h, fence).await?;
         } else if m44_flower {
             super::super::m44_flower_lifecycle::exercise(&owner, &mut admitted, &h, name.ends_with("/later"), name.ends_with("/uncertain")).await?;
         } else if m44_amphora {
