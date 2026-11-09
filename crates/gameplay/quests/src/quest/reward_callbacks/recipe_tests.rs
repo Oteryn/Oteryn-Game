@@ -96,6 +96,46 @@ fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs(
 }
 
 #[test]
+fn m20_durable_recipe_plan_is_distinct_from_legacy_tool_proofs() -> Result<(), String> {
+    let callbacks = load()?;
+    let recipe = callbacks
+        .iter()
+        .find(|c| c.carried_target.is_some())
+        .ok_or("recipe")?;
+    let plan = durable_plan(recipe)?;
+    assert!(plan.get("carried_item").is_none());
+    assert_eq!(
+        plan["recipe_source"].as_str(),
+        recipe.carried_item.as_deref()
+    );
+    assert_eq!(
+        plan["carried_target"].as_str(),
+        recipe.carried_target.as_deref()
+    );
+    let legacy = callbacks
+        .iter()
+        .find(|c| c.carried_item.is_some() && c.carried_target.is_none())
+        .ok_or("tool")?;
+    assert_eq!(
+        durable_plan(legacy)?,
+        serde_json::to_value(legacy).map_err(|e| e.to_string())?
+    );
+    Ok(())
+}
+
+#[test]
+fn m20_stateful_recipes_are_repeatable_paid_exchanges() -> Result<(), String> {
+    for callback in load()?.into_iter().filter(|c| c.carried_target.is_some()) {
+        assert!(!callback.storage.is_empty());
+        assert!(callback.is_paid_exchange());
+        let mut legacy = callback;
+        legacy.carried_target = None;
+        assert!(!legacy.is_paid_exchange());
+    }
+    Ok(())
+}
+
+#[test]
 fn m20_carried_recipe_requires_two_explicit_inputs_and_binds_target_coordinator()
 -> Result<(), String> {
     let mut document: serde_json::Value =

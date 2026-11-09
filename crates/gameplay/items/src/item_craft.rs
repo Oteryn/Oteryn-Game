@@ -129,6 +129,9 @@ pub fn cooking_conversion(
     used: &TypedDefinitionRef,
     station: &TypedDefinitionRef,
 ) -> Option<CookingConversion> {
+    if let Some(conversion) = quest_recipes::station(native, used, station) {
+        return Some(conversion);
+    }
     let rows = catalogue_rows()?;
     let used_ref = source_ref(native, used)?;
     let station_ref = source_ref(native, station)?;

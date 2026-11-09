@@ -31,6 +31,7 @@ mod bundle_gates_tests;
 mod bundle_map_position;
 mod cake_event;
 mod capabilities;
+mod carried_recipes;
 mod cast_observer;
 mod channel_states;
 mod character_gameplay_fence;

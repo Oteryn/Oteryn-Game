@@ -853,16 +853,7 @@
       "path": "tools/content-schema/native-gameplay/loot-tables.json"
     },
     {
-      "path": "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json"
-    },
-    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
-    },
-    {
-      "path": "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json"
-    },
-    {
-      "path": "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1019,7 +1010,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5824,
+          "record_count": 5782,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1027,7 +1018,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "ffffbf2eede6a48b76c26b2b133b59f26a41c43153d37afbcf911b7acf4651e1"
+          "sha256": "28f7a5da4141668e4a42fb347a90bf4e8ca31fae75cf226bcf207b3b35d9d48c"
         },
         {
           "creates_canonical_identities": false,

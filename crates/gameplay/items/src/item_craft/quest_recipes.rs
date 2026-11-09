@@ -8,12 +8,31 @@ struct Recipe {
     ingredients: [u32; 2],
     outputs: Vec<(u32, u32)>,
     source: String,
+    #[serde(default)]
+    world_station: bool,
 }
 
 pub(super) fn carried(
     native: &NativeGameplayState,
     used: &TypedDefinitionRef,
     target: &TypedDefinitionRef,
+) -> Option<CookingConversion> {
+    resolve(native, used, target, false)
+}
+
+pub(super) fn station(
+    native: &NativeGameplayState,
+    used: &TypedDefinitionRef,
+    target: &TypedDefinitionRef,
+) -> Option<CookingConversion> {
+    resolve(native, used, target, true)
+}
+
+fn resolve(
+    native: &NativeGameplayState,
+    used: &TypedDefinitionRef,
+    target: &TypedDefinitionRef,
+    world_station: bool,
 ) -> Option<CookingConversion> {
     let used = source_ref(native, used)?;
     let target = source_ref(native, target)?;
@@ -35,9 +54,10 @@ pub(super) fn carried(
             .ok()
         })
         .as_ref()?;
-    let mut matching = rows
-        .iter()
-        .filter(|r| r.ingredients == pair || r.ingredients == [pair[1], pair[0]]);
+    let mut matching = rows.iter().filter(|r| {
+        r.world_station == world_station
+            && (r.ingredients == pair || (!world_station && r.ingredients == [pair[1], pair[0]]))
+    });
     let row = matching.next()?;
     if matching.next().is_some()
         || row.outputs.is_empty()
