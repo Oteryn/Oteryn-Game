@@ -90,6 +90,7 @@ pub use oteryn_protocol_oteryn::presentation::{
 mod recovery;
 use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::coin_market;
+pub use oteryn_protocol_oteryn::coin_transfer;
 pub use oteryn_protocol_oteryn::depot::{
     DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply,
 };

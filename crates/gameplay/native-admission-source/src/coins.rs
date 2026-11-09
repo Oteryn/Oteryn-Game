@@ -75,12 +75,20 @@ impl ReceiptProof {
 }
 pub struct CoinClient {
     market_enabled: bool,
+    transfers_enabled: bool,
     transport: Box<dyn Transport>,
 }
 impl CoinClient {
     pub fn with_market_enabled(mut self, enabled: bool) -> Self {
         self.market_enabled = enabled;
         self
+    }
+    pub fn with_transfers_enabled(mut self, enabled: bool) -> Self {
+        self.transfers_enabled = enabled;
+        self
+    }
+    pub fn transfers_enabled(&self) -> bool {
+        self.transfers_enabled
     }
     pub fn market_enabled(&self) -> bool {
         self.market_enabled
@@ -89,6 +97,7 @@ impl CoinClient {
         Self {
             transport,
             market_enabled: false,
+            transfers_enabled: false,
         }
     }
     pub async fn receipt(

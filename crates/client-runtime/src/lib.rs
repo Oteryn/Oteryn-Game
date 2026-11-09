@@ -345,3 +345,4 @@ pub use oteryn_session::wheel_presentation;
 pub mod server_modal;
 
 pub use oteryn_session::coin_market;
+pub use oteryn_session::coin_transfer;

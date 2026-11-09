@@ -16,6 +16,8 @@ use sqlx::{PgConnection, Row};
 use std::{future::Future, pin::Pin};
 #[path = "coin_market/finish.rs"]
 mod finish;
+#[path = "coin_market/gift.rs"]
+mod gift;
 #[path = "coin_market/jobs.rs"]
 mod jobs;
 #[path = "coin_market/prepare.rs"]
@@ -174,6 +176,12 @@ fn pending_of(r: &sqlx::postgres::PgRow) -> Result<Pending> {
             operation: operation.clone(),
             reservation: r.try_get("reservation_id")?,
             buyer: r.try_get("buyer")?,
+            amount,
+        },
+        "transfer" => PlatformRequest::Transfer {
+            operation: operation.clone(),
+            account: r.try_get("seller")?,
+            recipient: r.try_get("buyer")?,
             amount,
         },
         "release" => PlatformRequest::Release {

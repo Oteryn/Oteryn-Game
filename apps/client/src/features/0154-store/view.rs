@@ -28,32 +28,28 @@ mod premium_game;
 #[path = "../local-premium/game_native.rs"]
 mod premium_native;
 
-
 #[cfg(windows)]
 fn open_gift(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,
         Form {
-            title: "In-game coin gift — preview",
+            title: "In-game coin gift",
             labels: &["Recipient name", "Transferable coins"],
             buttons: &[
                 "Review recipient and amount",
-                "Confirm gift (disabled)",
-                "Cancel",
+                "Confirm reviewed gift",
+                "Close",
+                "Retry confirmation",
+                "Refresh receipt",
             ],
             snapshot: |mailbox| {
                 let p = &mailbox.store;
                 (
                     p.gift_open,
-                    p.pending,
+                    p.gift.pending.is_some(),
                     p.gift_fields.to_vec(),
-                    lfmt!(
-                        "Coin transfers are unavailable in this session.\r\n{}",
-                        p.feedback.as_deref().unwrap_or(tr!(
-                            "Review a recipient and amount. No coins are moved by a preview."
-                        ))
-                    ),
+                    p.feedback.clone().unwrap_or_else(|| "Review the exact recipient and amount before confirming. Gifts cannot be recalled.".into()),
                 )
             },
             set_open: |mailbox, open| {
@@ -62,8 +58,10 @@ fn open_gift(link: &PlayLink) {
                     mailbox.store.gift_reviewed = None;
                 }
             },
-            submit: |mailbox, _commands, action, fields| {
-                super::input::gift_submit(&mut mailbox.store, action, &fields);
+            submit: |mailbox, commands, action, fields| {
+                if let Ok(fields) = <[String; 2]>::try_from(fields) {
+                    super::input::gift::submit(mailbox, commands, action, fields);
+                }
             },
         },
     );

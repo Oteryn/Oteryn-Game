@@ -40,6 +40,13 @@ impl c::Transport for Peer {
     let Some(w)=s.wallets.get_mut(&a)else{return Ok(refusal("unknown_account",422));};
     if w.transferable<n{return Ok(refusal("insufficient_transferable",409));}
     w.transferable-=n;w.reserved+=n;s.reservations.insert(id.clone(),(a.clone(),n));(a,None,n,"reserve")
+   }else if path.ends_with("/transfers"){
+    let a=field("sender_account_id")?;let other=field("recipient_account_id")?;let n=amount()?;
+    assert_eq!(c::Request::Transfer{operation:id.clone(),account:a.clone(),recipient:other.clone(),amount:n as u64}.wire()?.2,body);
+    if !s.wallets.contains_key(&other){return Ok(refusal("unknown_account",422));}
+    let Some(w)=s.wallets.get_mut(&a)else{return Ok(refusal("unknown_account",422));};
+    if w.transferable<n{return Ok(refusal("insufficient_transferable",409));}
+    w.transferable-=n;s.wallets.get_mut(&other).ok_or(c::Error::Invalid)?.transferable+=n;(a,Some(other),n,"transfer")
    }else if path.ends_with("market/settlements"){
     let reservation=field("reservation_id")?;let buyer=field("buyer_account_id")?;let n=amount()?;
     assert_eq!(c::Request::Settle{operation:id.clone(),reservation:reservation.clone(),buyer:buyer.clone(),amount:n as u64}.wire()?.2,body);
@@ -56,7 +63,7 @@ impl c::Transport for Peer {
    let w=s.wallets.get(&account).ok_or(c::Error::Invalid)?;
    let receipt=c::Receipt{operation_id:id.clone(),kind:kind.into(),account_id:account.clone(),counterparty_account_id:other.clone(),amount:n.to_string(),transferable_after:w.transferable.to_string(),non_transferable_after:w.non_transferable.to_string(),reserved_after:w.reserved.to_string(),occurred_at:"2026-11-09T00:00:00Z".into()};
    let r=c::Mutation{result:"ok".into(),receipt};s.mutations+=1;s.receipts.insert(id.clone(),(binding,r.clone()));s.sequence+=1;
-   let entry=c::Entry{entry_id:format!("019a65f0-0000-7000-8000-{:012x}",s.sequence),operation_id:id,kind:kind.into(),coin_class:"transferable".into(),counterparty_account_id:other.clone(),available_delta:if kind=="reserve"{-n}else if kind=="release"{n}else{0}.to_string(),reserved_delta:if kind=="reserve"{n}else{-n}.to_string(),occurred_at:"2026-11-09T00:00:00Z".into()};
+   let entry=c::Entry{entry_id:format!("019a65f0-0000-7000-8000-{:012x}",s.sequence),operation_id:id,kind:kind.into(),coin_class:"transferable".into(),counterparty_account_id:other.clone(),available_delta:if kind=="reserve" || kind=="transfer"{-n}else if kind=="release"{n}else{0}.to_string(),reserved_delta:if kind=="reserve"{n}else if kind=="transfer"{0}else{-n}.to_string(),occurred_at:"2026-11-09T00:00:00Z".into()};
    s.entries.entry(account.clone()).or_default().push(entry.clone());if let Some(other)=other{let mut e=entry;e.available_delta=n.to_string();e.reserved_delta="0".into();e.counterparty_account_id=Some(account);s.entries.entry(other).or_default().push(e);}
    if s.dropped_ack{s.dropped_ack=false;return Err(c::Error::Unavailable);}
    Ok((200,serde_json::to_vec(&r)?))
@@ -67,4 +74,4 @@ pub(super) struct NoStore;
 impl store::StoreTransport for NoStore {
  fn exchange<'a>(&'a mut self,_operation:Operation,_body:&'a str)->Pin<Box<dyn Future<Output=Result<Vec<u8>,store::TransportFailure>>+Send+'a>>{Box::pin(async{Err(store::TransportFailure::Unavailable)})}
 }
-pub(super) fn client(state:&Shared)->c::CoinClient{c::CoinClient::new(Box::new(Peer(Arc::clone(state)))).with_market_enabled(true)}
+pub(super) fn client(state:&Shared)->c::CoinClient{c::CoinClient::new(Box::new(Peer(Arc::clone(state)))).with_market_enabled(true).with_transfers_enabled(true)}

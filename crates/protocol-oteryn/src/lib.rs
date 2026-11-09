@@ -48,6 +48,7 @@ mod charm_wire;
 pub mod chat;
 pub mod coin_conversion;
 pub mod coin_market;
+pub mod coin_transfer;
 pub mod command_replay;
 pub mod condition_status;
 pub mod container_sort;

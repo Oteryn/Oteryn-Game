@@ -120,3 +120,36 @@ fn coin_client_calls_transport_and_rejects_changed_receipt()
     })?;
     Ok(())
 }
+#[test]
+fn platform_coin_transfer_matches_pinned_request_receipt_and_rejects_recipient_substitution()
+-> Result<(), Box<dyn std::error::Error>> {
+    let r = Request::Transfer {
+        operation: "019a65f0-0000-7000-8000-000000000003".into(),
+        account: "019a65f0-0000-7000-8000-000000000001".into(),
+        recipient: "019a65f0-0000-7000-8000-000000000002".into(),
+        amount: 10,
+    };
+    let (method, path, body) = r.wire()?;
+    assert_eq!(
+        (method, path.as_str()),
+        ("POST", "/internal/v1/coins/transfers")
+    );
+    assert_eq!(
+        body,
+        include_str!(
+            "../../../../../docs/contracts/fixtures/platform-coin-wire-v1/transfers-request.json"
+        )
+    );
+    let bytes = include_bytes!(
+        "../../../../../docs/contracts/fixtures/platform-coin-wire-v1/transfers-ok.json"
+    );
+    assert!(matches!(decode(&r, 200, bytes)?, Reply::Mutation(_)));
+    let wrong = Request::Transfer {
+        operation: "019a65f0-0000-7000-8000-000000000003".into(),
+        account: "019a65f0-0000-7000-8000-000000000001".into(),
+        recipient: "019a65f0-0000-7000-8000-000000000099".into(),
+        amount: 10,
+    };
+    assert!(decode(&wrong, 200, bytes).is_err());
+    Ok(())
+}

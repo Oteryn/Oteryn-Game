@@ -16,9 +16,9 @@ async fn call(owner:&crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '
 }
 #[test]fn coin_market_postgres_real_wire_reserve_partial_fill_replay_restart_and_gold_conservation()->TestResult{
  if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}
- std::thread::Builder::new().stack_size(256<<20).spawn(||scenario().map_err(|e|e.to_string()))?.join().map_err(|_|"coin scenario panicked")??;Ok(())
+ std::thread::Builder::new().stack_size(256<<20).spawn(||scenario(false).map_err(|e|e.to_string()))?.join().map_err(|_|"coin scenario panicked")??;Ok(())
 }
-fn scenario()->TestResult{run(async |admin|{
+fn scenario(gift:bool)->TestResult{run(async |admin|{
  let harness=Harness::create_with_admission_seed(admin,"coin_market",true,false).await?;super::reset();prepare_current_session(&harness).await?;
  let seal=harness.recovery.seal_current().map_err(debug)?;let authority=harness.root.open_character_authority(&seal).await.map_err(debug)?;
         let mut deps = Dependencies::new()?;
@@ -148,10 +148,10 @@ fn scenario()->TestResult{run(async |admin|{
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
-        scenario_body(&harness,&authority,&mut owner,&deps).await?;
+        scenario_body(&harness,&authority,&mut owner,&deps,gift).await?;
         drop(owner);drop(authority);drop(seal);harness.cleanup().await
     })}
-async fn scenario_body(h:&Harness,authority:&crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,owner:&mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,deps:&Dependencies)->TestResult{
+async fn scenario_body(h:&Harness,authority:&crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,owner:&mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,deps:&Dependencies,gift:bool)->TestResult{
  use crate::durability::guild_chat_fixture as chars;
  use crate::native_admission_source::store::StoreClient;
  use crate::gameplay_transport::coin_market::reconcile_coin_market;
@@ -166,7 +166,7 @@ async fn scenario_body(h:&Harness,authority:&crate::durability::character_author
  let mut admitted=deps.admitted;
  let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(admitted.game_session_id).await?.0;
  admitted.item_fence=crate::gameplay_transport::item_fence_of(current);admitted.first_entry=FirstEntryOutcome::Positioned;
- admitted.continuity.selected_capabilities=crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(),&[4,6,18,37,63]).ok_or("coin capabilities")?;
+ admitted.continuity.selected_capabilities=crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(),&[4,6,18,37,63,154]).ok_or("coin capabilities")?;
  let fence=admitted.item_fence.ok_or("coin fence")?;let world=admitted.world_id;
  let buyer=h.root.coin_owner(authority,&h.node,world,Some(peer_fence))?;
  let worker=h.root.coin_owner(authority,&h.node,world,None)?;
@@ -228,6 +228,7 @@ async fn scenario_body(h:&Harness,authority:&crate::durability::character_author
  let sum:i64=sqlx::query_scalar("SELECT coalesce(sum(bank_delta+escrow_delta+burn),0)::bigint FROM game_coin_gold_events").fetch_one(&h.pool).await?;assert_eq!(sum,0);
  let fee:i64=sqlx::query_scalar("SELECT sum(burn)::bigint FROM game_coin_gold_events").fetch_one(&h.pool).await?;assert_eq!(fee,169);
  assert_eq!(bank(h,id(40)).await?+bank(h,buyer_account).await?,20000-fee);
+ if gift { gifts::exercise(h,authority,owner,&mut admitted).await?; }
  Ok(())
 }
 async fn bank(h:&Harness,account:[u8;16])->TestResult<i64>{Ok(sqlx::query_scalar("SELECT balance FROM game_account_bank_balances WHERE account_id=$1::uuid AND world_id=$2::uuid").bind(uuid(&account)).bind(uuid(&id(42))).fetch_one(&h.pool).await?)}
@@ -241,4 +242,10 @@ async fn seed_gold(h:&Harness,accounts:impl IntoIterator<Item=([u8;16],[u8;16],u
  sqlx::query("INSERT INTO game_account_bank_balances(account_id,world_id,balance,last_entry_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,10000,encode($3,'hex')::uuid)").bind(account.as_slice()).bind(id(42).as_slice()).bind(id(tag+5).as_slice()).execute(&mut *seed).await?;
  }
  seed.commit().await?;Ok(())
+}
+
+#[path="coin_market/gift.rs"]mod gifts;
+#[test]fn coin_transfer_postgres_real_caller_quote_fence_cross_world_lost_ack_and_replay()->TestResult{
+ if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}
+ std::thread::Builder::new().stack_size(256<<20).spawn(||scenario(true).map_err(|e|e.to_string()))?.join().map_err(|_|"gift scenario panicked")??;Ok(())
 }

@@ -7,6 +7,8 @@ use serde::Deserialize;
 struct Config {
     #[serde(default)]
     market_enabled: bool,
+    #[serde(default)]
+    transfers_enabled: bool,
     source_authority: String,
     endpoint: std::net::SocketAddr,
     peer_name: String,
@@ -60,7 +62,8 @@ impl CoinClient {
         .map_err(|_| Error::Invalid)?;
         Ok(Some(
             Self::new(Box::new(MtlsTransport::new(descriptor)))
-                .with_market_enabled(config.market_enabled),
+                .with_market_enabled(config.market_enabled)
+                .with_transfers_enabled(config.transfers_enabled),
         ))
     }
 }

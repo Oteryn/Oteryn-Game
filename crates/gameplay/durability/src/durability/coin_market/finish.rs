@@ -48,6 +48,12 @@ pub(super) fn request(p: &Plan) -> Result<PlatformRequest> {
             buyer: required(&p.buyer)?.into(),
             amount: p.amount as u64,
         },
+        "transfer" => PlatformRequest::Transfer {
+            operation: p.operation.clone(),
+            account: required(&p.seller)?.into(),
+            recipient: required(&p.buyer)?.into(),
+            amount: p.amount as u64,
+        },
         "release" => PlatformRequest::Release {
             operation: p.operation.clone(),
             account: required(&p.seller)?.into(),
@@ -85,6 +91,7 @@ pub(super) async fn execute(
     .execute(&mut *tx)
     .await?;
     match p.kind.as_str() {
+        "transfer" => {}
         "reserve" => {
             let expired:bool=sqlx::query_scalar("SELECT expires_at<=clock_timestamp() FROM game_coin_market_offers WHERE offer_id=$1::uuid").bind(required(&p.sell_offer)?).fetch_one(&mut *tx).await?;
             if expired {
