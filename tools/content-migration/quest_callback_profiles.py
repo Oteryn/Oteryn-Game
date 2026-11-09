@@ -152,6 +152,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # Crystal 201189f movements_lions_rock.lua:54-108: the native STEP
+    # amphora grants this canonical scroll; it is authored in Rust, not JSON.
+    keys.add('oteryn:item.tibia.i21467')
     keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')

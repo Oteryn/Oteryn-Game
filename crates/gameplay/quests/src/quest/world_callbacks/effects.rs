@@ -306,7 +306,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
                 && (1..=100).contains(&count)
         };
-        callback.trigger != Trigger::Use
+        (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
             || !callback.has_personal_state()
             || callback
                 .storage
@@ -385,9 +385,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || target.from == target.to
                 || !(1..=3_600_000).contains(&target.reset_after_ms)
                 || callback.actor_kind != ActorKind::Player
-                || callback.trigger != Trigger::Use
+                || (callback.trigger != Trigger::Use && !callback.has_fenced_step_reward())
                 || !callback.has_personal_state()
-                || callback.item_on_target.is_none()
+                || (callback.item_on_target.is_none() && !callback.has_fenced_step_reward())
                 || callback
                     .selector
                     .native

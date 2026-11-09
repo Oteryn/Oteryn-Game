@@ -132,6 +132,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
     ("M09-GATHER", 28),
+    // M44: Crystal 201189f movements_lions_rock.lua:54-108 grants scroll 21467.
+    // quest_callback_profiles.py qualifies its exact portable definition; speed_bonus=0.
+    ("M44-LIONS-AMPHORA", 1),
     // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
     // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
     // their content-only profiles. None of them is equipment.
@@ -361,7 +364,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 63);
+    assert_eq!(added_keys.len(), 64);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -427,7 +430,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 63),
+        ("qengine-reward-item-profiles.json", 64),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

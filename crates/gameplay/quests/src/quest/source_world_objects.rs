@@ -162,15 +162,87 @@ pub(crate) fn lions_pagodas() -> Vec<Callback> {
     callbacks
 }
 
+/// Crystal 201189f movements_lions_rock.lua:54-108, OTS_HYPOTHESIS_ONLY.
+pub(crate) fn lions_amphora() -> Vec<Callback> {
+    use super::reward_callbacks::ItemReward;
+    use super::world_callbacks::TargetTransform;
+    [(33118, 32246, 520), (33119, 32246, 521), (33120, 32246, 522),
+        (33118, 32247, 523), (33120, 32247, 525), (33118, 32248, 526),
+        (33119, 32248, 527), (33120, 32248, 528)]
+        .into_iter().enumerate().map(|(index, (x, y, appearance))| {
+            let mut callback = uneasy_crystal();
+            callback.key = format!("oteryn:quest-callback/m44-lions-amphora-{index}");
+            callback.quest = "oteryn:quest.tibia_tales".into();
+            callback.trigger = Trigger::StepIn;
+            callback.requires_world_admission = true;
+            callback.selector = Selector {
+                native: Some(NativeSelector { position: Position { x, y, floor: -9 }, ordinal: 0, appearance }),
+                position: None, unique: None, action: None, appearance: Some(appearance),
+            };
+            callback.effects = CallbackEffectSet::default();
+            callback.effects.target_transform = Some(TargetTransform {
+                position: Position { x: 33119, y: 32247, floor: -9 }, from: 21945, to: 21946, reset_after_ms: 15_000,
+            });
+            callback.effects.item_reward = Some(ItemReward {
+                premium: false, item: "oteryn:item.tibia.i21467".into(), count: 1,
+                contents: Vec::new(), text: None, additional: Vec::new(),
+            });
+            callback.storage = vec![Storage {
+                track: "oteryn:quest-progress/quest/u10_70/lions_rock/questline".into(),
+                minimum: 4, maximum: 4, set: 5, preserve: false, increment: false, at_least: false,
+            }];
+            callback.success_message = Some("As you pass incautiously, the ancient amphora crumbles to shards and dust. Amidst the debris you discover an old scroll.".into());
+            callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:54-108".into()];
+            callback
+        }).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn lions_amphora_step_ring_has_eight_bound_sources_and_one_scroll_reward() -> Result<(), String>
+    {
+        let callbacks = super::super::world_callbacks::load()?;
+        let ring: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.key.contains("m44-lions-amphora-"))
+            .collect();
+        assert_eq!(ring.len(), 8);
+        for callback in ring {
+            assert_eq!(callback.trigger, Trigger::StepIn);
+            assert!(callback.has_fenced_step_reward());
+            let value = serde_json::to_value(&callback.effects).map_err(|e| e.to_string())?;
+            assert_eq!(value["target_transform"]["from"], 21945);
+            assert_eq!(value["target_transform"]["to"], 21946);
+            assert_eq!(value["target_transform"]["reset_after_ms"], 15000);
+            assert_eq!(value["item_reward"]["item"], "oteryn:item.tibia.i21467");
+            assert_eq!(value["item_reward"]["count"], 1);
+            assert_eq!(
+                (
+                    callback.storage[0].minimum,
+                    callback.storage[0].maximum,
+                    callback.storage[0].set
+                ),
+                (4, 4, 5)
+            );
+            super::super::world_callbacks::parse(
+                &serde_json::json!({"schema":1,"callbacks":[callback]}).to_string(),
+            )?;
+        }
+        Ok(())
+    }
     #[test]
     fn lions_rock_pagodas_bind_each_offering_and_both_questline_phases() -> Result<(), String> {
         let callbacks = super::super::world_callbacks::load()?;
         let trials: Vec<_> = callbacks
             .iter()
-            .filter(|c| c.key.contains("m44-lions-"))
+            .filter(|c| {
+                ["strength", "beauty", "tears"].iter().any(|name| {
+                    c.key
+                        .starts_with(&format!("oteryn:quest-callback/m44-lions-{name}/"))
+                })
+            })
             .collect();
         assert_eq!(trials.len(), 6);
         for callback in trials {

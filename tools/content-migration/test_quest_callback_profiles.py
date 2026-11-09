@@ -56,6 +56,17 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(json.loads(self.generated[MANIFEST])['item_profiles']['sha256'],
                          hashlib.sha256(self.generated[PROFILE]).hexdigest())
 
+    def test_lions_amphora_scroll_is_admitted_from_its_exact_canonical_definition(self):
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads((ROOT / PROFILE).read_bytes())['records']}
+        row = rows['oteryn:item.tibia.i21467']
+        self.assertEqual(row['admission'], {'materializable': True,
+                         'stack_class': 'NonStackable',
+                         'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(row['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 200})
+
     def test_quest_chest_rewards_preserve_canonical_item_admission(self):
         self.admit()
         rows = {r['production_definition']['production_key']: r

@@ -525,9 +525,12 @@ impl DurabilityRoot {
         let world_reward = callback
             .as_ref()
             .and_then(|c| c.effects.item_reward.as_ref());
+        let step_world_reward = callback.as_ref().is_some_and(|c| c.has_fenced_step_reward());
         if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
-            || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
+            || (world_reward.is_some()
+                && !((matches!(request.cause, QuestCause::Use(_)) && !step_world_reward)
+                    || (matches!(request.cause, QuestCause::Step(_)) && step_world_reward)))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -1088,7 +1091,7 @@ impl DurabilityRoot {
                         && let Some(reward) = &world.effects.item_reward
                     {
                         let (Some(admission), Some(tuple)) = (*reward_admission, reward_tuple) else { return Err(DurabilityError::InvalidStoredState); };
-                        let QuestCause::Use(command) = request.cause else { return Err(DurabilityError::InvalidStoredState); };
+                        let (QuestCause::Use(command) | QuestCause::Step(command)) = request.cause else { return Err(DurabilityError::InvalidStoredState); };
                         // Fresh value must use the generation proved by the physical
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
