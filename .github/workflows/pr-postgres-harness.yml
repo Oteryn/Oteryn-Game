@@ -826,7 +826,12 @@ jobs:
           fi
           if [[ "$IS_REAL_RUN" == 'true' ]]; then
             echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT node_boot=$NODE_BOOT_RESULT"
-            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' && "$NODE_BOOT_RESULT" == 'success' ]]
+            # Node boot is informational until NODEBOOT-CONTROL-LOST is fixed (owner decision
+            # 2026-11-09): it still runs and reports, but does not gate the merge.
+            if [[ "$NODE_BOOT_RESULT" != 'success' ]]; then
+              echo "::warning title=node boot (informational)::node_boot=$NODE_BOOT_RESULT"
+            fi
+            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
             exit
           fi
           # Other label events have skipped dependencies: mirror the latest
