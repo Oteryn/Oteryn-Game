@@ -189,6 +189,19 @@ pub fn completed_action(key: &str, changes: &[QuestTrackChange]) -> Option<Share
     .then_some(binding.action)
 }
 
+/// Reserved transition namespace for an explicit, once-per-save reset profile.
+pub const SAVE_EVENT_RESTART_PREFIX: &str = "oteryn:quest-transition/save-event-restart/";
+
+/// Stable reset declaration key for a canonical quest. The declaration names
+/// exactly which owned tracks restart; other persistent tracks remain unchanged.
+pub fn save_event_restart_key(quest: &str) -> String {
+    let name = quest
+        .strip_prefix("oteryn:quest.")
+        .or_else(|| quest.strip_prefix("oteryn:quest/"))
+        .unwrap_or(quest);
+    format!("{SAVE_EVENT_RESTART_PREFIX}{name}")
+}
+
 pub const HIVE_QUEST: &str = "oteryn:quest.hive_native_shared";
 pub const DEEPLING_QUEST: &str = "oteryn:quest.deeplings_native_shared";
 pub const HIVE_OBJECTIVE_PREFIX: &str = "oteryn:quest-callback/hive-native-objective-";

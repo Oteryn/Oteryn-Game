@@ -821,6 +821,7 @@ impl DurabilityRoot {
                     }
 
                     let quest = transition.quest.as_str();
+                    let save_restart = catalogue.save_event_restart(quest);
                     let current_hash = catalogue
                         .definition_hash(quest)
                         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -843,7 +844,7 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)?;
                             // §6: a completed quest keeps its pin and no longer blocks.
                             let blocked =
-                                hash != current_hash && !row.try_get::<bool, _>("completed")?;
+                                hash != current_hash && (!row.try_get::<bool, _>("completed")? || save_restart.is_some());
                             (
                                 row.try_get::<String, _>("pinned_content_revision")?,
                                 hash,
@@ -859,6 +860,21 @@ impl DurabilityRoot {
                             )
                         }
                     };
+                    if refusal.is_none() && let Some(restart) = save_restart
+                        && (transition.completes || transition.effects.iter().any(|effect|
+                            restart.effects.iter().any(|reset| reset.track == effect.track))) {
+                        let Some(epoch) = &save_event_epoch else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        // Read current-save progress under the Character root
+                        // lock; the current World and gameplay fence were resolved above.
+                        let restarted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_event_quest_progress p WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND p.quest_key=$3 AND p.reset_epoch=$4::text::numeric AND p.transition_key=$5)")
+                            .bind(id).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(quest).bind(epoch).bind(&restart.key).fetch_one(&mut *tx).await?;
+                        let eligible = if request.transition_key == restart.key { !restarted } else { restarted };
+                        if !eligible {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let final_flags: Vec<String> = if request.transition_key == oteryn_gameplay_quests::quest::monk_shrines::FINISH {
                         oteryn_gameplay_quests::quest::monk_shrines::NAMES.iter().map(|name|
                             format!("{}{name}", oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX)).collect()

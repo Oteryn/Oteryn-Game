@@ -470,6 +470,43 @@ impl QuestStateCatalogue {
             }
             transition_map.insert(transition.key.clone(), transition);
         }
+        // A restart is an explicit reset list, not permission to wipe every
+        // track of a quest. Dependent progress must use the same World gate.
+        for restart in transition_map.values().filter(|transition| {
+            transition
+                .key
+                .starts_with(shared_world_progress::SAVE_EVENT_RESTART_PREFIX)
+        }) {
+            if restart.key != shared_world_progress::save_event_restart_key(&restart.quest)
+                || restart.world_change.is_none()
+                || restart.completes
+                || restart.experience.is_some()
+                || restart.effects.iter().any(|effect| {
+                    effect.from != QuestComparison::Any
+                        || track_map.get(&effect.track).is_none_or(|track| {
+                            effect.effect != QuestEffectKind::Set(track.initial)
+                        })
+                })
+            {
+                return Err(E::InvalidEffect(restart.key.clone()));
+            }
+            for transition in transition_map
+                .values()
+                .filter(|transition| transition.quest == restart.quest)
+            {
+                if (transition.completes
+                    || transition.effects.iter().any(|effect| {
+                        restart
+                            .effects
+                            .iter()
+                            .any(|reset| reset.track == effect.track)
+                    }))
+                    && transition.world_change != restart.world_change
+                {
+                    return Err(E::InvalidEffect(transition.key.clone()));
+                }
+            }
+        }
         let quests: BTreeSet<&String> = track_map
             .values()
             .map(|track| &track.quest)
@@ -558,6 +595,14 @@ impl QuestStateCatalogue {
     #[must_use]
     pub fn transition(&self, key: &str) -> Option<&QuestTransition> {
         self.transitions.get(key)
+    }
+
+    /// The optional explicit save restart profile, validated with its dependent
+    /// transitions. Its receipt must precede current-save mission progress.
+    #[must_use]
+    pub fn save_event_restart(&self, quest: &str) -> Option<&QuestTransition> {
+        self.transitions
+            .get(&shared_world_progress::save_event_restart_key(quest))
     }
 
     /// The hash over the quest's tracks and transitions only (§6).
