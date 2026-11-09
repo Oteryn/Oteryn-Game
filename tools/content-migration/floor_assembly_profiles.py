@@ -67,7 +67,7 @@ def capture(xml_path):
     for item in sorted(IDS):
         definition = definitions[f'oteryn:item.tibia.i{item}']
         row = native.profile(item, xml[item], objects[item], physical[item], bindings, None)
-        if item in PROJECTION_IDS:
+        if item in PROJECTION_IDS or (item in ELEMENTAL_CORPSES and definition.get('materializable') is False):
             # These canonical client stubs are stationary World operands, not MINT
             # authority. Keep their nonmaterializable admission while qualifying
             # exact collision/appearance facts for native map projections.
