@@ -110,6 +110,14 @@ pub fn apply_result(p: &mut ItemForgePanel, r: &ServerMechanicResponse) {
         p.feedback = Some(format!("Server refused forge action: {:?}", r.status))
     }
 }
+/// Read-only projection through the existing Forge capability.
+pub fn preview_request(
+    panel: &mut ItemForgePanel,
+    selection: oteryn_client_runtime::forge_preview::Selection,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::preview::request(panel, selection)
+}
+
 #[cfg(test)]
 // Direct fixture construction keeps the wire assertions readable.
 #[allow(clippy::unwrap_used)]
@@ -156,12 +164,4 @@ mod tests {
         );
         assert!(p.feedback.unwrap().contains("refused"));
     }
-}
-
-/// Read-only projection through the existing Forge capability.
-pub fn preview_request(
-    panel: &mut ItemForgePanel,
-    selection: oteryn_client_runtime::forge_preview::Selection,
-) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
-    super::preview::request(panel, selection)
 }

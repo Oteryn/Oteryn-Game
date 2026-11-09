@@ -153,8 +153,9 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Spell list / spellbook",
-  "status": "PARTIAL",
-  "gap": "Jest katalog po name/words; brak wszystkich filtrów vocation/level/premium/group i pełnej książki czarów.",
+  "status": "DONE",
+  "gap": "Pełna książka czarów z filtrem nazwy/formuły, profesji, poziomu, premium i grupy; dane pochodzą z serwera.",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs:131 + spellbook_details_uses_real_book_vocations_premium_and_filters",
   "lane": "cg_options"
  },
  {
@@ -162,9 +163,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Magical Archive i przypisanie czaru",
-  "status": "PARTIAL",
-  "gap": "Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "T038",
@@ -872,8 +874,10 @@
   "area": "Hunting tasks",
   "feature": "Soul Seals fight dialog",
   "status": "PARTIAL",
-  "gap": "Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia.",
-  "lane": "cg_cyclo"
+  "gap": "BLOCKED: missing accepted Soulseal fight catalogue, costs, and entry contract; existing Task Board supplies balances only and Soulpit requires physical Soul Cores.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0072-task-board/view.rs:24 + soulseal_dialog_refreshes_confirmed_balance_without_inventing_fight_offers; remaining: BLOCKED: missing accepted Soulseal fight catalogue, costs, and entry contract; existing Task Board supplies balances only and Soulpit requires physical Soul Cores.",
+  "blocker_evidence": "Canary 99902524e052f37574194466c2949c576e4ab269 data/modules/scripts/soulseals/soulseals.lua:48-49 returns an empty dialog; no fight implementation or Soulseal spending rules. SHA256 506470c94d51c75ff9481a6de7399856ecb47e5bf6d18c8a423cb27972661af7."
  },
  {
   "id": "T115",
@@ -1090,8 +1094,9 @@
   "area": "Highscores",
   "feature": "Kategorie/world/vocation, paging/show-me",
   "status": "PARTIAL",
-  "gap": "Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone.",
-  "lane": "cg_cyclo"
+  "gap": "Show Me exists; cross-world selection remains blocked: accepted HIGHSCORES0 reserves other-World filters for a separate decision or amendment; command 14 reads the admitted session World only.",
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0009-highscores/protocol.rs:21 (ShowMe); crates/gameplay/dispatch/src/gameplay_transport/connection/routing/highscores.rs:18 (admitted.world_id); docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md:39 (owning amendment prerequisite)."
  },
  {
   "id": "T144",
@@ -1099,9 +1104,9 @@
   "area": "Rewards",
   "feature": "Daily wall/streak/jokers/claim/pick items",
   "status": "PARTIAL",
-  "gap": "30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog.",
+  "gap": "Brak pick-items: DAILY_REWARD_V2 celowo usuwa wybór nagród; potrzebna decyzja właściciela o katalogu i regułach wyboru.",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0182-daily-reward/view.rs:3 + reward_calendar_records_only_server_confirmed_claims; PARTIAL: account history and item picker remain"
+  "evidence": "apps/client/src/features/0182-daily-reward/protocol.rs:4 + daily_reward_catalogue_and_account_history_cross_real_session_caller; 30-day Free/Premium catalogue and durable account/World history wired through command 738 on existing capability 182; production PostgreSQL caller daily_reward_real_dispatch_delivers_replays_reloads_and_orders_thirty_days; remaining item-choice picker conflicts with DAILY_REWARD_V2 one-click contract and awaits owner choice rules"
  },
  {
   "id": "T145",
@@ -1470,7 +1475,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation"
+  "evidence": "apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation; apps/client/src/features/local-minimap/state.rs:79 + live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_binding; apps/client/src/features/local-minimap/tests/play_persistence.rs:10"
  },
  {
   "id": "O040",
@@ -1605,9 +1610,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Cyklopedia: Magical Archive",
-  "status": "PARTIAL",
-  "gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "O083",
