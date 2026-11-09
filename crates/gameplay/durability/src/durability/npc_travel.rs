@@ -28,6 +28,7 @@ use crate::domain::CharacterId;
 use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
 
+pub(crate) mod arrival_policy;
 mod paid;
 mod return_port;
 pub use paid::{NpcTravelGate, PaidTravelRequest, TravelRefusal};
@@ -222,7 +223,7 @@ pub(super) async fn consume_with_citizenship(
     fence: CurrentCharacterGameplayFence,
     occurrence: TravelOccurrence,
     placed: FinalLastPosition,
-    citizenship: Option<u32>,
+    citizenship: Option<(u32, super::character_home_town::HomeTownRelocationCause)>,
 ) -> Result<ArrivalConsume, TravelStoreError> {
     if placed.write_sequence == 0
         || !matches!(fence.runtime_scope,
@@ -241,7 +242,7 @@ pub(super) async fn consume_with_citizenship(
     // Only the hometown owner can consume this arrival, in its citizenship transaction.
     // Keep the placement owner's admitted fallback rules; a capture need not equal the
     // requested tile (runtime_actor_death.rs, NPC-0 §6.1).
-    if targuna && citizenship != Some(34) {
+    if targuna && !arrival_policy::targuna_citizenship_allowed(citizenship) {
         return Err(TravelStoreError::InvalidInput);
     }
     let deleted = sqlx::query(

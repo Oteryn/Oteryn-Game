@@ -67,6 +67,7 @@ enum PremiumEntry {
     Stored,
     Respawn,
     Arrival,
+    TargunaArrival,
 }
 
 #[test]
@@ -77,6 +78,20 @@ fn p20_ended_premium_consumes_pending_respawn_with_relocation() -> TestResult {
 #[test]
 fn p20_ended_premium_consumes_pending_arrival_with_relocation() -> TestResult {
     on_large_stack(Some(PremiumEntry::Arrival))
+}
+
+#[test]
+fn npcfix_m38_targuna_p20_supersedes_pending_arrival_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    on_large_stack(Some(PremiumEntry::TargunaArrival))?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED NPCFIX_M38_TARGUNA_P20 duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 fn on_large_stack(p20: Option<PremiumEntry>) -> TestResult {
@@ -452,11 +467,16 @@ async fn premium_ended<'a>(
                 crate::gameplay_transport::SessionDeath::Durable
             ));
         }
-        PremiumEntry::Arrival => {
+        PremiumEntry::Arrival | PremiumEntry::TargunaArrival => {
             // An interrupted paid trip has this same obligation; seed only its durable input.
             sqlx::query("INSERT INTO game_character_pending_arrivals(character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,14,11,7)")
                 .bind(id(41).as_slice()).bind(id(79).as_slice())
                 .bind(owner.world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            if matches!(entry, PremiumEntry::TargunaArrival) {
+                sqlx::query("INSERT INTO game_newhaven_travel_receipts(character_id,game_session_id,command_id,occurrence_id,route) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,48002,encode($3,'hex')::uuid,'targuna')")
+                    .bind(id(41).as_slice()).bind(session.as_bytes().as_slice()).bind(id(79).as_slice()).execute(&h.pool).await?;
+                eprintln!("POSTGRES_STARTED NPCFIX_M38_TARGUNA_P20");
+            }
         }
     }
     // An ended entitlement moves the citizen to Thais (town 8) and enters at its temple.
@@ -531,6 +551,13 @@ async fn premium_ended<'a>(
             let pending: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pending_respawns) + (SELECT count(*) FROM game_character_pending_arrivals)")
                 .fetch_one(&h.pool).await?;
             assert_eq!(pending, i64::from(!matches!(entry, PremiumEntry::Stored)));
+            if matches!(entry, PremiumEntry::TargunaArrival) {
+                let arrived: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts WHERE route='targuna' AND arrived_at IS NOT NULL").fetch_one(&h.pool).await?;
+                assert_eq!(
+                    arrived, 0,
+                    "failed P20 arrival must not complete the receipt"
+                );
+            }
             let restored = h
                 .root
                 .read_character_last_position(owner.character, owner.holder, fence)
@@ -599,6 +626,13 @@ async fn premium_ended<'a>(
     let pending: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pending_respawns) + (SELECT count(*) FROM game_character_pending_arrivals)")
         .fetch_one(&h.pool).await?;
     assert_eq!(pending, 0, "the relocation consumed its obligation");
+    if matches!(entry, PremiumEntry::TargunaArrival) {
+        let arrived: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts WHERE route='targuna' AND arrived_at IS NOT NULL").fetch_one(&h.pool).await?;
+        assert_eq!(
+            arrived, 1,
+            "P20 must complete the superseded free receipt atomically"
+        );
+    }
     // A free-area town stays where it is on the next login.
     assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
     let receipts: Vec<(i32, i32)> = sqlx::query_as(

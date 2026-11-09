@@ -57,15 +57,15 @@ fn npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres() -> TestResu
                 eprintln!("POSTGRES_STARTED NPCFIX_M38_TARGUNA_ATOMIC");
                 let ordinary = owner.root.consume_npc_pending_arrival_placed(owner.character,owner.holder,fence,occurrence,placed).await;
                 assert!(ordinary.is_err(), "ordinary consume must not omit citizenship: {ordinary:?}");
-                for town in [6, 33] {
-                    assert!(owner.root.character_home_town(owner.character,owner.holder,fence,33,Some(town),Some(HomeTownRelocation{placed,respawn:None,arrival:Some(occurrence)})).await.is_err(), "wrong town must roll back");
+                for town in [6, 8, 33] {
+                    assert!(owner.root.character_home_town(owner.character,owner.holder,fence,33,Some(town),Some(HomeTownRelocation{cause:crate::durability::character_home_town::HomeTownRelocationCause::Arrival,placed,respawn:None,arrival:Some(occurrence)})).await.is_err(), "wrong town must roll back");
                     super::maintain_ready(owner.root).await?;
                 }
                 // Fail the last owner write after arrival/position/tutorial work. Everything
                 // must roll back, not just the home-town row.
                 sqlx::query("CREATE FUNCTION m38_reject_town() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'M38 injected hometown failure'; END $$").execute(&h.pool).await?;
                 sqlx::query("CREATE TRIGGER m38_reject_town BEFORE INSERT OR UPDATE ON game_character_home_towns FOR EACH ROW EXECUTE FUNCTION m38_reject_town()").execute(&h.pool).await?;
-                assert!(owner.root.character_home_town(owner.character,owner.holder,fence,33,Some(34),Some(HomeTownRelocation{placed,respawn:None,arrival:Some(occurrence)})).await.is_err(), "late writer failure must roll back all owners");
+                assert!(owner.root.character_home_town(owner.character,owner.holder,fence,33,Some(34),Some(HomeTownRelocation{cause:crate::durability::character_home_town::HomeTownRelocationCause::Arrival,placed,respawn:None,arrival:Some(occurrence)})).await.is_err(), "late writer failure must roll back all owners");
                 super::maintain_ready(owner.root).await?;
                 sqlx::query("DROP TRIGGER m38_reject_town ON game_character_home_towns").execute(&h.pool).await?;
                 let unchanged: (i16,bool,bool) = sqlx::query_as("SELECT step,hunting,corruptor FROM game_character_tutorial").fetch_one(&h.pool).await?;
@@ -74,7 +74,7 @@ fn npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres() -> TestResu
                 assert_eq!(completed,0,"late failure must not complete receipt");
                 let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pending_arrivals").fetch_one(&h.pool).await?;
                 assert_eq!(pending,1,"refusals must preserve recovery obligation");
-                assert_eq!(owner.root.character_home_town(owner.character,owner.holder,fence,33,Some(34),Some(HomeTownRelocation{placed,respawn:None,arrival:Some(occurrence)})).await.map_err(debug)?,34);
+                assert_eq!(owner.root.character_home_town(owner.character,owner.holder,fence,33,Some(34),Some(HomeTownRelocation{cause:crate::durability::character_home_town::HomeTownRelocationCause::Arrival,placed,respawn:None,arrival:Some(occurrence)})).await.map_err(debug)?,34);
                 let state: (i64,i64,i32) = sqlx::query_as("SELECT (SELECT count(*) FROM game_character_pending_arrivals),(SELECT count(*) FROM game_newhaven_travel_receipts WHERE arrived_at IS NOT NULL),(SELECT town_id FROM game_character_home_towns LIMIT 1)").fetch_one(&h.pool).await?;
                 assert_eq!(state,(0,1,34),"arrival and citizenship commit together");
                 let departed: (i16,bool,bool) = sqlx::query_as("SELECT step,hunting,corruptor FROM game_character_tutorial").fetch_one(&h.pool).await?;
@@ -82,7 +82,7 @@ fn npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres() -> TestResu
                 let fresh = owner.current_quest_fence(session).await.map_err(|()| "fence")?.ok_or("fresh fence")?;
                 assert_eq!(owner.root.character_home_town(owner.character,owner.holder,fresh,33,Some(6),None).await.map_err(debug)?,6);
                 let replay_fence = owner.current_quest_fence(session).await.map_err(|()| "fence")?.ok_or("replay fence")?;
-                assert!(owner.root.character_home_town(owner.character,owner.holder,replay_fence,33,Some(34),Some(HomeTownRelocation{placed,respawn:None,arrival:Some(occurrence)})).await.is_err(),"replaying an old arrival must not rewind later citizenship");
+                assert!(owner.root.character_home_town(owner.character,owner.holder,replay_fence,33,Some(34),Some(HomeTownRelocation{cause:crate::durability::character_home_town::HomeTownRelocationCause::Arrival,placed,respawn:None,arrival:Some(occurrence)})).await.is_err(),"replaying an old arrival must not rewind later citizenship");
                 let town: i32 = sqlx::query_scalar("SELECT town_id FROM game_character_home_towns").fetch_one(&h.pool).await?;
                 assert_eq!(town,6);
 

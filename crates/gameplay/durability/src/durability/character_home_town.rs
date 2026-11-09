@@ -15,8 +15,12 @@ use super::npc_travel::{ArrivalConsume, TravelOccurrence};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 
-/// P20's actual first-entry placement and the obligation it supersedes, committed with citizenship.
+/// The trusted current-world caller distinguishes arrival from P20 relocation.
+pub use super::npc_travel::arrival_policy::HomeTownRelocationCause;
+
+/// Actual admitted placement and its exact obligation, committed with citizenship.
 pub struct HomeTownRelocation {
+    pub cause: HomeTownRelocationCause,
     pub placed: FinalLastPosition,
     pub respawn: Option<PlayerDeathOccurrence>,
     pub arrival: Option<TravelOccurrence>,
@@ -93,7 +97,7 @@ impl DurabilityRoot {
                 }
                 let written = if let Some(occurrence) = relocation.arrival {
                     super::npc_travel::consume_with_citizenship(
-                        &mut tx, &recovery, &node, fence, occurrence, relocation.placed, Some(u32::try_from(town).map_err(|_| DurabilityError::InvalidStoredState)?),
+                        &mut tx, &recovery, &node, fence, occurrence, relocation.placed, Some((u32::try_from(town).map_err(|_| DurabilityError::InvalidStoredState)?, relocation.cause)),
                     ).await.map_err(|_| DurabilityError::InvalidStoredState)? == ArrivalConsume::Consumed
                 } else {
                     upsert_last_position(

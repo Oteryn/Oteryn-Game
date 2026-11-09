@@ -28,11 +28,11 @@ fn citizen_town(unique: u16) -> Option<u32> {
 
 /// Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:5-8` and
 /// `data-global/lib/tables/town.lua:1-30`: the hometowns in the free-account area. Dawnport
-/// Tutorial, Island of Destiny and Targuna occur in Crystal's name list but are not hometowns in
-/// the pinned Oteryn catalogue, so they deliberately do not occur in this id partition. Yalahar
+/// Tutorial and Island of Destiny are not hometowns in the pinned Oteryn catalogue.
+/// Targuna34 is admitted by the M38 source-town adapter and is free-account territory. Yalahar
 /// 17 is added by the accepted Premium decision (PREMIUM-ACTIVATION-0 §4.5, D70: "the six free
 /// cities (Yalahar included)"), which Crystal's list predates.
-const FREE_ACCOUNT_TOWNS: [u32; 8] = [2, 3, 5, 6, 7, 8, 9, 17];
+const FREE_ACCOUNT_TOWNS: [u32; 9] = [2, 3, 5, 6, 7, 8, 9, 17, 34];
 /// The remaining hometowns admitted by the pinned catalogue are Premium territory. Crystal's
 /// two movement-side checks agree with the boundary: `premium_bridge.lua:1-17` protects the
 /// Rookgaard Premium bridge, while `oramond/teleport.lua:1-29` makes each Oramond destination's
@@ -92,6 +92,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         use last_position::AdmissionPosition;
         let relocation = crate::durability::character_home_town::HomeTownRelocation {
+            cause: crate::durability::character_home_town::HomeTownRelocationCause::PremiumExpired,
             placed,
             respawn: match decided {
                 AdmissionPosition::Respawn(pending) => Some(pending.occurrence),
@@ -428,7 +429,7 @@ mod tests {
     /// `login.lua:6` the free names; the hometown subset is pinned in area-report.json.
     #[test]
     fn p20_pinned_hometowns_have_a_complete_premium_partition() {
-        let free = [2, 3, 5, 6, 7, 8, 9, 17];
+        let free = [2, 3, 5, 6, 7, 8, 9, 17, 34];
         let premium = [10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22];
         for town in free {
             assert_eq!(super::premium_area_town(town), Some(false), "town {town}");
@@ -436,7 +437,7 @@ mod tests {
         for town in premium {
             assert_eq!(super::premium_area_town(town), Some(true), "town {town}");
         }
-        for non_hometown in [1, 4, 19, 23, 24, 25, 26, 32, 33, 34] {
+        for non_hometown in [1, 4, 19, 23, 24, 25, 26, 32, 33] {
             assert_eq!(super::premium_area_town(non_hometown), None);
         }
     }

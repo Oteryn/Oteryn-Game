@@ -637,7 +637,7 @@
     "native_offer": "disabled; real Anna story still unqualified"
   },
   "targuna_static_anchor_slice": {
-    "state": "GREEN_PUSH_READY",
+    "state": "GREEN_PUSHED",
     "source_ids": [
       20661,
       34434,
@@ -659,6 +659,25 @@
     "unit_runner": "PASS full 114-module retry alone; all cases executed, existing skips unchanged",
     "native_story": "Unqualified; fixture geometry now closes, but prior attempt failed unrelated progression setup before marker. Corrected fixture and P20 regression are excluded from this slice. Their attempted test build was SIGKILLed; no semantic RED or PG proof claimed.",
     "deployment_handoff": "Protected topology unchanged; coordinator must refresh World digest at integration.",
-    "unit_cases": 1145
+    "unit_cases": 1145,
+    "code_commit": "9f1d39153f1c14e04e0450870a672c86d7ed6247",
+    "origin_verified": true
+  },
+  "targuna_p20_override_slice": {
+    "state": "GREEN_PUSH_READY",
+    "scope": "Explicit P20 intent and free-town partition only; native Anna offer/reconnect still unqualified and disabled",
+    "draft_policy_unit_tests": "RED1failed -> GREEN2; isolated actual source file, not crate integration",
+    "draft_town_partition_tests": "Production-source extraction RED1failed -> GREEN2; not a native PG proof",
+    "postgres": "P20 supersession and atomic town34 arrival passed with real duration markers; ordinary town8 remains refused",
+    "native_offer": "still disabled",
+    "pg_p20_seconds": 102.638362344,
+    "pg_atomic_seconds": 12.829992229,
+    "pg_markers": [
+      "POSTGRES_STARTED NPCFIX_M38_TARGUNA_P20",
+      "P20_POSTGRES_EXECUTED",
+      "POSTGRES_STARTED NPCFIX_M38_TARGUNA_ATOMIC"
+    ],
+    "focused_tests": "3 PASS, 0 failed, 0 ignored, 115.47s total",
+    "qualification": "Focused3 cases, policy crate units, strict durability/dispatch library Clippy, workspace all-target check, fmt, duplicate migration and unchanged-input pin-check PASS"
   }
 }
