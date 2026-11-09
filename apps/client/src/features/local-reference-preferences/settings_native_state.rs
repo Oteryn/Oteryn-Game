@@ -296,6 +296,20 @@ impl Settings {
         let state = lock(&self.shared);
         (state.preferences.graphics, state.preferences.ui_scale)
     }
+    pub(in super::super) fn reject_graphics(
+        &self,
+        engine: oteryn_renderer::GraphicsEngine,
+        antialiasing: oteryn_renderer::Antialiasing,
+    ) {
+        let mut state = lock(&self.shared);
+        let mut preferences = state.preferences.clone();
+        preferences.graphics.engine = engine;
+        preferences.graphics.antialiasing = antialiasing;
+        state.apply(preferences);
+        state.feedback =
+            "Selected graphics mode is unavailable on this device; restored the working mode."
+                .into();
+    }
     pub(in super::super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);
         if let Err(error) = state.capture(view) {

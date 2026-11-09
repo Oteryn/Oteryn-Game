@@ -1,5 +1,48 @@
 use super::*;
 #[test]
+fn t060_selected_engine_and_aa_survive_restart_and_live_input_queue()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{SettingsState, play_channel};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    use oteryn_renderer::{Antialiasing, GraphicsEngine};
+    let path = std::env::temp_dir().join(format!("t060-select-{}.json", std::process::id()));
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let mut preferences = settings.preferences.clone();
+    preferences.graphics.engine = GraphicsEngine::Vulkan;
+    preferences.graphics.antialiasing = Antialiasing::Msaa4;
+    settings.apply(preferences);
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let mut play = view()?;
+    settings.restore(&mut play, [960, 540])?;
+    assert_eq!(play.preferences().graphics.engine, GraphicsEngine::Vulkan);
+    assert_eq!(play.preferences().graphics.antialiasing.samples(), 4);
+    let (link, mut commands, _) = play_channel();
+    let (events, opened) = settings.input(&[NormalizedInputEvent::Key {
+        code: KeyCode::ARROW_UP,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    }]);
+    assert!(!opened);
+    play.arrow(crate::input::arrow_step(&events).ok_or("missing movement")?);
+    play.tick(&link).map_err(|_| "tick failed")?;
+    assert_eq!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Step(crate::input::StepDir::North)
+    );
+    assert!(commands.try_recv().is_err());
+    let legacy: crate::play::GraphicsPreferences = serde_json::from_str("{}")?;
+    assert_eq!(legacy.engine, GraphicsEngine::Direct3D12);
+    assert_eq!(legacy.antialiasing, Antialiasing::Off);
+    assert!(
+        serde_json::from_str::<crate::play::GraphicsPreferences>(r#"{"antialiasing":"Unknown"}"#)
+            .is_err()
+    );
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
 fn t060_graphics_settings_restore_into_real_scene_and_presentation_request()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::SettingsState;

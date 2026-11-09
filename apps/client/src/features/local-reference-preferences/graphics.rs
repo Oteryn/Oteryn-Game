@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct GraphicsPreferences {
+    pub engine: oteryn_renderer::GraphicsEngine,
+    pub antialiasing: oteryn_renderer::Antialiasing,
     pub ambient: u8,
     pub separator: u8,
     pub indoor: u8,
@@ -14,6 +16,8 @@ pub struct GraphicsPreferences {
 impl Default for GraphicsPreferences {
     fn default() -> Self {
         Self {
+            engine: oteryn_renderer::GRAPHICS_ENGINE,
+            antialiasing: oteryn_renderer::ANTIALIASING,
             ambient: 0,
             separator: 0,
             indoor: 0,
