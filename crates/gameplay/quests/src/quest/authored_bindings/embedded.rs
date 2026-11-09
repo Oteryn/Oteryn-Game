@@ -217,6 +217,7 @@ impl RecipeEvidence {
                 matches!(
                     stage.trigger,
                     super::Trigger::TerrainUse { .. }
+                        | super::Trigger::DoorUse { .. }
                         | super::Trigger::TaskBoardUse { .. }
                         | super::Trigger::Collect { .. }
                         | super::Trigger::Kill { .. }
