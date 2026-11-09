@@ -30,9 +30,10 @@
       "Dragon Corpse Quest",
       "Ferumbras' Ascension Quest",
       "Heart of Destruction Quest",
-      "Grave Danger Quest"
+      "Grave Danger Quest",
+      "Emperor's Cookies Quest"
     ],
-    "wired_explore_stages": 23,
+    "wired_explore_stages": 24,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -55,9 +56,10 @@
       "Berserker Treasure Quest",
       "Dragon Corpse Quest",
       "Ferumbras' Ascension Quest",
-      "Heart of Destruction Quest"
+      "Heart of Destruction Quest",
+      "Grave Danger Quest"
     ],
-    "wired_native_visit_anchors": 37
+    "wired_native_visit_anchors": 38
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -131,11 +133,16 @@
     "two_source_postgres": "GREEN2passed121.89s:Heart61.115204965s,Ferumbras60.778325746s;level150+CurrentPremium,freshonce,old replay no credit,revisit no farming",
     "grave_resolver": "REDunsupportedsource0.189s -> GREEN twelve-site native-ground and distinct-flag proof8.768s",
     "grave_activation": "RED0vs12callbacks6.563s -> GREEN42Python198.847s;12distinct flags,shared counter,max11,level250+CurrentPremium;laterCobra stage4 unwired",
-    "grave_postgres": "PENDING own12visit case and retainedKoshei4visit case building;package-only test debug symbols disabled to shorten build;test assertions unchanged",
+    "grave_postgres": "GREEN2passed151.16s:GraveDanger12visits84.581403734s,Koshei4visits66.576479557s;Grave249/250+CurrentPremium refusals,old replay no credit,12distinct visits,replay/revisit no farming,wholecompletion0;compiled source/data0b84caf3a",
     "grave_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m11s",
-    "grave_profile": "GREEN5Rustprofiletests0.04s"
+    "grave_profile": "GREEN5Rustprofiletests0.04s",
+    "definition_reuse": "37callback generation11.183810527s ->0.310775211s with identical SHA256c961997b9379d869330e5dbccc8cd12f80b3768d2dee80cf51f912af8da03923;43tests13.929s;foreign provided definitions rejected",
+    "cookie_activation": "ResolverREDunsupported0.169s ->GREEN0.506s;activationREDmissing0.296s ->GREEN45Python14.636s;pre-key3800 passage,native436ground verified",
+    "cookie_clippy": "GREEN quests+dispatch all-targets strict -Dwarnings4m12s",
+    "cookie_profile": "GREEN5Rustprofiletests0.04s",
+    "cookie_postgres": "PENDING own native STEP case building;no reward or completion claimed"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "23wired stages in23routes,22PG-proven entry routes;37nativeanchors.23routes/33stages remain unwired,includingGraveDanger s4. Finish12visitPGcase. M01b PARTIAL."
+  "continuation": "24wired stages/routes,23PG-proven entry routes,38nativeanchors;22routes/32stages unwired. FinishCookies nativePG,then reuse existing fenced world_change predicate for event entries. M01b PARTIAL."
 }

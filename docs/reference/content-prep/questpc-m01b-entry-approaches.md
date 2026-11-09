@@ -97,3 +97,14 @@ This explicit bounded exception changes no source placements or collision rules.
 All other chosen approaches are adjacent on the original source floor.
 Canonical level250 and Current Premium requirements remain mandatory.
 The later Cobra Bastion EXPLORE stage is separate and remains unwired here.
+
+## Emperor's Cookies first passage
+
+Evidence: tools/content-schema/quest-authoring/samples/chests/claims.json,
+claim `canary:reward-claim/quest/key/id3800`, declared by the canonical quest.
+Source: https://github.com/opentibiabr/canary/tree/04b83b51
+
+The Key3800 chest is at32605,31908,z3 (appearance2472). The selected entry
+is its clear northern neighbour32605,31907,z3,ground436;the eastern starting
+tile32606,31907,z3 also has only436. This visits the western secret passage
+before the later Key3800 chamber step. It grants no key,cookies or completion.

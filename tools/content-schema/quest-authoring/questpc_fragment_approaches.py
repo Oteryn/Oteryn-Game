@@ -5,6 +5,7 @@ from pathlib import Path
 SOURCE = 'tools/content-schema/quest-authoring/samples/chests/claims.json'
 PREFIX = 'canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part'
 APPROACHES = {
+    'canary:reward-claim/quest/key/id3800': (32605, 31907, -3, 436),
     'canary:reward-claim/quest/u8_0/fishing_box': (32016, 31409, -7, 6587),
     'canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls': (33198, 31923, -11, 353),
     'canary:reward-claim/kv/minohell1': (32131, 32066, -12, 351),
@@ -19,7 +20,7 @@ APPROACHES = {
 }
 
 
-def resolve(root, quest, reference):
+def resolve(root, quest, reference, *, definition=None):
     key = reference.removeprefix('claim:')
     records = json.loads((Path(root) / SOURCE).read_text())['claims']
     matches = [(index, claim) for index, claim in enumerate(records)
@@ -27,11 +28,12 @@ def resolve(root, quest, reference):
     if len(matches) != 1 or key not in APPROACHES:
         raise ValueError('Fragment approach needs one explicitly selected claim: ' + key)
     index, claim = matches[0]
-    definitions = [row['definition']
+    definitions = ([definition] if definition is not None else [row['definition']
                    for path in (Path(root) / 'content/quests/definitions').glob('quests-*.json')
                    for row in json.loads(path.read_text())['records']
-                   if row['definition']['identity']['key'] == quest]
-    refs = definitions[0].get('source_refs', {}) if len(definitions) == 1 else {}
+                   if row['definition']['identity']['key'] == quest])
+    refs = (definitions[0].get('source_refs', {})
+            if len(definitions) == 1 and definitions[0]['identity']['key'] == quest else {})
     if (not isinstance(refs, dict) or claim['quest'] != refs.get('quest')
             or not any(ref['key'] == key for ref in refs.get('claims', []))):
         raise ValueError('Fragment claim must belong to the same canonical quest')

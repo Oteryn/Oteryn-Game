@@ -42,6 +42,9 @@ mod breach_entry;
 #[path = "m01b_explore/grave_danger.rs"]
 mod grave_danger;
 
+#[path = "m01b_explore/cookie_entry.rs"]
+mod cookie_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -313,6 +316,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/emperor-s-cookies/s1/id3800" {
+        return cookie_entry::world(native);
+    }
     if name.starts_with("m01b/grave-danger/s1/") {
         return grave_danger::world(native);
     }
@@ -513,6 +519,10 @@ pub(super) async fn exercise(
         return exercise_premium(owner, admitted, h, callback).await;
     }
     let additional = [
+        (
+            "m01b/emperor-s-cookies/s1/id3800",
+            "oteryn:quest-progress/chosen-source/emperor_s_cookies_quest/s1",
+        ),
         (
             "m01b/dragon-corpse/s1/entry",
             "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s1",

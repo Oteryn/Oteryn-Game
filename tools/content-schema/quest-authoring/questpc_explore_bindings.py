@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.emperor_s_cookies_quest', 's1', 'claim:canary:reward-claim/quest/key/id3800', 'chosen-source/emperor_s_cookies_quest'),
     *(("oteryn:quest.grave_danger_quest", "s1", "source-approach:" + name,
        "chosen-source/grave_danger_quest") for name in (
            "grave-danger/dark-cathedral", "grave-danger/femor-hills", "grave-danger/ankrahmun",
@@ -92,12 +93,14 @@ def stage_storage(quest, stage, recipe, track_tail, visit='entry'):
 
 def callbacks(root):
     areas = json.loads((Path(root) / AREA).read_text())['records']
+    by_quest = {}
+    for path in (Path(root) / 'content/quests/definitions').glob('quests-*.json'):
+        for row in json.loads(path.read_text())['records']:
+            definition = row['definition']
+            by_quest.setdefault(definition['identity']['key'], []).append(definition)
     result = []
     for quest, stage, area, track_tail in BINDINGS:
-        definitions = [r['definition']
-                       for path in (Path(root) / 'content/quests/definitions').glob('quests-*.json')
-                       for r in json.loads(path.read_text())['records']
-                       if r['definition']['identity']['key'] == quest]
+        definitions = by_quest.get(quest, [])
         if len(definitions) != 1:
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
         definition = definitions[0]
@@ -118,7 +121,7 @@ def callbacks(root):
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
         if area.startswith('source-approach:'):
             import questpc_source_approaches
-            at, appearance, sources = questpc_source_approaches.resolve(root, quest, area)
+            at, appearance, sources = questpc_source_approaches.resolve(root, quest, area, definition=definition)
         elif area.startswith('spawn-approach:'):
             import questpc_spawn_approaches
             at, appearance, sources = questpc_spawn_approaches.resolve(root, quest, area)
@@ -127,7 +130,7 @@ def callbacks(root):
             at, appearance, sources = questpc_area_approaches.resolve(root, area)
         elif area.startswith('claim:'):
             import questpc_fragment_approaches
-            at, appearance, sources = questpc_fragment_approaches.resolve(root, quest, area)
+            at, appearance, sources = questpc_fragment_approaches.resolve(root, quest, area, definition=definition)
         elif area.startswith('callback:'):
             import questpc_map_approaches
             at, appearance, sources = questpc_map_approaches.resolve(root, quest, area)

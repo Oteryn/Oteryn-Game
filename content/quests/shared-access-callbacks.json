@@ -636,6 +636,58 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/emperor-s-cookies/s1/id3800",
+      "quest": "oteryn:quest.emperor_s_cookies_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32605,
+          "y": 31907,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32605,
+            "y": 31907,
+            "floor": -3
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/emperor_s_cookies_quest/s1/visited/id3800",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/emperor_s_cookies_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/163",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/ferumbras-ascension/s1/entry",
       "quest": "oteryn:quest.ferumbras_ascension_quest",
       "trigger": "step_in",

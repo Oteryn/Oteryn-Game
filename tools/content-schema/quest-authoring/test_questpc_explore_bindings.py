@@ -21,6 +21,45 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_emperor_cookie_passage_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest'] == 'oteryn:quest.emperor_s_cookies_quest']
+        self.assertEqual(len(callbacks), 1, 'the pre-key passage entry is activated')
+        self.assertTrue(callbacks[0]['key'].endswith('/emperor-s-cookies/s1/id3800'))
+
+    def test_emperor_cookie_entry_reaches_key3800_before_its_locked_chamber(self):
+        binding = (('oteryn:quest.emperor_s_cookies_quest', 's1',
+                    'claim:canary:reward-claim/quest/key/id3800',
+                    'chosen-source/emperor_s_cookies_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32605, 'y': 31907, 'floor': -3},
+                'ordinal': 0, 'appearance': 436})
+            self.assertNotIn('admission', callback)
+            self.assertFalse(callback['offerings'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_reused_definition_cannot_bypass_the_source_quest_owner(self):
+        import copy
+        import questpc_source_approaches as source
+        import questpc_fragment_approaches as fragments
+        cases = ((source, source.QUEST, 'source-approach:ferumbras-entrance'),
+                 (fragments, 'oteryn:quest.frost_dragon_quest',
+                  'claim:canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir'))
+        definitions = [r['definition']
+                       for path in (ROOT / 'content/quests/definitions').glob('quests-*.json')
+                       for r in json.loads(path.read_text())['records']]
+        for resolver, quest, reference in cases:
+            with self.subTest(quest=quest):
+                definition = next(d for d in definitions if d['identity']['key'] == quest)
+                self.assertEqual(resolver.resolve(ROOT, quest, reference),
+                                 resolver.resolve(ROOT, quest, reference, definition=definition))
+                foreign = copy.deepcopy(definition)
+                foreign['identity']['key'] = 'oteryn:quest.longsword_quest'
+                with self.assertRaises(ValueError):
+                    resolver.resolve(ROOT, quest, reference, definition=foreign)
+
     def test_grave_danger_twelve_visit_stage_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT)
                      if c['quest'] == 'oteryn:quest.grave_danger_quest']
