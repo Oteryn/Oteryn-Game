@@ -38,7 +38,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             720,
-            350,
+            500,
             parent,
             null_mut(),
             null_mut(),
@@ -76,19 +76,64 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             [16, 90, 660, 28],
             BS_AUTOCHECKBOX as u32,
         );
-        let apply = control(hwnd, "BUTTON", "Apply", 1801, [516, 130, 160, 28], 0);
+        let events = [
+            "Capture on level increase",
+            "Capture on death",
+            "Capture on achievement",
+        ]
+        .iter()
+        .enumerate()
+        .map(|(i, label)| {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                1804 + i,
+                [16, 130 + i as i32 * 30, 660, 26],
+                BS_AUTOCHECKBOX as u32,
+            )
+        });
+        let events: Vec<HWND> = events.collect();
+        let backlog_label = control(
+            hwnd,
+            "STATIC",
+            "Pre-event backlog in seconds (0 disables; maximum 10)",
+            0,
+            [16, 230, 660, 24],
+            0,
+        );
+        let backlog = control(
+            hwnd,
+            "EDIT",
+            "0",
+            1807,
+            [16, 260, 100, 28],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        SendMessageW(backlog, EM_SETLIMITTEXT, 2, 0);
+        let apply = control(hwnd, "BUTTON", "Apply", 1801, [516, 260, 160, 28], 0);
         let info = control(
             hwnd,
             "STATIC",
-            "Print Screen saves a BMP capture. Only this client's rendered pixels are captured. Visible player information may appear in captures. Ctrl+Shift+C configures automatic capture events.",
+            "Print Screen saves a BMP capture. Automatic captures use confirmed level, death and achievement events. Backlog keeps one frame per second, up to 64 MiB; high resolutions may retain a shorter history. Captures can contain visible player information.",
             0,
-            [16, 172, 660, 56],
+            [16, 310, 660, 72],
             0,
         );
-        let feedback = control(hwnd, "STATIC", "", 0, [16, 240, 660, 60], 0);
-        if [label, folder, game, apply, info, feedback]
-            .iter()
-            .any(|h| h.is_null())
+        let feedback = control(hwnd, "STATIC", "", 0, [16, 390, 660, 56], 0);
+        if [
+            label,
+            folder,
+            game,
+            backlog_label,
+            backlog,
+            apply,
+            info,
+            feedback,
+        ]
+        .iter()
+        .chain(events.iter())
+        .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
             EnableWindow(parent, 1);
@@ -114,10 +159,21 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                 let mut prefs = state.preferences.clone();
                 prefs.screenshots.directory = text(folder);
                 prefs.screenshots.game_only = SendMessageW(game, BM_GETCHECK, 0, 0) == 1;
-                if prefs.screenshots.valid() {
-                    state.apply(prefs);
-                } else {
-                    state.feedback = "Enter an absolute folder path of at most 1024 bytes without control characters, or leave it blank.".into();
+                prefs.screenshots.on_level = SendMessageW(events[0], BM_GETCHECK, 0, 0) == 1;
+                prefs.screenshots.on_death = SendMessageW(events[1], BM_GETCHECK, 0, 0) == 1;
+                prefs.screenshots.on_achievement = SendMessageW(events[2], BM_GETCHECK, 0, 0) == 1;
+                match text(backlog).parse::<u8>() {
+                    Ok(seconds) => {
+                        prefs.screenshots.backlog_seconds = seconds;
+                        if prefs.screenshots.valid() {
+                            state.apply(prefs);
+                        } else {
+                            state.feedback = "Choose an absolute folder (or blank default), and backlog from 0 to 10 seconds.".into();
+                        }
+                    }
+                    Err(_) => {
+                        state.feedback = "Enter whole-number backlog seconds from 0 to 10.".into()
+                    }
                 }
             }
             let snapshot = (
@@ -127,6 +183,17 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             if held.as_ref() != Some(&snapshot) {
                 SetWindowTextW(folder, wide(&snapshot.1.directory).as_ptr());
                 SendMessageW(game, BM_SETCHECK, usize::from(snapshot.1.game_only), 0);
+                for (handle, enabled) in events.iter().zip([
+                    snapshot.1.on_level,
+                    snapshot.1.on_death,
+                    snapshot.1.on_achievement,
+                ]) {
+                    SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
+                }
+                SetWindowTextW(
+                    backlog,
+                    wide(&snapshot.1.backlog_seconds.to_string()).as_ptr(),
+                );
                 held = Some(snapshot);
             }
             SetWindowTextW(

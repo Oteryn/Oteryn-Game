@@ -1,4 +1,7 @@
 //! Bounded BGRA screenshot export and explicit automatic-capture policy.
+#[path = "features/local-reference-preferences/capture_backlog.rs"]
+mod backlog;
+pub use backlog::CaptureBacklog;
 use std::{
     io::{self, Write},
     path::Path,
@@ -11,6 +14,7 @@ pub struct Rect {
     pub height: u32,
 }
 /// One rendered frame and its game-map rectangle, excluding other desktop applications.
+#[derive(Clone, Copy)]
 pub struct Frame<'a> {
     pub width: u32,
     pub height: u32,

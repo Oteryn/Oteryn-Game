@@ -1,11 +1,12 @@
 //! Desktop screenshot caller: rendered client pixels and live session observations.
 use super::*;
-use oteryn_client::screenshots::{CaptureController, Frame, Rect};
+use oteryn_client::screenshots::{CaptureBacklog, CaptureController, Frame, Rect};
 use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
 #[derive(Default)]
 pub(super) struct Captures {
     controller: CaptureController,
+    backlog: CaptureBacklog,
     last_query: Option<std::time::Instant>,
 }
 impl Application {
@@ -28,17 +29,18 @@ impl Application {
                     && !modifiers.contains(Modifier::Alt)
                     && !modifiers.contains(Modifier::Super)
                 {
-                    let game_only = ask(
+                    let mut preferences = self.settings.screenshot_preferences();
+                    preferences.game_only = ask(
                         "Capture only the game map? Choose No for the entire client render surface. Screenshots can contain visible player information. Print Screen saves a manual capture.",
                     );
-                    self.settings.set_screenshot_scope(game_only);
-                    self.captures.controller.policy.level = ask(
+                    preferences.on_level = ask(
                         "Automatically save a screenshot when your server-reported level increases? This queries skill progress while playing.",
                     );
-                    self.captures.controller.policy.death =
+                    preferences.on_death =
                         ask("Automatically save a screenshot when your character dies?");
-                    self.captures.controller.policy.achievement =
+                    preferences.on_achievement =
                         ask("Automatically save a screenshot when you earn an achievement?");
+                    self.settings.set_screenshot_preferences(preferences);
                     return true;
                 }
             }
@@ -46,6 +48,9 @@ impl Application {
         false
     }
     pub(super) fn capture_tick(&mut self) {
+        self.settings
+            .screenshot_preferences()
+            .apply_policy(&mut self.captures.controller);
         if let Some(play) = &self.play {
             let now = std::time::Instant::now();
             if self.captures.controller.policy.level
@@ -79,7 +84,16 @@ impl Application {
             renderer.set_atlas(scene.atlas().clone());
             self.atlas = Some(scene.atlas().clone());
         }
-        if self.captures.controller.pending() {
+        let mut preferences = self.settings.screenshot_preferences();
+        if self.play.is_none() {
+            preferences.backlog_seconds = 0;
+        }
+        let now = std::time::Instant::now();
+        let sample = self
+            .captures
+            .backlog
+            .sample_due(now, preferences.backlog_seconds);
+        if self.captures.controller.pending() || sample {
             renderer.request_capture();
         }
         if renderer
@@ -94,8 +108,9 @@ impl Application {
             let result = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let frame = frame?;
                 let (w, h) = scene.view().viewport_px();
-                let preferences = self.settings.screenshot_preferences();
-                let directory = if preferences.directory.is_empty() {
+                let directory = if !self.captures.controller.pending() {
+                    std::path::PathBuf::new()
+                } else if preferences.directory.is_empty() {
                     oteryn_client::native_login::settings_path()?
                         .parent()
                         .ok_or("No screenshot directory")?
@@ -103,8 +118,9 @@ impl Application {
                 } else {
                     std::path::PathBuf::from(&preferences.directory)
                 };
-                let path = preferences.save_frame(
+                let paths = self.captures.backlog.process(
                     &mut self.captures.controller,
+                    &preferences,
                     &directory,
                     Frame {
                         width: frame.width,
@@ -117,8 +133,11 @@ impl Application {
                             height: h.min(frame.height),
                         },
                     },
+                    now,
                 )?;
-                println!("Oteryn: screenshot saved to {}", path.display());
+                for path in paths {
+                    println!("Oteryn: screenshot saved to {}", path.display());
+                }
                 Ok(())
             })();
             if let Err(error) = result {

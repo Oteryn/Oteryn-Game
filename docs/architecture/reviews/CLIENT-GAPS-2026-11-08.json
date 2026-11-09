@@ -483,9 +483,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: backlog i event triggers",
-  "status": "MISSING",
-  "gap": "Brak bufora wstecznego i automatycznych screenshotów zdarzeń.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Trwałe przełączniki level/death/achievement i opcjonalny backlog 0–10 s; renderowane klatki są próbkowane raz na sekundę, ograniczone do 64 MiB i zapisywane przy rzeczywistym zdarzeniu lub ręcznym capture.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native backlog and event settings; apps/client/src/features/local-reference-preferences/capture_backlog.rs:53 + bounded sampling and :94 + capture writer; apps/client/src/windows_shell/capture.rs:50 + confirmed event observations and :121 + actual renderer readback caller; apps/client/src/screenshots_live_tests.rs:165 + screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_policy; apps/client/src/features/local-reference-preferences/capture_backlog.rs:126 + backlog_evicts_oldest_frames_before_exceeding_memory_budget"
  },
  {
   "id": "T072",

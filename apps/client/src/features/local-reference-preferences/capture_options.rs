@@ -13,12 +13,22 @@ pub struct ScreenshotPreferences {
     /// Empty uses the client's normal screenshots directory.
     pub directory: String,
     pub game_only: bool,
+    pub backlog_seconds: u8,
+    pub on_level: bool,
+    pub on_death: bool,
+    pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
     pub fn valid(&self) -> bool {
-        self.directory.len() <= 1024
+        self.backlog_seconds <= 10
+            && self.directory.len() <= 1024
             && !self.directory.chars().any(char::is_control)
             && (self.directory.is_empty() || Path::new(&self.directory).is_absolute())
+    }
+    pub fn apply_policy(&self, capture: &mut CaptureController) {
+        capture.policy.level = self.on_level;
+        capture.policy.death = self.on_death;
+        capture.policy.achievement = self.on_achievement;
     }
     pub fn save_frame(
         &self,

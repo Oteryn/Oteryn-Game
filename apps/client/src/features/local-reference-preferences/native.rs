@@ -246,10 +246,13 @@ impl Settings {
     pub(super) fn screenshot_preferences(&self) -> oteryn_client::play::ScreenshotPreferences {
         lock(&self.shared).preferences.screenshots.clone()
     }
-    pub(super) fn set_screenshot_scope(&self, game_only: bool) {
+    pub(super) fn set_screenshot_preferences(
+        &self,
+        preferences: oteryn_client::play::ScreenshotPreferences,
+    ) {
         let mut state = lock(&self.shared);
         let mut prefs = state.preferences.clone();
-        prefs.screenshots.game_only = game_only;
+        prefs.screenshots = preferences;
         state.apply(prefs);
     }
     pub(super) fn graphics_settings(&self) -> (oteryn_client::play::GraphicsPreferences, u16) {
