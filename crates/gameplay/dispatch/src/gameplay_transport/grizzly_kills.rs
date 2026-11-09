@@ -35,6 +35,7 @@ struct NativeCounterCapture {
     transition: String,
     creature: String,
     definition_hash: Option<[u8; 32]>,
+    death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
 }
 
@@ -56,6 +57,7 @@ fn capture_native(
                 transition: key.clone(),
                 creature: counter.creature.into(),
                 definition_hash,
+                death_area: counter.death_area,
                 encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
@@ -124,12 +126,31 @@ fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 
     })
 }
 
+#[cfg(test)]
 fn freeze(
     source: Option<PartySnapshot>,
     principal: [u8; 16],
     principal_present: bool,
     creature: &str,
     snapshots: &[TaskSnapshot],
+) -> FrozenGrizzlyDeath {
+    freeze_at(
+        source,
+        principal,
+        principal_present,
+        creature,
+        snapshots,
+        None,
+    )
+}
+
+fn freeze_at(
+    source: Option<PartySnapshot>,
+    principal: [u8; 16],
+    principal_present: bool,
+    creature: &str,
+    snapshots: &[TaskSnapshot],
+    death_position: Option<[i32; 3]>,
 ) -> FrozenGrizzlyDeath {
     if !principal_present {
         return FrozenGrizzlyDeath::default();
@@ -161,7 +182,11 @@ fn freeze(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature && counter.encounter_source.is_none() {
+            if counter.creature == creature && counter.encounter_source.is_none()
+                && counter.death_area.is_none_or(|area| {
+                    death_position.is_some_and(|position| area.contains(position))
+                })
+            {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -311,12 +336,17 @@ pub(super) fn capture(
                 })
                 .cloned()
                 .collect();
-            let mut frozen = freeze(
+            let mut frozen = freeze_at(
                 source,
                 *principal.character.as_bytes(),
                 principal_present,
                 &entry.creature,
                 &live,
+                Some([
+                    entry.facts.corpse.x,
+                    entry.facts.corpse.y,
+                    i32::from(entry.facts.corpse.floor),
+                ]),
             );
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {

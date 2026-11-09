@@ -108,20 +108,31 @@ pub(super) fn tile_entries(
     position: MovementLocalPosition,
 ) -> Option<TileEntries> {
     let pos = tile_position(position)?;
-    let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
-    let mut ordinal = 0_u8;
+    let protection_zone = map.zone_flags(pos)?.1;
     let mut appearances = Vec::new();
-    for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
-        if depth != 0 {
-            continue;
-        }
-        if let Some(entry) = map.facts.base_entry(pos, ordinal, id) {
-            let key = placement_key(pos, ordinal)?;
-            if !map.facts.base_hidden(key) {
-                appearances.push((key, entry));
+    if let Some(tile) = map.facts.phase_tile(pos).ok()? {
+        // Timed World maps replace the whole stack, including ordinals which
+        // never existed in the immutable bundle. Read the same phase as rendering.
+        for entry in tile.entries {
+            if let crate::map::view::EntrySource::Base { placement_key, .. } = entry.source {
+                appearances.push((placement_key, entry.facts));
             }
         }
-        ordinal = ordinal.checked_add(1)?;
+    } else {
+        let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+        let mut ordinal = 0_u8;
+        for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
+            if depth != 0 {
+                continue;
+            }
+            if let Some(entry) = map.facts.base_entry(pos, ordinal, id) {
+                let key = placement_key(pos, ordinal)?;
+                if !map.facts.base_hidden(key) {
+                    appearances.push((key, entry));
+                }
+            }
+            ordinal = ordinal.checked_add(1)?;
+        }
     }
     appearances.extend(
         map.facts
@@ -135,7 +146,7 @@ pub(super) fn tile_entries(
             }),
     );
     Some(TileEntries {
-        protection_zone: tile.protection_zone(),
+        protection_zone,
         entries: appearances,
     })
 }

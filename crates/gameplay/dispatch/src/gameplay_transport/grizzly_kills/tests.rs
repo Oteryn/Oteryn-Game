@@ -297,3 +297,52 @@ fn grizzly_invalid_revision_or_excess_active_tasks_fail_closed() {
         .is_empty()
     );
 }
+
+#[test]
+fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> Result<(), String> {
+    let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("qn5-area")
+        .map_err(|e| format!("{e:?}"))?;
+    let mut observed = snapshot(1, &[], 10);
+    observed.native_counters = capture_native(
+        lowered.catalogue(),
+        &std::collections::BTreeMap::from([("oteryn:quest-progress/qn5/grimvale-entry".into(), 1)]),
+    );
+    assert_eq!(observed.native_counters.len(), 1);
+    let snapshots = [observed];
+    let capture = |position| {
+        freeze_at(
+            Some(party(1, &[], false)),
+            id(1),
+            true,
+            "oteryn:creature.werewolf",
+            &snapshots,
+            position,
+        )
+    };
+    for position in [
+        None,
+        Some([33384, 31539, 10]),
+        Some([33493, 31539, 10]),
+        Some([33420, 31531, 10]),
+        Some([33420, 31620, 10]),
+        Some([33420, 31539, 9]),
+        Some([33420, 31539, 12]),
+    ] {
+        assert!(
+            capture(position).native.is_empty(),
+            "outside/missing lethal coordinates cannot enter s2"
+        );
+    }
+    for position in [[33385, 31532, 10], [33492, 31619, 11], [33420, 31539, 10]] {
+        assert_eq!(capture(Some(position)).native.len(), 1);
+    }
+    let mut cache = GrizzlyCaptureCache::default();
+    let first = cache.remember(actor(1), id(22), |_| capture(Some([33420, 31539, 10])));
+    let replay = cache.remember(actor(1), id(22), |_| capture(Some([0, 0, 0])));
+    assert_eq!(
+        first, replay,
+        "later movement cannot rewrite eligibility of a queued death"
+    );
+    assert_eq!(replay.native.len(), 1);
+    Ok(())
+}
