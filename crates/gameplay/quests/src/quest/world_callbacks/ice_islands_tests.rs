@@ -69,3 +69,30 @@ fn unrelated_callback_sets_do_not_declare_a_seal_counter() -> Result<(), String>
     assert!(catalogue.track(seals::TARGETS).is_none());
     Ok(())
 }
+
+#[test]
+fn production_catalogue_registers_every_checked_paint_target() -> Result<(), String> {
+    let callbacks = load()?;
+    let paints = callbacks
+        .iter()
+        .filter(|callback| matches!(callback.native_rule, Some(NativeRule::IceSealPaint { .. })))
+        .collect::<Vec<_>>();
+    assert_eq!(paints.len(), usize::from(seals::targets::TARGET_COUNT));
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(
+        loaded
+            .catalogue()
+            .track(seals::TARGETS)
+            .map(|track| track.initial),
+        Some(0)
+    );
+    for callback in paints {
+        assert!(
+            loaded.catalogue().transition(&callback.key).is_some(),
+            "{}",
+            callback.key
+        );
+    }
+    Ok(())
+}

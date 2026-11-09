@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Static quest batches and the code-built source callbacks share this bound.
-pub const MAX_CALLBACKS: usize = 512;
+pub const MAX_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -276,6 +276,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/ice-islands-seals.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
     ))?);

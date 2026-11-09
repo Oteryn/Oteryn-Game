@@ -5,7 +5,7 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{CommandId, CommandRef, GameSessionId};
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, primary_transition};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, NativeRule, primary_transition};
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, ice_islands_seals as seals};
 use std::sync::Arc;
 
@@ -39,6 +39,13 @@ fn run_case(with_paint: bool) -> f::TestResult {
 }
 
 fn callback(seal: u16, with_paint: bool) -> f::TestResult<Callback> {
+    if with_paint {
+        return oteryn_gameplay_quests::quest::world_callbacks::load()
+            .map_err(f::debug)?
+            .into_iter()
+            .find(|callback| callback.native_rule == Some(NativeRule::IceSealPaint { seal }))
+            .ok_or_else(|| "missing registered production seal callback".into());
+    }
     Ok(serde_json::from_value(serde_json::json!({
         "key":format!("oteryn:quest-callback/engnpc2-fixture/seal-{seal}"),
         "quest":seals::QUEST,"trigger":"use","selector":{"position":{"x":1,"y":1,"floor":-1}},
