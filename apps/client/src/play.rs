@@ -135,12 +135,12 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences,
+    ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences, CustomAction,
     FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, GraphicsPreferences, HelpTopic,
-    HoverTooltip, MousePreset, MovementKeys, PreferenceBinding, PreferenceInput, PreferenceStore,
-    ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
-    SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help, help_text,
-    preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
+    HoverTooltip, MousePreset, MovementKeys, ObjectTarget, PreferenceBinding, PreferenceInput,
+    PreferenceStore, ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences,
+    SettingsPage, SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help,
+    help_text, preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

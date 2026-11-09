@@ -109,8 +109,9 @@ impl super::Application {
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let audio = self.audio.status(&mut play.view);
             let movement = play.link.item_movement_status();
+            let custom = play.link.custom_hotkey_status();
             let status = lfmt!(
-                "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
+                "{custom} — {movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
                 play.view.hud_status(),
                 play.link.movement_feedback().unwrap_or(""),
                 audio = audio,

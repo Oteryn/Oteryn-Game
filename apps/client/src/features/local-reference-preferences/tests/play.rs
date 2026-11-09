@@ -1,13 +1,20 @@
 use super::*;
 
+#[path = "action_key_interfaces.rs"]
+mod action_key_interfaces;
+
+#[path = "bar_hotkeys.rs"]
+mod bar_hotkeys;
+
+#[path = "options.rs"]
+mod options;
 #[path = "contexts.rs"]
 mod contexts;
 #[path = "hud_options.rs"]
 mod hud_options;
 #[path = "interface.rs"]
 mod interface;
-#[path = "options.rs"]
-mod options;
+
 #[path = "status_order.rs"]
 mod status_order;
 
@@ -143,6 +150,8 @@ fn admitted_character_preferences_are_isolated_and_reloaded()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+#[path = "custom_hotkeys.rs"]
+mod custom_hotkeys;
 
 #[path = "presentation_options.rs"]
 mod presentation_options;
@@ -388,6 +397,8 @@ mod shortcuts;
 mod compatibility_1;
 #[path = "compatibility_2.rs"]
 mod compatibility_2;
+
+
 
 #[path = "reserved.rs"]
 mod reserved;

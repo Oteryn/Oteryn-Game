@@ -110,7 +110,7 @@ pub(in crate::play) fn submit(
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(in crate::play) fn edit_slot(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,

@@ -21,6 +21,8 @@ pub use arcs::{ArcLayout, ArcPreferences};
 #[path = "basic.rs"]
 mod basic;
 pub use basic::{BASIC_GROUPS, BasicOptions};
+#[path = "bar_hotkeys.rs"]
+mod bar_hotkeys;
 #[path = "bindings.rs"]
 mod bindings;
 #[path = "control_input.rs"]
@@ -43,6 +45,11 @@ mod minimap_transfer;
 mod presentation;
 #[path = "profile_contexts.rs"]
 mod profile_contexts;
+#[path = "custom_actions.rs"]
+mod custom_actions;
+#[path = "custom_dispatch.rs"]
+mod custom_dispatch;
+pub use custom_actions::{CustomAction, ObjectTarget};
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "shortcuts.rs"]
@@ -127,6 +134,8 @@ pub struct ReferencePreferences {
     pub arc_opacity: u8,
     #[serde(default)]
     pub chat_context_hotkeys: bool,
+    #[serde(default)]
+    pub manual_hotkey_profile: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
@@ -232,6 +241,21 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
     #[serde(default)]
+    pub custom_hotkeys: std::collections::BTreeMap<String, CustomAction>,
+    #[serde(default)]
+    pub bar_hotkey_profiles: std::collections::BTreeMap<
+        String,
+        crate::play::feature_local_spell_action_bar::view::ActionKeys,
+    >,
+    #[serde(default)]
+    pub bar_action_profiles: std::collections::BTreeMap<
+        String,
+        crate::play::feature_local_spell_action_bar::view::BarActions,
+    >,
+    #[serde(default)]
+    pub custom_hotkey_profiles:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, CustomAction>>,
+    #[serde(default)]
     pub hotkey_profiles:
         std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>,
     #[serde(default)]
@@ -257,6 +281,7 @@ impl Default for ReferencePreferences {
             hud_npc_names: None,
             arc_opacity: 100,
             chat_context_hotkeys: false,
+            manual_hotkey_profile: false,
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,
@@ -310,6 +335,10 @@ impl Default for ReferencePreferences {
             secondary_keybindings: std::collections::BTreeMap::new(),
             hotkey_contexts: HotkeyProfiles::default(),
             item_hotkeys: Default::default(),
+            custom_hotkeys: std::collections::BTreeMap::new(),
+            bar_hotkey_profiles: std::collections::BTreeMap::new(),
+            bar_action_profiles: std::collections::BTreeMap::new(),
+            custom_hotkey_profiles: std::collections::BTreeMap::new(),
             hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,
             ui_scale: default_scale(),
@@ -331,80 +360,6 @@ impl Display for PreferenceError {
 
 impl std::error::Error for PreferenceError {}
 
-#[derive(Debug, Clone)]
-pub(crate) struct LocalPlayState {
-    character: Option<[u8; 16]>,
-    pub(in crate::play) minimap_binding:
-        Option<crate::play::feature_local_minimap::view::MinimapBinding>,
-    pub(in crate::play) minimap_edit: u64,
-    pub(in crate::play) minimap_origin: Option<oteryn_session::ActorPosition>,
-    world: Arc<World>,
-    pub(in crate::play) preferences: ReferencePreferences,
-    viewport: [u32; 2],
-}
-
-impl LocalPlayState {
-    pub(crate) fn new(world: World) -> Self {
-        Self {
-            character: None,
-            minimap_binding: None,
-            minimap_edit: 0,
-            minimap_origin: None,
-            world: Arc::new(world),
-            preferences: ReferencePreferences::default(),
-            viewport: [960, 540],
-        }
-    }
-
-    pub(crate) fn world(&self) -> Arc<World> {
-        Arc::clone(&self.world)
-    }
-
-    pub(crate) fn set_world(&mut self, world: Arc<World>) {
-        self.world = world;
-    }
-}
-
-impl PlayView {
-    pub fn preference_character(&self) -> Option<[u8; 16]> {
-        self.local.character
-    }
-
-    /// Installed only after native admission has accepted the selected character.
-    pub(crate) fn set_preference_character(&mut self, character: [u8; 16]) {
-        self.local.character = Some(character);
-    }
-
-    pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {
-        if viewport.contains(&0) || self.local.viewport == viewport {
-            return Ok(());
-        }
-        let mut candidate = self.clone();
-        candidate.local.viewport = viewport;
-        candidate
-            .apply_preference_scale()
-            .map_err(|_| PreferenceError)?;
-        *self = candidate;
-        Ok(())
-    }
-
-    #[must_use]
-    pub const fn preferences(&self) -> &ReferencePreferences {
-        &self.local.preferences
-    }
-
-    pub fn set_preferences(
-        &mut self,
-        preferences: ReferencePreferences,
-    ) -> Result<(), PreferenceError> {
-        preferences.validate()?;
-        let mut candidate = self.clone();
-        candidate.local.preferences = preferences;
-        candidate.rebuild().map_err(|_| PreferenceError)?;
-        *self = candidate;
-        Ok(())
-    }
-}
-
-
-
+#[path = "projection.rs"]
+mod projection;
+pub(crate) use projection::LocalPlayState;

@@ -27,6 +27,14 @@ impl Controls {
             let presentation = PresentationControls::new(hwnd)?;
             let language = LanguageControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
+            let custom_editor = control(
+                hwnd,
+                "BUTTON",
+                "New / edit object, text or passive action...",
+                234,
+                [10, 235, 710, 30],
+                0,
+            );
             let profile_name = control(
                 hwnd,
                 "EDIT",
@@ -321,6 +329,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                custom_editor,
                 battle_filters,
                 mixer,
                 stability,

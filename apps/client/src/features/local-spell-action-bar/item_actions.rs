@@ -28,20 +28,7 @@ pub(super) fn use_item(
         mailbox.spell_bar.feedback = "Item use unavailable or awaiting the server".into();
         return;
     }
-    let inventory = mailbox.inventory.rows();
-    let source = inventory
-        .iter()
-        .chain(
-            mailbox
-                .containers
-                .views
-                .iter()
-                .flat_map(|views| &views.views)
-                .flat_map(|view| &view.entries),
-        )
-        .filter(|item| item.item_definition_ref == definition)
-        .min_by_key(|item| (item.count, item.handle))
-        .map(|item| item.handle);
+    let source = item_source(mailbox, definition, None).map(|item| item.handle);
     let Some(source) = source else {
         mailbox.spell_bar.feedback =
             "That item is not visible in inventory or an open container".into();
@@ -52,22 +39,7 @@ pub(super) fn use_item(
         mailbox.world_context.rune_targeting = false;
         return;
     }
-    let target = match mode {
-        ItemUseMode::SelfActor => mailbox.bar_actions.own_actor,
-        ItemUseMode::Target => mailbox
-            .battle
-            .combat
-            .and_then(|combat| combat.target)
-            .and_then(|target| {
-                mailbox
-                    .battle
-                    .rows
-                    .iter()
-                    .find(|row| row.entity == target)
-                    .copied()
-            }),
-        ItemUseMode::Cursor => None,
-    };
+    let target = item_target(mailbox, mode);
     let Some(target) = target else {
         mailbox.spell_bar.feedback = "No current server target is available".into();
         return;
@@ -87,5 +59,52 @@ pub(super) fn use_item(
         mailbox.world_context.pending = true;
     } else {
         mailbox.spell_bar.feedback = "Session unavailable".into();
+    }
+}
+
+pub(in crate::play) fn visible_items(
+    mailbox: &Mailbox,
+) -> impl Iterator<Item = oteryn_session::ItemEntry> + '_ {
+    mailbox.inventory.rows().into_iter().chain(
+        mailbox
+            .containers
+            .views
+            .iter()
+            .flat_map(|views| &views.views)
+            .flat_map(|view| view.entries.iter())
+            .copied(),
+    )
+}
+pub(in crate::play) fn item_source(
+    mailbox: &Mailbox,
+    definition: NonZeroU32,
+    sub_type: Option<u32>,
+) -> Option<oteryn_session::ItemEntry> {
+    visible_items(mailbox)
+        .filter(|item| {
+            item.item_definition_ref == definition
+                && sub_type.is_none_or(|value| item.sub_type == value)
+        })
+        .min_by_key(|item| (item.count, item.handle))
+}
+pub(in crate::play) fn item_target(
+    mailbox: &Mailbox,
+    mode: ItemUseMode,
+) -> Option<oteryn_session::WorldSpatialEntity> {
+    match mode {
+        ItemUseMode::SelfActor => mailbox.bar_actions.own_actor,
+        ItemUseMode::Target => mailbox
+            .battle
+            .combat
+            .and_then(|combat| combat.target)
+            .and_then(|target| {
+                mailbox
+                    .battle
+                    .rows
+                    .iter()
+                    .find(|row| row.entity == target)
+                    .copied()
+            }),
+        ItemUseMode::Cursor => None,
     }
 }

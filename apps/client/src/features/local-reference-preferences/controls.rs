@@ -72,6 +72,7 @@ pub(super) struct Controls {
     pub(super) frames: FrameControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
+    pub(super) custom_editor: HWND,
     pub(super) profile_name: HWND,
     pub(super) profile_save: HWND,
     pub(super) profile_load: HWND,

@@ -36,10 +36,10 @@ pub(super) unsafe fn create(hwnd: HWND) -> Vec<HWND> {
 pub(super) fn page_help(page: SettingsPage) -> &'static str {
     match page {
         SettingsPage::CustomHotkeys => {
-            "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Object, text and passive action assignment is not available yet."
+            "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Use New / edit to assign object, text and read-only ability cooldown actions."
         }
         SettingsPage::BarHotkeys => {
-            "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
+            "Configure all three action bar rows (12 slots each). Empty chords clear slots 5–36. The first four slots retain their legacy defaults until rebound."
         }
         SettingsPage::Graphics => {
             "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."

@@ -3,9 +3,10 @@ mod hotkeys;
 #[path = "item_actions.rs"]
 mod item_actions;
 pub use hotkeys::ActionKeys;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(in crate::play) use hotkeys::bind as bind_custom_key;
 pub use item_actions::ItemUseMode;
+pub(in crate::play) use item_actions::{visible_items, item_source, item_target};
 #[path = "amount.rs"]
 mod amount;
 #[path = "layout.rs"]
@@ -18,10 +19,12 @@ use crate::spell::SPELL_SLOTS;
 pub(crate) use assignments::BarActionsState;
 #[cfg(any(windows, test))]
 pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 pub(in crate::play) use assignments::set_action as set_extra;
 pub use assignments::{BarAction, BarActions, PassiveAbility};
+pub(in crate::play) use assignments::label as action_label;
 pub(in crate::play) use assignments::{activate as activate_extra, clear_extra};
+
 
 impl PlayView {
     #[must_use]

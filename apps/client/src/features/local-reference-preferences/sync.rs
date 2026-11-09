@@ -7,97 +7,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum SettingsPage {
-    #[default]
-    Gameplay,
-    Hotkeys,
-    BarHotkeys,
-    CustomHotkeys,
-    Arcs,
-    ActorHud,
-    Status,
-    Console,
-    Interface,
-    Shortcuts,
-    Graphics,
-    Effects,
-    Sound,
-    Mixer,
-    Battle,
-    Screenshots,
-    Help,
-    HelpGuide,
-    MinimapTransfer,
-    ConsoleFilters,
-    ActionBarLayout,
-    Language,
-}
-
-impl SettingsPage {
-    pub const ALL: [Self; 22] = [
-        Self::Gameplay,
-        Self::Hotkeys,
-        Self::BarHotkeys,
-        Self::CustomHotkeys,
-        Self::Arcs,
-        Self::ActorHud,
-        Self::Status,
-        Self::Console,
-        Self::Interface,
-        Self::Shortcuts,
-        Self::Graphics,
-        Self::Effects,
-        Self::Sound,
-        Self::Mixer,
-        Self::Battle,
-        Self::Screenshots,
-        Self::Help,
-        Self::HelpGuide,
-        Self::MinimapTransfer,
-        Self::ConsoleFilters,
-        Self::ActionBarLayout,
-        Self::Language,
-    ];
-
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Gameplay => "Gameplay",
-            Self::Hotkeys => "Controls / General Hotkeys",
-            Self::BarHotkeys => "Controls / Action Bar Hotkeys",
-            Self::Console => "Interface / Console",
-            Self::Status => "Interface / Status Panel",
-            Self::ActorHud => "Interface / HUD",
-            Self::Arcs => "Interface / HUD Arcs",
-            Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
-            Self::Interface => "Interface",
-            Self::Shortcuts => "Interface / Shortcuts",
-            Self::Graphics => "Graphics",
-            Self::Effects => "Graphics / Effects",
-            Self::Sound => "Sound",
-            Self::Mixer => "Sound / Mixer",
-            Self::Battle => "Sound / Battle filters",
-            Self::Screenshots => "Screenshots",
-            Self::Help => "Help / settings transfer",
-            Self::HelpGuide => "Help / guide and support",
-            Self::MinimapTransfer => "Help / minimap transfer",
-            Self::ConsoleFilters => "Console",
-            Self::ActionBarLayout => "Interface / action bar layout",
-            Self::Language => "Interface / language",
-        }
-    }
-}
-
-pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
-    ("0199-cyclopedia-character-open", "Cyclopedia"),
-    ("0287-actor-spell-catalog-open", "Spellbook"),
-    ("local-spell-action-bar-open", "Spell action bar"),
-    ("0279-skill-progress-open", "Skills"),
-    ("0276-condition-status-open", "Conditions"),
-    ("0277-rest-status-open", "Rest and stamina"),
-    ("0016-quest-log-open", "Quest log"),
-    ("0007-chat-keybindings", "Chat"),
-];
+#[path = "pages.rs"]
+mod pages;
+pub use pages::{SettingsPage, WINDOW_ACTIONS};
 
 pub struct SettingsState {
     pub(super) minimap_transfer: Option<(bool, PathBuf)>,
@@ -107,6 +19,8 @@ pub struct SettingsState {
     pub(super) window_actions: std::collections::VecDeque<&'static str>,
     pending_chat_mode: Option<bool>,
     chat_context: Option<bool>,
+    pub custom_choices: Vec<(String, super::CustomAction)>,
+    pub(super) custom_choices_refreshed: Option<std::time::Instant>,
     pub(super) help_report_pending: bool,
     base_path: Option<PathBuf>,
     character: Option<[u8; 16]>,

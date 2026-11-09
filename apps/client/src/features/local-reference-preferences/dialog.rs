@@ -4,6 +4,8 @@ mod controls;
 #[path = "resource_checks.rs"]
 mod resource_checks;
 use controls::Controls;
+#[path = "custom_editor.rs"]
+mod custom_editor;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
@@ -39,6 +41,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             frames,
             arcs,
             interface,
+            custom_editor,
             profile_name,
             profile_save,
             profile_load,
@@ -136,6 +139,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             actor_hud.show(state.page == SettingsPage::ActorHud);
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
+            actor_hud.show(state.page == SettingsPage::ActorHud);
+            console.show(state.page == SettingsPage::Console);
+            layout.show(state.page == SettingsPage::Status);
             battle_sounds.show(state.page == SettingsPage::Sound);
             battle_filters.show(state.page == SettingsPage::Battle);
             mixer.show(state.page == SettingsPage::Mixer);
@@ -151,7 +157,13 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
-                    &[profile_name, profile_save, profile_load, profile_delete][..],
+                    &[
+                        custom_editor,
+                        profile_name,
+                        profile_save,
+                        profile_load,
+                        profile_delete,
+                    ][..],
                     SettingsPage::CustomHotkeys,
                 ),
                 (&[chat_on, chat_off, manual][..], SettingsPage::Hotkeys),
@@ -254,20 +266,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if (231..=233).contains(&action) {
-                    let name = text(profile_name);
-                    let result = match action {
-                        231 => preferences.save_hotkey_profile(&name),
-                        232 => preferences.load_hotkey_profile(&name),
-                        _ => {
-                            preferences.hotkey_profiles.remove(&name);
-                            Ok(())
-                        }
-                    };
-                    match result {
-                        Ok(()) => state.apply(preferences),
-                        Err(error) => state.feedback = error.to_string(),
-                    }
+                if (231..=234).contains(&action) {
+                    drop(state);
+                    custom_editor::profile_action(action, hwnd, &shared, &text(profile_name));
+                    state = lock(&shared);
                 } else if matches!(action, 225 | 226) {
                     if let Err(error) = state.apply_chat_preset(action == 225) {
                         state.feedback = error.to_string();

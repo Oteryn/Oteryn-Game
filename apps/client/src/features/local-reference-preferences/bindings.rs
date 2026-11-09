@@ -1,6 +1,6 @@
 //! Local key overrides translate into the existing production feature inputs.
 use super::{PreferenceError, ReferencePreferences};
-use oteryn_input_actions::{KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+use oteryn_input_actions::{KeyCode, Modifiers, NormalizedInputEvent};
 
 include!(concat!(env!("OUT_DIR"), "/preference_bindings.rs"));
 
@@ -11,118 +11,21 @@ pub struct PreferenceBinding {
 }
 
 pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> {
-    Ok(REGISTERED_BINDINGS
+    let mut bindings: Vec<_> = REGISTERED_BINDINGS
         .iter()
         .map(|&(id, default_chord)| PreferenceBinding { id, default_chord })
-        .collect())
+        .collect();
+    bindings.extend(super::bar_hotkeys::extra_bindings());
+    Ok(bindings)
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Chord(KeyCode, Modifiers);
-
-fn parse(value: &str) -> Result<Chord, PreferenceError> {
-    let upper = value.trim().to_ascii_uppercase();
-    let mut modifiers = Modifiers::NONE;
-    let mut code = None;
-    for part in upper.split('+') {
-        let modifier = match part {
-            "CTRL" => Some(Modifier::Control),
-            "SHIFT" => Some(Modifier::Shift),
-            "ALT" => Some(Modifier::Alt),
-            "SUPER" => Some(Modifier::Super),
-            _ => None,
-        };
-        if let Some(modifier) = modifier {
-            if modifiers.contains(modifier) {
-                return Err(PreferenceError);
-            }
-            modifiers = modifiers.with(modifier);
-            continue;
-        }
-        if code.is_some() {
-            return Err(PreferenceError);
-        }
-        let number = match part {
-            "ARROWUP" => 82,
-            "ARROWDOWN" => 81,
-            "ARROWLEFT" => 80,
-            "ARROWRIGHT" => 79,
-            "ESCAPE" => 41,
-            "ENTER" => 40,
-            "KEYPADENTER" | "NUMPADENTER" => 88,
-            "SPACE" => 44,
-            "TAB" => 43,
-            "0" => 39,
-            key if key.len() == 1 && key.as_bytes()[0].is_ascii_uppercase() => {
-                u16::from(key.as_bytes()[0] - b'A') + 4
-            }
-            key if key.len() == 1 && matches!(key.as_bytes()[0], b'1'..=b'9') => {
-                u16::from(key.as_bytes()[0] - b'1') + 30
-            }
-            key if key.starts_with('F') => {
-                let n = key[1..].parse::<u16>().map_err(|_| PreferenceError)?;
-                if !(1..=12).contains(&n) {
-                    return Err(PreferenceError);
-                }
-                57 + n
-            }
-            _ => return Err(PreferenceError),
-        };
-        code = Some(KeyCode::new(number).map_err(|_| PreferenceError)?);
-    }
-    Ok(Chord(code.ok_or(PreferenceError)?, modifiers))
-}
-
-pub(crate) fn parse_action_chord(value: &str) -> Option<(KeyCode, Modifiers)> {
-    parse(value)
-        .ok()
-        .map(|Chord(code, modifiers)| (code, modifiers))
-}
-fn validate_map(map: &std::collections::BTreeMap<String, String>) -> Result<(), PreferenceError> {
-    for (id, value) in map {
-        if !REGISTERED_BINDINGS
-            .iter()
-            .any(|(known, default)| known == id && !default.starts_with("MOUSE"))
-        {
-            return Err(PreferenceError);
-        }
-        let chord = parse(value)?;
-        if RESERVED_CHORDS
-            .iter()
-            .any(|reserved| parse(reserved).is_ok_and(|r| r == chord))
-        {
-            return Err(PreferenceError);
-        }
-    }
-    Ok(())
-}
-
-fn validate_effective(
-    primary: &std::collections::BTreeMap<String, String>,
-    secondary: &std::collections::BTreeMap<String, String>,
-) -> Result<(), PreferenceError> {
-    validate_map(primary)?;
-    validate_map(secondary)?;
-    let mut used = Vec::new();
-    for &(id, default) in REGISTERED_BINDINGS {
-        if default.starts_with("MOUSE") {
-            continue;
-        }
-        let chord = parse(primary.get(id).map_or(default, String::as_str))?;
-        if used.contains(&chord) {
-            return Err(PreferenceError);
-        }
-        used.push(chord);
-        if let Some(value) = secondary.get(id) {
-            let chord = parse(value)?;
-            if used.contains(&chord) {
-                return Err(PreferenceError);
-            }
-            used.push(chord);
-        }
-    }
-    Ok(())
-}
+#[path = "chords.rs"]
+mod chords;
+use chords::{Chord, parse};
+#[path = "binding_validation.rs"]
+mod binding_validation;
+pub(super) use binding_validation::validate_custom;
+use binding_validation::{validate_effective, validate_map};
 
 impl ReferencePreferences {
     pub fn set_action_bar_hotkeys(&mut self, chords: &[&str; 4]) -> Result<(), PreferenceError> {
@@ -157,12 +60,18 @@ impl ReferencePreferences {
     }
 
     pub fn binding_chord<'a>(&'a self, binding: &'a PreferenceBinding) -> &'a str {
+        if let Some(slot) = super::bar_hotkeys::extra_slot(binding.id) {
+            return self.bar_slot_chord(slot);
+        }
         self.keybindings
             .get(binding.id)
             .map_or(binding.default_chord, String::as_str)
     }
 
     pub fn rebind(&mut self, id: &str, chord: &str) -> Result<(), PreferenceError> {
+        if let Some(slot) = super::bar_hotkeys::extra_slot(id) {
+            return self.rebind_bar_slot(slot, chord);
+        }
         parse(chord)?;
         let mut candidate = self.clone();
         candidate
@@ -198,6 +107,8 @@ impl ReferencePreferences {
         if !self.hotkey_contexts.valid_shape() {
             return Err(PreferenceError);
         }
+        validate_effective(&self.keybindings, &self.secondary_keybindings)?;
+        self.validate_custom_chords(&self.keybindings, &self.secondary_keybindings)?;
         for (name, preset) in &self.hotkey_contexts.presets {
             for (chat_on, bindings) in [(true, &preset.chat_on), (false, &preset.chat_off)] {
                 validate_map(&bindings.primary)?;
@@ -210,7 +121,11 @@ impl ReferencePreferences {
                     (&bindings.primary, &bindings.secondary)
                 };
                 validate_effective(primary, secondary)?;
+                self.validate_custom_chords(primary, secondary)?;
             }
+        }
+        if !self.action_keys.valid(self) {
+            return Err(PreferenceError);
         }
         Ok(())
     }
@@ -283,9 +198,13 @@ impl ReferencePreferences {
 /// an early modifier release. Focus/device loss clears both this map and downstream routers.
 #[derive(Default)]
 pub struct PreferenceInput {
+    actions: Vec<super::CustomAction>,
     held: std::collections::BTreeMap<KeyCode, Option<(KeyCode, Modifiers)>>,
 }
 impl PreferenceInput {
+    pub fn take_custom_actions(&mut self) -> Vec<super::CustomAction> {
+        std::mem::take(&mut self.actions)
+    }
     pub fn route(
         &mut self,
         preferences: &ReferencePreferences,
@@ -301,6 +220,7 @@ impl PreferenceInput {
         chat_on: bool,
     ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
         use oteryn_input_actions::ButtonState;
+        self.actions.clear();
         let mut output = Vec::new();
         for event in events {
             match event {
@@ -308,8 +228,24 @@ impl PreferenceInput {
                     code,
                     state,
                     repeat,
-                    ..
+                    modifiers,
                 } => {
+                    if !self.held.contains_key(code)
+                        && let Some(action) = super::bar_hotkeys::routed_action(
+                            preferences,
+                            *code,
+                            *modifiers,
+                            chat_on,
+                        )
+                    {
+                        if *state == ButtonState::Pressed {
+                            self.held.insert(*code, None);
+                            if !repeat && self.actions.len() < 16 {
+                                self.actions.push(action);
+                            }
+                        }
+                        continue;
+                    }
                     let translated = match self.held.get(code) {
                         Some(translation) => *translation,
                         None => preferences
@@ -339,6 +275,7 @@ impl PreferenceInput {
                 NormalizedInputEvent::FocusChanged { focused: false }
                 | NormalizedInputEvent::DeviceLost => {
                     self.held.clear();
+                    self.actions.clear();
                     output.push(event.clone());
                 }
                 _ => output.push(event.clone()),
@@ -376,4 +313,10 @@ pub(super) fn window_events(
         repeat: false,
     })
     .collect()
+}
+
+pub(crate) fn parse_action_chord(value: &str) -> Option<(KeyCode, Modifiers)> {
+    parse(value)
+        .ok()
+        .map(|Chord(code, modifiers)| (code, modifiers))
 }

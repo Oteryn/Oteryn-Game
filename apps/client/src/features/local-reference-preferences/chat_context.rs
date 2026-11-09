@@ -7,6 +7,7 @@ impl SettingsState {
         let mut preferences = self.preferences.clone();
         preferences.general_hotkey_preset(chat_on)?;
         preferences.chat_context_hotkeys = true;
+        preferences.manual_hotkey_profile = false;
         self.apply(preferences);
         self.pending_chat_mode = Some(chat_on);
         self.chat_context = None;
@@ -16,6 +17,7 @@ impl SettingsState {
     pub fn manual_hotkeys(&mut self) {
         let mut preferences = self.preferences.clone();
         preferences.chat_context_hotkeys = false;
+        preferences.manual_hotkey_profile = true;
         self.apply(preferences);
         self.pending_chat_mode = None;
         self.chat_context = None;

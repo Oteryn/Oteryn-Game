@@ -152,18 +152,22 @@ impl Settings {
         &mut self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
         link: Option<&oteryn_client::play::PlayLink>,
-    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+    ) -> (
+        Vec<oteryn_input_actions::NormalizedInputEvent>,
+        Vec<oteryn_client::play::CustomAction>,
+    ) {
         let mut state = lock(&self.shared);
         state.open_help_report(link);
         let (events, requested) = match link {
             Some(link) => state.input_from_play(events, link),
             None => state.input_in_context(events, false),
         };
+        let actions = state.take_custom_actions();
         drop(state);
         if requested {
             spawn_window(Arc::clone(&self.shared));
         }
-        events
+        (events, actions)
     }
     pub(in super::super) fn restore(
         &self,
@@ -185,6 +189,7 @@ impl Settings {
         state.sync_bar_actions(link);
         state.sync_spellbook_filter(link);
         state.sync_archive_bindings(link);
+        state.refresh_custom_choices(link);
         state.sync_chat_context(link);
         state.sync_battle_lists(link);
         state.sync_local_preferences(link);

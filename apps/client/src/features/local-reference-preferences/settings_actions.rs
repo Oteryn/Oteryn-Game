@@ -26,6 +26,15 @@ impl SettingsState {
         }
     }
 
+    pub fn refresh_custom_choices(&mut self, link: &crate::play::PlayLink) {
+        if self.open && self.page == SettingsPage::CustomHotkeys
+            && self.custom_choices_refreshed.is_none_or(|time| time.elapsed() >= std::time::Duration::from_millis(250)) {
+            self.custom_choices = link.custom_hotkey_choices();
+            self.custom_choices_refreshed = Some(std::time::Instant::now());
+        }
+    }
+    pub fn take_custom_actions(&mut self) -> Vec<super::super::CustomAction> { self.input.take_custom_actions() }
+
     pub fn queue_window(&mut self, id: &str) -> bool {
         let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
             return false;
@@ -107,6 +116,8 @@ impl SettingsState {
             screenshot_runtime: Default::default(),
             screenshot_requested: false,
             window_actions: Default::default(),
+            custom_choices: Vec::new(),
+            custom_choices_refreshed: None,
             pending_chat_mode: None,
             chat_context: None,
             help_report_pending: false,

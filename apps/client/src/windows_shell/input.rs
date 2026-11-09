@@ -16,7 +16,7 @@ impl Application {
             return;
         }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
-        let routed = self
+        let (routed, custom_actions) = self
             .settings
             .input(events, self.play.as_ref().map(|play| &play.link));
         let events = routed.as_slice();
@@ -41,6 +41,9 @@ impl Application {
 
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
+            for action in custom_actions {
+                play.link.custom_hotkey_action(&play.view, &action);
+            }
             if let Some(window) = &self.window {
                 window.set_cursor(if play.view.preferences().cursor_crosshair {
                     winit::window::CursorIcon::Crosshair

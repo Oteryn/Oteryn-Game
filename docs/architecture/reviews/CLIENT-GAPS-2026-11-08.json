@@ -264,20 +264,20 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Action Bar Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:77 + action_bar_hotkeys_route_every_supported_slot; Additional action-bar rows remain unsupported; all four existing slots are configurable."
+  "evidence": "apps/client/src/features/local-reference-preferences/bar_hotkeys.rs:85 + options_key_edit_uses_action_keys_and_executes_the_live_mixed_slot + action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch; Options reads and edits cg-options ActionKeys for all 36 slots; native bar edits sync back, named saved settings survive restart, mixed slots dispatch through the owner executor, repeats are suppressed and chat letters remain available. Legacy custom slot chords remain readable."
  },
  {
   "id": "T049",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Custom Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:20 + hotkey_profiles_preserve_routes_across_restart; Object/text/passive action editor remains."
+  "evidence": "apps/client/src/features/local-reference-preferences/custom_dispatch.rs:8 + custom_passive_choices_use_confirmed_action_bar_status_interfaces; apps/client/src/features/local-reference-preferences/profiles.rs:107 + named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments; apps/client/src/features/local-spell-action-bar/item_actions.rs:78 + custom_object_picker_uses_open_container_handles_and_current_combat_generation. Native custom actions reuse cg-options visible-item/combat-target resolution and confirmed passive labels. Profiles restore owner ActionKeys and mixed BarActions, explicit loads win older pending edits, and disconnect ends custom tracking. Existing text draft/send, equip and cooldown caller tests pass."
  },
  {
   "id": "T050",
