@@ -613,7 +613,7 @@ pub fn prepare_bundle_step<'a>(
     closed: &'a dyn CellBlocker,
 ) -> Result<BundleStepProof<'a>, MovementError> {
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
-    qualify_origin(runtime, cells, actor, session, expected)?;
+    qualify_origin(runtime, cells, actor, session, expected, Some(direction))?;
     let (destination, starts_stairhop) = destination(
         cells,
         table,
@@ -642,6 +642,7 @@ fn qualify_origin(
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
+    direction: Option<CardinalStep>,
 ) -> Result<(), MovementError> {
     if runtime.actor_spell_reserved(actor)
         || cells.scope().world_id != runtime.binding().world_id()
@@ -651,9 +652,14 @@ fn qualify_origin(
             .read_actor_position(actor)
             .map_err(MovementError::Actor)?
             != expected
-        || !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
+        || !direction.map_or_else(
+            || {
+                runtime
+                    .player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            },
+            |direction| runtime.player_step_allowed(actor, session, direction.delta()),
+        )
     {
         return Err(MovementError::NotQualified);
     }
@@ -726,7 +732,14 @@ impl BundleStepProof<'_> {
     }
 
     fn validate(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            Some(self.direction),
+        )?;
         let observed = destination(
             self.cells,
             self.table,

@@ -227,7 +227,11 @@ pub fn step_in_channel_with_source_step(
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
     use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
-    let direction = states.drome_step_direction(runtime, actor, session, now_us, direction)?;
+    let direction = if runtime.forced_player_step_current(actor, session) {
+        direction
+    } else {
+        states.drome_step_direction(runtime, actor, session, now_us, direction)?
+    };
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
@@ -308,10 +312,7 @@ fn step_in_channel_inner(
     {
         return failure(MovementError::NotQualified);
     }
-    if !runtime
-        .player_control_facts(actor, session)
-        .is_ok_and(|facts| facts.control_loss.is_none())
-    {
+    if !runtime.player_step_allowed(actor, session, direction.delta()) {
         return failure(MovementError::NotQualified);
     }
     let Some(state) = states.get_mut(runtime, actor, session) else {
@@ -551,6 +552,7 @@ mod tests {
     #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
+    include!("actor_movement/m25_forced_step_tests.rs");
     use crate::spell::cast::CharacterCastFacts;
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
