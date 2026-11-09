@@ -150,7 +150,7 @@ def expected(root=ROOT):
                    "requires_premium": recipe["requirements"]["premium"],
                    "minimum_level": recipe["requirements"]["min_level"],
                    "journal": {"name": definition["display_name"], "objectives": [s["objective"] for s in stages]},
-                   "runtime_enabled": key in {"fury_gates", "grimvale", "hive_outpost", "kingsday", "insectoid_invasion"},
+                   "runtime_enabled": key in {"fire_from_the_earth", "fury_gates", "grimvale", "hive_outpost", "kingsday", "insectoid_invasion"},
                    "phase_track": track(key), "tracks": [], "world_callbacks": [],
                    "npc_callbacks": [], "counters": [], "stage_bindings": {},
                    "completion": {"callbacks": [], "counter_track": None, "counter_target": None},

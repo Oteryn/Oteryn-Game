@@ -137,7 +137,7 @@
       "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
       "repeat": "once",
       "requires_premium": true,
-      "runtime_enabled": false,
+      "runtime_enabled": true,
       "sources": [
         "https://tibia.fandom.com/index.php?curid=76220&oldid=845085",
         "https://tibia.fandom.com/index.php?curid=76221&oldid=887143"

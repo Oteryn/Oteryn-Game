@@ -46,7 +46,7 @@ unit cases also pass. The authoring checks pass, and all 115 authoring unit
 modules pass (1,148 tests, with the existing module skips unchanged).
 
 Fury Gates also has programme wiring and lowering tests; its own personal
-journey PostgreSQL case is still pending. Five other programmes remain disabled
+journey PostgreSQL case is still pending. Four other programmes remain disabled
 until their remaining engine paths and focused proofs are implemented.
 Kingsday's royal contact now has its captured native placement at
 `(32311,32172,6)`, facing north. The real-dispatch case passed in 175.683 seconds:
@@ -83,6 +83,14 @@ Four lifecycle unit tests pass. The strengthened Insectoid PG case passed in
 124.882 seconds: a source-area escape gives no credit, and finishing mid-wave
 removes the surviving actor while preserving ten kills and one completion.
 
-Pending M31 includes the remaining native NPC and achievement composition,
+Fire from the Earth now binds all seven native fiery creature kinds to its
+fifty-kill personal goal. The real-dispatch PG case passed in 104.685 seconds:
+missing Premium authority cannot activate the encounter; only death fifty earns
+the achievement; the kill counter, completion receipt, achievement request and
+account fact have the same PostgreSQL transaction identity. The final six live
+actors are retired, and later deaths or entry attempts cannot duplicate rewards.
+The case also reads the durable counter and completed domain-16 journal.
+
+Pending M31 includes the remaining native NPC composition,
 Jungle Camp's staged hunting, personal Hive favour/access, and Horse Station's taming receipt.
 Independent package review and protected integration belong to the coordinator.

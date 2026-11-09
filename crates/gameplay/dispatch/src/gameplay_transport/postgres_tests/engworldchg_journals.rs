@@ -12,6 +12,10 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 
 #[test]
+fn engworldchg_fire_goal_achievement_atomic_postgres() -> TestResult {
+    scenario("fire_from_the_earth", "volcano", "volcano", "dragon", 50)
+}
+#[test]
 fn engworldchg_grimvale_personal_native_journal_postgres() -> TestResult {
     scenario("grimvale", "island", "survey", "werewolf", 10)
 }
@@ -78,10 +82,24 @@ fn scenario(
             let cells = world
                 .movement_cells(activated.qualified_room().movement_cells())
                 .map_err(debug)?;
-            let origin = super::quest_world_callbacks::local(Position {
-                x: entry.x + 1,
-                ..entry
-            });
+            let origin = super::quest_world_callbacks::local(
+                entry_callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .filter(|_| {
+                        entry_callback.trigger
+                            == oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use
+                    })
+                    .and_then(|encounter| encounter.players.first())
+                    .map_or(
+                        Position {
+                            x: entry.x + 1,
+                            ..entry
+                        },
+                        |member| member.from,
+                    ),
+            );
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
@@ -214,7 +232,19 @@ fn scenario(
                 .map_err(debug)?;
             let phase = format!("oteryn:quest-progress/world-change-journal/{program}/phase");
             let kills = format!("oteryn:quest-progress/world-change-journal/{program}/kills");
-            if program == "insectoid_invasion" {
+            let mut journal_command_override = None;
+            if program == "fire_from_the_earth" {
+                journal_command_override = Some(
+                    super::engworldchg_fire::exercise(
+                        &mut owner,
+                        &mut admitted,
+                        &h,
+                        &authority,
+                        &entry_callback,
+                    )
+                    .await?,
+                );
+            } else if program == "insectoid_invasion" {
                 exercise_incursion(&mut owner, &mut admitted, &h, &authority).await?;
             } else if program == "kingsday" {
                 super::engworldchg_kingsday::exercise(&mut owner, &mut admitted, &h, &authority)
@@ -375,12 +405,12 @@ fn scenario(
                 assert_eq!(loaded.tracks().get(&phase), Some(&4));
                 assert_eq!(loaded.tracks().get(&kills), Some(&goal));
             }
-            let journal_command = match program {
+            let journal_command = journal_command_override.unwrap_or(match program {
                 "grimvale" => 11,
                 "hive_outpost" => 7,
                 "insectoid_invasion" => 10,
                 _ => 3,
-            };
+            });
             prove_journal_wire(
                 &owner,
                 admitted,
@@ -555,7 +585,7 @@ pub(super) async fn value(h: &Harness, track: &str) -> TestResult<i64> {
     .await?)
 }
 
-async fn use_marker(
+pub(super) async fn use_marker(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut super::AdmittedSession,
     callback: &Callback,
@@ -615,7 +645,12 @@ fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::Bu
         } else {
             3
         };
-    for y in at.y - 2..=at.y + 2 {
+    let max_y = entry
+        .effects
+        .encounter
+        .as_ref()
+        .map_or(at.y + 2, |encounter| (at.y + 2).max(encounter.room_max.y));
+    for y in at.y - 2..=max_y {
         for x in at.x - 2..=max_x {
             let mut items = vec![sector::Item {
                 palette: 0,
@@ -653,7 +688,7 @@ fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::Bu
         min_x: at.x - 2,
         min_y: at.y - 2,
         max_x: max_x + 1,
-        max_y: at.y + 3,
+        max_y: max_y + 1,
         floors: vec![at.floor],
     };
     let mut sectors: Vec<_> = sectors
@@ -765,7 +800,7 @@ async fn prove_journal_wire(
     Ok(())
 }
 
-async fn live_creatures(
+pub(super) async fn live_creatures(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     creature: &str,
 ) -> TestResult<Vec<crate::foundation::ExactActorRef>> {
@@ -784,7 +819,7 @@ async fn live_creatures(
         .collect())
 }
 
-async fn kill_actor(
+pub(super) async fn kill_actor(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &super::AdmittedSession,
     target: crate::foundation::ExactActorRef,

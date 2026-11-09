@@ -12,6 +12,21 @@ KEYS = {
 
 
 class NativeWorldChangeJournals(unittest.TestCase):
+    def test_fire_has_a_native_fifty_kill_goal_and_achievement(self):
+        program = next(p for p in json.loads(PROFILE.read_text())["programs"]
+                       if p["key"] == "fire_from_the_earth")
+        self.assertTrue(program["runtime_enabled"])
+        self.assertEqual(program["achievement"], "oteryn:achievement/fire_from_the_earth")
+        self.assertEqual(program["completion"]["counter_target"], 50)
+        entry, = program["world_callbacks"]
+        cohort = entry["effects"]["encounter"]
+        self.assertEqual(len(cohort["monsters"]), 7)
+        self.assertEqual({m["creature"] for m in cohort["monsters"]},
+                         {c["creature"] for c in program["counters"]})
+        self.assertEqual(cohort["players"][0]["from"], {"x":32037,"y":32588,"floor":-7})
+        self.assertTrue(any(s["track"].endswith("/kills") and s["maximum"] == 49
+                            and s.get("preserve") for s in entry["storage"]))
+
     def test_every_selected_recipe_has_exact_stage_bindings(self):
         document = json.loads(PROFILE.read_text())
         self.assertEqual(document["schema"], 1)
