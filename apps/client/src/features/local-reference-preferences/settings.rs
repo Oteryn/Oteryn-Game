@@ -144,6 +144,12 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub condition_order: Vec<u8>,
     #[serde(default)]
+    pub special_condition_order: Vec<String>,
+    #[serde(default)]
+    pub condition_status_hidden: Vec<String>,
+    #[serde(default)]
+    pub condition_hud_hidden: Vec<String>,
+    #[serde(default)]
     pub audio_device: String,
     #[serde(default = "default_opacity")]
     pub effect_opacity: [u8; 3],
@@ -289,6 +295,9 @@ impl Default for ReferencePreferences {
             status_panel_visible: true,
             skill_order: Vec::new(),
             condition_order: Vec::new(),
+            special_condition_order: Vec::new(),
+            condition_status_hidden: Vec::new(),
+            condition_hud_hidden: Vec::new(),
             audio_device: String::new(),
             effect_opacity: default_opacity(),
             optimise_connection: false,
