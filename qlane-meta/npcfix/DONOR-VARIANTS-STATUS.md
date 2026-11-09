@@ -11,8 +11,8 @@ The complete recursive GitHub trees were inspected on 2026-11-09, with case-inse
 
 Source route: `https://api.github.com/repos/zimbadev/crystalserver/git/trees/<revision>?recursive=1`. Classification: OTS_HYPOTHESIS_ONLY. No Crystal actor source was found to support the requested repair. Existing wiki-backed content is retained without claiming new donor qualification.
 
-## Captain Waverider: verification pending
+## Captain Waverider: existing identity and both anchors verified
 
-The existing displayed name already matches Crystal internalNpcName. No artificial display-name correction is authored. A separate real PostgreSQL test is queued to verify both retained retail anchors; until it completes, no qualification is claimed.
+The existing displayed name already matches Crystal internalNpcName. No artificial display-name correction was authored. The separate PostgreSQL test verifies both retained retail anchors, (32043,32931,7) and (32347,32859,7), through the real physical actor helper. Both emitted successful POSTGRES_CASE_COMPLETED markers: 87.880023878s and 84.270316296s. The test passed in 172.15s; formatting and strict all-target/all-feature dispatch Clippy passed. This is verification of existing behavior, so no failing baseline or new repair is claimed. Travel and mission semantics remain outside this physical identity proof.
 
 No main or qmech merge and no node-boot run were performed in this continuation.
