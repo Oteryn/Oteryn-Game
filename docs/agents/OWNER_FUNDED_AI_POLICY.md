@@ -46,29 +46,31 @@ review requests merely because a response is delayed.
 This standing authorization does **not** cover optional/speculative extra reviews,
 implementation, code generation or repair, tracked-file mutation, commits, push,
 merge/enqueue, production/live-data actions, cross-repository writes, general
-Codex usage, repeated reviewer loops or any other owner-funded AI/API operation.
+Codex usage, repeated reviewer loops beyond the per-PR rule below or any other owner-funded AI/API operation.
 Optional review without separate task-specific authorization is skipped rather than
 turned into a new owner prompt.
 
-### Owner review trial for waves and high-risk heads (2026-10-29)
+### Owner review rule for every PR (2026-11-09)
 
-As a trial, the owner also authorizes one manual Codex review (`codex exec`,
-read-only, reasoning effort `medium`) of a stable exact head in each of these
-cases, at most 5 a day. These reviews are owner-authorized, not optional extras:
+The owner authorizes one manual Codex review (`codex exec`, read-only, single
+agent, reasoning effort `medium`) of every Game PR before it merges. This
+replaces the 2026-10-29 trial and its "at most 5 a day" limit. These reviews
+are owner-authorized, not optional extras:
 
-- the batch PR of a mechanics wave (`.claude/skills/oteryn-waves`), after its
-  local checks pass;
-- a frozen PR head that changes persistence or migrations, session fencing, the
-  wire protocol, authority, durable value (gold, items) or a CI workflow.
-
-The trial starts on 2-3 PRs and ends, without a new owner prompt, if those
-reviews find no real defect. Automatic review of every PR is not authorized.
+- the first review runs once, after the PR's first push, over the whole diff
+  against `main`, in parallel with CI;
+- a second review is authorized only when a substantial logic change (server
+  code, persistence, session fencing, protocol, durable value) lands after the
+  first one, and covers only the new diff. At most 2 reviews per PR; a third is
+  never started: the coordinator reports to the owner instead;
+- P0/P1 findings are fixed at once; P2/P3 findings are collected and fixed
+  together in one grouped PR at the end.
 
 The binding, live readback, de-duplication and single review-dispatch owner rules
 of this file apply unchanged: one invocation per exact head, never a loop. A head
-that only answers this review's findings is reviewed again only when it fixes a P0
-or P1 (root `AGENTS.md`, *Review guidelines*, *Converge*). This authorization
-covers the review alone, not implementation, repair or any other Codex use.
+that only answers this review's findings is reviewed again only when it meets the
+second-review rule above. This authorization covers the review alone, not
+implementation, repair or any other Codex use.
 
 The owner may revoke or narrow this standing authorization at any time by a later
 explicit instruction. A later protected policy may narrow execution further but
