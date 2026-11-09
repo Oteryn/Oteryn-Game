@@ -128,8 +128,10 @@ fn parse(source: &'static str) -> Result<Document, String> {
         if !program.runtime_enabled {
             continue;
         }
-        if (program.achievement.is_some() && program.npc_callbacks.is_empty())
-            || program.taming.is_some()
+        if program.taming.is_some()
+            || program.achievement.as_deref().is_some_and(|key| {
+                !key.starts_with("oteryn:achievement/") || !super::valid_quest_key(key)
+            })
         {
             return Err("unsupported enabled journal reward policy".into());
         }
@@ -279,6 +281,7 @@ fn lower_npc_callbacks(
         callbacks.push(callback);
     }
     if program.achievement.is_some()
+        && program.completion.counter_track.is_none()
         && !callbacks
             .iter()
             .any(|callback| callback.achievement.is_some())
@@ -382,6 +385,30 @@ fn completion_matches(program: &Program, event: &str) -> bool {
                 && program.completion.counter_track.as_deref() == Some(counter.track)
                 && program.completion.counter_target == Some(counter.maximum)
         })
+}
+
+fn counter_achievement<'a>(program: &'a Program, event: &str) -> Option<&'a str> {
+    if program.runtime_enabled
+        && program
+            .counters
+            .iter()
+            .any(|counter| counter.transition == event)
+        && completion_matches(program, event)
+    {
+        program.achievement.as_deref()
+    } else {
+        None
+    }
+}
+
+/// Immutable reward policy for a native counter's final, goal-reaching receipt.
+/// The durable caller must also verify the committed goal and native death proof.
+pub fn counter_completion_achievement(event: &str) -> Result<Option<&'static str>, String> {
+    Ok(document()?
+        .programs
+        .iter()
+        .filter(|program| program.runtime_enabled)
+        .find_map(|program| counter_achievement(program, event)))
 }
 
 fn journal_end(p: &Program) -> Result<(String, i64), String> {
@@ -491,6 +518,89 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn native_counter_achievement_programme_requires_a_bound_goal() -> Result<(), String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/world-change-journals.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        for programme in value["programs"].as_array_mut().ok_or("programmes")? {
+            programme["runtime_enabled"] = (programme["key"] == "fire_from_the_earth").into();
+        }
+        let mut document = super::parse(Box::leak(value.to_string().into_boxed_str()))?;
+        let programme = document
+            .programs
+            .iter_mut()
+            .find(|p| p.runtime_enabled)
+            .ok_or("programme")?;
+        assert_eq!(
+            programme.achievement.as_deref(),
+            Some("oteryn:achievement/fire_from_the_earth")
+        );
+        assert_eq!(programme.completion.counter_target, Some(50));
+        for counter in &programme.counters {
+            assert_eq!(
+                super::counter_achievement(programme, counter.transition),
+                programme.achievement.as_deref()
+            );
+        }
+        for callback in &programme.world_callbacks {
+            assert_eq!(
+                super::counter_achievement(
+                    programme,
+                    callback["key"].as_str().ok_or("callback key")?
+                ),
+                None
+            );
+        }
+        assert_eq!(
+            super::counter_achievement(
+                programme,
+                "oteryn:quest-transition/native-kills/m31/foreign/dragon"
+            ),
+            None
+        );
+        assert_eq!(
+            super::counter_completion_achievement(
+                "oteryn:quest-transition/native-kills/m31/foreign/dragon"
+            )?,
+            None,
+            "foreign counter keys cannot grant achievements"
+        );
+        programme.runtime_enabled = false;
+        assert_eq!(
+            super::counter_achievement(programme, programme.counters[0].transition),
+            None,
+            "disabled source programmes cannot grant achievements"
+        );
+        for invalid in 0..5 {
+            let mut bad = value.clone();
+            let programme = bad["programs"]
+                .as_array_mut()
+                .ok_or("programmes")?
+                .iter_mut()
+                .find(|p| p["runtime_enabled"] == true)
+                .ok_or("programme")?;
+            match invalid {
+                0 => programme["completion"]["counter_target"] = 49.into(),
+                1 => {
+                    programme["completion"]["counter_track"] =
+                        "oteryn:quest-progress/foreign".into()
+                }
+                2 => programme["completion"]["counter_target"] = serde_json::Value::Null,
+                3 => programme["achievement"] = "oteryn:item.tibia.i2576".into(),
+                _ => {
+                    programme["completion"] = serde_json::json!({"callbacks":[],"counter_track":null,"counter_target":null})
+                }
+            }
+            assert!(
+                super::parse(Box::leak(bad.to_string().into_boxed_str())).is_err(),
+                "unbound achievement case {invalid}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn personal_room_entry_rejects_unfenced_shared_or_remote_staging() -> Result<(), String> {
         let value: serde_json::Value = serde_json::from_str(include_str!(
