@@ -59,6 +59,9 @@ impl DurabilityRoot {
         admission: QuestRewardAdmission<'_>,
         callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
     ) -> Result<QuestTransitionOutcome> {
+        // Rewardless admission fixtures still exercise the same world writer;
+        // only an actual item reward supplies the MINT participant.
+        let reward_admission = callback.effects.item_reward.as_ref().map(|_| admission);
         self.commit_quest_inner_resolved::<_, 0>(
             authority,
             node,
@@ -72,7 +75,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             None,
-            Some(admission),
+            reward_admission,
             None,
             None,
             Vec::new(),
@@ -566,6 +569,7 @@ impl DurabilityRoot {
                             || c.item_on_target.is_some()
                             || c.world_change.is_some()
                             || c.minimum_level.is_some()
+                            || c.admission.is_some()
                             || c.requires_live_premium()
                             || c.admission.is_some()
                             || c.experience.is_some()
