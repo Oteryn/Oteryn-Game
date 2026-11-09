@@ -65,8 +65,7 @@ async fn quote(
     }
     if let Some(requirement) = &route.return_origin {
         let last =
-            super::return_port::latest(&mut ***tx, *fence.character_id.as_bytes(), requirement)
-                .await?;
+            super::return_port::latest(tx, *fence.character_id.as_bytes(), requirement).await?;
         if !requirement.permits_latest_completed(last.as_deref()) {
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }

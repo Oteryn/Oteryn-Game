@@ -506,7 +506,7 @@
     "head": "f01758270bea550745ee5662af323f8f16a6a2ff"
   },
   "m38_return_origin_gate": {
-    "state": "GREEN_READY_TO_PUSH",
+    "state": "GREEN_PUSHED",
     "migration": "none",
     "pg_test": "npcfix_m38_return_origin_is_rechecked_at_quote_and_commit_postgres",
     "red": {
@@ -526,9 +526,19 @@
     "publication_checks": {
       "pins": "PASS unchanged inputs",
       "duplicate_migrations": "PASS HEAD",
-      "workspace_all_targets": "PENDING after immediate owner-directed publication",
-      "clippy": "PENDING content/durability/dispatch after immediate owner-directed publication",
+      "workspace_all_targets": "PASS 16m32s on gate commit 6da7963b9 before redundant-dereference-only correction",
+      "clippy": "PASS strict --lib content/durability/dispatch after replacing redundant explicit transaction dereference; no suppression",
       "fmt": "PASS cargo fmt --all --check"
+    },
+    "head": "6da7963b9381a50bf2c9128779f208a604ed67cc",
+    "lint_followup": {
+      "change": "Pass tx directly; compiler performs the same dereference coercion",
+      "sql_or_test_changes": false,
+      "sql_conformance_pg_seconds": 0.211019,
+      "full_pg_stories": "Four PASS results above precede this equivalent coercion-only change; not rerun afterward",
+      "fmt": "PASS",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD"
     }
   }
 }
