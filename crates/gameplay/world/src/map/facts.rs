@@ -308,7 +308,7 @@ impl BundleFacts {
         let movement_definitions = [
             1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
             12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
-            14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+            14163, 14164, 14255, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1405,6 +1405,33 @@ mod tests {
         assert!(facts.movement_effects_since(0).is_empty());
         assert!(!facts.create_world_change_item(pos, 1));
         assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+    }
+
+    #[test]
+    fn qn5_feroxa_trap_counterparts_resolve_without_a_base_placement()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let items = |key: &str| {
+            if matches!(key, "oteryn:item.tibia.i22059" | "oteryn:item.tibia.i22074") {
+                let mut definition = fixture::items("item:coin")?;
+                definition.pickupable = key.ends_with("22074");
+                Some(definition)
+            } else {
+                fixture::items(key)
+            }
+        };
+        let facts =
+            BundleFacts::palette(&bundle.manifest, items).map_err(|error| format!("{error:?}"))?;
+        let open = facts
+            .movement_item_facts(22059)
+            .ok_or("unplaced open trap counterpart")?;
+        let closed = facts
+            .movement_item_facts(22074)
+            .ok_or("unplaced closed trap counterpart")?;
+        assert!(!open.pickupable);
+        assert!(closed.pickupable);
+        Ok(())
     }
 
     #[test]
