@@ -107,7 +107,9 @@ mod native_summon_reconciliation_tests;
 #[path = "carrier/npc_actor.rs"]
 pub mod npc_actor;
 
+mod native_hits;
 mod owner_views;
+pub use native_hits::CommittedNativeHit;
 
 #[cfg(test)]
 #[path = "carrier/party_reward_occurrence_tests.rs"]
