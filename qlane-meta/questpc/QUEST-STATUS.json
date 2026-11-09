@@ -1124,5 +1124,12 @@
     "postgres": "m01b_horse_station_native_landmark_visit_never_activates_escape_state GREEN118.467654971s; real dispatch STEP, once/replay/revisit, no World escape activation.",
     "remaining": "No new route qualification.36routes/39stages proven,10routes/17stages unwired.",
     "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
+  },
+  "bewitched_cauldron_survey": {
+    "state": "PREPARED_INACTIVE",
+    "scope": "Bewitched s1 only: exact authored personal-daily adaptation, first objective, pinned spoiler and retained huge cauldron corner required; global event and later stages are untouched.",
+    "native_landmark": "32732,31935,z12 source stack[7272,12023];clear entry32733,31935,-12ground7272;startEast32734,31935,-12.",
+    "red_green": "2focusedtests RED(missing resolver/currentWorldowner)->GREEN0.588s;121authoringmodules1224tests0failingmodules;workspacealltargetsGREEN8m35s;fmt andauthoringchecksGREEN.",
+    "pending": "Prepared slice gates all GREEN:content-tree/equipment5795pin/dupmigrations/callbackcheck PASS. Callback is NOT live; native server PG case not yet run; no additional route qualification."
   }
 }
