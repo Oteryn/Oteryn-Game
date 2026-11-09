@@ -1,6 +1,6 @@
 //! Allocate quest metadata before damage; retain its first exact committed hit without allocation.
 use super::native_hits::NativeQuestHit;
-use crate::foundation::{CharacterLease, ExactActorRef, GameSessionId};
+use crate::foundation::{CharacterLease, CommandRef, ExactActorRef};
 use oteryn_gameplay_entities::runtime_actor_carrier::CommittedNativeHit;
 use oteryn_gameplay_quests::quest::{
     QuestStateCatalogue,
@@ -13,7 +13,8 @@ struct PreparedFields {
     attacker: ExactActorRef,
     target: ExactActorRef,
     lease: CharacterLease,
-    session: GameSessionId,
+    command: CommandRef,
+    sub_ordinal: u16,
     transition: String,
     creature: String,
     item: String,
@@ -42,7 +43,8 @@ impl PreparedQuestHit {
         attacker: ExactActorRef,
         target: ExactActorRef,
         lease: CharacterLease,
-        session: GameSessionId,
+        command: CommandRef,
+        sub_ordinal: u16,
     ) -> Option<Self> {
         let (quest, objective) = hits::objective_for(catalogue, transition)?;
         if observed_revision == 0
@@ -62,7 +64,8 @@ impl PreparedQuestHit {
                 attacker,
                 target,
                 lease,
-                session,
+                command,
+                sub_ordinal,
                 transition: objective.key.clone(),
                 creature: objective.creature.clone(),
                 item,
@@ -74,7 +77,7 @@ impl PreparedQuestHit {
         })
     }
 
-    /// Called in the native commit turn. Wrong actors, leases or actual sources leave
+    /// Called in the native commit turn. Wrong actors, leases, commands or actual sources leave
     /// the slot armed; a second hit never overwrites the first captured occurrence.
     pub fn capture(
         &mut self,
@@ -86,12 +89,14 @@ impl PreparedQuestHit {
         let Some(fields) = self.armed.as_ref() else {
             return false;
         };
-        let (character, generation, session, _, _) = witness.origin();
+        let (character, generation, session, sequence, sub_ordinal) = witness.origin();
         if witness.attacker() != fields.attacker
             || witness.target() != fields.target
             || character != fields.lease.character_id()
             || generation != fields.lease.generation()
-            || session != fields.session
+            || session != fields.command.game_session_id()
+            || sequence != fields.command.command_id().get()
+            || sub_ordinal != fields.sub_ordinal
             || creature != fields.creature
             || item != fields.item
             || spell != fields.spell.as_deref()

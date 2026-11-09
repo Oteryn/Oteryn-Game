@@ -818,24 +818,46 @@ async fn exercise_prepared_hit(h: &fixture::Harness) -> fixture::TestResult {
         player,
         target,
         lease,
-        fence.game_session_id,
+        command,
+        0,
     )
     .ok_or("prepared hit")?;
     assert!(plan.pending().is_none());
     let inactive = std::collections::BTreeMap::from([(PHASE.into(), 3)]);
     assert!(
         PreparedQuestHit::prepare(
-            &catalogue,
-            transition,
-            &inactive,
-            1,
-            player,
-            target,
-            lease,
-            fence.game_session_id
+            &catalogue, transition, &inactive, 1, player, target, lease, command, 0,
         )
         .is_none()
     );
+    let other_command = foundation::CommandRef::new(
+        command.game_session_id(),
+        foundation::CommandId::new(2).map_err(fixture::debug)?,
+    );
+    let mut command_plan = PreparedQuestHit::prepare(
+        &catalogue,
+        transition,
+        &Default::default(),
+        1,
+        player,
+        target,
+        lease,
+        other_command,
+        0,
+    )
+    .ok_or("command plan")?;
+    let mut ordinal_plan = PreparedQuestHit::prepare(
+        &catalogue,
+        transition,
+        &Default::default(),
+        1,
+        player,
+        target,
+        lease,
+        command,
+        1,
+    )
+    .ok_or("ordinal plan")?;
     assert_eq!(runtime.live_creature_health(target), Some(100));
     let stale = native_hit_witness(2)?;
     assert!(!plan.capture(stale, "oteryn:creature.rat", "oteryn:item.spear", None));
@@ -886,6 +908,16 @@ async fn exercise_prepared_hit(h: &fixture::Harness) -> fixture::TestResult {
             .ok_or("committed hit")?;
         assert!(!plan.capture(witness, "oteryn:creature.rat", "oteryn:item.sword", None));
         assert!(!plan.capture(witness, "oteryn:creature.dragon", "oteryn:item.spear", None));
+        assert!(
+            !command_plan.capture(witness, "oteryn:creature.rat", "oteryn:item.spear", None),
+            "another command's witness cannot fill this plan"
+        );
+        assert!(
+            !ordinal_plan.capture(witness, "oteryn:creature.rat", "oteryn:item.spear", None),
+            "another sub-ordinal's witness cannot fill this plan"
+        );
+        assert!(command_plan.pending().is_none());
+        assert!(ordinal_plan.pending().is_none());
         assert!(plan.capture(witness, "oteryn:creature.rat", "oteryn:item.spear", None));
         let original = plan.pending().ok_or("pending")?.occurrence();
         assert!(!plan.capture(witness, "oteryn:creature.rat", "oteryn:item.spear", None));
