@@ -1,0 +1,28 @@
+{
+  "signatures": [
+    {
+      "keyid": "eb023a73e218ce466aed8989869b28299fd3350925ba43158a07e688c157d58f",
+      "sig": "946d631c34f1bef0ed557562b7d40e0d3fdd327c439cc532ef0b672a251c5f8ede8552eb798b237cacf25ffba4057eaaa475810dde463a9f54a5808b327abb07"
+    }
+  ],
+  "signed": {
+    "_type": "targets",
+    "expires": "2099-01-01T00:00:00Z",
+    "spec_version": "1.0.0",
+    "targets": {
+      "channels/stable/policy-v1.json": {
+        "hashes": {
+          "sha256": "54d913bfb4f8142b535c6819be421d70141687e73f7e8f14925fe58c97069e1b"
+        },
+        "length": 525
+      },
+      "channels/stable/releases/rel-a/windows/x86_64/client.zip": {
+        "hashes": {
+          "sha256": "bc4a71180870f7945155fbb02f4b0a2e3faa2a62d6d31b7039013055ed19869a"
+        },
+        "length": 7
+      }
+    },
+    "version": 1
+  }
+}

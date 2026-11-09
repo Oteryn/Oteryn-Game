@@ -1,4 +1,5 @@
 //! Window-independent native entry lifecycle.
+mod device;
 
 use crate::play::{PlayLink, PlayView};
 use crate::{AdmittedSession, ClientBootstrap, GameplayEntryError};
@@ -68,9 +69,15 @@ impl Reentry {
     }
 
     /// Applies edited settings only while offline; the runtime is reused.
-    pub fn configure(&mut self, config: crate::NativeLoginConfig) -> bool {
+    pub fn configure(&mut self, mut config: crate::NativeLoginConfig) -> bool {
         if self.state != EntryState::Offline {
             return false;
+        }
+        if let Some(previous) = &self.client.native_login
+            && previous.platform_url == config.platform_url
+            && previous.oauth_client_id == config.oauth_client_id
+        {
+            config.device_sessions = previous.device_sessions.clone();
         }
         self.client.native_login = Some(config);
         true
@@ -120,25 +127,6 @@ impl Reentry {
             };
             let _ = sender.send(result);
         });
-        true
-    }
-
-    /// Cancel just this attempt, preserving the process runtime for a fresh sign-in.
-    pub fn cancel_entry(&mut self) -> bool {
-        let Some(token) = &self.attempt_cancellation else {
-            return false;
-        };
-        if self.state != EntryState::Entering || token.is_cancelled() {
-            return false;
-        }
-        token.cancel();
-        if let Some(config) = &self.client.native_login {
-            config.training_queue.clear();
-        }
-        if let Some((_, queue)) = &mut self.waiting {
-            queue.cancel();
-        }
-        self.last_wait_text = None;
         true
     }
 

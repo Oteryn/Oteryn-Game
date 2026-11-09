@@ -10,6 +10,9 @@ pub use game_window::GameWindowPreferences;
 #[path = "action_bar.rs"]
 mod action_bar;
 pub use action_bar::ActionBarPreferences;
+#[path="miscellaneous.rs"]
+mod miscellaneous;
+pub use miscellaneous::MiscellaneousPreferences;
 use crate::map::World;
 use crate::play::PlayView;
 use serde::{Deserialize, Serialize};
@@ -87,6 +90,8 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(skip)]
+    pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
     pub hud_layout: crate::play::HudLayout,
     #[serde(default)]
@@ -254,6 +259,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),
             hud_layout: Default::default(),

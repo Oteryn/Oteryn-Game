@@ -54,7 +54,7 @@ pub async fn admit_optimized(
         .map_err(|refusal| refusal.map(|refusal| refusal.code))
 }
 
-/// Detailed admission retaining both queue metadata and low-latency delivery settings.
+/// Preserves both authenticated queue metadata and the caller's TCP delivery preference.
 pub async fn admit_detailed_optimized(
     host: &str,
     port: u16,

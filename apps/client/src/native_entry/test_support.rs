@@ -151,6 +151,7 @@ impl Stack {
 
     pub(super) fn config(&self) -> NativeLoginConfig {
         NativeLoginConfig {
+            device_sessions: Default::default(),
             platform_url: self.http_url.clone(),
             gateway_url: self.http_url.clone(),
             oauth_client_id: "oteryn-native".to_owned(),

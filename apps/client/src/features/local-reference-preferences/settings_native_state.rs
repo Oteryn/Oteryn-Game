@@ -301,3 +301,17 @@ impl Settings {
         }
     }
 }
+
+impl Settings {
+    pub(in super::super) fn take_native_sign_out(&self) -> bool {
+        lock(&self.shared).take_native_sign_out()
+    }
+    pub(in super::super) fn confirm_exit(&self) -> bool {
+        !lock(&self.shared).preferences.miscellaneous.confirm_exit
+            || oteryn_client::device_login::confirm_action("Close Oteryn?")
+    }
+    pub(in super::super) fn confirm_logout(&self) -> bool {
+        !lock(&self.shared).preferences.miscellaneous.confirm_logout
+            || oteryn_client::device_login::confirm_action("Log out of the game?")
+    }
+}

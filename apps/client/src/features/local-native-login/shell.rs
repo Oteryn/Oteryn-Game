@@ -52,6 +52,17 @@ impl Application {
             Err(error) => self.leave_play(error_text(error)),
         }
     }
+    /// Reauthenticate after the consumed ticket, then show account character selection.
+    pub(super) fn return_to_character_selection(&mut self) {
+        self.leave_play(tr!("Choose a character after browser sign-in."));
+        if let Some(login) = &self.login {
+            login.finish(Ok(()));
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.request();
+        }
+    }
+
     pub(super) fn leave_play(&mut self, message: &str) {
         if let Some(renderer) = &mut self.renderer {
             renderer.cancel_capture();
@@ -80,16 +91,6 @@ impl Application {
     pub(super) fn request_entry(&mut self) {
         if let Some(login) = &self.login {
             login.show(tr!("Review connection settings, then choose Save and sign in.").into());
-        }
-    }
-    /// Reauthenticate after the consumed ticket, then show account character selection.
-    pub(super) fn return_to_character_selection(&mut self) {
-        self.leave_play(tr!("Choose a character after browser sign-in."));
-        if let Some(login) = &self.login {
-            login.finish(Ok(()));
-        }
-        if let Some(entry) = &mut self.entry {
-            entry.request();
         }
     }
 }

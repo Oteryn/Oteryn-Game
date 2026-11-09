@@ -14,6 +14,7 @@ pub mod coin_shop;
 pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
+pub mod device_login;
 pub mod input;
 pub mod map;
 pub mod miniwindow;
@@ -27,6 +28,7 @@ pub mod reentry;
 pub mod scene;
 pub mod screenshots;
 pub mod spell;
+pub mod updater;
 #[cfg(windows)]
 pub mod win_mutex;
 pub mod window_layout;

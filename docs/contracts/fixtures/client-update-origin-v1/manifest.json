@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "SOURCE.md",
+      "bytes": 1142,
+      "sha256": "b98e14520861d35d9037ede8e9183a8d00c8186e474d5bde9bc1445727eaf76e"
+    },
+    {
+      "path": "origin-v1/beta/metadata/1.beta.json",
+      "bytes": 818,
+      "sha256": "4688e296fe0e41c2fbc47424c97ebd606d15625e7cbf5f0353244a2c118d8067"
+    },
+    {
+      "path": "origin-v1/beta/metadata/1.root.json",
+      "bytes": 2723,
+      "sha256": "831361de6061b9282034c2693f0673d6db9075c5e6df2de9372ea9fb8f3a2d23"
+    },
+    {
+      "path": "origin-v1/beta/metadata/1.snapshot.json",
+      "bytes": 802,
+      "sha256": "5d6356d08961f2b8afaafaf3d9c8f674dd9f13f44edd23699c6776c9d654c219"
+    },
+    {
+      "path": "origin-v1/beta/metadata/1.targets.json",
+      "bytes": 1044,
+      "sha256": "7fcaf32f4d90b36659ce4b42b536feb15dca17eaf409e8bd9a6678d31c63a00b"
+    },
+    {
+      "path": "origin-v1/beta/metadata/timestamp.json",
+      "bytes": 611,
+      "sha256": "dcb6fd1a0813c25ecdfe378f162ee34de7f59c9eda5f471e08eb273481cf9cfa"
+    },
+    {
+      "path": "origin-v1/beta/policy-v1.json",
+      "bytes": 521,
+      "sha256": "7716bcb0bdd60e26ef2607ee1627cbe5b403759162e4174f0b18bfbb8f7df81d"
+    },
+    {
+      "path": "origin-v1/stable/metadata/1.root.json",
+      "bytes": 2723,
+      "sha256": "831361de6061b9282034c2693f0673d6db9075c5e6df2de9372ea9fb8f3a2d23"
+    },
+    {
+      "path": "origin-v1/stable/metadata/1.snapshot.json",
+      "bytes": 804,
+      "sha256": "b2f486ec8698ae5b60feed19ae267e0e7b74bd0081418cf4296e1096e3bb20ce"
+    },
+    {
+      "path": "origin-v1/stable/metadata/1.stable.json",
+      "bytes": 822,
+      "sha256": "aa14f4e43ded79396a760f148cdcf8a619b614d59d206145b913655ec8be854f"
+    },
+    {
+      "path": "origin-v1/stable/metadata/1.targets.json",
+      "bytes": 1048,
+      "sha256": "4c86749b633c052a163abfb49b505113c9218b9383c6aab24b57d81a5b6c1ade"
+    },
+    {
+      "path": "origin-v1/stable/metadata/timestamp.json",
+      "bytes": 611,
+      "sha256": "24dc658ab7a91ab7bd5524ac0c8ac827d8422e0f9825b803ef0de7f15fbdd798"
+    },
+    {
+      "path": "origin-v1/stable/policy-v1.json",
+      "bytes": 525,
+      "sha256": "54d913bfb4f8142b535c6819be421d70141687e73f7e8f14925fe58c97069e1b"
+    },
+    {
+      "path": "policy-v1.json",
+      "bytes": 510,
+      "sha256": "1a105f12687e85713e26b0289058362de5c6331ef43e6d25d3f28fa308e50742"
+    }
+  ]
+}
