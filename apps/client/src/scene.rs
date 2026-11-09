@@ -44,6 +44,7 @@ pub struct Scene {
     tiles: TileBatch,
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
+    pub(crate) target_frame: bool,
     target: Option<Targetable>,
     presentation_atlas: Option<Arc<AtlasImage>>,
     cache: appearance_cache::PresentationCache,
@@ -118,6 +119,7 @@ impl Scene {
             tiles,
             sprites: SpriteBatch::new(),
             visible,
+            target_frame: true,
             target: None,
             presentation_atlas: None,
             cache: appearance_cache::PresentationCache::default(),
@@ -277,7 +279,9 @@ impl Scene {
                 }
                 Ok(())
             },
-            self.target.map(|target| target.tile),
+            self.target
+                .filter(|_| self.target_frame)
+                .map(|target| target.tile),
         )?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
