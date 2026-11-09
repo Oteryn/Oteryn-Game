@@ -10,6 +10,7 @@ use serde::Deserialize;
 mod any_topic_tests;
 #[cfg(test)]
 mod fixture_offers;
+mod offer_match;
 mod offer_topic;
 mod offers;
 mod selection_facts;
@@ -147,11 +148,7 @@ pub(super) fn prepare(
                 return Some(choice);
             }
             if let Some(offer) = offers.offers.iter().find(|c| {
-                c.npc == context.2
-                    && c.matches_topic(topic.number)
-                    && c.keywords.contains(&text)
-                    && eligible(&c.storage)
-                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                c.admits(&context.2, topic.number, &text, catalogue, tracks)
             }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
@@ -237,4 +234,20 @@ fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), se
                 && r.preserve)
     );
     Ok(())
+}
+
+#[cfg(any(test, feature = "test-support"))]
+pub(in crate::gameplay_transport) fn fixture_rafzan_resume(
+    npc: &str,
+    topic: u16,
+    text: &str,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<(u16, Vec<String>)> {
+    let offers = offer_match::rafzan_offers()?;
+    let offer = offers
+        .offers
+        .iter()
+        .find(|o| o.admits(npc, topic, text, catalogue, tracks))?;
+    Some((offer.next_topic, offer.reply.clone()))
 }

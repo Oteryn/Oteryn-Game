@@ -429,6 +429,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-guardcatcher.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),

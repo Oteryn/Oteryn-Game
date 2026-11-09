@@ -155,3 +155,43 @@ pub fn cancel_capture(runtime: &mut ChannelRuntimeV1) {
     let guard = super::cosmetic_item_use::capture_commit::CaptureCommitGuard::new(runtime, true);
     guard.arm();
 }
+
+/// Same read-only offer selector as NPC prepare, with the test's real persisted tracks.
+pub fn rafzan_resume_offer(
+    npc: &str,
+    topic: u16,
+    text: &str,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<(u16, Vec<String>)> {
+    super::npc_command::reward_callbacks::fixture_rafzan_resume(npc, topic, text, catalogue, tracks)
+}
+
+/// Resolve the real World target and expose only the selected carried-tool keys.
+pub fn world_tool_callbacks(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> Result<Vec<String>, String> {
+    let map = owner.bundle_map().ok_or("Bundle map")?;
+    let view = super::world_map::MapViewSource {
+        overlay: &map.overlay,
+        facts: &map.facts,
+        content_generation: owner
+            .active_generation
+            .ok_or("active generation")?
+            .identity()
+            .client_artifact_digest(),
+        reset_epoch: owner.reset_epoch,
+    };
+    let resolved = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
+        .map_err(|e| format!("{e:?}"))?;
+    Ok(owner
+        .callback_content()
+        .iter()
+        .filter(|c| {
+            super::mount_taming::quest_objects::accepts(c)
+                && super::quest_callbacks::matches(map, c, resolved.placement_key)
+        })
+        .map(|c| c.key.clone())
+        .collect())
+}

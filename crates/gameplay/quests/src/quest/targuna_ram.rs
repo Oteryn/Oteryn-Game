@@ -14,7 +14,7 @@ pub const RAM: &str = "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/
 pub fn callback() -> Result<Callback, String> {
     let value = serde_json::json!({"schema":1,"callbacks":[{
         "key":KEY,"quest":QUEST,"trigger":"use",
-        "selector":{"position":{"x":31926,"y":31896,"floor":-7},"unique":null,"action":null,"appearance":53439},
+        "selector":{"position":{"x":31926,"y":31896,"floor":-7},"unique":null,"action":null,"appearance":53439,"native":{"position":{"x":31926,"y":31896,"floor":-7},"ordinal":2,"appearance":53439}},
         "lever":null,"reversible":false,"requires_world_admission":true,"passages":[],"teleport":null,
         "storage":[
             {"track":TURNIPS,"minimum":1,"maximum":1,"set":1,"preserve":true},
@@ -41,6 +41,21 @@ mod tests {
     fn srv7_ram_binds_source_earned_turnips_and_map_target() -> Result<(), String> {
         let callback = callback()?;
         assert_eq!(callback.selector.appearance, Some(53439));
+        let native = callback
+            .selector
+            .native
+            .as_ref()
+            .ok_or("exact native Ram counterpart")?;
+        assert_eq!(
+            (
+                native.position.x,
+                native.position.y,
+                native.position.floor,
+                native.ordinal,
+                native.appearance
+            ),
+            (31926, 31896, -7, 2, 53439)
+        );
         assert!(
             callback
                 .item_on_target

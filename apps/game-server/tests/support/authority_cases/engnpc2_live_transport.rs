@@ -93,7 +93,7 @@ fn run_case(handle: bool, corpse: bool) -> TestResult {
         .map_err(Into::into)
 }
 
-async fn fresh(h: &fixture::Harness) -> TestResult {
+pub(super) async fn fresh(h: &fixture::Harness) -> TestResult {
     use crate::durability::{
         admission_authority_guards::AdmissionGuardStore, fresh_admission::FreshAdmissionStore,
     };
@@ -437,7 +437,7 @@ async fn call(
         .map_err(|_| "composed quest caller unavailable".into())
 }
 
-async fn seed_tool(
+pub(super) async fn seed_tool(
     h: &fixture::Harness,
     native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
     tool: &str,

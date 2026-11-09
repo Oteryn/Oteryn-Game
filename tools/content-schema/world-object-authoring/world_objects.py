@@ -516,6 +516,12 @@ def validate_record(record):
                 or record["provenance"]["source_item_id"] == feroxa_static.IDENTIFIER):
             return ([] if record in feroxa_static.records()
                     else ["Feroxa scenery differs from its pinned source map and official appearance"])
+        import engnpc2_ram_world
+
+        if (record["provenance"]["source_item_id"] == engnpc2_ram_world.IDENTIFIER
+                or record["provenance"]["source"].get("profile") == engnpc2_ram_world.PROFILE):
+            return ([] if record == engnpc2_ram_world.record()
+                    else ["Reliable Ram differs from its qualified official source"])
         import soulpit_static
 
         if (

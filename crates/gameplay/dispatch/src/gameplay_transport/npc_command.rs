@@ -59,7 +59,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
-mod reward_callbacks;
+pub(super) mod reward_callbacks;
 mod reward_facts;
 mod seasonal;
 mod service_context;
