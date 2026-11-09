@@ -1531,9 +1531,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Lista czarów i wyszukiwanie",
-  "status": "PARTIAL",
-  "gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Filtry nazwy/formuły, profesji, grupy, poziomu i premium; karta szczegółów z czasem pozostałego cooldownu opartym na snapshotach serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:323 + native filtered spell detail with live cooldown projection; apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; apps/client/src/features/0287-actor-spell-catalog/book_detail.rs:50 + spellbook_details_project_live_spell_and_group_cooldowns_without_claiming_cast_authority"
  },
  {
   "id": "O066",
