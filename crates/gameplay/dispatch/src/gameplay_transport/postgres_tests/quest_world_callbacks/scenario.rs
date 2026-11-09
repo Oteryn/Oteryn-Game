@@ -132,6 +132,7 @@ fn scenario_case(
         || matches!(
             name,
             "engnpc-m04"
+                | "m05-gnomus"
                 | "catalogue-npc"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
@@ -892,6 +893,8 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name == "m05-gnomus" {
+            super::super::m05_gnomus::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "engnpc-m04" {
             super::super::engnpc_m04_completion::exercise(
                 &mut owner,

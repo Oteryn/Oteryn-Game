@@ -33,7 +33,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/hot_cuisine.json",
-      "sha256": "0db245ea075d9c2d721948b717b41e8fdd339424c3ed1df000af78fe86b117c6"
+      "sha256": "85c0aacf53b84026771216441bf596b1e592ba4bad18299ea8a28b1d09aed0b6"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/in_service_of_yalahar.json",
@@ -45,7 +45,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_hidden_city_of_beregar.json",
-      "sha256": "c91ea5245afd922aae7a22c8bb8a24613a32def50c738ed5b9f94c4117c81c15"
+      "sha256": "18cba8039698b0b35c4411c6b4217d662e47f44cf3c1d587e25fceacabe36248"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_way_of_the_monk.json",
@@ -184,6 +184,10 @@
       "sha256": "e530a62ea2ef8759a34bd49dac210caa6581162e42530145c983a0624e75f3bb"
     },
     {
+      "path": "content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json",
+      "sha256": "4c07dd0864182b0d99152e1c9d25f9c2aa4774af2e7014e64a17fe3003ff9deb"
+    },
+    {
       "path": "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json",
       "sha256": "ac18e35eb65368db8bf7d06affc1cda615abc17ca45ab3beca0f2c0e8dc09d37"
     },
@@ -197,7 +201,7 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "7e77fa9a344e98e078be35bb2407c31fc5a6d00c12cd44d9d9a0789f21598eb5"
+      "sha256": "735cf0285a0f79476fbd9434e9250d5a3e22f8c80434aa5dcf2bb6e44302efc3"
     }
   ],
   "canonical_inputs": [
@@ -238,12 +242,16 @@
       "sha256": "6b608a2af22526ec4ae80f7764092082a701142ad9d79156814a348679e75f85"
     },
     {
+      "path": "content/items/definitions/items-15500-15999.json",
+      "sha256": "1e982f7fa709710cd04c73ef9fe7f96d4127ce78f9dfbcd43775b0bb8d0ce73d"
+    },
+    {
       "path": "content/items/definitions/items-16000-16499.json",
       "sha256": "4487cf3964218a7bfd28e764b4b9af3106fff1e07b6f520f481fe7a1a59b66d4"
     },
     {
       "path": "content/items/definitions/items-16500-16999.json",
-      "sha256": "51ef1e1da1d46f71dff970a095748a6d04c9062b6bcb63b1b8b9631c454ccfac"
+      "sha256": "0976b3f6cedb987b93c6b6702cdcf4e0cabffb6c1477896cf9ac6aba0339842e"
     },
     {
       "path": "content/items/definitions/items-17000-17499.json",
@@ -251,11 +259,11 @@
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "33ba93d9207b89351f736f3ec15a84ab88ce6354e3d4109037657256d6b1693a"
+      "sha256": "30c6afeb92bc4b03e80d816d16f58f7c4306f50dd0857f8b02e983645ae85d51"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
-      "sha256": "2dd573f4c0857a86c2034f8ec4f497325b8fc2cb68a09038673e37f23f7c5cf2"
+      "sha256": "80fa7cc512cf1734a891a4acdad00c63689cc33ca2943b90501fef80bfe5920c"
     },
     {
       "path": "content/items/definitions/items-18500-18999.json",
@@ -267,7 +275,7 @@
     },
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "1b0927bf7da1965c551822031860c22c41e85fc25b2b90b0891f7e8fd693aa7b"
+      "sha256": "09d3b5409a8a5098cedaf47777a2d050e3faeee4f200139e5ae8a9da5d4a91d8"
     },
     {
       "path": "content/items/definitions/items-21500-21999.json",
@@ -303,7 +311,7 @@
     },
     {
       "path": "content/items/definitions/items-28500-28999.json",
-      "sha256": "2db3c8ce0a4b3b7d80063e458b8ed2a4b627f73789c835410d4364902d35e886"
+      "sha256": "ab430f09558a741812d55deaaf88cb64637515e965ccda9b31f5dd9a7aec2bd8"
     },
     {
       "path": "content/items/definitions/items-29000-29499.json",
@@ -345,7 +353,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "976bc7a100b4a87063b9d98289aa8bf95f9874cfafda8efe4481d6264734fea0"
+      "sha256": "8f37279c3dc69fc5e7c750742061f7f806583ff7e83c4374c98758faa3645511"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -21610,6 +21618,167 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "candidate:item/27654",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "surprise jar"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "27654",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i27654",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i27654",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/31590",
           "revision": "spell-p2-r21"
         }
@@ -23235,7 +23404,7 @@
           ]
         }
       ],
-      "canonical_materializable": false,
+      "canonical_materializable": true,
       "existing_native_profile": true,
       "holds": [
         "INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING"
@@ -23477,9 +23646,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23823,9 +23992,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24689,9 +24858,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25651,9 +25820,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25930,9 +26099,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26322,7 +26491,7 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:armor"
@@ -27022,9 +27191,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28476,9 +28645,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28578,9 +28747,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28679,9 +28848,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28751,9 +28920,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28912,9 +29081,27 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
+      "reason": null
+    },
+    {
+      "key": "oteryn:item.tibia.i27654",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:52778",
+      "uses": [
+        {
+          "path": "content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json",
+          "pointer": "/rules/0/effects/1/item",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": true,
+      "holds": [],
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -29159,9 +29346,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -29259,7 +29446,7 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:armor"

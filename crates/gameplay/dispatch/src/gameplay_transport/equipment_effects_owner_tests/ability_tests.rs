@@ -151,9 +151,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
     // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
     ("P11-MECHANICAL-FISHING", 1),
-    // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
-    // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
-    ("QNPCFX", 1),
+    // Source NPC inputs/rewards: tender venison 52636 and M05 surprise jar 27654,
+    // qualified from Crystal 201189f items.xml and the pinned client; zero speed.
+    ("QNPCFX", 2),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     ("QUESTPC4-TREASURE-REWARDS", 5),
@@ -361,7 +361,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 63);
+    assert_eq!(added_keys.len(), 64);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -369,11 +369,22 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let npc_additions = npc_proof["records"]
         .as_array()
         .ok_or("NPC source profiles")?;
-    assert_eq!(npc_additions.len(), 1);
+    assert_eq!(npc_additions.len(), 2);
     assert_eq!(
-        npc_additions[0]["production_definition"]["production_key"],
+        npc_additions[1]["production_definition"]["production_key"],
         "oteryn:item.tibia.i52636"
     );
+    assert_eq!(
+        npc_additions[0]["production_definition"]["production_key"],
+        "oteryn:item.tibia.i27654"
+    );
+    let jar = profiles
+        .records
+        .iter()
+        .find(|row| row.production_definition.production_key == "oteryn:item.tibia.i27654")
+        .ok_or("missing M05 surprise jar profile")?;
+    assert!(jar.admission.materializable);
+    assert_eq!(jar.attributes.speed_bonus, Some(0));
     let venison = profiles
         .records
         .iter()
@@ -427,7 +438,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 63),
+        ("qengine-reward-item-profiles.json", 64),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
