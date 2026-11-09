@@ -1,25 +1,12 @@
 use super::*;
 
-fn document() -> serde_json::Value {
-    serde_json::json!({"schema":1,"callbacks":[{
-        "key":"oteryn:quest-callback/m01c-paid-step-fixture",
-        "quest":"oteryn:quest.m01c_paid_step_fixture","trigger":"step_in",
-        "admission":{"premium":true},"requires_world_admission":true,
-        "selector":{"position":null,"unique":2241,"action":null,"appearance":null,
-                    "native":{"position":{"x":32861,"y":32239,"floor":-9},"ordinal":0,"appearance":353}},
-        "lever":null,"reversible":false,"passages":[],
-        "teleport":{"x":32861,"y":32235,"floor":-9},
-        "storage":[{"track":"oteryn:quest-progress/m01c-paid-step-fixture","minimum":0,"maximum":1,"set":1}],
-        "offerings":[],"item_on_target":{"item":"oteryn:item.tibia.i3595","count":1,
-            "replacement":null,"target_replacement":null,"on_step":true},
-        "return_on_failure":true,"failure_message":null,
-        "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:9-13"]
-    }]})
+fn document() -> Result<serde_json::Value, String> {
+    serde_json::from_str(include_str!("paid_step_fixture.json")).map_err(|error| error.to_string())
 }
 
 #[test]
 fn automatic_step_input_requires_explicit_fenced_native_admission() -> Result<(), String> {
-    let document = document();
+    let document = document()?;
     let callbacks = parse(&document.to_string())?;
     assert!(callbacks[0].item_on_target.as_ref().ok_or("input")?.on_step);
     for mutation in 0..6 {
@@ -38,5 +25,14 @@ fn automatic_step_input_requires_explicit_fenced_native_admission() -> Result<()
             "accepted mutation {mutation}"
         );
     }
+    let mut ordinary_use = document.clone();
+    ordinary_use["callbacks"][0]["trigger"] = "use".into();
+    ordinary_use["callbacks"][0]["item_on_target"]["on_step"] = false.into();
+    let ordinary = parse(&ordinary_use.to_string())?;
+    let serialized = serde_json::to_value(&ordinary[0]).map_err(|error| error.to_string())?;
+    assert!(
+        serialized["item_on_target"].get("on_step").is_none(),
+        "existing USE callback serialization and binding hashes stay unchanged"
+    );
     Ok(())
 }

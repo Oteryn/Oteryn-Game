@@ -60,6 +60,12 @@ class QuestBatch4Tests(unittest.TestCase):
             changed['item_on_target'][field] = value
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                 tool.validate_callback(changed, 'waterfall')
+        for field, value in (('ordinal', 256), ('ordinal', True),
+                             ('appearance', 0), ('appearance', True)):
+            changed = copy.deepcopy(row)
+            changed['selector']['native'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                tool.validate_callback(changed, 'waterfall')
         changed = copy.deepcopy(row)
         changed['requires_world_admission'] = False
         with self.assertRaises(ValueError):
