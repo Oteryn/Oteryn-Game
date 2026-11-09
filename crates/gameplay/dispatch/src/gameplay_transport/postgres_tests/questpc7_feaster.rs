@@ -29,6 +29,7 @@ fn questpc7_feaster_native_sampling_prefix() -> TestResult {
 }
 use super::questpc7_ferumbras::{step, use_at, value, walk};
 use oteryn_gameplay_quests::quest::world_callbacks::Callback;
+use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 const QUEST: &str = "oteryn:quest.feaster_of_souls_quest";
 const TRACK: &str = "oteryn:quest-progress/questpc7/feaster/programme";
@@ -198,31 +199,22 @@ async fn word(
     a: &mut AdmittedSession,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
     text: &str,
+    expected: NpcIntentDisposition,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::npc_service::{
-        NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
-    };
-    // NPC grants and world USE share the durable MINT CommandRef namespace.
-    // Keep both on the real connection sequence instead of issuing direct NPC
-    // commands that a later USE can accidentally reuse.
-    for words in ["hi", text] {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("clock")?;
-        let payload = encode_npc_talk_intent(&NpcTalkIntent {
-            npc_actor: npc,
-            text: words.into(),
-        })
-        .map_err(debug)?;
-        let command = a.continuity.next_command_id;
-        let reply = super::quest_world_callbacks::wire(owner, a, command, 7, payload).await?;
-        let disposition = decode_npc_intent_result(&reply).map_err(debug)?;
-        if words == "hi" {
-            assert_eq!(disposition, NpcIntentDisposition::Ok);
+    // A connection snapshot clears NPC engagement. Keep the greeting and request
+    // on one real connection, sharing its command sequence with subsequent USEs.
+    let greeting = a.continuity.next_command_id;
+    let command = greeting.checked_add(1).ok_or("NPC command exhaustion")?;
+    let commands = [(greeting, "hi"), (command, text)];
+    match expected {
+        NpcIntentDisposition::Ok => {
+            super::grizzly_npc::wire::talk(owner, a, npc, &commands).await
         }
+        NpcIntentDisposition::Rejected => {
+            super::grizzly_npc::wire::talk_refused(owner, a, npc, &commands).await
+        }
+        _ => Err("unsupported Feaster NPC expectation".into()),
     }
-    Ok(())
 }
 pub(super) async fn begin(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -261,11 +253,11 @@ pub(super) async fn begin(
     assert_eq!(carried(h, 32582).await?, 0);
     let premium = owner.premium_coordinator;
     owner.premium_coordinator = None;
-    word(owner, a, npc, "mission").await?;
+    word(owner, a, npc, "mission", NpcIntentDisposition::Rejected).await?;
     assert_eq!(value(owner, a, TRACK).await?, -1);
     assert_eq!(carried(h, 32582).await?, 0);
     owner.premium_coordinator = premium;
-    word(owner, a, npc, "mission").await?;
+    word(owner, a, npc, "mission", NpcIntentDisposition::Ok).await?;
     assert_eq!(value(owner, a, TRACK).await?, 0);
     assert_eq!(carried(h, 32582).await?, 1);
     Ok((rows,npc))
@@ -352,9 +344,9 @@ pub(super) async fn exercise(
         },
     )
     .await?;
-    word(owner, a, npc, "scalpel").await?;
+    word(owner, a, npc, "scalpel", NpcIntentDisposition::Ok).await?;
     assert_eq!(carried(h, 32225).await?, 1);
-    word(owner, a, npc, "scalpel").await?;
+    word(owner, a, npc, "scalpel", NpcIntentDisposition::Rejected).await?;
     assert_eq!(carried(h, 32225).await?, 1);
     let potion = callback(&rows, "potion")?;
     assert_eq!(click(owner, a, potion).await?, UseDisposition::Committed);
@@ -464,11 +456,11 @@ pub(super) async fn exercise(
     )
     .await?;
     passage(owner, a, callback(&rows, "samples-return")?).await?;
-    word(owner, a, npc, "probes").await?;
+    word(owner, a, npc, "probes", NpcIntentDisposition::Ok).await?;
     assert_eq!(carried(h, 32197).await?, 0);
     assert_eq!(carried(h, 32226).await?, 1);
     assert_eq!(value(owner, a, TRACK).await?, 5);
-    word(owner, a, npc, "probes").await?;
+    word(owner, a, npc, "probes", NpcIntentDisposition::Rejected).await?;
     assert_eq!(carried(h, 32226).await?, 1);
     step(
         owner,
@@ -507,7 +499,7 @@ pub(super) async fn exercise(
     assert_ne!(click(owner, a, purify).await?, UseDisposition::Committed);
     assert_eq!(receipts(h).await?, before);
     passage(owner, a, callback(&rows, "souls-return")?).await?;
-    word(owner, a, npc, "souls").await?;
+    word(owner, a, npc, "souls", NpcIntentDisposition::Ok).await?;
     assert_eq!(carried(h, 32228).await?, 0);
     assert_eq!(value(owner, a, TRACK).await?, 6);
     assert_eq!(carried(h, 32582).await?, 1);

@@ -655,28 +655,41 @@ pub(super) async fn exercise(
     assert_eq!(fee_count(h).await?, 0);
     assert_eq!(stage(h).await?, 5);
     drop_goldfish(owner, admitted, h, &mut next).await?;
-    say(
+    // A replay belongs to session ingress. Keep the original choice and yes on
+    // one connection, then resend its retained command on the next connection.
+    let first = admitted.continuity.next_command_id;
+    assert_eq!(first, 1, "the setup has not opened a wire command stream");
+    // Direct setup commands 1/2 only spoke; command 3 was the refused Premium
+    // probe. None committed a quest receipt under the new wire command ids.
+    let prior: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid AND cause_ordinal BETWEEN 1 AND 3",
+    )
+    .bind(id(41).as_slice())
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(prior, 0, "wire purchase ids have no earlier quest effects");
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &[3])
+            .ok_or("NPC wire capability")?;
+    super::grizzly_npc::wire::talk(
         owner,
         admitted,
         miraia,
-        &mut next,
-        &["hi", "scarab cheese", "yes"],
+        &[(first, "hi"), (first + 1, "scarab cheese"), (first + 2, "yes")],
     )
     .await?;
+    next += 3;
     assert_eq!(gold(h).await?, 1900);
     assert_eq!(stage(h).await?, 6);
     assert_eq!(quantity(h, 169).await?, 1);
     assert_eq!(fee_count(h).await?, 1);
-    let replay = next - 1;
-    talk(
-        owner,
-        admitted,
-        miraia,
-        replay,
-        "yes",
-        NpcIntentDisposition::Ok,
-    )
-    .await?;
+    let replay = admitted.continuity.next_command_id - 1;
+    super::grizzly_npc::wire::talk(owner, admitted, miraia, &[(replay, "yes")]).await?;
     assert_eq!(gold(h).await?, 1900);
     assert_eq!(fee_count(h).await?, 1);
     // Canonical recipe adaptation explicitly omits cheese decay. No deadline or paid refresh is part of this programme.

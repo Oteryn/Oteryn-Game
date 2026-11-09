@@ -10,7 +10,7 @@ fn nx5_mount_parts_unlock_the_production_appearance_catalogue_once() -> super::T
 }
 
 #[test]
-fn nx5_ot_only_addon_doll_is_refused_with_populated_cosmetics() -> super::TestResult {
+fn nx5_source_admitted_addon_doll_grants_and_replays_once() -> super::TestResult {
     super::item_cosmetics::nx5_production_case(2)
 }
 

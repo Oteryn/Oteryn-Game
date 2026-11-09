@@ -133,7 +133,7 @@ fn scenario(
             Some(
                 positive::Case::ProductionOutfit
                     | positive::Case::ProductionParts
-                    | positive::Case::ProductionOtOnly
+                    | positive::Case::ProductionAddonDoll
                     | positive::Case::ProductionMount
             )
         );
@@ -369,7 +369,9 @@ fn scenario(
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        let offered = if stock {
+        let appearance_consumer = stock
+            || matches!(case, Some(positive::Case::ProductionAddonDoll));
+        let offered = if appearance_consumer {
             crate::gameplay_transport::appearance_change::offer::offered(
                 owner.offered_capabilities(),
                 owner.appearance_available(),
@@ -379,14 +381,14 @@ fn scenario(
         };
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             &offered,
-            if stock {
+            if appearance_consumer {
                 &[3, 4, 6, 11, 15, 18, 25]
             } else {
                 &[4, 6, 11, 15, 18]
             },
         )
         .ok_or("offers")?;
-        if stock {
+        if appearance_consumer {
             assert!(admitted.continuity.selected_capabilities.contains(25));
         }
         let source = id(71);
@@ -551,7 +553,7 @@ pub(super) fn nx5_production_case(kind: u8) -> TestResult {
     let case = match kind {
         0 => positive::Case::ProductionOutfit,
         1 => positive::Case::ProductionParts,
-        2 => positive::Case::ProductionOtOnly,
+        2 => positive::Case::ProductionAddonDoll,
         _ => positive::Case::ProductionMount,
     };
     run_all(false, false, Some(case))

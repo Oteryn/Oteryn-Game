@@ -2511,8 +2511,8 @@ fn scenario_case(
                         assert_eq!(
                             oteryn_protocol_oteryn::world_object::decode_use_result(&result)
                                 .map_err(debug)?,
-                            UseDisposition::NothingToUse,
-                            "discordant lever {appearance} must not toggle"
+                            UseDisposition::Committed,
+                            "source handles discordant lever {appearance} without toggling"
                         );
                         assert_eq!(world.facts().object_revision(key), revision);
                         assert_eq!(world.facts().base_hidden(rock), appearance == 2772);

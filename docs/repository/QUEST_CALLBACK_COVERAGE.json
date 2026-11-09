@@ -5129,7 +5129,7 @@
               ]
             }
           ],
-          "reason": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+          "reason": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal",
           "status": "dispatch_pg_qualified"
         },
         {

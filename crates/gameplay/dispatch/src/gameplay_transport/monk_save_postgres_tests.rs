@@ -876,9 +876,12 @@ mod death_ml_loss_composed {
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         session: GameSessionId,
     ) -> TestResult<CurrentCharacterGameplayFence> {
-        super::maintain_ready(owner.root).await?;
+        // Setup needs the same bounded holder recovery as fresh admission:
+        // a completed durable pass can retire its holder before the next read.
+        let budget =
+            crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, owner.root);
         Ok(owner
-            .current_quest_fence(session)
+            .current_quest_fence_within(&budget, session)
             .await
             .map_err(|()| "fence read")?
             .ok_or("terminal session")?)

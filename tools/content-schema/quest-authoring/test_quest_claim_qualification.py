@@ -82,7 +82,7 @@ class QualificationTests(unittest.TestCase):
                 self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
                 self.assertEqual(claims[key]['reason'], {
                     'oteryn:reward-claim.kv.ornamentedshield':
-                        'quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal',
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
                     'oteryn:reward-claim.kv.triangletower':
                         'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
                     'oteryn:reward-claim.kv.powerring2':

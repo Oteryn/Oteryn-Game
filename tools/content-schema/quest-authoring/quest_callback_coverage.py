@@ -56,7 +56,7 @@ QUALIFIED.update({
     f"oteryn:reward-claim.kv.{suffix}":
         "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal"
     for suffix in ("desert2", "draconia1", "edrongoblin1", "fireaxe1", "ghoulroom1",
-                   "lifering", "powerring2", "silveramulet", "stealhring1", "timering3",
+                   "lifering", "ornamentedshield", "powerring2", "silveramulet", "stealhring1", "timering3",
                    "triangletower", "trollcave1", "weddingring1")
 })
 QUALIFIED["oteryn:reward-claim.quest.u7_3.the_medusa_quest"] = (
@@ -66,8 +66,7 @@ QUALIFIED.update({f"oteryn:reward-claim.{suffix}":
     for suffix in ("kv.deeperfibula4",
                    "quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
                    "quest.u15_24.targuna.silver_amulet_chest",
-                   "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
-                   "kv.ornamentedshield")})
+                   "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield")})
 QUALIFIED.update({f"oteryn:reward-claim.{suffix}":
     "quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal"
     for suffix in ("kv.goblintemple2", "quest.u7_9.dreamers_challenge.chests_wine", "kv.present_box")})

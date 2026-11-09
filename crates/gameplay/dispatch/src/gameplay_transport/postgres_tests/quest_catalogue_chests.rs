@@ -764,6 +764,7 @@ fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestRe
         "fireaxe1",
         "ghoulroom1",
         "lifering",
+        "ornamentedshield",
         "powerring2",
         "silveramulet",
         "stealhring1",
@@ -796,7 +797,6 @@ fn expected_charges(claim: &str) -> Vec<(String, i32)> {
         Some("quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet") => &[3081],
         Some("quest.u15_24.targuna.silver_amulet_chest") => &[3054],
         Some("quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield") => &[3048, 3085],
-        Some("kv.ornamentedshield") => &[3083],
         _ => &[],
     };
     ids.iter()
@@ -826,8 +826,8 @@ fn quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal() -> Test
         .collect();
     assert_eq!(
         selected.len(),
-        5,
-        "all five exact partial-charge source claims need USE proof"
+        4,
+        "all four exact partial-charge source claims need USE proof"
     );
     execute(selected)
 }

@@ -357,14 +357,11 @@ pub(super) async fn settle(
     let loot: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_corpse_container_entries),(SELECT count(*) FROM game_character_boss_reward_chests)")
         .fetch_one(&h.pool).await?;
     assert_eq!(loot.0, 0, "reward-boss physical corpses stay empty");
-    if case == Case::PrimalDefeat {
-        // Primal already has an admitted W03 personal reward source. It must
-        // remain bound to this victory and contributor through both drains;
-        // the physical corpse path cannot duplicate or erase it.
-        assert_eq!(
-            loot.1, 1,
-            "one admitted Primal personal reward after replay"
-        );
+    if matches!(case, Case::SoulWarDefeat | Case::PrimalDefeat) {
+        // Goshnar's Spite and Primal have admitted personal reward sources. They
+        // must remain bound to this victory and contributor through both drains;
+        // the physical corpse path cannot duplicate or erase them.
+        assert_eq!(loot.1, 1, "one admitted personal reward after replay");
         let earned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_boss_reward_chests c JOIN game_boss_reward_deaths d USING(world_id,death_id) JOIN game_boss_reward_contributors m USING(character_id,world_id,death_id) JOIN game_boss_room_activities a ON a.world_id=d.world_id AND a.instance_id=d.instance_id AND a.defeat_id=d.death_id WHERE d.scope_kind=2 AND d.instance_id=encode($1,'hex')::uuid AND d.boss_key=$2 AND c.character_id=encode($3,'hex')::uuid AND m.source_game_session_id=encode($4,'hex')::uuid AND m.eligible AND m.damage_dealt>0 AND d.settlement_outcome=1 AND d.participant_count=1 AND d.eligible_count=1 AND a.state=2 AND a.terminal_at=d.minted_at AND m.item_count=(SELECT count(*) FROM game_boss_reward_items i WHERE i.character_id=m.character_id AND i.world_id=m.world_id AND i.death_id=m.death_id))")
             .bind(instance_id.as_slice()).bind(&policy.definition_key)
             .bind(fence.character_id.as_bytes().as_slice())

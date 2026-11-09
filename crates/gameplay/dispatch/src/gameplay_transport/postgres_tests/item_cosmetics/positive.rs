@@ -14,7 +14,7 @@ pub(super) enum Case {
     ConcurrentGrant,
     ProductionOutfit,
     ProductionParts,
-    ProductionOtOnly,
+    ProductionAddonDoll,
     ProductionMount,
     RandomOutfit,
     Glider { missing: bool },
@@ -122,7 +122,7 @@ pub(super) async fn execute(
         Case::Glider { missing } => {
             return super::glider::execute(owner, h, admitted, reference, missing).await;
         }
-        Case::RandomOutfit => {
+        Case::RandomOutfit | Case::ProductionAddonDoll => {
             return super::stock::random_outfit(owner, h, admitted, reference, None).await;
         }
         Case::Parts | Case::OmittedGrant | Case::ConcurrentGrant | Case::ProductionParts => {
@@ -401,21 +401,6 @@ pub(super) async fn execute(
             assert_eq!(replayed, UseDisposition::Committed);
             assert_eq!(grant_count(h).await?, 1);
             assert_eq!(receipt_count(h).await?, 1);
-        }
-        Case::ProductionOtOnly => {
-            let (_, result, _) = super::super::rust_lottery::exchange(
-                owner,
-                admitted,
-                1,
-                &payload,
-                reference("oteryn:item.tibia.i6579"),
-                None,
-            )
-            .await?;
-            assert_eq!(result, UseDisposition::NotPossible);
-            assert_eq!(item_quantity(h, 71).await?, 1);
-            assert_eq!(grant_count(h).await?, 0);
-            assert_eq!(receipt_count(h).await?, 0);
         }
         Case::Afflicted => {
             let before: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($1,'hex')::uuid")
