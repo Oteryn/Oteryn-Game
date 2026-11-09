@@ -33,6 +33,12 @@ pub(in crate::play) fn submit(
     }
 }
 impl PlayLink {
+    pub fn appearance_colour(&self, part: usize) -> bool {
+        lock(&self.mailbox).properties.appearance.cycle_colour(part)
+    }
+    pub fn appearance_addon(&self, bit: u8) -> bool {
+        lock(&self.mailbox).properties.appearance.toggle_addon(bit)
+    }
     pub fn appearance_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).properties.appearance, field, value);
     }

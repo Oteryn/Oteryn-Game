@@ -322,7 +322,9 @@ fn run<P: StatusPanel>(
                     panel.toggle_skill(index);
                 }
             }
-            for ((check, progress), (_, percent, visible)) in gauges.iter().zip(panel.gauges()) {
+            for ((check, progress), (label, percent, visible)) in gauges.iter().zip(panel.gauges())
+            {
+                SetWindowTextW(*check, wide(label).as_ptr());
                 SendMessageW(*check, BM_SETCHECK, usize::from(visible), 0);
                 SendMessageW(*progress, PBM_SETPOS, usize::from(percent), 0);
                 ShowWindow(*progress, if visible { SW_SHOW } else { SW_HIDE });

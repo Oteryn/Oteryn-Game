@@ -1,5 +1,5 @@
-use super::*;
-
+use super::stamina;
+use oteryn_client_runtime::cyclopedia_character;
 pub(super) fn decode_badges(b: &[u8]) -> Option<String> {
     let (&count, ids) = b.split_first()?;
     (usize::from(count) == ids.len()

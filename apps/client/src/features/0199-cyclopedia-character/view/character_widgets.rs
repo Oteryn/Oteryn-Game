@@ -13,6 +13,7 @@ pub(super) struct Widgets {
     pub(super) cards: Vec<HWND>,
     pub(super) stamina_bar: HWND,
     pub(super) training_bar: HWND,
+    pub(super) badge_id: HWND,
 }
 
 pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
@@ -185,6 +186,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             cards,
             stamina_bar,
             training_bar,
+            badge_id,
         }
     }
 }

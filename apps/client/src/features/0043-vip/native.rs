@@ -1,8 +1,11 @@
 //! Native VIP management controls; every HWND remains on its creating thread.
 #![allow(unsafe_code)]
+#[path = "native_controls.rs"]
+mod panel_controls;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::vip::{Intent, request};
+use panel_controls::PanelControls;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
@@ -23,6 +26,13 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
         }
         DefWindowProcW(hwnd, msg, w, l)
     }
+}
+fn wide(value: &str) -> Vec<u16> {
+    value
+        .replace('\0', "�")
+        .encode_utf16()
+        .chain(Some(0))
+        .collect()
 }
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
@@ -77,122 +87,20 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let list = LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP;
-        control(
-            hwnd,
-            "STATIC",
-            "VIP entries                 Groups                      Consent invitations",
-            200,
-            [10, 5, 620, 20],
-            0,
-        );
-        let entries = control(hwnd, "LISTBOX", "", 101, [10, 30, 205, 160], list);
-        let groups = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            102,
-            [225, 30, 180, 160],
-            list | LBS_EXTENDEDSEL as u32,
-        );
-        let consents = control(hwnd, "LISTBOX", "", 103, [415, 30, 210, 160], list);
-        control(
-            hwnd,
-            "STATIC",
-            "Character / group name or description",
-            201,
-            [10, 195, 300, 20],
-            0,
-        );
-        let text = control(
-            hwnd,
-            "EDIT",
-            "",
-            104,
-            [10, 220, 300, 25],
-            WS_BORDER | WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Icon (0–19); select groups above to assign",
-            202,
-            [320, 195, 300, 20],
-            0,
-        );
-        let icon = control(
-            hwnd,
-            "EDIT",
-            "0",
-            105,
-            [320, 220, 50, 25],
-            WS_BORDER | WS_TABSTOP,
-        );
-        let notify = control(
-            hwnd,
-            "BUTTON",
-            "Notify",
-            107,
-            [545, 220, 80, 25],
-            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
-        );
-        for (index, label) in [
-            "Add",
-            "Remove",
-            "Save edit",
-            "Add group",
-            "Rename group",
-            "Delete group",
-            "Accept",
-            "Reject",
-            "Revoke",
-            "Withdraw",
-            "Show status",
-            "Hide status",
-            "Refresh",
-            "Next page",
-        ]
-        .iter()
-        .enumerate()
-        {
-            control(
-                hwnd,
-                "BUTTON",
-                label,
-                110 + index,
-                [
-                    10 + (index % 5) as i32 * 123,
-                    260 + (index / 5) as i32 * 35,
-                    120,
-                    30,
-                ],
-                WS_TABSTOP,
-            );
-        }
-        let status = control(hwnd, "STATIC", "", 203, [10, 370, 615, 75], 0);
-        for (id, title, x) in [
-            (124, "All contacts", 10),
-            (125, "Friends", 220),
-            (126, "Invitations", 430),
-        ] {
-            control(hwnd, "BUTTON", title, id, [x, 455, 195, 28], WS_TABSTOP);
-        }
-        let friends = control(
-            hwnd,
-            "EDIT",
-            "",
-            204,
-            [10, 490, 615, 140],
-            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Account Friends and main character: Ctrl+Alt+F",
-            205,
-            [10, 635, 615, 20],
-            0,
-        );
+        let Some(PanelControls {
+            entries,
+            groups,
+            consents,
+            text,
+            icon,
+            notify,
+            status,
+            friends,
+        }) = PanelControls::new(hwnd)
+        else {
+            return;
+        };
+        control(hwnd, "STATIC", "Account Friends and main character: Ctrl+Alt+F", 205, [10,635,615,20], 0);
         let mut held: Option<oteryn_client_ui::vip::VipPanel> = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -370,13 +278,42 @@ fn run(
         close(&weak);
     }
 }
-
+unsafe fn control(
+    parent: HWND,
+    class: &str,
+    text: &str,
+    id: usize,
+    rect: [i32; 4],
+    style: u32,
+) -> HWND {
+    unsafe {
+        CreateWindowExW(
+            0,
+            wide(class).as_ptr(),
+            wide(text).as_ptr(),
+            WS_CHILD | WS_VISIBLE | style,
+            rect[0],
+            rect[1],
+            rect[2],
+            rect[3],
+            parent,
+            id as _,
+            null_mut(),
+            null(),
+        )
+    }
+}
 fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
     if let Some(mailbox) = weak.upgrade() {
         lock(&mailbox).vip.open = false;
     }
 }
 
-#[path = "native/controls.rs"]
-mod controls;
-use controls::{control, read, wide};
+unsafe fn read(hwnd: HWND) -> String {
+    // SAFETY: the edit belongs to this thread; the buffer includes room for the terminator.
+    unsafe {
+        let mut buffer = vec![0u16; GetWindowTextLengthW(hwnd).max(0) as usize + 1];
+        let length = GetWindowTextW(hwnd, buffer.as_mut_ptr(), buffer.len() as i32);
+        String::from_utf16_lossy(&buffer[..length.max(0) as usize])
+    }
+}

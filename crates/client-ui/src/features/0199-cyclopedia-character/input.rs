@@ -33,3 +33,11 @@ pub fn set_target(p: &mut super::CyclopediaCharacterPanel, text: &str) -> bool {
     p.feedback = None;
     true
 }
+
+pub fn blessings_key(events: &[NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::Modifiers;
+    let chord = Modifiers::one(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 69 && *modifiers == chord))
+}
