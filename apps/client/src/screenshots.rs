@@ -10,6 +10,13 @@ pub struct Rect {
     pub width: u32,
     pub height: u32,
 }
+/// One rendered frame and its game-map rectangle, excluding other desktop applications.
+pub struct Frame<'a> {
+    pub width: u32,
+    pub height: u32,
+    pub bgra: &'a [u8],
+    pub game: Rect,
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     Manual,

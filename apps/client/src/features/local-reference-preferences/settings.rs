@@ -1,6 +1,9 @@
 //! Local-only preferences whose keys come from the audited client reference surface.
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
+#[path = "capture_options.rs"]
+mod capture_options;
+pub use capture_options::ScreenshotPreferences;
 #[path = "game_window.rs"]
 mod game_window;
 pub use game_window::GameWindowPreferences;
@@ -156,6 +159,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub frames: FramePreferences,
     #[serde(default)]
+    pub screenshots: ScreenshotPreferences,
+    #[serde(default)]
     pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
     #[serde(default)]
     pub spellbook_filter: crate::play::feature_0287_actor_spell_catalog::view::SpellbookFilter,
@@ -239,6 +244,7 @@ impl Default for ReferencePreferences {
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
+            screenshots: Default::default(),
             arcs: Default::default(),
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
@@ -290,6 +296,7 @@ impl ReferencePreferences {
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()
             || !self.frames.valid()
+            || !self.screenshots.valid()
             || !self.arcs.valid()
             || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)

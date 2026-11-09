@@ -144,9 +144,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Umiejętności, progress, loyalty",
-  "status": "PARTIAL",
-  "gap": "Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Skills widget z rzeczywistym postępem i paskami, poziomami trained/loyalty/current oraz trwałą konfiguracją widocznych statystyk i kolejności.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0274-loyalty-skills/native.rs:185 + native refresh and configurable skill rows; apps/client/src/features/0274-loyalty-skills/layout.rs:54 + server-backed widget projection; apps/client/src/features/0274-loyalty-skills/tests/play.rs:18 + skills_widget_uses_server_progress_and_saves_visible_order; apps/client/src/features/local-status-flows/tests/play.rs:298 + nx7_complete_skills_native_play_queue_decode_and_display; apps/client/src/features/local-reference-preferences/tests/status_order.rs:4 + status_order_settings_reach_confirmed_panels_and_survive_restart"
  },
  {
   "id": "T032",
@@ -473,9 +474,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: folder, game-only i manual capture",
-  "status": "MISSING",
-  "gap": "Brak systemu zrzutów i strony wyboru katalogu/zakresu.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Natywna strona Screenshots zapisuje folder i zakres game-only/full render; Print Screen pobiera klatkę z renderera i zapisuje BMP bez nadpisywania istniejących plików.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller and rendered-frame save at :106; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
  },
  {
   "id": "T071",
@@ -1337,9 +1339,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Górne menu i przyciski okien",
-  "status": "PARTIAL",
-  "gap": "Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Wspólny pasek przycisków otwiera istniejące okna przez normalne wejścia klienta, respektuje zmienione skróty i zarządza widocznością paneli.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:115 + shared native window buttons and click routing at :298; apps/client/src/features/local-reference-preferences/sync.rs:115 + queue_window and take_window_events; apps/client/src/windows_shell/application_handler.rs:145 + live menu event dispatch; apps/client/src/features/local-reference-preferences/tests/presentation.rs:110 + o010_menu_uses_live_window_inputs_after_rebinding; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:130 + shortcut_order_persists_and_buttons_open_real_panels"
  },
  {
   "id": "O011",
@@ -1415,9 +1418,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Okręgi HP/MP i status mnicha",
-  "status": "PARTIAL",
-  "gap": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Okręgi HP/MP wokół postaci i wskaźniki harmony/serene korzystają z potwierdzonych zasobów; widoczność, geometria i przezroczystość mają trwałe ustawienia.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:99 + monk indicators and player-centred HP/MP rings; apps/client/src/features/local-reference-preferences/arc_controls.rs:91 + native circle settings; apps/client/src/features/local-reference-preferences/tests/presentation.rs:171 + o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals; apps/client/src/features/local-reference-preferences/tests/hud_options.rs:104 + hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:218 + hud_arcs_project_server_vitals_and_persist_geometry_controls"
  },
  {
   "id": "O028",
@@ -1472,9 +1476,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Główny panel skrótów funkcji",
-  "status": "PARTIAL",
-  "gap": "Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Główny panel przycisków funkcji ma zwijanie, trwałą kolejność i selektor dodawania/usuwania; przyciski otwierają istniejące okna klienta.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:152 + collapsible function panel and saved ordering; apps/client/src/features/local-reference-preferences/native.rs:288 + persist collapse action; apps/client/src/features/local-reference-preferences/shortcut_controls.rs:52 + native add/remove/reorder controls; apps/client/src/features/local-reference-preferences/shortcuts.rs:27 + validated layout edits; apps/client/src/features/local-reference-preferences/tests/presentation.rs:196 + o037_shortcut_panel_collapse_and_order_survive_restart; apps/client/src/features/local-reference-preferences/tests/shortcuts.rs:3 + t059_settings_selector_persists_order_and_routes_the_selected_shortcut"
  },
  {
   "id": "O039",
