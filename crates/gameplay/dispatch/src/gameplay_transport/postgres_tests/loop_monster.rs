@@ -15,6 +15,8 @@ mod shared_budget;
 mod sql_cancellation;
 #[path = "loop_monster/summon_transaction.rs"]
 mod summon_transaction;
+#[path = "loop_monster/unknown_bundle_field.rs"]
+mod unknown_bundle_field;
 
 #[test]
 fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestResult {
