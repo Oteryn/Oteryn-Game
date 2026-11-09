@@ -13,7 +13,7 @@ WIKI = 'https://www.tibiawiki.com.br/index.php?curid=53187&oldid=433964'
 BODY_SHA = 'baa2bccd9eb87e55245e538350a84a44db3c2696bb567ff5117d3d8dd25a5b06'
 
 
-def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave'])):
+def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave']), minimum_level=0):
     matches = []
     for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
         for record in json.loads(path.read_bytes())['records']:
@@ -29,7 +29,7 @@ def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais t
     recipe = selected['payload']['recipe']
     req = recipe['requirements']
     first = recipe['stages'][0]
-    if (req['min_level'], req['premium'], req['prerequisites']) != (0, False, []):
+    if (req['min_level'], req['premium'], req['prerequisites']) != (minimum_level, False, []):
         raise ValueError('M01C_DEAD_ARCHER_ACTOR_ADMISSION')
     if (first['key'], first['kind'], first['count'], first['targets']) != expected:
         raise ValueError('M01C_DEAD_ARCHER_FIRST_STEP')
@@ -67,15 +67,14 @@ def build(root=ROOT):
         'sources':[path+':s1', WIKI, 'docs/reference/content-prep/questpc3-m01c/dead-archer-sources.md']}]}
 
 
-def build_fanfare(root=ROOT):
-    quest = 'oteryn:quest.fanfare_quest'
-    path, recipe = chosen(root, quest, ('s1', 'collect', 1, ['Key 3520', 'Carlin boat-side box']))
+def collection_entry(root, quest, targets, item, number, slug, minimum_level=0):
+    path, recipe = chosen(root, quest, ('s1', 'collect', 1, targets), minimum_level)
     source_path = root / 'tools/content-schema/quest-authoring/samples/chests/claims.json'
     claims = json.loads(source_path.read_bytes())
-    # The accepted donor claim binds both the physical copper key and its number.
+    # All accepted donor claims for this number must agree on the physical key.
     def rewards(value):
         if isinstance(value, dict):
-            if value.get('key_binding') == 'canary:door-key/3520':
+            if value.get('key_binding') == f'canary:door-key/{number}':
                 yield value
             for child in value.values():
                 yield from rewards(child)
@@ -83,22 +82,33 @@ def build_fanfare(root=ROOT):
             for child in value:
                 yield from rewards(child)
     matches = list(rewards(claims))
-    if len(matches) != 1 or [(r['item']['key'], r['count']) for r in matches[0]['items']] != [('canary:item/2973', 1)]:
-        raise ValueError('M01C_FANFARE_KEY_SOURCE')
+    if not matches or any([(r['item']['key'], r['count']) for r in reward['items']] != [(f'canary:item/{item}', 1)] for reward in matches):
+        raise ValueError('M01C_COLLECTION_KEY_SOURCE')
     raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
-    track = 'oteryn:quest-progress/m01c-fanfare-route'
-    evidence = 'tools/content-schema/quest-authoring/samples/chests/claims.json:key_binding=canary:door-key/3520'
-    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
-        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':4}],
-        'stages':[{'key':'s1-key-3520','completes':False,'trigger':{'kind':'collect','collection':{
-            'key':'oteryn:quest-collection/m01c-fanfare-key',
-            'items':[{'item':'oteryn:item.tibia.i2973','count':1,'key_number':3520}],
+    track = f'oteryn:quest-progress/m01c-{slug}-route'
+    evidence = f'tools/content-schema/quest-authoring/samples/chests/claims.json:key_binding=canary:door-key/{number}'
+    native = {'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':len(recipe['stages'])}],
+        'stages':[{'key':f's1-key-{number}','completes':False,'trigger':{'kind':'collect','collection':{
+            'key':f'oteryn:quest-collection/m01c-{slug}-key',
+            'items':[{'item':f'oteryn:item.tibia.i{item}','count':1,'key_number':number}],
             'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}],
-            'sources':[evidence]}}}], 'sources':[path+':s1', evidence]}]}
+            'sources':[evidence]}}}], 'sources':[path+':s1', evidence]}
+    if minimum_level:
+        native['admission'] = {'minimum_level':minimum_level}
+    return {'schema':1, 'quests':[native]}
+
+
+def build_fanfare(root=ROOT):
+    return collection_entry(root, 'oteryn:quest.fanfare_quest', ['Key 3520', 'Carlin boat-side box'], 2973, 3520, 'fanfare')
+
+
+def build_black_knight(root=ROOT):
+    return collection_entry(root, 'oteryn:quest.black_knight_quest', ['Key 5010', 'dead trees'], 2969, 5010, 'black-knight', 50)
 
 
 def content(check=False):
-    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare())]
+    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight())]
     for output, value in documents:
         path = ROOT / output
         if check:
@@ -107,7 +117,7 @@ def content(check=False):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
-    print('PASS M01c Dead Archer and Fanfare entries; completion/rewards remain held')
+    print('PASS M01c native entry bindings=3; completion/rewards remain held')
 
 
 

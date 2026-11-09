@@ -27,6 +27,14 @@ class NativeEntries(unittest.TestCase):
         self.assertEqual(collection['storage'][0]['set'], 1)
         self.assertEqual(quest['tracks'][0]['maximum'], 4)
 
+    def test_black_knight_collection_binds_its_real_key_and_level(self):
+        quest = source.build_black_knight()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.black_knight_quest')
+        self.assertEqual(quest['admission'], {'minimum_level':50})
+        stage = quest['stages'][0]
+        self.assertFalse(stage['completes'])
+        self.assertEqual(stage['trigger']['collection']['items'], [{'item':'oteryn:item.tibia.i2969','count':1,'key_number':5010}])
+
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()
         changed = copy.deepcopy(recipe)

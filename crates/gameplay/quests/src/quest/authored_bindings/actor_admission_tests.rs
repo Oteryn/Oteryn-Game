@@ -24,3 +24,26 @@ fn imported_level_gate_matches_the_chosen_recipe_before_native_admission() -> Re
     );
     Ok(())
 }
+
+#[test]
+fn production_black_knight_collection_enforces_its_canonical_level() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("black-knight-fixture")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue
+        .transition("oteryn:quest-collection/m01c-black-knight-key")
+        .ok_or("missing production Black Knight collection")?;
+    assert_eq!(transition.quest, "oteryn:quest.black_knight_quest");
+    assert!(!transition.completes);
+    let quest = catalogue
+        .authored_bindings()
+        .and_then(|b| b.quests.iter().find(|q| q.quest == transition.quest))
+        .ok_or("binding")?;
+    assert_eq!(quest.admission.as_ref().map(|a| a.minimum_level), Some(50));
+    let super::Trigger::Collect { collection } = &quest.stages[0].trigger else {
+        return Err("collection".into());
+    };
+    assert_eq!(collection.items[0].item, "oteryn:item.tibia.i2969");
+    assert_eq!(collection.items[0].key_number, Some(5010));
+    Ok(())
+}
