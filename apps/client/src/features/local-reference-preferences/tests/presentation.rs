@@ -220,3 +220,22 @@ fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dy
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn t056_own_spell_filter_changes_live_projection() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let now = std::time::Instant::now();
+    let baseline = play.scene().sprites().len();
+    play.receive_presentation(&[oteryn_session::PresentationEventKind::MagicEffect {
+        position: oteryn_session::ActorPosition { x: play.own.x, y: play.own.y, floor: play.floor },
+        effect_id: 29,
+        source: oteryn_session::PresentationSource::Own,
+    }], now);
+    play.project_presentation(now)?;
+    assert!(play.scene().sprites().len() > baseline);
+    let mut preferences = play.preferences().clone();
+    preferences.game_window.own_spells = false;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().sprites().len(), baseline);
+    Ok(())
+}

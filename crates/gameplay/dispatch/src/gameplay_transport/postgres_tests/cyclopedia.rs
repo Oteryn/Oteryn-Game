@@ -8,6 +8,8 @@ use crate::gameplay_transport::connection::{
 };
 use crate::gameplay_transport::guild_intent::GuildReply;
 use oteryn_protocol_oteryn::CommandStatus;
+#[path = "cyclopedia/atlas.rs"]
+mod atlas;
 #[path = "cyclopedia/fixture.rs"]
 pub(super) mod support;
 
@@ -683,6 +685,7 @@ fn scenario(canonical: bool) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!((improved, winner), (false, false));
+        atlas::verify(&owner, &mut admitted).await?;
         // A stale socket reserves its command before the Bank prelude refuses it, so its
         // unresolved original ends this GameSession's command stream (SESSION-INGRESS-1):
         // exercise it last.

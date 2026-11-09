@@ -48,7 +48,7 @@ fn battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filter
     let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
         return Err("metadata command".into());
     };
-    assert_eq!((command.capability, command.command_type), (17, 738));
+    assert_eq!((command.capability, command.command_type), (17, 740));
     assert_eq!(decode_query(&command.payload).ok_or("query")?.len(), 3);
     assert!(link.filtered_battle_rows(0).is_empty());
     assert!(commands.try_recv().is_err());

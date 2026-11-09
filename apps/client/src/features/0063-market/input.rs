@@ -2,9 +2,18 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::market::{Intent, request};
 impl PlayLink {
+    pub fn market_filter_side(&self, side: u8) -> bool {
+        if side > 2 { return false; }
+        let mut m = lock(&self.mailbox);
+        m.market.side_filter = side;
+        m.market.selected_offer = None;
+        true
+    }
+
     pub fn market_select_offer(&self, index: usize) {
         let mut m = lock(&self.mailbox);
-        m.market.selected_offer = m.market.rows.get(index).map(|r| r.offer);
+        m.market.selected_offer = oteryn_client_ui::market::visible_rows(&m.market).get(index)
+            .and_then(|index| m.market.rows.get(*index)).map(|r| r.offer);
     }
 
     pub fn market_details(

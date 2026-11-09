@@ -1,5 +1,5 @@
 {
-  "id": 738,
+  "id": 740,
   "name": "BATTLE_METADATA_QUERY",
   "owner_decision": "CLIENTGAP-OPTIONS O014 existing ATTACK_V1 read-only battle filters",
   "capability": 17,

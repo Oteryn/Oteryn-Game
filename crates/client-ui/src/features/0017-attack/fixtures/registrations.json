@@ -20,7 +20,7 @@
     "id": "0017-battle-metadata",
     "status": "supported",
     "commands": [
-      738
+      740
     ],
     "direction": "client_to_server",
     "capability": 17,

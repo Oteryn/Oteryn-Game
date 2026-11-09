@@ -1,6 +1,6 @@
 # Visible battle filter metadata
 
-O014 adds read-only command 738 to existing capability 17 ATTACK_V1; no capability is added.
+O014 adds read-only command 740 to existing capability 17 ATTACK_V1; no capability is added.
 Only currently visible, generation-matching players are enriched. The caller is fenced before
 and after the read. Unknown, unavailable or stale facts remain unknown, never a guessed vocation
 or a negative Guild relationship. No new persistent state is written.

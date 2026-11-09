@@ -6,7 +6,7 @@ use crate::{
     },
 };
 use oteryn_client_runtime::{
-    cyclopedia_map::atlas as wire,
+    cyclopedia_map::geometry as wire,
     raw_feature::{FeatureCommand, GatedCommandResult},
 };
 use oteryn_client_ui::cyclopedia_map::Panel;
@@ -18,7 +18,7 @@ impl PlayLink {
         super::super::view::atlas::open_window(self);
         #[cfg(not(windows))]
         {
-            lock(&self.mailbox).properties.cyclopedia_map.atlas.open = true;
+            lock(&self.mailbox).properties.cyclopedia_map.geometry.open = true;
         }
     }
     pub fn cyclopedia_atlas_action(&self, action: usize) {
@@ -27,16 +27,16 @@ impl PlayLink {
     pub fn cyclopedia_atlas_pump(&self) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.cyclopedia_map;
-        if panel.pending || !panel.atlas.open || !panel.atlas.auto_load {
+        if panel.pending || !panel.geometry.open || !panel.geometry.auto_load {
             return;
         }
-        let Some(after) = panel.atlas.next_geometry else {
+        let Some(after) = panel.geometry.next_geometry else {
             return;
         };
-        let Some(area) = panel.atlas.selected else {
+        let Some(area) = panel.geometry.selected else {
             return;
         };
-        let floor = panel.atlas.floor;
+        let floor = panel.geometry.floor;
         send(panel, &self.commands, wire::Request { area, floor, after });
     }
     pub fn cyclopedia_atlas_input(
@@ -47,20 +47,20 @@ impl PlayLink {
         let modifiers = Modifiers::one(Modifier::Control)
             .with(Modifier::Alt)
             .with(Modifier::Shift);
-        if !events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: actual, repeat: false } if code.get() == 68 && *actual == modifiers)) { return false; }
+        if !events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: actual, repeat: false } if code.get() == 66 && *actual == modifiers)) { return false; }
         self.cyclopedia_atlas_open();
         true
     }
 }
 fn send(panel: &mut Panel, commands: &UnboundedSender<PlayCommand>, request: wire::Request) {
     let Ok(payload) = wire::encode_request(request) else {
-        panel.atlas.feedback = "Invalid atlas selection".into();
+        panel.geometry.feedback = "Invalid atlas selection".into();
         return;
     };
     if !panel.begin(72) {
         return;
     }
-    panel.atlas.pending = Some(request);
+    panel.geometry.pending = Some(request);
     if commands
         .send(PlayCommand::Feature(FeatureCommand {
             capability: 57,
@@ -69,8 +69,8 @@ fn send(panel: &mut Panel, commands: &UnboundedSender<PlayCommand>, request: wir
         }))
         .is_err()
     {
-        panel.atlas.pending = None;
-        panel.atlas.auto_load = false;
+        panel.geometry.pending = None;
+        panel.geometry.auto_load = false;
         panel.failed("The session has ended");
     }
 }
@@ -98,11 +98,11 @@ pub(in crate::play) fn submit(
     }
     if action == 8 || action == 9 {
         if action == 8 {
-            panel.atlas.hide_geometry = !panel.atlas.hide_geometry;
+            panel.geometry.hide_geometry = !panel.geometry.hide_geometry;
         } else {
             panel.hide_pois = !panel.hide_pois;
         }
-        panel.atlas.revision = panel.atlas.revision.wrapping_add(1);
+        panel.geometry.revision = panel.geometry.revision.wrapping_add(1);
         return;
     }
     let request = match action {
@@ -112,7 +112,7 @@ pub(in crate::play) fn submit(
             after: 0,
         },
         1 | 2 => {
-            let a = &mut panel.atlas;
+            let a = &mut panel.geometry;
             if a.areas.is_empty() {
                 return;
             }
@@ -131,11 +131,11 @@ pub(in crate::play) fn submit(
             return;
         }
         3 => {
-            let Some(area) = panel.atlas.area() else {
+            let Some(area) = panel.geometry.area() else {
                 return;
             };
             if area.parent != 0 {
-                panel.atlas.feedback = "This is already a subarea".into();
+                panel.geometry.feedback = "This is already a subarea".into();
                 return;
             }
             wire::Request {
@@ -145,52 +145,52 @@ pub(in crate::play) fn submit(
             }
         }
         5..=7 => {
-            let Some(area) = panel.atlas.selected else {
-                panel.atlas.feedback = "Choose an area first".into();
+            let Some(area) = panel.geometry.selected else {
+                panel.geometry.feedback = "Choose an area first".into();
                 return;
             };
             if action == 6 {
-                panel.atlas.floor = if panel.atlas.floor == 0 {
+                panel.geometry.floor = if panel.geometry.floor == 0 {
                     -15
                 } else {
-                    panel.atlas.floor + 1
+                    panel.geometry.floor + 1
                 };
             }
             if action == 7 {
-                panel.atlas.floor = if panel.atlas.floor == -15 {
+                panel.geometry.floor = if panel.geometry.floor == -15 {
                     0
                 } else {
-                    panel.atlas.floor - 1
+                    panel.geometry.floor - 1
                 };
             }
-            panel.atlas.clear_geometry();
-            panel.atlas.auto_load = true;
+            panel.geometry.clear_geometry();
+            panel.geometry.auto_load = true;
             wire::Request {
                 area,
-                floor: panel.atlas.floor,
+                floor: panel.geometry.floor,
                 after: 0,
             }
         }
         12 => {
-            let Some(after) = panel.atlas.next_areas else {
-                panel.atlas.feedback = "End of area list".into();
+            let Some(after) = panel.geometry.next_areas else {
+                panel.geometry.feedback = "End of area list".into();
                 return;
             };
             wire::Request {
-                area: panel.atlas.parent,
+                area: panel.geometry.parent,
                 floor: 1,
                 after,
             }
         }
         13 => wire::Request {
-            area: panel.atlas.parent,
+            area: panel.geometry.parent,
             floor: 1,
-            after: panel.atlas.after.saturating_sub(wire::AREA_PAGE as u16),
+            after: panel.geometry.after.saturating_sub(wire::AREA_PAGE as u16),
         },
         _ => return,
     };
     if request.floor == 1 {
-        panel.atlas.auto_load = false;
+        panel.geometry.auto_load = false;
     }
     send(panel, commands, request);
 }
@@ -200,27 +200,27 @@ pub(in crate::play) fn apply(
     result: &GatedCommandResult,
 ) -> bool {
     if command.kind != 72 || command.payload.first() != Some(&255) {
-        return panel.atlas.pending.is_some();
+        return panel.geometry.pending.is_some();
     }
     let Ok(request) = wire::decode_request(&command.payload) else {
         return true;
     };
-    if !panel.pending || panel.atlas.pending != Some(request) {
+    if !panel.pending || panel.geometry.pending != Some(request) {
         return true;
     }
     panel.pending = false;
-    panel.atlas.pending = None;
+    panel.geometry.pending = None;
     if !crate::play::feature_0115_mail::protocol::accepted(result) {
-        panel.atlas.auto_load = false;
-        panel.atlas.feedback = "Atlas unavailable in this scope".into();
+        panel.geometry.auto_load = false;
+        panel.geometry.feedback = "Atlas unavailable in this scope".into();
         return true;
     }
     let Ok(reply) = wire::decode_reply(&result.payload) else {
-        panel.atlas.auto_load = false;
-        panel.atlas.feedback = "Invalid atlas reply".into();
+        panel.geometry.auto_load = false;
+        panel.geometry.feedback = "Invalid atlas reply".into();
         return true;
     };
-    let a = &mut panel.atlas;
+    let a = &mut panel.geometry;
     match reply {
         wire::Reply::Areas(page)
             if request.floor == 1 && page.parent == request.area && page.after == request.after =>
