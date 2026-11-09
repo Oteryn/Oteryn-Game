@@ -24,6 +24,9 @@ pub const DB_PASS_DEADLINE: Duration = Duration::from_millis(DB_PASS_DEADLINE_MI
 pub const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
+/// How often maintenance looks again for a checked-out holder's return (NBHOG-2); a pass that
+/// drops its holder without a semantic-pass guard sends no return notification.
+const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
 const WP3_RUNTIME_WORKER_THREADS: usize = 1;
 const WP3_RUNTIME_MAX_BLOCKING_THREADS: usize = 1;
 const WP3_RUNTIME_WORKER_STACK_BYTES: usize = 2 * 1024 * 1024;
@@ -1025,6 +1028,22 @@ impl DurabilityRoot {
         }
 
         let deadline = Instant::now() + ROOT_RECOVERY_WINDOW;
+        // NBHOG-2: a live holder that a pass has checked out needs no re-establishment.
+        // Waiting for it in `acquire()` would queue on the pool's fair semaphore: every
+        // non-blocking `try_acquire_ready` then fails until this window has taken the returned
+        // holder for its schema check, so each refused checkout, which re-arms the demand,
+        // starves the next one. Wait for the return without queueing, then take it as before.
+        while self.pool.size() > 0 && self.pool.num_idle() == 0 {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err(DurabilityError::RootUnavailable);
+            }
+            let _ = tokio::time::timeout(
+                remaining.min(HOLDER_RETURN_POLL),
+                self.holder_returned.notified(),
+            )
+            .await;
+        }
         let remaining = deadline.saturating_duration_since(Instant::now());
         let acquired = tokio::time::timeout(remaining, self.pool.acquire())
             .await

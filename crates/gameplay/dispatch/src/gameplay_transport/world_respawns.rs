@@ -169,7 +169,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     });
                     timers.insert(spawn.key, due);
                 }
-                Ok(BossClockClaim::Unchanged | BossClockClaim::CompareFailed) => {}
+                Ok(BossClockClaim::Unchanged) => {
+                    // NBHOG-3: nothing to claim yet (an at-reset boss before any reset, or one
+                    // alive at another point). Each check is a whole fenced pass on the single
+                    // holder, so a point is checked again only after a pause, not every second.
+                    timers.insert(
+                        spawn.key,
+                        unchanged_boss_recheck(tokio::time::Instant::now()),
+                    );
+                }
+                Ok(BossClockClaim::CompareFailed) => {}
                 Err(BossClockError::Unavailable(
                     crate::durability::DurabilityError::RootUnavailable,
                 )) => {
@@ -210,6 +219,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
     }
+}
+
+/// Pause before a boss point whose clock claim came back unchanged is checked again (NBHOG-3).
+/// A new reset drains and replaces the owner, so the pause never delays a reset's draw.
+pub(super) const UNCHANGED_BOSS_RECHECK: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// When a boss point whose claim came back unchanged at `now` is checked again (NBHOG-3).
+pub(super) fn unchanged_boss_recheck(now: tokio::time::Instant) -> Option<tokio::time::Instant> {
+    now.checked_add(UNCHANGED_BOSS_RECHECK)
 }
 
 pub(super) async fn drive(
