@@ -3,7 +3,11 @@ use super::{Callback, NativeRule, Position, Trigger};
 use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selection as dance};
 
 pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bool {
+    if let NativeRule::LionTrial { trial } = rule {
+        return super::super::lions_rock::callbacks().get(usize::from(trial)) == Some(callback);
+    }
     let (trigger, position, action, ranges, source): (_, _, _, &[(i64, i64)], _) = match rule {
+        NativeRule::LionTrial { .. } => return false,
         NativeRule::BarbarianMead => (
             Trigger::Use,
             (32201, 31154, -7),
@@ -135,7 +139,7 @@ impl Callback {
                     None
                 }
             }
-            None => self.success_message.as_deref(),
+            Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }
     }
 }

@@ -241,6 +241,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 passages.push(*passage);
             }
         }
+        match super::lion_trial::prepare(map, callback, &mut replacements, self.owner_now().get()) {
+            Ok(Some(remote)) => projection = Some(remote),
+            Ok(None) => {}
+            Err(result) => return result,
+        }
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return UseDisposition::Rejected;
         };
@@ -711,6 +716,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
+        // The source starts its reset after the successful offering, not before
+        // the durable RPC. A slow commit must not shorten the shared trial window.
+        if let Some(crate::map::facts::QuestCallbackProjection::TimedRemoteTransform {
+            due, ..
+        }) = &mut projection
+        {
+            let Some(deadline) = self.owner_now().get().checked_add(15_000_000) else {
+                return UseDisposition::Exhausted;
+            };
+            *due = deadline;
+        }
         if !map.facts.apply_quest_callback(
             key,
             expected_revision,
@@ -724,7 +740,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if matches!(
             projection,
-            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+            Some(
+                crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
+            )
         ) || callback.effects.reset_after_ms.is_some()
             || callback
                 .effects

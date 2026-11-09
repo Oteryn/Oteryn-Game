@@ -938,6 +938,8 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if oteryn_gameplay_quests::quest::lions_rock::binding(&callback.key).is_some() {
+            super::super::m07_trials::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger).await?;
         } else if callback.effects != Default::default()
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {

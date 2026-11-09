@@ -343,6 +343,8 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    // Flower and water bindings await native Item admission; Cobra Tongue is served.
+    callbacks.extend(super::lions_rock::callbacks().into_iter().take(1));
     callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());

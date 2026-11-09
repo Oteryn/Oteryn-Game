@@ -249,6 +249,8 @@ pub(super) fn lower_embedded_quest_state(
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
     lowered.catalogue =
+        super::lions_rock::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::fire_feathered_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -294,6 +296,7 @@ pub(super) fn lower_embedded_quest_state(
     for callback in super::fire_feathered_native::callbacks()
         .into_iter()
         .chain(super::shared_world_progress::callbacks())
+        .chain(super::lions_rock::callbacks())
     {
         for storage in callback.storage {
             lowered
