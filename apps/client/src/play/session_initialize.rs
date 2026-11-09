@@ -101,7 +101,10 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
-    outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.store_initialize(
+        session.server_mechanic_selected(154),
+        session.feature_selected(450),
+    );
     outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));

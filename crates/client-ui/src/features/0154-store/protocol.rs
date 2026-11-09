@@ -5,6 +5,9 @@ use oteryn_client_runtime::server_mechanic::{
 };
 
 pub fn command(command_type: u32, payload: Vec<u8>) -> Option<ServerMechanicCommand> {
+    if command_type == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION {
+        return Some(crate::server_modal::hireling_store(payload));
+    }
     ((183..=186).contains(&command_type) || command_type == store::browse::COMMAND_TYPE).then_some(
         ServerMechanicCommand {
             capability: 154,
@@ -69,7 +72,8 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
     }
     if let Some(payload) = panel.confirmed_purchase.clone() {
         panel.purchase_confirmed = false;
-        return encoded(panel, COMMAND_TYPE_STORE_PURCHASE, Ok(payload));
+        let kind = purchase_kind(&payload);
+        return encoded(panel, kind, Ok(payload));
     }
     let offer = panel
         .catalogue
@@ -85,8 +89,7 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
     // Crystal 201189f, data/modules/scripts/gamestore/gamestore.lua:6302-6332:
     // hire / rename / sex-change identities. init.lua:1877-1900,1951-1972,1990-2020:
     // hire takes name+sex, rename takes target+name, sex-change toggles target.
-    // CLIGAP-W09 uses the existing Game UUID customization instead of donor modals;
-    // capability-250 negotiation belongs to W00.
+    // An omitted identity opens the server's owned-Hireling choice modal.
     // Prices, currency and revision always come from the selected server row.
     let customization = match offer.offer_key.as_str() {
         "store:hireling:25440" => Some(StoreHirelingCustomization {
@@ -94,18 +97,14 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
             name: Some(panel.hireling_name.clone()),
             sex: Some(panel.hireling_sex),
         }),
-        "store:hireling:25438" | "store:hireling:25437" => {
-            let id = panel.hireling_id.or_else(|| {
-                panel.feedback = Some(tr!("Enter the Hireling identity").into());
-                None
-            })?;
-            Some(StoreHirelingCustomization {
-                hireling_id: Some(id),
+        "store:hireling:25438" | "store:hireling:25437" => (panel.hireling_id.is_some()
+            || offer.offer_key == "store:hireling:25438")
+            .then(|| StoreHirelingCustomization {
+                hireling_id: panel.hireling_id,
                 name: (offer.offer_key == "store:hireling:25438")
                     .then(|| panel.hireling_name.clone()),
                 sex: None,
-            })
-        }
+            }),
         _ => None,
     };
     let quote = StorePurchaseRequest {
@@ -119,9 +118,27 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
         Some(c) => store::encode_hireling_purchase_request(&quote, &c),
         None => store::encode_purchase_request(&quote),
     };
-    let command = encoded(panel, COMMAND_TYPE_STORE_PURCHASE, payload)?;
+    let payload = payload.ok().or_else(|| {
+        panel.feedback = Some(tr!("Enter valid store details").into());
+        None
+    })?;
+    let kind = purchase_kind(&payload);
+    let command = encoded(panel, kind, Ok(payload))?;
     panel.confirmed_purchase = Some(command.payload.clone());
     Some(command)
+}
+
+fn purchase_kind(payload: &[u8]) -> u32 {
+    if store::decode_purchase_request_with_hireling(payload).is_ok_and(|(quote, custom)| {
+        matches!(
+            quote.offer_key.as_str(),
+            "store:hireling:25438" | "store:hireling:25437"
+        ) && custom.is_none_or(|c| c.hireling_id.is_none())
+    }) {
+        oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION
+    } else {
+        COMMAND_TYPE_STORE_PURCHASE
+    }
 }
 
 pub fn claim(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
@@ -139,6 +156,12 @@ pub fn request(
     command: ServerMechanicCommand,
 ) -> Option<ServerMechanicCommand> {
     if !panel.selected || panel.pending {
+        return None;
+    }
+    if command.capability == oteryn_client_runtime::server_modal::CAPABILITY_SERVER_MODAL_V1
+        && !panel.hireling_modal_selected
+    {
+        panel.feedback = Some(tr!("Enter the Hireling identity").into());
         return None;
     }
     panel.pending = true;
@@ -159,6 +182,20 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
         panel.feedback = Some(lfmt!("Server refused store action: {:?}", result.status));
+        return;
+    }
+    if panel.pending_action
+        == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION
+    {
+        panel.feedback = Some(
+            match oteryn_client_runtime::server_modal::Reply::decode(&result.payload) {
+                Ok(oteryn_client_runtime::server_modal::Reply::Dialog(dialog)) => {
+                    panel.hireling_modal_id = Some(dialog.id);
+                    dialog.message
+                }
+                _ => tr!("The server returned invalid store data").into(),
+            },
+        );
         return;
     }
     let decoded = match panel.pending_action {
@@ -203,6 +240,67 @@ pub fn browse_request(
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+    #[test]
+    fn store_hireling_without_identity_requests_server_choice_before_purchase() {
+        let mut id = [1; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        for key in ["store:hireling:25438", "store:hireling:25437"] {
+            let mut panel = StorePanel {
+                selected: true,
+                hireling_modal_selected: true,
+                purchase_confirmed: true,
+                purchase_request_id: id,
+                hireling_name: "Morgan".into(),
+                catalogue: Some(StoreCataloguePage {
+                    catalog_revision: "revision".into(),
+                    offers: vec![StoreOffer {
+                        offer_key: key.into(),
+                        title: "Hireling".into(),
+                        price: 120,
+                        currency: "TIBIA_COIN".into(),
+                    }],
+                    next_page_cursor: String::new(),
+                    total_coins: 1000,
+                    transferable_coins: 0,
+                }),
+                ..Default::default()
+            };
+            let command = purchase(&mut panel).unwrap();
+            assert_eq!((command.capability, command.command_type), (450, 6196));
+            let (_, custom) =
+                store::decode_purchase_request_with_hireling(&command.payload).unwrap();
+            assert_eq!(custom.and_then(|c| c.hireling_id), None);
+            panel.pending = false;
+            panel.purchase_confirmed = true;
+            assert_eq!(purchase(&mut panel), Some(command));
+            let dialog = oteryn_client_runtime::server_modal::Dialog {
+                id: 42,
+                title: "Choose a Hireling".into(),
+                message: "Select a hireling below".into(),
+                choices: vec![(1, "Alex".into())],
+                buttons: vec![(1, "Select".into()), (2, "Cancel".into())],
+                cancel_button: Some(2),
+                image: None,
+            };
+            apply_result(
+                &mut panel,
+                &ServerMechanicResponse {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: CommandStatus::Accepted,
+                    payload: oteryn_client_runtime::server_modal::Reply::Dialog(dialog)
+                        .encode()
+                        .unwrap(),
+                },
+            );
+            assert!(panel.confirmed_purchase.is_some());
+            panel.pending = false;
+            panel.purchase_confirmed = true;
+            panel.hireling_modal_selected = false;
+            assert!(purchase(&mut panel).is_none());
+        }
+    }
     #[test]
     fn gap_store_hireling_fields_follow_offer_kind() {
         let mut id = [1; 16];

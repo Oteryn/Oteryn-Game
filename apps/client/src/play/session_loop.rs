@@ -33,9 +33,13 @@ pub async fn run_session<T: Stepper>(
         super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     loop {
-        if let Err(error) = modal.poll(&mut session).await {
-            outbox.end(public_class(&error));
-            return;
+        match modal.poll(&mut session).await {
+            Ok(Some(answer)) => outbox.store_modal_answered(answer),
+            Ok(None) => {}
+            Err(error) => {
+                outbox.end(public_class(&error));
+                return;
+            }
         }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
@@ -127,6 +131,7 @@ pub async fn run_session<T: Stepper>(
                             153 => outbox.depot_search_result(&response),
                             154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
                             154 => outbox.store_result(&response),
+                            450 if request.command_type == oteryn_client_runtime::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION => outbox.store_result(&response),
                             179 => outbox.hotkey_equip_result(&response),
                             230 => outbox.browse_field_result(&response),
                             _ => {}

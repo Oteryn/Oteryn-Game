@@ -1,8 +1,82 @@
 use crate::play::play_channel;
 #[test]
+fn store_hireling_confirmation_queues_server_modal_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, true);
+    let page = StoreCataloguePage {
+        catalog_revision: "revision".into(),
+        offers: vec![StoreOffer {
+            offer_key: "store:hireling:25438".into(),
+            title: "Name Change".into(),
+            price: 250,
+            currency: "TIBIA_COIN".into(),
+        }],
+        next_page_cursor: String::new(),
+        total_coins: 1000,
+        transferable_coins: 0,
+    };
+    crate::play::mailbox::lock(&link.mailbox).store.catalogue = Some(page.clone());
+    assert!(link.store_confirm_purchase(&page, "Morgan", "1", ""));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("modal command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (450, 6196));
+    let (_, custom) =
+        decode_purchase_request_with_hireling(&command.payload).map_err(|_| "request")?;
+    assert_eq!(custom.and_then(|c| c.name), Some("Morgan".into()));
+    let answer = oteryn_client_runtime::server_modal::Answer {
+        dialog_id: 42,
+        button_id: 1,
+        choice_id: Some(1),
+    };
+    let dialog = oteryn_client_runtime::server_modal::Dialog {
+        id: 42,
+        title: "Choose a Hireling".into(),
+        message: "Select a hireling below".into(),
+        choices: vec![(1, "Alex".into())],
+        buttons: vec![(1, "Select".into()), (2, "Cancel".into())],
+        cancel_button: Some(2),
+        image: None,
+    };
+    outbox.store_result(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: oteryn_client_runtime::server_modal::Reply::Dialog(dialog).encode()?,
+        },
+    );
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .store
+            .confirmed_purchase
+            .is_some()
+    );
+    outbox.store_modal_answered(oteryn_client_runtime::server_modal::Answer {
+        dialog_id: 43,
+        ..answer
+    });
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .store
+            .confirmed_purchase
+            .is_some()
+    );
+    outbox.store_modal_answered(answer);
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .store
+            .confirmed_purchase
+            .is_none()
+    );
+    Ok(())
+}
+#[test]
 fn store_panel_opens_and_sends() {
     let (link, mut rx, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     link.store_request(183, vec![]);
     assert!(matches!(
         rx.try_recv(),
@@ -159,7 +233,7 @@ fn store_native_preview_remains_visible_after_catalogue_feedback() {
 fn coin_gift_real_caller_requires_server_review_and_retries_exact_confirmation()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     let fields = ["Alice".into(), "25".into()];
     assert!(!link.coin_gift_control(1, fields.clone()));
     assert!(commands.try_recv().is_err());
@@ -208,7 +282,7 @@ fn store_category_navigation_sends_server_key_with_fresh_cursor()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::cui3::store::*;
     let (link, mut rx, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.store.catalogue_category = "consumables.exercise-weapons".into();

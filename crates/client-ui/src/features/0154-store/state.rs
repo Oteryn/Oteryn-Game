@@ -20,6 +20,8 @@ pub struct StorePanel {
     pub search: String,
     pub sort: StoreSort,
     pub selected: bool,
+    pub hireling_modal_selected: bool,
+    pub hireling_modal_id: Option<u32>,
     pub open: bool,
     pub classic_open: bool,
     pub pending: bool,
