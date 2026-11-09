@@ -2,6 +2,21 @@
   {
     "mechanic": "0154-store",
     "kind": "handlers",
+    "id": "0154-coin-gift",
+    "status": "supported",
+    "commands": [
+      6127
+    ],
+    "direction": "client_to_server",
+    "capability": 154,
+    "entry": "state/gift.rs::gift_control",
+    "not_applicable": {
+      "settings": "Coin gifts are confirmed by Platform."
+    }
+  },
+  {
+    "mechanic": "0154-store",
+    "kind": "handlers",
     "id": "0154-store-browse",
     "status": "supported",
     "commands": [

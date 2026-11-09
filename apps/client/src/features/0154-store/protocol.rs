@@ -6,6 +6,7 @@ impl Outbox {
         mailbox.store.gift_open = false;
         mailbox.store.gift_fields = Default::default();
         mailbox.store.gift_reviewed = None;
+        mailbox.store.gift = Default::default();
     }
     pub(in crate::play) fn store_result(
         &self,
@@ -40,5 +41,14 @@ impl Outbox {
             &text,
             received,
         );
+    }
+}
+
+impl Outbox {
+    pub(in crate::play) fn coin_gift_result(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        oteryn_client_ui::store::gift_result(&mut lock(&self.0).store, response);
     }
 }

@@ -343,3 +343,6 @@ pub use oteryn_session::gem_presentation;
 pub use oteryn_session::wheel_presentation;
 #[path = "features/0450-server-modal/protocol.rs"]
 pub mod server_modal;
+
+pub use oteryn_session::coin_market;
+pub use oteryn_session::coin_transfer;

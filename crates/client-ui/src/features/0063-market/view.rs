@@ -87,3 +87,7 @@ pub fn visible_rows(panel: &MarketPanel) -> Vec<usize> {
         .map(|(index, _)| index)
         .collect()
 }
+
+pub fn coin_panel_text(p: &super::MarketPanel) -> String {
+    super::coin_text(&p.coins)
+}

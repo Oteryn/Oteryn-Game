@@ -1,0 +1,15 @@
+{
+  "mechanic": "0063-market",
+  "kind": "handlers",
+  "id": "0063-coin-market-actions",
+  "status": "supported",
+  "commands": [
+    6126
+  ],
+  "direction": "client_to_server",
+  "capability": 63,
+  "entry": "state/coins.rs::coin_control",
+  "not_applicable": {
+    "settings": "Coin market authority and balances are server-owned."
+  }
+}

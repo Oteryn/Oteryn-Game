@@ -1,0 +1,10 @@
+name=coin_market
+commands=6126
+transport=coin_market
+composed=coin_market
+authority=coin_market
+[route]
+{
+ let bytes=authority.coin_market_command(session.admitted,command.command_id,command.payload).await.ok_or(ServeEnd::Disconnected)?;
+ routing::Dispatch::Reply(oteryn_protocol_oteryn::CommandStatus::Accepted,bytes)
+}

@@ -46,3 +46,8 @@ pub fn edit_details(
         false
     }
 }
+
+pub fn coin_open_key(events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
+    events.iter().any(|e|matches!(e,NormalizedInputEvent::Key{code,state:ButtonState::Pressed,modifiers,repeat:false} if code.get()==65 && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
+}
