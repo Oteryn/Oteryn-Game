@@ -32,6 +32,7 @@ impl BundleFacts {
     /// Release, the durable pit lease. A stale release never resets a newer run.
     pub fn set_svargrond_pillar(
         &self,
+        base: &crate::map::WorldBase,
         pos: TilePos,
         ordinal: u8,
         id: u32,
@@ -41,10 +42,29 @@ impl BundleFacts {
         let Some(key) = placement_key(pos, ordinal) else {
             return false;
         };
-        let Ok(index) = self.placements.binary_search_by_key(&key, |(key, _)| *key) else {
+        // Plain unique-id objects need no sparse placement record. Prove the
+        // actual top-level occurrence in the pinned base before palette fallback.
+        let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
             return false;
         };
-        let Some(palette) = self.palette.get(self.placements[index].1.palette as usize) else {
+        if tile
+            .ids()
+            .iter()
+            .zip(tile.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))
+            .map(|(&actual, _)| actual)
+            != Some(id)
+        {
+            return false;
+        }
+        let index = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .map(|index| self.placements[index].1.palette)
+            .or_else(|| self.unique_index(id));
+        let Some(palette) = index.and_then(|index| self.palette.get(index as usize)) else {
             return false;
         };
         if palette.id != id || palette.facts.appearance_id != 1841 || self.house_tile(pos) {

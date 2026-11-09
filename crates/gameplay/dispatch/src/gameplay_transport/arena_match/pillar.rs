@@ -42,5 +42,5 @@ pub(super) fn project(
         return false;
     }
     map.facts
-        .set_svargrond_pillar(pos, ordinal, id, state.run, projection)
+        .set_svargrond_pillar(map.overlay.base(), pos, ordinal, id, state.run, projection)
 }

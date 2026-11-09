@@ -2187,3 +2187,16 @@ RED missing admission predicate E0599:93.285s; GREEN map/collision test:31.793s.
 Changed world/dispatch/durability clippy -D warnings:41.711s. Formatting PASS;
 engine-only derive-identity equals the committed pin identity. No SQL or numbers.
 Native STEP caller and its full ten-pit PG case continue in the next slice.
+
+## M51: qualify plain pillars against the actual pinned base
+
+Plain, unique-id map items have no sparse placement record. The earlier pillar
+qualifier could therefore refuse a real unbound source pillar. It now proves
+position/ordinal/id against the pinned WorldBase and uses the existing unique
+palette fallback only after that proof. The dispatcher passes its actual base.
+The regression fixture now uses unique Item ids and also refuses a nonexistent
+occurrence even when supplied the correct pillar's known definition id.
+Source rule: Crystal201189f creaturescripts_arena_kill.lua:22-35.
+RED actual missing-portal assertion:31.086s. GREEN final source map test:14.016s;
+world/dispatch clippy -D warnings:121.696s; cargo fmt --all --check PASS.
+Engine-only derive-identity equals committed pin identity; no SQL or allocation.
