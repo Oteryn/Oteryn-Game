@@ -259,6 +259,113 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/berserk-potion/s1/entry",
+      "quest": "oteryn:quest.berserk_potion_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31179,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6593,
+        "native": {
+          "position": {
+            "x": 32479,
+            "y": 31179,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 6593
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserk_potion_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserk_potion_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/190",
+        "https://tibia.fandom.com/index.php?curid=16009&oldid=855143",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/dragon-tower/s1/entry",
+      "quest": "oteryn:quest.dragon_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33075,
+          "y": 32169,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 33075,
+            "y": 32169,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/357",
+        "https://tibia.fandom.com/index.php?curid=1545&oldid=1113770",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/edron-goblin/s1/entry",
       "quest": "oteryn:quest.edron_goblin_quest",
       "trigger": "step_in",
@@ -372,20 +479,20 @@
       "selector": {
         "position": {
           "x": 33098,
-          "y": 31701,
+          "y": 31703,
           "floor": -7
         },
         "unique": null,
         "action": null,
-        "appearance": 4409,
+        "appearance": 4408,
         "native": {
           "position": {
             "x": 33098,
-            "y": 31701,
+            "y": 31703,
             "floor": -7
           },
           "ordinal": 0,
-          "appearance": 4409
+          "appearance": 4408
         }
       },
       "lever": null,
@@ -414,7 +521,7 @@
       "sources": [
         "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/107",
         "https://tibia.fandom.com/index.php?curid=19176&oldid=1114456",
-        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
       ],
       "admission": {
         "premium": true

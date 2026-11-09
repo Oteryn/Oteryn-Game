@@ -1,4 +1,4 @@
-//! The Edron lair entry is approached from its walkable southern border.
+//! The Edron lair entry is approached from its clear western approach to the outer entry.
 use super::*;
 
 #[test]
@@ -12,7 +12,7 @@ fn m01b_fire_axe_native_entry_keeps_level_sixty_and_current_premium() -> TestRes
             "m01b/fire-axe/s1/entry",
             Position {
                 x: 33098,
-                y: 31701,
+                y: 31703,
                 floor: -7,
             },
             false,
@@ -38,17 +38,17 @@ pub(super) fn world(
                 "/../../../content/world/placements/region-z07-x129-y123.b3"
             )),
             region: (7, 129, 123),
-            bounds: (33098, 31701, 33099, 31703),
-            start: (33098, 31702),
+            bounds: (33097, 31703, 33099, 31704),
+            start: (33097, 31703),
             expected: vec![
                 ExpectedTile {
-                    position: (33098, 31701),
-                    ids: vec![4409],
+                    position: (33098, 31703),
+                    ids: vec![4408],
                     counted_entry: None,
                 },
                 ExpectedTile {
-                    position: (33098, 31702),
-                    ids: vec![4407, 1855],
+                    position: (33097, 31703),
+                    ids: vec![4406, 1103],
                     counted_entry: None,
                 },
             ],

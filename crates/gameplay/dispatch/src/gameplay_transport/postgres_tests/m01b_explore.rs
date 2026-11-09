@@ -3,6 +3,9 @@ use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 
+#[path = "m01b_explore/area_entries.rs"]
+mod area_entries;
+
 #[path = "m01b_explore/fire_axe.rs"]
 mod fire_axe;
 
@@ -248,9 +251,12 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 }
 
 pub(super) fn start(name: &str, trigger: Position) -> Position {
-    if name == "m01b/fire-axe/s1/entry" {
+    if matches!(
+        name,
+        "m01b/fire-axe/s1/entry" | "m01b/dragon-tower/s1/entry"
+    ) {
         Position {
-            y: trigger.y + 1,
+            x: trigger.x - 1,
             ..trigger
         }
     } else {
@@ -266,6 +272,12 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if matches!(
+        name,
+        "m01b/dragon-tower/s1/entry" | "m01b/berserk-potion/s1/entry"
+    ) {
+        return area_entries::world(native, name);
+    }
     if name == "m01b/fire-axe/s1/entry" {
         return fire_axe::world(native);
     }
@@ -425,11 +437,14 @@ pub(super) async fn exercise(
     if callback.admission.as_ref().is_some_and(|a| a.premium) {
         return exercise_premium(owner, admitted, h, callback).await;
     }
+    let dragon_tower = callback.key.ends_with("m01b/dragon-tower/s1/entry");
     let elvenbane = callback.key.ends_with("m01b/elvenbane/s1/entry");
     let alawar = callback.key.ends_with("m01b/alawar-s-vault/s1/entry");
     let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
-    assert!(elvenbane || alawar || geomancer || callback.key.ends_with(ENTRY));
-    let counter = if elvenbane {
+    assert!(dragon_tower || elvenbane || alawar || geomancer || callback.key.ends_with(ENTRY));
+    let counter = if dragon_tower {
+        "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1"
+    } else if elvenbane {
         "oteryn:quest-progress/authored/elvenbane_quest/s1"
     } else if alawar {
         "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1"
@@ -468,12 +483,19 @@ pub(super) async fn exercise(
         StepDirection::East,
         StepDirection::West,
     ];
-    let moves: &[StepDirection] = if elvenbane || alawar || geomancer {
+    let dragon_moves = [
+        StepDirection::East,
+        StepDirection::West,
+        StepDirection::East,
+    ];
+    let moves: &[StepDirection] = if dragon_tower {
+        &dragon_moves
+    } else if elvenbane || alawar || geomancer {
         &geomancer_moves
     } else {
         &longsword_moves
     };
-    let first_entry = if elvenbane || alawar || geomancer {
+    let first_entry = if dragon_tower || elvenbane || alawar || geomancer {
         0
     } else {
         2
@@ -511,7 +533,7 @@ pub(super) async fn exercise(
                 admitted,
                 u64::try_from(index)? + 1,
                 1,
-                oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::West),
+                oteryn_protocol_oteryn::world_spatial::encode_step_intent(moves[first_entry]),
             )
             .await?;
             assert_eq!(replay, reply);
@@ -537,7 +559,7 @@ async fn exercise_premium(
         koshei::seed_level(h, i64::from(minimum)).await?;
     }
     let (entry, exit) = if callback.key.ends_with("m01b/fire-axe/s1/entry") {
-        (StepDirection::North, StepDirection::South)
+        (StepDirection::East, StepDirection::West)
     } else {
         (StepDirection::West, StepDirection::East)
     };

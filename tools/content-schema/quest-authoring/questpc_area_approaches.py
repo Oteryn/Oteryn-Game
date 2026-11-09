@@ -4,9 +4,11 @@ from pathlib import Path
 
 SOURCE = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 APPROACHES = {
+    'oteryn:area.hunting_place.edron_dragon_lair': ((33098, 31701, -7), (33098, 31703, -7, 4408)),
     'oteryn:area.hunting_place.shadowthorn': ((33075, 32170, -7), (33075, 32169, -7, 408)),
     'oteryn:area.hunting_place.helheim': ((32478, 31179, -7), (32479, 31179, -7, 6593)),
 }
+DISTANCES = {'oteryn:area.hunting_place.edron_dragon_lair': 2}
 
 
 def resolve(root, reference):
@@ -21,8 +23,8 @@ def resolve(root, reference):
     origin, (x, y, floor, appearance) = APPROACHES[key]
     if source is None or (source['x'], source['y'], -source['floor']) != origin:
         raise ValueError('Pinned Area marker changed: ' + key)
-    if floor != origin[2] or abs(x - origin[0]) + abs(y - origin[1]) != 1:
-        raise ValueError('Chosen Area approach must be immediately adjacent to its marker')
+    if floor != origin[2] or abs(x - origin[0]) + abs(y - origin[1]) != DISTANCES.get(key, 1):
+        raise ValueError('Chosen Area approach must match its declared distance')
     bindings = [b for b in record['source_bindings']
                 if b['identity_namespace'] == 'tibiawiki-fandom/page-id'
                 and b['disposition'] == 'EXACT']

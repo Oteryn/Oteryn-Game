@@ -5,8 +5,12 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.dragon_tower_quest', 's1',
+     'area-approach:oteryn:area.hunting_place.shadowthorn', 'chosen-source/dragon_tower_quest'),
+    ('oteryn:quest.berserk_potion_quest', 's1',
+     'area-approach:oteryn:area.hunting_place.helheim', 'chosen-source/berserk_potion_quest'),
     ('oteryn:quest.fire_axe_quest', 's1',
-     'oteryn:area.hunting_place.edron_dragon_lair', 'chosen-source/fire_axe_quest'),
+     'area-approach:oteryn:area.hunting_place.edron_dragon_lair', 'chosen-source/fire_axe_quest'),
     *(("oteryn:quest.koshei_the_deathless_quest", "s1",
        "claim:canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part" + str(part),
        "chosen-source/koshei_the_deathless_quest") for part in range(1, 5)),

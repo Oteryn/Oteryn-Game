@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b9/56wired,12nativeanchors;8stagesPG-proven. FireAxelevel60+Premium binding/source/tests compile and ClippyPASS,PGbuilding.37routes/47stages remain;PARTIAL.",
+  "batch_state": "M01b11/56wired,14nativeanchors,8PG-proven. FireAxe old start RED StartNotEnterable55.016s;clear outer approach+DragonTower+Berserk bindings20Python/5Rust/strictClippyGREEN,nativePGpending.35routes/45stages remain;PARTIAL.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [

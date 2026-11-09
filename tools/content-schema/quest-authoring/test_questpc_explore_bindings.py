@@ -21,6 +21,26 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_dragon_tower_and_berserk_potion_approaches_are_activated(self):
+        callbacks = explore.callbacks(ROOT)
+        for quest in ('oteryn:quest.dragon_tower_quest', 'oteryn:quest.berserk_potion_quest'):
+            with self.subTest(quest=quest):
+                self.assertTrue(any(c['quest'] == quest for c in callbacks),
+                                'chosen adjacent Area visit is activated')
+
+    def test_area_approaches_reject_changed_markers_and_nonadjacent_tiles(self):
+        import questpc_area_approaches as approaches
+        key = 'oteryn:area.hunting_place.shadowthorn'
+        origin, anchor = approaches.APPROACHES[key]
+        cases = (
+            (((origin[0] + 1, origin[1], origin[2]), anchor), 'marker changed'),
+            ((origin, (anchor[0], anchor[1] - 1, anchor[2], anchor[3])), 'declared distance'),
+        )
+        for replacement, error in cases:
+            with mock.patch.dict(approaches.APPROACHES, {key: replacement}):
+                with self.assertRaisesRegex(ValueError, error):
+                    approaches.resolve(ROOT, 'area-approach:' + key)
+
     def test_chosen_area_approaches_keep_the_pinned_marker_unchanged(self):
         bindings = (
             ('oteryn:quest.dragon_tower_quest', 's1',

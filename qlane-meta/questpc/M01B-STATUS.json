@@ -16,9 +16,11 @@
       "Edron Goblin Quest",
       "Lion's Rock Quest",
       "Koshei the Deathless Quest",
-      "Fire Axe Quest"
+      "Fire Axe Quest",
+      "Dragon Tower Quest",
+      "Berserk Potion Quest"
     ],
-    "wired_explore_stages": 9,
+    "wired_explore_stages": 11,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -29,7 +31,7 @@
       "Lion's Rock Quest",
       "Koshei the Deathless Quest"
     ],
-    "wired_native_visit_anchors": 12
+    "wired_native_visit_anchors": 14
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -60,17 +62,18 @@
     "entrance_batch_postgres": "PASS Elvenbane60.850052123s;EdronGoblin60.838902318s;LionsRock61.484863385s. Actual native STEP;Premium provider refusal/replay tested on both gated entries.",
     "fragment_planner": "RED incomplete-set error8.800s -> GREEN15Python tests10.636s;4Koshei native B3 approach tiles verified;missing/duplicate/foreign claims rejected;active JSON unchanged",
     "entrance_batch_pg_commands": "cargo test dispatch --lib m01b_elvenbane_;same compiled libtest binary then selected m01b_edron_goblin_ and m01b_lions_rock_ together:2passed122.32s",
-    "clippy_current": "PASS quests+dispatch all-targets strict4m05s including Koshei and new FireAxe native test source",
+    "clippy_current": "PASS quests+dispatch all-targets strict3m01s after fixing both E0373 coordinate captures with move",
     "koshei_activation": "RED0of4active callbacks13.214s -> GREEN16Python tests17.186s;Rust profile5passed0.04s with all11callbacks",
     "koshei_postgres": "PASS m01b_koshei_four_native_visits_require_level_and_cannot_be_farmed67.641461065s:durable39refuses,40fresh succeeds,old replay no credit,4distinct source visits,replay/revisit no farming,whole completion0",
     "koshei_fixture": "QENGINE server relocation arrangement between4disconnected source floors;every credit uses productionSTEP. Administrator level setup transaction ends before commands;no quest progress seeded.",
     "koshei_lint": "Unused test import removed after run;behavior unchanged;strict Clippy next with next slice",
     "fire_axe_authoring": "RED missing active entry18.863s -> GREEN17tests19.505s;with inactive adjacent-Area resolver18tests20.974s",
     "fire_axe_profile": "5Rust profile testsPASS0.05s",
-    "fire_axe_postgres": "PENDING:cargo test dispatch --lib m01b_fire_axe_ building",
-    "area_approach_resolver": "RED unknown reference20.497s -> GREEN18tests20.974s;source markers unchanged,adjacent points/nativeground checked;not activated"
+    "fire_axe_postgres": "RED old southern-start scene55.015954915s:StartNotEnterable;revised outer approach native retry pending",
+    "area_approach_resolver": "Changed origins and undeclared distances rejected;FireAxe explicit distance2,Shadowthorn/Helheim distance1;canonical markers unchanged",
+    "three_clear_approaches": "20Python testsPASS26.589s;5Rust profile testsPASS0.04s;all3native cases building"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish FireAxe native PG;then37routes/47stages unwired.9wired,8PG-proven;M01b PARTIAL."
+  "continuation": "Finish3native clear-approach PG cases.11wired,8PG-proven;35routes/45stages unwired. M01b PARTIAL."
 }
