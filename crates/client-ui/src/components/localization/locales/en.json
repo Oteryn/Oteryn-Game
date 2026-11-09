@@ -276,5 +276,10 @@
  "Welcome back!": "Welcome back!",
  "Refresh reward": "Refresh reward",
  "Claim gift": "Claim gift",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.",
+ "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.": "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.",
+ "Crash report queued for delivery on your next play session.": "Crash report queued for delivery on your next play session.",
+ "Survey response queued for delivery on your next play session.": "Survey response queued for delivery on your next play session."
 }

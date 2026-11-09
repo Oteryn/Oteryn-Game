@@ -18,6 +18,10 @@ pub enum PlayCommand {
     LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
     Feature(oteryn_client_runtime::raw_feature::FeatureCommand),
+    SupportDelivery(
+        oteryn_client_runtime::raw_feature::FeatureCommand,
+        std::path::PathBuf,
+    ),
     ServerMechanic(oteryn_client_runtime::server_mechanic::ServerMechanicCommand),
     Step(StepDir),
     TargetWalk(oteryn_session::ActorPosition),

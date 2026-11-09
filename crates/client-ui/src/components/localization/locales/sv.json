@@ -276,5 +276,10 @@
  "Welcome back!": "Välkommen tillbaka!",
  "Refresh reward": "Uppdatera belöning",
  "Claim gift": "Hämta gåva",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den.",
+ "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.": "Vill du svara på en frivillig Oteryn-enkät med en fråga? Du kan avböja leverans efter att ha granskat svaret.",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nSkicka exakt detta svar till Oteryns spelserver vid nästa inloggade spelsession?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nSkicka exakt denna rapport till Oteryns spelserver vid nästa inloggade spelsession? Ja köar leveransen; Nej kasserar rapporten.",
+ "Crash report queued for delivery on your next play session.": "Kraschrapporten köades för nästa spelsession.",
+ "Survey response queued for delivery on your next play session.": "Enkätsvaret köades för nästa spelsession."
 }

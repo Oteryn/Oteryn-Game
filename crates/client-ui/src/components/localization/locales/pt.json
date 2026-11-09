@@ -276,5 +276,10 @@
  "Welcome back!": "Bem-vindo de volta!",
  "Refresh reward": "Atualizar recompensa",
  "Claim gift": "Resgatar presente",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo.",
+ "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer.": "Deseja responder a uma pesquisa opcional do Oteryn com uma pergunta? Você pode recusar o envio após revisar sua resposta.",
+ "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nEnviar exatamente esta resposta ao servidor do Oteryn na sua próxima sessão de jogo conectada?",
+ "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nEnviar exatamente este relatório ao servidor do Oteryn na sua próxima sessão de jogo conectada? Sim coloca na fila; Não descarta.",
+ "Crash report queued for delivery on your next play session.": "Relatório de falha na fila para a próxima sessão de jogo.",
+ "Survey response queued for delivery on your next play session.": "Resposta da pesquisa na fila para a próxima sessão de jogo."
 }
