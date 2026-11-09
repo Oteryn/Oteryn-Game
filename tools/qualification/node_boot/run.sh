@@ -428,6 +428,13 @@ VARS="$WORK/vars"
 declare -A STATUS=()
 ORDER=()
 remember() { printf '%s=%q\n' "$1" "$2" >> "$VARS"; }
+durability_report_lines() {
+  # Keep the report's legacy selectors while preserving the raw node log.
+  sed -E \
+    -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_window /DURABILITY_HOLDER_WINDOW /' \
+    -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_usage /DURABILITY_HOLDER_USAGE /' \
+    -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=pass_dropped /DURABILITY_PASS_DROPPED /'
+}
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -454,10 +461,10 @@ stage() { # name prerequisite... -- function
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
     echo "--- session close events"
     grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
-    echo "--- last node events"; grep -v 'DURABILITY_' "$node_log" 2>/dev/null | tail -n 40 || true
+    echo "--- last node events"; durability_report_lines < "$node_log" 2>/dev/null | grep -v 'DURABILITY_' | tail -n 40 || true
     # Repeated background-pass retries hide the event that took the root down.
     echo "--- node events without background retries"
-    grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused|DURABILITY_' "$node_log" 2>/dev/null | tail -n 150 || true
+    durability_report_lines < "$node_log" 2>/dev/null | grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused|DURABILITY_' | tail -n 150 || true
     echo "--- first root-not-ready"
     grep -n -m 1 -B 40 'root is not ready' "$node_log" 2>/dev/null | tail -n 41 || true
     # Which node events dominate, and what admission reported, beyond the tail above.
@@ -465,22 +472,22 @@ stage() { # name prerequisite... -- function
     grep -oE 'event=[a-z_]+' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
     # Which semantic passes kept the single holder long or retired it (NBDIAG-3).
     echo "--- durability holder reports"
-    grep -oE 'DURABILITY_[A-Z_]+( caller=[^ ]+)?( reason=[a-z_]+)?' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_[A-Z_]+( caller=[^ ]+)?( reason=[a-z_]+)?' | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- slowest durability passes"
     grep -oE 'DURABILITY_PASS_SLOW caller=[^ ]+ held_ms=[0-9]+ deadline_exceeded=[a-z]+' "$node_log" 2>/dev/null | sort -t= -k3 -n -r | head -n 25 || true
     echo "--- holder kept or dropped by a pass"
-    grep -oE 'DURABILITY_(HOLDER_STUCK|PASS_DROPPED) caller=[^ ]+( held_ms=[0-9]+)?' "$node_log" 2>/dev/null | head -n 25 || true
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_(HOLDER_STUCK|PASS_DROPPED) caller=[^ ]+( held_ms=[0-9]+)?' | head -n 25 || true
     # How busy the single holder was and who kept it (NBDIAG-5).
     echo "--- holder usage windows"
-    grep -oE 'DURABILITY_HOLDER_WINDOW .*' "$node_log" 2>/dev/null | head -n 60 || true
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_HOLDER_WINDOW .*' | head -n 60 || true
     echo "--- holder usage by caller over the run"
-    grep -oE 'DURABILITY_HOLDER_USAGE caller=[^ ]+ passes=[0-9]+ held_ms=[0-9]+ refused=[0-9]+' "$node_log" 2>/dev/null \
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_HOLDER_USAGE caller=[^ ]+ passes=[0-9]+ held_ms=[0-9]+ refused=[0-9]+' \
         | awk '{split($2,c,"=");split($3,p,"=");split($4,h,"=");split($5,r,"=");P[c[2]]+=p[2];H[c[2]]+=h[2];R[c[2]]+=r[2]} END {for (k in H) print H[k], P[k], R[k], k}' \
         | sort -rn | head -n 30 || true
     echo "--- node message kinds"
     sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- node admission and session events"
-    grep -iE 'admission|admit|refus|serve_|session_' "$node_log" 2>/dev/null | grep -vE 'quest_log_excluded|DURABILITY_' | tail -n 60 || true
+    durability_report_lines < "$node_log" 2>/dev/null | grep -iE 'admission|admit|refus|serve_|session_' | grep -vE 'quest_log_excluded|DURABILITY_' | tail -n 60 || true
     # How each gameplay connection entered and ended, and whether the shared listener task
     # was kept by one poll (NBDIAG-6).
     echo "--- connection entry and admission outcomes"

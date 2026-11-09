@@ -28,7 +28,7 @@
     },
     {
       "event": "pass_dropped",
-      "level": "info",
+      "level": "warn",
       "span": false,
       "fields": [],
       "codes": [],
