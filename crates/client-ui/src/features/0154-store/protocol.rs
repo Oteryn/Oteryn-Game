@@ -148,6 +148,7 @@ pub fn request(
 }
 pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
     panel.pending = false;
+    let coin_history = std::mem::take(&mut panel.coin_history.pending);
     if !matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -161,6 +162,10 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
                 panel.selected_offer = 0;
                 panel.catalogue = Some(v);
             })
+        }
+        COMMAND_TYPE_STORE_HISTORY_PAGE if coin_history => {
+            store::decode_coin_history_page(&result.payload)
+                .map(|page| panel.coin_history.page = Some(page))
         }
         COMMAND_TYPE_STORE_HISTORY_PAGE => {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))

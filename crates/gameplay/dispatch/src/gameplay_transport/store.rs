@@ -2,6 +2,8 @@
 //! purchase the Platform debits and the native Inbox mint delivers. Platform owns the balance,
 //! the debit and the order ledger; Game retains only the request binding and its answer
 //! (`store_purchase_requests`) and the delivery receipt of each operation.
+#[path = "store/coin_history.rs"]
+mod coin_history;
 use super::connection::AdmittedSession;
 use super::item_ref_admission::{generation_item_facts,generation_inbox_item_facts};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
@@ -167,6 +169,14 @@ pub(super) async fn execute(
                 return REJECTED;
             };
             wire::encode_purchase_result(&result)
+        }
+        wire::COMMAND_TYPE_STORE_HISTORY_PAGE => {
+            let Ok(request) = wire::decode_coin_history_request(payload) else { return REJECTED; };
+            let Some(account) = admitted.controller.map(|controller| controller.account_id) else { return REJECTED; };
+            let Some(platform) = owner.store.as_ref() else { return REJECTED; };
+            let mut client = platform.lock().await;
+            let Some(page) = coin_history::page(&mut client, &uuid_text(&account), &request).await else { return REJECTED; };
+            wire::encode_coin_history_page(&page)
         }
         wire::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE => {
             if !admitted

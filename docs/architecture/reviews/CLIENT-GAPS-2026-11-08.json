@@ -990,8 +990,9 @@
   "src": "TIBAUD-1",
   "area": "Store",
   "feature": "Purchase history i coins history",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt historii istnieje; brak pełnych filtrów, szczegółów i wszystkich rodzajów transakcji.",
+  "evidence": "apps/client/src/features/0154-store/input.rs:64 + coin_history_real_caller_preserves_signed_ledger_kinds_filters_and_cursor; crates/gameplay/dispatch/src/gameplay_transport/store/coin_history.rs:4 + coin_history_dispatch_projection_reads_all_platform_kinds_and_rejects_foreign_accounts",
   "lane": "cg_ui"
  },
  {
