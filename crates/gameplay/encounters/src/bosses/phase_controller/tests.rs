@@ -345,3 +345,61 @@ fn invalid_dependency_graphs_are_refused_before_any_native_binding() {
     assert!(progress.record_death(63).unwrap());
     assert!(progress.completed());
 }
+
+#[test]
+fn fugue_native_combat_closure_qualifies_every_source_attack_and_heal() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/creatures/definitions/spell-native-profiles.json");
+    let document: crate::content::native_gameplay::CreatureProfilesDocument =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let row = document
+        .records
+        .iter()
+        .find(|row| row.profile.target.key == "oteryn:creature.fugue")
+        .expect("production Fugue body");
+    let closure = row.attack_definitions.as_ref().expect("Fugue closure");
+    let creature = &row.profile.target;
+    crate::creature_auto_attack::MeleeSource::from_native(
+        creature,
+        0,
+        &closure.records,
+        &closure.profiles,
+        [1; 32],
+    )
+    .expect("Fugue source melee");
+    for index in 1..3 {
+        crate::creature_damage_spell::SpellSource::from_native(
+            creature,
+            index,
+            &closure.records,
+            &closure.profiles,
+            [1; 32],
+        )
+        .expect("Fugue source spell");
+    }
+    let heal = crate::self_heal_qualification::QualifiedSelfHealRules::qualify_native_parts(
+        &closure.records,
+        &closure.profiles,
+        &creature.key,
+        "oteryn:ability.creature.fugue.defense-1",
+    )
+    .expect("Fugue source healing");
+    assert_eq!(heal.magnitude_range(), (200, 650));
+    assert_eq!(heal.source_schedule(), (2000, 200000));
+    let mut detached = closure.records.clone();
+    detached.retain(|record| {
+        !matches!(
+            record,
+            crate::content::ProjectReferenceRecord::Formula { .. }
+        )
+    });
+    assert!(
+        crate::self_heal_qualification::QualifiedSelfHealRules::qualify_native_parts(
+            &detached,
+            &closure.profiles,
+            &creature.key,
+            "oteryn:ability.creature.fugue.defense-1"
+        )
+        .is_err()
+    );
+}

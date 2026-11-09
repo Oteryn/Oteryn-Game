@@ -12,5 +12,65 @@
       ]
     ],
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:2-4,46-61"
+  },
+  {
+    "key": "oteryn:quest-craft/cursed-crystal/molten-wax-2535",
+    "ingredients": [
+      5902,
+      2535
+    ],
+    "outputs": [
+      [
+        9106,
+        1
+      ]
+    ],
+    "world_station": true,
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:36-40"
+  },
+  {
+    "key": "oteryn:quest-craft/cursed-crystal/molten-wax-2537",
+    "ingredients": [
+      5902,
+      2537
+    ],
+    "outputs": [
+      [
+        9106,
+        1
+      ]
+    ],
+    "world_station": true,
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:36-40"
+  },
+  {
+    "key": "oteryn:quest-craft/cursed-crystal/molten-wax-2539",
+    "ingredients": [
+      5902,
+      2539
+    ],
+    "outputs": [
+      [
+        9106,
+        1
+      ]
+    ],
+    "world_station": true,
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:36-40"
+  },
+  {
+    "key": "oteryn:quest-craft/cursed-crystal/molten-wax-2541",
+    "ingredients": [
+      5902,
+      2541
+    ],
+    "outputs": [
+      [
+        9106,
+        1
+      ]
+    ],
+    "world_station": true,
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:36-40"
   }
 ]

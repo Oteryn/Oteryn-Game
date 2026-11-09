@@ -4,6 +4,9 @@ use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 use crate::monster_owner_cycle::respawn_job::{MonsterRespawnJob, RespawnExit};
 use oteryn_foundation::CancellationToken;
 
+#[path = "world_respawns/elemental.rs"]
+pub(super) mod elemental;
+
 pub(super) trait RespawnWake: OwnerClock {
     fn sleep_until(&self, due: SemanticTimeMicros) -> impl Future<Output = ()> + Send;
 }
@@ -99,6 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<bool, RespawnExit> {
         use crate::durability::boss_encounter::{BossClockClaim, BossClockError, BossClockKey};
         let mut checked_all = self.grizzly_boss_pass().await?;
+        checked_all &= self.elemental_spawn_pass().await?;
         let (binding, spawns) = {
             let runtime = self.runtime.lock().await;
             runtime.owner_fence().map_err(|_| RespawnExit::StaleOwner)?;
@@ -109,6 +113,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(true);
         };
         for spawn in spawns {
+            if spawn.is_elemental_arrival() {
+                continue;
+            }
             if timers
                 .get(&spawn.key)
                 .is_some_and(|due| due.is_none_or(|due| due > tokio::time::Instant::now()))

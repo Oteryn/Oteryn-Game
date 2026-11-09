@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 mod activity_scope;
+mod diagonal;
 mod own_identity;
 
 /// What the session task reports to the shell.
@@ -39,6 +40,7 @@ pub struct Pushed {
     pub activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
+    pub personal_map_marks: Option<oteryn_client_ui::personal_map_marks::PersonalMapMarks>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
@@ -72,6 +74,9 @@ impl Pushed {
         if newer.activity_scope.is_some() {
             *self = Self::default();
         }
+        if newer.scope_changed {
+            self.personal_map_marks = None;
+        }
         self.scope_changed |= newer.scope_changed;
         self.activity_scope = newer.activity_scope.or(self.activity_scope.take());
         super::feature_0023_presentation::protocol::absorb_visuals(
@@ -89,6 +94,7 @@ impl Pushed {
         self.served_channel = newer.served_channel.or(self.served_channel);
         self.world_clock = newer.world_clock.or(self.world_clock);
         self.world_weather = newer.world_weather.or(self.world_weather);
+        self.personal_map_marks = newer.personal_map_marks.or(self.personal_map_marks.take());
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
         self.own_identity = newer.own_identity.or(self.own_identity);
@@ -125,6 +131,7 @@ pub(super) struct Mailbox {
     pub(super) scope_pending: bool,
     pub(super) scope_initialize: bool,
     pub(super) command_receiver: std::sync::Weak<Mutex<UnboundedReceiver<PlayCommand>>>,
+    pub(super) diagonal_selected: bool,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
     pub(super) creature_push_selected: bool,
@@ -476,7 +483,8 @@ pub struct PlayLink {
 impl PlayLink {
     pub fn request(&self, direction: StepDir) {
         let mailbox = lock(&self.mailbox);
-        if mailbox.world_input_blocked() {
+        if mailbox.world_input_blocked() || (direction.is_diagonal() && !mailbox.diagonal_selected)
+        {
             return;
         }
         // A closed task has already reported or will report `Ended`.

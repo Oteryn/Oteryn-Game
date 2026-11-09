@@ -4,6 +4,7 @@ use super::{ComposedFreshAdmission, SeamRooms};
 use crate::durability::activity_handoff::boss_room::BossRoomDefinition;
 use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityRefusal};
 use crate::foundation::{ChannelRuntimeV1, RuntimeScopeRefV1};
+mod capacity;
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     /// A pinned source map uses its own frame. Allocation and readiness still
@@ -287,6 +288,27 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             }
             return Err(ActivityRefusal::ContentUnavailable);
         };
+        // Selected recipe record23 s5/s6: do not instantiate the timed room
+        // without its actual once-only native death/completion consumer.
+        if template.source_path() == "content/encounters/bosses/selected-first-dragon.json" {
+            let key = "oteryn:quest-transition/native-kills/first-dragon-selected";
+            let counter = oteryn_gameplay_quests::quest::native_kills::counter(key)
+                .ok_or(ActivityRefusal::ContentUnavailable)?;
+            let catalogue = self
+                .quest_catalogue
+                .as_ref()
+                .ok_or(ActivityRefusal::ContentUnavailable)?;
+            if counter.creature != template.creature_key()
+                || counter.gate_value() != 2
+                || counter.maximum != 1
+                || counter.completion_track().is_none()
+                || catalogue
+                    .transition(key)
+                    .is_none_or(|transition| !transition.completes)
+            {
+                return Err(ActivityRefusal::ContentUnavailable);
+            }
+        }
         let cell = |p: crate::content::LogicalCell| {
             crate::durability::character_last_position::LastPositionCell {
                 x: p.x,
@@ -409,7 +431,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     assignment.ownership_generation,
                     assignment.source_revision,
                     &assignment.decision_identity,
-                    template.maximum_players() + 1,
+                    capacity::for_template(template)?,
                     pin,
                 )
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;

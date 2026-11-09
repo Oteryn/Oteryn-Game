@@ -1,7 +1,7 @@
 //! An inventory collection is a read-only custody predicate, never a hand-in.
 use super::{BoundQuest, QuestTransition};
 use crate::quest::world_callbacks::Storage;
-use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
+use crate::quest::{QuestComparison, QuestEffect};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -65,11 +65,7 @@ impl Collection {
                     .tracks
                     .iter()
                     .find(|track| track.key == storage.track)
-                    .is_none_or(|track| {
-                        storage.minimum < track.minimum
-                            || storage.maximum > track.maximum
-                            || !(track.minimum..=track.maximum).contains(&storage.set)
-                    })
+                    .is_none_or(|track| !super::progress_storage::valid(storage, track, false))
             {
                 return Err("collection foreign/unbounded track".into());
             }
@@ -96,14 +92,7 @@ impl Collection {
                 .map(|storage| QuestEffect {
                     track: storage.track.clone(),
                     from: QuestComparison::Between(storage.minimum, storage.maximum),
-                    effect: if storage.preserve {
-                        QuestEffectKind::Add(0)
-                    } else {
-                        QuestEffectKind::SetWithBinding {
-                            value: storage.set,
-                            binding,
-                        }
-                    },
+                    effect: super::progress_storage::effect(storage, binding),
                 })
                 .collect(),
         })

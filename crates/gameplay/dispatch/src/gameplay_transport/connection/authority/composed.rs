@@ -853,13 +853,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         let facing = match direction {
             StepDirection::North => MovementFacing::North,
-            StepDirection::East => MovementFacing::East,
+            StepDirection::East | StepDirection::NorthEast | StepDirection::SouthEast => {
+                MovementFacing::East
+            }
             StepDirection::South => MovementFacing::South,
-            StepDirection::West => MovementFacing::West,
-            StepDirection::NorthEast => MovementFacing::North,
-            StepDirection::SouthEast => MovementFacing::South,
-            StepDirection::SouthWest => MovementFacing::South,
-            StepDirection::NorthWest => MovementFacing::North,
+            StepDirection::West | StepDirection::NorthWest | StepDirection::SouthWest => {
+                MovementFacing::West
+            }
         };
         movement.commit_turn(expected, facing).is_ok()
     }
@@ -1065,6 +1065,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             })
     }
 
+    async fn use_quest_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let corpse = match target {
+            Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
+                Some(id)
+            }
+            _ => None,
+        };
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source, corpse)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_event_item(
         &self,
         actor: ExactActorRef,
@@ -1100,7 +1124,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source)
+            .use_carried_quest_item(actor, command, &intent, source, None)
             .await?
         {
             return Ok(Some(outcome));

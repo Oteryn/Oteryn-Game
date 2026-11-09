@@ -6,10 +6,27 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(test)]
+mod capture_tests;
 mod colours_peer;
+mod corpse;
+mod inventory;
+pub use corpse::CorpseTarget;
+#[cfg(test)]
+mod corpse_tests;
 #[cfg(test)]
 mod peer_tests;
+#[cfg(test)]
+mod qready1_craft_tests;
+#[cfg(test)]
+mod recipe_tests;
 mod state_ops;
+pub use inventory::InventoryRequirement;
+#[cfg(test)]
+mod inventory_tests;
+mod temporal_payment;
+#[cfg(test)]
+mod temporal_payment_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
 fn is_false(value: &bool) -> bool {
@@ -38,29 +55,32 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
-    /// Literal source-authored text initialized by this reward's existing MINT.
+    /// Literal initial text on the root or its ordered container children.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
+    pub text: Option<RewardText>,
     /// Independent top-level items committed in the same quest receipt.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub additional: Vec<ItemAmount>,
 }
 
 impl ItemReward {
-    pub(super) fn valid_literal_text(&self) -> bool {
-        self.text.as_deref().is_none_or(|text| {
-            self.count == 1
-                && self.contents.is_empty()
-                && !text.is_empty()
-                && text.len() <= 7_996
-                && text.chars().count() <= 4_000
-                && !text.contains('\0')
-        })
+    /// Validate all initial text before constructing a durable MINT plan.
+    pub fn valid_literal_text(&self) -> bool {
+        self.text
+            .as_ref()
+            .is_none_or(|text| text.valid_for(self.count, &self.contents))
     }
 }
 
+mod reward_text;
+pub use reward_text::{RewardContentText, RewardText};
+
 #[cfg(test)]
 mod literal_text_tests;
+#[cfg(test)]
+mod native_claim_tests;
+#[cfg(test)]
+mod reward_contents_text_tests;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -135,12 +155,47 @@ pub enum ActorConditionRequirement {
 
 pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
 
+/// Inclusive native bounds for an exact self-target carried quest action.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SelfTarget {
+    pub minimum: super::world_callbacks::Position,
+    pub maximum: super::world_callbacks::Position,
+}
+
+impl SelfTarget {
+    pub fn contains(&self, x: i32, y: i32, floor: i16) -> bool {
+        floor == -i16::from(self.minimum.floor)
+            && (i32::from(self.minimum.x)..=i32::from(self.maximum.x)).contains(&x)
+            && (i32::from(self.minimum.y)..=i32::from(self.maximum.y)).contains(&y)
+    }
+
+    fn valid(&self) -> bool {
+        self.minimum.floor == self.maximum.floor
+            && (-15..=0).contains(&self.minimum.floor)
+            && self.minimum.x <= self.maximum.x
+            && self.minimum.y <= self.maximum.y
+            && self.maximum.x - self.minimum.x <= 16
+            && self.maximum.y - self.minimum.y <= 16
+    }
+}
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct AchievementProgress {
     pub key: String,
     pub target: u32,
+}
+
+/// Immutable native RewardClaim authority. The shared map binder proves the
+/// semantic digest before the physical USE owner may call the reward writer.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct NativeClaimBinding {
+    pub key: String,
+    pub revision: String,
+    pub authority_sha256: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -152,15 +207,32 @@ pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_claim: Option<NativeClaimBinding>,
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    /// Exact second carried operand; its selected instance must accompany the ingress.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_target: Option<String>,
     /// Read-only condition on the selected other live player, checked atomically.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub peer_requires: Option<TrackRequirement>,
-    /// Exact native live creature selected by a carried quest tool.
+    /// Exact native species; live unless a source corpse predicate is provided.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    /// Exact current self entity, inside the source-authored native area.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub self_target: Option<SelfTarget>,
+    /// Read-only source corpse sampling retains its native decay and contents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corpse_target: Option<CorpseTarget>,
+    /// Remove the exact living target only after its tool/progress receipt commits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub capture_creature: bool,
+    /// Sample the exact original fresh Ground corpse instead of a live creature.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub fresh_corpse: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -196,6 +268,9 @@ pub struct RewardCallback {
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
+    /// Inclusive carried-quantity guards, rechecked before a fresh reward write.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inventory: Vec<InventoryRequirement>,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -205,9 +280,46 @@ pub struct RewardCallback {
     pub achievement: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub achievement_progress: Vec<AchievementProgress>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub magic_effects: Vec<super::npc_magic::Cue>,
     pub reply: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failure_reply: Vec<String>,
+    /// Reuse the quest writer's fenced XP obligation, alongside the hand-in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
     pub sources: Vec<String>,
 }
+
+impl RewardCallback {
+    /// Syntax-only reset shape. Current save authority is resolved by the writer;
+    /// the catalogue separately validates owned tracks and their initial values.
+    pub(crate) fn is_save_restart_only(&self) -> bool {
+        if self.key != super::shared_world_progress::save_event_restart_key(&self.quest)
+            || self.storage.is_empty()
+            || self
+                .storage
+                .iter()
+                .any(|state| state.preserve || state.increment || state.at_least)
+        {
+            return false;
+        }
+        let pure = serde_json::from_value::<Self>(serde_json::json!({
+            "key":self.key,"quest":self.quest,"npc":self.npc,"keywords":self.keywords,
+            "topic":self.topic,"next_topic":self.next_topic,"storage":self.storage,
+            "take":[],"give":null,"outfit":null,"achievement":null,
+            "reply":self.reply,"sources":self.sources
+        }));
+        pure.is_ok_and(|callback| callback == *self)
+    }
+}
+
+#[cfg(test)]
+mod fresh_corpse_tests;
+#[cfg(test)]
+mod ice_paint_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -225,13 +337,36 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    fn valid_carried_inputs(&self) -> bool {
+        let selected = |key: &str| {
+            self.take
+                .iter()
+                .any(|input| input.item == key && input.count == 1 && input.fluid_subtype.is_none())
+        };
+        match (&self.carried_item, &self.carried_target) {
+            (Some(source), Some(target)) => {
+                source != target
+                    && selected(source)
+                    && selected(target)
+                    && self.give.is_some()
+                    && self.peer_requires.is_none()
+                    && self.creature_target.is_none()
+            }
+            (None, Some(_)) => false,
+            (Some(source), None) => {
+                matches!(self.take.as_slice(), [input]
+                if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
+                    && (self.give.is_none() || self.creature_target.is_some())
+            }
+            (None, None) => true,
+        }
+    }
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
-    /// Storage-free paid exchanges can repeat under distinct CommandRefs.
+    /// Paid exchanges and exact carried recipes repeat under distinct CommandRefs.
     pub fn is_paid_exchange(&self) -> bool {
-        self.storage.is_empty()
-            && self.state_ops.is_empty()
+        ((self.storage.is_empty() && self.state_ops.is_empty()) || self.carried_target.is_some())
             && self.participants.is_empty()
             && !self.take.is_empty()
             && self.give.is_some()
@@ -239,7 +374,11 @@ impl RewardCallback {
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        (!self.take.is_empty() && self.give.is_some())
+        temporal_payment::guarded(self)
+            || (self.repeatable
+                && (!self.take.is_empty() || self.fee.is_some())
+                && (self.give.is_some() || self.experience.is_some()))
+            || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
                     && target.sex.is_none()
@@ -273,6 +412,8 @@ struct TrackDeclaration {
 struct Document {
     schema: u32,
     #[serde(default)]
+    item_disguises: Vec<super::item_disguises::Rule>,
+    #[serde(default)]
     tracks: Vec<TrackDeclaration>,
     callbacks: Vec<RewardCallback>,
 }
@@ -280,10 +421,20 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m09-rookie.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -306,25 +457,49 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    parse_documents(DOCUMENTS).map(|document| document.callbacks)
+    embedded_document().map(|document| document.callbacks)
+}
+
+fn embedded_document() -> Result<Document, String> {
+    let mut document = parse_documents(DOCUMENTS)?;
+    document
+        .callbacks
+        .extend(super::world_change_journals::npc_callbacks()?);
+    validate_document_with_capacity(document, 256 * DOCUMENTS.len())
+}
+
+pub(super) fn item_disguises() -> Result<Vec<super::item_disguises::Rule>, String> {
+    parse_documents(DOCUMENTS).map(|document| document.item_disguises)
 }
 
 fn parse_documents(sources: &[&str]) -> Result<Document, String> {
     let mut combined = Document {
         schema: 1,
+        item_disguises: Vec::new(),
         tracks: Vec::new(),
         callbacks: Vec::new(),
     };
+    if sources.is_empty() || sources.len() > DOCUMENTS.len() {
+        return Err("reward callback source bounds".into());
+    }
     for source in sources {
         let document: Document = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        if document.callbacks.len() > 256 || document.tracks.len() > 256 {
+            return Err("reward callback bounds".into());
+        }
         if document.schema != 1 {
             return Err("reward callback schema".into());
         }
+        combined.item_disguises.extend(document.item_disguises);
         combined.tracks.extend(document.tracks);
         combined.callbacks.extend(document.callbacks);
     }
     colours_peer::append_after_opening(&mut combined)?;
-    validate_document(combined)
+    if sources.len() == 1 {
+        validate_document(combined)
+    } else {
+        validate_document_with_capacity(combined, 256 * sources.len())
+    }
 }
 
 pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
@@ -336,6 +511,16 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
 }
 
 fn validate_document(document: Document) -> Result<Document, String> {
+    validate_document_with_capacity(document, 256)
+}
+
+fn validate_document_with_capacity(
+    document: Document,
+    capacity: usize,
+) -> Result<Document, String> {
+    if !super::item_disguises::valid(&document.item_disguises) {
+        return Err("invalid quest item disguises".into());
+    }
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
         value.len() <= maximum
@@ -348,7 +533,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
     };
     let item =
         |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
-    if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
+    if document.schema != 1
+        || document.callbacks.len() > capacity
+        || document.tracks.len() > capacity
+    {
         return Err("reward callback bounds".into());
     }
     let mut declarations = BTreeSet::new();
@@ -461,7 +649,27 @@ fn validate_document(document: Document) -> Result<Document, String> {
         if c.map_mark
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
-            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || !(slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+                || (c.is_save_restart_only()
+                    && slug(
+                        &c.key,
+                        super::shared_world_progress::SAVE_EVENT_RESTART_PREFIX,
+                        b"._/-",
+                        128,
+                    )))
+            || c.self_target.as_ref().is_some_and(|area| {
+                !area.valid()
+                    || c.carried_item.is_none()
+                    || c.carried_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.creature_target.is_some()
+                    || c.storage.iter().all(|s| s.preserve)
+            })
+            || c.corpse_target
+                .as_ref()
+                .is_some_and(|target| !target.valid(c))
+            || (c.capture_creature && c.creature_target.is_none())
+            || (c.fresh_corpse && c.creature_target.is_none())
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -478,24 +686,41 @@ fn validate_document(document: Document) -> Result<Document, String> {
             })
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
-            || !slug(&c.npc, "oteryn:npc.", b"_", 128)
-            || c.carried_item.as_ref().is_some_and(|item| {
-                c.take
-                    != [ItemAmount {
-                        item: item.clone(),
-                        count: 1,
-                        fluid_subtype: None,
-                    }]
-                    || (c.give.is_some() && c.creature_target.is_none())
-                    || c.fee.is_some()
-                    || !c.requires_actor_conditions.is_empty()
-            })
+            || match &c.world_claim {
+                None => !slug(&c.npc, "oteryn:npc.", b"_", 128),
+                Some(binding) => {
+                    !c.npc.is_empty()
+                        || !c.keywords.is_empty()
+                        || c.topic != 0
+                        || c.next_topic != 0
+                        || c.carried_item.is_some()
+                        || c.fee.is_some()
+                        || c.storage.is_empty()
+                        || !slug(&binding.key, "oteryn:reward-claim.", b"._/-", 128)
+                        || binding.revision.is_empty()
+                        || binding.revision.len() > 128
+                        || !binding
+                            .revision
+                            .bytes()
+                            .all(|b| b.is_ascii_alphanumeric() || b"._/:-".contains(&b))
+                        || binding.authority_sha256.len() != 64
+                        || !binding
+                            .authority_sha256
+                            .bytes()
+                            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                }
+            }
+            || !c.valid_carried_inputs()
+            || c.carried_item.is_some()
+                && (c.fee.is_some() || !c.requires_actor_conditions.is_empty())
             || c.forbids_outfits.len() > 8
             || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
             || c.forbids_outfits
                 .iter()
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
+            || c.magic_effects.len() > 8
+            || c.magic_effects.iter().any(|cue| cue.effect_id().is_none())
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
@@ -541,6 +766,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
             || (!c.value_only_guarded()
+                && !c.is_save_restart_only()
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
@@ -591,11 +817,33 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || c.keywords.is_empty()
+            || (c.keywords.is_empty() && c.world_claim.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
+            })
+            || c.experience
+                .is_some_and(|amount| !(1..=100_000_000).contains(&amount))
+            || (c.repeatable
+                && ((c.take.is_empty() && c.fee.is_none())
+                    || (c.give.is_none() && c.experience.is_none())
+                    || c.cosmetic_targets().next().is_some()
+                    || c.achievement.is_some()
+                    || !c.achievement_progress.is_empty()))
+            || c.inventory.len() > 8
+            || c.inventory
+                .iter()
+                .map(|rule| &rule.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.inventory.len()
+            || c.inventory.iter().any(|rule| {
+                !slug(&rule.item, "oteryn:item.", b"._/:-", 256) || rule.minimum > rule.maximum
+            })
+            || c.failure_reply.len() > 8
+            || c.failure_reply.iter().any(|line| {
+                line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
             || c.reply.is_empty()
             || c.achievement_progress.len() > 8
@@ -631,9 +879,16 @@ fn validate_document(document: Document) -> Result<Document, String> {
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
     if callback.minimum_level.is_none()
+        && callback.inventory.is_empty()
+        && callback.world_claim.is_none()
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
+        && callback.carried_target.is_none()
+        && callback.self_target.is_none()
+        && !callback
+            .key
+            .starts_with("oteryn:quest-reward/worldchg-m31/")
     {
         return Ok(None);
     }
@@ -641,9 +896,22 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     let mut terms = serde_json::to_value(callback).map_err(|e| e.to_string())?;
     let terms = terms.as_object_mut().ok_or("reward terms")?;
     terms.remove("reply");
+    terms.remove("failure_reply");
     terms.remove("sources");
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
+}
+
+/// Recipe receipts have their own selected-input proof, separate from one-input tools.
+/// Legacy tool plans retain their exact serialized shape.
+pub fn durable_plan(callback: &RewardCallback) -> Result<serde_json::Value, String> {
+    let mut value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    if callback.carried_target.is_some() {
+        let object = value.as_object_mut().ok_or("recipe plan")?;
+        let source = object.remove("carried_item").ok_or("recipe source")?;
+        object.insert("recipe_source".into(), source);
+    }
+    Ok(value)
 }
 
 pub fn participant_key(callback: &str, index: usize) -> String {
@@ -653,7 +921,7 @@ pub fn participant_key(callback: &str, index: usize) -> String {
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let document = parse_documents(DOCUMENTS)?;
+    let document = embedded_document()?;
     for declaration in document.tracks {
         let declared = QuestTrack {
             key: declaration.key,
@@ -788,19 +1056,28 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 from: QuestComparison::Between(state.minimum, state.maximum),
                 effect: if state.preserve {
                     QuestEffectKind::Add(0)
-                } else if let Some(binding) = binding.filter(|_| Some(index) == bound_effect) {
-                    QuestEffectKind::SetWithBinding {
-                        value: state.set,
-                        binding,
-                    }
                 } else {
-                    QuestEffectKind::Set(state.set)
+                    match (
+                        state.at_least,
+                        binding.filter(|_| Some(index) == bound_effect),
+                    ) {
+                        (true, Some(binding)) => QuestEffectKind::RaiseToWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        (false, Some(binding)) => QuestEffectKind::SetWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        (true, None) => QuestEffectKind::RaiseTo(state.set),
+                        (false, None) => QuestEffectKind::Set(state.set),
+                    }
                 },
             })
             .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
             .collect(),
         completes: callback.completes,
-        experience: None,
+        experience: callback.experience,
     })
 }
 
@@ -1249,9 +1526,11 @@ mod tests {
                 "oteryn:quest.outfit_and_addon_quests",
                 "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
             ),
+            // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
-                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+                // M47 binds four source counters plus the durable roll; absence stays -1.
+                "a23884420cacf0330e359241e5fb30715e768051cd3ffd4b11985cb19ed3b3af",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
@@ -1262,6 +1541,23 @@ mod tests {
                 .catalogue()
                 .definition_hash(key)
                 .ok_or("published quest")?;
+            // Citizen source scopes promote the shared quest through the existing
+            // exact-predecessor adapter; its published hash must remain loadable.
+            let hash = if key == "oteryn:quest.outfit_and_addon_quests" {
+                let legacy = lowered
+                    .catalogue()
+                    .npc_legacy
+                    .get(key)
+                    .ok_or("published Citizen predecessor")?
+                    .0;
+                assert_ne!(
+                    hash, legacy,
+                    "source scopes must bind the active definition"
+                );
+                legacy
+            } else {
+                hash
+            };
             assert_eq!(
                 hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
                 expected,
@@ -1313,6 +1609,12 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod qnpcfx_tests;
+
+#[cfg(test)]
+mod m10_magic_tests;
 
 #[cfg(test)]
 #[path = "reward_callbacks/readable_text_tests.rs"]

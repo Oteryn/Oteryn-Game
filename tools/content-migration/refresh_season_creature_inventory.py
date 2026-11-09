@@ -36,7 +36,11 @@ def generated(root):
         raise ValueError('Cake source schedule inventory')
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
-    if len(rows) != 1863 + 1 or len(native) != len(rows) or schedules != 7201 + 4:
+    # M28's native-only Fugue is separate from the canonical Cake corpus.
+    # Admit its four schedules only after exact full-body source qualification.
+    from engenc2_fugue_profile import inventory_extension
+    extra_native, extra_schedules = inventory_extension(root, native)
+    if len(rows) != 1863 + 1 or len(native) != len(rows) + extra_native or schedules != 7201 + 4 + extra_schedules:
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
     result = {}
 

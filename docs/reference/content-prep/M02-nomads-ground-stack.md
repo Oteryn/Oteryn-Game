@@ -1,8 +1,8 @@
-# M02 — ordered Ground admission (first engine slice)
+# M02 — ordered Ground admission and Nomads window
 
-The current qmech INDEX reports M02 OPEN / claim none. SRV7 takes the
-read-only Ground stack prerequisite; no migration or protocol number is used.
-This slice does not claim that Nomads Land is fully wired or playable.
+SRV7 contributes the native Ground prerequisite and framed-use regression.
+ENGNPC2 supplies the shared rule owner; SRVWLD supplies the two-cell durable
+readset and source window binding. No SRV7 migration or protocol number is used.
 
 Checked game intent: `content/quests/definitions/quests-00300-00351.json`,
 `oteryn:quest.authored.nomads_land_quest`, recipe stage `s4`, explicitly requires
@@ -39,3 +39,38 @@ NEED-FETCH (wiki-pending; exact requests refused):
 The retained recipe source references revision 1002600 (spoiler) and 842864
 (base). Remaining consumer qualification: exact source window/cabinet placement,
 crate/amphora identities and arrangement, plus the production quest binding.
+
+## Qmech merge reconciliation
+
+The 20:25 UTC fetch advanced qmech to `3c06a2442`, whose updated INDEX assigns
+M02 to ENGNPC2 and includes the shared `quest::ground_stack` rule owner. This
+lane releases full M02 consumer work to that owner. The native callback adapter
+now delegates ordered comparison to that shared owner, including exact definition
+revision and positive ordered observation ordinals; no second comparison rule is
+retained. All three SRV7 regression behaviours remain tested. Ground predicates
+are explicitly value-free even after M07 admits *static* personal trial predicates:
+a mutable read-only projection cannot authorize a personal durable write.
+
+The subsequent qmech merge adds ENGNPC2's fenced durable Ground participant and
+assigns M02 jointly to ENGNPC2+SRV7. The public `{item,count}` wire shape is retained;
+both native and durable readers now delegate to the shared comparison rule with
+actual definition revisions and append ordinals. Personal progress requires world
+admission and the durable participant; an unfenced read-only declaration still
+fails parsing. Source quest window/cabinet placement qualification remains separate.
+
+## Source window qualification received with qmech 0326dc2e5
+
+`SRVWLD-M02.md` records the fetched Arito's Task Quest source, lines 115–117,
+including the body SHA-256 and donor Item identities. The source specifies two
+piles, each with two crates topped by a large amphora (or three crates). The
+registered `oteryn:quest-callback/m02/nomads-land/window` uses crate 2471 and
+large amphora 2904 beside the committed sandstone window 1744 at
+(33216,32855,-9). Its coordinates are an explicitly recorded Oteryn placement.
+This supersedes the earlier outstanding source-placement questions above.
+
+The merged native reader preserves current Item-definition revisions and actual
+persisted append ordinals. The durable callback checks all required cells once,
+locking Item identities before the existing Ground owner lock, while retaining
+the recovery/scope transaction proof. The source window has no personal reward
+or fabricated quest progress. Focused qualification includes
+`m02_nomads_window_postgres_stateless_observer_requires_the_real_stack`.

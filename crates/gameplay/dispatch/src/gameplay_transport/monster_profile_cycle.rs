@@ -9,6 +9,8 @@ use oteryn_simulation_determinism::GameplayDecisionRoot;
 pub(super) mod native_callbacks;
 pub(super) mod physical_spell;
 pub(in crate::gameplay_transport) mod rotten_area;
+pub(super) mod rotten_waves;
+pub(super) mod source_heals;
 mod source_items;
 
 pub(super) fn publish_native_facing(
@@ -164,6 +166,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     });
                     physical_spell::read_reference_parties(&mut tx, &authority, owner.root, runtime, states, required).await
                 } else { Default::default() };
+                let wave_enabled = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+                    && room.source_world().is_some() && rotten_waves::has_boss(runtime);
+                let wave_taints = if wave_enabled {
+                    let sessions = runtime.positioned_actor_census()
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                        .into_iter().filter_map(|(_, _, session)| session).collect::<Vec<_>>();
+                    crate::durability::quest_state::rotten_blood::room_taints::read_in_transaction(
+                        &mut tx, &authority, owner.holder, &sessions, native.source_digest(),
+                    ).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                } else { Vec::new() };
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
@@ -316,6 +328,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                     }
                 }
+                if wave_enabled { rotten_waves::warm(runtime, &mut map).await; }
                 let mut reader = NativeMonsterThinkRead::new(
                     map,
                     native,
@@ -370,6 +383,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|profile| &profile.target)
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
+                let waves = &mut states.rotten_waves;
                 let mut proposals = Vec::new();
                 let native_reports = if primal_pending.as_ref().is_some_and(|pending|pending.ai_known()) { Vec::new() } else { table
                     .run_reserved_current_thinks_borrowed(
@@ -389,7 +403,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 pending.record_report(actor,selected);
                             } else { proposals.extend(selected); }
                             summons
-                                .consume_report(runtime, table, native, actor, report, reader, now)
+                                .consume_report(runtime, table, native, actor, report, reader, now);
+                            if wave_enabled && waves.consume(runtime, table, native, actor, report,
+                                reader.map.view(), room, &wave_taints, now).is_err() {
+                                eprintln!("oteryn-game-server event=rotten_wave_refused current_owner=true");
+                            }
                         },
                     )
                     .await };
@@ -418,6 +436,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 drop(reader);
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
+                source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
                 owner
                     .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now, native_health_names)
                     .await?;

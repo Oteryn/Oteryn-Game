@@ -33,7 +33,7 @@ mod catalogue;
 mod entry;
 mod quest_encounter;
 #[cfg(any(test, feature = "test-support"))]
-pub use quest_encounter::fixture_first_dragon_trials_permit;
+pub use quest_encounter::{fixture_first_dragon_trials_permit, fixture_first_dragon_entry_permit};
 mod outburst;
 mod primal;
 mod rotten_blood;
@@ -262,7 +262,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, false).await
+        self.enter_inner(authority, node, request, false, &super::quest_state::grizzly::NoGrizzlyPremium).await
     }
 
     pub async fn enter_boss_room(
@@ -271,15 +271,27 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, true).await
+        self.enter_inner(authority, node, request, true, &super::quest_state::grizzly::NoGrizzlyPremium).await
     }
 
-    async fn enter_inner(
+    /// Join the selected quest's Premium predicate to the same admission transaction.
+    pub async fn enter_boss_room_with_premium<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityEnterRequest,
+        premium: &G,
+    ) -> Result<ActivityEnterOutcome> {
+        self.enter_inner(authority, node, request, true, premium).await
+    }
+
+    async fn enter_inner<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         mut request: ActivityEnterRequest,
         boss_room: bool,
+        premium: &G,
     ) -> Result<ActivityEnterOutcome> {
         request
             .participants
@@ -294,16 +306,16 @@ impl ActivityHandoffOwner {
             .map_err(|_| DurabilityError::Unavailable)?;
         let root = self.root.clone();
         let node = node.clone();
-        let mut context = ();
+        let mut premium = premium;
         self.root
             .try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, _context| {
+            .run_with_context(&mut premium, move |holder, deadline, premium| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = entry::enter_in_transaction(
-                        &mut tx, &root, &node, &request, boss_room, None,
+                        &mut tx, &root, &node, &request, boss_room, None, *premium,
                     )
                     .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {
@@ -463,6 +475,22 @@ async fn now_ms(tx: &mut Transaction<'_, Postgres>) -> Result<i64> {
             .fetch_one(&mut **tx)
             .await?,
     )
+}
+
+// The existing root-scoped fixture quest clock can advance this quest's room
+// deadline without changing source policy or sleeping for the donor's twenty minutes.
+async fn quest_activity_now_ms(tx: &mut Transaction<'_, Postgres>, root: &DurabilityRoot) -> Result<i64> {
+    let now = now_ms(tx).await?;
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(clock) = root.quest_test_clock_handle() {
+        let seconds = clock.load(std::sync::atomic::Ordering::Acquire);
+        if seconds >= 0 {
+            return seconds.checked_mul(1000).ok_or(DurabilityError::InvalidStoredState);
+        }
+    }
+    #[cfg(not(any(test, feature = "test-support")))]
+    let _ = root;
+    Ok(now)
 }
 
 /// Publication history and session-identity history are separate from live mirrors.

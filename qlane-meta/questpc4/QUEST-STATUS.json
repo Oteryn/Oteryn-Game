@@ -4062,7 +4062,7 @@
       },
       "shared_world_switch_personal_expiry": {
         "status": "QUALIFIED",
-        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
+        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0→1, Diprath<=1→2, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
         "migration": "1258_quest_source_expiry.sql",
         "postgres": {
           "status": "GREEN",
@@ -9667,7 +9667,7 @@
         "requires_world_admission_unknown_field": 51.489982592,
         "renamed_stripped_binding_committed_protected_story": 89.599955017
       },
-      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
+      "shadow_actual": "Ok(Committed), story-1→1 and character revision1→2 through weaker generic API; this is the concrete gap, not a hypothetical"
     },
     "implemented": [
       "opening_only durable work only on opening, restricted value-free close",
@@ -10930,15 +10930,479 @@
       ],
       "whole_treasure_hunt_done": false,
       "source": "n2 61a1f24af source tools/tests restored; packet regenerated from pinned local donor"
+    },
+    "latest_revalidation": {
+      "after_qmech_sync": "3c06a2442",
+      "test": "l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+      "postgres_version": "18.6",
+      "seconds": 61.95,
+      "completed_marker_seconds": 61.90461723,
+      "log": "/tmp/questpc4-m07-area-dispatch-final.log"
     }
   },
   "qmech_m07": {
     "status": "IN_PROGRESS",
-    "slice": "Bound native world predicates and own-quest completion",
-    "code_commit": "96a1d1cfb",
+    "slice": "Native-bound world predicates/own completion plus current-carrier area-clear",
     "red": "/tmp/questpc4-m07-red.log: 2 failed (invalid callback; unknown effect)",
     "green": "/tmp/questpc4-m07-green2.log: 15 passed, including 3 M07 tests",
-    "clippy": "/tmp/questpc4-m07-clippy.log: all targets passed 12.29s",
-    "remaining": "Source-specific lifecycle projection, five quest bindings and PG scenarios"
+    "clippy": "quests+dispatch all-targets/all-features -Dwarnings PASS 4m01s",
+    "remaining": "Source-specific lifecycle resets, puzzle operations and five quest bindings/PG routes; do not mark M07 DONE from an engine slice",
+    "qmech_sync": "3c06a2442",
+    "area_clear_model_tests": "4 passed, 0.044s; /tmp/questpc4-m07-area-quests-final.log",
+    "area_clear_runtime_test": "m07_area_clear_observes_live_carrier_and_refuses_partial_census: PASS 0.018s",
+    "integration_regressions": {
+      "mead_postgres_version": "18.6",
+      "mead_nextest_seconds": 61.95,
+      "mead_completed_marker_seconds": 61.90461723,
+      "equipment_pin_seconds": 65.979
+    },
+    "authoring_checks": {
+      "checks_seconds": 291.955,
+      "unit_modules_counted": 111,
+      "units_seconds": 489.519,
+      "existing_optional_skips_counted": 8,
+      "content_tree_seconds": 185.202,
+      "all_exit_codes": 0
+    },
+    "resource_recovery": "Removed stale own artifacts after disk-full; target-only test debug=0 with jobs=2 after compiler SIGKILL; no assertion/gating changes",
+    "first_slice_commit": "96a1d1cfb",
+    "qualification_base_merge": "17d4beb85",
+    "workspace_check": "cargo check --workspace --all-targets PASS 4m25s",
+    "fmt": "cargo fmt --all --check PASS",
+    "pin_and_packet_verification": "pin-check, duplicate migrations, quest binding, completion matrix and reward variant packet checks PASS"
+  },
+  "qmech_merge_b1d": {
+    "status": "QUALIFICATION_IN_PROGRESS",
+    "qmech_head": "b1d907db4",
+    "merge_head": "88896d40d4e08881dbe96d1866f85d3e32510785",
+    "preserved": "World requirements, fenced Ground requirements and current-carrier area-clear all guard the same native operation",
+    "fixed_compiler_errors": [
+      "Callback.admission=None in existing Soul War and underwater fixtures"
+    ],
+    "fixed_pin_root_cause": "Shared QENGINE source packet grew60->63; generator now refreshes both strict cardinality pins from independent source packet, not runtime union",
+    "generator_tests": "16 passed12.262s; red regression observed for both stale-pin sites",
+    "native_equipment_pin_seconds": 69.47,
+    "native_mead_postgres": {
+      "version": "18.6",
+      "nextest_seconds": 63.478,
+      "completed_marker_seconds": 63.423148457
+    },
+    "native_area_clear_seconds": 0.023,
+    "quest_tests": "17 passed0.179s",
+    "author_checks_seconds": 330.553,
+    "author_unit_modules": 112,
+    "author_units_seconds": 549.968,
+    "content_tree_seconds": 205.303,
+    "clippy": "quests+dispatch all-targets/all-features -Dwarnings PASS4m05s",
+    "pins_and_migration_duplicates": "PASS; engine exact-key pins generated63; independent profile union5795"
+  },
+  "qmech_merge_0326": {
+    "merge_head": "45c5dc5e0db9d045544d75ca24c4897bd05c042b",
+    "upstream": "0326dc2e5",
+    "state": "QUALIFIED_MERGE_REPAIR",
+    "authoring_checks_seconds": 391.015,
+    "authoring_unit_modules": 114,
+    "authoring_units_seconds": 548.305,
+    "content_tree_seconds": 221.942,
+    "quest_focused_tests": "24/24 PASS 9.302s",
+    "pin_generator_tests": "16/16 PASS 18.321s",
+    "remaining": "M07 remains PARTIAL: five quest wiring and lifecycle/puzzle stories not qualified",
+    "coordinator_override": "No more qmech/main merges; existing merge was committed before override",
+    "dispatch_tests": {
+      "passed": 3,
+      "seconds": 134.929,
+      "mead_postgres": "18.6; completed marker 66.453404024s success=true",
+      "area_clear_seconds": 0.019,
+      "equipment_pin_seconds": 68.399
+    },
+    "pin_check": "PASS",
+    "duplicate_migrations": "PASS",
+    "merge_duplicate_repairs": "Retained one definition of each M20 test and one identical branch per autowalk direction; no assertions removed",
+    "clippy": "PASS all-targets/all-features -D warnings 4m09s",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS"
+  },
+  "m07_remote_resets": {
+    "state": "TESTED_ENGINE_SLICE",
+    "red": "/tmp/questpc4-m07-timed-red.log: missing TimedPassages variant",
+    "green": "4/4 world owner tests PASS 0.008s; two new M07 cases and existing lifecycle/readset regressions",
+    "clippy": "world all-targets/all-features -D warnings PASS 1m32s",
+    "workspace": "--workspace --all-targets PASS 3m47s",
+    "fmt": "PASS",
+    "pin_check": "PASS, no content input changes",
+    "sql": "none; no new PostgreSQL path in this slice",
+    "remaining": "Wire source-specific lifecycle callbacks, puzzle stages, all five assigned quests and PG stories; M07 remains PARTIAL"
+  },
+  "m07_callback_reset_adapter": {
+    "state": "TESTED_ENGINE_SLICE",
+    "red": "/tmp/questpc4-m07-binding-red2.log: new callback effect is rejected before implementation",
+    "green": "quests/world 9/9 PASS 0.056s; dispatch3/3 PASS62.167s",
+    "adapter_test": "m07_callback_adapter_preflights_real_bundle_before_publishing_remote_reset PASS0.053s",
+    "postgres": "Mead18.6 completed marker62.042849635s success=true",
+    "clippy": "quests/world/dispatch all-targets all-features -D warnings PASS3m51s",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS",
+    "pin_check": "PASS",
+    "migrations": "duplicate check PASS; no SQL changes",
+    "remaining": "M07 PARTIAL: lifecycle source bindings, puzzle wiring and five assigned quest stories remain"
+  },
+  "m07_dreamer_levers": {
+    "state": "TESTED_NATIVE_LIFECYCLE_STAGE",
+    "bindings": 4,
+    "source_wall_entries": 17,
+    "actual_north_walls": 5,
+    "red": "m07_dreamer_levers_bind_four_native_controls_and_all_source_wall_objects: 0 bindings vs4",
+    "model": "29/29 PASS7.166s (legacy source validation included)",
+    "postgres": "PostgreSQL18.6 marker success=true59.928511707s; nextest case59.985s",
+    "adapter": "PASS0.059s; dispatch2/2 PASS60.047s",
+    "author_checks": "PASS361.884s",
+    "author_units": "114 modules PASS529.327s",
+    "content_tree": "PASS193.615s",
+    "clippy": "quests/dispatch all-targets all-features -D warnings PASS3m55s",
+    "remaining": "M07 still PARTIAL: other trial/lifecycle bindings and Dreamer remaining puzzles; no whole-quest completion claim",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS",
+    "pin_check": "PASS",
+    "duplicate_migrations": "PASS"
+  },
+  "m07_counter_floor": {
+    "state": "TESTED_ENGINE_SLICE_NOT_QUEST_WIRED",
+    "migration": 2061,
+    "operation": "checked add then minimum floor; max(old+1,2) for Lion source progress",
+    "rust": "9/9 focused PASS0.059s; old operators included",
+    "pg_red": "PostgreSQL180006 unsupported floor witness rejected5.075s",
+    "pg_green": "PostgreSQL180006 success marker5.551617259s; nextest5.561s; migrationSHA384 exact",
+    "sql_guards": "wrong outputs, signed overflow/underflow, malformed terms rejected; legacy add and16-effect capacity preserved",
+    "clippy": "quests/durability all-targets all-features -D warnings PASS1m27s",
+    "workspace": "all-targets PASS3m50s",
+    "fmt": "PASS",
+    "migration_check": "staged duplicate scan and embedded migrator/directory equality PASS",
+    "pin_check": "PASS",
+    "remaining": "Authoring JSON schema still needs the new operator (RED test held outside checkout); native Lion offering PG/wiring and rest of M07 remain PARTIAL"
+  },
+  "m07_floor_authoring_schema": {
+    "state": "TESTED_AUTHORING_SLICE",
+    "own_tests": "3/3 PASS0.004s; RED unknown operator before schema extension",
+    "checks": "PASS429.691s",
+    "tree": "PASS220.034s",
+    "workspace": "PASS6m29s",
+    "fmt": "PASS",
+    "pin_check": "PASS",
+    "pg": "unchanged qualified binary; PostgreSQL180006 success marker14.685194148s",
+    "scope": "authoring representation only; no additional quest completion claim",
+    "unit_runner": "115 modules PASS580.943s"
+  },
+  "m07_lion_strength": {
+    "state": "TESTED_NATIVE_OFFERING_STAGE",
+    "owner": "oteryn:quest.tibia_tales",
+    "source_flag": "Crystal OuterSanctum.LionsStrength; no invented Canary alias",
+    "model": "RED missing binding; GREEN9/9 3.354s",
+    "postgres": "18.6 success marker60.571310712s; nextest60.619s",
+    "dreamer_regression": "18.6 success marker59.628807242s; nextest59.681s",
+    "author_checks": "PASS362.493s",
+    "author_units": "115 modules PASS521.593s",
+    "content_tree": "PASS187.262s",
+    "behavior": "exact one9634; missing input or wrong pagoda costs0; flag1/QL2; 15s reset; repeat trial does not charge",
+    "remaining": "Beauty/Tears inputs and bindings, other M07 trials/puzzles not done",
+    "clippy": "quests/dispatch all-targets all-features -D warnings PASS3m49s",
+    "pin_check": "PASS",
+    "duplicate_migrations": "PASS",
+    "workspace_check": "PASS --workspace --all-targets",
+    "fmt": "PASS"
+  },
+  "m07_lion_tears_input": {
+    "status": "PARTIAL",
+    "item": "oteryn:item.tibia.i21466",
+    "red": "source capture omitted exact item21466",
+    "green": "NativeFactJoin: 4 tests passed in5.048s",
+    "remaining": "Holy-water input qualified; well producer and Tears offering remain unwired; M07 PARTIAL",
+    "validation": {
+      "authoring_checks_seconds": 388.256,
+      "authoring_unit_tests_seconds": 552.321,
+      "content_tree_seconds": 265.857,
+      "workspace_check_seconds": 354.454,
+      "clippy_dispatch_seconds": 257.484,
+      "fmt": "PASS",
+      "equipment_profile_pin": "PASS 5796",
+      "focused_importer_tests": "4 passed; red missing21466 before implementation",
+      "equipment_rust_regression": "PASS 68.529s; no longer pending"
+    }
+  },
+  "m07_lion_tears": {
+    "status": "PARTIAL",
+    "binding": "oteryn:quest-callback/m07/lion-tears",
+    "quest_owner": "oteryn:quest.tibia_tales",
+    "source": "Crystal201189 actions_lions_rock.lua:30-79; B3 pedestal ordinal2/21391 and pagoda ordinal1/2074",
+    "red": "test_native_tears_offering_consumes_exact_vessel_and_resets_pagoda: native Lion Tears offering missing",
+    "green": {
+      "postgres_version": "18.6",
+      "tears_seconds": 62.824823324,
+      "strength_regression_seconds": 62.064119198,
+      "authoring_checks_seconds": 410.535,
+      "authoring_unit_modules": 116,
+      "authoring_unit_seconds": 587.74,
+      "content_tree_seconds": 207.702,
+      "clippy_dispatch_seconds": 242.466,
+      "workspace_all_targets_seconds": 243.461,
+      "fmt": "PASS",
+      "pin_check": "PASS",
+      "duplicate_migrations": "PASS"
+    },
+    "remaining": "Offering slice qualified; repeatable well producer, Beauty and other assigned M07 trial/puzzle wiring remain"
+  },
+  "m07_lion_well": {
+    "status": "PARTIAL",
+    "capability": "explicit native per-use item_reward; distinct command/session/character/source mint identity, existing transaction owner",
+    "binding": "oteryn:quest-callback/m07/lion-well",
+    "source": "Crystal201189 actions_lions_rock.lua:96-111; B3z6 exact well21394 ordinal1",
+    "validation": {
+      "model_red": "new per-use mode rejected by old callback format",
+      "model_green": "cycle_tests5/5 3.571s; native requirements and cycle exclusivity",
+      "claim_keys_green": "1/1 0.008s; old paid-exchange key unchanged",
+      "authoring_checks_seconds": 350.157,
+      "authoring_units_seconds": 536.906,
+      "content_tree_seconds": 190.504,
+      "clippy_seconds": 223.146,
+      "pg_tears_regression_seconds": 59.979037201,
+      "pg_well_partial_seconds": 59.567954483,
+      "pg_well_last_red": "PG18.6 60.011407783s: first grant/replay/stale source passed; second fresh request incorrectly sent old source revision0 and got StaleState. Test now sends revision1 and asserts cursor only advances on fresh grants; rerun pending",
+      "build_recovery": "two SIGKILLs; serial build, bounded allocator and coroutine frame succeeded; temporary linker wrapper removed",
+      "workspace_all_targets_seconds": 240.128,
+      "fmt": "PASS",
+      "pin_check_seconds": 27.818,
+      "duplicate_migrations": "PASS",
+      "cursor_workspace_seconds": 218.055,
+      "pg_well_green_seconds": 60.478245469,
+      "pg_well_result": "PASS PostgreSQL18.6: two fresh grants, exact replay, stale refusal, source cursors1/2; source test1e70"
+    },
+    "remaining": "Well producer slice PG-qualified; whole M07 still PARTIAL"
+  },
+  "m07_lion_flower_input": {
+    "status": "QUALIFIED",
+    "red": "missing exact portable flower21389; five tests7.923s with1failure",
+    "green": {
+      "source_profile_tests": "6/6 7.923s",
+      "native_runtime_artifact_test_seconds": 12.192,
+      "authoring_checks_seconds": 330.176,
+      "authoring_unit_seconds": 512.015,
+      "content_tree_seconds": 167.741,
+      "clippy_content_dispatch_seconds": 255.952,
+      "workspace_all_targets_seconds": 246.58,
+      "fmt": "PASS",
+      "equipment_profile_pin": "PASS 5797 union /65engine profiles",
+      "pin_check_seconds": 26.462,
+      "duplicate_migrations": "PASS"
+    },
+    "decision": "chosen recipe excludes original schedules; pinned donor duration alone does not enable decay",
+    "remaining": "Profile slice qualified; Beauty offering/picker and rest of M07 not finished"
+  },
+  "m07_lion_beauty_bindings": {
+    "status": "QUALIFIED",
+    "bindings": [
+      "oteryn:quest-callback/m07/lion-beauty",
+      "oteryn:quest-callback/m07/lion-flower-west",
+      "oteryn:quest-callback/m07/lion-flower-east"
+    ],
+    "engine": "current world requirements allowed only for explicit admitted native per-use producers; legacy item rewards remain restricted",
+    "red": "missing Beauty and two producer bindings; native model rejected guarded item reward",
+    "green": {
+      "authoring_contract_tests": "3/3 0.001s",
+      "model_tests": "3/3 3.366s",
+      "workspace_seconds": 215.635,
+      "clippy_quests_dispatch_seconds": 297.015,
+      "pin_check_seconds": 38.732,
+      "authoring_checks_seconds": 343.374,
+      "content_tree_seconds": 188.68,
+      "fmt": "PASS",
+      "authoring_unit_seconds": 514.722,
+      "duplicate_migrations": "PASS",
+      "postgres_version": "18.6",
+      "beauty_pg_seconds": 60.528791369,
+      "east_picker_pg_seconds": 60.036891018,
+      "west_picker_pg_seconds": 60.083257795
+    },
+    "pending": "none for this slice",
+    "remaining": "Lion offering/picker lifecycle slice qualified on b49f03e7c; other M07 families remain"
+  },
+  "m07_realm_multifloor": {
+    "status": "PARTIAL",
+    "red": "m07_clear_area_extra_floors unsupported; Realm/key and repair kit missing from source capture",
+    "green": {
+      "legacy_and_new_floor_model_tests": "2/2 0.030s; Realm data load rerun2/2 0.029s",
+      "portable_tool_source_tests": "7/7 10.025s",
+      "realm_authoring_contract": "PASS",
+      "workspace_all_targets_seconds": 386.21,
+      "clippy_quests_dispatch_seconds": 228.098,
+      "authoring_checks_seconds": 425.634,
+      "authoring_unit_modules": 117,
+      "authoring_unit_seconds": 569.24,
+      "content_tree_seconds": 190.199,
+      "fmt": "PASS",
+      "equipment_profile_pin": "PASS 5799 union/67engine profiles",
+      "pin_check_seconds": 30.741,
+      "duplicate_migrations": "PASS",
+      "live_carrier_multifloor_regression_seconds": 0.016,
+      "module_registration_seconds": 0.01,
+      "postgres_native_realm": {
+        "version": "18.6",
+        "seconds": 60.501319708,
+        "test": "m07_realm_postgres_retained_key_multifloor_clear_and_independent_resets"
+      },
+      "remote_adapter_preflight_seconds": 0.051,
+      "clock_fix_validation": {
+        "dispatch_clippy_seconds": 224.423,
+        "workspace_all_targets_seconds": 223.709,
+        "fmt_seconds": 16.074,
+        "pin_check_seconds": 27.624,
+        "duplicate_migrations": "PASS"
+      }
+    },
+    "capability": "up to3 explicitly opted-in extra floors of the same bounded clear footprint; legacy single-floor validation unchanged",
+    "bindings": [
+      "oteryn:quest-callback/m07/realm-begin",
+      "oteryn:quest-callback/m07/realm-trial"
+    ],
+    "decision": "native existing lever starts level40 retained-key trial; adjacent native fire atomically reveals/operates chosen switch; wall60s/control300s; explicit chosen mapping, no recovered AID claim",
+    "pending": "none for the native Realm retained-key/multi-floor trial slice",
+    "remaining": "Realm trial slice PG GREEN; other M07 families remain incomplete",
+    "native_pg_red": [
+      {
+        "seconds": 54.9329459,
+        "error": "StartNotEnterable",
+        "cause": "fixture start carried sandstone statue2189; changed to adjacent captured bare sand104"
+      },
+      {
+        "seconds": 59.973569411,
+        "postgres": "18.6",
+        "error": "reset delta239999989 !=240000000",
+        "cause": "source and remote reset preparations sampled owner clock separately; use one operation timestamp"
+      }
+    ]
+  },
+  "m07_machinery_firebug_input": {
+    "status": "INPUT_SLICE_DONE",
+    "scope": "Qualified physical prerequisite only; native Machinery burn callbacks are next",
+    "source": {
+      "path": "imports/canary/items-xml/items.xml:14936",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "item": 5467,
+      "weight": 3050
+    },
+    "red": "Importer test failed: exact carried Fire Bug5467 missing",
+    "green": {
+      "importer_tests": "8/8 12.610s",
+      "native_artifact_firebug_seconds": 9.278,
+      "native_artifact_lion_regression_seconds": 9.405,
+      "profile_review": "only5467 added; no removed/modified existing profiles; source-update records unchanged",
+      "independent_equipment_profile_count": 5800,
+      "shared_engine_profile_count": 68,
+      "authoring_checks_seconds": 308.665,
+      "authoring_unit_modules": 117,
+      "authoring_unit_seconds": 502.031,
+      "content_tree_seconds": 161.168,
+      "clippy_content_dispatch_seconds": 253.281,
+      "workspace_all_targets_seconds": 270.25,
+      "fmt_seconds": 15.555,
+      "pin_check_seconds": 26.665,
+      "duplicate_migrations": "PASS"
+    },
+    "pending": "Native Machinery repair/burn callbacks and their PG stories; M07 remains PARTIAL",
+    "sql_changed": false
+  },
+  "m07_machinery_ballistae": {
+    "status": "BALLISTA_SLICE_DONE",
+    "scope": "8 source-bound distinct ballista burn occurrences; shared60s fire overlay and retained5467; no whole-quest completion",
+    "red": {
+      "model": "minimum level with exact native world predicates rejected; focused RED0.027s",
+      "data": "new binding tests failed: sidecar absent",
+      "native_pg_fixture": {
+        "seconds": 58.868980485,
+        "postgres": "18.6",
+        "error": "Character progression permits only one typed XP, death or stance successor",
+        "cause": "test tried a direct successor UPDATE; changed to separate historical49/50 creation fixtures without bypassing the owner guard"
+      }
+    },
+    "green": {
+      "native_level_composition_seconds": 0.026,
+      "model_tests": "13/13 3.508s",
+      "data_tests": "2/2 0.153s; all24 native parts and8ordinals checked",
+      "workspace_all_targets_seconds": 294.098,
+      "authoring_checks_seconds": 340.786,
+      "authoring_unit_modules": 118,
+      "authoring_unit_seconds": 506.804,
+      "content_tree_seconds": 142.661,
+      "source_witness_coverage_seconds": 0.243,
+      "module_registration_seconds": 0.011,
+      "postgres": {
+        "version": "18.6",
+        "level49_seconds": 59.516960557,
+        "level50_story_seconds": 65.257049011,
+        "level49_case": "m07_machinery_postgres_ballista_refuses_level49_without_credit_or_tool_charge",
+        "level50_case": "m07_machinery_postgres_ballista_retains_tool_checks_level_and_resets"
+      },
+      "clippy_quests_dispatch_seconds": 217.678,
+      "workspace_final_all_targets_seconds": 137.755,
+      "fmt_seconds": 15.473,
+      "pin_check_seconds": 27.981,
+      "duplicate_migrations": "PASS"
+    },
+    "source": "content/world/placements/region-z07-x128-y123.b3 sha256865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+    "decision": "Level50/free eligibility retained. Deterministic reusable Fire Bug; front shows2113 for60s. One personal credit per machine survives shared restoration. Chosen visual timing/positions, no recovered AID or source-schedule claim. Commission/report/finale not certified by this slice.",
+    "pending": "Remaining M07: Machinery repair/catapults/tower wheels, Dreamer remaining puzzle, Too Hot tool bindings; no whole-quest completion claim"
+  },
+  "m07_machinery_catapults": {
+    "status": "CATAPULT_SLICE_DONE",
+    "scope": "8 native four-part catapults with separate once-only flags/counter; retained5467; same chosen60s fire lifecycle",
+    "red": "New data sidecar absent; geometry test then caught decorated root32909,31736 needing ordinal2 rather than1",
+    "green": {
+      "machine_data_modules": "4/4 tests 0.353s;32 catapult parts plus24ballista parts and exact source ordinals",
+      "model_tests": "13/13 3.712s",
+      "workspace_all_targets_seconds": 362.188,
+      "authoring_checks_seconds": 425.977,
+      "authoring_unit_modules": 119,
+      "authoring_unit_seconds": 621.265,
+      "content_tree_seconds": 170.526,
+      "postgres": {
+        "version": "18.6",
+        "ballista_level49_seconds": 70.870134547,
+        "ballista_level50_seconds": 69.293728831,
+        "catapult_level49_seconds": 70.096262391,
+        "catapult_level50_seconds": 71.42717194,
+        "total_tests": "6/6 282.186s including source-witness coverage and sorted module registration"
+      },
+      "clippy_quests_dispatch_seconds": 299.499,
+      "fmt_seconds": 20.366,
+      "pin_check_seconds": 42.189,
+      "duplicate_migrations": "PASS"
+    },
+    "decision": "Reuse the native-level and retained-tool engine already pushed; PG helper now resolves actual callback selectors and bundle-palette appearance facts. Rerun both level49/50 stories for both machine families. No new SQL/migration.",
+    "pending": "Remaining M07 repair/tower-wheel, Dreamer puzzle and Too Hot bindings; full M07 still PARTIAL"
+  },
+  "m07_too_hot_tool_inputs": {
+    "status": "INPUT_SLICE_DONE",
+    "scope": "Physical prerequisite only:36543 chisel,36544 brush,36545 marble-floor tool",
+    "red": "Exact tool36543 missing from independent source profile capture; all3 absent from runtime profile union",
+    "green": {
+      "importer_tests": "9/9 25.688s",
+      "native_artifact_tests": "3/3 40.052s",
+      "too_hot_native_artifact_seconds": 15.238,
+      "firebug_native_regression_seconds": 12.419,
+      "lion_flower_native_regression_seconds": 12.391,
+      "independent_equipment_profile_count": 5803,
+      "shared_engine_profile_count": 71,
+      "profile_review": "only36543/36544/36545 added; no removed/modified existing records; source-update records unchanged",
+      "clippy_content_dispatch_seconds": 397.754,
+      "authoring_checks_seconds": 503.637,
+      "authoring_unit_modules": 119,
+      "authoring_unit_seconds": 814.682,
+      "content_tree_seconds": 268.065,
+      "workspace_all_targets_seconds": 450.038,
+      "fmt_seconds": 24.39,
+      "pin_check_seconds": 38.036,
+      "duplicate_migrations": "PASS"
+    },
+    "source": "imports/canary/items-xml/items.xml:67140-67151; same pinned SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2;weight850each",
+    "pending": "Native Too Hot target bindings follow; fullM07 remainsPARTIAL",
+    "resource_recovery": "Pin process exit-9 during workspace build; succeeded serially after build completion"
   }
 }

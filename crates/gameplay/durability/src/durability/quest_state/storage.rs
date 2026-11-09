@@ -10,17 +10,20 @@ impl DurabilityRoot {
         command: CommandRef,
         intent: Vec<u8>,
     ) -> Result<Option<bool>> {
-        let recovery=authority.record_for(self).map_err(|_|CharacterProgressionError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
-            let rows=sqlx::query("SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND s.plan ? 'carried_item' LIMIT 2")
+            let rows=sqlx::query("SELECT proof,item_instance_id FROM (SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c LEFT JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND (((s.plan ? 'carried_item' OR s.plan ? 'recipe_source') AND c.before_item->>'definition_production_key'=coalesce(s.plan->>'carried_item',s.plan->>'recipe_source')) OR (convert_from(c.proof,'UTF8')::jsonb #>> '{callback,item_on_target,selected_instance}'='true' AND c.location_kind<>'ground')) UNION ALL SELECT r.proof,r.item_instance_id FROM game_quest_world_tool_reads r WHERE r.character_id=encode($1,'hex')::uuid AND r.cause_id=encode($2,'hex')::uuid AND r.cause_ordinal=$3::text::numeric) bound_tool_proofs LIMIT 2")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
             let answer=match rows.as_slice() {
                 []=>None,
                 [row]=>{
                     let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
-                    let use_:super::super::reward_claim_mint::QuestCarriedUse=serde_json::from_value(proof["carried_use"].clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let selected=proof.get("carried_use").or_else(||proof.get("context").and_then(|context|context.get("selected_tool"))).ok_or(DurabilityError::InvalidStoredState)?;
+                    let use_:super::super::reward_claim_mint::QuestCarriedUse=serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
                     let source:sqlx::types::Uuid=row.try_get("item_instance_id")?;
                     if use_.source!=*source.as_bytes() {return Err(DurabilityError::InvalidStoredState);}
                     Some(use_.intent==intent)
@@ -116,10 +119,13 @@ impl DurabilityRoot {
                     // One coherent copy: every quest writer and every claim that inserts an
                     // obligation holds `character_root` FOR UPDATE until it commits, so with the
                     // root held FOR SHARE no quest relation of this Character can change between
-                    // the reads below.
+                    // the reads below. Hold the current World save row too: a save
+                    // must not advance the history views between the epoch read and
+                    // their subsequent scoped progress reads.
                     let root = sqlx::query(
-                        "SELECT character_revision::text FROM game_character_roots \
-                          WHERE character_id = encode($1,'hex')::uuid FOR SHARE",
+                        "SELECT r.character_revision::text, \
+                                (SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=r.world_id FOR SHARE OF a) AS save_event_epoch \
+                           FROM game_character_roots r WHERE r.character_id=encode($1,'hex')::uuid FOR SHARE OF r",
                     )
                     .bind(id)
                     .fetch_optional(&mut *tx)
@@ -144,6 +150,62 @@ impl DurabilityRoot {
                     )
                     .bind(id)
                     .bind(bound(QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES)))
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    // A current cycle spans multiple saves. Read latest values per
+                    // track through the existing counter-qualified receipt view,
+                    // independently matching the Character's current World.
+                    let counter_progress_limit = QUESTSTATE0_RL_08_TRACKS + QUESTSTATE0_RL_08_STATES;
+                    let counter_progress = sqlx::query(
+                        "SELECT DISTINCT ON (p.quest_key,t.track_key) p.quest_key, \
+                                p.occurrence_generation::text AS occurrence_generation, \
+                                bool_or(p.completes) OVER (PARTITION BY p.quest_key) AS completed, \
+                                t.track_key,t.value \
+                           FROM game_current_counter_quest_progress p \
+                           JOIN game_character_roots c ON c.character_id=p.character_id AND c.world_id=p.world_id \
+                           LEFT JOIN LATERAL unnest(p.track_keys,p.values_after) AS t(track_key,value) ON true \
+                          WHERE p.character_id=encode($1,'hex')::uuid \
+                          ORDER BY p.quest_key,t.track_key,p.committed_character_revision DESC LIMIT $2",
+                    )
+                    .bind(id)
+                    .bind(bound(counter_progress_limit))
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    // Keep completion-only receipts: LEFT LATERAL retains one
+                    // row when the receipt has no tracks. Counter-qualified
+                    // history is read above with its longer-lived cycle ID.
+                    let save_progress_limit = QUESTSTATE0_RL_08_TRACKS + QUESTSTATE0_RL_08_STATES;
+                    let save_progress = sqlx::query(
+                        "SELECT DISTINCT ON (p.quest_key,t.track_key) p.quest_key,p.reset_epoch::text, \
+                                bool_or(p.completes) OVER (PARTITION BY p.quest_key) AS completed, \
+                                t.track_key,t.value \
+                           FROM game_current_event_quest_progress p \
+                           JOIN game_character_roots c ON c.character_id=p.character_id AND c.world_id=p.world_id \
+                           LEFT JOIN game_character_counter_quest_scopes s ON s.character_id=p.character_id AND s.committed_character_revision=p.committed_character_revision AND s.world_id=p.world_id \
+                           LEFT JOIN LATERAL unnest(p.track_keys,p.values_after) AS t(track_key,value) ON true \
+                          WHERE p.character_id=encode($1,'hex')::uuid AND s.character_id IS NULL \
+                          ORDER BY p.quest_key,t.track_key,p.committed_character_revision DESC LIMIT $2",
+                    )
+                    .bind(id)
+                    .bind(bound(save_progress_limit))
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    // Defaults describe the pinned definition, not an active
+                    // occurrence. A matching reset receipt can come from any
+                    // previous World; current progress above still matches the
+                    // Character's current World and active save independently.
+                    let restart_profiles = sqlx::query(
+                        "SELECT DISTINCT ON (p.quest_key) p.quest_key,p.transition_key,p.track_keys,p.values_after \
+                           FROM game_character_event_quest_progress p \
+                           JOIN game_character_quest_receipts r USING(character_id,committed_character_revision) \
+                           JOIN game_character_quest_states q ON q.character_id=p.character_id AND q.quest_key=p.quest_key \
+                          WHERE p.character_id=encode($1,'hex')::uuid \
+                            AND p.transition_key LIKE 'oteryn:quest-transition/save-event-restart/%' \
+                            AND r.definition_hash=q.definition_hash AND r.pinned_content_revision=q.pinned_content_revision \
+                          ORDER BY p.quest_key,p.committed_character_revision DESC LIMIT $2",
+                    )
+                    .bind(id)
+                    .bind(bound(QUESTSTATE0_RL_08_STATES))
                     .fetch_all(&mut *tx)
                     .await?;
                     let obligations = sqlx::query(
@@ -193,6 +255,9 @@ impl DurabilityRoot {
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
+                        || over(&counter_progress, counter_progress_limit)
+                        || over(&save_progress, save_progress_limit)
+                        || over(&restart_profiles, QUESTSTATE0_RL_08_STATES)
                         || over(&obligations, QUESTSTATE0_RL_07)
                         || over(&xp_obligations, QUESTGATE0_RL_10)
                     {
@@ -206,6 +271,9 @@ impl DurabilityRoot {
                                     .map_err(|_| DurabilityError::InvalidStoredState)
                             })
                             .transpose()?,
+                        save_event_snapshot_valid: true,
+                        save_event_epoch: root.as_ref().map(|row|row.try_get::<Option<String>,_>("save_event_epoch"))
+                            .transpose()?.flatten().map(|epoch|epoch.parse::<u64>().map_err(|_|DurabilityError::InvalidStoredState)).transpose()?,
                         ..QuestStateCopy::default()
                     };
                     for row in &tracks {
@@ -218,6 +286,76 @@ impl DurabilityRoot {
                             .entry("oteryn:quest-progress/storage/47855".into())
                             .or_insert(1);
                         *first_kill = (*first_kill).max(1);
+                    }
+                    for row in &counter_progress {
+                        let quest: String = row.try_get("quest_key")?;
+                        if !matches!(quest.as_str(),
+                            oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST
+                            | oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST) {
+                            continue;
+                        }
+                        let generation = numeric_u64(row, "occurrence_generation")?;
+                        let progress = copy.counter_quests.entry(quest.clone()).or_insert_with(|| CounterQuestProgress {
+                            occurrence_generation: generation,
+                            completed: false,
+                            tracks: BTreeMap::new(),
+                        });
+                        if generation == 0 || progress.occurrence_generation != generation {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        progress.completed |= row.try_get::<bool,_>("completed")?;
+                        match (row.try_get::<Option<String>,_>("track_key")?,row.try_get::<Option<i64>,_>("value")?) {
+                            (Some(track),Some(value)) => {
+                                if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(&quest, &track) {
+                                    progress.tracks.insert(track,value);
+                                }
+                            },
+                            (None,None) => {},
+                            _ => return Err(DurabilityError::InvalidStoredState),
+                        }
+                    }
+                    if copy.counter_quests.len() > QUESTSTATE0_RL_08_STATES
+                        || copy.counter_quests.values().map(|progress|progress.tracks.len()).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    for row in &save_progress {
+                        let quest: String = row.try_get("quest_key")?;
+                        // Legacy counter history without a qualified cycle must
+                        // never acquire daily scope by falling back to this view.
+                        if matches!(quest.as_str(),
+                            oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST
+                            | oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST) {
+                            continue;
+                        }
+                        let epoch = numeric_u64(row,"reset_epoch")?;
+                        let progress = copy.save_events.entry(quest).or_insert_with(|| SaveEventQuestProgress {
+                            reset_epoch: epoch,completed:false,tracks:BTreeMap::new(),
+                        });
+                        if progress.reset_epoch != epoch { return Err(DurabilityError::InvalidStoredState); }
+                        progress.completed |= row.try_get::<bool,_>("completed")?;
+                        match (row.try_get::<Option<String>,_>("track_key")?,row.try_get::<Option<i64>,_>("value")?) {
+                            (Some(track),Some(value)) => {progress.tracks.insert(track,value);}
+                            (None,None) => {},
+                            _ => return Err(DurabilityError::InvalidStoredState),
+                        }
+                    }
+                    if copy.save_events.len() > QUESTSTATE0_RL_08_STATES
+                        || copy.save_events.values().map(|progress|progress.tracks.len()).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    for row in &restart_profiles {
+                        let quest: String = row.try_get("quest_key")?;
+                        let reset: String = row.try_get("transition_key")?;
+                        let keys: Vec<String> = row.try_get("track_keys")?;
+                        let defaults: Vec<i64> = row.try_get("values_after")?;
+                        if reset != oteryn_gameplay_quests::quest::shared_world_progress::save_event_restart_key(&quest)
+                            || keys.is_empty() || keys.len() != defaults.len() {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        copy.save_restart_defaults.insert(quest,keys.into_iter().zip(defaults).collect());
+                    }
+                    if copy.save_restart_defaults.values().map(BTreeMap::len).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
                     if primal_completed {
@@ -454,6 +592,17 @@ pub(super) fn decode_receipt(
 /// The production session copy (QUEST-STATE-0 §7).
 impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
     fn track_value(&self, track: &str) -> Option<i64> {
+        for (quest, defaults) in &self.save_restart_defaults {
+            if let Some(initial) = defaults.get(track) {
+                return self.save_event_snapshot_valid.then(|| {
+                    self.save_events
+                        .get(quest)
+                        .and_then(|progress| progress.tracks.get(track))
+                        .copied()
+                        .unwrap_or(*initial)
+                });
+            }
+        }
         self.tracks().get(track).copied()
     }
 
@@ -461,11 +610,20 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         &self,
         quest: &str,
     ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
-        self.states()
-            .get(quest)
-            .map(|state| oteryn_gameplay_quests::quest::log::QuestLogState {
-                pinned_content_revision: &state.pinned_content_revision,
-                completed: state.completed,
-            })
+        let state = self.states().get(quest)?;
+        let scoped = self.save_restart_defaults.contains_key(quest);
+        if scoped && !self.save_event_snapshot_valid {
+            return None;
+        }
+        Some(oteryn_gameplay_quests::quest::log::QuestLogState {
+            pinned_content_revision: &state.pinned_content_revision,
+            completed: if scoped {
+                self.save_events
+                    .get(quest)
+                    .is_some_and(|progress| progress.completed)
+            } else {
+                state.completed
+            },
+        })
     }
 }

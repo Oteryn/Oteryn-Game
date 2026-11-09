@@ -39,8 +39,14 @@ class CompletionImportTests(unittest.TestCase):
                     })
                     self.assertFalse(transition['completes'])
                     native[stage['stage_key']] = stage['native_dispatch_binding']
+                elif (quest['quest'], stage['stage_key']) == ('oteryn:quest.authored.a_pirate_s_death_to_me', 's1'):
+                    self.assertTrue(stage['runtime_enabled'])
+                    self.assertEqual(stage['native_dispatch_binding'], {
+                        'kind': 'npc_dialogue', 'document': 'content/quests/authored-bindings/m01a-a-pirates-death-to-me.json',
+                        'stage': 's1', 'callback': 'oteryn:quest-reward/native-talk/a-pirates-death-to-me/s1'})
                 else:
                     self.assertIsNone(stage['native_dispatch_binding'])
+                    self.assertFalse(stage['runtime_enabled'])
                 self.assertIsNone(stage['selected_NPC_branch'])
         self.assertEqual(set(native), {'s5', 's8'})
 

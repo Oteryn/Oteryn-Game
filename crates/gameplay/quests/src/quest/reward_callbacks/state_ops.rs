@@ -14,6 +14,7 @@ pub enum StateCondition {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StateMutation {
     Add { value: i64 },
+    AddAtLeast { value: i64, minimum: i64 },
     SetNow,
 }
 
@@ -71,6 +72,10 @@ impl StateOperation {
             },
             effect: match self.effect {
                 StateMutation::Add { value } => QuestEffectKind::Add(value),
+                StateMutation::AddAtLeast { value, minimum } => QuestEffectKind::AddAtLeast {
+                    delta: value,
+                    minimum,
+                },
                 StateMutation::SetNow => QuestEffectKind::SetNow,
             },
         }

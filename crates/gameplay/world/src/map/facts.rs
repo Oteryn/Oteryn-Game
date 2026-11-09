@@ -34,17 +34,25 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+#[cfg(test)]
+mod seal_paint_tests;
 mod source_container_capacity;
 pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
 mod creature_visuals;
+mod empty_amphora;
+mod feroxa_map_phases;
 pub use creature_visuals::{CreatureVisualCue, CreatureVisualKind};
 mod quest_callbacks;
 mod world_change_phases;
+pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
+pub use quest_callbacks::{
+    ArenaPillarProjection, ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove,
+    QuestTimedPassage, RafzaneElevator,
+};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -163,6 +171,9 @@ pub struct BundleFacts {
     palette: Vec<PaletteFacts>,
     /// Movement targets may be unplaced; these are resolved by the same served Item index.
     movement_definitions: BTreeMap<u16, EntryFacts>,
+    /// Blocking facts retained from the same native owner as unplaced states.
+    movement_solidities: BTreeMap<u16, bool>,
+    movement_blocks: BTreeMap<u16, bool>,
     /// `(compact id, palette index)` ascending by id, for the ids only one palette entry has.
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
@@ -176,7 +187,7 @@ pub struct BundleFacts {
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
-    callbacks: Mutex<Arc<CallbackStates>>,
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
@@ -256,6 +267,8 @@ impl BundleFacts {
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements,
             map_source_items: self
@@ -290,7 +303,7 @@ impl BundleFacts {
                 .collect(),
             doors: self.doors.activity_copy(inside),
             rotations: Mutex::new(Arc::new(BTreeMap::new())),
-            callbacks: Mutex::new(Arc::new(CallbackStates::default())),
+            callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
             monster_steps: Mutex::new(VecDeque::new()),
         }
     }
@@ -308,6 +321,8 @@ impl BundleFacts {
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
+            movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements: self
                 .placements
@@ -354,16 +369,20 @@ impl BundleFacts {
                 _ => unique.push((id, index)),
             }
         }
+        // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [
-            1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
-            12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
-            14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+        let mut movement_solidities = BTreeMap::new();
+        let movement_definitions: BTreeMap<_, _> = [
+            1025, 1841, 1949, 5022, 7252, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938,
+            9939, 10186, 10187, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064,
+            14074, 14076, 14077, 14163, 14164, 14255, 17939, 21804, 21805, 21812, 22059, 22074,
+            26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
+            movement_solidities.insert(id, definition.solid.unwrap_or(true));
             Some((
                 id,
                 EntryFacts {
@@ -379,9 +398,15 @@ impl BundleFacts {
             ))
         })
         .collect();
+        let movement_blocks = movement_definitions
+            .keys()
+            .filter_map(|id| Some((*id, item(&format!("oteryn:item.tibia.i{id}"))?.solid?)))
+            .collect();
         Ok(Self {
             palette,
             movement_definitions,
+            movement_solidities,
+            movement_blocks,
             ids: unique,
             placements: Vec::new(),
             map_source_items: BTreeMap::new(),
@@ -391,7 +416,7 @@ impl BundleFacts {
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
-            callbacks: Mutex::default(),
+            callbacks: Arc::default(),
             monster_steps: Mutex::default(),
         })
     }
@@ -406,9 +431,24 @@ impl BundleFacts {
     }
 
     /// Collision of a transformed entry whose exact definition and appearance
-    /// already have qualified palette facts. Unknown/ambiguous targets cannot
+    /// already have qualified palette or native unplaced-state facts. Unknown targets cannot
     /// clear a blocker from the immutable base map.
     fn override_blocks(&self, after: EntryFacts) -> Option<bool> {
+        if let (Some(qualified), Some(solid)) = (
+            self.movement_definitions.get(&after.appearance_id),
+            self.movement_solidities.get(&after.appearance_id),
+        ) && qualified.definition == after.definition
+            && qualified.terrain_kind == after.terrain_kind
+            && qualified.blocks_projectile == after.blocks_projectile
+        {
+            return Some(*solid);
+        }
+
+        if self.movement_definitions.get(&after.appearance_id) == Some(&after)
+            && let Some(blocked) = self.movement_blocks.get(&after.appearance_id)
+        {
+            return Some(*blocked);
+        }
         let reference = match after.definition {
             MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
         };
@@ -831,6 +871,13 @@ impl BundleFacts {
         let Ok(mut states) = self.rotations.lock() else {
             return UseDisposition::Rejected;
         };
+        if !self
+            .callbacks
+            .lock()
+            .is_ok_and(|callbacks| !callbacks.reserved.contains(&key))
+        {
+            return UseDisposition::StaleState;
+        }
         let current = states.get(&key);
         if current.map_or(0, |(revision, _)| *revision) != expected_revision
             || current.is_some_and(|(_, facts)| *facts != before)
@@ -1204,6 +1251,13 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        Ok(self
+            .callbacks
+            .lock()
+            .map_err(|_| view::ViewError::MissingFacts)?
+            .phase_composition(pos))
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.lock().ok()?.movement_item(id)
     }
@@ -1231,6 +1285,9 @@ impl MapFacts for BundleFacts {
         {
             return Some(*facts);
         }
+        if let Some(entry) = self.callbacks.lock().ok()?.phase_entry(pos, ordinal) {
+            return entry;
+        }
         let rotations = self.rotations.lock().ok()?;
         self.entry(pos, ordinal, id, None, &rotations)
     }
@@ -1257,6 +1314,11 @@ impl MapFacts for BundleFacts {
         {
             return *r;
         }
+        if let Ok(s) = self.callbacks.lock()
+            && let Some(revision) = s.phase_revision(placement_key)
+        {
+            return revision;
+        }
         self.rotations.lock().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
                 || self.doors.revision(placement_key),
@@ -1275,6 +1337,13 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        Ok(self
+            .callbacks
+            .as_ref()
+            .ok_or(view::ViewError::MissingFacts)?
+            .phase_composition(pos))
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.as_ref()?.movement_item(id)
     }
@@ -1295,6 +1364,9 @@ impl MapFacts for PinnedFacts<'_> {
             .get(&placement_key(pos, ordinal)?)
         {
             return Some(*facts);
+        }
+        if let Some(entry) = self.callbacks.as_ref()?.phase_entry(pos, ordinal) {
+            return entry;
         }
         self.facts.entry(
             pos,
@@ -1324,6 +1396,11 @@ impl MapFacts for PinnedFacts<'_> {
             && let Some((r, _)) = s.changed.get(&placement_key)
         {
             return *r;
+        }
+        if let Some(s) = &self.callbacks
+            && let Some(revision) = s.phase_revision(placement_key)
+        {
+            return revision;
         }
         self.rotations.as_ref().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
@@ -1550,6 +1627,33 @@ mod tests {
         assert!(facts.movement_effects_since(0).is_empty());
         assert!(!facts.create_world_change_item(pos, 1));
         assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+    }
+
+    #[test]
+    fn qn5_feroxa_trap_counterparts_resolve_without_a_base_placement()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let items = |key: &str| {
+            if matches!(key, "oteryn:item.tibia.i22059" | "oteryn:item.tibia.i22074") {
+                let mut definition = fixture::items("item:coin")?;
+                definition.pickupable = key.ends_with("22074");
+                Some(definition)
+            } else {
+                fixture::items(key)
+            }
+        };
+        let facts =
+            BundleFacts::palette(&bundle.manifest, items).map_err(|error| format!("{error:?}"))?;
+        let open = facts
+            .movement_item_facts(22059)
+            .ok_or("unplaced open trap counterpart")?;
+        let closed = facts
+            .movement_item_facts(22074)
+            .ok_or("unplaced closed trap counterpart")?;
+        assert!(!open.pickupable);
+        assert!(closed.pickupable);
+        Ok(())
     }
 
     #[test]

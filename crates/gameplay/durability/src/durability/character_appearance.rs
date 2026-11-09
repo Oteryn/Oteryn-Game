@@ -157,6 +157,7 @@ mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
 mod marriage;
 pub(crate) use marriage::grant_marriage_outfits;
+pub mod npc_outfits;
 pub(crate) mod quest_grants;
 pub use current_appearance::CurrentCharacterAppearance;
 pub(crate) use quest_grants::{QuestOutfitGrant, grant_content_outfit, grant_quest_outfit};

@@ -102,3 +102,79 @@ fn m41_stag_authored_finale_preserves_sword_achievement_and_progress() -> Result
     );
     Ok(())
 }
+
+#[test]
+fn m41_alyxo_finale_is_native_bound_and_keeps_canonical_remains() -> Result<(), String> {
+    let text = include_str!("../../../../../../content/quests/missions/quest-state.json");
+    let old = super::super::loader::parse_quest_state(text, "m41-native")
+        .map_err(|e| format!("{e:?}"))?;
+    let document: serde_json::Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let mut bindings = BTreeMap::new();
+    for quest in document["quests"].as_array().ok_or("quests")? {
+        for track in quest["tracks"].as_array().ok_or("tracks")? {
+            bindings.insert(
+                track["key"].as_str().ok_or("key")?.into(),
+                track["source_key"].as_str().ok_or("source")?.into(),
+            );
+        }
+    }
+    let current = extend(old.catalogue().clone(), &bindings)?;
+    let remains = "oteryn:quest-progress/crystalserver/kilmaresh/fourteen/remains";
+    assert_eq!(
+        current.track(remains).ok_or("native Remains")?.initial,
+        old.catalogue().track(remains).ok_or("old Remains")?.initial
+    );
+    let source = NpcRuleCatalog::runtime()
+        .map_err(|e| e.to_string())?
+        .admitted_for_npc("oteryn:npc.alyxo", &current)
+        .map_err(|e| e.to_string())?
+        .ok_or("admitted Alyxo")?;
+    let tracks = BTreeMap::from([
+        (
+            "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar".into(),
+            301,
+        ),
+        (remains.into(), 0),
+    ]);
+    let inventory = NpcInventorySnapshot::default();
+    let outfits = BTreeMap::new();
+    let input = NpcRuleInput {
+        npc: "oteryn:npc.alyxo",
+        trigger: NpcRuleTrigger::Say,
+        message: "yes",
+        player_name: None,
+        topic: 13,
+        tracks: &tracks,
+        inventory: &inventory,
+        now_epoch_seconds: 0,
+        calendar_month: 1,
+        premium_current: false,
+        level: 50,
+        vocation: "",
+        sex: 0,
+        outfits: &outfits,
+    };
+    let plan = source
+        .plan_item_exchange(&input)
+        .map_err(|e| e.to_string())?
+        .ok_or("Alyxo source finale")?;
+    assert_eq!(plan.next_topic, 14);
+    assert!(
+        plan.track_changes
+            .iter()
+            .any(|c| c.key == remains && c.before == 0 && c.after == 1)
+    );
+    assert!(
+        plan.effects
+            .iter()
+            .any(|e| matches!(e,NpcRuleEffect::Achievement{name} if name=="Sculptor Apprentice"))
+    );
+    assert_eq!(
+        plan.inventory_after.items.get(&NpcItemKey {
+            item: "oteryn:item.tibia.i31574".into(),
+            subtype: None
+        }),
+        Some(&1)
+    );
+    Ok(())
+}

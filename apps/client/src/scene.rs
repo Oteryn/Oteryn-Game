@@ -390,3 +390,6 @@ mod appearance_cache;
 #[path = "features/0170-arena/scene.rs"]
 mod drome_hazards;
 pub(crate) use drome_hazards::GroundWarning;
+
+#[path = "features/0451-personal-map-marks/scene.rs"]
+mod personal_map_marks;

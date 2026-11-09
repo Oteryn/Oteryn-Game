@@ -110,6 +110,9 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) encounter_phases: super::encounter_phases::Registry,
+    pub(super) native_self_heals: crate::foundation::CreatureSelfHealLedger,
+    pub(super) native_self_heal_content: Option<[u8; 32]>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     pub(in crate::gameplay_transport) enchanting_pending: Vec<(ExactActorRef, GameSessionId)>,
     /// Last persisted native gourmet conditions; a write-suppression projection only.
@@ -183,6 +186,8 @@ pub struct ChannelSpellStates {
     pub(super) source_death_action: Option<super::source_death::PreparedSourceDeathAction>,
     pub(super) source_death_action_ready: bool,
     pub(super) source_death_action_reservation: Option<oteryn_gameplay_entities::carrier::runtime_actor_source_reservation::SourceDeathActionReservation>,
+    pub(in crate::gameplay_transport) rotten_waves:
+        super::monster_profile_cycle::rotten_waves::RoomWaveStates,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
     pub(in crate::gameplay_transport) monster_spells:
         crate::creature_damage_spell::DamageSpellOwner,
@@ -314,6 +319,9 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            encounter_phases: Default::default(),
+            native_self_heals: Default::default(),
+            native_self_heal_content: None,
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
             pending_item_effects: Vec::new(),
@@ -355,6 +363,7 @@ impl Default for ChannelSpellStates {
             source_death_action: None,
             source_death_action_ready: false,
             source_death_action_reservation: None,
+            rotten_waves: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),
@@ -647,8 +656,11 @@ impl ChannelSpellStates {
 
     /// Shared carrier-owner bookkeeping. This uses the carrier's actual Channel
     /// binding to maintain its existing timer owner; it grants no actor authority.
-    /// Each caller first proves either ordinary Channel or explicit House custody.
-    fn initialize_owner_bookkeeping(&mut self, runtime: &ChannelRuntimeV1) -> Option<()> {
+    /// Each caller first proves ordinary Channel, named House, or activity custody.
+    pub(in crate::gameplay_transport) fn initialize_owner_bookkeeping(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Option<()> {
         let binding = runtime.binding();
         if self.spell_timers.as_ref().is_some_and(|timers| {
             timers.scope() != binding.runtime_scope()

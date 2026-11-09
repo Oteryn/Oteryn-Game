@@ -19,6 +19,14 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
         // refused and nothing moves.
         match decode_step_intent(command.payload) {
             Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
+            Ok(direction)
+                if direction.is_diagonal()
+                    && !session.selected_capabilities.contains(
+                        oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+                    ) =>
+            {
+                Dispatch::Step(StepOutcome::rejected(), 0)
+            }
             // STEP-PACE-WIRE-1: the receipt is the time left until the pacing clock is due,
             // after the buffered step ran; none when that step did not move.
             Ok(_) if arrived_while_buffered => {

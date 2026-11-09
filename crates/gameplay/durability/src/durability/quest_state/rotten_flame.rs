@@ -256,7 +256,7 @@ impl DurabilityRoot {
             fence,
             request,
             catalogue,
-            Some((permit, context, None)),
+            Some((permit, context.into(), None)),
             None,
             None,
             None,

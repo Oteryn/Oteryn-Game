@@ -117,6 +117,8 @@ pub enum QuestCause {
     Step(CommandRef),
     /// A reward-claim obligation (§5.4): the claim's CommandRef.
     ClaimObligation(CommandRef),
+    /// An exact committed native damage occurrence, independent of player USE.
+    NativeHit(native_hits::QuestHitOccurrence),
     /// A creature-death reward occurrence.
     CreatureDeath(ExperienceRewardOccurrence),
     /// A sealed actual native onThink callback, in its own occurrence namespace.
@@ -128,6 +130,7 @@ impl QuestCause {
     const fn kind(self) -> &'static str {
         match self {
             Self::ServerTimer(_) => "server_timer",
+            Self::NativeHit(_) => "native_hit",
             Self::Command(_) => "command",
             Self::Use(_) => "use",
             Self::Step(_) => "step",
@@ -150,6 +153,7 @@ impl QuestCause {
                 command.command_id().get(),
             ),
             Self::ServerTimer(occurrence) => (*occurrence.as_bytes(), 0),
+            Self::NativeHit(occurrence) => (*occurrence.as_bytes(), 0),
             Self::CreatureDeath(occurrence) => (*occurrence.as_bytes(), 0),
             Self::SourceThink(occurrence) => (*occurrence.as_bytes(), 0),
             Self::SourceStep(occurrence) => (*occurrence.as_bytes(), 0),
@@ -168,6 +172,7 @@ impl QuestCause {
             "server_timer" if ordinal == 0 => {
                 Self::ServerTimer(server_timer::QuestTimerOccurrence::from_bytes(id)?)
             }
+            "native_hit" if ordinal == 0 => Self::NativeHit(native_hits::QuestHitOccurrence::from_bytes(id)?),
             "command" => Self::Command(command()?),
             "use" => Self::Use(command()?),
             "step" => Self::Step(command()?),
@@ -275,6 +280,30 @@ pub struct QuestObligationRecord {
     pub waiting_migration: bool,
 }
 
+/// Current source-cycle progress read with the Character root at admission.
+/// These facts are a snapshot, not authority for a later write.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CounterQuestProgress {
+    /// The counter owner's lifecycle generation, independent of save epochs.
+    pub occurrence_generation: u64,
+    /// A receipt completed the quest within this cycle, including trackless completion.
+    pub completed: bool,
+    /// Latest mission values in this cycle; excludes persistent private balances.
+    pub tracks: BTreeMap<String, i64>,
+}
+
+/// Quest receipt history qualified by the Character's current World/server save.
+/// This is an admission snapshot, not a current-authority or reward-MINT proof.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SaveEventQuestProgress {
+    /// Save epoch that qualified these event receipts.
+    pub reset_epoch: u64,
+    /// A receipt completed the quest within this save, including trackless completion.
+    pub completed: bool,
+    /// Latest values written in this save, independent of permanent canonical history.
+    pub tracks: BTreeMap<String, i64>,
+}
+
 /// The session copy of one Character's quest progress (§7): loaded at admission and advanced by
 /// each committed receipt. Predicates read it; the writer re-checks under lock.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -284,9 +313,45 @@ pub struct QuestStateCopy {
     states: BTreeMap<String, QuestStateRecord>,
     obligations: Vec<QuestObligationRecord>,
     xp_obligations: Vec<QuestXpObligation>,
+    counter_quests: BTreeMap<String, CounterQuestProgress>,
+    save_events: BTreeMap<String, SaveEventQuestProgress>,
+    // Definition defaults, recovered only from receipts matching the pinned profile.
+    save_restart_defaults: BTreeMap<String, BTreeMap<String, i64>>,
+    save_event_snapshot_valid: bool,
+    save_event_epoch: Option<u64>,
 }
 
 impl QuestStateCopy {
+    /// Whether this copy contains an explicitly save-scoped pinned profile.
+    #[must_use]
+    pub fn has_save_event_scope(&self) -> bool {
+        !self.save_restart_defaults.is_empty()
+    }
+
+    /// A journal observer must reload scoped facts after a World save or an
+    /// unqualified receipt delta; neither refreshes this snapshot's World epoch.
+    #[must_use]
+    pub fn save_event_scope_needs_refresh(&self, current_epoch: Option<u64>) -> bool {
+        self.has_save_event_scope()
+            && (!self.save_event_snapshot_valid || self.save_event_epoch != current_epoch)
+    }
+
+    /// Save-qualified event history at admission. Counter-owned quests use
+    /// `counter_quest_progress` instead. Any applied receipt invalidates this
+    /// snapshot; reload it before interpreting current-save completion.
+    #[must_use]
+    pub fn save_event_quest_progress(&self, quest: &str) -> Option<&SaveEventQuestProgress> {
+        self.save_events.get(quest)
+    }
+
+    /// Source-cycle snapshot from admission. Any applied receipt invalidates it:
+    /// a receipt delta cannot establish current World lifecycle authority. Reload
+    /// the copy to observe a new cycle or newly committed mission progress.
+    #[must_use]
+    pub fn counter_quest_progress(&self, quest: &str) -> Option<&CounterQuestProgress> {
+        self.counter_quests.get(quest)
+    }
+
     /// Revision read with these tracks under the Character root lock. Kill owners
     /// freeze it with a death so a later task restart cannot receive an older kill.
     #[must_use]
@@ -396,6 +461,22 @@ impl QuestStateCopy {
             return false;
         }
         self.xp_obligations.extend(new_xp);
+        self.counter_quests.clear();
+        self.save_events.clear();
+        self.save_event_snapshot_valid = false;
+        if committed.transition_key
+            == oteryn_gameplay_quests::quest::shared_world_progress::save_event_restart_key(
+                &committed.quest_key,
+            )
+        {
+            // A first restart can arrive after admission. Remember only that a
+            // reload is required: a receipt alone supplies neither current-save
+            // authority nor the pinned profile's complete default values.
+            self.save_restart_defaults
+                .entry(committed.quest_key.clone())
+                .or_default();
+        }
+
         // A partial delta does not establish a coherent predecessor across a gap or
         // out-of-order replay. Reload before using such a copy as a frozen death fact.
         self.character_revision = self
@@ -594,14 +675,20 @@ pub(super) fn report_refused_experience(
     }
 }
 
+mod authored_admission;
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
 mod collection;
+pub mod encounter_deaths;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod native_kills;
+mod native_prerequisites;
+pub mod native_hits;
+pub mod native_hit_capture;
+pub(crate) mod native_events;
 mod planegazer_finale;
 pub mod rotten_area;
 pub mod rotten_blood;
@@ -612,12 +699,16 @@ pub mod soul_war;
 pub mod source_deaths;
 pub mod soul_war_source;
 mod storage;
+mod terrain_use;
+pub use terrain_use::TerrainUseObservation;
+mod world_change_journal_rewards;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 
+mod world_access;
 mod writer;
 use storage::*;
 
@@ -653,3 +744,7 @@ impl QuestSourceAction {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "m07_counter_postgres_tests.rs"]
+mod m07_counter_postgres_tests;

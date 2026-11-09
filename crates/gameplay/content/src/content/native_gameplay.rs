@@ -41,6 +41,7 @@ use std::{
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
+mod qready1_cradle;
 pub use cosmetics_view::{MARRIAGE_GRANT_KEY, MARRIAGE_PROVENANCE, NativeCosmeticsView};
 
 mod market_catalogue;
@@ -281,10 +282,24 @@ impl NativeMonsterMeleeProfile {
                     .bytes()
                     .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         };
-        if !matches!(
-            self.source_repository.as_str(),
-            "opentibiabr/canary" | "zimbadev/crystalserver"
-        ) || !source_hex(&self.source_revision, 40)
+        // M28 admits one fully pinned OTServBR-derived Fugue body. This is not
+        // a repository-wide admission for arbitrary third-party creature rows.
+        let fugue_source = self.source_repository == "Meth28/global"
+            && self.source_revision == "d959b2a99136978fc714622d42f6906b6d90e892"
+            && self.source_sha256
+                == "834ff4317ac9072021905921751056e5dc466dc216589292c8274e250a19595c"
+            && self.source_path == "data/monster/quests/the_order_of_the_lion/fugue.lua"
+            && self.ability.key == "oteryn:ability.creature.fugue.attack-1"
+            && self.minimum == 150
+            && self.maximum == 700
+            && self.interval_ms == 2000
+            && self.chance_ppm == 1_000_000;
+        if !(fugue_source
+            || matches!(
+                self.source_repository.as_str(),
+                "opentibiabr/canary" | "zimbadev/crystalserver"
+            ))
+            || !source_hex(&self.source_revision, 40)
             || !source_hex(&self.source_sha256, 64)
             || self.source_path.is_empty()
             || self.source_path.starts_with('/')
@@ -1201,6 +1216,24 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
         }
+        // M34: existing canonical quest Item identities use their own pinned
+        // Wiki revisions and the admitted client appearances, never donor IDs.
+        for (item, revision) in [
+            (50335, 1143035),
+            (50336, 1143038),
+            (50337, 1143037),
+            (50338, 1143036),
+        ] {
+            let binding = serde_json::from_value(serde_json::json!({
+                "source_key": "oteryn:source.tibiawiki", "source_revision": format!("fandom-r{revision}"),
+                "identity_namespace": "tibiawiki/item_id", "external_id": item.to_string(),
+                "target": {"family":"Item", "key":format!("oteryn:item.tibia.i{item}"), "revision":"definition-r1"},
+                "disposition":"EXACT"
+            })).map_err(|_| invalid("M34 exact Wiki identity"))?;
+            if admitted.insert(item.to_string(), binding).is_some() {
+                return Err(invalid("M34 Wiki identity collision"));
+            }
+        }
         // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
         // appearance.id. Appearance48416 is independently captured by
         // boss_reward_item_profiles.py; the existing canonical identity is reused.
@@ -1217,6 +1250,15 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             .is_some()
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
+        }
+        let cradle_profiles = qready1_cradle::profiles()?;
+        for (id, record) in &cradle_profiles {
+            if admitted
+                .insert(id.clone(), record.production_binding.clone())
+                .is_some()
+            {
+                return Err(invalid("M20 Cradle identity collision"));
+            }
         }
         let candidate_bytes = include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
@@ -1276,6 +1318,14 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         source_reward_items.extend(galthen_loot::qualified_records()?);
         for record in &items.records {
             let binding = &record.production_binding;
+            if cradle_profiles
+                .get(&binding.external_id)
+                .is_some_and(|source| source != record)
+            {
+                return Err(invalid(
+                    "M20 Cradle profile differs from its qualified source",
+                ));
+            }
             let external = binding
                 .external_id
                 .parse::<u32>()
@@ -2130,6 +2180,27 @@ mod tests {
     }
 
     #[test]
+    fn m18_exit_carpet_uses_validated_native_collision_and_ground_custody() {
+        // Crystal201189f items.xml:35502-35504 and the pinned appearance's
+        // clip/unmove flags: the source timeout exit is carpet17400, not a wall.
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().unwrap();
+        let native = generation.native_gameplay().unwrap();
+        let profile = native
+            .item_policy("oteryn:item.tibia.i17400", "definition-r1")
+            .unwrap();
+        let row = profile.record();
+        assert_eq!(row.attributes.blocks_movement, Some(false));
+        assert_eq!(row.attributes.blocks_projectile, Some(false));
+        assert_eq!(
+            row.admission.legal_destinations,
+            vec![NativeItemDestination::Ground]
+        );
+        assert_eq!(row.attributes.always_on_top_order, Some(1));
+    }
+
+    #[test]
     fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
         let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
         let mut supplied = input();
@@ -2515,6 +2586,93 @@ mod tests {
             supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
             assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
         }
+    }
+
+    #[test]
+    fn m07_too_hot_tools_survive_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for item in [36543, 36544, 36545] {
+            let key = format!("oteryn:item.tibia.i{item}");
+            let record = decoded
+                .state
+                .item_policy(&key, "definition-r1")
+                .expect("qualified Too Hot tool")
+                .record();
+            assert!(record.admission.materializable);
+            assert_eq!(
+                record.admission.legal_destinations,
+                [
+                    NativeItemDestination::CharacterInventory,
+                    NativeItemDestination::Ground
+                ]
+            );
+            assert!(matches!(&record.semantics.physical, F::Known(physical)
+                if physical.movable == F::Known(true) && physical.weight == F::Known(850)));
+        }
+    }
+
+    #[test]
+    fn m07_fire_bug_profile_survives_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i5467", "definition-r1")
+            .expect("qualified Machinery Fire Bug")
+            .record();
+        assert!(record.admission.materializable);
+        assert_eq!(
+            record.admission.legal_destinations,
+            [
+                NativeItemDestination::CharacterInventory,
+                NativeItemDestination::Ground
+            ]
+        );
+        assert!(matches!(&record.semantics.physical, F::Known(physical)
+            if physical.movable == F::Known(true) && physical.weight == F::Known(3050)));
+    }
+
+    #[test]
+    fn m07_lion_flower_profile_preserves_annotation_without_an_active_deadline() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i21389", "definition-r1")
+            .expect("qualified Lion Beauty input")
+            .record();
+        assert!(record.admission.materializable);
+        let F::Known(temporal) = &record.semantics.temporal else {
+            panic!("source duration annotation must survive artifact loading");
+        };
+        assert_eq!(
+            temporal.duration,
+            F::Known(super::super::ReferenceMilliseconds(3_600_000))
+        );
+        assert_eq!(temporal.consumption_mode, F::NotApplicable);
+        assert_eq!(temporal.decay_target, F::NotApplicable);
     }
 
     #[test]
@@ -3109,6 +3267,41 @@ mod tests {
             }
         }
     }
+    #[test]
+    fn fugue_melee_admission_is_limited_to_the_exact_source_body() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/creatures/definitions/spell-native-profiles.json");
+        let document: CreatureProfilesDocument =
+            serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        let row = document
+            .records
+            .iter()
+            .find(|r| r.profile.target.key == "oteryn:creature.fugue")
+            .expect("production Fugue body");
+        let melee = row.monster_melee.clone().expect("source melee");
+        let ProjectV2AuthoringProfileData::Behavior(behavior) =
+            &row.behavior.as_ref().unwrap().data
+        else {
+            unreachable!()
+        };
+        assert!(melee.validate(behavior).is_ok());
+        for mutation in 0..6 {
+            let mut changed = melee.clone();
+            match mutation {
+                0 => changed.source_repository = "unknown/creatures".into(),
+                1 => changed.source_revision = "0".repeat(40),
+                2 => changed.source_sha256 = "0".repeat(64),
+                3 => changed.source_path = "other/fugue.lua".into(),
+                4 => changed.minimum += 1,
+                _ => changed.maximum += 1,
+            }
+            assert!(
+                changed.validate(behavior).is_err(),
+                "unqualified Fugue source mutation {mutation}"
+            );
+        }
+    }
+
     #[test]
     fn monster_melee_requires_exact_active_schedule_and_explicit_approximation_status() {
         let mut creatures: CreatureProfilesDocument =

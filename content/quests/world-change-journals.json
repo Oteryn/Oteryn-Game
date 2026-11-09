@@ -1,0 +1,2449 @@
+{
+  "programs": [
+    {
+      "achievement": "oteryn:achievement/fire_from_the_earth",
+      "completion": {
+        "callbacks": [],
+        "counter_target": 50,
+        "counter_track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills"
+      },
+      "counters": [
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.diabolic_imp",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/diabolic_imp"
+        },
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.dragon",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon"
+        },
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.dragon_hatchling",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_hatchling"
+        },
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.dragon_lord",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord"
+        },
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.dragon_lord_hatchling",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord_hatchling"
+        },
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.dragonling",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragonling"
+        },
+        {
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.hellfire_fighter",
+          "gate": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "maximum": 50,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/hellfire_fighter"
+        }
+      ],
+      "journal": {
+        "name": "Fire from the Earth Mini World Change",
+        "objectives": [
+          "Enter the erupting Hellgore volcano on Goroma.",
+          "Defeat fifty fiery invaders inside or on top of the volcano.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "fire_from_the_earth",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/phase",
+      "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+      "repeat": "once",
+      "requires_premium": true,
+      "runtime_enabled": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76220&oldid=845085",
+        "https://tibia.fandom.com/index.php?curid=76221&oldid=887143"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/fire_from_the_earth/volcano"
+        ],
+        "s2": [
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/diabolic_imp",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_hatchling",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord_hatchling",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragonling",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/hellfire_fighter"
+        ],
+        "s3": [
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/diabolic_imp",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_hatchling",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragon_lord_hatchling",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/dragonling",
+          "oteryn:quest-transition/native-kills/m31/fire_from_the_earth/hellfire_fighter"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills",
+          "max": 50,
+          "min": 0,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/waves",
+          "max": 9223372036854775807,
+          "min": 0,
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "effects": {
+            "encounter": {
+              "minimum_level": 1,
+              "monsters": [
+                {
+                  "creature": "oteryn:creature.diabolic_imp",
+                  "position": {
+                    "floor": -7,
+                    "x": 32038,
+                    "y": 32589
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.dragon",
+                  "position": {
+                    "floor": -7,
+                    "x": 32039,
+                    "y": 32589
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.dragon_hatchling",
+                  "position": {
+                    "floor": -7,
+                    "x": 32040,
+                    "y": 32589
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.dragon_lord",
+                  "position": {
+                    "floor": -7,
+                    "x": 32037,
+                    "y": 32590
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.dragon_lord_hatchling",
+                  "position": {
+                    "floor": -7,
+                    "x": 32038,
+                    "y": 32590
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.dragonling",
+                  "position": {
+                    "floor": -7,
+                    "x": 32039,
+                    "y": 32590
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.hellfire_fighter",
+                  "position": {
+                    "floor": -7,
+                    "x": 32040,
+                    "y": 32590
+                  }
+                }
+              ],
+              "players": [
+                {
+                  "from": {
+                    "floor": -7,
+                    "x": 32037,
+                    "y": 32588
+                  },
+                  "to": {
+                    "floor": -7,
+                    "x": 32037,
+                    "y": 32589
+                  }
+                }
+              ],
+              "room_max": {
+                "floor": -7,
+                "x": 32040,
+                "y": 32590
+              },
+              "room_min": {
+                "floor": -7,
+                "x": 32037,
+                "y": 32589
+              }
+            },
+            "facing": null,
+            "item_cycle": null,
+            "magic": null,
+            "portals": null,
+            "transform": null
+          },
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/fire_from_the_earth/volcano",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 103,
+            "position": {
+              "floor": -7,
+              "x": 32037,
+              "y": 32587
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76220&oldid=845085",
+            "https://tibia.fandom.com/index.php?curid=76221&oldid=887143"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/phase"
+            },
+            {
+              "maximum": 49,
+              "minimum": 0,
+              "preserve": true,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/enabled"
+            },
+            {
+              "increment": true,
+              "maximum": 9223372036854775806,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/fire_from_the_earth/waves"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "use"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [
+          "oteryn:quest-callback/worldchg-m31/fury_gates/seal"
+        ],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [
+        {
+          "area": [
+            33257,
+            33342,
+            31784,
+            31867,
+            13,
+            15
+          ],
+          "creature": "oteryn:creature.fury",
+          "gate": "oteryn:quest-progress/world-change-journal/fury_gates/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.fury_gates_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/fury_gates/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/fury_gates/fury"
+        }
+      ],
+      "journal": {
+        "name": "Fury Gates Mini World Change",
+        "objectives": [
+          "Locate the chosen active Fury Gate entrance.",
+          "Cross the entrance and reach the heart of the Fury Dungeon.",
+          "Subdue ten Furies in the incursion encounter.",
+          "Close the authored personal gate seal.",
+          "Record the completion of the chosen Fury Gates Mini World Change programme and its selected reward intents."
+        ]
+      },
+      "key": "fury_gates",
+      "minimum_level": 60,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/fury_gates/phase",
+      "quest": "oteryn:quest.fury_gates_mini_world_change",
+      "repeat": "once",
+      "requires_premium": true,
+      "runtime_enabled": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76237&oldid=1099676",
+        "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/fury_gates/entry"
+        ],
+        "s2": [
+          "oteryn:quest-callback/worldchg-m31/fury_gates/dungeon"
+        ],
+        "s3": [
+          "oteryn:quest-transition/native-kills/m31/fury_gates/fury"
+        ],
+        "s4": [
+          "oteryn:quest-callback/worldchg-m31/fury_gates/seal"
+        ],
+        "s5": [
+          "oteryn:quest-callback/worldchg-m31/fury_gates/seal"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fury_gates/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.fury_gates_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fury_gates/kills",
+          "max": 10,
+          "min": 0,
+          "quest": "oteryn:quest.fury_gates_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/fury_gates/enabled",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.fury_gates_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/fury_gates/entry",
+          "lever": null,
+          "minimum_level": 60,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.fury_gates_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 7066,
+            "position": {
+              "floor": -7,
+              "x": 32265,
+              "y": 32164
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76237&oldid=1099676",
+            "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
+          ],
+          "storage": [
+            {
+              "at_least": true,
+              "maximum": 5,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/phase"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": {
+            "floor": -13,
+            "x": 33290,
+            "y": 31786
+          },
+          "trigger": "use"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/fury_gates/dungeon",
+          "lever": null,
+          "minimum_level": 60,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.fury_gates_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 10549,
+            "position": {
+              "floor": -13,
+              "x": 33290,
+              "y": 31786
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76237&oldid=1099676",
+            "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
+          ],
+          "storage": [
+            {
+              "at_least": true,
+              "maximum": 5,
+              "minimum": 1,
+              "set": 2,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/phase"
+            },
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/fury_gates/seal",
+          "lever": null,
+          "minimum_level": 60,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.fury_gates_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 776,
+            "position": {
+              "floor": -13,
+              "x": 33290,
+              "y": 31785
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76237&oldid=1099676",
+            "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
+          ],
+          "storage": [
+            {
+              "maximum": 2,
+              "minimum": 2,
+              "set": 5,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/phase"
+            },
+            {
+              "maximum": 10,
+              "minimum": 10,
+              "preserve": true,
+              "set": 10,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/fury_gates/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "use"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [
+          "oteryn:quest-callback/worldchg-m31/grimvale/survey"
+        ],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [
+        {
+          "area": [
+            33300,
+            33360,
+            31665,
+            31730,
+            0,
+            15
+          ],
+          "creature": "oteryn:creature.werewolf",
+          "gate": "oteryn:quest-progress/world-change-journal/grimvale/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.grimvale_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/grimvale/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/grimvale/werewolf"
+        }
+      ],
+      "journal": {
+        "name": "Grimvale Mini World Change",
+        "objectives": [
+          "Reach Grimvale during the authored full-moon encounter.",
+          "Defeat ten Werewolves in the island encounter.",
+          "Record the curse disturbance at the chosen island survey marker.",
+          "Record the completion of the chosen Grimvale Mini World Change programme and its selected reward intents."
+        ]
+      },
+      "key": "grimvale",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/grimvale/phase",
+      "quest": "oteryn:quest.grimvale_mini_world_change",
+      "repeat": "once",
+      "requires_premium": true,
+      "runtime_enabled": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76238&oldid=847053",
+        "https://tibia.fandom.com/index.php?curid=76239&oldid=1102848"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/grimvale/island"
+        ],
+        "s2": [
+          "oteryn:quest-transition/native-kills/m31/grimvale/werewolf"
+        ],
+        "s3": [
+          "oteryn:quest-callback/worldchg-m31/grimvale/survey"
+        ],
+        "s4": [
+          "oteryn:quest-callback/worldchg-m31/grimvale/survey"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/grimvale/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.grimvale_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/grimvale/kills",
+          "max": 10,
+          "min": 0,
+          "quest": "oteryn:quest.grimvale_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/grimvale/enabled",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.grimvale_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/grimvale/waves",
+          "max": 9223372036854775807,
+          "min": 0,
+          "quest": "oteryn:quest.grimvale_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "effects": {
+            "encounter": {
+              "minimum_level": 1,
+              "monsters": [
+                {
+                  "creature": "oteryn:creature.werewolf",
+                  "position": {
+                    "floor": -7,
+                    "x": 33310,
+                    "y": 31710
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.werewolf",
+                  "position": {
+                    "floor": -7,
+                    "x": 33311,
+                    "y": 31710
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.werewolf",
+                  "position": {
+                    "floor": -7,
+                    "x": 33310,
+                    "y": 31711
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.werewolf",
+                  "position": {
+                    "floor": -7,
+                    "x": 33311,
+                    "y": 31711
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.werewolf",
+                  "position": {
+                    "floor": -7,
+                    "x": 33312,
+                    "y": 31711
+                  }
+                }
+              ],
+              "players": [
+                {
+                  "from": {
+                    "floor": -7,
+                    "x": 33312,
+                    "y": 31709
+                  },
+                  "to": {
+                    "floor": -7,
+                    "x": 33312,
+                    "y": 31710
+                  }
+                }
+              ],
+              "room_max": {
+                "floor": -7,
+                "x": 33312,
+                "y": 31711
+              },
+              "room_min": {
+                "floor": -7,
+                "x": 33310,
+                "y": 31710
+              }
+            },
+            "facing": null,
+            "item_cycle": null,
+            "magic": null,
+            "portals": null,
+            "transform": null
+          },
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/grimvale/island",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.grimvale_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 4409,
+            "position": {
+              "floor": -7,
+              "x": 33312,
+              "y": 31709
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76238&oldid=847053",
+            "https://tibia.fandom.com/index.php?curid=76239&oldid=1102848"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/phase"
+            },
+            {
+              "maximum": 9,
+              "minimum": 0,
+              "preserve": true,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/enabled"
+            },
+            {
+              "increment": true,
+              "maximum": 9223372036854775806,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/waves"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/grimvale/survey",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.grimvale_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 1866,
+            "position": {
+              "floor": -7,
+              "x": 33311,
+              "y": 31709
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76238&oldid=847053",
+            "https://tibia.fandom.com/index.php?curid=76239&oldid=1102848"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 4,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/phase"
+            },
+            {
+              "maximum": 10,
+              "minimum": 10,
+              "preserve": true,
+              "set": 10,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/grimvale/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "use"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [
+          "oteryn:quest-callback/worldchg-m31/hive_born/western-inner"
+        ],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [
+        {
+          "area": [
+            33430,
+            33630,
+            31150,
+            31320,
+            0,
+            14
+          ],
+          "creature": "oteryn:creature.crawler",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_born/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_born/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_born/crawler"
+        },
+        {
+          "area": [
+            33430,
+            33630,
+            31150,
+            31320,
+            0,
+            14
+          ],
+          "creature": "oteryn:creature.spidris",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_born/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_born/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_born/spidris"
+        },
+        {
+          "area": [
+            33430,
+            33630,
+            31150,
+            31320,
+            0,
+            14
+          ],
+          "creature": "oteryn:creature.spidris_elite",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_born/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_born/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_born/spidris_elite"
+        },
+        {
+          "area": [
+            33430,
+            33630,
+            31150,
+            31320,
+            0,
+            14
+          ],
+          "creature": "oteryn:creature.kollos",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_born/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_born/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_born/kollos"
+        }
+      ],
+      "journal": {
+        "name": "Hive Born World Change",
+        "objectives": [
+          "Ask Orockle about the Hive defence and personal inner-Hive access.",
+          "Earn fifty Favour Points by completing War Against the Hive tasks.",
+          "Exchange the fifty Favour Points with Orockle for a personal Hive pheromone permit.",
+          "Pass the pheromone gate and reach the eastern inner Hive.",
+          "Defeat ten Hive defenders on the western route.",
+          "Reach the western Hive tower and record the unlocked route.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "hive_born",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [
+        {
+          "achievement": null,
+          "give": null,
+          "key": "oteryn:quest-reward/worldchg-m31/hive_born/ask",
+          "keywords": [
+            "hive defence"
+          ],
+          "next_topic": 0,
+          "npc": "oteryn:npc.orockle",
+          "outfit": null,
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "reply": [
+            "Your personal world-change journey has been recorded."
+          ],
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
+            "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
+          ],
+          "storage": [
+            {
+              "maximum": 0,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
+            }
+          ],
+          "take": [],
+          "topic": 0
+        },
+        {
+          "achievement": null,
+          "give": null,
+          "key": "oteryn:quest-reward/worldchg-m31/hive_born/permit",
+          "keywords": [
+            "personal scent"
+          ],
+          "next_topic": 0,
+          "npc": "oteryn:npc.orockle",
+          "outfit": null,
+          "participants": [
+            {
+              "quest": "oteryn:quest.hive_native_shared",
+              "state_ops": [
+                {
+                  "effect": {
+                    "kind": "add",
+                    "value": -50
+                  },
+                  "from": {
+                    "kind": "between",
+                    "maximum": 9223372036854775807,
+                    "minimum": 50
+                  },
+                  "track": "oteryn:quest-progress/hive/favour"
+                }
+              ],
+              "storage": []
+            }
+          ],
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "reply": [
+            "Your personal world-change journey has been recorded."
+          ],
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
+            "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 3,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
+            }
+          ],
+          "take": [],
+          "topic": 0
+        }
+      ],
+      "phase_track": "oteryn:quest-progress/world-change-journal/hive_born/phase",
+      "quest": "oteryn:quest.authored.hive_born_world_change",
+      "repeat": "once",
+      "requires_premium": true,
+      "runtime_enabled": false,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
+        "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-reward/worldchg-m31/hive_born/ask"
+        ],
+        "s2": [
+          "oteryn:quest-reward/worldchg-m31/hive_born/permit"
+        ],
+        "s3": [
+          "oteryn:quest-reward/worldchg-m31/hive_born/permit"
+        ],
+        "s4": [
+          "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner"
+        ],
+        "s5": [
+          "oteryn:quest-transition/native-kills/m31/hive_born/crawler",
+          "oteryn:quest-transition/native-kills/m31/hive_born/spidris",
+          "oteryn:quest-transition/native-kills/m31/hive_born/spidris_elite",
+          "oteryn:quest-transition/native-kills/m31/hive_born/kollos"
+        ],
+        "s6": [
+          "oteryn:quest-callback/worldchg-m31/hive_born/western-inner"
+        ],
+        "s7": [
+          "oteryn:quest-callback/worldchg-m31/hive_born/western-inner"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/hive_born/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.hive_born_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/hive_born/kills",
+          "max": 10,
+          "min": 0,
+          "quest": "oteryn:quest.authored.hive_born_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/hive_born/enabled",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.authored.hive_born_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/hive_born/eastern-inner",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 12854,
+            "position": {
+              "floor": -1,
+              "x": 33599,
+              "y": 31228
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
+            "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
+          ],
+          "storage": [
+            {
+              "maximum": 3,
+              "minimum": 3,
+              "set": 4,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
+            },
+            {
+              "maximum": 0,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/hive_born/western-inner",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.hive_born_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 13038,
+            "position": {
+              "floor": -1,
+              "x": 33494,
+              "y": 31197
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
+            "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
+          ],
+          "storage": [
+            {
+              "maximum": 4,
+              "minimum": 4,
+              "set": 7,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/phase"
+            },
+            {
+              "maximum": 10,
+              "minimum": 10,
+              "preserve": true,
+              "set": 10,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/hive_born/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [
+          "oteryn:quest-callback/worldchg-m31/hive_outpost/survey"
+        ],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.crawler",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/crawler"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.hive_overseer",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/hive_overseer"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.insectoid_worker",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/insectoid_worker"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.kollos",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/kollos"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.spidris",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/spidris"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.spidris_elite",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/spidris_elite"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.spitter",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/spitter"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.swarmer",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/swarmer"
+        },
+        {
+          "area": [
+            32130,
+            32190,
+            32810,
+            32880,
+            0,
+            12
+          ],
+          "creature": "oteryn:creature.waspoid",
+          "gate": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "maximum": 20,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/hive_outpost/waspoid"
+        }
+      ],
+      "journal": {
+        "name": "Hive Outpost Mini World Change",
+        "objectives": [
+          "Find the Hive outpost west of Liberty Bay on Vandura.",
+          "Drive back twenty insects in the outpost encounter.",
+          "Record the outpost survey at its landmark after the defence.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "hive_outpost",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/hive_outpost/phase",
+      "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+      "repeat": "once",
+      "requires_premium": true,
+      "runtime_enabled": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76240&oldid=969491",
+        "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/hive_outpost/outpost"
+        ],
+        "s2": [
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/crawler",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/hive_overseer",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/insectoid_worker",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/kollos",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/spidris",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/spidris_elite",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/spitter",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/swarmer",
+          "oteryn:quest-transition/native-kills/m31/hive_outpost/waspoid"
+        ],
+        "s3": [
+          "oteryn:quest-callback/worldchg-m31/hive_outpost/survey"
+        ],
+        "s4": [
+          "oteryn:quest-callback/worldchg-m31/hive_outpost/survey"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/hive_outpost/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/hive_outpost/kills",
+          "max": 20,
+          "min": 0,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/hive_outpost/outpost",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 12851,
+            "position": {
+              "floor": -7,
+              "x": 32159,
+              "y": 32845
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76240&oldid=969491",
+            "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
+          ],
+          "storage": [
+            {
+              "maximum": 0,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/hive_outpost/phase"
+            },
+            {
+              "maximum": 0,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/hive_outpost/survey",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 3733,
+            "position": {
+              "floor": -7,
+              "x": 32159,
+              "y": 32844
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76240&oldid=969491",
+            "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 4,
+              "track": "oteryn:quest-progress/world-change-journal/hive_outpost/phase"
+            },
+            {
+              "maximum": 20,
+              "minimum": 20,
+              "preserve": true,
+              "set": 20,
+              "track": "oteryn:quest-progress/world-change-journal/hive_outpost/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/hive_outpost/enabled"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "use"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [],
+      "journal": {
+        "name": "Horse Station World Change",
+        "objectives": [
+          "Visit the horse station east of Thais and inspect its pasture.",
+          "Gather one Sugar Oat for the personal taming attempt.",
+          "Use the Sugar Oat on the chosen Wild Horse encounter.",
+          "Record the completion of the chosen Horse Station World Change programme and its selected reward intents."
+        ]
+      },
+      "key": "horse_station",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/horse_station/phase",
+      "quest": "oteryn:quest.horse_station_world_change",
+      "repeat": "once",
+      "requires_premium": false,
+      "runtime_enabled": false,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=54701&oldid=844780",
+        "https://tibia.fandom.com/index.php?curid=54702&oldid=502074"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/horse_station/pasture"
+        ],
+        "s2": [
+          "oteryn:quest-transition/worldchg-m31/horse_station/tamed"
+        ],
+        "s3": [
+          "oteryn:quest-transition/worldchg-m31/horse_station/tamed"
+        ],
+        "s4": [
+          "oteryn:quest-transition/worldchg-m31/horse_station/tamed"
+        ]
+      },
+      "taming": {
+        "creature": "oteryn:creature.wild_horse",
+        "from_phase": 1,
+        "guaranteed_once": true,
+        "item": "oteryn:item.tibia.i12802",
+        "mount": "oteryn:mount.war_horse",
+        "position": {
+          "floor": -7,
+          "x": 32462,
+          "y": 32214
+        },
+        "to_phase": 4,
+        "transition": "oteryn:quest-transition/worldchg-m31/horse_station/tamed"
+      },
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/horse_station/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.horse_station_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/horse_station/waves",
+          "max": 9223372036854775807,
+          "min": 0,
+          "quest": "oteryn:quest.horse_station_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "effects": {
+            "encounter": {
+              "minimum_level": 1,
+              "monsters": [
+                {
+                  "creature": "oteryn:creature.wild_horse",
+                  "position": {
+                    "floor": -7,
+                    "x": 32462,
+                    "y": 32214
+                  }
+                }
+              ],
+              "players": [
+                {
+                  "from": {
+                    "floor": -7,
+                    "x": 32462,
+                    "y": 32213
+                  },
+                  "to": {
+                    "floor": -7,
+                    "x": 32463,
+                    "y": 32214
+                  }
+                }
+              ],
+              "room_max": {
+                "floor": -7,
+                "x": 32463,
+                "y": 32214
+              },
+              "room_min": {
+                "floor": -7,
+                "x": 32462,
+                "y": 32214
+              }
+            },
+            "facing": null,
+            "item_cycle": null,
+            "magic": null,
+            "portals": null,
+            "transform": null
+          },
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/horse_station/pasture",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.horse_station_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 4519,
+            "position": {
+              "floor": -7,
+              "x": 32462,
+              "y": 32213
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=54701&oldid=844780",
+            "https://tibia.fandom.com/index.php?curid=54702&oldid=502074"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/horse_station/phase"
+            },
+            {
+              "increment": true,
+              "maximum": 9223372036854775806,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/horse_station/waves"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [],
+        "counter_target": 10,
+        "counter_track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills"
+      },
+      "counters": [
+        {
+          "area": [
+            32200,
+            32220,
+            32050,
+            32070,
+            7,
+            7
+          ],
+          "creature": "oteryn:creature.insectoid_scout",
+          "gate": "oteryn:quest-progress/world-change-journal/insectoid_invasion/enabled",
+          "maximum": 10,
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills",
+          "transition": "oteryn:quest-transition/native-kills/m31/insectoid_invasion/insectoid_scout"
+        }
+      ],
+      "journal": {
+        "name": "Insectoid Invasion World Change",
+        "objectives": [
+          "Find the Rotworm hole across the bridge west of Greenshore.",
+          "Clear ten Insectoid Scouts in the chosen incursion encounter.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "insectoid_invasion",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/phase",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "repeat": "once",
+      "requires_premium": false,
+      "runtime_enabled": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=54570&oldid=1106148",
+        "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/insectoid_invasion/incursion"
+        ],
+        "s2": [
+          "oteryn:quest-transition/native-kills/m31/insectoid_invasion/insectoid_scout"
+        ],
+        "s3": [
+          "oteryn:quest-transition/native-kills/m31/insectoid_invasion/insectoid_scout"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/insectoid_invasion/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills",
+          "max": 10,
+          "min": 0,
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/insectoid_invasion/enabled",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/insectoid_invasion/waves",
+          "max": 9223372036854775807,
+          "min": 0,
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "effects": {
+            "encounter": {
+              "minimum_level": 1,
+              "monsters": [
+                {
+                  "creature": "oteryn:creature.insectoid_scout",
+                  "position": {
+                    "floor": -7,
+                    "x": 32208,
+                    "y": 32058
+                  }
+                },
+                {
+                  "creature": "oteryn:creature.insectoid_scout",
+                  "position": {
+                    "floor": -7,
+                    "x": 32209,
+                    "y": 32060
+                  }
+                }
+              ],
+              "players": [
+                {
+                  "from": {
+                    "floor": -7,
+                    "x": 32208,
+                    "y": 32059
+                  },
+                  "to": {
+                    "floor": -7,
+                    "x": 32209,
+                    "y": 32059
+                  }
+                }
+              ],
+              "room_max": {
+                "floor": -7,
+                "x": 32209,
+                "y": 32060
+              },
+              "room_min": {
+                "floor": -7,
+                "x": 32208,
+                "y": 32058
+              }
+            },
+            "facing": null,
+            "item_cycle": null,
+            "magic": null,
+            "portals": null,
+            "transform": null
+          },
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/insectoid_invasion/incursion",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 4407,
+            "position": {
+              "floor": -7,
+              "x": 32208,
+              "y": 32059
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=54570&oldid=1106148",
+            "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/phase"
+            },
+            {
+              "maximum": 9,
+              "minimum": 0,
+              "preserve": true,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/kills"
+            },
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/enabled"
+            },
+            {
+              "increment": true,
+              "maximum": 9223372036854775806,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/insectoid_invasion/waves"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        }
+      ]
+    },
+    {
+      "achievement": null,
+      "completion": {
+        "callbacks": [],
+        "counter_target": 5,
+        "counter_track": "oteryn:quest-progress/world-change-journal/jungle_camp/dworcs"
+      },
+      "counters": [
+        {
+          "area": [
+            32870,
+            32960,
+            32720,
+            32820,
+            0,
+            15
+          ],
+          "creature": "oteryn:creature.hunter",
+          "gate": "oteryn:quest-progress/world-change-journal/jungle_camp/hunt-active",
+          "maximum": 5,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/jungle_camp/hunters",
+          "transition": "oteryn:quest-transition/native-kills/m31/jungle_camp/hunter"
+        },
+        {
+          "area": [
+            32870,
+            32960,
+            32720,
+            32820,
+            0,
+            15
+          ],
+          "creature": "oteryn:creature.poacher",
+          "gate": "oteryn:quest-progress/world-change-journal/jungle_camp/hunt-active",
+          "maximum": 5,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/jungle_camp/hunters",
+          "transition": "oteryn:quest-transition/native-kills/m31/jungle_camp/poacher"
+        },
+        {
+          "area": [
+            32800,
+            32860,
+            32830,
+            32900,
+            8,
+            12
+          ],
+          "creature": "oteryn:creature.dworc_fleshhunter",
+          "gate": "oteryn:quest-progress/world-change-journal/jungle_camp/dworc-active",
+          "maximum": 5,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/jungle_camp/dworcs",
+          "transition": "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_fleshhunter"
+        },
+        {
+          "area": [
+            32800,
+            32860,
+            32830,
+            32900,
+            8,
+            12
+          ],
+          "creature": "oteryn:creature.dworc_venomsniper",
+          "gate": "oteryn:quest-progress/world-change-journal/jungle_camp/dworc-active",
+          "maximum": 5,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/jungle_camp/dworcs",
+          "transition": "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_venomsniper"
+        },
+        {
+          "area": [
+            32800,
+            32860,
+            32830,
+            32900,
+            8,
+            12
+          ],
+          "creature": "oteryn:creature.dworc_voodoomaster",
+          "gate": "oteryn:quest-progress/world-change-journal/jungle_camp/dworc-active",
+          "maximum": 5,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "track": "oteryn:quest-progress/world-change-journal/jungle_camp/dworcs",
+          "transition": "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_voodoomaster"
+        }
+      ],
+      "journal": {
+        "name": "Jungle Camp Mini World Change",
+        "objectives": [
+          "Locate the Hunter Camp in Tiquanda and survey its perimeter.",
+          "Clear five hostile Hunters or Poachers from the camp route.",
+          "Cross to the Dworc Camp and survey its perimeter.",
+          "Clear five Dworcs from the second camp route.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "jungle_camp",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [],
+      "phase_track": "oteryn:quest-progress/world-change-journal/jungle_camp/phase",
+      "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+      "repeat": "once",
+      "requires_premium": true,
+      "runtime_enabled": false,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76242&oldid=847067",
+        "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/jungle_camp/hunter-camp"
+        ],
+        "s2": [
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/hunter",
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/poacher"
+        ],
+        "s3": [
+          "oteryn:quest-callback/worldchg-m31/jungle_camp/dworc-camp"
+        ],
+        "s4": [
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_fleshhunter",
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_venomsniper",
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_voodoomaster"
+        ],
+        "s5": [
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_fleshhunter",
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_venomsniper",
+          "oteryn:quest-transition/native-kills/m31/jungle_camp/dworc_voodoomaster"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/jungle_camp/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/jungle_camp/hunters",
+          "max": 5,
+          "min": 0,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/jungle_camp/hunt-active",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/jungle_camp/dworcs",
+          "max": 5,
+          "min": 0,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change"
+        },
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/jungle_camp/dworc-active",
+          "max": 1,
+          "min": 0,
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/jungle_camp/hunter-camp",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 1019,
+            "position": {
+              "floor": -7,
+              "x": 32900,
+              "y": 32792
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76242&oldid=847067",
+            "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
+          ],
+          "storage": [
+            {
+              "maximum": 0,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/jungle_camp/phase"
+            },
+            {
+              "maximum": 0,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/jungle_camp/hunt-active"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        },
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/jungle_camp/dworc-camp",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 351,
+            "position": {
+              "floor": -10,
+              "x": 32831,
+              "y": 32866
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76242&oldid=847067",
+            "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 3,
+              "track": "oteryn:quest-progress/world-change-journal/jungle_camp/phase"
+            },
+            {
+              "maximum": 5,
+              "minimum": 5,
+              "preserve": true,
+              "set": 5,
+              "track": "oteryn:quest-progress/world-change-journal/jungle_camp/hunters"
+            },
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 0,
+              "track": "oteryn:quest-progress/world-change-journal/jungle_camp/hunt-active"
+            },
+            {
+              "maximum": 0,
+              "minimum": 0,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/jungle_camp/dworc-active"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        }
+      ]
+    },
+    {
+      "achievement": "oteryn:achievement/loyal_subject",
+      "completion": {
+        "callbacks": [
+          "oteryn:quest-reward/worldchg-m31/kingsday/greeting"
+        ],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [],
+      "journal": {
+        "name": "Kingsday Mini World Change",
+        "objectives": [
+          "Visit decorated Thais and the celebration outside the royal castle.",
+          "Greet King Tibianus respectfully during the personal celebration.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "kingsday",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [
+        {
+          "achievement": "oteryn:achievement/loyal_subject",
+          "completes": true,
+          "give": null,
+          "key": "oteryn:quest-reward/worldchg-m31/kingsday/greeting",
+          "keywords": [
+            "hail the king"
+          ],
+          "next_topic": 0,
+          "npc": "oteryn:npc.king_tibianus",
+          "outfit": null,
+          "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+          "reply": [
+            "Your personal world-change journey has been recorded."
+          ],
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76244&oldid=845148",
+            "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 3,
+              "track": "oteryn:quest-progress/world-change-journal/kingsday/phase"
+            }
+          ],
+          "take": [],
+          "topic": 0
+        }
+      ],
+      "phase_track": "oteryn:quest-progress/world-change-journal/kingsday/phase",
+      "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+      "repeat": "once",
+      "requires_premium": false,
+      "runtime_enabled": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76244&oldid=845148",
+        "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/kingsday/royal-visit"
+        ],
+        "s2": [
+          "oteryn:quest-reward/worldchg-m31/kingsday/greeting"
+        ],
+        "s3": [
+          "oteryn:quest-reward/worldchg-m31/kingsday/greeting"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/kingsday/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.kingsday_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/kingsday/royal-visit",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 464,
+            "position": {
+              "floor": -6,
+              "x": 32309,
+              "y": 32173
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76244&oldid=845148",
+            "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
+          ],
+          "storage": [
+            {
+              "maximum": 0,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/kingsday/phase"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        }
+      ]
+    },
+    {
+      "achievement": "oteryn:achievement/whistle_blower",
+      "completion": {
+        "callbacks": [
+          "oteryn:quest-reward/worldchg-m31/lumberjack/report"
+        ],
+        "counter_target": null,
+        "counter_track": null
+      },
+      "counters": [],
+      "journal": {
+        "name": "Lumberjack Mini World Change",
+        "objectives": [
+          "Find Chip's clearing in the Fields of Glory north of Carlin.",
+          "Speak with Chip about his work and establish knowledge of the logging.",
+          "Report Chip the lumberjack to Queen Eloise.",
+          "Record completion and the selected Oteryn reward intents in the character journal."
+        ]
+      },
+      "key": "lumberjack",
+      "minimum_level": 0,
+      "mode": "personal_on_demand",
+      "npc_callbacks": [
+        {
+          "achievement": null,
+          "give": null,
+          "key": "oteryn:quest-reward/worldchg-m31/lumberjack/chip",
+          "keywords": [
+            "work"
+          ],
+          "next_topic": 0,
+          "npc": "oteryn:npc.chip",
+          "outfit": null,
+          "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
+          "reply": [
+            "Your personal world-change journey has been recorded."
+          ],
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76246&oldid=845163",
+            "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
+          ],
+          "storage": [
+            {
+              "maximum": 1,
+              "minimum": 1,
+              "set": 2,
+              "track": "oteryn:quest-progress/world-change-journal/lumberjack/phase"
+            }
+          ],
+          "take": [],
+          "topic": 0
+        },
+        {
+          "achievement": "oteryn:achievement/whistle_blower",
+          "completes": true,
+          "give": null,
+          "key": "oteryn:quest-reward/worldchg-m31/lumberjack/report",
+          "keywords": [
+            "lumberjack"
+          ],
+          "next_topic": 0,
+          "npc": "oteryn:npc.queen_eloise",
+          "outfit": null,
+          "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
+          "reply": [
+            "Your personal world-change journey has been recorded."
+          ],
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76246&oldid=845163",
+            "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
+          ],
+          "storage": [
+            {
+              "maximum": 2,
+              "minimum": 2,
+              "set": 4,
+              "track": "oteryn:quest-progress/world-change-journal/lumberjack/phase"
+            }
+          ],
+          "take": [],
+          "topic": 0
+        }
+      ],
+      "phase_track": "oteryn:quest-progress/world-change-journal/lumberjack/phase",
+      "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
+      "repeat": "once",
+      "requires_premium": false,
+      "runtime_enabled": false,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76246&oldid=845163",
+        "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
+      ],
+      "stage_bindings": {
+        "s1": [
+          "oteryn:quest-callback/worldchg-m31/lumberjack/clearing"
+        ],
+        "s2": [
+          "oteryn:quest-reward/worldchg-m31/lumberjack/chip"
+        ],
+        "s3": [
+          "oteryn:quest-reward/worldchg-m31/lumberjack/report"
+        ],
+        "s4": [
+          "oteryn:quest-reward/worldchg-m31/lumberjack/report"
+        ]
+      },
+      "taming": null,
+      "tracks": [
+        {
+          "initial": 0,
+          "key": "oteryn:quest-progress/world-change-journal/lumberjack/phase",
+          "max": 7,
+          "min": -1,
+          "quest": "oteryn:quest.authored.lumberjack_mini_world_change"
+        }
+      ],
+      "world_callbacks": [
+        {
+          "failure_message": "The personal journey requirements are not met.",
+          "item_on_target": null,
+          "key": "oteryn:quest-callback/worldchg-m31/lumberjack/clearing",
+          "lever": null,
+          "offerings": [],
+          "passages": [],
+          "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
+          "requires_world_admission": true,
+          "return_on_failure": false,
+          "reversible": false,
+          "selector": {
+            "action": null,
+            "appearance": 4518,
+            "position": {
+              "floor": -7,
+              "x": 32418,
+              "y": 31701
+            },
+            "unique": null
+          },
+          "sources": [
+            "oteryn-native:world-change-journal:v1",
+            "https://tibia.fandom.com/index.php?curid=76246&oldid=845163",
+            "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
+          ],
+          "storage": [
+            {
+              "maximum": 0,
+              "minimum": -1,
+              "set": 1,
+              "track": "oteryn:quest-progress/world-change-journal/lumberjack/phase"
+            }
+          ],
+          "success_message": "Your personal journal has been updated.",
+          "teleport": null,
+          "trigger": "step_in"
+        }
+      ]
+    }
+  ],
+  "schema": 1
+}

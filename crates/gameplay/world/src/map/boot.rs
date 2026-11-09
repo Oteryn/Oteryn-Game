@@ -394,13 +394,16 @@ impl CheckedBundle {
         Ok(BundleWorld {
             source_bases: Arc::new(source_bases),
             daily: self.daily,
-            map: Arc::new(BundleMap {
-                entry_start: self.start,
-                overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
-                facts,
-                floors,
-                spell_tiles,
-            }),
+            map: Arc::new(
+                BundleMap {
+                    entry_start: self.start,
+                    overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
+                    facts,
+                    floors,
+                    spell_tiles,
+                }
+                .bind_phase_owner()?,
+            ),
             base: self.base,
             map_revision: self.map_revision,
             start: self.start,
@@ -776,6 +779,44 @@ pub struct BundleMap {
     pub spell_tiles: Arc<BundleSpellTiles>,
 }
 
+impl BundleMap {
+    fn bind_phase_owner(self) -> Result<Self, BootRefusal> {
+        if !self
+            .spell_tiles
+            .install_phases(self.facts.phase_spell_owner())
+        {
+            return Err(BootRefusal::Load(LoadError::Bundle(
+                oteryn_world_bundle::Error::Format("map phase owner already bound".into()),
+            )));
+        }
+        Ok(self)
+    }
+
+    /// Semantic publication only; caller retains the fenced current Channel turn.
+    pub fn publish_feroxa_phase(
+        &self,
+        firing: [u8; 16],
+        phase: u8,
+        source: [u8; 32],
+        tiles: Vec<super::facts::FeroxaPhaseTile>,
+    ) -> bool {
+        matches!(
+            self.overlay.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) && self
+            .facts
+            .publish_feroxa_phase(firing, phase, source, tiles)
+    }
+
+    pub fn zone_flags(&self, pos: TilePos) -> Option<(bool, bool)> {
+        if let Some(flags) = self.facts.phase_zones(pos).ok()? {
+            return Some(flags);
+        }
+        let tile = self.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+        Some((tile.no_logout(), tile.protection_zone()))
+    }
+}
+
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
 /// is enterable, Blocked when it exists but is not, and Absent outside the map.
 #[derive(Debug, Clone)]
@@ -817,9 +858,10 @@ impl BundleCollisionData {
         }) {
             return Err(StaticCellEngineError::Absent);
         }
-        self.base
-            .tile(pos.x, pos.y, pos.floor)
-            .ok_or(StaticCellEngineError::Absent)?;
+        if self.base.tile(pos.x, pos.y, pos.floor).is_none() && !self.map.facts.phase_contains(pos)
+        {
+            return Err(StaticCellEngineError::Absent);
+        }
         Ok(
             if !self
                 .map
@@ -939,23 +981,28 @@ impl BundleCollisionData {
             tile_shapes.push(*self.map.spell_tiles.tiles.get(old)?);
         }
         let spell_tiles = Arc::new(BundleSpellTiles {
+            phases: Default::default(),
             base: Arc::clone(&base) as Arc<dyn crate::content::bundle_spell_tiles::BundleTileBase>,
-            tiles: tile_shapes,
+            tiles: tile_shapes.into(),
             shapes: self.map.spell_tiles.shapes.clone(),
         });
-        let map = Arc::new(BundleMap {
-            entry_start,
-            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
-            facts: match exit {
-                Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
-                None => self.map.facts.activity_region(bounds),
-            },
-            floors: match exit {
-                Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
-                None => self.map.floors.activity_region(bounds),
-            },
-            spell_tiles,
-        });
+        let map = Arc::new(
+            BundleMap {
+                entry_start,
+                overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
+                facts: match exit {
+                    Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
+                    None => self.map.facts.activity_region(bounds),
+                },
+                floors: match exit {
+                    Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
+                    None => self.map.floors.activity_region(bounds),
+                },
+                spell_tiles,
+            }
+            .bind_phase_owner()
+            .ok()?,
+        );
         let view = Self {
             // The region retains the same source bases qualified from the
             // complete compiled Bundle bytes; clipping never invents geometry.
@@ -1025,13 +1072,17 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
         {
             return None;
         }
-        let map = Arc::new(BundleMap {
-            entry_start: source.map.entry_start,
-            overlay: ChannelOverlay::for_scope(Arc::clone(&source.base), scope),
-            facts: source.map.facts.activity_copy(bounds),
-            floors: source.map.floors.clone(),
-            spell_tiles: Arc::clone(&source.map.spell_tiles),
-        });
+        let map = Arc::new(
+            BundleMap {
+                entry_start: source.map.entry_start,
+                overlay: ChannelOverlay::for_scope(Arc::clone(&source.base), scope),
+                facts: source.map.facts.activity_copy(bounds),
+                floors: source.map.floors.clone(),
+                spell_tiles: Arc::new(source.map.spell_tiles.fork_without_phases()),
+            }
+            .bind_phase_owner()
+            .ok()?,
+        );
         Some(BundleCollisionIndex(Arc::new(BundleCollisionData {
             source_bases: Arc::clone(&source.source_bases),
             scope: source.scope.clone(),

@@ -29,6 +29,7 @@
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
+mod platform;
 mod quest_callback;
 mod rope;
 use super::overlay::TilePos;
@@ -40,7 +41,11 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
-pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
+pub use platform::prepare_quest_platform_rider;
+pub use quest_callback::{
+    prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
+    prepare_quest_encounter_ejection,
+};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -345,16 +350,7 @@ fn resolve_landing_with_teleports(
     teleport: impl Fn(TilePos) -> Option<TilePos>,
     suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-        CardinalStep::NorthEast => (1, -1),
-        CardinalStep::SouthEast => (1, 1),
-        CardinalStep::SouthWest => (-1, 1),
-        CardinalStep::NorthWest => (-1, -1),
-    };
+    let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
@@ -510,6 +506,9 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
         return None;
     };
     let bundle = index.map();
+    if let Some(destination) = bundle.facts.phase_teleport(at) {
+        return destination;
+    }
     bundle.floors.teleport_for_source(at, |ordinal| {
         let key = placement_key(at, ordinal)?;
         if bundle.facts.base_hidden(key) {
@@ -570,6 +569,31 @@ fn ground_of(cells: &NativeEntryMovementCells) -> impl Fn(Cell) -> Ground + '_ {
         Ok(CollisionClass::Blocked) => Ground::Blocked,
         Err(_) => Ground::Absent,
     }
+}
+
+/// Forced platform movement permits stacked occupants, while retaining the
+/// ordinary collision and protection-zone landing rules for every occupant.
+pub fn quest_platform_landable(
+    cells: &NativeEntryMovementCells,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &dyn CellBlocker,
+    projected_walkable: bool,
+) -> bool {
+    let cell = (destination.x, destination.y, i32::from(destination.floor));
+    projected_walkable
+        && cells
+            .index()
+            .lookup(
+                cells.scope(),
+                LogicalCell {
+                    x: cell.0,
+                    y: cell.1,
+                    z: cell.2,
+                },
+            )
+            .is_ok()
+        && landable_of(cells, pz_blocked, closed)(cell)
 }
 
 fn movement_error(refusal: Refusal) -> MovementError {
@@ -774,16 +798,7 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-            CardinalStep::NorthEast => MovementFacing::North,
-            CardinalStep::SouthEast => MovementFacing::South,
-            CardinalStep::SouthWest => MovementFacing::South,
-            CardinalStep::NorthWest => MovementFacing::North,
-        };
+        let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
 }

@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "positions/m40.rs"]
+mod m40;
+
 /// Lossless, private 32-byte position namespace. Both identifier kinds are
 /// UUIDv7, so their fixed version nibble can carry the kind without growing
 /// every actor slot. This is never a wire, database or canonical identity key.
@@ -709,12 +712,10 @@ impl ChannelActorCarrier {
                 next.x.checked_sub(position.position.x),
                 next.y.checked_sub(position.position.y),
             ) {
-                (true, Some(1), Some(0)) => MovementFacing::East,
-                (true, Some(-1), Some(0)) => MovementFacing::West,
+                (true, Some(1), Some(-1..=1)) => MovementFacing::East,
+                (true, Some(-1), Some(-1..=1)) => MovementFacing::West,
                 (true, Some(0), Some(1)) => MovementFacing::South,
                 (true, Some(0), Some(-1)) => MovementFacing::North,
-                (true, Some(-1 | 1), Some(-1)) => MovementFacing::North,
-                (true, Some(-1 | 1), Some(1)) => MovementFacing::South,
                 _ => return Err(CarrierError::MovementNonCardinal),
             };
             let order = self.next_tile_entry_order()?;

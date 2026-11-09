@@ -657,17 +657,9 @@ fn next(
     mut at: MovementLocalPosition,
     step: oteryn_protocol_oteryn::world_spatial::StepDirection,
 ) -> MovementLocalPosition {
-    use oteryn_protocol_oteryn::world_spatial::StepDirection as D;
-    match step {
-        D::North => at.y -= 1,
-        D::East => at.x += 1,
-        D::South => at.y += 1,
-        D::West => at.x -= 1,
-        D::NorthEast => { at.x += 1; at.y -= 1; }
-        D::SouthEast => { at.x += 1; at.y += 1; }
-        D::SouthWest => { at.x -= 1; at.y += 1; }
-        D::NorthWest => { at.x -= 1; at.y -= 1; }
-    }
+    let (dx,dy)=step.delta();
+    at.x+=dx;
+    at.y+=dy;
     at
 }
 
@@ -1008,6 +1000,7 @@ async fn pick_origin(
     let item = generation_item_facts(native, &definition).map_err(debug)?;
     let fence = admitted.item_fence.ok_or("fence")?;
     let request = MapItemMintRequest {
+        flat_crate: None,
         key_number: None,
         command: crate::foundation::CommandRef::new(
             admitted.game_session_id,

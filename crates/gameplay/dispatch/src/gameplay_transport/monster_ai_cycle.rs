@@ -28,6 +28,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.drain_cloak_blood_events().await {
             return;
         }
+        self.drain_arena_matches(self.owner_now().get()).await;
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -43,6 +44,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.drain_cloak_blood_events().await {
             return;
         }
+        self.drain_arena_matches(now.get()).await;
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -174,6 +176,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::primal_menace::tick(self, &mut runtime, room, content, now.get() / 1_000);
         }
         let periodic_pass = now.get() >= states.next_monster_ai_pass_us;
+        if periodic_pass {
+            super::encounter_phases::tick(&mut runtime, &states);
+        }
         if !periodic_pass
             && !states
                 .monster_melee

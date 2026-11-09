@@ -18,6 +18,18 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod altar_arrival;
+pub use altar_arrival::{AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
+
+mod elemental_arrival;
+pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
+mod elemental_recovery;
+pub use elemental_recovery::ElementalSummonProjection;
+mod elemental_summons;
+pub use elemental_summons::{
+    ElementalSummonClaim, ElementalSummonClock, ElementalSummonIntent, ElementalSummonScope,
+};
+
 mod floor_assembly;
 pub(in crate::durability) mod floor_transform;
 pub use floor_assembly::FloorAssemblyTarget;
@@ -51,7 +63,7 @@ use oteryn_gameplay_items::item_capacity::{
 };
 use serde::Serialize;
 use serde_json::json;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use sqlx::{Postgres, Row, Transaction};
 
 /// BAGS-1: the deepest admitted placement (the main backpack's direct entries are depth 1).
@@ -189,8 +201,24 @@ pub struct LoopGroundItem {
 /// The admitted Content generation the move is decided against: the facts of every touched
 /// definition and their unit weights, bound to the active Content digest.
 pub trait ItemLoopContent: ItemWeightLookup {
+    /// The same admitted generation used for source outfit grants; absent is fail-closed.
+    fn npc_outfit_content(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        None
+    }
     fn loop_content_digest(&self) -> [u8; 32];
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts>;
+    /// Only Ground-to-Ground relocation may admit a movable, non-portable profile.
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
+    /// Called only after the durable native corpse source proof and Ground-only
+    /// destination gate. It grants no inventory or trade admission.
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {
         None
     }
@@ -1061,9 +1089,12 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
+                EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS native_corpse, \
+                game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
-                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup \
+                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup, \
+                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1143,7 +1174,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         {
             return refuse(LoopMoveRefusal::Stale);
         }
-        if !row.try_get::<bool, _>("loop_pickup")? {
+        let native_corpse = row.try_get::<bool, _>("native_corpse")?;
+        if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
+            return refuse(LoopMoveRefusal::NotSupported);
+        }
+        if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse && !row.try_get::<bool, _>("altar_corpse_source")? {
             return refuse(LoopMoveRefusal::NotSupported);
         }
         let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
@@ -1156,25 +1191,28 @@ async fn apply_loop_move<C: ItemLoopContent>(
         // Map-MINT's exact source proof binds its context to the bundle digest (0130),
         // whereas the destination loop drop uses the actor's frame. A loop drop keeps
         // its frame context; both sources must keep their map and Content pins.
-        if let LoopDestination::Ground(to) = &request.destination
-            && (row.try_get::<String, _>("ground_map")?
-                != if source_plain_corpse {
-                    let digest = Sha256::digest(to.map_revision.as_bytes());
-                    format!(
+        if let LoopDestination::Ground(to) = &request.destination {
+            let source_map: String = row.try_get("ground_map")?;
+            let loop_drop: bool = row.try_get("loop_drop")?;
+            // A corpse MINT binds the native pin's revision-string digest.
+            // Its first loop drop binds the underlying bundle revision instead.
+            let native_map = (native_corpse && !loop_drop) || source_plain_corpse
+
+                && source_map
+                    == format!(
                         "sha256:{}",
-                        digest
+                        sha2::Sha256::digest(to.map_revision.as_bytes())
                             .iter()
                             .map(|byte| format!("{byte:02x}"))
                             .collect::<String>()
-                    )
-                } else {
-                    to.map_revision.clone()
-                }
+                    );
+            if (source_map != to.map_revision && !native_map)
                 || row.try_get::<String, _>("ground_content")? != to.content_revision
-                || ((row.try_get::<bool, _>("loop_drop")? || source_plain_corpse)
-                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context))
-        {
-            return refuse(LoopMoveRefusal::Stale);
+                || ((loop_drop || native_corpse || source_plain_corpse)
+                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context)
+            {
+                return refuse(LoopMoveRefusal::Stale);
+            }
         }
         SourceKind::Ground
     } else {
@@ -1187,7 +1225,14 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let Some(facts) = content.loop_facts(&definition) else {
+    let facts = if row.try_get::<bool, _>("native_corpse")? { content.loop_native_corpse_facts(&definition) } else if source == SourceKind::Ground
+        && matches!(request.destination, LoopDestination::Ground(_))
+    {
+        content.loop_ground_facts(&definition)
+    } else {
+        content.loop_facts(&definition)
+    };
+    let Some(facts) = facts else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
     if facts.definition != definition {
@@ -1619,6 +1664,20 @@ async fn main_target<C: ItemLoopContent>(
     })
 }
 
+/// Share map-source admission with the MINT owner before reserving an origin.
+/// Current generation facts must still match the complete requested definition facts.
+pub fn plan_map_item_loop_mint(
+    mint: &super::map_item_mint::MapItemMintRequest,
+    current_facts: Option<&ItemDefinitionFacts>,
+) -> std::result::Result<(), LoopMoveRefusal> {
+    if current_facts != Some(&mint.item)
+        || super::map_item_mint::plan_map_item_mint_request(mint, false).is_err()
+    {
+        return Err(LoopMoveRefusal::NotSupported);
+    }
+    Ok(())
+}
+
 impl DurabilityRoot {
     /// MAP-PICKUP-1: read-only destination/weight admission before reserving a MINT.
     /// Reuses the live loop's planner; the move rechecks everything under its own fence.
@@ -1653,11 +1712,13 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let world = fence.runtime_scope.world_id();
-                        if mint.item.container_capacity.is_some()
-                            || content.loop_facts(&mint.item.definition).as_ref()
-                                != Some(&mint.item)
-                        {
-                            return refuse(LoopMoveRefusal::NotSupported);
+                        let facts = if matches!(destination, LoopDestination::Ground(_)) {
+                            content.loop_ground_facts(&mint.item.definition)
+                        } else {
+                            content.loop_facts(&mint.item.definition)
+                        };
+                        if let Err(reason) = plan_map_item_loop_mint(mint, facts.as_ref()) {
+                            return refuse(reason);
                         }
                         plan_loop_destination(
                             &mut tx,
@@ -1785,6 +1846,43 @@ impl DurabilityRoot {
                         // Dropping the transaction rolls it back: a refusal writes nothing.
                         Ok(Err(refusal)) => Ok(Err(refusal)),
                         Err(error) => loop_error(error).map(Err),
+                    }
+                })
+            })
+            .await
+    }
+
+    /// Resolve an uncertain ordinary or elemental-arrival move against its exact request.
+    /// The command lock waits out an in-flight writer before absence is returned. This
+    /// historical read needs the current recovery seal, but no live item or old session
+    /// authority: a successful arrival has already retired its input corpse.
+    pub async fn reconcile_item_loop_move(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+        request: LoopMoveRequest,
+    ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let read: LoopResult<_> = async {
+                        let intent = intent_bytes(character_id, &request)?;
+                        lock_loop_command(&mut tx, command).await?;
+                        committed_loop_move(&mut tx, command, character_id, &intent).await
+                    }
+                    .await;
+                    match read {
+                        Ok(replay) => {
+                            super::db::commit_semantic_transaction(tx, deadline).await?;
+                            Ok(replay)
+                        }
+                        Err(error) => loop_error(error).map(|refusal| Some(Err(refusal))),
                     }
                 })
             })

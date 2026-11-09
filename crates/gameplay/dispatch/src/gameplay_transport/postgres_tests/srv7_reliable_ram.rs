@@ -51,6 +51,27 @@ pub(super) async fn exercise(
     callback: &Callback,
     target: Position,
 ) -> TestResult {
+    exercise_mode(owner, admitted, h, callback, target, false).await
+}
+
+pub(super) async fn exercise_selected(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: &Callback,
+    target: Position,
+) -> TestResult {
+    exercise_mode(owner, admitted, h, callback, target, true).await
+}
+
+async fn exercise_mode(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    callback: &Callback,
+    target: Position,
+    twins: bool,
+) -> TestResult {
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -90,6 +111,12 @@ pub(super) async fn exercise(
         true,
     )
     .await?;
+    if twins {
+        super::quest_world_callbacks::input_item(owner, fence.item_fence(), &Offering {position:target,item:source.item.clone(),count:1}, 902, true).await?;
+    }
+    let tools: Vec<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i53073' ORDER BY e.placement_ordinal DESC").fetch_all(&h.pool).await?;
+    let selected_offset = if twins && tools[1] > tools[0] {1} else {0};
+    let selected_id = tools[selected_offset].clone();
     let map = owner.bundle_map().ok_or("map")?;
     let key = oteryn_world_bundle::bundle::placement_key(target.floor, target.x, target.y, 1)
         .ok_or("ram key")?;
@@ -134,7 +161,7 @@ pub(super) async fn exercise(
     let (remaining, consumed, achievement): (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i53073' AND lifecycle=1), (SELECT count(*) FROM game_quest_callback_consumptions), (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/a_reliable_friend')").fetch_one(&h.pool).await?;
     assert_eq!(
         (remaining, consumed, achievement),
-        (1, 0, 0),
+        (if twins {2} else {1}, 0, 0),
         "refusal changes no value participant"
     );
     // Source state after Emiliana's real reward is the fixture boundary. The
@@ -224,7 +251,7 @@ pub(super) async fn exercise(
         .ok_or("clock")?;
     let command = admitted.continuity.next_command_id;
     let (next, outcome, actual) =
-        super::item_craft::exchange(owner, *admitted, command, &payload, Some(reference)).await?;
+        super::item_craft::exchange_selected(owner, *admitted, command, &payload, Some(reference), selected_offset).await?;
     *admitted = next;
     assert_eq!(
         outcome,
@@ -257,7 +284,11 @@ pub(super) async fn exercise(
         Some(&1)
     );
     let (remaining, consumed, achievement): (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i53073' AND lifecycle=1), (SELECT count(*) FROM game_quest_callback_consumptions), (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/a_reliable_friend')").fetch_one(&h.pool).await?;
-    assert_eq!((remaining, consumed, achievement), (0, 1, 1));
+    assert_eq!((remaining, consumed, achievement), (if twins {1} else {0}, 1, 1));
+    let consumed_id: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_quest_callback_consumptions WHERE transition_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
+    assert_eq!(consumed_id, selected_id, "the selected copy is consumed, even when FIFO would choose another UUID");
+    let bound: bool = sqlx::query_scalar("SELECT (convert_from(proof,'UTF8')::jsonb #> '{context,selected_tool,source}')=(SELECT jsonb_agg(get_byte(uuid_send(c.item_instance_id),n) ORDER BY n) FROM generate_series(0,15) bytes(n)) FROM game_quest_callback_consumptions c WHERE transition_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
+    assert!(bound, "immutable consumption binds the chosen instance");
     let (next, outcome, _) =
         super::item_craft::exchange(owner, *admitted, command, &actual, None).await?;
     *admitted = next;
@@ -269,4 +300,16 @@ pub(super) async fn exercise(
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key='oteryn:content.mount.reliable_ram/quest-grant'").fetch_one(&h.pool).await?;
     assert_eq!(count, 1);
     Ok(())
+}
+
+#[test]
+fn engitem_targuna_consumes_the_selected_copy_and_replays_its_fenced_receipt() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }
+    let started=std::time::Instant::now();
+    let result=super::kill_reward_e2e::scenario_thread::run("engitem_selected_world_tool", || {
+        super::quest_world_callbacks::scenario("engitem-targuna-selected-tool",Position{x:31926,y:31896,floor:-7},false)
+    });
+    assert!(started.elapsed().as_secs_f64()>0.01);
+    eprintln!("ENGITEM_PG_EXECUTED selected_world_tool duration={:?} success={}",started.elapsed(),result.is_ok());
+    result
 }

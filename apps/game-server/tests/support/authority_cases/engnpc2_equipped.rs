@@ -37,6 +37,14 @@ impl ItemLoopContent for Content {
 
 #[test]
 fn engnpc2_equipped_head_admission_is_fenced_atomic_and_replay_bound() -> fixture::TestResult {
+    run_equipped_fixture("head", HELMET, 1)
+}
+
+pub(super) fn run_equipped_fixture(
+    slot_name: &'static str,
+    item: &'static str,
+    slot: i16,
+) -> fixture::TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -47,13 +55,18 @@ fn engnpc2_equipped_head_admission_is_fenced_atomic_and_replay_bound() -> fixtur
                 .map_err(fixture::debug)?
                 .block_on(async {
                     let started = std::time::Instant::now();
-                    let h = fixture::Harness::create(admin, "engnpc2_equipped", true).await?;
-                    let result = exercise(&h).await;
+                    let h = fixture::Harness::create(
+                        admin,
+                        &format!("engnpc2_equipped_{slot_name}"),
+                        true,
+                    )
+                    .await?;
+                    let result = exercise(&h, slot_name, item, slot).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
-                        "ENGNPC2_PG_EXECUTED equipped_head duration={:?}",
+                        "ENGNPC2_PG_EXECUTED equipped_{slot_name} duration={:?}",
                         started.elapsed()
                     );
                     Ok::<(), Box<dyn std::error::Error>>(())
@@ -65,12 +78,17 @@ fn engnpc2_equipped_head_admission_is_fenced_atomic_and_replay_bound() -> fixtur
         .map_err(Into::into)
 }
 
-async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+async fn exercise(
+    h: &fixture::Harness,
+    slot_name: &str,
+    item: &str,
+    slot: i16,
+) -> fixture::TestResult {
     let reference = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13";
     let text = serde_json::json!({"schema":1,"quest":QUEST,
         "tracks":[{"key":TRACK,"quest":QUEST,"initial":0,"min":0,"max":1,"sources":[reference]}],
         "rules":[{"key":RULE,"quest":QUEST,"npc":"oteryn:npc.fixture","trigger":"say",
-            "keywords":["mission"],"guards":[{"kind":"equipped","slot":"head","item":HELMET},
+            "keywords":["mission"],"guards":[{"kind":"equipped","slot":slot_name,"item":item},
                 {"kind":"storage","track":TRACK,"op":"eq","value":0}],
             "effects":[{"kind":"set","track":TRACK,"value":1}],"reply":["Accepted."],"sources":[reference]}]
     }).to_string();
@@ -116,7 +134,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
-        .bind(fixture::id(91).as_slice()).bind(fixture::id(fixture::WORLD).as_slice()).bind(HELMET).bind(fixture::id(92).as_slice()).execute(&mut *tx).await?;
+        .bind(fixture::id(91).as_slice()).bind(fixture::id(fixture::WORLD).as_slice()).bind(item).bind(fixture::id(92).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(fixture::id(fixture::CHARACTER).as_slice()).execute(&mut *tx).await?;
     // The right Item in a different equipped slot must not qualify.
@@ -173,7 +191,8 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_character_equipment_slots SET slot=1")
+    sqlx::query("UPDATE game_character_equipment_slots SET slot=$1")
+        .bind(slot)
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;

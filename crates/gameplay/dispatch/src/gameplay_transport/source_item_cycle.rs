@@ -182,6 +182,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
+        if matches!(
+            runtime.binding().runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_static_instance(
+                &runtime, room, source,
+            )
+            .is_ok();
+        }
         let binding = match crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
             &runtime, room, source,
         ) {

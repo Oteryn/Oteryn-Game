@@ -55,12 +55,30 @@ pub enum CardinalStep {
 }
 
 impl CardinalStep {
+    /// Crystal201189f map.cpp:413-422: horizontal movement wins facing.
+    #[must_use]
+    pub const fn facing(self) -> crate::foundation::MovementFacing {
+        use crate::foundation::MovementFacing;
+        match self {
+            Self::North => MovementFacing::North,
+            Self::South => MovementFacing::South,
+            Self::East | Self::NorthEast | Self::SouthEast => MovementFacing::East,
+            Self::West | Self::NorthWest | Self::SouthWest => MovementFacing::West,
+        }
+    }
+    #[must_use]
     pub const fn is_diagonal(self) -> bool {
         matches!(
             self,
             Self::NorthEast | Self::SouthEast | Self::SouthWest | Self::NorthWest
         )
     }
+    /// Crystal201189f creature.hpp:53 and creature.cpp:1492-1511.
+    #[must_use]
+    pub const fn duration_multiplier(self) -> u32 {
+        if self.is_diagonal() { 3 } else { 1 }
+    }
+
     pub const fn delta(self) -> (i32, i32) {
         match self {
             Self::North => (0, -1),
@@ -216,7 +234,7 @@ impl<'a> MovementDecision<'a> {
             return Err(MovementError::NotQualified);
         }
         owner
-            .commit_adjacent(self.expected, self.destination)
+            .commit_step(self.expected, self.destination)
             .map_err(MovementError::Actor)
     }
 }
@@ -440,6 +458,8 @@ mod tests {
     use crate::foundation::{ChannelId, GameSessionId, MovementActorFixture, NodeId, WorldId};
     use std::error::Error;
     use std::time::Instant;
+
+    include!("movement/m40_diagonal_tests.rs");
 
     fn fixture(x: i32, y: i32, creature: bool) -> Result<MovementActorFixture, CarrierError> {
         MovementActorFixture::new(MovementLocalPosition { x, y, floor: 7 }, creature)

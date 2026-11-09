@@ -40,6 +40,10 @@ fn qn3_m05_gnomus_measurements_report_keeps_item_points_and_deadline() -> Result
         .plan_item_exchange(&input)
         .map_err(|e| e.to_string())?
         .ok_or("no report")?;
+    assert!(
+        !plan.completes,
+        "a repeatable task report must not complete Dangerous Depths"
+    );
     assert_eq!(
         plan.track_changes
             .iter()

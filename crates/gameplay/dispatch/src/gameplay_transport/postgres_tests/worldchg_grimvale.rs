@@ -459,7 +459,21 @@ fn producer_world(
             blocks_projectile: None,
         }),
     });
-    for (floor, x, y) in [(-11, 33389, 31539), (-11, 33457, 31531)] {
+    // Retained middle.otbm contains three appearance-only13841 decorations.
+    // They have no portable Item definition. A qualified source World must serve
+    // their fixed Terrain identity; missing definitions still refuse the phase.
+    data.manifest.palette.push(bundle::PaletteEntry {
+        key: "oteryn:terrain.tibia.i13841".into(),
+        family: bundle::Family::Terrain,
+        id: 3,
+        terrain: Some(bundle::Terrain {
+            kind: bundle::TerrainKind::Common,
+            walkable: None,
+            ground_speed: None,
+            blocks_projectile: Some(false),
+        }),
+    });
+    for (floor, x, y) in [(-11, 33380, 31537), (-11, 33457, 31531)] {
         cells.entry((floor, x, y)).or_default();
     }
     cells
@@ -542,10 +556,24 @@ fn producer_world(
 
 #[test]
 fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestResult {
+    run_producer(false, false)
+}
+
+#[test]
+fn qn5_feroxa_final_opens_portal_when_boss_spawn_is_blocked() -> TestResult {
+    run_producer(true, false)
+}
+
+#[test]
+fn qn5_feroxa_timed_native_maps_ignore_pending_delivery_and_reject_stale_reset() -> TestResult {
+    run_producer(false, true)
+}
+
+fn run_producer(block_spawn: bool, prove_phases: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("worldchg-grimvale-producer", || {
+    super::kill_reward_e2e::scenario_thread::run("worldchg-grimvale-producer", move || {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(
                 admin,
@@ -554,7 +582,7 @@ fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestRe
                 false,
             )
             .await?;
-            let result = producer_scenario(&h).await;
+            let result = producer_scenario(&h, block_spawn, prove_phases).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -590,13 +618,17 @@ async fn producer_seed(
     Ok(())
 }
 
-async fn producer_scenario(harness: &Harness) -> TestResult {
+async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool) -> TestResult {
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     let key = "raid:edron.feroxa";
     let expected = 1;
     let start = std::time::Instant::now();
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&harness.pool)
+        .await?;
+    eprintln!("QN5_M52_FORMS_POSTGRES_READY version={version}");
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -659,7 +691,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         .select(bundle_digest, firing)
         .map_err(debug)?;
     assert_eq!(selected.definition.waves.len(), 1);
-    assert_eq!(selected.definition.waves[0].delay_ms, 61_000);
+    assert_eq!(selected.definition.waves[0].delay_ms, 75 * 60_000);
     let first_area = selected
         .areas
         .get(&selected.definition.waves[0].entries[0].area_anchor)
@@ -667,8 +699,8 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     assert_eq!(
         first_area.from,
         RaidPosition {
-            x: 33389,
-            y: 31539,
+            x: 33380,
+            y: 31537,
             floor: 11
         }
     );
@@ -706,7 +738,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         1,
         1,
         "runtime-scope-assignment:1",
-        expected + 1,
+        expected + 5, // four players plus one transient source create-before-remove body
         pin,
     )
     .map_err(debug)?;
@@ -720,6 +752,21 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     runtime
         .initialize_first_entry_position(deps.actor)
         .map_err(debug)?;
+    let mut extra_players = Vec::new();
+    for (n, at) in [
+        (81, Position { x: TRIGGER.x - 2, ..TRIGGER }),
+        (82, if block_spawn {
+            // An actual current player occupies the source's only spawn tile.
+            Position { x: 33380, y: 31537, floor: -11 }
+        } else { Position { x: 33457, y: 31531, floor: -11 } }),
+        (83, DESTINATION),
+    ] {
+        let session = crate::foundation::GameSessionId::decode(&id(n)).map_err(debug)?;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime.initialize_pinned_test_position(actor, super::quest_world_callbacks::local(at)).map_err(debug)?;
+        extra_players.push((actor, at));
+    }
     deps.runtime = tokio::sync::Mutex::new(runtime);
     deps.combat_room = Some(room);
     let mut owner = deps.owner(harness, &authority);
@@ -744,8 +791,35 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         }
     ));
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
+    if prove_phases {
+        owner.apply_feroxa_map_clock(firing, 0).await.map_err(|_| "new firing before first announcement")?;
+        let pending = harness.root.advance_raid_run(&harness.node, firing, owner.channel_id,
+            generation, selected.definition.clone(), 0).await?.ok_or("pending announcement")?;
+        assert!(matches!(pending.action, CommittedRaidAction::Announcement { .. }));
+        let at = crate::map::overlay::TilePos { x: 33421, y: 31524, floor: -11 };
+        owner.reset_epoch = 2;
+        assert!(owner.apply_feroxa_map_clock(firing, 1_800_000).await.is_err());
+        owner.reset_epoch = 1;
+        owner.apply_feroxa_map_clock(firing, 1_799_999).await.map_err(|_| "before map timer")?;
+        assert!(owner.bundle_map().ok_or("map")?.facts.phase_tile(at).map_err(debug)?.is_none());
+        for (now, expected_ground, expected_no_logout) in [(1_800_000, 13989, true), (3_600_000, 8087, false)] {
+            owner.apply_feroxa_map_clock(firing, now).await.map_err(|_| "native map timer")?;
+            let map = owner.bundle_map().ok_or("map")?;
+            let tile = map.facts.phase_tile(at).map_err(debug)?.ok_or("published source phase")?;
+            assert_eq!(tile.entries[0].facts.appearance_id, expected_ground);
+            assert_eq!(map.zone_flags(at).ok_or("phase flags")?.0, expected_no_logout);
+            let before = map.facts.object_revision(crate::map::view::placement_key(at, 0).ok_or("phase placement")?);
+            owner.apply_feroxa_map_clock(firing, now).await.map_err(|_| "map replay")?;
+            assert_eq!(map.facts.object_revision(crate::map::view::placement_key(at, 0).ok_or("phase placement")?), before);
+            let still_pending = harness.root.pending_raid_effect(&harness.node, firing, owner.channel_id, generation)
+                .await?.ok_or("announcement remains pending")?;
+            assert_eq!(still_pending.identity, pending.identity);
+        }
+        assert!(start.elapsed().as_secs_f64() > 0.01);
+        eprintln!("QN5_M52_TIMED_NATIVE_MAPS_PG_EXECUTED elapsed={:?}", start.elapsed());
+    }
     let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
-    for announcement_at in [1_000, 30_000, 60_000] {
+    for announcement_at in selected.definition.announcements.iter().map(|notice| i64::from(notice.delay_ms)) {
         let announcement = harness
             .root
             .advance_raid_run(
@@ -789,7 +863,30 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         .await
         .map_err(|_| "physical raid wave")?;
     assert_eq!(outcomes.len(), expected);
-    assert!(outcomes.iter().all(|outcome| outcome.placed));
+    assert!(outcomes.iter().all(|outcome| outcome.placed != block_spawn));
+    assert_eq!(
+        deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(DESTINATION),
+        "source final() ejects current contenders before opening the portal"
+    );
+    {
+        let mut runtime = deps.runtime.lock().await;
+        for (index, (actor, original)) in extra_players.iter().enumerate() {
+            let expected = if index == 1 { *original } else { DESTINATION };
+            assert_eq!(runtime.read_actor_position(*actor).map_err(debug)?.position(),
+                super::quest_world_callbacks::local(expected),
+                "only current in-range players move; existing landing occupants remain");
+        }
+        // A later arrival must not be ejected by replay of the same final wave.
+        let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        let closed = crate::map::floor::BundleDoors(owner.bundle_map().ok_or("map")?.facts.doors());
+        let proof = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime, &cells, deps.actor, deps.admitted.game_session_id, before,
+            super::quest_world_callbacks::local(Position { x: TRIGGER.x - 1, ..TRIGGER }),
+            false, &closed,
+        ).map_err(debug)?;
+        runtime.commit_source_step(proof).map_err(debug)?;
+    }
     assert_eq!(
         owner
             .apply_raid_wave(&wave, &selected, bundle_digest)
@@ -797,6 +894,9 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
             .map_err(|_| "physical raid replay")?,
         outcomes
     );
+    assert_eq!(deps.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+        super::quest_world_callbacks::local(Position { x: TRIGGER.x - 1, ..TRIGGER }),
+        "final-wave replay does not eject later arrivals");
     let map = owner.bundle_map().ok_or("bundle map")?;
     let at = crate::map::overlay::TilePos {
         x: TRIGGER.x,
@@ -829,9 +929,18 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         revision,
         "replay cannot retransform source"
     );
-    let runtime = deps.runtime.lock().await;
+    let mut runtime = deps.runtime.lock().await;
     let statuses = runtime.raid_creatures(firing).map_err(debug)?;
     assert_eq!(statuses.len(), 1);
+    if block_spawn {
+        assert_eq!(statuses[0].outcome, oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Failed);
+        assert!(!statuses[0].alive, "failed placement must not fabricate a live boss");
+        drop(runtime);
+        harness.root.acknowledge_raid_effect(&harness.node, wave.identity, outcomes, now).await?;
+        assert!(start.elapsed().as_secs_f64() > 0.01);
+        eprintln!("QN5_FEROXA_BLOCKED_SPAWN_POSTGRES_COMPLETED elapsed={:?}", start.elapsed());
+        return Ok(());
+    }
     assert!(statuses[0].alive);
     let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(actor) = statuses[0].outcome
     else {
@@ -846,6 +955,92 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
             .definition_key,
         "oteryn:creature.feroxa"
     );
+    let original = runtime.companion_snapshot(actor).map_err(debug)?;
+    let poffs = || map.facts.movement_effects_since(0).into_iter()
+        .filter_map(|(_, at, effect)| (effect == 3).then_some(at)).collect::<Vec<_>>();
+    let body_tile = crate::map::overlay::TilePos { x: 33380, y: 31537, floor: -11 };
+    assert!(poffs().is_empty());
+    assert_eq!(
+        (original.health, original.maximum_health),
+        (100_000, 100_000)
+    );
+    runtime
+        .commit_monster_lab_damage(actor, b"qn5-feroxa-above-half", 49_999)
+        .map_err(debug)?;
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
+    assert!(
+        runtime.contains_live_creature(actor),
+        "above half does not replace the body"
+    );
+    assert!(poffs().is_empty(), "no transformation means no source poff");
+    runtime
+        .commit_monster_lab_damage(actor, b"qn5-feroxa-at-half", 1)
+        .map_err(debug)?;
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
+    let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(second) =
+        runtime.raid_creatures(firing).map_err(debug)?[0].outcome
+    else {
+        return Err("Feroxa2 missing".into());
+    };
+    assert_ne!(second, actor);
+    let second_body = runtime.companion_snapshot(second).map_err(debug)?;
+    assert_eq!(
+        second_body.state.policy.definition_key,
+        "oteryn:creature.feroxa2"
+    );
+    assert_eq!(
+        (second_body.health, second_body.maximum_health),
+        (50_000, 50_000)
+    );
+    assert_eq!(second_body.position, original.position);
+    assert_eq!(poffs(), vec![body_tile], "first source handoff emits poff at its original cell");
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
+    assert_eq!(poffs(), vec![body_tile], "replay cannot repeat a handoff's effect");
+    runtime
+        .commit_monster_lab_damage(second, b"qn5-feroxa-at-quarter", 25_000)
+        .map_err(debug)?;
+    crate::gameplay_transport::raid_live::advance_feroxa_forms(&mut runtime, firing, bundle_digest, map);
+    let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(third) =
+        runtime.raid_creatures(firing).map_err(debug)?[0].outcome
+    else {
+        return Err("Feroxa3/4 missing".into());
+    };
+    assert_ne!(third, second);
+    let third_body = runtime.companion_snapshot(third).map_err(debug)?;
+    assert!(matches!(
+        third_body.state.policy.definition_key.as_str(),
+        "oteryn:creature.feroxa3" | "oteryn:creature.feroxa4"
+    ));
+    assert_eq!(
+        (third_body.health, third_body.maximum_health),
+        (130_000, 130_000)
+    );
+    assert_eq!(poffs(), vec![body_tile, body_tile], "second source handoff emits exactly one poff");
+    runtime
+        .commit_monster_lab_damage(third, b"qn5-feroxa-intermediate-lethal", 130_000)
+        .map_err(debug)?;
+    assert!(crate::gameplay_transport::raid_live::continue_feroxa_death(
+        &mut runtime,
+        third
+    ));
+    let oteryn_gameplay_entities::carrier::RaidSpawnOutcome::Placed(actor) =
+        runtime.raid_creatures(firing).map_err(debug)?[0].outcome
+    else {
+        return Err("Feroxa5 missing".into());
+    };
+    assert_ne!(actor, third);
+    let final_body = runtime.companion_snapshot(actor).map_err(debug)?;
+    assert_eq!(
+        final_body.state.policy.definition_key,
+        "oteryn:creature.feroxa5"
+    );
+    assert_eq!(
+        (final_body.health, final_body.maximum_health),
+        (150_000, 150_000)
+    );
+    assert_eq!(final_body.position, original.position);
+    assert_eq!(poffs(), vec![body_tile, body_tile], "the source death callback emits no poff");
+    assert!(runtime.raid_creatures(firing).map_err(debug)?[0].alive);
     drop(runtime);
     // Placement acknowledgement opens the durable runner's lifetime boundary.
     harness
@@ -898,6 +1093,17 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         .root
         .acknowledge_raid_effect(&harness.node, expiry.identity, vec![], now + 72_000_000)
         .await?;
+    if prove_phases {
+        let state: i16 = sqlx::query_scalar("SELECT state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid")
+            .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(state, 2);
+        assert!(harness.root.due_raid_firings(owner.channel_id).await?.iter().any(|(id, _)| *id == firing));
+        assert!(crate::gameplay_transport::raid_live_world::project_grimvale_portal(map, false));
+        owner.apply_feroxa_map_clock(firing, now + 72_000_000).await.map_err(|_| "completed map recovery")?;
+        assert!(!crate::map::floor::is_teleport(&cells, crate::content::LogicalCell {
+            x: i32::from(TRIGGER.x), y: i32::from(TRIGGER.y), z: 11,
+        }), "ACKed final entry recovers without spawning or ejecting again");
+    }
     assert!(crate::gameplay_transport::raid_live_world::project_grimvale_portal(map, false));
     assert!(
         crate::map::floor::is_teleport(
@@ -916,7 +1122,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         "PG execution duration must exceed1s"
     );
     eprintln!(
-        "WORLDCHG-Q PG EXECUTED: Grimvale native61s final wave, Feroxa actor, exact1949/22761 ingress, replay and close; elapsed={:?}",
+        "WORLDCHG-Q PG EXECUTED: Grimvale native75min source wave, source Feroxa form handoffs, exact1949/22761 ingress, replay and close; elapsed={:?}",
         start.elapsed()
     );
     Ok(())

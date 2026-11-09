@@ -6,11 +6,18 @@ import argparse
 import copy
 import importlib
 import questpc4_treasure_reward_equipment_pin
+import first_dragon_item_profiles
 import json
 import os
 import re
 import tempfile
 from pathlib import Path
+
+import qengine_reward_equipment_pin
+import qready1_clock_equipment_pin
+import qready1_cradle_equipment_pin
+import qready1_craft_equipment_pin
+import questpc4_treasure_reward_equipment_pin
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
@@ -204,6 +211,24 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
         )
+    # Pin the independent admission packet, never the generated runtime union.
+    # New shared quest inputs must retain the exact-key/raw-speed checks below.
+    engine_pin = r"assert_eq!\(added_keys\.len\(\),\s*[0-9_]+\);"
+    if len(re.findall(engine_pin, source)) > 1:
+        raise ValueError("ambiguous shared engine exact-key pin")
+    source = re.sub(
+        engine_pin, f"assert_eq!(added_keys.len(), {len(engine_keys)});", source
+    )
+    source = re.sub(
+        r'\("qengine-reward-item-profiles\.json",\s*[0-9_]+\)',
+        f'("qengine-reward-item-profiles.json", {len(engine_keys)})',
+        source,
+    )
+    source = re.sub(
+        r"// QENGINE2 captures \d+ shared Items plus \w+ portable QUESTPC4 Items\.",
+        "// QENGINE2 independently captures shared engine and portable quest Items.",
+        source,
+    )
     if additions:
         cohort_block = "    // Generated from closed source packets minus pinned pre-SRX3 identities.\n"
         if coowners:
@@ -252,12 +277,44 @@ def main():
         "content/items/definitions/starting-loadout-profiles.json",
     )
     original = TEST.read_text()
+    source = first_dragon_item_profiles.cohort_receipt(original)
     source = questpc4_treasure_reward_equipment_pin.refresh(
-        original,
+        source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
     )
+    import qengine_equipment_cohort
+    source = qengine_equipment_cohort.refresh(
+        source, json.loads((ROOT / paths[2]).read_bytes())
+    )
+    from m41_equipment_cohort import register
+    # A stale preceding owner already determines --check; refuse without touching
+    # its file or requiring unrelated owner inputs to be admitted first.
+    if args.check and source != original:
+        raise SystemExit("equipment cohort pin is stale")
+    import qengine_reward_equipment_pin
+    source = qengine_reward_equipment_pin.refresh(
+        source, json.loads((ROOT / paths[2]).read_bytes())
+    )
+    from qnpcfx_item_profiles import cohort_receipt, profile_identity_receipt
+    packet = json.loads((ROOT / paths[3]).read_bytes())
+    source = profile_identity_receipt(cohort_receipt(source, packet), packet)
+    source = qready1_clock_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-quest-item-profiles.json").read_bytes()),
+    )
+    source = qready1_craft_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json").read_bytes()),
+    )
+    source = qready1_cradle_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-cradle-item-profiles.json").read_bytes()),
+    )
+    source = qengine_reward_equipment_pin.refresh(
+        source, json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
+    )
     generated, count = regenerate(
-        source, *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
+        register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
         coowners=source_coowners(ROOT),
     )
     if args.check and generated != original:

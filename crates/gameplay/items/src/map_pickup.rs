@@ -66,3 +66,118 @@ pub fn eligibility(facts: PickupFacts) -> Result<(), Ineligible> {
     }
     Ok(())
 }
+
+/// The native empty large amphora uses count zero for its empty fluid state.
+/// Its ground push reuses every ordinary source-binding refusal.
+pub fn empty_amphora_push_quantity(key: &str, facts: PickupFacts) -> Result<u32, Ineligible> {
+    if key != "oteryn:item.tibia.i2904" {
+        return Err(Ineligible::NotPickupable);
+    }
+    if facts.quantity != 0 {
+        return Err(Ineligible::Quantity);
+    }
+    eligibility(PickupFacts {
+        pickupable: true,
+        quantity: 1,
+        ..facts
+    })?;
+    Ok(1)
+}
+
+/// A map source is materialized whole; a partial or different requested count is unsupported.
+pub fn whole_quantity_requested(quantity: u32, requested: Option<u32>) -> bool {
+    (1..=crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX).contains(&quantity)
+        && requested.is_none_or(|count| count == quantity)
+}
+
+#[cfg(test)]
+mod amphora_tests {
+    use super::*;
+    #[test]
+    fn empty_amphora_push_preserves_bindings_and_refuses_filled_sources() {
+        let empty = PickupFacts {
+            pickupable: false,
+            house: false,
+            action: false,
+            unique: false,
+            door: false,
+            depot: false,
+            teleport: false,
+            dropped_teleport: false,
+            contents: false,
+            text: false,
+            description: false,
+            charges: false,
+            quantity: 0,
+        };
+        let key = "oteryn:item.tibia.i2904";
+        assert_eq!(eligibility(empty), Err(Ineligible::NotPickupable));
+        assert_eq!(empty_amphora_push_quantity(key, empty), Ok(1));
+        assert_eq!(
+            empty_amphora_push_quantity("oteryn:item.tibia.i2471", empty),
+            Err(Ineligible::NotPickupable)
+        );
+        assert_eq!(
+            empty_amphora_push_quantity(
+                key,
+                PickupFacts {
+                    quantity: 1,
+                    ..empty
+                }
+            ),
+            Err(Ineligible::Quantity)
+        );
+        assert_eq!(
+            empty_amphora_push_quantity(
+                key,
+                PickupFacts {
+                    house: true,
+                    ..empty
+                }
+            ),
+            Err(Ineligible::House)
+        );
+        assert_eq!(
+            empty_amphora_push_quantity(
+                key,
+                PickupFacts {
+                    action: true,
+                    ..empty
+                }
+            ),
+            Err(Ineligible::Action)
+        );
+        assert_eq!(
+            empty_amphora_push_quantity(
+                key,
+                PickupFacts {
+                    contents: true,
+                    ..empty
+                }
+            ),
+            Err(Ineligible::Contents)
+        );
+    }
+}
+
+#[cfg(test)]
+mod quantity_tests {
+    use super::whole_quantity_requested;
+    #[test]
+    fn map_source_refuses_different_requested_counts_before_materialization() {
+        assert!(whole_quantity_requested(1, None));
+        assert!(whole_quantity_requested(1, Some(1)));
+        assert!(whole_quantity_requested(7, Some(7)));
+        assert!(
+            !whole_quantity_requested(1, Some(2)),
+            "a request for two must not silently move one"
+        );
+        assert!(
+            !whole_quantity_requested(7, Some(3)),
+            "a partial request must not silently move the whole source"
+        );
+        assert!(!whole_quantity_requested(7, Some(0)));
+        assert!(!whole_quantity_requested(0, None));
+        assert!(!whole_quantity_requested(101, None));
+    }
+}

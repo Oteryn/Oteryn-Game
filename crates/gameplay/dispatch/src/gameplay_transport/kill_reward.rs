@@ -1522,6 +1522,9 @@ pub fn record_creature_kill(
             .soul_war_callbacks
             .record_committed_death(runtime, target, now_ms);
     }
+    if super::raid_live::continue_feroxa_death(runtime, target) {
+        return;
+    }
     if runtime.is_tibiadrome(target) {
         let _ = crate::combat::project_fixed_one_creature_death(
             &mut runtime.borrow_combat_death(),
@@ -1571,6 +1574,11 @@ pub fn record_creature_kill(
         .is_err()
     {
         return;
+    }
+    if let Some(states) = sink.prey {
+        states
+            .encounter_phases
+            .note_projected_death(runtime, target);
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
@@ -1758,9 +1766,10 @@ pub fn record_creature_kill(
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
                 if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
-                    accept_kill(
+                    accept_encounter_kill(
                         runtime,
                         sink.queue,
+                        sink.prey,
                         PendingKillSettlement {
                             facts,
                             creature,
@@ -1820,7 +1829,7 @@ pub fn record_creature_kill(
             entry.world_change = world_change;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
-            accept_kill(runtime, sink.queue, entry);
+            accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
             return;
         }
     };
@@ -2130,7 +2139,7 @@ pub fn record_creature_kill(
         source_completion: None,
         no_progression_logged: false,
     };
-    accept_kill(runtime, sink.queue, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
 }
 
 /// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
@@ -2216,16 +2225,26 @@ fn record_soulpit_kill(
     entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
     entry.activity_at_death = Some(sink.activity.to_vec());
     entry.damage_shares = shares;
-    accept_kill(runtime, sink.queue, entry);
+    accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
 }
 
 /// Append `entry` to `queue`. Once the queue accepts it (queued or parked), pin its killed
 /// actor's corpse projection, so no later death evicts it before the settle binds the committed
 /// corpse (Codex 4248192466). A duplicate keeps the pin its first append took; a kill the full
 /// queue refuses pins nothing. Runs under the runtime lock and the `attack` guard.
+#[cfg(test)]
 fn accept_kill(
     runtime: &mut ChannelRuntimeV1,
     queue: &KillSettlementQueue,
+    entry: PendingKillSettlement,
+) -> AppendOutcome {
+    accept_encounter_kill(runtime, queue, None, entry)
+}
+
+fn accept_encounter_kill(
+    runtime: &mut ChannelRuntimeV1,
+    queue: &KillSettlementQueue,
+    states: Option<&super::actor_spell::ChannelSpellStates>,
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     // A source-controlled lethal publication already reserved its deferred
@@ -2241,6 +2260,11 @@ fn accept_kill(
     };
     if entry.soulpit_experience.is_none() {
         super::grizzly_kills::capture(runtime, queue, &mut entry);
+        if let Some(states) = states {
+            states
+                .encounter_phases
+                .capture_terminal(runtime, states, &mut entry);
+        }
     }
 
     let target = entry.target;
@@ -2671,6 +2695,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// bounty may be changed by any earlier kill. Each entry gets its own current
     /// fence, and no later entry passes an in-flight, parked or retrying predecessor.
     pub(super) async fn drain_kill_rewards(&self, _session: GameSessionId) -> DrainOutcome {
+        if !self.drain_native_quest_hits().await {
+            return DrainOutcome::Deferred;
+        }
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
             let principal = match self.states.attack.lock().await.kills().ordered_principal() {
                 Ok(Some(principal)) => principal,

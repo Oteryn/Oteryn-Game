@@ -70,7 +70,7 @@ pub fn essence(item: &str) -> Option<&'static EssenceSource> {
 /// by the existing quest callback consumption owner under the Character lock.
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
-    Callback { admission: None,
+    Callback { required_completed_quests: Vec::new(), admission: None, requires_premium: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
@@ -79,8 +79,8 @@ world_change: None,
         lever: None, reversible: false, passages: Vec::new(), teleport: None, facing: None, effects: Default::default(),
         state_ops: Vec::new(), world_requirements: Vec::new(),
         storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, increment: false, at_least: false }],
-        minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),
-        item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,
+        minimum_level: None, character_requirements: None, experience: None, monk_reward: None, offerings: Vec::new(),
+        item_on_target: Some(ItemOnTarget { ingredients: Vec::new(), target_remove: false, selected_instance: false, item: "oteryn:item.tibia.i32594".into(), count: 1,
             alternatives: Vec::new(), replacement: None, target_replacement: None, reusable: false }),
         return_on_failure: false,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),

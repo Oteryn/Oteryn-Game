@@ -1282,3 +1282,20 @@ follow-up batch; this repair does not claim full-suite qualification.
 ## QMECH fungus-source correction
 
 The recipe marks Slime Fungus ambiguous, but the pinned donor supplies the needed consequence: Crystal201189f `data-global/lib/quests/their_masters_voice.lua:111–149` preserves Slime Gobbler and transforms the selected fungus to12065 (line127). Native daily projection already supplies appearances12059–12063 (`crates/gameplay/world/src/map/daily.rs:233–254`). Existing target replacement/tool reuse is sufficient; do not add remove-only map semantics for this quest. Personal cleaning-stage, Sentry/tool handout and death-stage registrations still need binding; this correction does not qualify the complete journey.
+
+## M03 source lookup (2026-11-08)
+
+The live-admission schema is already on qmech b1d907db4; reuse it. The current
+slice connects structured Premium to the existing transaction-bound gate, with
+Feaster's existing Premium requirement as the production regression consumer.
+Blessing/promotion hooks and the two M03 quest entries are still this lane's next
+work, not a dependency on another engine lane.
+
+Checked the retained 25 Years source specification and the pinned Canary tree.
+The structured specification names Thais/Time Travel Dungeon but supplies no exact
+entrance tile or appearance; the pinned Canary tree has no 25 Years script.
+TibiaWiki BR's public API returned HTTP 403, so that route was stopped. Continue
+with other public sources for the entry geometry instead of inventing coordinates.
+Sources: https://www.tibiawiki.com.br/index.php?curid=53542&oldid=406180 ;
+https://tibia.fandom.com/index.php?curid=95774&oldid=1082137 ;
+https://github.com/opentibiabr/canary/tree/47dfd51f45280a59a1d3e50ba7edd573d7234446 .

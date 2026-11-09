@@ -450,3 +450,5 @@ pub use error::SessionError;
 use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;
+
+pub use oteryn_protocol_oteryn::personal_map_marks;

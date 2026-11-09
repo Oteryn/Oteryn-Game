@@ -593,6 +593,10 @@ def validate_record(record):
         or record["provenance"]["item_pointer"]["key"] in official_corpses.KEYS
     ):
         errors.extend(official_corpses.validate_record(record))
+    if record["provenance"]["source_item_id"] == 17970:
+        import qm50_ground
+        if record != qm50_ground.record():
+            errors.append("M50 ground differs from its qualified source")
     for field in known_fields(record):
         if field not in record["provenance"]["fields"]:
             errors.append(f"provenance/fields: no source for KNOWN {field}")

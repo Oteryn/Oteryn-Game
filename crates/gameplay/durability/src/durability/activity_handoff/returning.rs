@@ -197,7 +197,7 @@ pub(super) async fn return_in_transaction(
             ));
         }
     }
-    let now = now_ms(tx).await?;
+    let now = quest_activity_now_ms(tx, root).await?;
     let due = match r.reason {
         ActivityReturnReason::Exit | ActivityReturnReason::OwnerLost | ActivityReturnReason::Death { .. } => true,
         ActivityReturnReason::Abandoned { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
@@ -339,7 +339,6 @@ pub(super) async fn return_in_transaction(
             origin: None,
             transport: r.destination_transport,
         },
-        now,
     )
     .await?;
     sqlx::query("INSERT INTO game_activity_runtime_returns(return_id,handoff_id,character_id,source_game_session_id,source_connection_generation,source_lease_generation,command_id,request_binding,destination_game_session_id,destination_ownership_generation,returned_at,reason,destination_transport_ref,death_occurrence_id,return_x,return_y,return_floor,return_coordinate_frame_digest,return_map_revision_digest,return_server_artifact_digest,release_transport_ref,release_loss_epoch,native_step_exit) \

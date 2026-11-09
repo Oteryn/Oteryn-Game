@@ -202,6 +202,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    ElementalArrival(Box<super::super::loop_move::elemental_arrival::PendingElementalArrival>),
     Enchanting(Box<super::super::item_craft::enchanting::PendingEnchanting>),
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
@@ -355,6 +356,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::ElementalArrival(pending) => {
+                drop(states);
+                self.resolve_elemental_arrival(&mut permit, *pending).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Enchanting(pending) => {
                 drop(states);
                 self.resolve_enchanting(&mut permit, *pending).await;
@@ -1293,6 +1299,8 @@ async fn prepare_source_self_from_owners(
         now,
         &mut |minimum, _| minimum,
     )?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=paid_preview");
     item_spell_augments::cooldown(owned, spell, &mut preview.next, &mut preview.anchor, now)?;
     // Source reentry protection suppresses outgoing ally healing; self healing
     // remains eligible. This selection preview consumes no live random stream.
@@ -1333,11 +1341,17 @@ async fn prepare_source_self_from_owners(
             preview_requests,
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=presentation_preview");
     runtime
         .stage_spell_batch(&preview_batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=runtime_preview");
     stage_player_batch(runtime, states, &preview_batch, Some(preview.next.clone()))
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=player_preview");
     before
         .prepare_paid_training(
             &preview.next,
@@ -2935,9 +2949,35 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
             let mut attack=owner.states.attack.lock().await;
-            // Phase 2: no awaited work, allocation, new random draw or fallible branch.
-            let mut attempt=window.install();
-            let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            // Prepare hit metadata before the physical install; this last fallible span
+            // still borrows the retained original attempt, including the exact Rune use.
+            let (attempt,batch)={
+                let mut cache=attack.kills().1.lock().map_err(|_|DurabilityError::Unavailable)?;
+                let source=if window.attempt().rune.is_some() {
+                    match spell.carrier {
+                        crate::spell::Carrier::Rune {item,..}=>content.item_policy_for_source_id(item)
+                            .and_then(|policy|super::super::quest_hits::queue::direct_damage_target(&window.attempt().prepared.batch().effects)
+                                .and_then(|(target,ordinal)|runtime.companion_snapshot(target).ok().map(|snapshot|
+                                    (target,ordinal,policy.record().production_definition.production_key.as_str(),snapshot.state.policy.definition_key.clone())))),
+                        _=>None,
+                    }
+                } else {None};
+                let mut hits=if let Some((target,ordinal,item,creature))=&source {
+                    Some(cache.hits.prepare(&runtime,actor,*target,command,*ordinal,creature,item,Some(spell.key.as_str()))
+                        .map_err(|_|DurabilityError::Unavailable)?)
+                } else {None};
+                // Phase 2: no awaited work, allocation, new random draw or fallible branch.
+                let mut attempt=window.install();
+                let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+                if batch.applied && let (Some(hits),Some((target,ordinal,item,creature)))=(&mut hits,&source)
+                    && batch.effects.iter().any(|effect|effect.target==*target && effect.sub_ordinal==*ordinal
+                        && effect.health.is_some_and(|health|health.committed_health_loss().is_some()))
+                    && let Ok(Some(witness))=runtime.borrow_exact_actor_commit()
+                        .committed_hit_for_bound_attacker(*target,actor,command,*ordinal) {
+                    hits.capture(witness,creature,item,Some(spell.key.as_str()));
+                }
+                (attempt,batch)
+            };
             if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
@@ -2945,7 +2985,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             if let Some(at) = attempt.prepared.batch().now_us && batch.applied {
                 for effect in &batch.effects {
-                    if effect.health.is_some_and(|h| h.applied && h.health_after < h.health_before)
+                    if effect.health.is_some_and(|h| h.committed_health_loss().is_some())
                         && let Ok(snapshot) = runtime.companion_snapshot_including_dead(effect.target)
                         && snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar {
                         states.prey_activity(&runtime, actor, session, super::super::prey::PreyActivity {
@@ -2977,6 +3017,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             leftover,
             parked,
         );
+        drop(states);
+        let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
             Err(_) => NativeCastDispatch::Pending,

@@ -1117,6 +1117,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if let Some(callbacks) = source_callbacks {
             states.spell_states.get_mut().soul_war_callbacks = callbacks;
         }
+        states
+            .spell_states
+            .lock()
+            .await
+            .initialize_owner_bookkeeping(&runtime)
+            .ok_or(ActivityRuntimeRegistrationError)?;
         self.activity_runtimes
             .insert(RegisteredRuntime {
                 scope: assignment.scope,

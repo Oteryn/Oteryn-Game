@@ -1,6 +1,8 @@
 //! Source NPC teleport composition over the existing pending-arrival owner.
 use super::*;
+use crate::durability::character_last_position::LastPositionCell;
 use crate::durability::npc_travel::PendingArrival;
+use oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition;
 use oteryn_gameplay_quests::quest::npc_rules::teleport::NpcTeleportPlan;
 
 /// Map-owner admitted destination. Locked source evaluation must independently match it.
@@ -9,15 +11,28 @@ pub struct NpcTeleportAdmission {
     pub arrival: PendingArrival,
 }
 impl NpcTeleportAdmission {
+    /// Quest data stores native floor `-z`; movement and arrival records use legacy `z`.
+    pub fn runtime_destination(position: NpcRulePosition) -> Option<LastPositionCell> {
+        if !(0..=65535).contains(&position.x)
+            || !(0..=65535).contains(&position.y)
+            || !(-15..=0).contains(&position.floor)
+        {
+            return None;
+        }
+        Some(LastPositionCell {
+            x: position.x,
+            y: position.y,
+            floor: -position.floor,
+        })
+    }
+
     pub(super) fn matches(
         self,
         fence: CurrentCharacterGameplayFence,
         plan: &NpcTeleportPlan,
     ) -> bool {
         self.arrival.world_id == fence.runtime_scope.world_id()
-            && self.arrival.destination.x == plan.destination.x
-            && self.arrival.destination.y == plan.destination.y
-            && self.arrival.destination.floor == plan.destination.floor
+            && Self::runtime_destination(plan.destination) == Some(self.arrival.destination)
     }
 }
 
@@ -75,6 +90,7 @@ pub fn preview_teleport(
         NpcEvaluationFacts {
             eligibility,
             player_name: None,
+            appearance: (&BTreeMap::new(), 0),
         },
     )
 }
@@ -102,8 +118,8 @@ pub(super) fn evaluate(
         level: facts.eligibility.level,
         premium_current: facts.eligibility.premium_current,
         vocation: &facts.eligibility.vocation,
-        sex: 0,
-        outfits: &BTreeMap::new(),
+        sex: facts.appearance.1,
+        outfits: facts.appearance.0,
     })
 }
 
@@ -114,6 +130,7 @@ pub(super) fn response(plan: &NpcRulePlan) -> NpcProgramCommit {
         next_topic: plan.next_topic,
         read_only: true,
         inventory_changed: false,
+        magic_effects: Vec::new(),
         end_conversation: items::ends(plan),
         end_delay_ms: items::end_delay(plan),
     }
@@ -127,7 +144,7 @@ pub(super) async fn insert(
     admission: NpcTeleportAdmission,
 ) -> StoredResult<()> {
     let a = admission.arrival;
-    sqlx::query("INSERT INTO game_quest_npc_teleport_receipts(character_id,game_session_id,command_id,transition_key,request_binding,program_digest,occurrence_id,world_id,tile_x,tile_y,tile_floor,reply,next_topic,end_conversation,end_delay_ms,quest_changed) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,$10,$11,$12,$13,$14,$15,$16)")
+    sqlx::query("INSERT INTO game_quest_npc_teleport_receipts(character_id,game_session_id,command_id,transition_key,request_binding,program_digest,occurrence_id,world_id,tile_x,tile_y,tile_floor,reply,next_topic,end_conversation,end_delay_ms,quest_changed,runtime_coordinates) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,$10,$11,$12,$13,$14,$15,$16,true)")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice())
         .bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(request.binding(character).as_slice())
         .bind(plan.program_digest.as_slice()).bind(a.occurrence.as_bytes().as_slice()).bind(a.world_id.as_bytes().as_slice())
@@ -146,19 +163,27 @@ pub(super) async fn replay_matches(
     request: &NpcProgramRequest,
     admission: NpcTeleportAdmission,
 ) -> StoredResult<bool> {
-    let row = sqlx::query("SELECT occurrence_id::text,world_id::text,tile_x,tile_y,tile_floor FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
+    let row = sqlx::query("SELECT occurrence_id::text,world_id::text,tile_x,tile_y,tile_floor,runtime_coordinates FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice())
         .bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
     let Some(row) = row else {
         return Ok(true);
     };
     let a = admission.arrival;
+    let stored_floor: i16 = row.try_get("tile_floor")?;
+    let stored_floor = if row.try_get::<bool, _>("runtime_coordinates")? {
+        stored_floor
+    } else {
+        stored_floor
+            .checked_neg()
+            .ok_or(DurabilityError::InvalidStoredState)?
+    };
     Ok(
         uuid_text(&row.try_get::<String, _>("occurrence_id")?)? == a.occurrence.as_bytes()
             && uuid_text(&row.try_get::<String, _>("world_id")?)? == *a.world_id.as_bytes()
             && row.try_get::<i32, _>("tile_x")? == a.destination.x
             && row.try_get::<i32, _>("tile_y")? == a.destination.y
-            && row.try_get::<i16, _>("tile_floor")? == a.destination.floor,
+            && stored_floor == a.destination.floor,
     )
 }
 
@@ -185,6 +210,7 @@ pub(super) async fn load_read_only(
         next_topic: row.try_get("next_topic")?,
         read_only: true,
         inventory_changed: false,
+        magic_effects: Vec::new(),
         end_conversation: row.try_get("end_conversation")?,
         end_delay_ms: u64::try_from(row.try_get::<i32, _>("end_delay_ms")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,

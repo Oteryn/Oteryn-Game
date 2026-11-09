@@ -312,6 +312,19 @@ impl<T: Send + 'static> SpellCommitWindow<'_, T> {
         self.commit_called = true;
     }
 
+    /// Keep an audited item-owner attempt parked if its real COMMIT is cancelled
+    /// or ambiguous. Only a definite rejection makes it reclaimable again.
+    pub(in crate::durability) async fn commit_type2_transaction(
+        &mut self,
+        tx: super::item_mint_audit::Type2Transaction<'_>,
+        deadline: Instant,
+    ) -> Result<(), DurabilityError> {
+        self.commit_called = true;
+        tx.commit(deadline)
+            .await
+            .map_err(|error| self.observe_commit_error(error))
+    }
+
     /// A definite `COMMIT` rejection proves the transaction rolled back, so the attempt is
     /// reclaimable again. Every other error after the call keeps the ambiguity and parks.
     fn observe_commit_error(&mut self, error: DurabilityError) -> DurabilityError {

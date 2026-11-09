@@ -102,9 +102,11 @@ impl StepIngressRead<'_, '_> {
             return Err(MovementError::NotQualified);
         }
         let tile = if let Some(prepared) = prepared {
-            prepared
-                .tile(self.destination)
-                .ok_or(MovementError::NotQualified)?
+            std::borrow::Cow::Borrowed(
+                prepared
+                    .tile(self.destination)
+                    .ok_or(MovementError::NotQualified)?,
+            )
         } else {
             room.movement_cells()
                 .spell_tiles()

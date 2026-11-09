@@ -2,11 +2,20 @@
 //!
 //! A binding set belongs to the same immutable catalogue as its tracks and transitions.
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
+pub mod actor_admission;
 pub mod collection;
+pub mod door_use;
 pub(crate) mod embedded;
+pub mod hits;
 mod imported_recipe;
+mod occurrence;
+pub use occurrence::Occurrence;
+mod npc_keys;
+pub use npc_keys::native_dialogue_npcs;
 pub mod kills;
+mod progress_storage;
 mod state_operations;
+pub mod terrain_use;
 pub use kills::KillCounter;
 
 use super::reward_callbacks::RewardCallback;
@@ -49,8 +58,17 @@ pub enum Trigger {
     Kill {
         counter: Box<KillCounter>,
     },
+    Hit {
+        objective: Box<hits::HitObjective>,
+    },
     Collect {
         collection: Box<collection::Collection>,
+    },
+    TerrainUse {
+        usage: Box<terrain_use::TerrainUse>,
+    },
+    DoorUse {
+        usage: Box<door_use::DoorUse>,
     },
 }
 
@@ -67,6 +85,10 @@ pub struct Stage {
 pub struct BoundQuest {
     pub quest: String,
     pub recipe_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence: Option<Occurrence>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<actor_admission::ActorAdmission>,
     pub tracks: Vec<Track>,
     pub stages: Vec<Stage>,
     pub sources: Vec<String>,
@@ -115,6 +137,11 @@ impl Bindings {
                     _ => 1,
                 })
                 .sum::<usize>()
+                + self
+                    .quests
+                    .iter()
+                    .filter(|quest| quest.occurrence.is_some())
+                    .count()
                 > MAX_BOUND_STAGES
         {
             return Err("authored binding bounds/schema".into());
@@ -138,6 +165,15 @@ impl Bindings {
                     .any(|s| s.is_empty() || s.len() > 1024 || !s.is_ascii())
             {
                 return Err("authored quest identity/source/bounds".into());
+            }
+            if let Some(occurrence) = &quest.occurrence {
+                occurrence.validate(quest)?;
+                if !transitions.insert(&occurrence.restart().key) {
+                    return Err("authored save restart binding collision".into());
+                }
+            }
+            if let Some(admission) = &quest.admission {
+                admission.validate(&quest.quest)?;
             }
             let mut tracks = BTreeSet::new();
             for track in &quest.tracks {
@@ -191,6 +227,27 @@ impl Bindings {
                     }
                     continue;
                 }
+                if let Trigger::Hit { objective } = &stage.trigger {
+                    objective.validate(quest)?;
+                    if !transitions.insert(&objective.key) {
+                        return Err("authored hit binding collision".into());
+                    }
+                    continue;
+                }
+                if let Trigger::DoorUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if !transitions.insert(&usage.key) {
+                        return Err("authored door USE binding collision".into());
+                    }
+                    continue;
+                }
+                if let Trigger::TerrainUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if !transitions.insert(&usage.key) {
+                        return Err("authored terrain USE binding collision".into());
+                    }
+                    continue;
+                }
                 if let Trigger::Collect { collection } = &stage.trigger {
                     collection.validate(quest)?;
                     if !transitions.insert(&collection.key) {
@@ -200,13 +257,24 @@ impl Bindings {
                 }
                 if let Trigger::Kill { counter } = &stage.trigger {
                     counter.validate(quest)?;
+                    if counter.encounter_source.is_some() && stage.completes {
+                        return Err(
+                            "encounter deaths cannot complete before the chamber exit".into()
+                        );
+                    }
                     if !transitions.insert(&counter.key) {
                         return Err("authored kill binding collision".into());
                     }
                     continue;
                 }
                 let (key, owner, storage) = match &stage.trigger {
-                    Trigger::Kill { .. } | Trigger::Collect { .. } => continue,
+                    Trigger::Kill { .. }
+                    | Trigger::Collect { .. }
+                    | Trigger::TerrainUse { .. }
+                    | Trigger::DoorUse { .. }
+                    | Trigger::Hit { .. } => {
+                        continue;
+                    }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
                         super::reward_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
@@ -237,7 +305,7 @@ impl Bindings {
                 };
                 if owner != &quest.quest
                     || !transitions.insert(key)
-                    || storage.is_empty()
+                    || (storage.is_empty() && !stage.is_native_encounter())
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest
@@ -279,6 +347,10 @@ impl Bindings {
     }
     fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
+        if self.quests.is_empty() {
+            // An empty addition must retain the existing immutable binding witnesses.
+            return Ok(base.clone());
+        }
         if let Some(evidence) = &base.native_recipe_evidence {
             evidence.verify(self)?;
         }
@@ -294,14 +366,18 @@ impl Bindings {
                     max: t.maximum,
                 });
             }
+            if let Some(occurrence) = &quest.occurrence {
+                transitions.push(occurrence.transition()?);
+            }
             for stage in &quest.stages {
-                transitions.push(stage.transition(&quest.quest)?);
-                if let Trigger::NpcDialogue { alternatives, .. } = &stage.trigger {
-                    for callback in alternatives {
-                        let mut transition = super::reward_callbacks::primary_transition(callback)?;
-                        transition.completes = stage.completes;
-                        transitions.push(transition);
+                if stage.is_native_encounter() {
+                    continue;
+                }
+                for mut transition in stage.transitions(&quest.quest)? {
+                    if let Some(occurrence) = &quest.occurrence {
+                        occurrence.qualify(&mut transition);
                     }
+                    transitions.push(transition);
                 }
             }
         }
@@ -353,10 +429,12 @@ impl Bindings {
     }
 
     pub fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
-        self.quests
-            .iter()
-            .flat_map(|q| &q.stages)
-            .flat_map(|s| s.trigger.reward_callbacks())
+        self.quests.iter().flat_map(|q| {
+            q.occurrence
+                .iter()
+                .map(Occurrence::restart)
+                .chain(q.stages.iter().flat_map(|s| s.trigger.reward_callbacks()))
+        })
     }
     pub fn world_callbacks(&self) -> impl Iterator<Item = &Callback> {
         self.quests
@@ -372,6 +450,28 @@ impl Bindings {
 }
 
 impl Stage {
+    /// Native entry mutates the physical owner atomically and grants no quest value.
+    pub(in crate::quest) fn is_native_encounter(&self) -> bool {
+        matches!(&self.trigger, Trigger::MapUse { callback }
+            if !self.completes && callback.storage.is_empty() && callback.state_ops.is_empty()
+                && callback.effects.encounter.as_ref().is_some_and(|encounter| encounter.timing.is_none()))
+    }
+    /// All exact operations registered for this stage share one ownership boundary.
+    pub(in crate::quest) fn transitions(
+        &self,
+        quest: &str,
+    ) -> Result<Vec<QuestTransition>, String> {
+        let mut transitions = vec![self.transition(quest)?];
+        if let Trigger::NpcDialogue { alternatives, .. } = &self.trigger {
+            for callback in alternatives {
+                let mut transition = super::reward_callbacks::primary_transition(callback)?;
+                transition.completes = self.completes;
+                transitions.push(transition);
+            }
+        }
+        Ok(transitions)
+    }
+
     pub(in crate::quest) fn transition(&self, quest: &str) -> Result<QuestTransition, String> {
         let mut transition = match &self.trigger {
             Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
@@ -388,7 +488,10 @@ impl Stage {
                 experience: None,
                 world_change: None,
             },
+            Trigger::Hit { objective } => objective.transition(quest, self.completes),
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
+            Trigger::TerrainUse { usage } => usage.transition(quest, self.completes)?,
+            Trigger::DoorUse { usage } => usage.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
         Ok(transition)
@@ -404,10 +507,21 @@ fn digest(value: &str) -> bool {
 }
 
 #[cfg(test)]
+mod asura_palace_tests;
+
+#[cfg(test)]
+mod actor_admission_tests;
+
+#[cfg(test)]
 mod collection_tests;
 
 #[cfg(test)]
 mod composition_tests;
+
+#[cfg(test)]
+mod encounter_source_tests;
+#[cfg(test)]
+mod occurrence_tests;
 
 impl Trigger {
     fn reward_callbacks(&self) -> impl Iterator<Item = &RewardCallback> {
@@ -422,3 +536,18 @@ impl Trigger {
         first.into_iter().chain(others.iter())
     }
 }
+
+#[cfg(test)]
+mod hit_tests;
+
+#[cfg(test)]
+mod child_of_destiny_tests;
+
+#[cfg(test)]
+mod terrain_use_tests;
+
+#[cfg(test)]
+mod door_use_tests;
+
+#[cfg(test)]
+mod collector_delivery_tests;

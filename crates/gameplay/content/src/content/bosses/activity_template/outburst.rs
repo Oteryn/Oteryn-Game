@@ -51,6 +51,7 @@ impl ActiveGeneration {
             }
         }
         Ok(QualifiedActivityRoomTemplate {
+            spite_source_setup: None,
             boss_key: "oteryn:boss.outburst".into(),
             template_key: "oteryn:room.callback-outburst-source".into(),
             template_revision: "crystal-201189f".into(),

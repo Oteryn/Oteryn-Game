@@ -3,7 +3,9 @@ use super::{QuestEffectKind, QuestTransition, reward_callbacks, world_callbacks}
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
+mod resolved_world;
 mod shared_world;
+pub use resolved_world::validate_resolved_world;
 
 struct Owner {
     transition: QuestTransition,
@@ -49,9 +51,12 @@ fn registry() -> Result<&'static Registry, String> {
                 let protect = reward_callbacks::gated_binding(&callback)?.is_some();
                 add(
                     reward_callbacks::primary_transition(&callback)?,
-                    false,
+                    callback.world_claim.is_some(),
                     protect,
                 )?;
+            }
+            for transition in super::completion_sets::mint_transitions()? {
+                add(transition, false, true)?;
             }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
@@ -80,6 +85,7 @@ fn registry() -> Result<&'static Registry, String> {
             for rule in super::source_deaths::rules().map_err(str::to_owned)? {
                 add(rule.transition()?, false, false)?;
             }
+            add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
@@ -95,6 +101,12 @@ fn registry() -> Result<&'static Registry, String> {
 /// Bound owners must use their exact canonical operation. Removing the binding
 /// does not release ownership of a protected track to the weaker generic writer.
 pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(), String> {
+    if transition.quest == super::arena_completion::QUEST
+        && transition.completes
+        && transition != &super::arena_completion::transition()?
+    {
+        return Err("arena completion requires its native owner".into());
+    }
     let registry = registry()?;
     if let Some(owner) = registry.owners.get(&transition.key) {
         if transition != &owner.transition || (owner.world && !world_context) {
@@ -133,8 +145,14 @@ pub fn validate_for_catalogue(
     if let Some(bindings) = &catalogue.authored_bindings {
         for quest in &bindings.source.quests {
             for stage in &quest.stages {
-                let expected = stage.transition(&quest.quest)?;
-                if expected.key == transition.key {
+                if stage.is_native_encounter() {
+                    continue;
+                }
+                if let Some(expected) = stage
+                    .transitions(&quest.quest)?
+                    .into_iter()
+                    .find(|expected| expected.key == transition.key)
+                {
                     let world = matches!(
                         stage.trigger,
                         super::authored_bindings::Trigger::MapUse { .. }

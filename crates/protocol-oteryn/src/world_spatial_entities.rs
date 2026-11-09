@@ -193,10 +193,14 @@ pub fn lit_kind(kind: EntityKind) -> bool {
 
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
     match entity.detail {
-        EntityDetail::Actor { health_percent, .. }
-            if actor_kind(entity.kind)
-                && health_percent <= MAX_HEALTH_PERCENT
-                && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
+        EntityDetail::Actor {
+            health_percent,
+            direction,
+            ..
+        } if actor_kind(entity.kind)
+            && !direction.is_diagonal()
+            && health_percent <= MAX_HEALTH_PERCENT
+            && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
         {
             Ok(())
         }

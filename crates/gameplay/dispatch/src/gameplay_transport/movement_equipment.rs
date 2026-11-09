@@ -92,51 +92,75 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let current = store.current_session_at(session).await.ok()?.0;
-        if current.session_state() != GameSessionState::Active
-            && !(forced && current.session_state() == GameSessionState::Reconnectable)
-        {
-            return None;
-        }
-        let fence = CurrentCharacterItemFence {
-            character_id: crate::domain::CharacterId::from_bytes(
-                *current.commit().character_id().as_bytes(),
-            )
-            .ok()?,
-            game_session_id: session,
-            connection_generation: current.current_connection_generation(),
-            character_lease_generation: current.current_character_lease().generation(),
-            runtime_scope: current.current_runtime_scope(),
-            scope_ownership_generation: current.current_scope_generation(),
-        };
-        if fence.runtime_scope != scope || fence.scope_ownership_generation != generation {
-            return None;
-        }
-        let read = self
-            .root
-            .read_movement_equipment(self.character, self.holder, &fence, digest)
+        use crate::gameplay_transport::connection::AdmissionRefusal::{Rejected, Unavailable};
+        // All three reads share the bounded durability holder. Retry an
+        // unavailable holder without turning a missing policy or stale fence
+        // into an equipment grant. The physical predecessor is checked again
+        // by current_delta before the actual Movement commit.
+        let (read, delta) = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                let current = store
+                    .current_session_at(session)
+                    .await
+                    .map_err(|_| Unavailable)?
+                    .0;
+                if current.session_state() != GameSessionState::Active
+                    && !(forced && current.session_state() == GameSessionState::Reconnectable)
+                {
+                    return Err(Rejected);
+                }
+                let fence = CurrentCharacterItemFence {
+                    character_id: crate::domain::CharacterId::from_bytes(
+                        *current.commit().character_id().as_bytes(),
+                    )
+                    .map_err(|_| Rejected)?,
+                    game_session_id: session,
+                    connection_generation: current.current_connection_generation(),
+                    character_lease_generation: current.current_character_lease().generation(),
+                    runtime_scope: current.current_runtime_scope(),
+                    scope_ownership_generation: current.current_scope_generation(),
+                };
+                if fence.runtime_scope != scope || fence.scope_ownership_generation != generation {
+                    return Err(Rejected);
+                }
+                let read = self
+                    .root
+                    .read_movement_equipment(self.character, self.holder, &fence, digest)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::character_equipment::EquipmentError::Rejected(_) => {
+                            Rejected
+                        }
+                        _ => Unavailable,
+                    })?;
+                if read.fence() != &fence
+                    || read.equipment().character != *fence.character_id.as_bytes()
+                    || read.equipment().content_digest != digest
+                {
+                    return Err(Rejected);
+                }
+                // The SQL reader already locked the current fence. A separately fresh
+                // admission observation also rejects handover while that read awaited.
+                let after = store
+                    .current_session_at(session)
+                    .await
+                    .map_err(|_| Unavailable)?
+                    .0;
+                if after.session_state() != GameSessionState::Active
+                    || after.commit().character_id() != current.commit().character_id()
+                    || after.current_connection_generation() != fence.connection_generation
+                    || after.current_character_lease().generation()
+                        != fence.character_lease_generation
+                    || after.current_runtime_scope() != fence.runtime_scope
+                    || after.current_scope_generation() != fence.scope_ownership_generation
+                {
+                    return Err(Rejected);
+                }
+                let delta = equipment_delta(read.equipment(), source).ok_or(Rejected)?;
+                Ok((read, delta))
+            })
             .await
             .ok()?;
-        if read.fence() != &fence
-            || read.equipment().character != *fence.character_id.as_bytes()
-            || read.equipment().content_digest != digest
-        {
-            return None;
-        }
-        // The SQL reader already locked the current fence. A separately fresh
-        // admission observation also rejects handover while that read awaited.
-        let after = store.current_session_at(session).await.ok()?.0;
-        if (after.session_state() != GameSessionState::Active
-            && !(forced && after.session_state() == GameSessionState::Reconnectable))
-            || after.commit().character_id() != current.commit().character_id()
-            || after.current_connection_generation() != fence.connection_generation
-            || after.current_character_lease().generation() != fence.character_lease_generation
-            || after.current_runtime_scope() != fence.runtime_scope
-            || after.current_scope_generation() != fence.scope_ownership_generation
-        {
-            return None;
-        }
-        let delta = equipment_delta(read.equipment(), source)?;
         Some(MovementEquipmentRead {
             actor,
             session,

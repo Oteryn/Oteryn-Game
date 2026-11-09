@@ -11,6 +11,10 @@ fn position(x: i32, y: i32, floor: i16) -> RoomPosition {
 
 fn fixture<'a>(players: &'a [EchoPlayer]) -> BakragoreThinkFacts<'a> {
     BakragoreThinkFacts {
+        now_ms: 0,
+        interval_ms: 1_000,
+        teleport_paused: false,
+        teleport_bloodjaw_present: true,
         boss: BAKRAGORE_ROOM_CENTRE,
         mechanics_disabled: false,
         bloodjaw_spawn_paused: false,
@@ -315,4 +319,149 @@ fn essence_table_matches_the_donor() {
             pillar_reset_item: 43_507,
         }
     );
+}
+
+#[test]
+fn bakragore_think_emits_its_source_teleport_on_the_owned_deadline() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    owner.think(&facts);
+    assert_eq!(owner.teleport.next_at_ms(), Some(90_000));
+    facts.now_ms = 89_999;
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+    facts.now_ms = 90_000;
+    let effects = owner.think(&facts);
+    let teleports: Vec<_> = effects
+        .iter()
+        .filter(|effect| is_teleport(effect))
+        .collect();
+    assert_eq!(
+        teleports,
+        vec![&BakragoreEffect::CreateCentreTeleport(
+            super::super::chagorz_think::CentreTeleport {
+                centre: BAKRAGORE_ROOM_CENTRE,
+                item_id: 37_000,
+                action_id: 50_001,
+                remove_at_ms: 105_000,
+            }
+        )]
+    );
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+}
+
+fn is_teleport(effect: &BakragoreEffect) -> bool {
+    matches!(effect, BakragoreEffect::CreateCentreTeleport(_))
+}
+
+#[test]
+fn bakragore_room_timers_do_not_share_state_or_restart_on_later_thinks() {
+    let mut first = BakragoreThinkOwner::default();
+    let mut second = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.now_ms = 1_234;
+    first.think(&facts);
+    assert_eq!(first.teleport.next_at_ms(), Some(91_234));
+    assert_eq!(second.teleport.next_at_ms(), None);
+    facts.now_ms = 8_000;
+    first.think(&facts);
+    second.think(&facts);
+    assert_eq!(first.teleport.next_at_ms(), Some(91_234));
+    assert_eq!(second.teleport.next_at_ms(), Some(98_000));
+    facts.now_ms = 91_234;
+    facts.teleport_paused = true;
+    assert!(!first.think(&facts).iter().any(is_teleport));
+    assert_eq!(first.teleport.next_at_ms(), Some(181_234));
+    facts.now_ms = 181_234;
+    facts.teleport_paused = false;
+    facts.teleport_bloodjaw_present = false;
+    assert!(!first.think(&facts).iter().any(is_teleport));
+    assert_eq!(first.teleport.next_at_ms(), Some(271_234));
+    // A boss outside the source centre census stops the source cycle.
+    facts.now_ms = 271_234;
+    facts.boss.floor -= 1;
+    assert!(!first.think(&facts).iter().any(is_teleport));
+    assert_eq!(first.teleport.next_at_ms(), None);
+    assert_eq!(second.teleport.next_at_ms(), Some(98_000));
+}
+
+#[test]
+fn bakragore_teleport_pause_rearms_before_the_centre_census() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    owner.think(&facts);
+    facts.now_ms = 90_000;
+    facts.teleport_paused = true;
+    facts.boss.x += i32::from(TELEPORT_CENSUS_RANGE_TILES) + 1;
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+    assert_eq!(owner.teleport.next_at_ms(), Some(180_000));
+    facts.now_ms = 180_000;
+    facts.teleport_paused = false;
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+    assert_eq!(owner.teleport.next_at_ms(), None);
+}
+
+#[test]
+fn bakragore_teleport_timer_is_independent_of_summon_mechanics_disable() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    owner.think(&facts);
+    facts.now_ms = 90_000;
+    facts.mechanics_disabled = true;
+    facts.nearby_bloodjaws = 0;
+    let effects = owner.think(&facts);
+    assert_eq!(effects.len(), 1);
+    assert!(is_teleport(&effects[0]));
+}
+
+#[test]
+fn bakragore_agony_waits_for_the_accumulated_source_second() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 250;
+    for tick in 1..=3 {
+        facts.now_ms = tick * 250;
+        assert!(!owner.think(&facts).iter().any(is_agony_check));
+    }
+    facts.now_ms = 1_000;
+    let effects = owner.think(&facts);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| is_agony_check(effect))
+            .count(),
+        1
+    );
+    facts.interval_ms = 0;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+}
+
+fn is_agony_check(effect: &BakragoreEffect) -> bool {
+    matches!(effect, BakragoreEffect::RunAgonyCheck { .. })
+}
+
+#[test]
+fn bakragore_disabled_mechanics_freeze_the_agony_accumulator() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 600;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.mechanics_disabled = true;
+    facts.interval_ms = 10_000;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.mechanics_disabled = false;
+    facts.interval_ms = 399;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.interval_ms = 1;
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+}
+
+#[test]
+fn bakragore_agony_discards_overshoot_as_the_source_check_time_reset_does() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 1_500;
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+    facts.interval_ms = 500;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    assert!(owner.think(&facts).iter().any(is_agony_check));
 }

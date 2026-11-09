@@ -941,7 +941,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     .await
             } else if attempt.boss_room {
                 owner
-                    .enter_boss_room(self.character, self.holder, attempt.request.clone())
+                    .enter_boss_room_with_premium(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        &self.premium_coordinator,
+                    )
                     .await
             } else {
                 owner
@@ -1110,6 +1115,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             source_view
                 .transfer_activity_session_state(&destination_view, old, next)
                 .await?;
+            // M18: the transferred quest copy must seed the new session's native
+            // death consumer before the activity lanes expose its actor.
+            destination_view
+                .refresh_grizzly_kill_snapshot(next.game_session_id)
+                .await;
             connections.push((old, next));
         }
         if attempt.soulpit.is_some() && destination_view.rooms().gate_wire_position().is_some_and(|room|

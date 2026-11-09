@@ -26,8 +26,38 @@ pub(in crate::durability) fn encode(
     occurred: i64,
     tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
+    encode_with_ingredient(
+        fence,
+        request,
+        recipe,
+        content_digest,
+        before,
+        outputs,
+        None,
+        transaction,
+        event,
+        occurred,
+        tuple,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::durability) fn encode_with_ingredient(
+    fence: CurrentCharacterItemFence,
+    request: &ItemCraftRequest,
+    recipe: &str,
+    content_digest: [u8; 32],
+    before: &Value,
+    outputs: &[Value],
+    ingredient: Option<(&Value, i64)>,
+    transaction: &str,
+    event: &str,
+    occurred: i64,
+    tuple: Type2EventTuple,
+) -> Result<Vec<u8>, DurabilityError> {
     let proof = serde_json::to_vec(&json!({"recipe": recipe, "intent": request.intent,
         "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
+        "ingredient": ingredient.map(|(before, count)| json!({"before": before, "count": count})),
         "station": request.station.as_ref().map(|s| json!({"family": s.family, "key": s.production_key, "revision": s.revision_ref})),
         "scope_generation": fence.scope_ownership_generation.get(),
         "content_digest": content_digest,
@@ -118,4 +148,79 @@ fn encode_proof(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(wire)
+}
+
+#[cfg(test)]
+mod captured_ingredient_tests {
+    use super::*;
+    use crate::domain::CharacterId;
+    use crate::foundation::{
+        ChannelId, CommandId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, WorldId,
+    };
+
+    #[test]
+    fn m22_audit_binds_captured_target_before_and_exact_debit() -> Result<(), String> {
+        let id = super::super::super::item_mint::uuid_text("29020304-0506-7008-800a-0b0c0d0e0f29")
+            .map_err(|e| format!("{e:?}"))?;
+        let session = GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?;
+        let fence = CurrentCharacterItemFence {
+            character_id: CharacterId::from_bytes(id).map_err(|e| format!("{e:?}"))?,
+            game_session_id: session,
+            connection_generation: ConnectionGeneration::new(1).map_err(|e| format!("{e:?}"))?,
+            character_lease_generation: 1,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id).map_err(|e| format!("{e:?}"))?,
+                ChannelId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            ),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1)
+                .map_err(|e| format!("{e:?}"))?,
+        };
+        let request = ItemCraftRequest {
+            command: CommandRef::new(session, CommandId::new(1).map_err(|e| format!("{e:?}"))?),
+            source: id,
+            tool: None,
+            ingredient: Some(id),
+            station: None,
+            intent: vec![1],
+            gathering: None,
+            enchanting: None,
+        };
+        let before =
+            json!({"quantity": 7, "definition_production_key": "oteryn:item.tibia.i10297"});
+        let mut wires = Vec::new();
+        for debit in [1, 7] {
+            let wire = encode_with_ingredient(
+                fence,
+                &request,
+                "oteryn:item-conversion.tainted-souls-antler-talisman",
+                [1; 32],
+                &json!({"quantity":1}),
+                &[],
+                Some((&before, debit)),
+                "29020304-0506-7008-800a-0b0c0d0e0f29",
+                "29020304-0506-7008-800a-0b0c0d0e0f29",
+                1,
+                Type2EventTuple::V1,
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            let envelope =
+                EventEnvelopeV1::decode(wire.as_slice()).map_err(|e| format!("{e:?}"))?;
+            let operation = OneItemTransactionV1::decode(envelope.payload.as_slice())
+                .map_err(|e| format!("{e:?}"))?;
+            let Some(OneItemOperationV1::Craft(craft)) = operation.operation else {
+                return Err("craft operation missing".into());
+            };
+            let proof: Value =
+                serde_json::from_slice(&craft.proof).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(proof["ingredient"]["before"], before);
+            assert_eq!(proof["ingredient"]["count"], debit);
+            wires.push(wire);
+        }
+        assert_ne!(
+            wires[0], wires[1],
+            "a changed target debit must change the audit envelope"
+        );
+        Ok(())
+    }
 }

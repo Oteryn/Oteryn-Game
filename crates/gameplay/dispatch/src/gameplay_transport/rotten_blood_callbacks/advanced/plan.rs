@@ -49,6 +49,7 @@ pub(super) fn plan(
     now_ms: u64,
     paused: bool,
     active_essences: [bool; 4],
+    centre_bloodjaw: bool,
 ) -> Result<Vec<Planned>, ()> {
     let facts: Vec<_> = players
         .iter()
@@ -135,6 +136,10 @@ pub(super) fn plan(
             // The accepted entry claims actual source flame receipts, including
             // an explicit zero header. Taints/child flags never create essences.
             for effect in think.think(&bak::BakragoreThinkFacts {
+                now_ms,
+                interval_ms: 1_000, // Native creature-check interval, independent of wall-clock drift.
+                teleport_paused: paused,
+                teleport_bloodjaw_present: centre_bloodjaw,
                 boss,
                 mechanics_disabled: false,
                 bloodjaw_spawn_paused: paused,
@@ -149,6 +154,9 @@ pub(super) fn plan(
                     bak::BakragoreEffect::StartTeleportCycle => {
                         planned.push(Planned::StartTeleport)
                     }
+                    // portals::plan retains the same source deadline independently of think wakes,
+                    // and qualifies the physical Item against its current centre census.
+                    bak::BakragoreEffect::CreateCentreTeleport(_) => {}
                     bak::BakragoreEffect::Spawn {
                         creature_key,
                         around,

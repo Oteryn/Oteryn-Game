@@ -16,11 +16,16 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+#[cfg(test)]
+mod aggregate_completion_tests;
+
 pub mod admission_binding;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
+pub mod arena_completion;
 pub mod authored_bindings;
+pub mod barbarian_arena;
 pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
@@ -28,23 +33,37 @@ pub mod carried_step;
 pub mod children_puzzle;
 pub mod classic_dialogue;
 pub mod classic_talk;
+pub mod completion_sets;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
+pub mod distinct_targets;
+pub mod elemental_arrival;
+pub mod elemental_spheres;
 pub mod fire_feathered_native;
+pub mod goblin_merchant;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
+#[path = "batch3_a/hot_cuisine.rs"]
+pub mod hot_cuisine;
+pub mod ice_islands_seals;
+pub mod ice_seal_paint;
 pub mod isle_of_evil;
+pub mod item_disguises;
+pub mod last_creep_native;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
+#[cfg(test)]
+mod m07_offering_counter_tests;
 pub mod map_marks;
 pub mod monk_shrines;
 pub mod native_kills;
 pub mod native_rules;
+pub mod npc_magic;
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;
@@ -63,6 +82,7 @@ pub mod threatened_dreams;
 pub mod timers;
 pub mod unnatural_selection;
 pub mod world_callbacks;
+pub mod world_change_journals;
 pub mod wrath_sleeping_dragon;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -192,6 +212,11 @@ pub enum QuestEffectKind {
     },
     /// Checked `i64` addition.
     Add(i64),
+    /// Checked addition, then a floor; used by source counters with an unset sentinel.
+    AddAtLeast {
+        delta: i64,
+        minimum: i64,
+    },
     /// Checked addition while pinning physical admission terms.
     AddWithBinding {
         delta: i64,
@@ -237,6 +262,11 @@ impl QuestEffectKind {
             Self::Add(value) => {
                 out.push(2);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::AddAtLeast { delta, minimum } => {
+                out.push(12);
+                out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&minimum.to_be_bytes());
             }
             Self::AddWithBinding { delta, binding } => {
                 out.push(8);
@@ -341,6 +371,7 @@ pub enum QuestCatalogueError {
 /// The tracks and transitions of one content revision, with each quest's definition hash.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuestStateCatalogue {
+    completion_sets: BTreeMap<String, completion_sets::CompletionSet>,
     content_revision: String,
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
@@ -447,6 +478,9 @@ impl QuestStateCatalogue {
                     | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
                     }
+                    QuestEffectKind::AddAtLeast { minimum, .. } => {
+                        (track.min..=track.max).contains(&minimum)
+                    }
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,
                         value,
@@ -468,6 +502,43 @@ impl QuestStateCatalogue {
             }
             transition_map.insert(transition.key.clone(), transition);
         }
+        // A restart is an explicit reset list, not permission to wipe every
+        // track of a quest. Dependent progress must use the same World gate.
+        for restart in transition_map.values().filter(|transition| {
+            transition
+                .key
+                .starts_with(shared_world_progress::SAVE_EVENT_RESTART_PREFIX)
+        }) {
+            if restart.key != shared_world_progress::save_event_restart_key(&restart.quest)
+                || restart.world_change.is_none()
+                || restart.completes
+                || restart.experience.is_some()
+                || restart.effects.iter().any(|effect| {
+                    effect.from != QuestComparison::Any
+                        || track_map.get(&effect.track).is_none_or(|track| {
+                            effect.effect != QuestEffectKind::Set(track.initial)
+                        })
+                })
+            {
+                return Err(E::InvalidEffect(restart.key.clone()));
+            }
+            for transition in transition_map
+                .values()
+                .filter(|transition| transition.quest == restart.quest)
+            {
+                if (transition.completes
+                    || transition.effects.iter().any(|effect| {
+                        restart
+                            .effects
+                            .iter()
+                            .any(|reset| reset.track == effect.track)
+                    }))
+                    && transition.world_change != restart.world_change
+                {
+                    return Err(E::InvalidEffect(transition.key.clone()));
+                }
+            }
+        }
         let quests: BTreeSet<&String> = track_map
             .values()
             .map(|track| &track.quest)
@@ -487,6 +558,7 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            completion_sets: BTreeMap::new(),
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
             authored_bindings: None,
@@ -517,6 +589,7 @@ impl QuestStateCatalogue {
                 .collect(),
         )?;
         extended.hashes.extend(self.hashes.clone());
+        extended.completion_sets = self.completion_sets.clone();
         extended.npc_legacy = self.npc_legacy.clone();
         extended.predecessors = self.predecessors.clone();
         extended.authored_bindings = self.authored_bindings.clone();
@@ -556,6 +629,14 @@ impl QuestStateCatalogue {
         self.transitions.get(key)
     }
 
+    /// The optional explicit save restart profile, validated with its dependent
+    /// transitions. Its receipt must precede current-save mission progress.
+    #[must_use]
+    pub fn save_event_restart(&self, quest: &str) -> Option<&QuestTransition> {
+        self.transitions
+            .get(&shared_world_progress::save_event_restart_key(quest))
+    }
+
     /// The hash over the quest's tracks and transitions only (§6).
     #[must_use]
     pub fn definition_hash(&self, quest: &str) -> Option<[u8; 32]> {
@@ -571,6 +652,17 @@ impl QuestStateCatalogue {
         transition: &QuestTransition,
         stored: &BTreeMap<String, i64>,
         now: i64,
+    ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
+        self.evaluate_with_roll(transition, stored, now, None)
+    }
+
+    /// Only the fenced writer supplies a fresh database roll after receipt lookup.
+    pub fn evaluate_with_roll(
+        &self,
+        transition: &QuestTransition,
+        stored: &BTreeMap<String, i64>,
+        now: i64,
+        roll: Option<u8>,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
         if transition.effects.iter().enumerate().any(|(index,effect)| {
             effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
@@ -607,7 +699,7 @@ impl QuestStateCatalogue {
                 .iter()
                 .map(|(track, value)| (track.key.clone(), *value))
                 .collect();
-            Some(rule.evaluate(&snapshot)?)
+            Some(rule.evaluate_with_roll(&snapshot, roll)?)
         } else {
             None
         };
@@ -624,6 +716,9 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
                         before.checked_add(delta)
+                    }
+                    QuestEffectKind::AddAtLeast { delta, minimum } => {
+                        before.checked_add(delta).map(|value| value.max(minimum))
                     }
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,

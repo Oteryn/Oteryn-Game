@@ -967,3 +967,6 @@ async fn provenance_refuses_late_binding(h: &Harness, unregistered: [u8; 16]) ->
     assert_eq!(after, before);
     Ok(())
 }
+
+#[path = "srx2_scavenge/m41.rs"]
+mod m41;

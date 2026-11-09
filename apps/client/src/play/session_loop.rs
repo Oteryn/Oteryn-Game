@@ -33,6 +33,10 @@ pub async fn run_session<T: Stepper>(
     commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    let personal_marks_selected = session.feature_selected(451);
+    if personal_marks_selected {
+        outbox.personal_map_marks_initialize();
+    }
     let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
     outbox.scope_receiver(&commands);
     if let Err(error) = initialize(&session, &outbox) {
@@ -41,8 +45,28 @@ pub async fn run_session<T: Stepper>(
         outbox.end(public_class(&error));
         return;
     }
+    outbox.diagonal_initialize(session.feature_selected(449));
     let mut held = Vec::new();
+    let mut personal_marks_refresh = std::time::Instant::now();
     loop {
+        if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
+            let command = oteryn_client_ui::personal_map_marks::request();
+            match session.feature(&command).await {
+                Ok(result) => {
+                    if let Err(error) = outbox.personal_map_marks_result(&result) {
+                        outbox.end(public_class(&error));
+                        return;
+                    }
+                    publish(&mut session, &outbox, &mut held);
+                }
+                Err(error) => {
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+        }
+
         if outbox.scope_needs_initialize()
             && let Err(error) = initialize(&session, &outbox)
         {

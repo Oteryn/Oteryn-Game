@@ -1493,16 +1493,7 @@ fn commit_summon_follow(
     if facts.tile_admits != Some(true) {
         return Err(SummonFollowError::MissingMap);
     }
-    let (dx, dy) = match facts.direction {
-        crate::movement::CardinalStep::North => (0, -1),
-        crate::movement::CardinalStep::East => (1, 0),
-        crate::movement::CardinalStep::South => (0, 1),
-        crate::movement::CardinalStep::West => (-1, 0),
-        crate::movement::CardinalStep::NorthEast => (1, -1),
-        crate::movement::CardinalStep::SouthEast => (1, 1),
-        crate::movement::CardinalStep::SouthWest => (-1, 1),
-        crate::movement::CardinalStep::NorthWest => (-1, -1),
-    };
+    let (dx, dy) = facts.direction.delta();
     let next = oteryn_gameplay_entities::MovementLocalPosition {
         x: at
             .x
@@ -2568,16 +2559,7 @@ fn commit_paced_summon_follow(
         .read_actor_position(child)
         .map_err(SummonFollowError::Carrier)?
         .position();
-    let (dx, dy) = match facts.direction {
-        crate::movement::CardinalStep::North => (0, -1),
-        crate::movement::CardinalStep::East => (1, 0),
-        crate::movement::CardinalStep::South => (0, 1),
-        crate::movement::CardinalStep::West => (-1, 0),
-        crate::movement::CardinalStep::NorthEast => (1, -1),
-        crate::movement::CardinalStep::SouthEast => (1, 1),
-        crate::movement::CardinalStep::SouthWest => (-1, 1),
-        crate::movement::CardinalStep::NorthWest => (-1, -1),
-    };
+    let (dx, dy) = facts.direction.delta();
     let onto = crate::content::LogicalCell {
         x: at
             .x

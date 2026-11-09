@@ -33,7 +33,7 @@ pub enum NativeWorldReadError<E> {
 /// Current durable fields must additionally be read by their transaction owner.
 pub struct QualifiedCombatTileFact<'owner, O: NativeWorldObjectRead + ?Sized> {
     position: MovementLocalPosition,
-    tile: &'owner crate::content::QualifiedSpellTile,
+    tile: std::borrow::Cow<'owner, crate::content::QualifiedSpellTile>,
     _runtime: &'owner ChannelRuntimeV1,
     _objects: WorldStaticOwnerBorrow<'owner, O>,
 }
@@ -55,7 +55,7 @@ impl<O: NativeWorldObjectRead + ?Sized> QualifiedCombatTileFact<'_, O> {
         self.position
     }
     pub fn qualified_tile(&self) -> &crate::content::QualifiedSpellTile {
-        self.tile
+        &self.tile
     }
     pub fn no_pvp_zone(&self) -> Option<bool> {
         self.tile.no_pvp_zone()
@@ -166,7 +166,8 @@ pub fn qualified_static_owner<'owner, O: NativeWorldObjectRead + ?Sized>(
 pub fn tile<E>(
     room: &crate::content::QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
-) -> Result<Option<&crate::content::QualifiedSpellTile>, NativeWorldReadError<E>> {
+) -> Result<Option<std::borrow::Cow<'_, crate::content::QualifiedSpellTile>>, NativeWorldReadError<E>>
+{
     use crate::content::SpellTileLookupError;
     let cells = room.movement_cells();
     match cells.spell_tiles().lookup(cells.scope(), cell(position)) {
@@ -186,7 +187,10 @@ async fn initialized_tile_in_transaction<'owner, E>(
     room: &'owner crate::content::QualifiedNativeEntryRoom,
     runtime: &ChannelRuntimeV1,
     position: MovementLocalPosition,
-) -> Result<Option<&'owner crate::content::QualifiedSpellTile>, NativeWorldReadError<E>> {
+) -> Result<
+    Option<std::borrow::Cow<'owner, crate::content::QualifiedSpellTile>>,
+    NativeWorldReadError<E>,
+> {
     use sqlx::Row;
     match tile(room, position) {
         Ok(tile) => return Ok(tile),
@@ -254,6 +258,7 @@ async fn initialized_tile_in_transaction<'owner, E>(
     }
     world
         .immutable_tile(world.scope(), cell(position))
+        .map(std::borrow::Cow::Borrowed)
         .map(Some)
         .map_err(|_| NativeWorldReadError::MissingTileMetadata)
 }
@@ -264,7 +269,10 @@ pub async fn tile_in_transaction<'owner, E>(
     room: &'owner crate::content::QualifiedNativeEntryRoom,
     runtime: &ChannelRuntimeV1,
     position: MovementLocalPosition,
-) -> Result<Option<&'owner crate::content::QualifiedSpellTile>, NativeWorldReadError<E>> {
+) -> Result<
+    Option<std::borrow::Cow<'owner, crate::content::QualifiedSpellTile>>,
+    NativeWorldReadError<E>,
+> {
     crate::durability::spell_item_transaction::check_transaction(tx, authority)
         .await
         .map_err(NativeWorldReadError::Items)?;
@@ -321,13 +329,13 @@ pub async fn qualified_standing_tile_in_transaction<'owner, O: NativeWorldObject
 /// Read-only source STEP probes may inspect a known solid neighbour while
 /// resolving stair destinations. This fact grants neither combat nor movement.
 pub struct QualifiedSourceStepProbe<'owner, O: NativeWorldObjectRead + ?Sized> {
-    tile: &'owner crate::content::QualifiedSpellTile,
+    tile: std::borrow::Cow<'owner, crate::content::QualifiedSpellTile>,
     _runtime: &'owner ChannelRuntimeV1,
     _objects: WorldStaticOwnerBorrow<'owner, O>,
 }
 impl<O: NativeWorldObjectRead + ?Sized> QualifiedSourceStepProbe<'_, O> {
     pub fn qualified_tile(&self) -> &crate::content::QualifiedSpellTile {
-        self.tile
+        &self.tile
     }
 }
 pub async fn qualified_source_step_probe_in_transaction<

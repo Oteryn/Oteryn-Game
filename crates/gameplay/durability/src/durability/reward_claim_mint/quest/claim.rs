@@ -8,6 +8,7 @@ use sha2::{Digest, Sha256};
 pub(crate) enum QuestMintClaim<'a> {
     Once,
     PaidExchange,
+    WorldUse,
     Cycle { track: &'a str, value: i64 },
 }
 
@@ -23,6 +24,17 @@ pub(super) fn key(
             "oteryn:quest-exchange/",
             Sha256::new()
                 .chain_update(b"oteryn:quest-exchange:v1\0")
+                .chain_update(character.as_bytes())
+                .chain_update(command.game_session_id().as_bytes())
+                .chain_update(command.command_id().get().to_string().as_bytes())
+                .chain_update(b":")
+                .chain_update(callback.as_bytes())
+                .finalize(),
+        ),
+        QuestMintClaim::WorldUse => (
+            "oteryn:quest-world-use/",
+            Sha256::new()
+                .chain_update(b"oteryn:quest-world-use:v1\0")
                 .chain_update(character.as_bytes())
                 .chain_update(command.game_session_id().as_bytes())
                 .chain_update(command.command_id().get().to_string().as_bytes())
@@ -102,6 +114,16 @@ mod tests {
             )?
         );
         assert!(scoped(character, 50, 1, "source", "epoch", -1).is_err());
+        let per_use=key(character,command(50,1)?,"source",QuestMintClaim::WorldUse)
+            .map_err(|e|format!("{e:?}"))?;
+        assert_eq!(per_use,key(character,command(50,1)?,"source",QuestMintClaim::WorldUse).map_err(|e|format!("{e:?}"))?);
+        for (who,session,n,source) in [
+            (character,50,2,"source"),(character,51,1,"source"),(character,50,1,"other"),
+            (CharacterId::from_bytes(id(42)).map_err(|e|format!("{e:?}"))?,50,1,"source"),
+        ] {
+            assert_ne!(per_use,key(who,command(session,n)?,source,QuestMintClaim::WorldUse).map_err(|e|format!("{e:?}"))?);
+        }
+        assert_ne!(per_use,key(character,command(50,1)?,"source",QuestMintClaim::PaidExchange).map_err(|e|format!("{e:?}"))?);
         assert_eq!(
             key(character, command(50, 1)?, "source", QuestMintClaim::Once)
                 .map_err(|e| format!("{e:?}"))?,

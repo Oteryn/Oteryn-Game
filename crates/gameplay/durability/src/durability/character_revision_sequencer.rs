@@ -24,6 +24,7 @@ mod appearance_revision;
 mod arena_match;
 mod atelier;
 mod npc_program;
+mod npc_teleport;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -34,10 +35,12 @@ mod cyclopedia;
 mod death_promotion;
 mod grizzly;
 mod native_kills;
+mod native_hits;
 mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
+mod world_access;
 mod rotten_area;
 mod rotten_flame;
 #[cfg(test)]
@@ -453,6 +456,42 @@ impl RevisionSlot {
         .await
     }
 
+    /// Preserve the revision cursor while consulting the registered actor admission owner.
+    #[allow(
+        dead_code,
+        clippy::too_many_arguments,
+        reason = "complete actor admission context; standalone path-loaded suites omit quest cases"
+    )]
+    pub async fn commit_quest_transition_with_admission<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_quest_transition_with_admission(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    gate,
+                )
+            },
+        )
+        .await
+    }
+
     /// Commit a content-bound NPC exchange and all its value participants.
     #[allow(
         clippy::too_many_arguments,
@@ -677,7 +716,9 @@ impl RevisionSlot {
 
     /// World callback storage and altar inputs share one revision slot and transaction.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_world_callback_with_items<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_world_callback_with_items<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -691,12 +732,31 @@ impl RevisionSlot {
         admission: Option<super::reward_claim_mint::QuestRewardAdmission<'_>>,
         gate: &G,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_world_callback_with_items_selected(root,authority,node,fence,request,catalogue,permit,context.into(),native,admission,gate).await
+    }
+
+    /// Preserve an exact selected source through cursor retries.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_items_selected<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldToolContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<super::reward_claim_mint::QuestRewardAdmission<'_>>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
             fence,
             Expect::Cursor(OnMismatch::RetryOnce),
             |fence| {
-                root.commit_character_world_callback_with_items(
+                root.commit_character_world_callback_with_items_selected(
                     authority,
                     node,
                     fence,
@@ -707,6 +767,66 @@ impl RevisionSlot {
                     native,
                     admission,
                     gate,
+                )
+            },
+        )
+        .await
+    }
+
+    /// World callback storage and altar inputs share one revision slot and transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_requirements<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<super::reward_claim_mint::QuestRewardAdmission<'_>>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_world_callback_with_items_and_premium(
+            root, authority, node, fence, request, catalogue, permit, context, native,
+            admission, premium,
+        ).await
+    }
+
+    /// Keep the native Premium owner on both sequenced attempts, including a cursor retry.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_items_and_premium<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<super::reward_claim_mint::QuestRewardAdmission<'_>>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_world_callback_with_requirements(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    permit,
+                    context.clone(),
+                    native,
+                    admission,
+                    premium,
                 )
             },
         )

@@ -347,10 +347,17 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon,
         daily.flower_month,
     ));
-    let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot).with_seasonal(
-        npc_boot,
-        &seasonal,
-        |position| {
+    let npc_calendar = if reset_epoch == 0 {
+        None
+    } else {
+        Some(
+            root.world_change_calendar(material.world, reset_epoch)
+                .await
+                .map_err(|_| BootError::Readiness("conditional NPC calendar binding"))?,
+        )
+    };
+    let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot)
+        .with_seasonal(npc_boot, &seasonal, |position| {
             bundle.as_ref().is_some_and(|world| {
                 if (position.x, position.y, position.floor) == (33303, 32064, -7) {
                     // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:470 force=true bypasses collision on
@@ -367,8 +374,12 @@ pub(super) async fn prepare_channel(
                     world.enterable(position)
                 }
             })
-        },
-    );
+        })
+        .with_calendar(npc_calendar);
+    timed_npcs
+        .refresh_event_contacts(root, material.world)
+        .await
+        .map_err(|_| BootError::Readiness("event NPC presence"))?;
     timed_npcs.set_brutus_present(
         root.cake_brutus_present(material.world)
             .await
@@ -447,6 +458,7 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         world_counters: false,
         counter_stages: [0; 8],
         counter_generations: [0; 8],
+        counter_quest_occurrences: [0; 8],
         counter_progress: [[0; 3]; 8],
         shared_used_sources_mask: 0,
     }
