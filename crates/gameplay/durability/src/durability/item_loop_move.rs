@@ -1062,7 +1062,8 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
-                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) AS loop_pickup \
+                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) AS loop_pickup, \
+                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1142,7 +1143,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         {
             return refuse(LoopMoveRefusal::Stale);
         }
-        if !row.try_get::<bool, _>("loop_pickup")? {
+        let native_corpse = row.try_get::<bool, _>("native_corpse")?;
+        if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
+            return refuse(LoopMoveRefusal::NotSupported);
+        }
+        if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse {
             return refuse(LoopMoveRefusal::NotSupported);
         }
         // Map-MINT's exact source proof binds its context to the bundle digest (0130),

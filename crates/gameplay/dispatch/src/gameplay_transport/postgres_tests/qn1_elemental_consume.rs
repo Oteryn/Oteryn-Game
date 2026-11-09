@@ -107,6 +107,13 @@ fn facts(key: &str) -> ItemDefinitionFacts {
 }
 #[test]
 fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::TestResult {
+    run(false)
+}
+#[test]
+fn qn1_elemental_native_corpse_arrival_postgres() -> f::TestResult {
+    run(true)
+}
+fn run(native: bool) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
     };
@@ -117,8 +124,17 @@ fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::Te
                 .map_err(f::debug)?
                 .block_on(async {
                     let start = std::time::Instant::now();
-                    let h = f::Harness::create(admin, "qn1_elemental_consume", true).await?;
-                    let result = exercise(&h).await;
+                    let h = f::Harness::create(
+                        admin,
+                        if native {
+                            "qn1_elemental_native"
+                        } else {
+                            "qn1_elemental_consume"
+                        },
+                        true,
+                    )
+                    .await?;
+                    let result = exercise(&h, native).await;
                     h.cleanup().await?;
                     result?;
                     assert!(start.elapsed().as_secs_f64() > 0.01);
@@ -126,6 +142,12 @@ fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::Te
                         "QN1_ELEMENTAL_CONSUME_PG_EXECUTED duration={:?}",
                         start.elapsed()
                     );
+                    if native {
+                        eprintln!(
+                            "QN1_ELEMENTAL_NATIVE_CORPSE_PG_EXECUTED duration={:?}",
+                            start.elapsed()
+                        );
+                    }
                     Ok::<(), Box<dyn std::error::Error>>(())
                 })
                 .map_err(f::debug)
@@ -134,7 +156,7 @@ fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::Te
         .map_err(|_| "elemental consumption PG thread failed")?
         .map_err(Into::into)
 }
-async fn exercise(h: &f::Harness) -> f::TestResult {
+async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     use crate::durability::character_equipment::{
         assert_equipment_authority_in_transaction, initialize_equipment_in_transaction,
     };
@@ -142,6 +164,9 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .fetch_one(&h.pool)
         .await?;
     eprintln!("QN1_ELEMENTAL_CONSUME_PG_READY PostgreSQL {version}");
+    if native {
+        eprintln!("QN1_ELEMENTAL_NATIVE_CORPSE_PG_READY PostgreSQL {version}");
+    }
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
         .root
@@ -149,6 +174,9 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     for (n, key) in [(1, f::BACKPACK), (2, "oteryn:item.tibia.i8139")] {
+        if native && n == 2 {
+            continue;
+        }
         let item = mint(h, &authority, n, key).await?;
         let request = if n == 1 {
             f::to_slot(f::command(n)?, item, facts(key))
@@ -199,6 +227,38 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     tx.commit().await?;
+    if native {
+        let mut request = mint_request(
+            2,
+            "oteryn:item.tibia.i8139",
+            crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY,
+        )?;
+        request.ground.map_revision = format!("sha256:{}", "07".repeat(32));
+        request.ground.content_revision = format!("sha256:{}", "01".repeat(32));
+        request.ground.native_room_placement_context = vec![3; 32];
+        request.content_revision = request.ground.content_revision.clone();
+        let mut candidate = h
+            .root
+            .freeze_item_mint(&authority, &h.node, request)
+            .await
+            .map_err(f::debug)?;
+        let permit = candidate.fresh_death_lane_permit().await;
+        let outcome = h
+            .root
+            .commit_corpse_mint(
+                &permit,
+                &authority,
+                &h.node,
+                &mut candidate,
+                f::id(f::CHARACTER),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(
+            outcome,
+            crate::durability::item_mint::ItemMintOutcome::Committed(_)
+        ));
+    }
     let (item,revision):(Vec<u8>,String)=sqlx::query_as("SELECT decode(replace(item_instance_id::text,'-',''),'hex'),state_revision::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i8139' AND lifecycle=1").fetch_one(&h.pool).await?;
     let item: [u8; 16] = item.try_into().map_err(|_| "corpse identity")?;
     let recipe = &rules::RECIPES[0];
@@ -257,7 +317,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let request = LoopMoveRequest {
         item,
         count: None,
-        pickup_cell: None,
+        pickup_cell: native.then(|| vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3]),
         destination: LoopDestination::Ground(LoopGround {
             spatial_position: spatial,
             map_revision: format!("sha256:{}", "07".repeat(32)),
@@ -268,6 +328,28 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let permit = SpellLanePermit::of_fresh_scope(f::scope()?)
         .await
         .map_err(f::debug)?;
+    if native {
+        let pickup = h
+            .root
+            .commit_item_loop_move(
+                &permit,
+                &authority,
+                &h.node,
+                &f::fence()?,
+                f::command(99)?,
+                &Content,
+                LoopMoveRequest {
+                    destination: LoopDestination::MainBackpack,
+                    ..request.clone()
+                },
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(
+            pickup,
+            Err(crate::durability::item_loop_move::LoopMoveRefusal::NotSupported)
+        ));
+    }
     let mut stale_connection = f::fence()?;
     stale_connection.connection_generation =
         crate::foundation::ConnectionGeneration::new(2).map_err(f::debug)?;
