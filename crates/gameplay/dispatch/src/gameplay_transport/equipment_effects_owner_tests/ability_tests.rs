@@ -68,6 +68,8 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    // Eight fixed elevator scenery profiles; qm50_elevator_profiles.py.
+    ("QM50-ELEVATOR", 8),
     // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
     ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
