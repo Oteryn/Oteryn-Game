@@ -66,6 +66,7 @@ enum Case {
     BlackKnight,
     FireAxeBag,
     FireAxeAll,
+    EmperorCookies,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -85,6 +86,24 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_emperor_cookies_and_key3802_complete_only_after_both_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::EmperorCookies).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Emperor Cookies scenario panicked")??;
+    println!("M35_EMPEROR_COOKIES_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 #[test]
@@ -179,6 +198,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::EmperorCookies => (
+            (32648, 31905, -3),
+            2472,
+            "oteryn:quest.emperor_s_cookies_quest",
+            &[(32648, 5004), (32599, 5005)],
+        ),
         Case::FireAxeAll => (
             (33078, 31656, -11),
             2472,
@@ -249,6 +274,14 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     (33084, 31650, -12, 6036, 4024),
                 ],
             )?
+        } else if matches!(case, Case::EmperorCookies) {
+            source_world_spatial(
+                chest,
+                &[
+                    (32648, 31905, -3, 5004, 2472),
+                    (32599, 31923, -6, 5005, 2472),
+                ],
+            )?
         } else if matches!(case, Case::Koshei) {
             source_world_objects(
                 chest,
@@ -274,7 +307,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             bound.served.len(),
             if matches!(
                 case,
-                Case::Alawar | Case::Koshei | Case::BlackKnight | Case::FireAxeAll
+                Case::Alawar
+                    | Case::Koshei
+                    | Case::BlackKnight
+                    | Case::FireAxeAll
+                    | Case::EmperorCookies
             ) {
                 2
             } else {
@@ -389,14 +426,18 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 index
             };
             let x = choices[position_index].0;
-            let y = if matches!(case, Case::FireAxeAll) {
+            let y = if matches!(case, Case::EmperorCookies) {
+                if position_index == 0 { 31905 } else { 31923 }
+            } else if matches!(case, Case::FireAxeAll) {
                 if position_index == 0 { 31656 } else { 31650 }
             } else if matches!(case, Case::Koshei) {
                 chest.1 + 4 * u16::try_from(position_index)?
             } else {
                 chest.1
             };
-            let floor = if matches!(case, Case::FireAxeAll) && position_index == 1 {
+            let floor = if matches!(case, Case::EmperorCookies) && position_index == 1 {
+                -6
+            } else if matches!(case, Case::FireAxeAll) && position_index == 1 {
                 -12
             } else {
                 chest.2
@@ -406,7 +447,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 y: i32::from(y),
                 floor: -i16::from(floor),
             };
-            if matches!(case, Case::FireAxeAll) {
+            if matches!(case, Case::FireAxeAll | Case::EmperorCookies) {
                 // Fixture admission at each literal source endpoint; travel is not
                 // under test. Keep the same SQL session fence and command stream.
                 let (runtime, actor) = runtime_at(destination)?;
@@ -513,9 +554,84 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     matches!(case, Case::Fanfare)
                         || matches!(
                             case,
-                            Case::Alawar | Case::Koshei | Case::BlackKnight | Case::FireAxeAll
+                            Case::Alawar
+                                | Case::Koshei
+                                | Case::BlackKnight
+                                | Case::FireAxeAll
+                                | Case::EmperorCookies
                         ) && index == 1
                 );
+            }
+            if matches!(case, Case::EmperorCookies) {
+                let cookies_claimed = !reverse || index == 1;
+                let key_claimed = reverse || index == 1;
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let expected_children = if cookies_claimed {
+                    vec![
+                        ("oteryn:item.tibia.i2970".to_owned(), 1),
+                        ("oteryn:item.tibia.i3598".to_owned(), 27),
+                    ]
+                } else {
+                    Vec::new()
+                };
+                assert_eq!(children, expected_children);
+                let keys: Vec<(i32, String, i64)> = sqlx::query_as(
+                    "SELECT k.key_number,i.definition_production_key,i.quantity FROM game_item_keys k \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY k.key_number LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let mut expected_keys = Vec::new();
+                if cookies_claimed {
+                    expected_keys.push((3801, "oteryn:item.tibia.i2970".to_owned(), 1));
+                }
+                if key_claimed {
+                    expected_keys.push((3802, "oteryn:item.tibia.i2970".to_owned(), 1));
+                }
+                assert_eq!(keys, expected_keys);
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let mut expected_roots = Vec::new();
+                if cookies_claimed {
+                    expected_roots.push(("oteryn:item.tibia.i2853".to_owned(), 1));
+                }
+                if key_claimed {
+                    expected_roots.push(("oteryn:item.tibia.i2970".to_owned(), 1));
+                }
+                assert_eq!(roots, expected_roots);
+                if index == 1 {
+                    let guard: String = sqlx::query_scalar(
+                        "SELECT pg_get_functiondef('game_item_key_proven()'::regprocedure)",
+                    )
+                    .fetch_one(&h.pool)
+                    .await?;
+                    for arm in [
+                        "game_reward_claim_container_item_proven",
+                        "game_map_item_mint_receipts",
+                        "game_reward_claim_inbox_item_proven",
+                        "game_reward_claim_mint_receipts",
+                    ] {
+                        assert!(guard.contains(arm), "missing key provenance owner: {arm}");
+                    }
+                    // A completed, earlier bag MINT cannot authorize a fresh key.
+                    let forged = sqlx::query(
+                        "INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id) \
+                         SELECT i.item_instance_id,3800,i.minted_transaction_id \
+                         FROM game_reward_claim_mint_receipts r JOIN game_item_instances i USING(item_instance_id) \
+                         WHERE i.definition_production_key='oteryn:item.tibia.i2853' LIMIT 1")
+                        .execute(&h.pool).await;
+                    let Err(sqlx::Error::Database(error)) = forged else {
+                        return Err(format!("stale bag key proof must refuse: {forged:?}").into());
+                    };
+                    assert_eq!(error.code().as_deref(), Some("23514"));
+                    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_keys")
+                        .fetch_one(&h.pool)
+                        .await?;
+                    assert_eq!(count, 2);
+                }
             }
             if matches!(case, Case::FireAxeBag | Case::FireAxeAll) {
                 let bag_claimed = matches!(case, Case::FireAxeBag) || !reverse || index == 1;

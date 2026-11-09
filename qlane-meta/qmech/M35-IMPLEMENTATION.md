@@ -313,3 +313,39 @@ passed. Both live Fire Axe tests passed in184.12 seconds, with
 `M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED` and
 `M35_FIRE_AXE_TWO_FLOOR_POSTGRES_CASE_COMPLETED`. This closes the previously
 recorded combined Fire Axe caller-proof gap. No production pins or data changed.
+
+## Emperor's Cookies caller and container-key guard repair
+
+The new literal caller case was RED: the cookie bag was rejected at commit.
+The retained PostgreSQL log confirmed `game_item_key_proven` raised
+'a key number is set only by the reward-claim MINT of its one item'. Migration
+2150 replaced that guard and omitted the complete-container proof arm installed
+by0762. The failed commit left a frozen pending claim, with no completed reward
+in the RED run. The lane needs both the original container arm and M21's map arm.
+
+New migration2601 restores the already-owned complete frozen-container arm by
+inserting it into the installed function definition. It preserves every map,
+inbox and root-key arm, the installed privileges and pinned search path. The
+proof still requires the current physical transaction and its whole reserved
+child plan. It adds no table, privilege or new value-grant API. Migration2601
+was the next free number from next-free-numbers.py against origin/main7723ead5a
+and origin/qmech856a420d6 plus open PR claims when authoring began. The final
+scan saw a new unrelated peer2701, advancing its next suggestion to2702;2601
+remained unused in both refs and peer PRs. Existing main peer-PR clashes do not
+involve2601; no reference branch was merged.
+
+The GREEN case drives both source endpoints in both orders: UID5004,
+(32648,31905,3), appearance2472, bag2853 holding Key3801 (2970 x1) and27 cookies
+(3598); UID5005, (32599,31923,6), appearance2472, Key3802 (2970 x1). It checks
+exact roots, nested quantities, immutable key numbers, receipts, consumed
+obligations and canonical completion only after both claims. Replay and a
+fresh repeated USE add no reward. An adversarial insertion of Key3800 onto
+the already-minted bag is rejected with SQLSTATE23514 and leaves two key rows.
+The live guard retains all four installed provenance-owner references.
+
+Dispatch all-features/all-target clippy with `-D warnings` and formatting pass.
+The live case passes in126.35 seconds and prints
+`M35_EMPEROR_COOKIES_POSTGRES_CASE_COMPLETED`. Temporary diagnostics were
+removed. The forward migration and its real-caller/negative proof form the
+coordinator's review packet for this persistence repair; no PR or review was
+requested by this single-agent lane.
