@@ -84,7 +84,7 @@ pub(super) async fn execute(
     {
         return refused();
     }
-    let is_query = request.operation == Operation::Query;
+    let is_query = request.operation.is_query();
     let presence_selected = admitted.continuity.selected_capabilities.contains(
         oteryn_protocol_oteryn::vip_presence::CAPABILITY_VIP_PRESENCE_V1,
     );

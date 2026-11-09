@@ -1,6 +1,7 @@
 //! Native local-chat panel. HWND access remains on its creating thread.
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
+use super::console;
 use crate::play::feature_0080_chat_private_channel::view::Controls as PrivateControls;
 use crate::play::{
     PlayLink,

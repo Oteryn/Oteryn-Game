@@ -42,6 +42,11 @@ pub(in crate::play) fn submit(
         };
         return None;
     }
+    if id == 154 { return request(p, Intent::Badges); }
+    if id == 153 {
+        let badge = values[0].trim().parse::<u8>().ok()?;
+        return request(p, Intent::SetBadgeVisibility { badge, public: p.server_hidden_badges.contains(&badge) });
+    }
     if target::badge_filter(p, id) {
         return None;
     }

@@ -93,8 +93,9 @@
   "src": "TIBAUD-1",
   "area": "Chat",
   "feature": "Tabbed console, chat on/off i filtry",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off.",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:9 + console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once",
   "lane": "cg_analytics"
  },
  {
@@ -102,8 +103,9 @@
   "src": "TIBAUD-1",
   "area": "Chat",
   "feature": "Save / append channel log",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak zapisu i dopisywania treści kanału do pliku.",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:26 + channel_log_control_saves_appends_replaces_and_reports_io_errors",
   "lane": "cg_analytics"
  },
  {
@@ -111,8 +113,9 @@
   "src": "TIBAUD-1",
   "area": "Chat",
   "feature": "Ignore / whitelist / blacklist",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak dedykowanych list komunikacji i wyjątków.",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:18 + communication_control_filters_live_lines_and_propagates_whitelist_exceptions",
   "lane": "cg_analytics"
  },
  {
@@ -120,8 +123,9 @@
   "src": "TIBAUD-1",
   "area": "Social",
   "feature": "Friends, main character, zaproszenia",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są zgody/status VIP; brak pełnego kontowego Friends i main character.",
+  "evidence": "apps/client/src/features/0043-vip/account.rs:11 + account_friends_caller_sends_explicit_consent_and_main_selection_without_optimistic_state; crates/gameplay/durability/src/durability/vip/account.rs:24 + account_friends_postgres_main_consent_revocation_replay_and_fences",
   "lane": "cg_analytics"
  },
  {
@@ -129,8 +133,9 @@
   "src": "TIBAUD-1",
   "area": "Social",
   "feature": "Badges: widoczność i filtry",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt jest; brak edycji publicznej widoczności i filtrów locked/hidden/public.",
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/native.rs:25 + native_badge_controls_route_public_filters_and_confirmed_visibility_changes; crates/gameplay/durability/src/durability/account_badge/visibility.rs:5 + cyclopedia_badges_postgres_real_dispatch",
   "lane": "cg_analytics"
  },
  {

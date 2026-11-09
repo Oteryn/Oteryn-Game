@@ -33,6 +33,8 @@ fn decode_badge(raw: i16) -> Result<Badge, CharacterAuthorityError> {
         .ok_or(CharacterAuthorityError::Rejected)
 }
 
+mod visibility;
+
 impl DurabilityRoot {
     /// PAR-P12b (Crystal `PlayerBadge::checkAndUpdateNewBadges`, `player_badge.cpp:63`): in one
     /// fenced transaction, grant every badge the account's native facts meet and return the
