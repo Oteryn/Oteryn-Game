@@ -267,5 +267,14 @@
  "Level": "Level", "Health (last saved)": "Health (last saved)", "Mana (last saved)": "Mana (last saved)", "Permanent prey slots": "Permanent prey slots", "Prey wildcards": "Prey wildcards", "Hirelings": "Hirelings", "Blessings": "Blessings", "; hidden locally": "; hidden locally", "Quest Log": "Quest Log", "No guild": "No guild", "Your offer": "Your offer", "Their offer": "Their offer",
  " · locked": " · locked", " · in vessel": " · in vessel", " · migration required": " · migration required", "Counts cover the visible carried inventory.": "Counts cover the visible carried inventory.", "invitation sent": "invitation sent", "Citizen": "Citizen", "Hireling identity and outfits": "Hireling identity and outfits", "Market offers": "Market offers", "Market history": "Market history", "Unassigned": "Unassigned", "Hall payment": "Hall payment", " — Complete": " — Complete",
  "Hall reserve": "Hall reserve", "Disband payout": "Disband payout", "Withdrawal": "Withdrawal", "not confirmed available": "not confirmed available", "Hall refund": "Hall refund", "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.": "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.", " — Selected": " — Selected", "Item: ": "Item: ", "Backpack: ": "Backpack: ", "Minimum ambient brightness %": "Minimum ambient brightness %", "Lower-floor dimming %": "Lower-floor dimming %", "Indoor dimming %": "Indoor dimming %",
- "Cloud dimming %": "Cloud dimming %", "Apply lighting": "Apply lighting", "Enter lighting percentages from 0 to 100": "Enter lighting percentages from 0 to 100"
+ "Cloud dimming %": "Cloud dimming %", "Apply lighting": "Apply lighting", "Enter lighting percentages from 0 to 100": "Enter lighting percentages from 0 to 100",
+ "Claim one health potion for your Inbox.": "Claim one health potion for your Inbox.",
+ "No unclaimed returner reward is available.": "No unclaimed returner reward is available.",
+ "The returner reward is unavailable. Refresh to try again.": "The returner reward is unavailable. Refresh to try again.",
+ "The server refused the returner reward claim.": "The server refused the returner reward claim.",
+ "Welcome-back reward": "Welcome-back reward",
+ "Welcome back!": "Welcome back!",
+ "Refresh reward": "Refresh reward",
+ "Claim gift": "Claim gift",
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it."
 }

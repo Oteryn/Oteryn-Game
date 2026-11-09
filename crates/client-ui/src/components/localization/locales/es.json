@@ -267,5 +267,14 @@
  "Level": "Nivel", "Health (last saved)": "Salud (último salvado)", "Mana (last saved)": "El último salvo (Mana)", "Permanent prey slots": "Los slots permanentes prey", "Prey wildcards": "Prey los Wildcards", "Hirelings": "Hirelings", "Blessings": "Bendiciones", "; hidden locally": "• Esconder localmente", "Quest Log": "El logotipo Quest", "No guild": "No hay guía", "Your offer": "Su oferta", "Their offer": "Su oferta",
  " · locked": " • Cerrado", " · in vessel": " • En el barco", " · migration required": " · Migración requerida", "Counts cover the visible carried inventory.": "Las cuentas cubren el inventario llevado visible.", "invitation sent": "Invitación enviada", "Citizen": "Ciudadanos", "Hireling identity and outfits": "La identidad de Hireling y los outfits", "Market offers": "Ofertas de mercado", "Market history": "Historia del mercado", "Unassigned": "No asignado", "Hall payment": "Salón de pago", " — Complete": " - Completo",
  "Hall reserve": "Salón Reserva", "Disband payout": "Disminución de pago", "Withdrawal": "Retiro", "not confirmed available": "No confirmado disponible", "Hall refund": "Hall de devolución", "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.": "Envíe a través de tu navegador. Utilice el calendario para navegar en eventos publicados por el operador. Este calendario no tiene eventos publicados.", " — Selected": " - Seleccionados", "Item: ": "El objeto: ", "Backpack: ": "El Backpack: ", "Minimum ambient brightness %": "Brillo ambiental mínimo %", "Lower-floor dimming %": "Oscurecimiento de plantas inferiores %", "Indoor dimming %": "Oscurecimiento en interiores %",
- "Cloud dimming %": "Oscurecimiento por nubes %", "Apply lighting": "Aplicar iluminación", "Enter lighting percentages from 0 to 100": "Introduce porcentajes de iluminación de 0 a 100"
+ "Cloud dimming %": "Oscurecimiento por nubes %", "Apply lighting": "Aplicar iluminación", "Enter lighting percentages from 0 to 100": "Introduce porcentajes de iluminación de 0 a 100",
+ "Claim one health potion for your Inbox.": "Reclama una poción de salud para tu buzón.",
+ "No unclaimed returner reward is available.": "No hay ninguna recompensa de regreso pendiente.",
+ "The returner reward is unavailable. Refresh to try again.": "La recompensa de regreso no está disponible. Actualiza para volver a intentarlo.",
+ "The server refused the returner reward claim.": "El servidor rechazó la solicitud de recompensa de regreso.",
+ "Welcome-back reward": "Recompensa de regreso",
+ "Welcome back!": "¡Bienvenido de nuevo!",
+ "Refresh reward": "Actualizar recompensa",
+ "Claim gift": "Reclamar regalo",
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Hay un regalo de bienvenida disponible. Abre Recompensa diaria (Ctrl+D) y luego Recompensa de regreso para reclamarlo."
 }

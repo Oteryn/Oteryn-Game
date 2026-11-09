@@ -1139,20 +1139,20 @@
   "src": "TIBAUD-1",
   "area": "Rewards",
   "feature": "Daily wall/streak/jokers/claim/pick items",
-  "status": "PARTIAL",
-  "gap": "Brak pick-items: DAILY_REWARD_V2 celowo usuwa wybór nagród; potrzebna decyzja właściciela o katalogu i regułach wyboru.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0182-daily-reward/protocol.rs:4 + daily_reward_catalogue_and_account_history_cross_real_session_caller; 30-day Free/Premium catalogue and durable account/World history wired through command 738 on existing capability 182; production PostgreSQL caller daily_reward_real_dispatch_delivers_replays_reloads_and_orders_thirty_days; remaining item-choice picker conflicts with DAILY_REWARD_V2 one-click contract and awaits owner choice rules"
+  "evidence": "crates/gameplay/durability/src/durability/daily_reward_delivery.rs:111 + daily_picker_real_dispatch_validates_rolls_back_delivers_and_replays; apps/client/src/features/0182-daily-reward/input.rs:65 + item_picker_real_caller_validates_catalogue_and_sends_exact_selection"
  },
  {
   "id": "T145",
   "src": "TIBAUD-1",
   "area": "Rewards",
   "feature": "Returner reward",
-  "status": "PARTIAL",
-  "gap": "Brak dedykowanego przepływu i notyfikacji nagrody powrotnej.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0182-daily-reward/state/returner.rs:9 + returner_reward_notification_never_infers_entitlement_from_daily_streak; PARTIAL: server entitlement/claim wire and native notification remain"
+  "evidence": "crates/gameplay/durability/src/durability/daily_reward_delivery/returner.rs:17 + returner_real_dispatch_qualifies_native_history_and_claims_once; apps/client/src/features/0182-daily-reward/tests/returner.rs:82 + play_entry_queries_returner_entitlement_without_opening_daily_wall"
  },
  {
   "id": "T147",

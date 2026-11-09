@@ -22,6 +22,12 @@ pub async fn run_session<T: Stepper>(
     if !session_initialize::initialize(&session, &outbox) {
         return;
     }
+    if let Some(command) = outbox.returner_initial_request() {
+        match session.feature(&command).await {
+            Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+            Err(_) => outbox.returner_unavailable(),
+        }
+    }
     let mut modal =
         super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
@@ -58,7 +64,11 @@ pub async fn run_session<T: Stepper>(
                         76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
-                        182 => outbox.daily_reward_details_result(&result),
+                        182 => match command.kind {
+                            738=>outbox.daily_reward_details_result(&result),
+                            oteryn_session::daily_reward::returner::QUERY | oteryn_session::daily_reward::returner::CLAIM =>outbox.daily_reward_returner_result(command.kind,&result),
+                            _=>outbox.daily_reward_picker_result(command.kind,&result),
+                        },
                         170 => outbox.arena_result(&result),
                         195 | 448 => outbox.weapon_proficiency_result(&result),
                         148 if command.kind == 6121 => outbox.gem_presentation_result(&command, &result),

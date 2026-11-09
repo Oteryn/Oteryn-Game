@@ -267,5 +267,14 @@
  "Level": "nivå", "Health (last saved)": "Hälsa (den sista räddade)", "Mana (last saved)": "Manna (den sista räddade)", "Permanent prey slots": "Permanent Prey Slots", "Prey wildcards": "Prey Wildkorts", "Hirelings": "Hirelingar", "Blessings": "välsignelser", "; hidden locally": "• gömda lokalt", "Quest Log": "Quest logg", "No guild": "Ingen guild", "Your offer": "ditt erbjudande", "Their offer": "Deras erbjudande",
  " · locked": " · Lås", " · in vessel": " • på fartyget", " · migration required": " · Migration krävs", "Counts cover the visible carried inventory.": "Konton täcker den synliga bärda inventeringen.", "invitation sent": "Inbjudan skickas", "Citizen": "medborgare", "Hireling identity and outfits": "Hireling identitet och outfits", "Market offers": "marknadserbjudanden", "Market history": "Marknadshistoria", "Unassigned": "Ouppdelad", "Hall payment": "Hall betalning", " — Complete": " - kompletta",
  "Hall reserve": "Hall Reservering", "Disband payout": "Avbrytande betalning", "Withdrawal": "Avdrag", "not confirmed available": "inte bekräftat tillgängligt", "Hall refund": "Hall återbetalning", "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.": "Logga in via din webbläsare. Använd kalendern för att surfa på operatörs publicerade evenemang. Denna kalender har inga publicerade evenemang.", " — Selected": " - Välj", "Item: ": "föremål : ", "Backpack: ": "Backpack för: ", "Minimum ambient brightness %": "Minsta omgivningsljus %", "Lower-floor dimming %": "Nedtoning av lägre våningar %", "Indoor dimming %": "Nedtoning inomhus %",
- "Cloud dimming %": "Nedtoning av moln %", "Apply lighting": "Tillämpa belysning", "Enter lighting percentages from 0 to 100": "Ange belysningsprocent från 0 till 100"
+ "Cloud dimming %": "Nedtoning av moln %", "Apply lighting": "Tillämpa belysning", "Enter lighting percentages from 0 to 100": "Ange belysningsprocent från 0 till 100",
+ "Claim one health potion for your Inbox.": "Hämta en hälsodryck till din inkorg.",
+ "No unclaimed returner reward is available.": "Det finns ingen ohämtad återkomstbelöning.",
+ "The returner reward is unavailable. Refresh to try again.": "Återkomstbelöningen är inte tillgänglig. Uppdatera för att försöka igen.",
+ "The server refused the returner reward claim.": "Servern nekade begäran om återkomstbelöningen.",
+ "Welcome-back reward": "Återkomstbelöning",
+ "Welcome back!": "Välkommen tillbaka!",
+ "Refresh reward": "Uppdatera belöning",
+ "Claim gift": "Hämta gåva",
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den."
 }

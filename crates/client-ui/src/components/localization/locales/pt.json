@@ -267,5 +267,14 @@
  "Level": "Nível", "Health (last saved)": "Saúde (último salvo)", "Mana (last saved)": "Mãe (O Último Salvo)", "Permanent prey slots": "Próximo artigoSlots Permanentes", "Prey wildcards": "Prey cartão selvagem", "Hirelings": "Hirelings", "Blessings": "bênçãos", "; hidden locally": "• Esconde localmente", "Quest Log": "Quest de Log", "No guild": "Não Guilherme", "Your offer": "Sua oferta", "Their offer": "Sua oferta",
  " · locked": " • fechado", " · in vessel": " • Em um navio", " · migration required": " · Migração necessária", "Counts cover the visible carried inventory.": "As contas cobrem o inventário visível carregado.", "invitation sent": "Envio de convite", "Citizen": "Cidadão", "Hireling identity and outfits": "Identificação e outfits", "Market offers": "Ofertas de mercado", "Market history": "História do Mercado", "Unassigned": "Não atribuído", "Hall payment": "Salão de Pagamento", " — Complete": " - Completo",
  "Hall reserve": "Hall Reserva", "Disband payout": "Disputação de pagamento", "Withdrawal": "Retirada", "not confirmed available": "Não confirmado disponível", "Hall refund": "Salão de reembolso", "Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.": "Inscreva-se através do seu navegador. Use o calendário para navegar em eventos publicados pelo operador. Este calendário não tem eventos publicados.", " — Selected": " - seleção", "Item: ": "O item: ", "Backpack: ": "O backpack: ", "Minimum ambient brightness %": "Brilho ambiente mínimo %", "Lower-floor dimming %": "Escurecimento de andares inferiores %", "Indoor dimming %": "Escurecimento em interiores %",
- "Cloud dimming %": "Escurecimento por nuvens %", "Apply lighting": "Aplicar iluminação", "Enter lighting percentages from 0 to 100": "Introduza percentagens de iluminação de 0 a 100"
+ "Cloud dimming %": "Escurecimento por nuvens %", "Apply lighting": "Aplicar iluminação", "Enter lighting percentages from 0 to 100": "Introduza percentagens de iluminação de 0 a 100",
+ "Claim one health potion for your Inbox.": "Resgate uma poção de vida para sua caixa de entrada.",
+ "No unclaimed returner reward is available.": "Não há recompensa de retorno pendente.",
+ "The returner reward is unavailable. Refresh to try again.": "A recompensa de retorno está indisponível. Atualize para tentar novamente.",
+ "The server refused the returner reward claim.": "O servidor recusou o resgate da recompensa de retorno.",
+ "Welcome-back reward": "Recompensa de retorno",
+ "Welcome back!": "Bem-vindo de volta!",
+ "Refresh reward": "Atualizar recompensa",
+ "Claim gift": "Resgatar presente",
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo."
 }

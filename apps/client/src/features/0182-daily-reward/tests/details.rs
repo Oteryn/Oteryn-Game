@@ -8,6 +8,16 @@ impl Stepper for DetailsPeer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        if command.kind == daily_reward::returner::QUERY {
+            return Ok(oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: daily_reward::returner::Reply { state: 0, id: None }
+                    .encode()
+                    .map_err(|_| SessionError::SessionUnusable)?,
+            });
+        }
         assert_eq!((command.capability, command.kind), (182, 738));
         assert!(command.payload.is_empty());
         let mut details = daily_reward::details::Details::empty(50);
