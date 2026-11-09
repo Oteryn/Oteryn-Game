@@ -28,6 +28,7 @@ pub struct QuestCreatureUseProof<'runtime> {
     key: String,
     intent: UseIntent,
     corpse: Option<corpse::CorpseUse<'runtime>>,
+    live_target: Option<ExactActorRef>,
     _runtime: std::marker::PhantomData<&'runtime ()>,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
@@ -75,9 +76,17 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             key: key.clone(),
             intent: intent.clone(),
             corpse: None,
+            live_target: Some(creature),
             _runtime: std::marker::PhantomData,
         })
     }
+    /// Exact server actor checked by the live runtime owner. Capture retirement
+    /// can retain this identity instead of reconstructing it from a client handle.
+    /// The proof still borrows that runtime; this accessor grants no mutation.
+    pub fn live_target(&self) -> Option<ExactActorRef> {
+        self.live_target
+    }
+
     pub(super) fn permits(
         &self,
         fence: CurrentCharacterGameplayFence,

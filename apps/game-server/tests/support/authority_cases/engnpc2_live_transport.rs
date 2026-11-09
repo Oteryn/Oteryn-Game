@@ -337,6 +337,9 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
         command_id: 13101,
         item_fence: Some(fence.item_fence()),
     };
+    if !corpse {
+        capture::assert_target(&runtime, actor, Some(creature), fence, command, &intent).await?;
+    }
     let mut wrong = intent.clone();
     wrong.use_with_map_item = None;
     wrong.use_with = Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
@@ -389,6 +392,9 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
         .await
         .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
         .map_err(debug)?;
+    if !corpse {
+        capture::assert_target(&runtime, actor, None, fence, command, &intent).await?;
+    }
     // Spent source and target handles no longer resolve; the live actor is removed.
     // The historical command must still reach the existing receipt owner.
     let replay = call(&owner, actor, command, intent, handle, (false, false, None))
@@ -452,3 +458,6 @@ async fn seed_tool(
 
 #[path = "engnpc2_live_transport/corpse.rs"]
 mod corpse;
+
+#[path = "engnpc2_live_transport/capture.rs"]
+mod capture;

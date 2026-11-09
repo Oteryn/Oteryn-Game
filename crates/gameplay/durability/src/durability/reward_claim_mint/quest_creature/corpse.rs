@@ -61,6 +61,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             callback: callback.key.clone(),
             key: callback.creature_target.clone()?,
             intent: intent.clone(),
+            live_target: None,
             corpse: Some(CorpseUse {
                 actor: CorpseActorSnapshot::read_current(runtime, actor, fence)?,
                 operand,
