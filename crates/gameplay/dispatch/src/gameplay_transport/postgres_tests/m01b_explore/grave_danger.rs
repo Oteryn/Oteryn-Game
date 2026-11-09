@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 const QUEST: &str = "oteryn:quest.grave_danger_quest";
 const TRACK: &str = "oteryn:quest-progress/chosen-source/grave_danger_quest/s1";
-const POINTS: [(u16, u16, i8, StepDirection); 12] = [
+pub(super) const POINTS: [(u16, u16, i8, StepDirection); 12] = [
     (32645, 32394, -8, StepDirection::West),
     (32542, 31845, -6, StepDirection::West),
     (33376, 32805, -8, StepDirection::West),
@@ -50,7 +50,11 @@ fn m01b_grave_danger_twelve_native_visits_require_level_premium_and_cannot_be_fa
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
+    super::super::l6_world_pickups::native_scene(native, crops(), &[])
+}
+
+pub(super) fn crops() -> Vec<super::super::l6_world_pickups::NativeCrop> {
+    use super::super::l6_world_pickups::{ExpectedTile, NativeCrop};
     let bytes: [&'static [u8]; 12] = [
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -107,7 +111,7 @@ pub(super) fn world(
     let starts = [
         410, 11417, 418, 7065, 4399, 436, 469, 429, 429, 429, 429, 429,
     ];
-    let crops = POINTS
+    POINTS
         .iter()
         .enumerate()
         .map(|(i, &(x, y, floor, _))| NativeCrop {
@@ -128,8 +132,7 @@ pub(super) fn world(
                 },
             ],
         })
-        .collect();
-    native_scene(native, crops, &[])
+        .collect()
 }
 
 pub(super) async fn exercise(

@@ -247,8 +247,10 @@ class ExploreBindingsTests(unittest.TestCase):
                     resolver.resolve(ROOT, quest, reference, definition=foreign)
 
     def test_grave_danger_twelve_visit_stage_is_activated(self):
-        callbacks = [c for c in explore.callbacks(ROOT)
-                     if c['quest'] == 'oteryn:quest.grave_danger_quest']
+        quest_callbacks = [c for c in explore.callbacks(ROOT)
+                           if c['quest'] == 'oteryn:quest.grave_danger_quest']
+        callbacks = [c for c in quest_callbacks if '/s1/' in c['key']]
+        self.assertEqual(len(quest_callbacks), 13, 'twelve graves plus one guarded Cobra visit')
         self.assertEqual(len(callbacks), 12, 'all twelve chosen grave visits are activated atomically')
         self.assertEqual(len({c['key'] for c in callbacks}), 12)
 

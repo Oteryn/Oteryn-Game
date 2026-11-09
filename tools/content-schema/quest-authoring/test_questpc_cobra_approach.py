@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CobraApproachTests(unittest.TestCase):
-    def test_inactive_cobra_plan_preserves_all_predecessor_guards(self):
+    def test_cobra_plan_preserves_all_predecessor_guards(self):
         binding = (('oteryn:quest.grave_danger_quest', 's4',
                     'area-approach:oteryn:area.hunting_place.cobra_bastion',
                     'chosen-source/grave_danger_quest'),)
@@ -27,5 +27,5 @@ class CobraApproachTests(unittest.TestCase):
         self.assertEqual([(s['track'].rsplit('/',1)[-1],s['minimum'],s['maximum'])
                           for s in guards], [('s1',12,12),('s2',5,5),('s3',1,1)])
         self.assertEqual(len([s for s in callback['storage'] if not s.get('preserve')]),2)
-        self.assertFalse(any(c['quest']=='oteryn:quest.grave_danger_quest'
+        self.assertTrue(any(c['quest']=='oteryn:quest.grave_danger_quest'
                              and '/s4/' in c['key'] for c in explore.callbacks(ROOT)))

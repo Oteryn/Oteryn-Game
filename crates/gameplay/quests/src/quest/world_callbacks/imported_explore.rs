@@ -86,6 +86,44 @@ mod tests {
     use super::super::*;
 
     #[test]
+    fn imported_explore_cobra_preserves_predecessor_bounds_and_binds_the_guards()
+    -> Result<(), String> {
+        let state = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/grave-danger/s4/entry")
+            .ok_or("bound Cobra investigation")?;
+        assert!(super::admitted(&callback));
+        for (stage, maximum) in [("s1", 12), ("s2", 5), ("s3", 1), ("s4", 1)] {
+            let track = state
+                .catalogue()
+                .track(&format!(
+                    "oteryn:quest-progress/chosen-source/grave_danger_quest/{stage}"
+                ))
+                .ok_or("Cobra predecessor track")?;
+            assert_eq!((track.initial, track.min, track.max), (0, 0, maximum));
+        }
+        assert_eq!(callback.storage.iter().filter(|s| s.preserve).count(), 3);
+        let bound = gated_binding(&callback)?;
+        let mut stripped = callback;
+        let guard = stripped
+            .storage
+            .iter_mut()
+            .find(|s| s.track.ends_with("/s3"))
+            .ok_or("King Zelos guard")?;
+        guard.minimum = 0;
+        guard.maximum = 0;
+        guard.set = 0;
+        assert_ne!(
+            gated_binding(&stripped)?,
+            bound,
+            "boss guards belong to native authority"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn imported_explore_fury_layer_approach_is_admitted_and_city_bound() -> Result<(), String> {
         crate::quest::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;

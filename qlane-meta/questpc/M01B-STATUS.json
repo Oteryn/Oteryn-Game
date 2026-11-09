@@ -44,7 +44,7 @@
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change"
     ],
-    "wired_explore_stages": 36,
+    "wired_explore_stages": 37,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -82,7 +82,7 @@
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change"
     ],
-    "wired_native_visit_anchors": 50,
+    "wired_native_visit_anchors": 51,
     "pg_proven_explore_stages": 36
   },
   "validation": {
@@ -239,7 +239,8 @@
     "fury_catalogue_key": "NativePG RED70.03292385s InvalidEffect on1be1660da;fullcatalogueregressionRED0.33s. ExactFurycitysyntax helper preserveslegacygrammar,otherfamilies/doublepaths/malformednamesreject. GREEN380questunit tests94.15s;nativePGretryrequired aftercataloguefix.",
     "cobra_inactive_resolver": "RED unsupportedArea0.53s -> GREEN1test1.561s includingretainedB3ground;stage4readonlyguards s1=12,s2=5,s3=1;level250/Premiumretained. Inactive,noactivebindingcountchange. Fullauthoringretry1212tests/117modulesPASS afteroneOOMSIGKILLtreechild;checksPASS;activeJSONunchanged.",
     "fury_native_postgres": "GREEN80.739761441s m01b_fury_native_survey_requires_selected_city_and_premium onb338efe70;actualselectedThaisdays,currentreset/Premium/replay/freshonce/revisit,wholecompletion0. PriorRED70.03292385s InvalidEffect fixedviafullcataloguekeyvalidator. Actualentryphaseonly;Fury s2/othercities/Furyosa notqualified.",
-    "fury_final_prevention": "GREEN currentworkspacealltargets5m33s andcargo fmtallcheck;380questunits94.15s;strictquestsClippy10.81s;1212authoringtests/117modules,checks/tree/nativeproviderregeneration/pins/dupmigrationsPASS;FuryrealPG80.739761441s. Cobrahelperinactive/1focusedtest1.561s;noactiveJSONchange."
+    "fury_final_prevention": "GREEN currentworkspacealltargets5m33s andcargo fmtallcheck;380questunits94.15s;strictquestsClippy10.81s;1212authoringtests/117modules,checks/tree/nativeproviderregeneration/pins/dupmigrationsPASS;FuryrealPG80.739761441s. Cobrahelperinactive/1focusedtest1.561s;noactiveJSONchange.",
+    "cobra_live_activation": "ActivationRED missing s4 -> GREEN1authoringtest1.196s;8Rustprofiletests8.11s includefullcatalogue/readguardbounds/bindinghash;strictquests+dispatchalltargetsClippy7m53s;1212authoringtests/117modules,checks/tree/nativeproviderregenPASS. NativePG2casesbuilding,notqualified. Currentworkspacecheckpending;prior5m33s checkpredatesactivation."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
