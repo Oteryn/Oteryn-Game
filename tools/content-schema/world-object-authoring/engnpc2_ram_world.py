@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[3]
 IDENTIFIER = 53439
 KEY = f'oteryn:terrain.tibia.i{IDENTIFIER}'
 PROFILE = 'OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1'
-SHARD = 'content/world/terrain/terrain-08749-08749.json'
+SHARD = 'content/world/terrain/terrain-08750-08750.json'
 NOTE = ' Additionally one source-qualified Reliable Ram static appearance; total 8694 Terrain records.'
 
 

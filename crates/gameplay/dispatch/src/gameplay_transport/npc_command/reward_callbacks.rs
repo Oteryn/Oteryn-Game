@@ -147,9 +147,11 @@ pub(super) fn prepare(
             {
                 return Some(choice);
             }
-            if let Some(offer) = offers.offers.iter().find(|c| {
-                c.admits(&context.2, topic.number, &text, catalogue, tracks)
-            }) {
+            if let Some(offer) = offers
+                .offers
+                .iter()
+                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
+            {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }

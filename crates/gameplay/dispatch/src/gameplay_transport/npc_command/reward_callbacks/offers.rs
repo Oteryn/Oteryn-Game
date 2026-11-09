@@ -16,7 +16,9 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         }
         offers.offers.extend(document.offers);
     }
-    offers.offers.extend(super::offer_match::rafzan_offers()?.offers);
+    offers
+        .offers
+        .extend(super::offer_match::rafzan_offers()?.offers);
     #[cfg(test)]
     if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
         offers.offers.extend(rows.iter().cloned());

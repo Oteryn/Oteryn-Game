@@ -853,11 +853,11 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         && (item.target_replacement.is_some()
                             || callback.effects.transform.is_some()))
                     || (item.replacement.is_some() && item.count != 1)
-                    || !callback.requires_durable_commit()
+                    || (!callback.requires_durable_commit()
+                        && callback.effects.source_portal.is_none())
                     || (callback.trigger != Trigger::Use
                         && !super::dreamer_carrot::shared_input(callback))
                     || (item.selected_instance && !callback.requires_world_admission)
-                && callback.effects.source_portal.is_none()
                     || item.count == 0
                     || item.count > 100
                     || item.ingredients.len() > 15

@@ -31,6 +31,9 @@ pub(crate) fn dreamer_entrance() -> Callback {
         replacement: None,
         target_replacement: None,
         reusable: true,
+        selected_instance: false,
+        target_remove: false,
+        ingredients: Vec::new(),
     });
     callback.effects = CallbackEffectSet::default();
     callback.effects.source_portal = Some(SourcePortal {

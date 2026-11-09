@@ -967,31 +967,31 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let seed_result = match elemental_result {
         Some(result) => result.map(Some),
         None => match ring_result {
-        Ok(Some(Ok((receipt, opened)))) => {
-            ring_opened = opened;
-            Ok(Some(Ok(receipt)))
-        }
-        Ok(Some(Err(refusal))) => Ok(Some(Err(refusal))),
-        Err(error) => Err(error),
-        Ok(None) => match seed_target {
-            Some(target) => {
-                admission
-                    .root
-                    .commit_item_loop_seed_drop(
-                        &permit,
-                        admission.character,
-                        admission.holder,
-                        fence,
-                        CommandRef::new(command.game_session_id, command_id),
-                        &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                        loop_request.clone(),
-                        target,
-                    )
-                    .await
+            Ok(Some(Ok((receipt, opened)))) => {
+                ring_opened = opened;
+                Ok(Some(Ok(receipt)))
             }
-            None => Ok(None),
+            Ok(Some(Err(refusal))) => Ok(Some(Err(refusal))),
+            Err(error) => Err(error),
+            Ok(None) => match seed_target {
+                Some(target) => {
+                    admission
+                        .root
+                        .commit_item_loop_seed_drop(
+                            &permit,
+                            admission.character,
+                            admission.holder,
+                            fence,
+                            CommandRef::new(command.game_session_id, command_id),
+                            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                            loop_request.clone(),
+                            target,
+                        )
+                        .await
+                }
+                None => Ok(None),
+            },
         },
-    },
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),

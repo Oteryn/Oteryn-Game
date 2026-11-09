@@ -504,6 +504,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08614-08668.json",
             "content/world/terrain/terrain-08693-08693.json",
             "content/world/terrain/terrain-08749-08749.json",
+            "content/world/terrain/terrain-08750-08750.json",
             "content/world/objects/objects-12917-12931.json",
         )
         if (path := ROOT / relative).exists()
