@@ -14,6 +14,8 @@ class SourceChargedAdmission(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.items = claims.load_items()
+        # Replay the historical held Item independently of its live admission.
+        cls.items[KEY]['materializable'] = False
         rows = json.loads((claims.ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']
         cls.profile = next(r for r in rows if r['production_definition']['production_key'] == KEY)
 

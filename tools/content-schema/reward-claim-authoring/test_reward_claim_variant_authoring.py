@@ -76,12 +76,36 @@ class CanonicalVariantTests(unittest.TestCase):
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
                     if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
-                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                        # Crystal 201189f8 chest.lua:1051 UID6063 grants [3083, 1].
+                        self.assertEqual(d['data_holds'], [])
                         self.assertEqual(d['native_contents']['placements'][0]['contents'][2]['charges_remaining'], 1)
                     else:
                         self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
+
+    def test_ornamented_source_reconciliation_requires_the_exact_donor_recipe(self):
+        key = 'canary:reward-claim/kv/ornamentedshield'
+        original = next(r for r in self.packet['records'] if r['source_claim']['identity']['key'] == key)
+        for mutation in ('charge', 'sibling', 'position', 'hold'):
+            row = copy.deepcopy(original)
+            placement = row['source_claim']['placements'][0]
+            if mutation == 'charge':
+                placement['reward']['items'][2]['count'] = 2
+                row['charge_dispositions'][0]['source_raw_argument'] = 2
+            elif mutation == 'sibling':
+                placement['reward']['items'][0]['count'] = 2
+            elif mutation == 'position':
+                placement['position']['x'] += 1
+            else:
+                row['source_data']['missing'].append({'code': 'SOURCE_PLACEMENT_BINDING_MISSING',
+                                                     'placement_index': 0})
+            with self.subTest(mutation=mutation):
+                record, = variants.derive_definitions({'records': [row]}, self.items, plain.stack_problem)
+                definition = record['definition']
+                self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in definition['data_holds']))
+                self.assertNotIn('native_contents', definition)
+                self.assertEqual(definition['readiness'], 'waiting_data')
 
     def test_covered_fields_text_key_random_container_cooldown_retained(self):
         seen = set()

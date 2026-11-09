@@ -60,6 +60,7 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertFalse(self.items['oteryn:item.tibia.i3084']['materializable'])
 
     def test_charged_mismatch_stays_held_and_unrelated_quests_keep_their_facts(self):
+        before = copy.deepcopy(self.items)
         changed = copy.deepcopy(self.items)
         changed['oteryn:item.tibia.i3083']['semantics']['charges']['value']['count']['value'] = 149
         rows = self.build(changed)
@@ -69,8 +70,8 @@ class SourceQuestRewards(unittest.TestCase):
                          if r['definition']['identity']['key'] == 'oteryn:reward-claim.kv.lifering')
         self.assertNotIn('native_contents', life_ring)
         # Full-charge admission must not mutate the source-wide Item catalogue.
-        self.assertTrue(self.items['oteryn:item.tibia.i3083']['materializable'])
-        self.assertEqual(self.items, plain.load_items(), 'source catalogue must remain unchanged')
+        self.assertFalse(self.items['oteryn:item.tibia.i3083']['materializable'])
+        self.assertEqual(self.items, before, 'source catalogue must remain unchanged')
 
     def test_native_charge_admission_requires_exact_profile_and_all_known_facts(self):
         profiles = plain.load_json(plain.ROOT / 'content/items/definitions/spell-native-profiles.json')

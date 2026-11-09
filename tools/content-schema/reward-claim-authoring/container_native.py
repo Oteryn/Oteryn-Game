@@ -65,8 +65,10 @@ def native_charge_item(item, profile):
     charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
     if charges is None:
         return item
-    held = copy.deepcopy(item)
-    held['materializable'] = False
+    held = item
+    if item.get('materializable') is not False:
+        held = copy.deepcopy(item)
+        held['materializable'] = False
     if profile is None:
         return held
     semantics = profile['semantics']
@@ -361,6 +363,12 @@ def derive(definition, items, stack_problem):
             count = quantity['count']
             if (item is None or item['identity'] != quantity['item'] or item_id(quantity['item']) != source_id
                     or stack_problem(item, count) is not None):
+                return None
+            charges = fact(item, 'charges', 'count')
+            if (item.get('stack_class') == 'NonStackable'
+                    and type(charges) is int and charges > 0 and raw_count != charges):
+                # Partial-charge recipes require charge_native's explicit
+                # instance state; this projection uses definition defaults.
                 return None
             if (count != raw_count
                     and (item.get('stack_class') != 'NonStackable' or count != 1

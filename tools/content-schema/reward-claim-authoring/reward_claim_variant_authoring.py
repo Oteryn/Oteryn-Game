@@ -216,6 +216,17 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             'source_variant': copy.deepcopy(row)}
         if source.get('quest'):
             definition['quest'] = copy.deepcopy(source['quest'])
+        if (definition['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield'
+                and source['placements'][0]['reward']['items'][2]['count'] == 1
+                and charges[(0, 'items', 2)]['source_raw_argument'] == 1):
+            # Retain the historical default-charge conflict in source_variant.
+            # Clear the live hold only after the complete donor recipe qualifies.
+            candidate = {**definition, 'data_holds': [g for g in holds
+                if g != {'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH',
+                         'placement_index': 0, 'reward_field': 'items', 'reward_index': 2}]}
+            if charge_native.derive(candidate, claim_items, stack_problem) is not None:
+                definition = candidate
+                definition['readiness'] = 'waiting_implementation'
         native_contents = (charge_native.derive(definition, claim_items, stack_problem)
                            or container_native.derive(definition, claim_items, stack_problem))
         if native_contents is not None:

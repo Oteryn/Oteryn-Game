@@ -55,7 +55,9 @@ def derive(definition, items, stack_problem):
         return None
     expected_holds = ([{'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH',
                        'placement_index': 0, 'reward_field': 'items', 'reward_index': index}
-                      for index in spec['charged']] if spec['container'] else [])
+                      for index in spec['charged']] if spec['container'] and spec['uid'] != 6063 else [])
+    # Crystal chest.lua:1051, UID6063 explicitly grants [3083, 1]. Its
+    # admitted one-charge recipe agrees with Source, not the Item default 150.
     if definition.get('data_holds', []) != expected_holds:
         return None
     reward = placement['reward']
