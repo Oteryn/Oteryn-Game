@@ -36,10 +36,15 @@ impl PlayLink {
 
     pub fn store_request(&self, command_type: u32, payload: Vec<u8>) {
         let mut mailbox = lock(&self.mailbox);
+        if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported { return; }
         let Some(command) = oteryn_client_ui::store::command(command_type, payload) else {
             return;
         };
-        if let Some(command) = oteryn_client_ui::store::request(&mut mailbox.store, command)
+        let requested = if matches!(command_type, 6187 | 6188) {
+            oteryn_client_ui::store_cosmetic_tokens::request(&mut mailbox.store, command_type, command.payload)
+        } else { oteryn_client_ui::store::request(&mut mailbox.store, command) };
+        if requested.is_some() && command_type == 6187 { mailbox.store.token_balance_refresh = false; }
+        if let Some(command) = requested
             && self
                 .commands
                 .send(PlayCommand::ServerMechanic(command))
@@ -48,6 +53,10 @@ impl PlayLink {
             mailbox.store.pending = false;
             mailbox.store.feedback = Some(tr!("The session has ended").into());
         }
+    }
+
+    pub fn store_payment(&self, tokens: bool) -> bool {
+        oteryn_client_ui::store::choose_payment(&mut lock(&self.mailbox).store, tokens)
     }
 
     pub fn store_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {

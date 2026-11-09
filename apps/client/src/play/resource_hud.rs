@@ -40,6 +40,7 @@ pub(super) struct ViewState {
     stamina: Option<u16>,
     conditions: Option<oteryn_client_ui::condition_status::ConditionStatus>,
     rest: Option<oteryn_client_ui::rest_status::RestStatus>,
+    taints: Option<oteryn_client_runtime::boss_encounter::Taints>,
 }
 
 pub(super) fn stamina_command() -> oteryn_client_runtime::raw_feature::FeatureCommand {
@@ -104,6 +105,24 @@ impl PlayView {
     pub(super) fn sync_resource_hud(&mut self, link: &PlayLink) {
         let conditions = link.condition_status_panel();
         let rest = link.rest_status_panel();
+        let (taints, refresh_taints) = {
+            let mailbox = lock(&link.mailbox);
+            let panel = &mailbox.boss_encounter;
+            let taints = panel
+                .feedback
+                .is_none()
+                .then(|| panel.snapshot.as_ref().and_then(|snapshot| snapshot.taints))
+                .flatten();
+            (
+                taints,
+                panel.selected
+                    && !panel.pending
+                    && !panel.open
+                    && !panel.cooldowns_open
+                    && !panel.gallery_open,
+            )
+        };
+        self.resource_hud.taints = taints;
         self.resource_hud.conditions = conditions
             .error
             .is_none()
@@ -121,10 +140,13 @@ impl PlayView {
             .is_none_or(|last| now.duration_since(last) >= Duration::from_secs(2))
         {
             let options = &self.preferences().resource_hud;
+            if options.conditions && refresh_taints {
+                link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Refresh);
+            }
             if options.conditions && conditions.selected && !conditions.pending {
                 link.condition_status_request();
             }
-            if options.rest && rest.selected && !rest.pending {
+            if (options.rest || options.conditions) && rest.selected && !rest.pending {
                 link.rest_status_request();
             }
             self.resource_hud.refreshed = Some(now);
@@ -213,10 +235,13 @@ impl PlayView {
             ));
         }
         if options.conditions {
-            parts.push(self.resource_hud.conditions.as_ref().map_or_else(
-                || "Conditions: —".into(),
-                oteryn_client_ui::condition_status::status_text,
-            ));
+            parts.push(
+                self.special_condition_rows(false)
+                    .into_iter()
+                    .map(|row| row.2)
+                    .collect::<Vec<_>>()
+                    .join("   "),
+            );
         }
         parts.join("   ")
     }
@@ -227,10 +252,13 @@ impl PlayView {
     pub fn hud_conditions_text(&self) -> String {
         let mut parts = Vec::new();
         if self.preferences().resource_hud.conditions {
-            parts.push(self.resource_hud.conditions.as_ref().map_or_else(
-                || "Conditions: —".into(),
-                oteryn_client_ui::condition_status::status_text,
-            ));
+            parts.push(
+                self.special_condition_rows(true)
+                    .into_iter()
+                    .map(|row| row.2)
+                    .collect::<Vec<_>>()
+                    .join("   "),
+            );
         }
         if self.preferences().resource_hud.rest {
             let panel = oteryn_client_ui::rest_status::RestStatusPanel {
@@ -261,5 +289,84 @@ impl PlayView {
             parts.push(format!("Combo charges: {}/5", vitals.harmony));
         }
         parts.join("\r\n")
+    }
+}
+
+impl PlayView {
+    /// Only admitted observations reach either display; both use the same saved order.
+    pub(crate) fn special_condition_rows(&self, hud: bool) -> Vec<(String, String, String)> {
+        use oteryn_client_ui::condition_status::{icon_key, icon_label};
+        let preferences = self.preferences();
+        if !preferences.resource_hud.conditions {
+            return Vec::new();
+        }
+        let hidden = if hud {
+            &preferences.condition_hud_hidden
+        } else {
+            &preferences.condition_status_hidden
+        };
+        let mut rows = Vec::new();
+        if let Some(status) = &self.resource_hud.conditions {
+            for condition in &status.conditions {
+                let (glyph, label) = icon_label(condition.icon);
+                let duration = if condition.remaining_ms == -1 {
+                    "Permanent".into()
+                } else {
+                    format!(
+                        "{}s",
+                        condition.remaining_ms / 1000
+                            + i64::from(condition.remaining_ms % 1000 != 0)
+                    )
+                };
+                rows.push((
+                    icon_key(condition.icon).to_owned(),
+                    glyph.to_owned(),
+                    format!("{glyph} {label}: {duration}"),
+                ));
+            }
+        }
+        if self
+            .resource_hud
+            .rest
+            .is_some_and(|rest| rest.inside_resting_area)
+        {
+            rows.push(("Resting Area".into(), "☾".into(), "☾ Resting Area".into()));
+        }
+        if let Some(taints) = self.resource_hud.taints {
+            if taints.soul_war > 0 {
+                rows.push((
+                    "Soul War".into(),
+                    format!("S{}", taints.soul_war),
+                    format!("Soul War: {} taints", taints.soul_war),
+                ));
+            }
+            if taints.rotten_blood > 0 || taints.rotten_blood_final {
+                rows.push((
+                    "Rotten Blood".into(),
+                    format!("R{}", taints.rotten_blood),
+                    format!(
+                        "Rotten Blood: {} taints{}",
+                        taints.rotten_blood,
+                        if taints.rotten_blood_final {
+                            " + final"
+                        } else {
+                            ""
+                        }
+                    ),
+                ));
+            }
+        }
+        rows.retain(|row| !hidden.contains(&row.0));
+        let order = preferences.ordered_condition_keys();
+        rows.sort_by_key(|row| {
+            order
+                .iter()
+                .position(|key| *key == row.0)
+                .unwrap_or(order.len())
+        });
+        if hud {
+            rows.dedup_by(|left, right| left.0 == right.0);
+        }
+        rows
     }
 }

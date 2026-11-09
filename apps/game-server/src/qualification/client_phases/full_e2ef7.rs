@@ -621,13 +621,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = ClockRow::default();
     let mut client = None;
     let result = tokio::time::timeout(
-        Duration::from_secs(3_750),
+        qualification_deadline(3_750),
         clock_journey(&mut row, &mut client, clients),
     )
     .await;
     let mut result = match result {
         Ok(result) => result,
-        Err(_) => Err("world-clock deadline: natural full cycle not observed within 3750s".into()),
+        Err(_) => Err("world-clock deadline: full cycle not observed within wall-time budget".into()),
     };
     // The session lives outside the timed future: even cancellation attempts an
     // ordinary logout, and cleanup failure prevents a full-row PASS.
@@ -824,6 +824,54 @@ fn admitted_clock(
         .map_err(|error| format!("world-clock snapshot: {error:?}").into())
 }
 
+// Advances are explicit and occur only while W20 observes time. Other packet
+// rows, immediate cooldown refusals and offline restoration retain real time.
+fn qualification_deadline(real_seconds: u64) -> Duration {
+    Duration::from_secs(if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some() {
+        120
+    } else {
+        real_seconds
+    })
+}
+
+fn qualification_step() -> Duration {
+    Duration::from_secs(75)
+}
+
+fn qualification_offset() -> Duration {
+    #[cfg(feature = "qualification-clock")]
+    {
+        Duration::from_millis(crate::world_clock::qualification_offset_ms())
+    }
+    #[cfg(not(feature = "qualification-clock"))]
+    {
+        Duration::ZERO
+    }
+}
+
+fn advance_qualification_time(step: Duration) -> TestResult {
+    if let Some(path) = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE") {
+        if !cfg!(feature = "qualification-clock") {
+            return Err("qualification clock requires the disposable build feature".into());
+        }
+        let path = std::path::PathBuf::from(path);
+        let next = qualification_offset().checked_add(step).ok_or("clock overflow")?;
+        let temporary = path.with_extension("next");
+        fs::write(&temporary, next.as_millis().to_string())?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&temporary, fs::Permissions::from_mode(0o644))?;
+        }
+        fs::rename(temporary, path)?;
+    }
+    Ok(())
+}
+
+fn qualification_elapsed(started: std::time::Instant, offset: Duration) -> Duration {
+    started.elapsed().saturating_add(qualification_offset().saturating_sub(offset))
+}
+
 async fn clock_journey(
     row: &mut ClockRow,
     connection: &mut Option<DevClientSession>,
@@ -831,8 +879,9 @@ async fn clock_journey(
 ) -> TestResult {
     let started = std::time::Instant::now();
     row.started = Some(started);
+    let offset = qualification_offset();
     let mut previous_session = None;
-    // One Tibian day is one real hour. No fixture or clock override is used.
+    // The real-clock mode takes one hour; the disposable build advances facts.
     // Short sessions also avoid idle-removal: each logout is real and each new
     // admission proves the World clock continues independently of the session.
     for tag in 0xb0..=0xdf {
@@ -843,18 +892,30 @@ async fn clock_journey(
             return Err("world-clock fresh admission reused the old game session".into());
         }
         let clock = admitted_clock(client)?;
-        row.observe(clock, started.elapsed())?;
+        row.observe(clock, qualification_elapsed(started, offset))?;
         row.pass("snapshot");
         if previous_session.is_some() {
             row.pass("fresh-admission");
         }
-        let reconnect_at = tokio::time::Instant::now() + Duration::from_secs(90);
+        let reconnect_at = qualification_elapsed(started, offset) + Duration::from_secs(90);
         loop {
-            client.service_liveness(Duration::from_secs(1)).await?;
-            for event in client.take_events() {
-                if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
-                    row.observe(delta.value, started.elapsed())?;
-                    row.pass("clock-delta");
+            advance_qualification_time(qualification_step())?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+            loop {
+                client.service_liveness(Duration::from_secs(1)).await?;
+                let mut observed = false;
+                for event in client.take_events() {
+                    if let oteryn_dev_client::SessionEvent::WorldClock(delta) = event {
+                        row.observe(delta.value, qualification_elapsed(started, offset))?;
+                        row.pass("clock-delta");
+                        observed = true;
+                    }
+                }
+                if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none() || observed {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("world-clock advance did not produce a server delta".into());
                 }
             }
             // Final logout is checked by run_packet even on timeout or error.
@@ -865,7 +926,7 @@ async fn clock_journey(
             {
                 return Ok(());
             }
-            if tokio::time::Instant::now() >= reconnect_at {
+            if qualification_elapsed(started, offset) >= reconnect_at {
                 break;
             }
         }
@@ -887,6 +948,61 @@ mod clock_tests {
             light_level: expected_light(u32::from(minute)),
             light_color: 215,
         }
+    }
+
+    #[test]
+    fn accelerated_clock_keeps_all_natural_transition_assertions() -> TestResult {
+        let source = crate::world_clock::WorldClockSource::new(0);
+        for initial_minute in [0_u64, 359, 479, 1_049, 1_439] {
+            let mut row = ClockRow::default();
+            for step in 0..=50_u64 {
+                let elapsed = qualification_step() * u32::try_from(step)?;
+                let now = initial_minute * 2_500 + u64::try_from(elapsed.as_millis())?;
+                row.observe(source.reading(now).ok_or("clock reading")?, elapsed)?;
+            }
+            for action in ["day", "night", "sunrise", "sunset", "midnight-wrap", "full-cycle"] {
+                assert!(row.passed.contains(action), "missing {action}");
+            }
+            assert!(!row.complete(), "transport and relog are still required");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn accelerated_personal_light_keeps_decay_and_expiry_assertions() -> TestResult {
+        use crate::foundation::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionStore,
+        };
+        use oteryn_gameplay_domain::domain::condition::ConditionValues;
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+        let root = GameplayDecisionRoot::from_bytes([1; 32]);
+        for (level, seconds) in [(6_u8, 370_u64), (8, 695), (8, 1_990)] {
+            let duration = Duration::from_secs(seconds);
+            let definition = ConditionDefinition::new("qualification.light", 1,
+                ConditionValues::SpellLight { level, color: 215, duration_ms: u32::try_from(seconds * 1_000)? })
+                .ok_or("light definition")?;
+            let mut store = ConditionStore::<String>::new();
+            store.apply(&definition, None, ConditionSourceKind::SelfUse, &[], &ApplicationFacts {
+                now: 0, base_speed: 220, mana_shield_capacity: 0,
+                target_reentry_protected: false, source_reentry_protected: false,
+                target_is_player: true, decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([2; 16]),
+            }).map_err(|error| format!("light application: {error:?}"))?;
+            let step = duration / u32::from(level);
+            let mut saw_decay = false;
+            for index in 0..=u32::from(level) + 1 {
+                let elapsed = step * index;
+                let light = store.light_at(u64::try_from(elapsed.as_micros())?)
+                    .map(|(level, color)| spatial::EntityLight { level, color: color.unwrap_or(0) });
+                light_sample(light, level, elapsed, duration)?;
+                saw_decay |= light.is_some_and(|light| light.level > 0 && light.level < level);
+                if elapsed >= duration {
+                    assert!(light.is_none());
+                }
+            }
+            assert!(saw_decay);
+        }
+        Ok(())
     }
 
     #[test]
@@ -1079,12 +1195,12 @@ async fn additional_rows(clients: &SeamClients<'_>) {
     let mut row = JourneyRow::new("W20b", LIGHT_ACTIONS);
     let mut light = None;
     let result = tokio::time::timeout(
-        Duration::from_secs(3_300),
+        qualification_deadline(3_300),
         light_journey(&mut row, &mut light, clients),
     )
     .await;
     let mut result = result.unwrap_or_else(|_| {
-        Err("personal-light journey exceeded natural-duration deadline".into())
+        Err("personal-light journey exceeded wall-time deadline".into())
     });
     if let Some(client) = light.as_mut() {
         match tokio::time::timeout(Duration::from_secs(25), client.logout()).await {
@@ -1746,6 +1862,7 @@ async fn light_journey(
         let before = client.vitals;
         let own_updates = client.own_updates;
         let started = std::time::Instant::now();
+        let offset = qualification_offset();
         let cast = client.cast(index).await?;
         if cast != casts::SpellCastDisposition::Cast {
             let spell = book
@@ -1808,11 +1925,26 @@ async fn light_journey(
         let mut last_level = level;
         let mut saw_decay = false;
         let mut activity = std::time::Instant::now();
-        while started.elapsed().saturating_sub(offline) <= duration + Duration::from_secs(8) {
-            if client.receive().await?.is_some() {
-                return Err("personal-light unsolicited command result during observation".into());
+        while qualification_elapsed(started, offset).saturating_sub(offline) <= duration + Duration::from_secs(8) {
+            advance_qualification_time(duration / u32::from(level))?;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+            loop {
+                let accelerated = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some();
+                let result = if accelerated {
+                    tokio::time::timeout_at(deadline, client.receive()).await??
+                } else {
+                    client.receive().await?
+                };
+                if result.is_some() {
+                    return Err("personal-light unsolicited command result during observation".into());
+                }
+                if !accelerated
+                    || client.light.map_or(0, |light| light.level) < last_level
+                {
+                    break;
+                }
             }
-            let elapsed = started.elapsed().saturating_sub(offline);
+            let elapsed = qualification_elapsed(started, offset).saturating_sub(offline);
             light_sample(client.light, level, elapsed, duration)?;
             let current = client.light.map_or(0, |l| l.level);
             if current > last_level {
@@ -2385,6 +2517,7 @@ mod continuation_tests {
         let mut a = parties::PartyResult::refused(parties::PartyDisposition::Ok);
         a.members = vec![
             parties::PartyEntry {
+                list: Vec::new(),
                 handle: 1,
                 name: "Caster".into(),
                 leader: true,
@@ -2392,6 +2525,7 @@ mod continuation_tests {
                 party_spell_remaining_ms: None,
             },
             parties::PartyEntry {
+                list: Vec::new(),
                 handle: 2,
                 name: "Peer".into(),
                 leader: false,

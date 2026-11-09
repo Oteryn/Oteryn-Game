@@ -33,6 +33,7 @@ pub struct ArcLayout {
     pub height: i32,
     pub alpha: u8,
     pub strokes: Vec<ArcStroke>,
+    pub condition_icons: Vec<String>,
 }
 impl ArcPreferences {
     pub fn valid(self) -> bool {
@@ -99,13 +100,53 @@ impl ArcPreferences {
             height: half_height * 2,
             alpha: u8::try_from(u16::from(self.opacity) * 255 / 100).ok()?,
             strokes,
+            condition_icons: Vec::new(),
         })
     }
 }
 impl crate::play::PlayView {
     pub fn hud_arc_layout(&self) -> Option<ArcLayout> {
-        self.preferences()
+        let icons = self.special_condition_rows(true);
+        let mut layout = if let Some(layout) = self
+            .preferences()
             .arcs
             .layout(self.scene.hud_center(), self.actor_vitals())
+        {
+            layout
+        } else {
+            let options = self.preferences().arcs;
+            if icons.is_empty() || !options.valid() || options.opacity == 0 {
+                return None;
+            }
+            let half_width = i32::from(options.distance) + i32::from(options.size) + 8;
+            let half_height = i32::from(options.size) + 8;
+            let center = self.scene.hud_center();
+            ArcLayout {
+                origin: [
+                    center[0].saturating_sub(half_width),
+                    center[1].saturating_sub(half_height),
+                ],
+                width: half_width * 2,
+                height: half_height * 2,
+                alpha: (u16::from(options.opacity) * 255 / 100) as u8,
+                strokes: Vec::new(),
+                condition_icons: Vec::new(),
+            }
+        };
+        if !icons.is_empty() {
+            layout.origin[0] = layout.origin[0].saturating_sub(28);
+            layout.width += 28;
+            layout.height = layout.height.max(7 * 18);
+            for stroke in &mut layout.strokes {
+                for point in &mut stroke.points {
+                    point[0] += 28;
+                }
+            }
+            layout.condition_icons = icons.iter().take(6).map(|row| row.1.clone()).collect();
+            if icons.len() > 6 {
+                layout.condition_icons.push("…".into());
+            }
+        }
+        Some(layout)
     }
 }

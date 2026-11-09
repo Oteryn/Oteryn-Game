@@ -29,10 +29,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = self.current_quest_fence(session).await.map_err(|_| ())? else {
             return Ok(BountyTalismanSnapshot::default());
         };
-        self.root
+        let snapshot = self
+            .root
             .read_bounty_talisman(self.character, self.holder, fence)
             .await
-            .map_err(|_| ())
+            .map_err(|_| ())?;
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        states.set_elite_bounty(&runtime, session, snapshot.elite_race());
+        Ok(snapshot)
     }
 }
 
@@ -114,6 +119,9 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses(
             effect.sub_ordinal,
         )?;
         *magnitude = damage(*magnitude, extra_damage);
+        if snapshot.elite(&creature.state.policy.definition_key) {
+            *magnitude /= 2;
+        }
         if extra_life > 0 {
             leech.push((effect.target, effect.sub_ordinal, extra_life));
         }
@@ -182,6 +190,38 @@ pub(in crate::gameplay_transport) fn apply_timer_leech(
     }
 }
 
+impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn set_elite_bounty(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+        race: Option<&str>,
+    ) {
+        self.elite_bounties.retain(|(actor, id, _)| {
+            *id != session && runtime.player_control_facts(*actor, *id).is_ok()
+        });
+        if let Some(race) = race
+            && let Ok(Some((actor, _))) = runtime.positioned_player_for_session(session)
+            && runtime.player_control_facts(actor, session).is_ok()
+        {
+            self.elite_bounties.push((actor, session, race.to_owned()));
+        }
+    }
+    pub(in crate::gameplay_transport) fn elite_bounty(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        race: &str,
+    ) -> bool {
+        self.get(runtime, actor, session).is_some()
+            && self
+                .elite_bounties
+                .iter()
+                .any(|(present, id, key)| *present == actor && *id == session && key == race)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(
@@ -231,6 +271,8 @@ mod tests {
         let mut board = TaskBoardData::default();
         board.bounty.state = BountyStatus::Active;
         board.bounty.active = Some(BountyTask {
+            elite: false,
+            dust: 0,
             race: "oteryn:creature.rat".into(),
             required: 25,
             current: 0,
@@ -270,6 +312,15 @@ mod tests {
 
     #[test]
     fn talisman_timer_batch_uses_actual_overkill_aoe_and_replay_receipts() {
+        timer_batch_case(false);
+    }
+
+    #[test]
+    fn elite_spell_batch_halves_actual_hp_and_replay() {
+        timer_batch_case(true);
+    }
+
+    fn timer_batch_case(elite: bool) {
         use crate::foundation::runtime_actor_spell_types::{
             OwnerCombatEffect, SpellOccurrenceBinding,
         };
@@ -396,6 +447,8 @@ mod tests {
         let mut board = TaskBoardData::default();
         board.bounty.state = BountyStatus::Active;
         board.bounty.active = Some(BountyTask {
+            elite,
+            dust: 0,
             race: "fixture:rat".into(),
             required: 25,
             current: 24,
@@ -461,15 +514,15 @@ mod tests {
             .expect("qualified effects");
         assert!(matches!(
             batch.effects[0].change,
-            OwnerCombatChange::Damage { magnitude: 37, .. }
+            OwnerCombatChange::Damage { magnitude, .. } if magnitude == if elite { 18 } else { 37 }
         ));
         assert!(matches!(
             batch.effects[1].change,
             OwnerCombatChange::DamageWithHealing {
-                damage: 5,
+                damage,
                 healing: 3,
                 ..
-            }
+            } if damage == if elite { 2 } else { 5 }
         ));
         assert_eq!(leech, vec![(first, 0, 5000)]);
         // Completing the bounty cannot alter the already resolved physical hit.
@@ -484,9 +537,12 @@ mod tests {
         let first_health = receipt.effects[0].health.expect("first HP receipt");
         assert_eq!(
             (first_health.health_before, first_health.health_after),
-            (20, 0)
+            (20, if elite { 2 } else { 0 })
         );
-        assert_eq!(runtime.live_creature_health(second), Some(8));
+        assert_eq!(
+            runtime.live_creature_health(second),
+            Some(if elite { 11 } else { 8 })
+        );
         apply_timer_leech(&runtime, &mut states, &batch, &receipt, &leech);
         // round(20 actual HP * 53% * (0.1*2+0.9)/2) = 6. Planned damage or
         // omission of the AoE factor would each incorrectly restore 11 HP.
@@ -495,7 +551,7 @@ mod tests {
                 .get(&runtime, caster, session)
                 .expect("player")
                 .health,
-            16
+            if elite { 15 } else { 16 }
         );
         let staged = runtime.stage_spell_batch(&batch).expect("stage replay");
         let replay = runtime.commit_spell_batch(staged).expect("commit replay");
@@ -506,8 +562,11 @@ mod tests {
                 .get(&runtime, caster, session)
                 .expect("player")
                 .health,
-            16
+            if elite { 15 } else { 16 }
         );
-        assert_eq!(runtime.live_creature_health(second), Some(8));
+        assert_eq!(
+            runtime.live_creature_health(second),
+            Some(if elite { 11 } else { 8 })
+        );
     }
 }

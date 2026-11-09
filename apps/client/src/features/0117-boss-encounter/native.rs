@@ -12,6 +12,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Slot (1-2)",
                 "Hazard level (1-12)",
                 "Boss search",
+                "Difficulty",
             ],
             buttons: &[
                 "Refresh",
@@ -39,21 +40,52 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Next gallery page",
                 "Previous eligible slot boss",
                 "Next eligible slot boss",
+                "Preview",
+                "Start",
+                "Cancel",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
                 (
                     panel.open,
-                    panel.pending,
-                    [panel.fields.to_vec(), vec![panel.browser_search.clone()]].concat(),
-                    oteryn_client_ui::boss_encounter::panel_text(panel)
-                        .replace("\r\n", "\n")
-                        .replace('\n', "\r\n"),
+                    panel.pending || mailbox.boss_difficulty.pending,
+                    [
+                        panel.fields.to_vec(),
+                        vec![
+                            panel.browser_search.clone(),
+                            mailbox.boss_difficulty.difficulty.to_string(),
+                        ],
+                    ]
+                    .concat(),
+                    format!(
+                        "{}\n{}",
+                        oteryn_client_ui::boss_encounter::panel_text(panel),
+                        if panel.difficulty_windows.contains_key(&panel.fields[0]) {
+                            mailbox.boss_difficulty.feedback.unwrap_or("")
+                        } else {
+                            ""
+                        }
+                    )
+                    .replace("\r\n", "\n")
+                    .replace('\n', "\r\n"),
                 )
             },
             set_open: |mailbox, value| mailbox.boss_encounter.open = value,
             submit: |mailbox, commands, action, values| {
                 if mailbox.boss_encounter.pending {
+                    return;
+                }
+                if (25..=27).contains(&action) {
+                    use oteryn_client_ui::boss_difficulty::Intent as Difficulty;
+                    let Some(difficulty) = values.get(4).and_then(|v| v.parse::<u16>().ok()) else {
+                        return;
+                    };
+                    let intent = match action {
+                        25 => Difficulty::Preview,
+                        26 => Difficulty::Start,
+                        _ => Difficulty::Cancel,
+                    };
+                    super::super::input::enqueue_difficulty(mailbox, commands, intent, difficulty);
                     return;
                 }
                 if let Some(search) = values.get(3) {

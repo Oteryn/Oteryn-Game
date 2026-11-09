@@ -157,7 +157,7 @@ pub async fn reconcile_in_transaction(
     {
         return Err(CharacterProgressionError::ConflictingOccurrence);
     }
-    let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text,xp_awarded FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
+    let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text,xp_awarded,bounty_dust_key FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
         .bind(death).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
     if rows.is_empty()
         || rows.len() > 50
@@ -193,13 +193,28 @@ pub async fn reconcile_in_transaction(
         } else {
             None
         };
-        let forge_dust = super::character_forge_dust::read_creature_gain(
+        let mut forge_dust = super::character_forge_dust::read_creature_gain(
             tx,
             character,
             forge_id(death, character, 0),
         )
         .await
         .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+        if let Some(key) = row
+            .try_get::<Option<Vec<u8>>, _>("bounty_dust_key")
+            .map_err(DurabilityError::from)?
+        {
+            forge_dust = super::character_forge_dust::read_creature_gain(
+                tx,
+                character,
+                forge_id(&key, character, 0),
+            )
+            .await
+            .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+            if forge_dust.is_none() {
+                return Err(DurabilityError::InvalidStoredState.into());
+            }
+        }
         result.push(PartyKillXpAward {
             raw: base_xp,
             gained: row.try_get("xp_awarded").map_err(DurabilityError::from)?,
@@ -271,7 +286,13 @@ pub async fn commit_in_transaction<const N: usize>(
     super::world_event::capture_kill(tx, &input).await?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
-        let forge_dust = if let Some(amount) = member.forge_dust {
+        let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
+        let elite_dust = if member.premium {
+            bounty.completion_dust(&input.creature)
+        } else {
+            0
+        };
+        let mut forge_dust = if let Some(amount) = member.forge_dust {
             use super::character_forge_dust::{
                 ForgeDustGainCause, ForgeDustOutcome, ForgeDustWriteIds,
                 gain_forge_dust_in_transaction,
@@ -297,6 +318,37 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
+        // A selection identity, rather than this death, fences completion dust. Another
+        // death can settle before the separate Task Board credit has drained.
+        let mut bounty_dust_key = (elite_dust > 0).then(|| bounty.selection_serial().to_be_bytes());
+        if let Some(key) = bounty_dust_key {
+            use super::character_forge_dust::{
+                ForgeDustGainCause, ForgeDustOutcome, ForgeDustWriteIds,
+                gain_forge_dust_in_transaction,
+            };
+            let character = member.fence.character_id;
+            let outcome = gain_forge_dust_in_transaction(
+                tx,
+                &member.fence,
+                ForgeDustGainCause::CreatureKill {
+                    occurrence: forge_id(&key, character, 0),
+                },
+                elite_dust,
+                ForgeDustWriteIds {
+                    entry_id: forge_id(&key, character, 1),
+                    transaction_id: forge_id(&key, character, 2),
+                },
+            )
+            .await
+            .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+            match outcome {
+                ForgeDustOutcome::Written(entry) => forge_dust = Some(entry),
+                ForgeDustOutcome::AlreadyWritten(entry) if forge_dust.is_none() => {
+                    forge_dust = Some(entry)
+                }
+                ForgeDustOutcome::AlreadyWritten(_) => bounty_dust_key = None,
+            }
+        }
         let mut modifiers =
             hunting_xp::read_in_transaction(tx, &member.fence, &input.creature, member.premium)
                 .await?;
@@ -336,12 +388,12 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
-        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14)")
+        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent,bounty_dust_key) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14,$15)")
             .bind(input.death_key.as_slice()).bind(member.fence.character_id.as_bytes().as_slice())
             .bind(xp.as_ref().map(|_|request.occurrence.as_bytes().as_slice()))
             .bind(member.shared).bind(member.party_id.as_ref().map(|id|id.as_slice())).bind(member.party_revision.map(|r|r.to_string()))
             .bind(raw).bind(modifiers.prey_slot).bind(modifiers.prey_epoch).bind(modifiers.prey_grade)
-            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent)
+            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent).bind(bounty_dust_key.as_ref().map(|key| key.as_slice()))
             .execute(&mut **tx).await.map_err(DurabilityError::from)?;
         awards.push(PartyKillXpAward {
             raw: input.base_xp,

@@ -51,20 +51,40 @@ fn refusal(value: Option<&TaskBoardRefusal>) -> u8 {
     }
 }
 
-fn offer(task: &rules::BountyTask) -> full_wire::BountyOffer {
+fn offer(task: &rules::BountyTask, extended: bool) -> full_wire::BountyOffer {
     full_wire::BountyOffer {
+        elite: extended && task.elite,
+        dust: if extended { task.dust } else { 0 },
         race: task.race.clone(),
         required: task.required,
         experience: task.experience,
         points: task.points,
-        grade: task.grade,
+        grade: if extended {
+            task.grade
+        } else {
+            task.grade.min(2)
+        },
     }
 }
 
-pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
+pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<full_wire::Reply> {
     let view = &commit.view;
     let data = &view.data;
     let balances = &view.balances;
+    let weekly_results = if include_results {
+        if let Some(board) = data.weekly.as_ref().filter(|board| board.finished) {
+            let (points, soulseals) = board.rewards().ok()?;
+            Some(full_wire::WeeklyResults {
+                period: u64::try_from(board.period).ok()?,
+                points,
+                soulseals,
+            })
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let board = data.weekly.as_ref().filter(|board| !board.finished);
     let weekly = if let Some(board) = board {
         let (points, seals) = board.rewards().ok()?;
@@ -167,6 +187,7 @@ pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
         })
         .collect::<Option<Vec<_>>>()?;
     Some(full_wire::Reply {
+        weekly_results,
         refusal: refusal(commit.refusal.as_ref()),
         period: u64::try_from(view.period).ok()?,
         points: u64::try_from(balances.points).ok()?,
@@ -174,6 +195,7 @@ pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
         soulseals: u64::try_from(balances.soulseals).ok()?,
         weekly,
         bounty: full_wire::Bounty {
+            elite: include_results && bounty.elite,
             state: match bounty.state {
                 rules::BountyStatus::None => 0,
                 rules::BountyStatus::Selection => 1,
@@ -185,8 +207,12 @@ pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
             current: active.map_or(0, |task| task.current),
             rerolls: view.reroll_tokens,
             daily_reroll_at: u64::try_from(bounty.next_free_reroll_unix).ok()?,
-            offers: bounty.offers.iter().map(offer).collect(),
-            active: active.map(offer),
+            offers: bounty
+                .offers
+                .iter()
+                .map(|task| offer(task, include_results))
+                .collect(),
+            active: active.map(|task| offer(task, include_results)),
             lists: bounty
                 .lists
                 .iter()

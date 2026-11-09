@@ -163,3 +163,62 @@ impl PlayLink {
         !slots.is_empty()
     }
 }
+
+/// Battle-list child windows deliver native key messages rather than winit events.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn native_key(
+    mailbox: &mut Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+    virtual_key: u32,
+    modifiers: Modifiers,
+) -> bool {
+    let code = match virtual_key {
+        0x41..=0x5a => virtual_key - 0x41 + 4,
+        0x31..=0x39 => virtual_key - 0x31 + 30,
+        0x30 => 39,
+        0x70..=0x7b => virtual_key - 0x70 + 58,
+        0x7c..=0x87 => virtual_key - 0x7c + 104,
+        0x20 => 44,
+        0x25 => 80,
+        0x26 => 82,
+        0x27 => 79,
+        0x28 => 81,
+        _ => return false,
+    };
+    let Ok(code) = KeyCode::new(code as u16) else {
+        return false;
+    };
+    let slot = mailbox
+        .bar_actions
+        .keys
+        .0
+        .iter()
+        .find(|(_, value)| parse(value) == Some((code, modifiers)))
+        .map(|(slot, _)| *slot)
+        .or_else(|| {
+            crate::play::preference_bindings()
+                .ok()?
+                .iter()
+                .find_map(|binding| {
+                    let slot = binding
+                        .id
+                        .strip_prefix("local-spell-action-bar-spell-")?
+                        .parse::<usize>()
+                        .ok()?
+                        .checked_sub(1)?;
+                    let preferences = &mailbox.local_preferences;
+                    (parse(preferences.binding_chord(binding)) == Some((code, modifiers))
+                        || preferences
+                            .binding_secondary(binding)
+                            .is_some_and(|chord| parse(chord) == Some((code, modifiers))))
+                    .then_some(slot)
+                })
+        });
+    let Some(slot) = slot
+        .and_then(|slot| u32::try_from(slot + 1).ok())
+        .and_then(std::num::NonZeroU32::new)
+    else {
+        return false;
+    };
+    super::assignments::activate_shared(mailbox, commands, slot)
+}

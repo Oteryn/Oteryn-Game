@@ -55,6 +55,10 @@ impl PlayLink {
             mailbox.market.feedback = Some(tr!("The session has ended"));
         }
     }
+    pub fn market_stashback(&self) -> bool {
+        stashback(&self.mailbox, &self.commands)
+    }
+
     pub fn open_market(&self) {
         open_from_depot(&self.mailbox, &self.commands);
     }
@@ -82,6 +86,10 @@ pub(in crate::play) fn open_from_depot(
         if m.market_shutdown {
             return;
         }
+        if m.stash.open {
+            m.stash.return_from_market = true;
+            m.stash.open = false;
+        }
         enqueue(&mut m, commands, Intent::Refresh);
     }
     #[cfg(windows)]
@@ -90,6 +98,22 @@ pub(in crate::play) fn open_from_depot(
     {
         lock(mailbox).market.open = true;
     }
+}
+
+pub(in crate::play) fn stashback(
+    mailbox: &crate::play::mailbox::SharedMailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+) -> bool {
+    {
+        let mut m = lock(mailbox);
+        if !m.stash.return_from_market || m.depot_shutdown || m.market_shutdown {
+            return false;
+        }
+        m.stash.return_from_market = false;
+        m.market.open = false;
+    }
+    PlayLink::stash_open(mailbox, commands);
+    true
 }
 
 #[path="input/coins.rs"]

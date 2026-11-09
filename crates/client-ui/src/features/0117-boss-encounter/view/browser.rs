@@ -80,9 +80,31 @@ pub fn select_boss(panel: &mut BossEncounterPanel, forward: bool) -> bool {
 }
 
 pub fn browser_text(panel: &BossEncounterPanel) -> String {
-    if panel.catalogue.is_some() {
-        return super::catalogue_view::text(panel);
+    let mut text = if panel.catalogue.is_some() {
+        super::catalogue_view::text(panel)
+    } else {
+        legacy_browser_text(panel)
+    };
+    if let Some(oteryn_client_runtime::boss_difficulty::Reply::Window {
+        personal_highest,
+        unlocked_max,
+        maximum_difficulty,
+        ..
+    }) = panel.difficulty_windows.get(&panel.fields[0])
+        && *unlocked_max > 0
+    {
+        let _ = lwrite!(
+            text,
+            "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
+            personal_highest = personal_highest,
+            unlocked_max = unlocked_max,
+            maximum_difficulty = maximum_difficulty
+        );
     }
+    text
+}
+
+fn legacy_browser_text(panel: &BossEncounterPanel) -> String {
     let mut text = lfmt!("\nBosstiary browser — {:?}\n", panel.browser_category);
     let rows = boss_records(panel);
     for key in &rows {

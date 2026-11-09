@@ -713,15 +713,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     parts[0] = parts[0]
                         .saturating_add(landed.saturating_sub(parts[0].saturating_add(parts[1])))
                         .max(0);
-                    boost_attack_components(parts, prey, talisman_damage)
+                    boost_attack_components(parts, prey, talisman_damage, talisman.elite(&race_key))
                 } else {
-                    [
-                        bounty_talisman::damage(
-                            super::super::prey::damage(landed, prey),
-                            talisman_damage,
-                        ),
-                        0,
-                    ]
+                    boost_attack_components(
+                        [landed, 0],
+                        prey,
+                        talisman_damage,
+                        talisman.elite(&race_key),
+                    )
                 };
                 let landed = final_parts[0].saturating_add(final_parts[1]);
                 if landed <= 0 {
@@ -973,6 +972,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .filter(|n| *n > 0) else {
                             continue;
                         };
+                        let amount = if talisman.elite(&race_key) {
+                            amount / 2
+                        } else {
+                            amount
+                        };
+                        if amount == 0 {
+                            continue;
+                        }
                         let stream = format!(
                             "charm-attack:{}:{}",
                             swing.lineage.command_id().get(),
@@ -1064,6 +1071,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .filter(|amount| *amount > 0) else {
                                 continue;
                             };
+                            let amount =
+                                if runtime
+                                    .companion_snapshot(neighbour)
+                                    .is_ok_and(|candidate| {
+                                        talisman.elite(&candidate.state.policy.definition_key)
+                                    })
+                                {
+                                    amount / 2
+                                } else {
+                                    amount
+                                };
+                            if amount == 0 {
+                                continue;
+                            }
                             let stream = format!(
                                 "charm-carnage:{}:{}:{}",
                                 swing.lineage.command_id().get(),
@@ -2055,14 +2076,19 @@ fn finish_melee_components(
     Some([primary, secondary])
 }
 
-fn boost_attack_components(parts: [i64; 2], prey: u8, talisman: u16) -> [i64; 2] {
+fn boost_attack_components(parts: [i64; 2], prey: u8, talisman: u16, elite: bool) -> [i64; 2] {
     let boosted =
         parts.map(|part| bounty_talisman::damage(super::super::prey::damage(part, prey), talisman));
-    if talisman == 0 {
+    let boosted = if talisman == 0 {
         // Preserve the existing whole-hit Prey rounding when no Talisman is active.
         let total = super::super::prey::damage(parts[0].saturating_add(parts[1]), prey);
         let primary = boosted[0].min(total);
         [primary, total.saturating_sub(primary)]
+    } else {
+        boosted
+    };
+    if elite {
+        boosted.map(|part| part / 2)
     } else {
         boosted
     }
@@ -2127,13 +2153,77 @@ mod tests {
 
     #[test]
     fn t174_converted_melee_analyser_uses_final_scaled_components() {
-        let boosted = super::boost_attack_components([50, 50], 20, 2500);
+        let boosted = super::boost_attack_components([50, 50], 20, 2500, false);
         assert_eq!(boosted, [75, 75]);
-        assert_eq!(super::boost_attack_components([50, 50], 25, 0), [63, 62]);
+        assert_eq!(
+            super::boost_attack_components([50, 50], 25, 0, false),
+            [63, 62]
+        );
         assert_eq!(super::reported_primary(boosted, 150), 75);
         // A later owner modifier scales both components, including Elite reduction.
         assert_eq!(super::reported_primary(boosted, 120), 60);
         assert_eq!(super::reported_primary(boosted, 0), 0);
+    }
+
+    #[test]
+    fn t174_elite_bounty_converted_melee_reports_halved_components() -> Result<(), &'static str> {
+        use crate::content::ProjectV2RangedElement as E;
+        use crate::durability::task_board::BountyTalismanSnapshot;
+        use oteryn_gameplay_quests::quest::task_board::full::{
+            BountyStatus, BountyTask, TaskBoardData,
+        };
+        let mut board = TaskBoardData::default();
+        board.bounty.state = BountyStatus::Active;
+        board.bounty.active = Some(BountyTask {
+            elite: true,
+            dust: 0,
+            race: "oteryn:creature.rat".into(),
+            required: 25,
+            current: 0,
+            experience: 1850,
+            points: 25,
+            grade: 0,
+            difficulty: 0,
+            slot: 0,
+        });
+        let talisman = BountyTalismanSnapshot::from_board(&board, &Default::default(), true);
+        let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+            elemental_conversion: Some((E::Fire, 50)),
+            ..Default::default()
+        };
+        let (physical, elemental, element) = offence
+            .convert_physical(100, 0, E::Physical)
+            .ok_or("conversion")?;
+        let parts = super::boost_attack_components(
+            [physical, elemental],
+            20,
+            2500,
+            talisman.elite("oteryn:creature.rat"),
+        );
+        // 50 -> 60 after Prey -> 75 after Talisman -> 37 per component.
+        // Halving the combined 150 would incorrectly land 75 instead of 74.
+        assert_eq!(parts, [37, 37]);
+        let landed = u32::try_from(parts[0] + parts[1]).map_err(|_| "landed")?;
+        let reported_physical = super::reported_primary(parts, landed);
+        let reported_elemental = landed - reported_physical;
+        assert_eq!(
+            (reported_physical, reported_elemental, landed),
+            (37, 37, 74)
+        );
+        assert_eq!(
+            super::ranged::analyser_element(element),
+            oteryn_protocol_oteryn::damage_element::DamageElement::Fire
+        );
+        assert_eq!(
+            super::boost_attack_components(
+                [physical, elemental],
+                20,
+                2500,
+                talisman.elite("oteryn:creature.cave_rat")
+            ),
+            [75, 75]
+        );
+        Ok(())
     }
 
     #[test]

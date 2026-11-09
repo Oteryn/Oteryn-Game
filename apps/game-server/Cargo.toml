@@ -13,6 +13,8 @@ category = "app"
 release-role = "production"
 
 [features]
+# Disposable node-boot builds only; absent from production binaries.
+qualification-clock = ["oteryn-gameplay-dispatch/qualification-clock", "oteryn-gameplay-world/qualification-clock"]
 # Recognized by the remaining path-loaded integration fixtures.
 test-support = ["oteryn-gameplay-entities/test-support"]
 

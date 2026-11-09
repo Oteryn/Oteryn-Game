@@ -80,7 +80,7 @@ pub async fn run_session<T: Stepper>(
                             14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
-                            154 => outbox.store_result(&response),
+                            154 | 479 => outbox.store_result(&response),
                             179 => outbox.hotkey_equip_result(&response),
                             230 => outbox.browse_field_result(&response),
                             _ => {}

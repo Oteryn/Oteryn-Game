@@ -20,11 +20,14 @@ use winit::{
 
 #[path = "../local-reference-preferences/arcs_native.rs"]
 mod arcs;
+#[path = "../0195-weapon-proficiency/hud_native.rs"]
+mod proficiency;
 #[path = "../local-reference-preferences/shortcut_strip.rs"]
 mod shortcuts;
 #[path = "slots_native.rs"]
 mod slots;
 pub(super) struct Hud {
+    proficiency: proficiency::ProficiencyHud,
     arcs: arcs::ArcHud,
     spells: slots::SpellRow,
     shortcuts: shortcuts::ShortcutStrip,
@@ -55,6 +58,7 @@ impl Hud {
             .map(|id| panes::Pane::new(handle.hwnd.get() as HWND, id, actions.clone()))
             .collect::<Option<Vec<_>>>()?;
         Some(Self {
+            proficiency: proficiency::ProficiencyHud::new(handle.hwnd.get() as HWND)?,
             panes,
             actions,
             arcs: arcs::ArcHud::new(handle.hwnd.get() as HWND)?,
@@ -116,6 +120,20 @@ impl super::Application {
             ];
             let layout = play.view.preferences().effective_hud_layout();
             self.settings.sync_hud_menu(&layout);
+            hud.proficiency.update(
+                &play.link,
+                play.view
+                    .preferences()
+                    .status_panel_visible
+                    .then(|| {
+                        layout.rect(
+                            HudPanel::Resources,
+                            root,
+                            play.view.preferences().interface_scale,
+                        )
+                    })
+                    .flatten(),
+            );
             hud.arcs.update(play.view.hud_arc_layout());
             let labels = play.link.spell_slot_labels();
             for gesture in hud.spells.update(
@@ -158,6 +176,7 @@ impl super::Application {
             }
         } else if let Some(hud) = &mut self.hud {
             hud.hide();
+            hud.proficiency.hide();
             hud.spells
                 .update(None, &oteryn_client::play::BarLayout::default(), &[]);
             hud.arcs.update(None);

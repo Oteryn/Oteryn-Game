@@ -258,6 +258,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 pub(super) mod drops;
 pub(super) mod rewards;
 
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Bestiary mirrors the first-species Warden earning, independently of discovery kills.
+    pub(super) async fn echo_warden_bestiary_page(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        mut page: oteryn_protocol_oteryn::charm_progression::catalogue::Page,
+    ) -> super::guild_intent::GuildReply {
+        use super::guild_intent::GuildReply;
+        use oteryn_protocol_oteryn::charm_progression::catalogue;
+        let Some(fence) = admitted.item_fence else {
+            return GuildReply::Rejected;
+        };
+        let Ok(completed) = self
+            .root
+            .read_current_echo_warden_completions(self.character, self.holder, fence)
+            .await
+        else {
+            return GuildReply::Unavailable;
+        };
+        let Some(races) = super::charm_progression::canonical_races() else {
+            return GuildReply::Rejected;
+        };
+        for card in &mut page.cards {
+            let Some(race) = card
+                .race
+                .checked_sub(1)
+                .and_then(|i| races.get(usize::from(i)))
+            else {
+                return GuildReply::Rejected;
+            };
+            card.echo_warden_completed = Some(
+                completed
+                    .binary_search_by(|key| key.as_str().cmp(race.key()))
+                    .is_ok(),
+            );
+        }
+        catalogue::encode_page(&page).map_or(GuildReply::Rejected, GuildReply::Payload)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

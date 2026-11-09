@@ -214,10 +214,10 @@ fn committed_native_sources_cover_every_category_without_source_writes() -> Test
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(ids.len(), 14);
+        assert_eq!(ids.len(), 15);
         assert_eq!(
             ids.iter().map(|s| s.category).collect::<Vec<_>>(),
-            (1..=12).chain([14, 17]).collect::<Vec<_>>()
+            (1..=12).chain([14, 16, 17]).collect::<Vec<_>>()
         );
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
         for category in 1..=9 {
@@ -510,7 +510,7 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
                 Err(SnapshotError::SnapshotExpired)
             ));
         }
-        for category in [0, 13, 15, 16, 18, 255] {
+        for category in [0, 13, 15, 18, 255] {
             assert!(matches!(
                 h.root
                     .read_highscore_page(world(), category, None, 1, 0, asking())
@@ -754,7 +754,7 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(ids.len(), 14);
+        assert_eq!(ids.len(), 15);
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
         let accounts = page(h, 10, None, 1, 0).await?;
         assert_eq!(accounts.rows.len(), 1);
@@ -793,7 +793,7 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(first.len(), 14);
+        assert_eq!(first.len(), 15);
         // A separately connected genuine Root supplies no process-local schedule cache.
         let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
@@ -808,7 +808,7 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(reset.len(), 14);
+        assert_eq!(reset.len(), 15);
         assert!(
             reset
                 .iter()
@@ -960,7 +960,7 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
             .await
             .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(published.len(), 14);
+        assert_eq!(published.len(), 15);
         let accounts = page(h, 10, None, 1, 0).await?;
         // The highest initialized Character represents its account, the bootstrap-only
         // account has no representative, and the whole cut published.
@@ -994,7 +994,7 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
 /// Seed valid retained derived headers with a short remaining interval. This fixture changes
 /// no source, bypasses no trigger, and supplies no current gameplay authority.
 async fn seed_near_due_headers(h: &Harness, remaining_ms: i64) -> TestResult {
-    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM unnest(ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,14,17]) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
+    sqlx::query("WITH inserted AS (INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) SELECT encode($1,'hex')::uuid,category,floor(extract(epoch FROM statement_timestamp())*1000)::bigint-1800000+$2,pg_current_snapshot()::text,0 FROM unnest(ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,14,16,17]) category RETURNING world_id,category,snapshot_id) INSERT INTO game_world_highscore_heads(world_id,category,current_snapshot_id) SELECT world_id,category,snapshot_id FROM inserted")
         .bind(world().as_bytes().as_slice()).bind(remaining_ms).execute(&h.pool).await?;
     Ok(())
 }
@@ -1479,18 +1479,18 @@ fn boss_points_query_is_served_through_the_client_handler() -> TestResult {
     })
 }
 
-/// Migration 1105's restated guard on the cluster-global job group, as the migration runs it.
+/// Migration 2727's extended guard on the cluster-global job group, as the migration runs it.
 fn job_role_guard() -> &'static str {
-    const MIGRATION: &str = include_str!("../../migrations/1105_tibiadrome_highscores.sql");
+    const MIGRATION: &str = include_str!("../../migrations/2727_boss_difficulty_victories.sql");
     const END: &str = "END $highscore_role_guard$;";
     let start = MIGRATION
         .find("DO $highscore_role_guard$")
-        .expect("1105 restates its role guard");
+        .expect("2727 extends its role guard");
     let end = start + MIGRATION[start..].find(END).expect("the guard block ends") + END.len();
     &MIGRATION[start..end]
 }
 
-/// Runs `statements` and then the 1105 guard in one transaction. With `refusal` the guard must
+/// Runs `statements` and then the 2727 guard in one transaction. With `refusal` the guard must
 /// refuse with 42501 and that message, otherwise it must pass. The changes to the cluster-global
 /// group exist only in this transaction, so no other database on the shared cluster ever sees
 /// them; after the rollback the provisioned group passes the guard again.
@@ -1665,7 +1665,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
     run("hsjobprivileges", async |h| {
         let guard = job_role_guard();
         assert!(guard.contains("pg_shdepend"));
-        // Provisioned: the table-level grants of 0129/0929/1105 plus exactly the
+        // Provisioned: the table-level grants of 0129/0929/1105/2727 plus exactly the
         // closure predicate of 0996, no shared grants, and the group owns nothing.
         let grants: Vec<(String, String)> = sqlx::query_as(
             "SELECT c.relname::text, string_agg(a.privilege_type, ',' ORDER BY a.privilege_type COLLATE \"C\") \
@@ -1678,7 +1678,9 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
         let expected = [
             ("game_account_achievement_grant_requests", "SELECT"),
             ("game_account_achievements", "SELECT"),
+            ("game_boss_room_catalogue", "SELECT"),
             ("game_character_bestiary_progress", "SELECT"),
+            ("game_character_boss_difficulty_records", "SELECT"),
             ("game_character_bosstiary_progress", "SELECT"),
             ("game_character_build_state", "SELECT"),
             ("game_character_progression_state", "SELECT"),
@@ -1781,7 +1783,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
 /// Page 1 of every (category, filter) list of the current snapshots.
 async fn every_list(h: &Harness) -> TestResult<Vec<(u64, Vec<SnapshotRow>)>> {
     let mut lists = Vec::new();
-    for category in (1..=12).chain([14, 17]) {
+    for category in (1..=12).chain([14, 16, 17]) {
         for filter in FILTERS {
             let current = page(h, category, filter, 1, 0).await?;
             lists.push((current.snapshot.snapshot_id, current.rows));
@@ -1835,7 +1837,7 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
             .refresh_highscore_world_within(world(), complete_catalogues()?, limits(2, 1)?)
             .await
             .map_err(debug)?;
-        assert_eq!(published.len(), 14);
+        assert_eq!(published.len(), 15);
         assert_eq!(page(h, 10, None, 1, 0).await?.rows.len(), 2);
         // Five more eligible Characters (six in all) cross several page boundaries of every
         // source; the paged cut at its exact bound equals the registered cut.

@@ -82,6 +82,7 @@ impl SceneGpu {
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
         atlas: &AtlasImage,
+        antialiasing: crate::Antialiasing,
     ) -> Self {
         let extent = wgpu::Extent3d {
             width: atlas.width(),
@@ -202,7 +203,7 @@ impl SceneGpu {
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: crate::ANTIALIASING.samples(),
+                count: antialiasing.samples(),
                 ..Default::default()
             },
             fragment: Some(wgpu::FragmentState {

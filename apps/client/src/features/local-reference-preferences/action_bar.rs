@@ -14,16 +14,23 @@ pub struct ActionBarPreferences {
     pub three_rows: bool,
     pub labels: bool,
     pub cooldowns: bool,
+    pub cooldown_bar_enabled: bool,
 }
 impl Default for ActionBarPreferences {
     fn default() -> Self {
         Self {
-            tooltips: true, amounts: true,
-            visible: true, origin: [8, 120], columns: 4, size: [64, 30], gap: 6,
+            tooltips: true,
+            amounts: true,
+            visible: true,
+            origin: [8, 120],
+            columns: 4,
+            size: [64, 30],
+            gap: 6,
             auto_insert: false,
             three_rows: false,
             labels: true,
             cooldowns: true,
+            cooldown_bar_enabled: true,
         }
     }
 }

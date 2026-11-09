@@ -1,6 +1,9 @@
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel;
 impl PlayLink {
+    pub fn weapon_proficiency_hud(&self) -> Option<oteryn_client_ui::weapon_proficiency::HudView> {
+        oteryn_client_ui::weapon_proficiency::hud_view(&lock(&self.mailbox).weapon_proficiency)
+    }
     #[must_use]
     pub fn weapon_proficiency_panel(&self) -> WeaponProficiencyPanel {
         lock(&self.mailbox).weapon_proficiency.clone()

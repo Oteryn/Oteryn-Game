@@ -1,5 +1,5 @@
 name=server_modal
-commands=736,737
+commands=736,737,6196
 transport=server_modal
 composed=server_modal
 authority=server_modal

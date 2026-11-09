@@ -61,6 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.refresh_pvp_locks(actor, session).await {
             return (StepOutcome::rejected(), None);
         }
+        self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
         // Lock order (§1.2): the lane before any Channel guard.
@@ -252,6 +253,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     None => snapshot,
                 };
+                self.cyclopedia_step(actor, session, snapshot).await;
+                self.refresh_cyclopedia_speed(actor, session).await;
                 let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);

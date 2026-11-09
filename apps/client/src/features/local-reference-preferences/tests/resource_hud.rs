@@ -1,5 +1,5 @@
 #[test]
-fn t011_server_resources_reach_configurable_hud_without_opening_windows()
+fn t175_t176_confirmed_conditions_reach_independent_hud_and_status_displays()
 -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use crate::play::{Stepper, run_session};
     use oteryn_session::{GatedCommandResult, SessionError};
@@ -16,13 +16,32 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
             })
         }
         fn feature_selected(&self, capability: u32) -> bool {
-            matches!(capability, 199 | 276 | 277)
+            matches!(capability, 117 | 199 | 276 | 277)
         }
         async fn feature(
             &mut self,
             command: &oteryn_client_runtime::raw_feature::FeatureCommand,
         ) -> Result<GatedCommandResult, SessionError> {
             let payload = match command.capability {
+                117 => {
+                    use oteryn_session::property_services::boss_encounter::{
+                        BossTaints, append_boss_taints, encode_cooldown_list,
+                    };
+                    assert_eq!(command.payload, vec![16, 1]);
+                    let mut payload = encode_cooldown_list(1, &[], false)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    append_boss_taints(
+                        &mut payload,
+                        BossTaints {
+                            soul_war: 3,
+                            rotten_blood: 2,
+                            rotten_blood_flags: 3,
+                            rotten_blood_final: true,
+                        },
+                    )
+                    .map_err(|_| SessionError::SessionUnusable)?;
+                    payload
+                }
                 199 => {
                     assert_eq!(command.kind, 388);
                     let request =
@@ -39,11 +58,13 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
                     .map_err(|_| SessionError::SessionUnusable)?
                 }
                 276 => oteryn_session::condition_status::ConditionStatus {
-                    conditions: vec![oteryn_session::condition_status::ActiveCondition {
-                        icon: 1,
-                        sub_id: 0,
-                        remaining_ms: 5000,
-                    }],
+                    conditions: (1..=8)
+                        .map(|icon| oteryn_session::condition_status::ActiveCondition {
+                            icon,
+                            sub_id: 0,
+                            remaining_ms: 5000,
+                        })
+                        .collect(),
                 }
                 .encode()
                 .ok_or(SessionError::SessionUnusable)?,
@@ -120,6 +141,7 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
                         if status.contains("41:00")
                             && status.contains("Poison")
                             && status.contains("Rest active")
+                            && status.contains("Soul War: 3")
                         {
                             break Ok::<_, Box<dyn std::error::Error + Send + Sync>>(());
                         }
@@ -127,6 +149,55 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
                     }
                 })
                 .await??;
+                let layout = play
+                    .hud_arc_layout()
+                    .ok_or("condition HUD missing with arcs off")?;
+                assert!(layout.strokes.is_empty());
+                assert_eq!(layout.alpha, (85_u16 * 255 / 100) as u8);
+                assert!(
+                    play.resource_status()
+                        .contains("Rotten Blood: 2 taints + final")
+                );
+                assert!(!link.boss_encounter_panel().open);
+                assert_eq!(layout.condition_icons.len(), 7);
+                assert_eq!(layout.condition_icons[0], "☠");
+                assert_eq!(layout.condition_icons[6], "…");
+                let mut preferences = play.preferences().clone();
+                preferences.arcs.health = true;
+                preferences.arcs.mana = true;
+                preferences.arcs.opacity = 42;
+                preferences.special_condition_order = preferences.ordered_condition_keys();
+                preferences
+                    .special_condition_order
+                    .retain(|key| key != "Soul War");
+                preferences
+                    .special_condition_order
+                    .insert(0, "Soul War".into());
+                preferences.condition_status_hidden = vec!["Soul War".into()];
+                play.set_preferences(preferences.clone())?;
+                let with_arcs = play.hud_arc_layout().ok_or("arcs and conditions")?;
+                assert_eq!(with_arcs.strokes.len(), 2);
+                assert_eq!(with_arcs.alpha, (42_u16 * 255 / 100) as u8);
+                assert_eq!(with_arcs.condition_icons[0], "S3");
+                assert!(!play.resource_status().contains("Soul War:"));
+                preferences.arcs.health = false;
+                preferences.arcs.mana = false;
+                preferences.special_condition_order.clear();
+                preferences.condition_hud_hidden = vec![
+                    "Poison".into(),
+                    "Burning".into(),
+                    "Resting Area".into(),
+                    "Soul War".into(),
+                    "Rotten Blood".into(),
+                ];
+                preferences.condition_status_hidden = vec!["Energy".into()];
+                preferences.condition_order = (1..=27).rev().collect();
+                play.set_preferences(preferences)?;
+                let layout = play.hud_arc_layout().ok_or("filtered condition HUD")?;
+                assert_eq!(layout.condition_icons.len(), 6);
+                assert_eq!(layout.condition_icons[0], "☾");
+                assert!(!play.resource_status().contains("Energy:"));
+                assert!(play.resource_status().contains("Poison:"));
                 assert!(play.resource_status().contains("Soul: 22"));
                 assert!(!link.condition_status_panel().open);
                 assert!(!link.rest_status_panel().open);
@@ -137,6 +208,7 @@ fn t011_server_resources_reach_configurable_hud_without_opening_windows()
                 play.set_preferences(preferences)?;
                 assert!(!play.resource_status().contains("Poison"));
                 assert!(!play.resource_status().contains("Soul:"));
+                assert!(play.hud_arc_layout().is_none());
                 drop(link);
                 task.await?;
                 Ok(())

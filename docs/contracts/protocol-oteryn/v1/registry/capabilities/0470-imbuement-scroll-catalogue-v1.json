@@ -9,5 +9,5 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Bundle World with IMBUE_V1. Command 85 and material quotes admit families 21-25 (Scorch, Venom, Frost, Electrify, Reap), 26 (Vibrancy); original clients retain families 1-20 and their offer indices."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, with IMBUE_V1. Command 85 and material quotes admit families 21-25 (Scorch, Venom, Frost, Electrify, Reap), 26 (Vibrancy); original clients retain families 1-20 and their offer indices."
 }

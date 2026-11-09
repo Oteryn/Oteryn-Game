@@ -7,7 +7,19 @@ impl Application {
             return Ok(());
         };
         let (requested, zoom) = self.settings.graphics_settings();
+        if window.inner_size().width == 0 || window.inner_size().height == 0 {
+            return Ok(());
+        }
         if self.applied_graphics != Some(requested) {
+            if renderer
+                .set_antialiasing(self.generation, requested.antialiasing)
+                .is_err()
+            {
+                let (_, antialiasing) = renderer.graphics();
+                self.settings
+                    .reject_graphics(requested.engine, antialiasing);
+                return Ok(());
+            }
             if window.fullscreen().is_some() != requested.fullscreen {
                 window.set_fullscreen(requested.fullscreen.then_some(Fullscreen::Borderless(None)));
             }

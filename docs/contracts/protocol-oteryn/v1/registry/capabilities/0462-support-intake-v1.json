@@ -1,0 +1,13 @@
+{
+  "id": 462,
+  "name": "SUPPORT_INTAKE_V1",
+  "owner_decision": "cg-support T153/T154 owner decision 2026-11-09",
+  "owner": "Game-owned consented crash/survey intake; Platform retains web and control-plane ownership. Offered in all worlds including BUNDLE_WORLD_OFFERED_CAPABILITIES.",
+  "requires": [],
+  "command_types": [
+    6144,
+    6145
+  ],
+  "state_domains": [],
+  "offered": true
+}

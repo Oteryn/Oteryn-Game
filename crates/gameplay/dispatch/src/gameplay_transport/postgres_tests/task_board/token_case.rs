@@ -8,11 +8,13 @@ pub(super) async fn missing_participant(
     admitted: &mut AdmittedSession,
 ) -> TestResult {
     full_board(owner, admitted, 4, 0, "").await?;
+    completed_fixture(harness, None).await?;
     let before = value_snapshot(harness).await?;
     let receipts = quest_receipts(harness).await?;
-    let board_receipts = sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_receipts")
-        .fetch_one(&harness.pool)
-        .await?;
+    let board_receipts =
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_receipts")
+            .fetch_one(&harness.pool)
+            .await?;
     rollback_cases::start_fault_witness(harness).await?;
     sqlx::raw_sql("CREATE FUNCTION task_board_test_skip_token() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('task_board_test_fault_hits'); RETURN NULL; END $$;
         CREATE TRIGGER task_board_test_skip_token BEFORE INSERT ON game_task_board_token_sources FOR EACH ROW EXECUTE FUNCTION task_board_test_skip_token();
@@ -20,7 +22,7 @@ pub(super) async fn missing_participant(
         CREATE TRIGGER task_board_test_skip_token BEFORE INSERT OR UPDATE ON game_character_bounty_reroll_tokens FOR EACH ROW EXECUTE FUNCTION task_board_test_skip_token();")
         .execute(&harness.pool).await?;
     let command = admitted.continuity.next_command_id;
-    let result = serve_attempt(owner, admitted, command, &[full_request(12, 0, "")]).await;
+    let result = serve_attempt(owner, admitted, command, &[full_request(9, 0, "")]).await;
     sqlx::raw_sql(
         "DROP TRIGGER task_board_test_skip_token ON game_task_board_token_sources;
         DROP TRIGGER task_board_test_skip_token ON game_character_bounty_reroll_token_entries;
