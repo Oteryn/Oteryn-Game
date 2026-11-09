@@ -131,9 +131,10 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    FIXED_PIXEL_FONT_PROPERTY, HoverTooltip, PreferenceBinding, PreferenceInput, PreferenceStore,
-    ReferencePreferences, SettingsPage, SettingsState, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale,
-    preference_bindings, rescale_ui_rect, scale_ui_rect,
+    CustomAction, FIXED_PIXEL_FONT_PROPERTY, HoverTooltip, ObjectTarget, PreferenceBinding,
+    PreferenceInput, PreferenceStore, ReferencePreferences, SettingsPage, SettingsState,
+    TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, preference_bindings, rescale_ui_rect,
+    scale_ui_rect,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

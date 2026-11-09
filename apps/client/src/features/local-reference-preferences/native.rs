@@ -172,12 +172,18 @@ impl Settings {
     pub(super) fn input(
         &mut self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
-    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        let (events, requested) = lock(&self.shared).input(events);
+    ) -> (
+        Vec<oteryn_input_actions::NormalizedInputEvent>,
+        Vec<oteryn_client::play::CustomAction>,
+    ) {
+        let mut state = lock(&self.shared);
+        let (events, requested) = state.input(events);
+        let actions = state.take_custom_actions();
+        drop(state);
         if requested {
             spawn_window(Arc::clone(&self.shared));
         }
-        events
+        (events, actions)
     }
     pub(super) fn restore(&self, view: &mut PlayView, link: &oteryn_client::play::PlayLink) {
         let mut viewport = [960, 540];
@@ -188,6 +194,7 @@ impl Settings {
             }
         }
         let mut state = lock(&self.shared);
+        state.refresh_custom_choices(link);
         state.sync_chat_context(link);
         state.sync_battle_lists(link);
         state.sync_local_preferences(link);
@@ -288,7 +295,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=227 | 231..=233 | 241..=244)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=227 | 231..=234 | 241..=244)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

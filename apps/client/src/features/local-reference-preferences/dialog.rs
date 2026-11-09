@@ -3,6 +3,8 @@ use super::*;
 #[path = "controls.rs"]
 mod controls;
 use controls::Controls;
+#[path = "custom_editor.rs"]
+mod custom_editor;
 #[path = "transfer.rs"]
 mod transfer;
 
@@ -40,6 +42,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             layout,
             arcs,
             interface,
+            custom_editor,
             profile_name,
             profile_save,
             profile_load,
@@ -135,7 +138,13 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
-                    &[profile_name, profile_save, profile_load, profile_delete][..],
+                    &[
+                        custom_editor,
+                        profile_name,
+                        profile_save,
+                        profile_load,
+                        profile_delete,
+                    ][..],
                     SettingsPage::CustomHotkeys,
                 ),
                 (&[chat_on, chat_off, manual][..], SettingsPage::Hotkeys),
@@ -210,20 +219,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if (231..=233).contains(&action) {
-                    let name = text(profile_name);
-                    let result = match action {
-                        231 => preferences.save_hotkey_profile(&name),
-                        232 => preferences.load_hotkey_profile(&name),
-                        _ => {
-                            preferences.hotkey_profiles.remove(&name);
-                            Ok(())
-                        }
-                    };
-                    match result {
-                        Ok(()) => state.apply(preferences),
-                        Err(error) => state.feedback = error.to_string(),
-                    }
+                if (231..=234).contains(&action) {
+                    drop(state);
+                    custom_editor::profile_action(action, hwnd, &shared, &text(profile_name));
+                    state = lock(&shared);
                 } else if matches!(action, 225 | 226) {
                     if let Err(error) = state.apply_chat_preset(action == 225) {
                         state.feedback = error.to_string();
@@ -368,7 +367,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             }
             let page_help = match state.page {
                 SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Object, text and passive action assignment is not available yet."
+                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Use New / edit to assign object, text and read-only ability cooldown actions."
                 }
                 SettingsPage::BarHotkeys => {
                     "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."

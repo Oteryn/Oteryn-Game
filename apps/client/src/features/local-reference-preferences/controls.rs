@@ -22,6 +22,7 @@ pub(super) struct Controls {
     pub(super) layout: LayoutControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
+    pub(super) custom_editor: HWND,
     pub(super) profile_name: HWND,
     pub(super) profile_save: HWND,
     pub(super) profile_load: HWND,
@@ -63,6 +64,14 @@ impl Controls {
             let layout = LayoutControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
+            let custom_editor = control(
+                hwnd,
+                "BUTTON",
+                "New / edit object, text or passive action...",
+                234,
+                [10, 235, 710, 30],
+                0,
+            );
             let profile_name = control(
                 hwnd,
                 "EDIT",
@@ -298,6 +307,7 @@ impl Controls {
             let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
             if [
                 manual,
+                custom_editor,
                 profile_name,
                 profile_save,
                 profile_load,
@@ -341,6 +351,7 @@ impl Controls {
                 layout,
                 arcs,
                 interface,
+                custom_editor,
                 profile_name,
                 profile_save,
                 profile_load,

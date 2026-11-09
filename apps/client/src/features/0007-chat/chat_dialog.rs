@@ -151,6 +151,11 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.chat_public_shutdown {
                 break;
             }
+            if let Some(paste) = mailbox.custom_chat_paste.take() {
+                SetWindowTextW(message, wide(&paste).as_ptr());
+                SetForegroundWindow(hwnd);
+                SetFocus(message);
+            }
             mailbox.chat.text = read_text(message);
             super::super::super::feature_0233_player_typing::input::composer(
                 &mut mailbox,

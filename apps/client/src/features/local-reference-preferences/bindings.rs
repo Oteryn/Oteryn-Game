@@ -139,7 +139,22 @@ impl ReferencePreferences {
                 return Err(PreferenceError);
             }
         }
+        if self.custom_hotkeys.len() > 64 {
+            return Err(PreferenceError);
+        }
         let mut used = Vec::new();
+        for (chord, action) in &self.custom_hotkeys {
+            let chord = parse(chord)?;
+            if !action.valid()
+                || used.contains(&chord)
+                || RESERVED_CHORDS
+                    .iter()
+                    .any(|key| parse(key).is_ok_and(|r| r == chord))
+            {
+                return Err(PreferenceError);
+            }
+            used.push(chord);
+        }
         for &(id, default) in REGISTERED_BINDINGS {
             if default.starts_with("MOUSE") {
                 continue;
@@ -210,15 +225,20 @@ impl ReferencePreferences {
 /// an early modifier release. Focus/device loss clears both this map and downstream routers.
 #[derive(Default)]
 pub struct PreferenceInput {
+    actions: Vec<super::CustomAction>,
     held: std::collections::BTreeMap<KeyCode, Option<(KeyCode, Modifiers)>>,
 }
 impl PreferenceInput {
+    pub fn take_custom_actions(&mut self) -> Vec<super::CustomAction> {
+        std::mem::take(&mut self.actions)
+    }
     pub fn route(
         &mut self,
         preferences: &ReferencePreferences,
         events: &[NormalizedInputEvent],
     ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
         use oteryn_input_actions::ButtonState;
+        self.actions.clear();
         let mut output = Vec::new();
         for event in events {
             match event {
@@ -226,8 +246,22 @@ impl PreferenceInput {
                     code,
                     state,
                     repeat,
-                    ..
+                    modifiers,
                 } => {
+                    if !self.held.contains_key(code)
+                        && let Some((_, action)) =
+                            preferences.custom_hotkeys.iter().find(|(key, _)| {
+                                parse(key).is_ok_and(|chord| chord == Chord(*code, *modifiers))
+                            })
+                    {
+                        if *state == ButtonState::Pressed {
+                            self.held.insert(*code, None);
+                            if !repeat && self.actions.len() < 16 {
+                                self.actions.push(action.clone());
+                            }
+                        }
+                        continue;
+                    }
                     let translated = match self.held.get(code) {
                         Some(translation) => *translation,
                         None => preferences
@@ -257,6 +291,7 @@ impl PreferenceInput {
                 NormalizedInputEvent::FocusChanged { focused: false }
                 | NormalizedInputEvent::DeviceLost => {
                     self.held.clear();
+                    self.actions.clear();
                     output.push(event.clone());
                 }
                 _ => output.push(event.clone()),

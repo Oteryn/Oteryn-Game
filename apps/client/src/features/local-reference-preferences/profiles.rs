@@ -16,8 +16,20 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
+        if self
+            .custom_hotkey_profiles
+            .keys()
+            .any(|name| !self.hotkey_profiles.contains_key(name))
+        {
+            return Err(PreferenceError);
+        }
         let mut candidate = self.clone();
-        for bindings in self.hotkey_profiles.values() {
+        for (name, bindings) in &self.hotkey_profiles {
+            candidate.custom_hotkeys = self
+                .custom_hotkey_profiles
+                .get(name)
+                .cloned()
+                .unwrap_or_default();
             candidate.keybindings.clone_from(bindings);
             candidate.validate_bindings()?;
         }
@@ -33,6 +45,8 @@ impl ReferencePreferences {
         self.validate_bindings()?;
         self.hotkey_profiles
             .insert(name.into(), self.keybindings.clone());
+        self.custom_hotkey_profiles
+            .insert(name.into(), self.custom_hotkeys.clone());
         Ok(())
     }
 
@@ -40,7 +54,13 @@ impl ReferencePreferences {
         let bindings = self.hotkey_profiles.get(name).ok_or(PreferenceError)?;
         let mut candidate = self.clone();
         candidate.keybindings.clone_from(bindings);
+        candidate.custom_hotkeys = self
+            .custom_hotkey_profiles
+            .get(name)
+            .cloned()
+            .unwrap_or_default();
         candidate.validate_bindings()?;
+        self.custom_hotkeys = candidate.custom_hotkeys;
         self.keybindings = candidate.keybindings;
         // Profiles are explicit binding snapshots; automatic presets must not overwrite them.
         self.chat_context_hotkeys = false;

@@ -10,6 +10,11 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "custom_actions.rs"]
+mod custom_actions;
+#[path = "custom_dispatch.rs"]
+mod custom_dispatch;
+pub use custom_actions::{CustomAction, ObjectTarget};
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "status_order.rs"]
@@ -173,6 +178,11 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
     #[serde(default)]
+    pub custom_hotkeys: std::collections::BTreeMap<String, CustomAction>,
+    #[serde(default)]
+    pub custom_hotkey_profiles:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, CustomAction>>,
+    #[serde(default)]
     pub hotkey_profiles:
         std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>,
     #[serde(default)]
@@ -223,6 +233,8 @@ impl Default for ReferencePreferences {
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
+            custom_hotkeys: std::collections::BTreeMap::new(),
+            custom_hotkey_profiles: std::collections::BTreeMap::new(),
             hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,
             ui_scale: default_scale(),

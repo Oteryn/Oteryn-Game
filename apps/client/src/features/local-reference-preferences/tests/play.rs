@@ -4,6 +4,8 @@ use super::*;
 mod options;
 #[path = "contexts.rs"]
 mod contexts;
+#[path = "custom_hotkeys.rs"]
+mod custom_hotkeys;
 #[path = "hud_options.rs"]
 mod hud_options;
 #[path = "interface.rs"]

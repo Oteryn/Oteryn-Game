@@ -260,10 +260,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Custom Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:37 + hotkey_profiles_preserve_routes_across_restart + loaded_hotkey_profile_preserves_manual_routes_in_live_chat_context; Named profiles persist and load as manual bindings without queued chat presets overwriting them. Remaining: Custom Hotkeys integration with object/text/passive assignment editor owned by T043 (TIBIA-CLIENT-PARITY-2026-11-08.md:87); no shared assignment interface exists on this branch. Passive assignment displays cooldowns per docs/reference/tibia-manual/interface.md:254."
+  "evidence": "apps/client/src/features/local-reference-preferences/custom_editor.rs:91 + custom_actions_dispatch_chat_live_items_and_confirmed_cooldowns + custom_hotkeys_suppress_builtin_input_and_survive_profiles; Native create/edit/delete editor binds text draft/send, object use/self/current/cursor/equip and read-only ability cooldown tracking from live inventory/catalogue. Shell input dispatches once per gesture through existing chat/item/equip callers; profiles persist custom actions and cooldown tracking never casts."
  },
  {
   "id": "T050",

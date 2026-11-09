@@ -70,6 +70,8 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pub custom_choices: Vec<(String, super::CustomAction)>,
+    custom_choices_refreshed: Option<std::time::Instant>,
     pending_chat_mode: Option<bool>,
     chat_context: Option<bool>,
     window_action: Option<&'static str>,
@@ -85,6 +87,15 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn refresh_custom_choices(&mut self, link: &crate::play::PlayLink) {
+        if self.open && self.page == SettingsPage::CustomHotkeys
+            && self.custom_choices_refreshed.is_none_or(|time| time.elapsed() >= std::time::Duration::from_millis(250)) {
+            self.custom_choices = link.custom_hotkey_choices();
+            self.custom_choices_refreshed = Some(std::time::Instant::now());
+        }
+    }
+    pub fn take_custom_actions(&mut self) -> Vec<super::CustomAction> { self.input.take_custom_actions() }
+
     pub fn select_page(&mut self, index: usize) -> bool {
         let Some(page) = SettingsPage::ALL.get(index) else { return false; };
         self.page = *page;
@@ -163,6 +174,8 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            custom_choices: Vec::new(),
+            custom_choices_refreshed: None,
             pending_chat_mode: None,
             chat_context: None,
             window_action: None,
