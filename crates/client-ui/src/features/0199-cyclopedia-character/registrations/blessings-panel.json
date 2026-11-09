@@ -1,0 +1,7 @@
+{
+  "mechanic": "0199-cyclopedia-character",
+  "kind": "panels",
+  "id": "0199-blessings-panel",
+  "status": "supported",
+  "entry": "view.rs::blessings_text"
+}

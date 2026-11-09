@@ -1,3 +1,6 @@
+#[path = "protocol/blessings.rs"]
+mod blessings;
+pub use blessings::{BlessingsPanel, request_blessings};
 #[path = "protocol/decode.rs"]
 mod decode;
 use decode::{decode_badges, decode_general, decode_history, decode_store, decode_tab};
@@ -31,7 +34,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Feature unavailable in this session");
         return None;
     }
-    if p.pending {
+    if p.pending || p.blessings.pending {
         p.feedback = Some("Waiting for the server");
         return None;
     }
@@ -136,6 +139,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.blessings.pending {
+        return blessings::apply(&mut p.blessings, r);
+    }
     if p.protection.awaiting {
         return super::protection::apply(p, r);
     }

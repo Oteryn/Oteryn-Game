@@ -1,10 +1,15 @@
 //! Native controls for Item Forge.
 mod input;
+#[path = "protocol/preview.rs"]
+pub mod preview;
 mod protocol;
+#[path = "state/selection.rs"]
+mod selection;
 mod state;
 pub use protocol::reply;
 mod view;
 pub use input::open_key;
-pub use protocol::{apply_result, command, control_request, request};
+pub use protocol::{apply_result, command, control_request, preview_request, request};
+pub use selection::{MAX_CANDIDATES, PreviewState};
 pub use state::ItemForgePanel;
-pub use view::panel_text;
+pub use view::{panel_text, selected_pair_text};

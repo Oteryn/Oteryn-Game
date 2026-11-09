@@ -27,3 +27,24 @@ message CharmProgressionReplyV1 {
 // Expansion purchase stays PENDING PLATFORM: migration 0568 is the existing durable hook;
 // the Platform Store producer must grant that character entitlement through its accepted
 // commercial/control-plane integration. Game exposes no player-grant command or Store purchase.
+
+// O072 catalogue extension, command 84 / capability 67. This read-only request
+// is distinguished before the legacy protobuf decoder by the seven-byte body:
+// ff 01, after:u16le, race:u16le, category:u8. Race 0 browses canonical race
+// ordinals after `after`; a positive race requests its card and uses `after`
+// as the loot offset. Category 0 means all, otherwise a 1-based category index.
+// The active generation supplies names, classes, combat facts and base loot.
+// These public definition facts grant no discovery, charm or gameplay authority.
+// Request <=7 bytes; the response retains the existing command reply byte limit.
+// Legacy request/reply bytes and all progression mutation guards are unchanged.
+message BestiaryCataloguePageV1 {
+  optional uint32 next = 1; // positive race ordinal or loot offset, <=8192
+  repeated BestiaryCatalogueCardV1 cards = 2; // <=20, strictly ascending race
+  repeated string categories = 3; // <=64 unique ascending names, <=128 UTF-8 bytes each
+}
+message BestiaryCatalogueCardV1 {
+  uint32 race = 1; // 1..1024, the same canonical ordinal used for charm assignment
+  string name = 2; // 1..128 UTF-8 bytes
+  string category = 3; // an exact member of the page categories
+  string detail = 4; // <=16000 UTF-8 bytes; empty on browse pages
+}

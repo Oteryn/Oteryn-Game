@@ -27,7 +27,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=119 | 140)
+                && matches!(id, 101..=119 | 140 | 145..=148 | 150)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -95,6 +95,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             cards,
             stamina_bar,
             training_bar,
+            badge_id,
         } = character_widgets::create(hwnd);
         let mut held_history = Vec::new();
         let mut held_combat = Vec::new();

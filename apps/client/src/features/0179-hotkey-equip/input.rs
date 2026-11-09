@@ -2,11 +2,13 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn hotkey_equip_assign(&self, slot: usize, definition: u32) -> bool {
-        oteryn_client_ui::hotkey_equip::assign(
-            &mut lock(&self.mailbox).hotkey_equip,
-            slot,
-            definition,
-        )
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.hotkey_equip;
+        let assigned = oteryn_client_ui::hotkey_equip::assign(panel, slot, definition);
+        if assigned {
+            super::view::edited(panel);
+        }
+        assigned
     }
 
     pub fn hotkey_equip_request(&self, payload: Vec<u8>) {

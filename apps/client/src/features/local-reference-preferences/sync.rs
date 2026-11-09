@@ -15,6 +15,9 @@ pub enum SettingsPage {
     BarHotkeys,
     CustomHotkeys,
     Arcs,
+    ActorHud,
+    Status,
+    Console,
     Interface,
     Shortcuts,
     Graphics,
@@ -23,12 +26,15 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 13] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
         Self::CustomHotkeys,
         Self::Arcs,
+        Self::ActorHud,
+        Self::Status,
+        Self::Console,
         Self::Interface,
         Self::Shortcuts,
         Self::Graphics,
@@ -41,6 +47,9 @@ impl SettingsPage {
             Self::Gameplay => "Gameplay",
             Self::Hotkeys => "Controls / General Hotkeys",
             Self::BarHotkeys => "Controls / Action Bar Hotkeys",
+            Self::Console => "Interface / Console",
+            Self::Status => "Interface / Status Panel",
+            Self::ActorHud => "Interface / HUD",
             Self::Arcs => "Interface / HUD Arcs",
             Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
             Self::Interface => "Interface",
@@ -64,10 +73,22 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 ];
 
 pub struct SettingsState {
+    pending_chat_mode: Option<bool>,
+    chat_context: Option<bool>,
     window_action: Option<&'static str>,
+    pub(super) help_report_pending: bool,
+    base_path: Option<PathBuf>,
+    character: Option<[u8; 16]>,
+    skills_edit: u64,
+    pub(crate) item_hotkeys_edit: u64,
+    minimap_edit: u64,
+    spellbook_edit: u64,
+    archive_edit: u64,
     battle_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
+    control_input: super::controls::ControlInput,
+    control_epoch: std::time::Instant,
     pub preferences: ReferencePreferences,
     pub feedback: String,
     pub open: bool,
@@ -77,6 +98,20 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn select_page(&mut self, index: usize) -> bool {
+        let Some(page) = SettingsPage::ALL.get(index) else { return false; };
+        self.page = *page;
+        true
+    }
+
+    pub fn sync_local_preferences(&self, link: &crate::play::PlayLink) {
+        if self.preferences.validate().is_err() { return; }
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.skill_progress.order.clone_from(&self.preferences.skill_order);
+        mailbox.condition_status.order.clone_from(&self.preferences.condition_order);
+        if mailbox.local_preferences != self.preferences { mailbox.local_preferences.clone_from(&self.preferences); }
+    }
+
     pub fn queue_window(&mut self, id: &str) -> bool {
         let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
             return false;
@@ -117,13 +152,19 @@ impl SettingsState {
             .store
             .as_mut()
             .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
-        store.replace_with_backup(preferences.clone())?;
+        store.replace_with_backup(preferences.clone(), &self.preferences)?;
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        self.skills_edit = self.battle_edit;
+        self.item_hotkeys_edit = self.battle_edit;
+        self.minimap_edit = self.battle_edit;
+        self.spellbook_edit = self.battle_edit;
+        self.archive_edit = self.battle_edit;
         Ok(())
     }
 
     pub fn new(path: Option<PathBuf>) -> Self {
+        let base_path = path.clone();
         let (store, feedback) = match path {
             Some(path) => match PreferenceStore::load(path.clone()) {
                 Ok(store) => (Some(store), String::new()),
@@ -141,7 +182,19 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            pending_chat_mode: None,
+            chat_context: None,
             window_action: None,
+            help_report_pending: false,
+            control_input: super::controls::ControlInput::default(),
+            control_epoch: std::time::Instant::now(),
+            base_path,
+            character: None,
+            skills_edit: 0,
+            item_hotkeys_edit: 0,
+            minimap_edit: 0,
+            spellbook_edit: 0,
+            archive_edit: 0,
             battle_edit: 0,
             store,
             preferences,
@@ -162,10 +215,44 @@ impl SettingsState {
         true
     }
 
+    pub fn control_events(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_open: bool,
+    ) -> Vec<NormalizedInputEvent> {
+        self.control_events_at(events, chat_open, self.control_epoch.elapsed())
+    }
+
+    pub fn control_events_at(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_open: bool,
+        now: std::time::Duration,
+    ) -> Vec<NormalizedInputEvent> {
+        self.control_input
+            .route(&self.preferences.controls, events, chat_open, now)
+    }
+
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
+        self.input_in_context(events, self.preferences.hotkey_contexts.chat_on)
+    }
+
+    pub fn input_from_play(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        link: &crate::play::PlayLink,
+    ) -> (Vec<NormalizedInputEvent>, bool) {
+        self.input_in_context(events, link.preference_chat_open())
+    }
+
+    pub fn input_in_context(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_on: bool,
+    ) -> (Vec<NormalizedInputEvent>, bool) {
         let mut routed = self
             .input
-            .route(&self.preferences, events)
+            .route_chat(&self.preferences, events, chat_on)
             .unwrap_or_default();
         use oteryn_input_actions::{ButtonState, MouseButton};
         let now = std::time::Instant::now();
@@ -227,8 +314,24 @@ impl SettingsState {
             .ok_or_else(|| "Preference storage is unavailable".to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
+        if self.preferences.archive_bindings != preferences.archive_bindings {
+            self.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
+        if self.preferences.spellbook_filter != preferences.spellbook_filter {
+            self.spellbook_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
+        if self.preferences.minimap != preferences.minimap {
+            self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
+        if self.preferences.skills_layout != preferences.skills_layout {
+            self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
+        if !preferences.chat_context_hotkeys {
+            self.pending_chat_mode = None;
+            self.chat_context = None;
         }
         self.preferences = preferences;
         self.feedback = match result {
@@ -237,20 +340,19 @@ impl SettingsState {
         };
     }
 
-    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
-        let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
-        {
-            self.apply(preferences);
-            self.battle_edit = edit;
-        }
-    }
-
     pub fn restore(
         &mut self,
         view: &mut PlayView,
         viewport: [u32; 2],
     ) -> Result<(), PreferenceError> {
+        if view.local.minimap_edit > self.minimap_edit {
+            let edit = view.local.minimap_edit;
+            let mut preferences = self.preferences.clone();
+            preferences.minimap = view.preferences().minimap.clone();
+            self.apply(preferences);
+            self.minimap_edit = edit;
+        }
+        view.local.minimap_edit = self.minimap_edit;
         view.set_world_viewport(viewport)?;
         if view.preferences() != &self.preferences {
             view.set_preferences(self.preferences.clone())?;
@@ -271,3 +373,18 @@ impl SettingsState {
         Ok(())
     }
 }
+
+impl crate::play::PlayLink {
+    pub fn preference_chat_open(&self) -> bool {
+        crate::play::mailbox::lock(&self.mailbox).chat.open
+    }
+}
+
+#[path = "panel_sync.rs"]
+mod panel_sync;
+
+#[path = "chat_context.rs"]
+mod chat_context;
+
+#[path = "character_scope.rs"]
+mod character_scope;
