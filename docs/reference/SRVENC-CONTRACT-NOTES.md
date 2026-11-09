@@ -2221,3 +2221,18 @@ Real PG m51_postgres_native_portals_complete_all_ten_pits_and_reward:
 14.016s; world/dispatch clippy -D warnings:121.696s. Fmt and pin identity PASS.
 M51 remains PARTIAL: silent-death publication, runtime-role lease privileges and
 full source reset closure still follow; victory is currently observed by Status.
+
+## M51: production runtime-role custody permissions (migration2182)
+
+Allocated2182_svargrond_pit_runtime_privileges.sql within2180-2189. The runtime
+receives only SELECT/INSERT/UPDATE/DELETE on the existing shared pit leases;
+PUBLIC and control-plane access are revoked. The original2180 is unchanged.
+Source ownership: Crystal201189f movements_arena_enter.lua:22-30 and
+movements_arena_pit.lua:52-64. The native writer is the existing fenced runtime.
+RED actual PG4.98s: production runtime role lacks SELECT on pit custody.
+GREEN:7 M51 tests,34.588s including build; real PG runtime role5.302931318s,
+origin binding6.42310675s, custody race/rollback5.250074248s. Tests execute
+SET LOCAL ROLE and prove reservation/read/release, control write denial and
+runtime TRUNCATE denial. Migration uniqueness:14.791s; clippy:78.272s PASS.
+Fmt and engine-only pin identity verification PASS. M51 remains PARTIAL pending
+silent-death publication and complete source reset closure.

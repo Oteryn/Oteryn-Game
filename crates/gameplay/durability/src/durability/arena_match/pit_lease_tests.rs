@@ -95,3 +95,54 @@ fn m51_postgres_pit_reservation_serializes_contenders_and_releases_atomically() 
         Ok(())
     })
 }
+
+#[test]
+fn m51_postgres_runtime_role_can_reserve_and_release_without_control_write_access() -> h::TestResult
+{
+    let Some(admin) = h::configured_admin() else {
+        return Ok(());
+    };
+    h::runtime()?.block_on(async move {
+        let started = std::time::Instant::now();
+        let fixture = h::Harness::create(admin, "srvenc_m51_pit_runtime_role", true).await?;
+        let result: h::TestResult = async {
+            let fence = h::fence(1)?;
+            let mut tx = fixture.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+            let role: String = sqlx::query_scalar("SELECT current_user::text").fetch_one(&mut *tx).await?;
+            assert_eq!(role, "oteryn_game_runtime");
+            let can_read: bool = sqlx::query_scalar(
+                "SELECT has_table_privilege(current_user,'game_svargrond_pit_leases','SELECT')",
+            ).fetch_one(&mut *tx).await?;
+            assert!(can_read, "production runtime role lacks SELECT on pit custody");
+            let clock = super::super::now(&mut tx).await?;
+            let state = MatchState {
+                rank: 1, pit: 1, phase: 1, deadline_ms: clock + 600_000,
+                session: *fence.game_session_id.as_bytes(),
+                scope_generation: fence.scope_ownership_generation.get(),
+                run: h::id(234), ..MatchState::default()
+            };
+            assert!(claim(&mut tx, fence, &state, clock).await?);
+            assert!(owned(&mut tx, fence, &state, clock).await?);
+            release(&mut tx, fence).await?;
+            let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+                .fetch_one(&mut *tx).await?;
+            assert_eq!(remaining, 0);
+            let control_write: bool = sqlx::query_scalar(
+                "SELECT has_table_privilege('oteryn_game_control','game_svargrond_pit_leases','INSERT,UPDATE,DELETE')",
+            ).fetch_one(&mut *tx).await?;
+            assert!(!control_write, "control-plane role cannot write gameplay pit custody");
+            let truncate: bool = sqlx::query_scalar(
+                "SELECT has_table_privilege(current_user,'game_svargrond_pit_leases','TRUNCATE')",
+            ).fetch_one(&mut *tx).await?;
+            assert!(!truncate, "runtime receives only its required lease operations");
+            tx.commit().await?;
+            Ok(())
+        }.await;
+        fixture.cleanup().await?;
+        result?;
+        eprintln!("M51 REAL POSTGRES runtime-role custody duration={:?}", started.elapsed());
+        assert!(started.elapsed().as_secs_f64() > 0.01);
+        Ok(())
+    })
+}
