@@ -55,7 +55,7 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
     let bounty = &reply.bounty;
     let _ = lwriteln!(
         text,
-        "Bounty: state {}, difficulty {}, rerolls {}, daily reroll at {}",
+        "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
         bounty.state,
         bounty.difficulty,
         bounty.rerolls,

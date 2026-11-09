@@ -2,6 +2,7 @@ use crate::play::play_channel;
 use oteryn_client_runtime::task_board::task_board::full::*;
 fn reply() -> Reply {
     Reply {
+        weekly_results: None,
         refusal: 0,
         period: 42,
         points: 0,

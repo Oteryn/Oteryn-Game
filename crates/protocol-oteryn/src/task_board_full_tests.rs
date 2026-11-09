@@ -4,6 +4,7 @@ use super::*;
 
 fn reply() -> Reply {
     Reply {
+        weekly_results: None,
         refusal: 0,
         period: 2965,
         points: 150,
@@ -83,7 +84,7 @@ fn reply() -> Reply {
 
 #[test]
 fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields() {
-    for action in 4..=18 {
+    for action in (4..=18).filter(|action| *action != 12) {
         let request = Request {
             action,
             selection: 0,
@@ -375,4 +376,37 @@ fn full_task_board_delivery_availability_can_exceed_the_requirement() {
         value.weekly.deliveries[0].current = invalid;
         assert_eq!(encode_reply(&value), Err(Error::Malformed));
     }
+}
+
+#[test]
+fn retired_daily_reroll_is_not_a_task_board_request() {
+    assert!(decode_request(&[8, 12, 16, 0, 26, 0]).is_err());
+    assert!(
+        encode_request(&Request {
+            action: 12,
+            selection: 0,
+            race: String::new()
+        })
+        .is_err()
+    );
+}
+
+#[test]
+fn monday_results_are_optional_bounded_and_cannot_accompany_an_active_week() {
+    let mut reply = reply();
+    reply.weekly.started = false;
+    reply.weekly.kills.clear();
+    reply.weekly.deliveries.clear();
+    reply.weekly_results = Some(WeeklyResults {
+        period: reply.period - 7,
+        points: 75,
+        soulseals: 3,
+    });
+    let bytes = encode_reply(&reply).expect("Monday result");
+    assert_eq!(decode_reply(&bytes), Ok(reply.clone()));
+    reply.weekly.started = true;
+    assert!(encode_reply(&reply).is_err());
+    reply.weekly.started = false;
+    reply.weekly_results.as_mut().expect("results").period = reply.period;
+    assert!(encode_reply(&reply).is_err());
 }

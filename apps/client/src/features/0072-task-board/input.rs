@@ -82,3 +82,48 @@ impl PlayLink {
         enqueue_talisman(&mut lock(&self.mailbox), &self.commands, intent)
     }
 }
+
+impl PlayLink {
+    /// Check the committed calendar once after admission, without opening the Task Board.
+    pub(in crate::play) fn poll_weekly_results(&self) {
+        let show = {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.task_board;
+            if !panel.selected || !panel.weekly_results_selected {
+                return;
+            }
+            if !panel.weekly_checked && !panel.pending {
+                panel.weekly_checked = true;
+                if panel.weekly.is_none()
+                    && let Some(command) =
+                        oteryn_client_ui::task_board_weekly_results::request(panel)
+                    && self.commands.send(PlayCommand::Feature(command)).is_err()
+                {
+                    panel.pending = false;
+                    panel.feedback = Some(tr!("The session has ended"));
+                }
+            }
+            let period = panel
+                .weekly
+                .as_ref()
+                .and_then(|reply| reply.weekly_results.as_ref())
+                .map(|results| results.period);
+            if let Some(period) = period
+                && panel.weekly_results_seen != Some(period)
+            {
+                panel.weekly_results_seen = Some(period);
+                true
+            } else {
+                false
+            }
+        };
+        if show {
+            #[cfg(windows)]
+            super::view::weekly_results_window::open(self);
+            #[cfg(not(windows))]
+            {
+                lock(&self.mailbox).task_board.weekly_results_open = true;
+            }
+        }
+    }
+}

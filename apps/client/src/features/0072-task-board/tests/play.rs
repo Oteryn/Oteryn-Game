@@ -98,6 +98,7 @@ fn task_board_controls_use_the_real_codec_and_show_refusals() -> Result<(), Erro
 fn full_reply() -> task_board::full::Reply {
     use task_board::full::*;
     Reply {
+        weekly_results: None,
         refusal: 0,
         period: 2965,
         points: 150,
@@ -180,7 +181,6 @@ fn full_task_board_reply_reaches_the_play_panel() -> Result<(), Error> {
                     FullIntent::ClaimBounty,
                     FullIntent::BountyDifficulty(1),
                     FullIntent::Reroll,
-                    FullIntent::DailyReroll,
                     FullIntent::Preferred(0, "oteryn:creature.rat".into()),
                     FullIntent::Unwanted(0, String::new()),
                     FullIntent::UnlockList,
@@ -208,10 +208,10 @@ fn full_task_board_reply_reaches_the_play_panel() -> Result<(), Error> {
                             .iter()
                             .map(|request| request.action)
                             .collect::<Vec<_>>(),
-                        (4..=16).collect::<Vec<_>>()
+                        (4..=16).filter(|action| *action != 12).collect::<Vec<_>>()
                     );
                     assert_eq!(recorded[6].selection, 1);
-                    assert_eq!(recorded[9].race, "oteryn:creature.rat");
+                    assert_eq!(recorded[8].race, "oteryn:creature.rat");
                 }
                 assert_eq!(
                     oteryn_client_ui::task_board::creature_choices(&link.task_board_panel()),

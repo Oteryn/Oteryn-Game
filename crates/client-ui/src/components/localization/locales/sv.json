@@ -314,5 +314,11 @@
  "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nSkicka exakt detta svar till Oteryns spelserver vid nästa inloggade spelsession?",
  "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nSkicka exakt denna rapport till Oteryns spelserver vid nästa inloggade spelsession? Ja köar leveransen; Nej kasserar rapporten.",
  "Crash report queued for delivery on your next play session.": "Kraschrapporten köades för nästa spelsession.",
- "Survey response queued for delivery on your next play session.": "Enkätsvaret köades för nästa spelsession."
+ "Survey response queued for delivery on your next play session.": "Enkätsvaret köades för nästa spelsession.",
+ "Weekly results": "Veckoresultat",
+ "Choose next week's difficulty": "Välj nästa veckas svårighetsgrad",
+ "Start next week": "Starta nästa vecka",
+ "Weekly rewards received": "Veckobelöningar mottagna",
+ "Task points": "Uppdragspoäng",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Prisjakt: status {}, svårighet {}, omlottningar {}, gratis omlottning av erbjudanden vid {}"
 }

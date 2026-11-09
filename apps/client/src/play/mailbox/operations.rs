@@ -253,6 +253,7 @@ impl PlayLink {
 
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
+        self.poll_weekly_results();
         #[cfg(windows)]
         super::super::feature_0148_wheel_allocation::view::poll_gems(&self.mailbox, &self.commands);
         #[cfg(windows)]

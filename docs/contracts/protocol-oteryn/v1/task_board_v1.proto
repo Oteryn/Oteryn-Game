@@ -72,7 +72,7 @@ message TaskBoardBountyV1 {
   uint32 selected = 3; // 0 absent, otherwise original index +1
   uint32 current = 4;
   uint64 rerolls = 5; // 0..i64::MAX; daily threshold10 is not a balance cap
-  uint64 daily_reroll_at = 6;
+  uint64 daily_reroll_at = 6; // free offer reroll cooldown; not a daily token claim
   repeated TaskBoardBountyOfferV1 offers = 7; // <=3
   optional TaskBoardBountyOfferV1 active = 8;
   repeated TaskBoardListSlotV1 lists = 9; // <=5
@@ -91,6 +91,11 @@ message TaskBoardShopOfferV1 {
   uint32 addon = 6;
   bool bought = 7;
 }
+message TaskBoardWeeklyResultsV1 {
+  uint64 period = 1; // completed board's Monday ordinal
+  uint32 points = 2; // already credited, never a claim amount
+  uint32 soulseals = 3; // already credited
+}
 message TaskBoardFullReplyV1 {
   uint32 refusal = 1; // closed codes 0..17
   uint64 period = 2;
@@ -101,4 +106,5 @@ message TaskBoardFullReplyV1 {
   TaskBoardBountyV1 bounty = 7;
   repeated TaskBoardTalismanPathV1 talisman = 8; // exactly4
   repeated TaskBoardShopOfferV1 shop = 9; // <=32
+  optional TaskBoardWeeklyResultsV1 weekly_results = 10; // capability 474 only
 }

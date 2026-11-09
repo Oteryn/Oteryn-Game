@@ -647,10 +647,10 @@ fn bounty_completion_preserves_existing_wide_token_owner() -> Result<(), TaskBoa
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::LimitReached)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     Ok(())
 }
@@ -877,10 +877,10 @@ fn bounty_rerolls_use_twenty_hour_free_timer_before_spending_one_token()
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::Cooldown)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     ctx.now_unix_seconds += 72_000;
     ctx.reroll_tokens = 10;
@@ -888,21 +888,20 @@ fn bounty_rerolls_use_twenty_hour_free_timer_before_spending_one_token()
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::LimitReached)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     ctx.reroll_tokens = 9;
     assert_eq!(
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
-        )?
-        .reroll_tokens_granted,
-        1
+        ),
+        Err(TaskBoardRefusal::RetiredAction)
     );
     Ok(())
 }

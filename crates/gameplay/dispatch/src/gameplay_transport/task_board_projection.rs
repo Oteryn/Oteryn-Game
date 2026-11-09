@@ -61,10 +61,24 @@ fn offer(task: &rules::BountyTask) -> full_wire::BountyOffer {
     }
 }
 
-pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
+pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<full_wire::Reply> {
     let view = &commit.view;
     let data = &view.data;
     let balances = &view.balances;
+    let weekly_results = if include_results {
+        if let Some(board) = data.weekly.as_ref().filter(|board| board.finished) {
+            let (points, soulseals) = board.rewards().ok()?;
+            Some(full_wire::WeeklyResults {
+                period: u64::try_from(board.period).ok()?,
+                points,
+                soulseals,
+            })
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let board = data.weekly.as_ref().filter(|board| !board.finished);
     let weekly = if let Some(board) = board {
         let (points, seals) = board.rewards().ok()?;
@@ -167,6 +181,7 @@ pub(super) fn full(commit: &TaskBoardCommit) -> Option<full_wire::Reply> {
         })
         .collect::<Option<Vec<_>>>()?;
     Some(full_wire::Reply {
+        weekly_results,
         refusal: refusal(commit.refusal.as_ref()),
         period: u64::try_from(view.period).ok()?,
         points: u64::try_from(balances.points).ok()?,

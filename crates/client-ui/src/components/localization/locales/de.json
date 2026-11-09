@@ -314,5 +314,11 @@
  "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nDiese Antwort bei deiner nächsten angemeldeten Spielsitzung an den Oteryn-Spielserver senden?",
  "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nDiesen Bericht bei deiner nächsten angemeldeten Spielsitzung an den Oteryn-Spielserver senden? Ja stellt ihn zum Versand bereit; Nein verwirft ihn.",
  "Crash report queued for delivery on your next play session.": "Absturzbericht zum Versand bei der nächsten Spielsitzung bereitgestellt.",
- "Survey response queued for delivery on your next play session.": "Umfrageantwort zum Versand bei der nächsten Spielsitzung bereitgestellt."
+ "Survey response queued for delivery on your next play session.": "Umfrageantwort zum Versand bei der nächsten Spielsitzung bereitgestellt.",
+ "Weekly results": "Wochenergebnisse",
+ "Choose next week's difficulty": "Schwierigkeit für die nächste Woche wählen",
+ "Start next week": "Nächste Woche beginnen",
+ "Weekly rewards received": "Wöchentliche Belohnungen erhalten",
+ "Task points": "Aufgabenpunkte",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Kopfgeld: Status {}, Schwierigkeit {}, Neuauswahlen {}, kostenlose Angebotsauswahl um {}"
 }

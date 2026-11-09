@@ -314,5 +314,11 @@
  "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
  "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.",
  "Crash report queued for delivery on your next play session.": "Crash report queued for delivery on your next play session.",
- "Survey response queued for delivery on your next play session.": "Survey response queued for delivery on your next play session."
+ "Survey response queued for delivery on your next play session.": "Survey response queued for delivery on your next play session.",
+ "Weekly results": "Weekly results",
+ "Choose next week's difficulty": "Choose next week's difficulty",
+ "Start next week": "Start next week",
+ "Weekly rewards received": "Weekly rewards received",
+ "Task points": "Task points",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}"
 }

@@ -314,5 +314,11 @@
  "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?": "{}\nWysłać dokładnie tę odpowiedź do serwera gry Oteryn podczas następnej zalogowanej sesji gry?",
  "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.": "{preview}\nWysłać dokładnie ten raport do serwera gry Oteryn podczas następnej zalogowanej sesji gry? Tak kolejkuje wysłanie; Nie odrzuca raport.",
  "Crash report queued for delivery on your next play session.": "Raport awarii oczekuje na wysłanie podczas następnej sesji gry.",
- "Survey response queued for delivery on your next play session.": "Odpowiedź ankiety oczekuje na wysłanie podczas następnej sesji gry."
+ "Survey response queued for delivery on your next play session.": "Odpowiedź ankiety oczekuje na wysłanie podczas następnej sesji gry.",
+ "Weekly results": "Wyniki tygodniowe",
+ "Choose next week's difficulty": "Wybierz trudność na następny tydzień",
+ "Start next week": "Rozpocznij następny tydzień",
+ "Weekly rewards received": "Otrzymane nagrody tygodniowe",
+ "Task points": "Punkty zadań",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Zlecenie: stan {}, trudność {}, losowania {}, darmowe losowanie ofert o {}"
 }

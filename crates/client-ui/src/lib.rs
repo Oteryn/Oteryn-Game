@@ -252,6 +252,8 @@ pub mod server_save_countdown;
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]
 pub mod task_board;
+#[path = "features/0474-task-board-weekly-results/mod.rs"]
+pub mod task_board_weekly_results;
 
 #[path = "features/0051-staff/mod.rs"]
 pub mod staff;
