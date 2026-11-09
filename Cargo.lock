@@ -3000,6 +3000,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-task-supervisor"
+version = "0.1.0"
+dependencies = [
+ "oteryn-error-codes",
+ "tokio",
+]
+
+[[package]]
 name = "oteryn-test-support"
 version = "0.1.0"
 dependencies = [

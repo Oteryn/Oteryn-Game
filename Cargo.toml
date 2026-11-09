@@ -32,6 +32,7 @@ members = [
     "crates/simulation-determinism",
     "crates/diagnostics",
     "crates/error-codes",
+    "crates/task-supervisor",
     "crates/ntp-clock",
     "crates/client-runtime",
     "crates/client-ui",

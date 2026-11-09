@@ -1,0 +1,14 @@
+{
+  "module": "durability",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "highscore_snapshot",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}
