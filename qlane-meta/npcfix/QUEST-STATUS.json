@@ -588,7 +588,7 @@
     "workspace_all_targets": "PENDING after publication"
   },
   "targuna_receipt_schema_slice": {
-    "state": "GREEN_PG_COMPILE_PENDING",
+    "state": "GREEN_PUSHED",
     "migration": "2141_targuna_free_travel_receipt.sql",
     "test": "npcfix_m38_targuna_receipt.py",
     "red_pg_seconds": 0.148875,
@@ -596,6 +596,35 @@
     "scope": "Exact free receipt destination only; original paid route shape preserved. Anna offer remains disabled; atomic citizenship/arrival and story wiring outstanding.",
     "fmt": "PASS",
     "pin_check": "PASS unchanged pins",
-    "workspace_all_targets": "RUNNING; publication requested without holding tested SQL"
+    "workspace_all_targets": "PASS 14m37s",
+    "commit": "ba5175273e583c41679a85389e4230aeb80d0435"
+  },
+  "targuna_atomic_arrival_slice": {
+    "state": "GREEN_READY_TO_PUSH",
+    "test": "npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres",
+    "red_pg_seconds": 15.11,
+    "red_observation": "ordinary consume returned Ok(Consumed) without citizenship",
+    "scope": "Existing hometown transaction consumes Targuna only with chosen town34, position/receipt and all typed tutorial flags in the same commit. Public ordinary consume refuses. Native dialogue/map/offer remains disabled.",
+    "review_correction": "Preserve runtime_actor_death.rs NPC-0 6.1 admitted fallback; no exact-coordinate guard. The positive case actually performs fallback placement.",
+    "new_migrations": [],
+    "green_pg_seconds": 18.396251785,
+    "green_checks": [
+      "ordinary consumer refuses",
+      "wrong town6/33 refuses",
+      "actual nearby fallback placement accepted",
+      "injected late hometown-write failure rolls back receipt/tutorial/obligation",
+      "position+arrival+town34+all tutorial flags commit together",
+      "old arrival replay cannot rewind later town6"
+    ],
+    "local_checks": "own atomic and two affected legacy PostgreSQL cases PASS; fmt/pins/duplicates PASS; workspace all-target compile pending after immediate owner-directed publication",
+    "legacy_pg": {
+      "remembered_return_seconds": 19.175548114,
+      "p20_pending_arrival_seconds": 139.48,
+      "p20_marker": "P20_POSTGRES_EXECUTED: ended Premium, premium-area town 11 -> Thais temple"
+    },
+    "fmt": "PASS current tree",
+    "pins": "PASS unchanged",
+    "duplicate_migrations": "PASS HEAD",
+    "clippy": "PASS durability+dispatch --lib -D warnings"
   }
 }

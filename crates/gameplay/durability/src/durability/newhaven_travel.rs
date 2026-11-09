@@ -110,8 +110,9 @@ pub(super) async fn complete_in_transaction(
         .await?;
     }
     if completed.as_ref().is_some_and(|row| {
-        row.try_get::<String, _>("route")
-            .is_ok_and(|route| matches!(route.as_str(), "rookgaard" | "thais_peninsula"))
+        row.try_get::<String, _>("route").is_ok_and(|route| {
+            matches!(route.as_str(), "rookgaard" | "thais_peninsula" | "targuna")
+        })
     }) && let TutorialProgressOutcome::Read(Some(stored)) =
         tutorial_progress_in_transaction(tx, character, None).await?
         && let Some(next) = tutorial_transition(

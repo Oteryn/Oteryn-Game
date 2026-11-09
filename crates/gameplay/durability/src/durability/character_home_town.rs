@@ -92,8 +92,8 @@ impl DurabilityRoot {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 let written = if let Some(occurrence) = relocation.arrival {
-                    super::npc_travel::consume_in_transaction(
-                        &mut tx, &recovery, &node, fence, occurrence, relocation.placed,
+                    super::npc_travel::consume_with_citizenship(
+                        &mut tx, &recovery, &node, fence, occurrence, relocation.placed, Some(u32::try_from(town).map_err(|_| DurabilityError::InvalidStoredState)?),
                     ).await.map_err(|_| DurabilityError::InvalidStoredState)? == ArrivalConsume::Consumed
                 } else {
                     upsert_last_position(

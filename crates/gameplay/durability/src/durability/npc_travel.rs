@@ -211,6 +211,19 @@ pub async fn consume_in_transaction(
     occurrence: TravelOccurrence,
     placed: FinalLastPosition,
 ) -> Result<ArrivalConsume, TravelStoreError> {
+    consume_with_citizenship(tx, recovery, node, fence, occurrence, placed, None).await
+}
+
+/// Only the hometown owner supplies citizenship, in the same transaction as arrival consumption.
+pub(super) async fn consume_with_citizenship(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    occurrence: TravelOccurrence,
+    placed: FinalLastPosition,
+    citizenship: Option<u32>,
+) -> Result<ArrivalConsume, TravelStoreError> {
     if placed.write_sequence == 0
         || !matches!(fence.runtime_scope,
         RuntimeScopeRefV1::Channel { world_id, .. } if world_id == placed.record.world_id)
@@ -220,6 +233,16 @@ pub async fn consume_in_transaction(
     let row = read_fenced(tx, recovery, node, fence).await?;
     if classify_consume(row, occurrence) == ConsumeReplay::Complete {
         return Ok(ArrivalConsume::NoOp);
+    }
+    let targuna: bool = sqlx::query_scalar(
+        "SELECT route='targuna' FROM game_newhaven_travel_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid"
+    ).bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice())
+        .fetch_optional(&mut **tx).await?.unwrap_or(false);
+    // Only the hometown owner can consume this arrival, in its citizenship transaction.
+    // Keep the placement owner's admitted fallback rules; a capture need not equal the
+    // requested tile (runtime_actor_death.rs, NPC-0 §6.1).
+    if targuna && citizenship != Some(34) {
+        return Err(TravelStoreError::InvalidInput);
     }
     let deleted = sqlx::query(
         "DELETE FROM game_character_pending_arrivals WHERE character_id = encode($1,'hex')::uuid AND occurrence_id = encode($2,'hex')::uuid"
