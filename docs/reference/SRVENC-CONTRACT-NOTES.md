@@ -2413,3 +2413,21 @@ outside/floor exclusion and ambiguous observations. Quest crate clippy --all-tar
 -D warnings PASS8.980s; fmt PASS15.850s; engine-only pin identity unchanged.
 No SQL/id allocated; no content data changed. M51 remains PARTIAL; production
 monster reset composition and physical top-Item cleanup follow.
+
+## M51: source monster reset executes before the next fight
+
+Restoring a new fighting projection now performs the bounded source monster
+reset before spawning its opponent. It rechecks current Channel control, active
+session/generation and the full spectator census; only actual native Monster
+identities inside the exact reset rectangle are removed. The existing exact
+administrative creature owner removes them without death, corpse or kill credit.
+NPCs, Players and Monsters outside the rectangle remain. Native summon-family
+cleanup stays with that same existing owner. Source: Crystal201189f lib/quests/
+svargrond_arena.lua:207-246, movements_arena_enter.lua:22-30.
+GREEN actual PG entry reset53.034282454s: unregistered inside Monster removed,
+outside Monster and canonical Halvar NPC retained, new opponent spawned, fee
+retained and zero victories credited. Other real PG: departure52.970301648s,
+timeout57.891032298s, ten-pit combat/STEP/reward60.115019485s. Four tests PASS
+398.240s with cold build. Dispatch clippy --lib -D warnings PASS108.408s;
+fmt PASS15.750s; engine-only pin identity unchanged. No SQL/id allocation.
+M51 remains PARTIAL for physical top-Item reset and missing-pillar recreation.

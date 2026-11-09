@@ -18,6 +18,8 @@ mod death_poll;
 mod departure_poll;
 #[path = "arena_match/pillar.rs"]
 mod pillar;
+#[path = "arena_match/pit_reset.rs"]
+mod pit_reset;
 #[path = "arena_match/portal_step.rs"]
 mod portal_step;
 #[path = "arena_match/timeout_poll.rs"]
@@ -628,6 +630,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
                 return None;
             }
+            pit_reset::reset_monsters(&mut runtime, actor, session, state)?;
             let mut summon = destination;
             summon.y += 2;
             let key = opponent(state.rank, state.pit)?;

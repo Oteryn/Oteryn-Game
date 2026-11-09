@@ -90,6 +90,7 @@ enum NativeScenario {
     Portals,
     Departure,
     Timeout,
+    ResetMonsters,
 }
 
 #[test]
@@ -110,6 +111,27 @@ fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> 
     assert!(started.elapsed().as_secs_f64() > 0.01);
     Ok(())
 }
+#[test]
+fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(true, Some(NativeScenario::ResetMonsters)).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "M51 native reset worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native monster reset duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
 fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
     scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
 }
@@ -117,6 +139,7 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
     let native_portals = route.is_some();
     let leave_early = matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
+    let reset_monsters = matches!(route, Some(NativeScenario::ResetMonsters));
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
@@ -286,6 +309,42 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
                 .regression_arena_pit_time(5000)
                 .ok_or("fixture timer")?;
         }
+        let reset_observations = if reset_monsters {
+            let mut runtime = deps.runtime.lock().await;
+            let mut spawn = |at| {
+                runtime
+                    .spawn_arena_opponent("oteryn:creature.frostfur", at, |runtime, at| {
+                        Some(crate::gameplay_transport::arena_match::walkable(
+                            &owner, runtime, at,
+                        ))
+                    })
+                    .map_err(debug)
+            };
+            let inside = spawn(crate::foundation::MovementLocalPosition {
+                x: 32205,
+                y: 31094,
+                floor: 7,
+            })?;
+            let outside = spawn(crate::foundation::MovementLocalPosition {
+                x: 32215,
+                y: 31098,
+                floor: 7,
+            })?;
+            let npc = runtime
+                .place_dynamic_npc(
+                    "oteryn:npc.halvar",
+                    crate::foundation::NpcPlacement {
+                        x: 32206,
+                        y: 31094,
+                        floor: -7,
+                        direction: crate::foundation::MovementFacing::South,
+                    },
+                )
+                .map_err(debug)?;
+            Some((inside, outside, npc))
+        } else {
+            None
+        };
         let entry_id = admitted.continuity.next_command_id;
         let entered = command(&owner, &mut admitted, A::Enter).await?;
         if !funded {
@@ -323,6 +382,33 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
             .await
             .ok_or("entry replay")?;
         assert_eq!(wire::decode_match_result(&replay).map_err(debug)?, entered);
+        if let Some((inside, outside, npc)) = reset_observations {
+            let runtime = deps.runtime.lock().await;
+            assert!(
+                !runtime.contains_live_creature(inside),
+                "entry clears an unregistered Monster inside the source box"
+            );
+            assert!(
+                runtime.contains_live_creature(outside),
+                "source reset must preserve Monsters outside its box"
+            );
+            assert_eq!(
+                runtime.npc_key(npc),
+                Some("oteryn:npc.halvar"),
+                "source reset removes Monsters, never NPCs"
+            );
+            assert_eq!(
+                runtime.visible_entities().creatures.len(),
+                2,
+                "outside Monster and the newly spawned opponent remain"
+            );
+            drop(runtime);
+            let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(victories, 0, "administrative reset is not a kill source");
+            return Ok(());
+        }
         if timeout_early {
             let target = {
                 let runtime = deps.runtime.lock().await;
