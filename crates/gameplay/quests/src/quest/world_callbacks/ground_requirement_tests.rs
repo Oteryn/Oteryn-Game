@@ -44,6 +44,83 @@ fn ground_stack_guards_bind_progress_without_admitting_value_free_actions() -> R
     assert!(parse(&reward.to_string()).is_err());
     let mut invalid = doc;
     invalid["callbacks"][0]["world_requirements"][0]["appearance"] = 0.into();
+    // Portable Ground facts may omit an immutable appearance; neither kind of
+    // predicate may be omitted altogether. Preserve that distinction.
+    let ground_only = parse(&invalid.to_string())?.remove(0);
+    assert!(gated_binding(&ground_only)?.is_some());
+    invalid["callbacks"][0]["world_requirements"][0]
+        .as_object_mut()
+        .ok_or("requirement")?
+        .remove("ground_stack");
     assert!(parse(&invalid.to_string()).is_err());
+    Ok(())
+}
+
+fn dense_document() -> serde_json::Value {
+    let mut doc = document();
+    doc["callbacks"][0]["world_requirements"] = serde_json::Value::Array(
+        (0..36)
+            .map(|cell| {
+                serde_json::json!({
+                    "position":{"x":32818 + cell % 6,"y":32334 + cell / 6,"floor":-9},
+                    "appearance":415,
+                    "ground_stack":[{"item":"oteryn:item.tibia.i2394","count":1}]
+                })
+            })
+            .collect(),
+    );
+    doc
+}
+
+#[test]
+fn m07_dense_ground_callback_binds_every_cell_without_expanding_effect_budgets()
+-> Result<(), String> {
+    let doc = dense_document();
+    let callback = parse(&doc.to_string())?.remove(0);
+    let binding = gated_binding(&callback)?.ok_or("dense progress must be fenced")?;
+    assert_eq!(callback.world_requirements.len(), 36);
+    let mut changed = doc.clone();
+    changed["callbacks"][0]["world_requirements"][35]["ground_stack"][0]["item"] =
+        "oteryn:item.tibia.i2395".into();
+    assert_ne!(
+        gated_binding(&parse(&changed.to_string())?.remove(0))?,
+        Some(binding)
+    );
+    for field in ["experience", "requires_world_admission", "reversible"] {
+        let mut unsafe_doc = doc.clone();
+        unsafe_doc["callbacks"][0][field] = match field {
+            "experience" => 10.into(),
+            "requires_world_admission" => false.into(),
+            _ => true.into(),
+        };
+        assert!(
+            parse(&unsafe_doc.to_string()).is_err(),
+            "unsafe dense field {field}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn m07_dense_ground_callback_refuses_sparse_multifloor_and_stacked_readsets() -> Result<(), String>
+{
+    parse(&dense_document().to_string())?;
+    for (field, value) in [("x", 32824), ("floor", -8)] {
+        let mut doc = dense_document();
+        doc["callbacks"][0]["world_requirements"][35]["position"][field] = value.into();
+        assert!(
+            parse(&doc.to_string()).is_err(),
+            "invalid dense geometry {field}"
+        );
+    }
+    let mut doc = dense_document();
+    doc["callbacks"][0]["world_requirements"][0]["ground_stack"][0]["count"] = 2.into();
+    assert!(parse(&doc.to_string()).is_err());
+    let mut doc = dense_document();
+    doc["callbacks"][0]["world_requirements"]
+        .as_array_mut()
+        .ok_or("requirements")?
+        .pop();
+    assert!(parse(&doc.to_string()).is_err());
     Ok(())
 }

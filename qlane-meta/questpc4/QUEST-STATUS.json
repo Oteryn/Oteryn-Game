@@ -11570,5 +11570,28 @@
         "exit": 1
       }
     }
+  },
+  "m07_dense_ground_callback_slice": {
+    "state": "PARTIAL",
+    "scope": "Callback parser admits the complete 36-cell single-item Ground pattern only for fenced progress-only actions; other effect/readset budgets remain unchanged.",
+    "red": "Two new parser regression tests failed invalid callback before implementation; /tmp/questpc4-dense-callback-red.log.",
+    "validation": {
+      "focused_tests": 25,
+      "focused_seconds": 6.088,
+      "clippy_seconds": 11.86,
+      "fmt": "PASS",
+      "workspace": {
+        "seconds": 307.371,
+        "exit": 0
+      },
+      "pg": "Not run: parser-only Rust change, no SQL or native callback wiring changed.",
+      "pin_verify": {
+        "seconds": 8.949,
+        "exit": 1,
+        "error": "key: unknown key oteryn:world-object.tibia.i10736"
+      }
+    },
+    "pending": "Native Dreamer puzzle callback and pillow profile qualification remain. Repair PG blocked by published migration 2020.",
+    "decision": "Portable Ground-only predicates already permit appearance=0 in production. Preserve that admission and test rejection when both the immutable appearance and Ground predicate are absent."
   }
 }
