@@ -101,6 +101,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 state.select_page(index);
             }
             if binding_page != state.page {
+                layout.place_apply(apply, state.page == SettingsPage::Status);
                 binding_page = state.page;
                 bindings = preference_bindings()
                     .unwrap_or_default()
@@ -184,6 +185,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 if matches!(
                     state.page,
                     SettingsPage::Interface
+                        | SettingsPage::Status
                         | SettingsPage::Sound
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
@@ -258,6 +260,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         Err(_) => {
                             state.feedback = "Enter a keyboard delay from 0 to 1000 ms".into()
                         }
+                    }
+                } else if (241..=244).contains(&action) {
+                    if state.page == SettingsPage::Status
+                        && layout.reorder(action, &mut preferences)
+                    {
+                        state.apply(preferences);
                     }
                 } else if action == 103 {
                     if let Some(binding) = bindings.get(selected.max(0) as usize) {

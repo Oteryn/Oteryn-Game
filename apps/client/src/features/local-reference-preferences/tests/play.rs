@@ -8,6 +8,8 @@ mod contexts;
 mod hud_options;
 #[path = "interface.rs"]
 mod interface;
+#[path = "status_order.rs"]
+mod status_order;
 
 #[test]
 fn named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate()

@@ -44,7 +44,7 @@ pub async fn run_session<T: Stepper>(
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
-                        76 | 103 | 146 | 447 => outbox.properties_result(&command, &result),
+                        76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
                         170 => outbox.arena_result(&result),

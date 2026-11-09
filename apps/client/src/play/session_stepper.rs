@@ -22,6 +22,7 @@ pub(super) fn publish<T: Stepper>(
     outbox.achievement_notices_publish(session);
     outbox.guild_chat_publish(session);
     outbox.depot_publish(session);
+    outbox.item_forge_publish(session);
     outbox.stash_publish(session);
     if let Some(inventory) = session.inventory() {
         outbox.browse_field_inventory(inventory);

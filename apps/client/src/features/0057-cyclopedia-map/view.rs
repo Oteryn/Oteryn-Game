@@ -230,3 +230,7 @@ mod analytics_tests;
 #[cfg(any(windows, test))]
 #[path = "view/analytics.rs"]
 mod analytics;
+
+#[cfg(windows)]
+#[path = "view/atlas.rs"]
+pub(in crate::play) mod atlas;

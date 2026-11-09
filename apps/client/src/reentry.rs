@@ -45,6 +45,7 @@ pub struct Reentry {
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
     pending: Option<Receiver<Result<AdmittedSession, GameplayEntryError>>>,
+    training_completion: Option<Box<dyn Fn() -> bool + Send>>,
 }
 
 impl Reentry {
@@ -57,6 +58,7 @@ impl Reentry {
             waiting: None,
             last_wait_text: None,
             pending: None,
+            training_completion: None,
         }
     }
 
@@ -125,6 +127,9 @@ impl Reentry {
             return false;
         }
         token.cancel();
+        if let Some(config) = &self.client.native_login {
+            config.training_queue.clear();
+        }
         if let Some((_, queue)) = &mut self.waiting {
             queue.cancel();
         }
@@ -197,6 +202,15 @@ impl Reentry {
         self.waiting = None;
         self.last_wait_text = None;
         let result = result.and_then(|admitted| self.client.start_play(admitted));
+        self.training_completion = result
+            .as_ref()
+            .ok()
+            .map(|(_, link)| Box::new(link.training_completion()) as Box<dyn Fn() -> bool + Send>);
+        if result.is_err()
+            && let Some(config) = &self.client.native_login
+        {
+            config.training_queue.clear();
+        }
         self.state.finish(result.is_ok());
         Some(result)
     }
@@ -204,6 +218,18 @@ impl Reentry {
     pub fn leave_play(&mut self) {
         if self.state == EntryState::Playing {
             self.state = EntryState::Offline;
+            let confirmed = self
+                .training_completion
+                .take()
+                .is_some_and(|completed| completed());
+            if self
+                .client
+                .native_login
+                .as_ref()
+                .is_some_and(|config| config.training_queue.finish_current(confirmed))
+            {
+                self.request();
+            }
         }
     }
 
@@ -347,3 +373,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "features/0054-training/tests/reentry.rs"]
+mod training_batch_tests;
