@@ -62,6 +62,7 @@ pub mod threatened_dreams;
 pub mod timers;
 pub mod unnatural_selection;
 pub mod world_callbacks;
+mod world_requirement_key;
 pub mod wrath_sleeping_dragon;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -402,13 +403,11 @@ impl QuestStateCatalogue {
             {
                 return Err(E::InvalidEffect(transition.key));
             }
-            if transition.world_change.as_ref().is_some_and(|key| {
-                key.is_empty()
-                    || key.len() > 100
-                    || !key
-                        .bytes()
-                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
-            }) {
+            if transition
+                .world_change
+                .as_ref()
+                .is_some_and(|key| !world_requirement_key::valid(key))
+            {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition

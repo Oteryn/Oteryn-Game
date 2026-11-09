@@ -87,6 +87,8 @@ mod tests {
 
     #[test]
     fn imported_explore_fury_layer_approach_is_admitted_and_city_bound() -> Result<(), String> {
+        crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
         let callback = load()?
             .into_iter()
             .find(|c| c.key == "oteryn:quest-callback/m01b/fury-gates-mini-world-change/s1/entry")
