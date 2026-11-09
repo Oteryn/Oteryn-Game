@@ -1,9 +1,13 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::quest_log::{QuestLogQuery, request};
+use oteryn_client_ui::quest_log::{QuestLogQuery, QuestSort, request};
 use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
+    pub fn quest_list_options(&self, search: &str, sort: QuestSort) {
+        lock(&self.mailbox).quest.set_list_options(search, sort);
+    }
+
     /// Feature controls enter the same chronological session command channel as movement.
     pub fn quest_request(&self, query: &QuestLogQuery) {
         let mut mailbox = lock(&self.mailbox);

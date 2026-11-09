@@ -27,7 +27,7 @@ unsafe extern "system" fn proc(h: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRE
     unsafe {
         if msg == WM_COMMAND
             && (wp >> 16) & 0xffff == BN_CLICKED as usize
-            && matches!(wp & 0xffff, 101..=103)
+            && matches!(wp & 0xffff, 101..=103 | 106)
         {
             let actions = GetWindowLongPtrW(h, GWLP_USERDATA) as *mut Actions;
             if !actions.is_null() && (*actions).0.len() < 32 {
@@ -100,15 +100,16 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let add = ctl(h, "BUTTON", "", 101, [10, 65, 220, 28], 0);
         let remove = ctl(h, "BUTTON", "", 102, [240, 65, 220, 28], 0);
         let filter = ctl(h, "BUTTON", "", 103, [470, 65, 220, 28], 0);
+        let hide = ctl(h, "BUTTON", "", 106, [10, 100, 680, 28], 0);
         let out = ctl(
             h,
             "EDIT",
             "",
             105,
-            [10, 105, 680, 410],
+            [10, 140, 680, 375],
             WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
-        if [search, add, remove, filter, out]
+        if [search, add, remove, filter, hide, out]
             .iter()
             .any(|h| h.is_null())
         {
@@ -156,6 +157,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             TrackerFilter::Completed => TrackerFilter::All,
                         }
                     }
+                    106 => {
+                        m.quest.tracker.hide_completed_missions =
+                            !m.quest.tracker.hide_completed_missions
+                    }
                     _ => {}
                 }
             }
@@ -191,6 +196,15 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             SetWindowTextW(
                 filter,
                 wide(&format!("Filter: {:?}", p.tracker.filter)).as_ptr(),
+            );
+            SetWindowTextW(
+                hide,
+                wide(if p.tracker.hide_completed_missions {
+                    "Completed missions: hidden"
+                } else {
+                    "Completed missions: shown"
+                })
+                .as_ptr(),
             );
             let text = tracker_text(p);
             if held != text {

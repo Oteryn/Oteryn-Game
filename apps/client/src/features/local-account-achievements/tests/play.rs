@@ -197,3 +197,6 @@ fn account_browser_follows_real_page_commands_before_global_secret_filtering() -
     assert_eq!(rows[0].key, "oteryn:achievement/a64");
     Ok(())
 }
+
+#[path = "browser.rs"]
+mod browser;
