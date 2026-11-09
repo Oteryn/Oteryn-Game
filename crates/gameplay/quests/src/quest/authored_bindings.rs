@@ -4,6 +4,7 @@
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
 pub mod actor_admission;
 pub mod collection;
+pub mod door_use;
 pub(crate) mod embedded;
 mod imported_recipe;
 pub mod kills;
@@ -57,6 +58,9 @@ pub enum Trigger {
     },
     TerrainUse {
         usage: Box<terrain_use::TerrainUse>,
+    },
+    DoorUse {
+        usage: Box<door_use::DoorUse>,
     },
 }
 
@@ -202,6 +206,13 @@ impl Bindings {
                     }
                     continue;
                 }
+                if let Trigger::DoorUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if !transitions.insert(&usage.key) {
+                        return Err("authored door USE binding collision".into());
+                    }
+                    continue;
+                }
                 if let Trigger::TerrainUse { usage } = &stage.trigger {
                     usage.validate(quest)?;
                     if !transitions.insert(&usage.key) {
@@ -224,7 +235,10 @@ impl Bindings {
                     continue;
                 }
                 let (key, owner, storage) = match &stage.trigger {
-                    Trigger::Kill { .. } | Trigger::Collect { .. } | Trigger::TerrainUse { .. } => {
+                    Trigger::Kill { .. }
+                    | Trigger::Collect { .. }
+                    | Trigger::TerrainUse { .. }
+                    | Trigger::DoorUse { .. } => {
                         continue;
                     }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
@@ -410,6 +424,7 @@ impl Stage {
             },
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
             Trigger::TerrainUse { usage } => usage.transition(quest, self.completes)?,
+            Trigger::DoorUse { usage } => usage.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
         Ok(transition)
@@ -449,3 +464,6 @@ impl Trigger {
 
 #[cfg(test)]
 mod terrain_use_tests;
+
+#[cfg(test)]
+mod door_use_tests;

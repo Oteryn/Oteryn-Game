@@ -73,10 +73,54 @@ fn m01c_native_prerequisite_uses_its_registered_completion_owner_postgres() -> f
             let persisted: i64=sqlx::query_scalar("SELECT count(*) FROM game_character_rotten_blood WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(persisted,0,"query fixtures must never commit unearned completion");
+            reject_unwitnessed_native_door(&h).await?;
             h.cleanup().await?;
             assert!(started.elapsed().as_secs_f64()>0.01);
             eprintln!("M01C_NATIVE_PREREQUISITE POSTGRES_CASE_COMPLETED duration_ms={} missing_refused incomplete_refused native_completed_accepted mixed_both_required stale_generic_shadow_refused no_foreign_writes rolled_back",started.elapsed().as_millis());
             Ok::<(),Box<dyn std::error::Error>>(())
         }).map_err(fixture::debug)
     })?.join().map_err(|_|"native prerequisite PG thread")?.map_err(Into::into)
+}
+
+async fn reject_unwitnessed_native_door(h: &fixture::Harness) -> fixture::TestResult {
+    use durability::character_progression::CharacterProgressionError;
+    use durability::quest_state::{QuestCause, QuestTransitionRequest};
+    let bindings = Bindings::parse(include_bytes!(
+        "../../quests/src/quest/authored_bindings/fixtures/door_use.json"
+    ))?;
+    let catalogue =
+        bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?;
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let fence = fixture::fence(1)?;
+    let command = foundation::CommandRef::new(
+        fence.game_session_id,
+        foundation::CommandId::new(9910).map_err(fixture::debug)?,
+    );
+    let outcome = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            fence,
+            QuestTransitionRequest {
+                transition_key: "oteryn:quest-door-use/m01c-fixture".into(),
+                cause: QuestCause::Command(command),
+            },
+            std::sync::Arc::new(catalogue),
+        )
+        .await;
+    assert!(
+        matches!(outcome, Err(CharacterProgressionError::InvalidInput)),
+        "a caller-supplied command is not a captured native opening: {outcome:?}"
+    );
+    let tracks: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-door-fixture'")
+        .bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(tracks, 0);
+    eprintln!("M01C_DOOR_UNWITNESSED plain_command_refused no_progress_written");
+    Ok(())
 }

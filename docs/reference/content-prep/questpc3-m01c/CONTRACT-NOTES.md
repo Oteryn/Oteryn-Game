@@ -40,3 +40,12 @@ route phase and grants no outfit; Rotten Blood's existing victory owner keeps
 its base-outfit grant. The admission PG component reads the production binding
 and probes its level boundary, premium declaration and prerequisite matrix.
 It does not claim a live level-250 boss victory or full quest completion.
+
+Door USE bindings name the native bundle placement key, including its signed
+floor byte; they do not reuse terrain USE's Tibia-depth encoding. Candidates
+require the exact key number, full 40-byte target shape and active owned
+progress guards. Root refuses the reserved door-use namespace on its plain
+transition API: a command alone cannot witness a volatile door opening. The
+PG regression first committed without that guard, then refused with no track
+write after the guard. No production door binding is enabled by this slice;
+the captured-opening consumer remains to be wired.

@@ -400,6 +400,13 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
+        // A caller-supplied command is not evidence of a native key-door opening.
+        if request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
