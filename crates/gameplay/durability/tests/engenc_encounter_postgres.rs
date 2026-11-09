@@ -642,3 +642,107 @@ async fn exercise_native_hit(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!((count, phase), (1, 5));
     Ok(())
 }
+
+#[test]
+fn engenc_hit_revision_slot_uses_current_cursor_and_replays_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h =
+                        fixture::Harness::create(admin, "engenc_hit_revision_slot", true).await?;
+                    let result = exercise_hit_revision_slot(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_HIT_REVISION_SLOT_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC revision slot PG worker panicked")?
+        .map_err(Into::into)
+}
+
+async fn exercise_hit_revision_slot(h: &fixture::Harness) -> fixture::TestResult {
+    use durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use durability::quest_state::native_hits::NativeQuestHit;
+    let catalogue = hit_catalogue()?;
+    let hit = NativeQuestHit::from_committed(
+        "oteryn:quest-transition/native-hits/training".into(),
+        "oteryn:creature.rat".into(),
+        "oteryn:item.spear".into(),
+        None,
+        1,
+        catalogue.definition_hash(QUEST).ok_or("hash")?,
+        native_hit_witness(1)?,
+    );
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let mismatched = fixture::fence(99)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(mismatched.character_id).await;
+    let committed = slot
+        .commit_native_quest_hit(
+            &h.root,
+            &authority,
+            &h.node,
+            mismatched,
+            &hit,
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    assert_eq!(
+        slot.cursor(&h.root, &authority)
+            .await
+            .map_err(fixture::debug)?
+            .get(),
+        2
+    );
+    let replay = slot
+        .commit_native_quest_hit(
+            &h.root,
+            &authority,
+            &h.node,
+            fixture::fence(1)?,
+            &hit,
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(
+        replay,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    assert_eq!(
+        slot.cursor(&h.root, &authority)
+            .await
+            .map_err(fixture::debug)?
+            .get(),
+        2
+    );
+    assert_eq!(h.root_revision().await?, "2");
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='native_hit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 1);
+    Ok(())
+}
