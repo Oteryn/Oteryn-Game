@@ -54,6 +54,7 @@ mod windows {
     const REMOVE: usize = 104;
     const USE: usize = 105;
     const SUBMIT: usize = 202;
+    const SMART: usize = 203;
     #[derive(Default)]
     struct Actions(Vec<usize>);
     unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -172,6 +173,14 @@ mod windows {
                 [370, 280, 170, 30],
                 WS_TABSTOP,
             );
+            let smart = control(
+                hwnd,
+                "BUTTON",
+                "Smart equip (applies at next login)",
+                SMART,
+                [10, 320, 550, 28],
+                BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+            );
             let status = control(
                 hwnd,
                 "EDIT",
@@ -198,6 +207,7 @@ mod windows {
             );
             if [
                 input,
+                smart,
                 submit,
                 keys,
                 items,
@@ -235,6 +245,10 @@ mod windows {
                         continue;
                     }
                     match action {
+                        SMART => {
+                            panel.smart = SendMessageW(smart, BM_GETCHECK, 0, 0) == 1;
+                            super::super::edited(panel);
+                        }
                         SUBMIT => {
                             let mut text = [0_u16; 32];
                             let len = GetWindowTextW(input, text.as_mut_ptr(), 32);
@@ -254,12 +268,15 @@ mod windows {
                                 usize::try_from(SendMessageW(items, LB_GETCURSEL, 0, 0))
                                 && let Some(&definition) =
                                     desired.as_ref().and_then(|shown| shown.items.get(row))
+                                && assign(panel, slot, definition)
                             {
-                                assign(panel, slot, definition);
+                                super::super::edited(panel);
                             }
                         }
                         REMOVE => {
-                            assign(panel, slot, 0);
+                            if assign(panel, slot, 0) {
+                                super::super::edited(panel);
+                            }
                         }
                         USE => {
                             if let Some(definition) = panel.bindings[slot] {
@@ -313,7 +330,11 @@ mod windows {
                         usize::try_from(item_row).unwrap_or(0),
                         0,
                     );
-                    SetWindowTextW(status, wide(&panel_text(panel)).as_ptr());
+                    SendMessageW(smart, BM_SETCHECK, usize::from(panel.smart), 0);
+                    SetWindowTextW(status, wide(&format!(
+                        "{}\r\nSession source selection: {}.\r\nSmart equip searches carried containers and prefers a started copy. Mode changes apply on your next login.",
+                        panel_text(panel), if panel.smart_active { "smart" } else { "direct inventory" }
+                    )).as_ptr());
                     desired = Some(panel.clone());
                 }
                 drop(mailbox);

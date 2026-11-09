@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Query,
+    PvpStatus,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
@@ -13,6 +14,8 @@ pub struct Panel {
     pub summary: String,
     pub unjustified: Option<UnjustifiedSnapshot>,
     pub skull_timer: Option<SkullTimer>,
+    pub status_received_at: Option<std::time::Instant>,
+    pub black_limits_milli: Option<[u64; 3]>,
     pub icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
 }
 impl Panel {
@@ -48,6 +51,9 @@ impl SkullTimer {
             .map(|remaining| remaining.saturating_sub(elapsed_ms).div_ceil(1000))
     }
     pub fn text(self) -> String {
+        self.text_at(0)
+    }
+    pub fn text_at(self, elapsed_ms: u64) -> String {
         let name = match self.skull {
             0 => tr!("No"),
             1 => tr!("Yellow"),
@@ -58,7 +64,7 @@ impl SkullTimer {
             6 => tr!("Orange"),
             _ => tr!("Unknown"),
         };
-        match self.remaining_seconds(0) {
+        match self.remaining_seconds(elapsed_ms) {
             Some(seconds) => lfmt!(
                 "{name} skull: {seconds}s at observation",
                 name = name,

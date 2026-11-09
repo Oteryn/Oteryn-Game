@@ -20,7 +20,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPAR
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 4);
             return 0;
         }
-        if message == WM_COMMAND && (1..=5).contains(&(w & 0xffff)) {
+        if message == WM_COMMAND && (1..=6).contains(&(w & 0xffff)) {
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
             return 0;
         }
@@ -85,7 +85,7 @@ pub(super) fn select(
                     "No characters on this account. Create a character in your browser, then refresh."
                 )
             } else {
-                tr!("Choose a character (name — world — availability) and optional channel.")
+                "Choose a character and channel. Ctrl/Shift selects several for offline training; Play uses the focused character."
             },
             0,
             [15, 15, 650, 40],
@@ -97,7 +97,7 @@ pub(super) fn select(
             "",
             10,
             [15, 60, 650, 180],
-            WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32,
+            WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32 | LBS_EXTENDEDSEL as u32,
         );
         let channel_label = control(hwnd, "STATIC", tr!("Channel"), 0, [15, 250, 80, 25], 0);
         let channels = control(
@@ -151,7 +151,7 @@ pub(super) fn select(
         let train = control(
             hwnd,
             "BUTTON",
-            tr!("Train selected character"),
+            "Train selected characters",
             6,
             [310, 345, 280, 32],
             WS_TABSTOP,
@@ -191,7 +191,7 @@ pub(super) fn select(
             .iter()
             .position(|row| row.character.character_id == preselect)
         {
-            SendMessageW(list, LB_SETCURSEL, index, 0);
+            SendMessageW(list, LB_SETSEL, 1, index as LPARAM);
         }
         let mut previous = -2;
         let mut message: MSG = std::mem::zeroed();
@@ -205,7 +205,7 @@ pub(super) fn select(
                     DispatchMessageW(&message);
                 }
             }
-            let index = SendMessageW(list, LB_GETCURSEL, 0, 0);
+            let index = SendMessageW(list, LB_GETCARETINDEX, 0, 0);
             let row = usize::try_from(index)
                 .ok()
                 .and_then(|index| rows.get(index));
@@ -231,12 +231,28 @@ pub(super) fn select(
             );
             windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
                 train,
-                i32::from(row.is_some_and(|row| row.available)),
+                i32::from(rows.iter().enumerate().any(|(index, row)| {
+                    row.available && SendMessageW(list, LB_GETSEL, index, 0) > 0
+                })),
             );
             let command = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             match command {
-                1 | 6 => {
+                6 => {
+                    let characters: Vec<_> = rows
+                        .iter()
+                        .enumerate()
+                        .filter(|(index, _)| SendMessageW(list, LB_GETSEL, *index, 0) > 0)
+                        .map(|(_, row)| super::TrainingSelection {
+                            character_id: row.character.character_id.clone(),
+                            channel_id: None,
+                        })
+                        .collect();
+                    if !characters.is_empty() {
+                        break SelectionAction::TrainMany { characters };
+                    }
+                }
+                1 => {
                     if let Some(row) = row.filter(|row| row.available) {
                         let selected = SendMessageW(channels, CB_GETCURSEL, 0, 0);
                         let channel_id = usize::try_from(selected)
@@ -245,16 +261,9 @@ pub(super) fn select(
                             .and_then(|index| row.channels.get(index))
                             .map(|channel| channel.0.clone());
                         let character_id = row.character.character_id.clone();
-                        break if command == 6 {
-                            SelectionAction::Train {
-                                character_id,
-                                channel_id,
-                            }
-                        } else {
-                            SelectionAction::Play {
-                                character_id,
-                                channel_id,
-                            }
+                        break SelectionAction::Play {
+                            character_id,
+                            channel_id,
                         };
                     }
                 }

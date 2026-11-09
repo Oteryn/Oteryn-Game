@@ -1,7 +1,7 @@
 //! Client presentation of server-owned creature lights. No gameplay timers live here.
 use crate::{QUAD_INSTANCE_BYTES, QuadInstance};
 
-pub const LIT_INSTANCE_BYTES: usize = QUAD_INSTANCE_BYTES + 12;
+pub const LIT_INSTANCE_BYTES: usize = QUAD_INSTANCE_BYTES + 16;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PointLight {
@@ -12,6 +12,8 @@ pub struct PointLight {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SceneLighting {
+    /// Per-frame overlay ranges and their opacity percentage; later ranges take precedence.
+    pub opacity: Vec<(std::ops::Range<usize>, u8)>,
     pub ambient: [u8; 3],
     pub sources: Vec<PointLight>,
     /// Emissive UI palette, in atlas UV coordinates.
@@ -23,6 +25,7 @@ pub struct SceneLighting {
 impl Default for SceneLighting {
     fn default() -> Self {
         Self {
+            opacity: Vec::new(),
             ambient: [255; 3],
             sources: Vec::new(),
             palette: None,
@@ -39,6 +42,24 @@ pub fn light_color(index: u8) -> [u8; 3] {
 }
 
 impl SceneLighting {
+    pub fn set_opacity(
+        &mut self,
+        range: std::ops::Range<usize>,
+        percentage: u8,
+    ) -> Result<(), crate::BatchError> {
+        if range.start > range.end || range.end > crate::MAX_BATCH_QUADS || percentage > 100 {
+            return Err(crate::BatchError::InvalidView);
+        }
+        if self.opacity.len() == crate::MAX_BATCH_QUADS {
+            return Err(crate::BatchError::CapacityExceeded {
+                max: crate::MAX_BATCH_QUADS,
+            });
+        }
+        if !range.is_empty() {
+            self.opacity.push((range, percentage));
+        }
+        Ok(())
+    }
     /// Maximum channel contribution, with a linear radial falloff in screen pixels.
     /// Sampling once per sprite keeps the native tile presentation deterministic.
     #[must_use]
@@ -57,10 +78,20 @@ impl SceneLighting {
         rgb
     }
 
-    /// GPU upload layout extends the stable quad layout with an RGB multiplier.
+    /// GPU upload extends the stable quad layout with linear RGB and overlay opacity.
     /// The shader samples an sRGB texture in linear space, so convert light here.
     #[must_use]
     pub fn instance_bytes(&self, instances: &[QuadInstance]) -> Vec<u8> {
+        self.upload_bytes(instances, true)
+    }
+
+    /// Terrain uses the same light samples without sprite overlay opacity ranges.
+    #[must_use]
+    pub fn opaque_instance_bytes(&self, instances: &[QuadInstance]) -> Vec<u8> {
+        self.upload_bytes(instances, false)
+    }
+
+    fn upload_bytes(&self, instances: &[QuadInstance], overlays: bool) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(instances.len() * LIT_INSTANCE_BYTES);
         for (index, quad) in instances.iter().enumerate() {
             bytes.extend_from_slice(&quad.to_bytes());
@@ -90,6 +121,15 @@ impl SceneLighting {
                 };
                 bytes.extend_from_slice(&linear.to_ne_bytes());
             }
+            let alpha = self
+                .opacity
+                .iter()
+                .rev()
+                .find(|(range, _)| overlays && range.contains(&index))
+                .map_or(1.0, |(_, percentage)| {
+                    f32::from((*percentage).min(100)) / 100.0
+                });
+            bytes.extend_from_slice(&alpha.to_ne_bytes());
         }
         bytes
     }
@@ -99,8 +139,39 @@ impl SceneLighting {
 mod tests {
     use super::*;
     #[test]
+    fn overlay_alpha_upload_preserves_terrain_opacity() -> Result<(), crate::BatchError> {
+        let mut lighting = SceneLighting::default();
+        lighting.set_opacity(0..1, 25)?;
+        let quad = QuadInstance {
+            position: [0.0; 2],
+            size: [1.0; 2],
+            uv: [0.0; 4],
+        };
+        let sprites = lighting.instance_bytes(&[quad, quad]);
+        let terrain = lighting.opaque_instance_bytes(&[quad, quad]);
+        assert_eq!(
+            &sprites[LIT_INSTANCE_BYTES - 4..LIT_INSTANCE_BYTES],
+            &0.25_f32.to_ne_bytes()
+        );
+        assert_eq!(
+            &sprites[2 * LIT_INSTANCE_BYTES - 4..],
+            &1.0_f32.to_ne_bytes()
+        );
+        for instance in terrain.as_chunks::<LIT_INSTANCE_BYTES>().0 {
+            assert_eq!(&instance[LIT_INSTANCE_BYTES - 4..], &1.0_f32.to_ne_bytes());
+        }
+        assert!(
+            lighting
+                .set_opacity(std::ops::Range { start: 2, end: 1 }, 50)
+                .is_err()
+        );
+        assert!(lighting.set_opacity(0..1, 101).is_err());
+        Ok(())
+    }
+    #[test]
     fn clxa_local_light_falls_off_and_leaves_ui_emissive() {
         let lighting = SceneLighting {
+            opacity: Vec::new(),
             ambient: [0; 3],
             sources: vec![PointLight {
                 position: [16.0; 2],

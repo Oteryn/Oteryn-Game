@@ -72,3 +72,24 @@ impl PlayLink {
         offer_request(&self.mailbox, &self.commands, quote, true);
     }
 }
+
+impl PlayLink {
+    pub fn npc_shop_options(&self, options: oteryn_client_ui::npc_shop::ShopOptions) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.npc_shop.pending || mailbox.npc_shop.live.pending {
+            return false;
+        }
+        mailbox.npc_shop.live.options = options;
+        true
+    }
+    pub fn npc_shop_open_backpack(&self) -> bool {
+        let handle = lock(&self.mailbox)
+            .npc_shop
+            .live
+            .inventory
+            .as_ref()
+            .and_then(|inventory| inventory.main_backpack)
+            .map(|item| item.handle);
+        handle.is_some_and(|handle| self.container_open(handle))
+    }
+}

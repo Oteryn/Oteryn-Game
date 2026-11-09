@@ -1,9 +1,24 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::account_achievements::Intent;
+use oteryn_client_ui::account_achievements::{AchievementFilter, AchievementSort, Intent};
 use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
+    pub fn achievements_browse(
+        &self,
+        search: &str,
+        filter: AchievementFilter,
+        sort: AchievementSort,
+    ) {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.achievements.selected {
+            mailbox
+                .achievements
+                .catalog
+                .set_options(search, filter, sort);
+        }
+    }
+
     pub fn achievements_request(&self, intent: Intent) {
         let mut mailbox = lock(&self.mailbox);
         if let Some(payload) =

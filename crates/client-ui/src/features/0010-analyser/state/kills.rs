@@ -147,11 +147,12 @@ pub fn text(panel: &Panel) -> String {
             for row in rows {
                 let _ = write!(
                     text,
-                    "{}: {}/{} · {}\r\n",
+                    "{}: {}/{} · {} · {} remaining\r\n",
                     row.label,
                     row.current,
                     row.required,
-                    if row.complete { "complete" } else { "active" }
+                    if row.complete { "complete" } else { "active" },
+                    row.required.saturating_sub(row.current)
                 );
             }
         }

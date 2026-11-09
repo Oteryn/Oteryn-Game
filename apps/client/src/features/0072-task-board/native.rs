@@ -7,6 +7,9 @@ use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
+#[path = "native/tree.rs"]
+mod tree;
+
 const REFRESH: usize = 102;
 const START: usize = 103;
 const DELIVER: usize = 104;
@@ -99,9 +102,15 @@ fn run(
             "EDIT",
             "",
             101,
-            [10, 10, 780, 380],
+            [10, 10, 470, 380],
             WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
+        let upgrades = tree::create(hwnd);
+        if upgrades.is_null() {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        }
         control(hwnd, "STATIC", tr!("Difficulty"), 0, [10, 400, 100, 24], 0);
         let difficulty = control(
             hwnd,
@@ -118,7 +127,7 @@ fn run(
         control(
             hwnd,
             "STATIC",
-            tr!("Row / list slot / path (1-based)"),
+            "Task row / list slot (1-based)",
             0,
             [270, 400, 260, 24],
             0,
@@ -161,8 +170,8 @@ fn run(
             (UNWANTED, tr!("Set unwanted")),
             (UNLOCK, tr!("Unlock list slot")),
             (BUY, tr!("Buy shop row")),
-            (BUY_TALISMAN, tr!("Buy Bounty Talisman")),
-            (UPGRADE_TALISMAN, tr!("Upgrade talisman path")),
+            (BUY_TALISMAN, "Buy talisman (5000 gold)"),
+            (UPGRADE_TALISMAN, "Upgrade selected path"),
         ]
         .into_iter()
         .enumerate()
@@ -247,17 +256,22 @@ fn run(
                         .map(FullIntent::BuyShop),
                     _ => None,
                 };
-                let command = if let Some(intent) = intent {
-                    full_request(&mut mailbox.task_board, intent)
-                } else {
+                if matches!(id, BUY_TALISMAN | UPGRADE_TALISMAN) {
                     use oteryn_client_ui::task_board::talisman;
-                    let intent = match id {
-                        BUY_TALISMAN => Some(talisman::Intent::Buy),
-                        UPGRADE_TALISMAN => slot.map(talisman::Intent::Upgrade),
-                        _ => None,
+                    let chosen = if id == BUY_TALISMAN {
+                        Some(talisman::Intent::Buy)
+                    } else {
+                        tree::selected_path(upgrades).map(talisman::Intent::Upgrade)
                     };
-                    intent.and_then(|intent| talisman::request(&mut mailbox.task_board, intent))
-                };
+                    if let Some(chosen) = chosen {
+                        super::super::input::enqueue_talisman(&mut mailbox, &commands, chosen);
+                    } else {
+                        mailbox.task_board.feedback = Some("Select a talisman path in the tree");
+                    }
+                    continue;
+                }
+                let command =
+                    intent.and_then(|intent| full_request(&mut mailbox.task_board, intent));
                 if let Some(command) = command
                     && commands
                         .send(crate::combat_input::PlayCommand::Feature(command))
@@ -291,25 +305,8 @@ fn run(
             }
             let rendered = panel_text(&mailbox.task_board).replace('\n', "\r\n");
             if held.as_ref() != Some(&rendered) {
-                let previous = usize::try_from(SendMessageW(shop, CB_GETCURSEL, 0, 0))
-                    .ok()
-                    .and_then(|row| shop_ids.get(row).copied());
-                SendMessageW(shop, CB_RESETCONTENT, 0, 0);
-                shop_ids.clear();
-                if let Some(reply) = &mailbox.task_board.weekly {
-                    for offer in &reply.shop {
-                        let label =
-                            oteryn_client_ui::task_board::shop_offer_text(offer, reply.points)
-                                .replace('\n', " — ");
-                        SendMessageW(shop, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
-                        shop_ids.push(offer.index);
-                    }
-                }
-                if let Some(row) =
-                    previous.and_then(|id| shop_ids.iter().position(|value| *value == id))
-                {
-                    SendMessageW(shop, CB_SETCURSEL, row, 0);
-                }
+                tree::refresh_shop(shop, &mailbox.task_board, &mut shop_ids);
+                tree::refresh(upgrades, &mailbox.task_board);
                 SetWindowTextW(text, wide(&rendered).as_ptr());
                 held = Some(rendered);
             }

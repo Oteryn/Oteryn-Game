@@ -8,6 +8,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub atlas: super::atlas::Atlas,
     pub section: Section,
     pub map: Option<oteryn_client_runtime::cyclopedia_map::MapResult>,
     pub floor: i8,
@@ -109,5 +110,13 @@ impl Panel {
                 }
             });
         self.floor = floors[index];
+    }
+}
+
+impl Panel {
+    pub fn invalidate_atlas(&mut self) {
+        self.atlas = Default::default();
+        self.map = None;
+        self.summary.clear();
     }
 }

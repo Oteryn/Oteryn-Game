@@ -92,3 +92,57 @@ pub fn save_bmp(path: &Path, width: u32, height: u32, bgra: &[u8], crop: Rect) -
     }
     file.sync_all()
 }
+
+/// Server-owned observations sampled by the desktop shell. The first sample is a baseline.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Facts {
+    pub level: Option<u32>,
+    pub deaths: u64,
+    pub achievement: Option<u32>,
+}
+#[derive(Debug, Default)]
+pub struct CaptureController {
+    pub policy: CapturePolicy,
+    previous: Option<Facts>,
+    pending: bool,
+}
+impl CaptureController {
+    pub fn cancel(&mut self) {
+        self.pending = false;
+    }
+    pub fn manual(&mut self) {
+        self.pending = true;
+    }
+    pub fn pending(&self) -> bool {
+        self.pending
+    }
+    pub fn observe(&mut self, facts: Facts) {
+        if let Some(old) = self.previous {
+            self.pending |=
+                self.policy.level && old.level.zip(facts.level).is_some_and(|(a, b)| b > a);
+            self.pending |= self.policy.death && facts.deaths > old.deaths;
+            self.pending |= self.policy.achievement
+                && old
+                    .achievement
+                    .zip(facts.achievement)
+                    .is_some_and(|(a, b)| b > a);
+        }
+        self.previous = Some(facts);
+    }
+    pub fn save(
+        &mut self,
+        path: &Path,
+        width: u32,
+        height: u32,
+        bgra: &[u8],
+        crop: Rect,
+    ) -> io::Result<()> {
+        save_bmp(path, width, height, bgra, crop)?;
+        self.pending = false;
+        Ok(())
+    }
+    pub fn reset_session(&mut self) {
+        self.previous = None;
+        self.pending = false;
+    }
+}

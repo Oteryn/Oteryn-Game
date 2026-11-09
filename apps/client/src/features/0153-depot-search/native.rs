@@ -152,6 +152,6 @@ pub(in crate::play) fn activate_shared(
 
 #[cfg(windows)]
 pub(in crate::play) use windows::open_window;
-#[path = "native_localized_9.rs"]
 #[cfg(windows)]
+#[path = "native_windows.rs"]
 mod windows;

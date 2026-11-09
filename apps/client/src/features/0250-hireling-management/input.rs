@@ -1,3 +1,6 @@
+#[cfg(any(windows, test))]
+#[path = "input/configuration.rs"]
+pub(in crate::play) mod configuration;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::hireling_management::{Intent, request};

@@ -1,6 +1,8 @@
 //! Imbuement shrine panel state and command construction.
 #[path = "../0447-imbuement-details/protocol.rs"]
 pub mod details;
+#[path = "state/equipment_tracker.rs"]
+pub mod equipment_tracker;
 mod input;
 mod view;
 pub use input::{open_key, tracker_key};
@@ -24,6 +26,7 @@ pub struct ImbuePanel {
     pub selected: bool,
     pub open: bool,
     pub tracker_open: bool,
+    pub equipment: equipment_tracker::EquipmentTracker,
     pub tracker_minutes: String,
     pub pending: bool,
     pub refresh_required: bool,

@@ -13,6 +13,7 @@ pub const SKILL_LABELS: [&str; 8] = [
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SkillProgressPanel {
     pub hidden_skills: u8,
+    pub order: Vec<u8>,
     pub selected: bool,
     pub complete_selected: bool,
     pub complete: Option<oteryn_client_runtime::skill_display::SkillDisplay>,
@@ -23,22 +24,30 @@ pub struct SkillProgressPanel {
 }
 
 impl SkillProgressPanel {
+    pub fn ordered_families(&self) -> Vec<usize> {
+        let mut families: Vec<usize> = (0..8).collect();
+        families.sort_by_key(|family| {
+            self.order
+                .iter()
+                .position(|id| usize::from(*id) == *family)
+                .unwrap_or(self.order.len() + family)
+        });
+        families
+    }
     pub fn toggle_skill(&mut self, index: usize) {
-        if index < 8 {
-            self.hidden_skills ^= 1 << index;
+        if let Some(family) = self.ordered_families().get(index) {
+            self.hidden_skills ^= 1 << family;
         }
     }
     #[must_use]
     pub fn gauges(&self) -> Vec<(&'static str, u16, bool)> {
         self.snapshot.map_or_else(Vec::new, |snapshot| {
-            SKILL_LABELS
+            self.ordered_families()
                 .into_iter()
-                .zip(snapshot.skills)
-                .enumerate()
-                .map(|(index, (label, skill))| {
+                .map(|index| {
                     (
-                        crate::localization::tr(label),
-                        skill.percent.min(10000),
+                        crate::localization::tr(SKILL_LABELS[index]),
+                        snapshot.skills[index].percent.min(10000),
                         self.hidden_skills & (1 << index) == 0,
                     )
                 })

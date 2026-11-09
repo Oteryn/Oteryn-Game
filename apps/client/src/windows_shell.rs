@@ -1,10 +1,11 @@
+mod capture;
+#[path = "features/local-reference-preferences/frame_native.rs"]
+mod frame_native;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
 #[path = "features/local-native-login/shell.rs"]
 mod native_login_shell;
-#[path = "features/local-reference-preferences/shell_redraw.rs"]
-mod redraw;
 #[path = "features/local-reference-preferences/native.rs"]
 mod settings;
 
@@ -64,6 +65,8 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    frame_timing: frame_native::FrameTiming,
+    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -104,6 +107,8 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            frame_timing: frame_native::FrameTiming::default(),
+            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -159,6 +164,10 @@ impl Application {
     }
 
     fn leave_play(&mut self, message: &str) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.cancel_capture();
+        }
+        self.captures = Default::default();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {
@@ -201,8 +210,8 @@ const fn redraw_eligible(phase: Option<SurfacePhase>) -> bool {
     matches!(phase, Some(SurfacePhase::Configured))
 }
 
-#[path = "windows_shell_localized_2.rs"]
-mod windows_shell_localized_2;
+#[path = "windows_shell/application_handler.rs"]
+mod application_handler;
 
 pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
     if let Some(path) = oteryn_client::play::PreferenceStore::path()

@@ -50,6 +50,9 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    if super::input::catalogue::apply(panel, command, result) {
+        return;
+    }
     if !panel.pending || panel.pending_kind != command.kind {
         return;
     }

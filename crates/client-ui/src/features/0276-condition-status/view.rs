@@ -1,6 +1,6 @@
 use super::ConditionStatusPanel;
 /// The icon catalogue is closed and shares its identities with the authoritative projection.
-fn icon_label(icon: u8) -> (&'static str, &'static str) {
+pub fn icon_label(icon: u8) -> (&'static str, &'static str) {
     match icon {
         1 => ("☠", tr!("Poison")),
         2 => ("♨", tr!("Burning")),
@@ -42,15 +42,28 @@ pub fn panel_text(panel: &ConditionStatusPanel) -> String {
     let Some(status) = &panel.snapshot else {
         return tr!("Loading conditions…").into();
     };
-    status_text(status)
+    ordered_status_text(status, &panel.order)
 }
 /// Render an already decoded observation without duplicating the icon catalogue.
 pub fn status_text(status: &super::ConditionStatus) -> String {
+    ordered_status_text(status, &[])
+}
+
+fn ordered_status_text(status: &super::ConditionStatus, order: &[u8]) -> String {
     if status.conditions.is_empty() {
         return tr!("No active conditions").into();
     }
     let mut text = String::new();
-    for condition in &status.conditions {
+    let mut conditions: Vec<_> = status.conditions.iter().collect();
+    if !order.is_empty() {
+        conditions.sort_by_key(|condition| {
+            order
+                .iter()
+                .position(|id| *id == condition.icon)
+                .unwrap_or(order.len() + usize::from(condition.icon))
+        });
+    }
+    for condition in conditions {
         let (icon, label) = icon_label(condition.icon);
         let duration = if condition.remaining_ms == -1 {
             tr!("Permanent").into()

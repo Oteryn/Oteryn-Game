@@ -14,6 +14,7 @@ pub struct QuestTracker {
     pub auto_add: bool,
     pub auto_remove: bool,
     pub filter: TrackerFilter,
+    pub hide_completed_missions: bool,
     pub search: String,
     seen: Option<BTreeSet<u32>>,
     added: BTreeSet<u32>,

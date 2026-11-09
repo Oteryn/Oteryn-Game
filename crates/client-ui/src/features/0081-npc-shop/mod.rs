@@ -130,7 +130,7 @@ pub fn buy_request(
 mod live_tests;
 
 mod state;
-pub use state::{LiveShop, Quote};
+pub use state::{LiveShop, Quote, ShopOptions};
 
 mod input;
 pub use input::parse_amount;

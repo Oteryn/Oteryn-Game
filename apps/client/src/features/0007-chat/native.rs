@@ -92,17 +92,12 @@ pub(in crate::play) fn open_shared(
     let commands = commands.clone();
     if std::thread::Builder::new()
         .name("local-chat-panel".into())
-        .spawn(move || run(weak, commands))
+        .spawn(move || dialog::run(weak, commands))
         .is_err()
     {
         close(&rollback);
     }
 }
-
-#[path = "native_localized_18.rs"]
-mod native_localized_18;
-
-use native_localized_18::run;
 
 fn close(weak: &WeakMailbox) {
     if let Some(mailbox) = weak.upgrade() {
@@ -144,3 +139,6 @@ unsafe fn read_text(hwnd: HWND) -> String {
         String::from_utf16_lossy(&value[..usize::try_from(read).unwrap_or(0)])
     }
 }
+
+#[path = "chat_dialog.rs"]
+mod dialog;

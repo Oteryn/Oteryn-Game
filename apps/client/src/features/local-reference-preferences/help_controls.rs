@@ -91,7 +91,7 @@ impl HelpControls {
             261 => Report::Player,
             _ => return false,
         };
-        state.request_help_report(report);
+        state.request_typed_help_report(report);
         true
     }
 }

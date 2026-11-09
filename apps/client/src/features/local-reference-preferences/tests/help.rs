@@ -14,12 +14,12 @@ fn help_navigation_opens_reviewed_report_through_live_caller()
     }
     assert!(state.help_text(Topic::Faq).contains("server"));
     let (link, mut commands, _) = play_channel();
-    state.request_help_report(Report::Bug);
-    assert!(!state.open_help_report(&link));
+    state.request_typed_help_report(Report::Bug);
+    assert!(!state.open_typed_help_report(&link));
     assert!(!link.player_report_panel().bug.open);
     lock(&link.mailbox).properties.player_report.selected = true;
-    state.request_help_report(Report::Bug);
-    assert!(state.open_help_report(&link));
+    state.request_typed_help_report(Report::Bug);
+    assert!(state.open_typed_help_report(&link));
     assert!(link.player_report_panel().bug.open);
     lock(&link.mailbox).properties.player_report.bug.fields = [
         "100,200,0".into(),
@@ -33,8 +33,8 @@ fn help_navigation_opens_reviewed_report_through_live_caller()
     assert!(
         matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.capability == 76)
     );
-    state.request_help_report(Report::Player);
-    assert!(state.open_help_report(&link));
+    state.request_typed_help_report(Report::Player);
+    assert!(state.open_typed_help_report(&link));
     assert!(link.player_report_panel().open);
     Ok(())
 }

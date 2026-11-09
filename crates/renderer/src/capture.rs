@@ -1,87 +1,46 @@
-//! Offscreen game capture uses the live scene pipeline and atlas, without native UI windows.
-use super::*;
+//! Explicit readback of the client's rendered surface, never the desktop.
+use crate::RendererError;
 
-impl<T> WindowsRenderer<T>
-where
-    T: Clone + Into<wgpu::SurfaceTarget<'static>>,
-{
-    pub fn capture_batches(
-        &mut self,
-        tiles: &TileBatch,
-        sprites: &SpriteBatch,
-    ) -> Result<(u32, u32, Vec<u8>), RendererError> {
-        self.prepare_scene(Some(FrameBatches { tiles, sprites }))?;
-        let config = self
-            .configuration
-            .as_ref()
-            .ok_or(RendererError::Validation)?;
-        let (width, height, format) = (config.width, config.height, config.format);
-        if width == 0 || height == 0 || width > 4096 || height > 4096 {
+#[derive(Debug)]
+pub struct CapturedFrame {
+    pub width: u32,
+    pub height: u32,
+    pub bgra: Vec<u8>,
+}
+
+pub(crate) struct Readback {
+    buffer: wgpu::Buffer,
+    width: u32,
+    height: u32,
+    stride: u32,
+    rgba: bool,
+}
+impl Readback {
+    pub(crate) fn encode(
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        texture: &wgpu::Texture,
+    ) -> Result<Self, RendererError> {
+        let width = texture.width();
+        let height = texture.height();
+        if width == 0 || height == 0 || u64::from(width) * u64::from(height) > 32 * 1024 * 1024 {
             return Err(RendererError::Validation);
         }
-        let bgra = matches!(
-            format,
-            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb
-        );
-        if !bgra
-            && !matches!(
-                format,
-                wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb
-            )
-        {
+        let rgba = match texture.format() {
+            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => false,
+            wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb => true,
+            _ => return Err(RendererError::Validation),
+        };
+        if !texture.usage().contains(wgpu::TextureUsages::COPY_SRC) {
             return Err(RendererError::Validation);
         }
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("screenshot"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[],
-        });
-        let stride = (width * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
-            * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("screenshot-readback"),
+        let stride = (width * 4).div_ceil(256) * 256;
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("oteryn-explicit-screenshot"),
             size: u64::from(stride) * u64::from(height),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-        {
-            let attachments = [Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                depth_slice: None,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.035,
-                        g: 0.055,
-                        b: 0.090,
-                        a: 1.0,
-                    }),
-                    store: wgpu::StoreOp::Store,
-                },
-            })];
-            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("screenshot-scene"),
-                color_attachments: &attachments,
-                ..Default::default()
-            });
-            self.scene
-                .as_ref()
-                .ok_or(RendererError::Validation)?
-                .draw(&mut pass, tiles, sprites);
-        }
         encoder.copy_texture_to_buffer(
             texture.as_image_copy(),
             wgpu::TexelCopyBufferInfo {
@@ -92,44 +51,54 @@ where
                     rows_per_image: Some(height),
                 },
             },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
+            texture.size(),
         );
-        self.queue.submit([encoder.finish()]);
-        let (send, receive) = std::sync::mpsc::sync_channel(1);
-        buffer
+        Ok(Self {
+            buffer,
+            width,
+            height,
+            stride,
+            rgba,
+        })
+    }
+    pub(crate) fn finish(self, device: &wgpu::Device) -> Result<CapturedFrame, RendererError> {
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        self.buffer
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |result| {
-                let _ = send.send(result);
+                let _ = sender.send(result);
             });
-        self.device
+        device
             .poll(wgpu::PollType::Wait {
                 submission_index: None,
-                timeout: Some(std::time::Duration::from_secs(5)),
+                timeout: Some(std::time::Duration::from_secs(2)),
             })
-            .map_err(|_| RendererError::BackendFatal)?;
-        receive
-            .recv_timeout(std::time::Duration::from_secs(5))
-            .map_err(|_| RendererError::BackendFatal)?
-            .map_err(|_| RendererError::BackendFatal)?;
-        let mapped = buffer
+            .map_err(|_| RendererError::Validation)?;
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .map_err(|_| RendererError::Validation)?
+            .map_err(|_| RendererError::Validation)?;
+        let mapped = self
+            .buffer
             .slice(..)
             .get_mapped_range()
-            .map_err(|_| RendererError::BackendFatal)?;
-        let mut rgba = Vec::with_capacity(width as usize * height as usize * 4);
-        for row in mapped.chunks_exact(stride as usize) {
-            rgba.extend_from_slice(&row[..width as usize * 4]);
+            .map_err(|_| RendererError::Validation)?;
+        let mut bgra = Vec::with_capacity(self.width as usize * self.height as usize * 4);
+        for row in mapped.chunks_exact(self.stride as usize) {
+            bgra.extend_from_slice(&row[..self.width as usize * 4]);
         }
         drop(mapped);
-        buffer.unmap();
-        if bgra {
-            for pixel in rgba.chunks_exact_mut(4) {
+        self.buffer.unmap();
+        for pixel in bgra.chunks_exact_mut(4) {
+            if self.rgba {
                 pixel.swap(0, 2);
             }
+            pixel[3] = 255;
         }
-        Ok((width, height, rgba))
+        Ok(CapturedFrame {
+            width: self.width,
+            height: self.height,
+            bgra,
+        })
     }
 }

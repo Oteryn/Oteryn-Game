@@ -17,6 +17,7 @@ pub struct Panel {
     pub party_revision: u64,
     pub party_pending_revision: u64,
     pub clock: Clock,
+    pub kill_chart: Series,
     pub xp_chart: Series,
     pub raw_xp_chart: Series,
     pub gold_chart: Series,

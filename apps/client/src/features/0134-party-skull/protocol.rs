@@ -4,11 +4,15 @@ use oteryn_client_runtime::{
     raw_feature::{FeatureCommand, GatedCommandResult},
 };
 use oteryn_client_ui::party_skull::{Intent, Panel};
-pub(in crate::play) fn command(_: &Panel, _: Intent) -> Result<FeatureCommand, String> {
+pub(in crate::play) fn command(_: &Panel, intent: Intent) -> Result<FeatureCommand, String> {
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_PARTY_SKULL_V1,
         kind: wire::COMMAND_TYPE_PARTY_SKULL_QUERY,
-        payload: Vec::new(),
+        payload: if intent == Intent::PvpStatus {
+            vec![8, 1]
+        } else {
+            Vec::new()
+        },
     })
 }
 pub(in crate::play) fn apply(
@@ -21,6 +25,10 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
 
+    if command.payload == [8, 1] {
+        super::view::pvp_status::apply(panel, result);
+        return;
+    }
     if !accepted(result) {
         panel.feedback = tr!("The server refused the request").into();
         return;

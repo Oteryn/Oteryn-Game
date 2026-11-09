@@ -139,15 +139,10 @@ unsafe fn control(
         )
     }
 }
-fn specs(
-    panel: u32,
-) -> (
-    &'static [&'static str],
-    &'static [(&'static str, &'static str)],
-) {
+fn specs(panel: u32) -> (Vec<&'static str>, Vec<(&'static str, &'static str)>) {
     match panel {
         98 => (
-            &[
+            vec![
                 tr!("Loot nearby"),
                 tr!("Add item"),
                 tr!("Remove item"),
@@ -157,7 +152,7 @@ fn specs(
                 tr!("Lists / Managed containers"),
                 tr!("Reset selected to main"),
             ],
-            &[
+            vec![
                 (tr!("Item type"), ""),
                 (tr!("List: 1 skip, 2 accept"), "1"),
                 (
@@ -170,7 +165,7 @@ fn specs(
             ],
         ),
         132 => (
-            &[
+            vec![
                 tr!("Inspect selected inventory item"),
                 tr!("Permission requests"),
                 tr!("Grant selected"),
@@ -181,14 +176,14 @@ fn specs(
                 tr!("Refresh inspection"),
                 tr!("Inspect trade item"),
             ],
-            &[
+            vec![
                 (tr!("Catalogue item type"), ""),
                 (tr!("Trade item index"), "0"),
                 (tr!("Counter offer: 0 no, 1 yes"), "0"),
             ],
         ),
         232 => (
-            &[
+            vec![
                 tr!("Browse teams"),
                 tr!("Your applicants"),
                 tr!("Next page"),
@@ -202,7 +197,7 @@ fn specs(
                 tr!("Apply team filters"),
                 tr!("Clear team filters"),
             ],
-            &[
+            vec![
                 (tr!("Minimum level"), "1"),
                 (tr!("Maximum level"), "1000"),
                 (tr!("Vocations mask"), "255"),
@@ -221,14 +216,14 @@ fn specs(
             ],
         ),
         _ => (
-            &[
+            vec![
                 tr!("Refresh current Store tab"),
                 tr!("Next page in current tab"),
                 tr!("Catalogue"),
                 tr!("Purchase history"),
                 tr!("Apply purchase history filters"),
             ],
-            &[
+            vec![
                 (tr!("Offer text (this page)"), ""),
                 (tr!("From Unix milliseconds"), ""),
                 (tr!("Through Unix milliseconds"), ""),
@@ -236,7 +231,6 @@ fn specs(
         ),
     }
 }
-#[path = "native_localized_14.rs"]
-mod native_localized_14;
-
-use native_localized_14::window;
+#[path = "native/paint.rs"]
+mod paint;
+use paint::window;

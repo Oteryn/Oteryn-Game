@@ -1,8 +1,6 @@
 //! Windows system controls provide a readable panel without a new rendering dependency.
 //! Handles and the window-procedure context stay on this thread. The context outlives HWND.
 #![allow(unsafe_code)]
-#[path = "native_widgets.rs"]
-mod native_widgets;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::quest_log::{
@@ -108,7 +106,7 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let Some(native_widgets::Widgets {
+        let controls::Controls {
             quests,
             missions,
             description,
@@ -121,12 +119,28 @@ fn run(
             filter,
             search,
             tracker,
-        }) = native_widgets::Widgets::new(hwnd)
-        else {
+        } = controls::create(hwnd);
+        if [
+            quests,
+            missions,
+            description,
+            refresh,
+            track,
+            list_search,
+            list_sort,
+            auto_add,
+            auto_remove,
+            filter,
+            search,
+            tracker,
+        ]
+        .iter()
+        .any(|h| h.is_null())
+        {
             DestroyWindow(hwnd);
             close(&weak);
             return;
-        };
+        }
         let mut held = None;
         let mut last_search = None;
         let mut shown_quests = Vec::new();
@@ -209,9 +223,10 @@ fn run(
             }
             let mut list_text = [0u16; 129];
             let len = GetWindowTextW(list_search, list_text.as_mut_ptr(), 129).max(0) as usize;
-            mailbox.quest.list_search = String::from_utf16_lossy(&list_text[..len]);
-            mailbox.quest.list_sort =
-                QuestSort::from_selection(SendMessageW(list_sort, CB_GETCURSEL, 0, 0));
+            mailbox.quest.set_list_options(
+                &String::from_utf16_lossy(&list_text[..len]),
+                QuestSort::from_selection(SendMessageW(list_sort, CB_GETCURSEL, 0, 0)),
+            );
             let mut search_text = [0u16; 129];
             let len = GetWindowTextW(search, search_text.as_mut_ptr(), 129);
             let typed = String::from_utf16_lossy(&search_text[..len.max(0) as usize]);
@@ -310,12 +325,7 @@ fn run(
                     SendMessageW(missions, LB_RESETCONTENT, 0, 0);
                     if let Some(QuestLogView::Line(line)) = &panel.state.log.view {
                         let selected = shown_quests.iter().position(|id| *id == line.quest_index);
-                        SendMessageW(
-                            quests,
-                            LB_SETCURSEL,
-                            selected.map_or(usize::MAX, |row| row),
-                            0,
-                        );
+                        SendMessageW(quests, LB_SETCURSEL, selected.unwrap_or(usize::MAX), 0);
                         for m in &line.missions {
                             SendMessageW(
                                 missions,
@@ -361,33 +371,5 @@ fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-unsafe fn control(
-    parent: HWND,
-    class: &str,
-    text: &str,
-    id: usize,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    style: u32,
-) -> HWND {
-    // SAFETY: parent is live on this thread; system class strings live for the call.
-    unsafe {
-        CreateWindowExW(
-            0,
-            wide(class).as_ptr(),
-            wide(text).as_ptr(),
-            WS_CHILD | WS_VISIBLE | style,
-            x,
-            y,
-            width,
-            height,
-            parent,
-            id as _,
-            null_mut(),
-            null(),
-        )
-    }
-}
+#[path = "native/controls.rs"]
+mod controls;

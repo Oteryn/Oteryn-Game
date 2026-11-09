@@ -127,14 +127,6 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
 }
 
 pub fn shop_offer_text(offer: &task_board::full::ShopOffer, points: u64) -> String {
-    let kind = match offer.kind {
-        0 => tr!("Item"),
-        1 => tr!("Mount"),
-        2 => tr!("Outfit"),
-        3 => tr!("Item pair"),
-        4 => tr!("Promotion"),
-        _ => tr!("Reward"),
-    };
     let status = if offer.bought {
         tr!("Already owned").into()
     } else if points >= u64::from(offer.price) {
@@ -145,15 +137,30 @@ pub fn shop_offer_text(offer: &task_board::full::ShopOffer, points: u64) -> Stri
             u64::from(offer.price).saturating_sub(points)
         )
     };
-    lfmt!(
-        "Shop {} — {kind} {} / {} (addon {})\n  {} points — {status}",
+    format!(
+        "Shop {} — {}\n  Reward {} / {} (addon {})\n  {} task points — {status}",
         offer.index + 1,
+        super::shop_names::name(offer),
         offer.primary,
         offer.secondary,
         offer.addon,
+        offer.price
+    )
+}
+
+pub fn shop_offer_choice(offer: &task_board::full::ShopOffer, points: u64) -> String {
+    format!(
+        "{}. {} — {} task points — {}",
+        offer.index + 1,
+        super::shop_names::name(offer),
         offer.price,
-        kind = kind,
-        status = status
+        if offer.bought {
+            "Owned"
+        } else if points >= u64::from(offer.price) {
+            "Available"
+        } else {
+            "More points needed"
+        }
     )
 }
 

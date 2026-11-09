@@ -1,3 +1,5 @@
+#[path = "input/bulk.rs"]
+pub(super) mod bulk;
 use crate::combat_input::PlayCommand;
 use crate::play::{GroundItem, PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::container_tree::{ContainerViewIntent, ItemHandle};

@@ -76,7 +76,7 @@ impl GraphicsControls {
         }
         let mut values = [0_u8; 4];
         for (index, value) in values.iter_mut().enumerate() {
-            let Ok(parsed) = text(self.0[index * 2 + 1]).parse::<u8>() else {
+            let Ok(parsed) = unsafe { text(self.0[index * 2 + 1]) }.parse::<u8>() else {
                 state.feedback = tr!("Enter lighting percentages from 0 to 100").into();
                 return true;
             };

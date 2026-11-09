@@ -86,12 +86,15 @@ pub enum HouseAction {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseQuery {
+    /// Opt-in metadata extension; absent on legacy queries.
+    pub details: bool,
     pub world: [u8; 16],
     pub town: String,
     pub cursor: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseSummary {
+    pub details: Option<HouseDetails>,
     pub house: String,
     pub kind: HouseKind,
     pub state: u8,
@@ -103,6 +106,13 @@ pub struct HouseSummary {
     pub price: u64,
     pub ends_ms: Option<u64>,
     pub own_maximum: Option<u64>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseDetails {
+    pub name: String,
+    pub size: u32,
+    pub beds: u16,
+    pub entrance: (u16, u16, i8),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HouseKind {
@@ -280,10 +290,18 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
         return Err(Error::LimitExceeded);
     }
     let (mut c, mut world, mut town, mut cursor) = (0, None, None, None);
+    let mut details = None;
     while c < body.len() {
         match read_varint(body, &mut c)? {
             10 => set_once(&mut world, uuid(read_bytes(body, &mut c)?)?)?,
             18 => set_once(&mut town, text(read_bytes(body, &mut c)?)?)?,
+            32 => set_once(
+                &mut details,
+                match read_varint(body, &mut c)? {
+                    1 => true,
+                    _ => return Err(Error::Malformed),
+                },
+            )?,
             26 => {
                 let raw = read_bytes(body, &mut c)?;
                 set_once(
@@ -310,6 +328,7 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
         return Err(Error::Malformed);
     }
     Ok(HouseQuery {
+        details: details.unwrap_or(false),
         world: world.ok_or(Error::Malformed)?,
         town,
         cursor: cursor.flatten(),
@@ -355,6 +374,19 @@ pub fn encode_house_page(
         }
         if let Some(maximum) = row.own_maximum {
             scalar(&mut b, 9, maximum);
+        }
+        if let Some(details) = &row.details {
+            text(details.name.as_bytes())?;
+            if details.size == 0 || !(-15..=0).contains(&details.entrance.2) {
+                return Err(Error::Malformed);
+            }
+            bytes(&mut b, 12, details.name.as_bytes());
+            scalar(&mut b, 13, details.size.into());
+            scalar(&mut b, 14, details.beds.into());
+            scalar(&mut b, 15, details.entrance.0.into());
+            scalar(&mut b, 16, details.entrance.1.into());
+            let floor = i64::from(details.entrance.2);
+            scalar(&mut b, 17, ((floor << 1) ^ (floor >> 63)) as u64);
         }
         bytes(&mut out, 3, &b);
     }

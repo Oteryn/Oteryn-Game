@@ -28,7 +28,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
             let id = (w & 0xffff) as u16;
             let notification = (w >> 16) & 0xffff;
             if ((101..=102).contains(&id) && notification == LBN_SELCHANGE as usize)
-                || ((103..=105).contains(&id) && notification == BN_CLICKED as usize)
+                || ((103..=106).contains(&id) && notification == BN_CLICKED as usize)
             {
                 let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<u16>;
                 if !actions.is_null() {
@@ -130,15 +130,43 @@ pub(in crate::play) fn open_shared(
                             null(),
                         );
                     }
+                    let destination = CreateWindowExW(
+                        0,
+                        wide("EDIT").as_ptr(),
+                        wide("Target view ID").as_ptr(),
+                        WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP,
+                        10,
+                        370,
+                        235,
+                        28,
+                        hwnd,
+                        null_mut(),
+                        null_mut(),
+                        null(),
+                    );
+                    CreateWindowExW(
+                        0,
+                        wide("BUTTON").as_ptr(),
+                        wide("Move all to view").as_ptr(),
+                        WS_CHILD | WS_VISIBLE | WS_TABSTOP,
+                        255,
+                        370,
+                        235,
+                        28,
+                        hwnd,
+                        106 as _,
+                        null_mut(),
+                        null(),
+                    );
                     let status = CreateWindowExW(
                         0,
                         wide("STATIC").as_ptr(),
                         wide("").as_ptr(),
                         WS_CHILD | WS_VISIBLE,
                         10,
-                        370,
+                        405,
                         480,
-                        60,
+                        35,
                         hwnd,
                         null_mut(),
                         null_mut(),
@@ -167,8 +195,19 @@ pub(in crate::play) fn open_shared(
                         if mailbox.inventory_shutdown {
                             break;
                         }
-                        let panel = &mut mailbox.containers;
                         for action in actions.drain(..) {
+                            if action == 106 {
+                                let mut text = [0u16; 20];
+                                let len = GetWindowTextW(destination, text.as_mut_ptr(), 20).max(0)
+                                    as usize;
+                                if let Ok(id) =
+                                    String::from_utf16_lossy(&text[..len]).trim().parse::<u8>()
+                                {
+                                    super::super::input::bulk::begin(&mut mailbox, &commands, id);
+                                }
+                                continue;
+                            }
+                            let panel = &mut mailbox.containers;
                             let intent = match action {
                                 101 => {
                                     let row = SendMessageW(views, LB_GETCURSEL, 0, 0);
@@ -206,6 +245,7 @@ pub(in crate::play) fn open_shared(
                                 panel.end();
                             }
                         }
+                        let panel = &mut mailbox.containers;
                         if held.as_ref() != Some(panel) {
                             SendMessageW(views, LB_RESETCONTENT, 0, 0);
                             if let Some(state) = &panel.views {
@@ -257,6 +297,17 @@ pub(in crate::play) fn open_shared(
                             );
                             held = Some(panel.clone());
                         }
+                        SetWindowTextW(
+                            status,
+                            wide(&format!(
+                                "{}\n{}",
+                                oteryn_client_ui::house_container_capacity::view::panel_text(
+                                    &mailbox.containers
+                                ),
+                                mailbox.item_movement.feedback.unwrap_or_default()
+                            ))
+                            .as_ptr(),
+                        );
                         if let Some(panel) = &held
                             && let Some(view) = panel.current()
                         {

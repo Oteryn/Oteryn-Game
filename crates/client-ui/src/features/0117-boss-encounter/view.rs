@@ -70,6 +70,11 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
             selected = selected,
             unlocked = unlocked
         );
+        if panel.fields[0].is_empty() {
+            text.push_str("Choose a boss from the browser before entering.\n");
+        } else {
+            let _ = writeln!(text, "Enter {} at hazard {selected}", panel.fields[0]);
+        }
         text.push_str(tr!("Use Lower/Raise hazard to choose an unlocked level, then Enter for the selected boss.\nEntry and cooldown eligibility are confirmed by the server.\n"));
     } else {
         text.push_str(tr!(

@@ -127,6 +127,11 @@ impl ClientBootstrap {
         link.party_own_character(admitted.character_name());
         link.house_world(admitted.world_id());
         if admitted.training_requested() {
+            let remaining = self
+                .native_login
+                .as_ref()
+                .map_or(0, |config| config.training_queue.remaining());
+            link.training_batch_label(admitted.character_name(), remaining);
             link.training_open();
         }
         self.runtime

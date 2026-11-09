@@ -79,3 +79,20 @@ impl NotificationCenter {
         text
     }
 }
+
+impl NotificationCenter {
+    pub fn surface_text(&self, popup: bool) -> String {
+        if (popup && !self.popups_enabled) || (!popup && !self.banners_enabled) {
+            return String::new();
+        }
+        let mut text = String::new();
+        for entry in self.entries.iter().filter(|entry| entry.popup == popup) {
+            text.push_str(&entry.text);
+            text.push_str("\r\n");
+        }
+        text
+    }
+    pub fn dismiss_all(&mut self) {
+        self.entries.clear();
+    }
+}

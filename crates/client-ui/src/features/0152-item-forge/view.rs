@@ -42,3 +42,37 @@ pub fn panel_text(p: &super::ItemForgePanel) -> String {
     }
     s
 }
+
+pub fn selected_pair_text(p: &super::ItemForgePanel) -> String {
+    let item = |handle| {
+        p.preview.item(handle).map_or_else(
+            || "No current item selected".into(),
+            |item| {
+                format!(
+                    "{} — class {}, tier {} / {}",
+                    item.name, item.classification, item.tier, item.maximum_tier
+                )
+            },
+        )
+    };
+    let mut text = format!(
+        "Receiver: {}\nSource / tier donor: {}\n",
+        item(p.first_item),
+        item(p.second_item)
+    );
+    if let Some(quote) = &p.preview.quote {
+        text.push_str(&format!("Server-verified pair: target tier {}\nBase cost before outcome bonuses: {} gold, {} dust, {} cores\nSuccess: {}%; tier-loss protection: {}%\nAvailable: {} carried gold; {} bank gold{}; {} / {} dust; {} cores; {} slivers\nThe original server writer independently rechecks the current state.",quote.target_tier,quote.cost.gold,quote.cost.dust,quote.cost.cores,quote.success_percent,quote.protection_percent,quote.resources.carried_gold,quote.resources.bank_gold,if quote.resources.bank_spendable{""}else{" (not spendable by this character)"},quote.resources.dust,quote.resources.dust_limit,quote.resources.cores,quote.resources.slivers));
+    } else if !p.preview.selected {
+        text.push_str("This server has no Forge preview capability. Legacy submission is available; the server evaluates its cost and eligibility.\n");
+    } else {
+        text.push_str("Choose two current carried items and request a server quote.\n");
+    }
+    if p.retry.is_some() {
+        text.push_str("\nAn attempt needs confirmation. Retry sends its exact original occurrence and operands; new paid attempts are disabled.");
+    }
+    if let Some(message) = &p.preview.feedback {
+        text.push('\n');
+        text.push_str(message);
+    }
+    text
+}

@@ -49,3 +49,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 #[cfg(windows)]
 #[path = "native.rs"]
 pub(in crate::play) mod native;
+
+#[cfg(any(windows, test))]
+#[path = "view/dialog_preferences.rs"]
+pub(in crate::play) mod dialog_preferences;

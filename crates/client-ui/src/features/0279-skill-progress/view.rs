@@ -14,20 +14,9 @@ pub fn panel_text(panel: &SkillProgressPanel) -> String {
         "Level: {} — Experience: {} — {}.{:02}% to next level\r\nLoyalty skill-point bonus: {}%\r\nSkills: trained / with Loyalty / current\r\n",
         full.level, full.experience, full.level_percent / 100, full.level_percent % 100, full.loyalty_bonus_percent,
     ));
-    for (family, (label, skill)) in [
-        tr!("Magic"),
-        tr!("Fist"),
-        tr!("Club"),
-        tr!("Sword"),
-        tr!("Axe"),
-        tr!("Distance"),
-        tr!("Shielding"),
-        tr!("Fishing"),
-    ]
-    .into_iter()
-    .zip(snapshot.skills)
-    .enumerate()
-    {
+    for family in panel.ordered_families() {
+        let label = super::SKILL_LABELS[family];
+        let skill = snapshot.skills[family];
         if panel.hidden_skills & (1 << family) != 0 {
             continue;
         }

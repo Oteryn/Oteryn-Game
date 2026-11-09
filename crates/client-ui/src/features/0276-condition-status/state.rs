@@ -1,6 +1,7 @@
 use super::ConditionStatus;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ConditionStatusPanel {
+    pub order: Vec<u8>,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

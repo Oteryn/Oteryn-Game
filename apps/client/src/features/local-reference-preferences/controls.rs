@@ -1,4 +1,3 @@
-//! Construction and validation of the settings dialog controls.
 use super::*;
 #[path = "interface_controls.rs"]
 mod interface_controls;
@@ -25,6 +24,16 @@ use presentation_controls::PresentationControls;
 mod localization_controls;
 use localization_controls::LanguageControls;
 
+#[path = "layout_controls.rs"]
+mod layout_controls;
+use layout_controls::LayoutControls;
+#[path = "console_controls.rs"]
+mod console_controls;
+use console_controls::ConsoleControls;
+#[path = "hud_controls.rs"]
+mod hud_controls;
+use hud_controls::HudControls;
+
 pub(super) struct Controls {
     pub(super) language: LanguageControls,
     pub(super) presentation: PresentationControls,
@@ -32,6 +41,9 @@ pub(super) struct Controls {
     pub(super) guide: HelpControls,
     pub(super) screenshots: ScreenshotControls,
     pub(super) gameplay: GameplayControls,
+    pub(super) actor_hud: HudControls,
+    pub(super) console: ConsoleControls,
+    pub(super) layout: LayoutControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -43,6 +55,7 @@ pub(super) struct Controls {
     pub(super) list: HWND,
     pub(super) chord: HWND,
     pub(super) rebind: HWND,
+    pub(super) manual: HWND,
     pub(super) chat_on: HWND,
     pub(super) chat_off: HWND,
     pub(super) mouse_preset: HWND,
@@ -66,14 +79,19 @@ pub(super) struct Controls {
     pub(super) feedback: HWND,
 }
 
-#[path = "controls_localized_3.rs"]
-mod controls_localized_3;
+#[path = "dialog_construction.rs"]
+mod dialog_construction;
 
 pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState) {
+    let hint = if state.page == SettingsPage::CustomHotkeys {
+        super::super::navigation_controls::page_help(state.page)
+    } else {
+        page_hint(state.page)
+    };
     unsafe {
         SetWindowTextW(
             handle,
-            wide(&format!("{}\r\n{}", page_hint(state.page), state.feedback)).as_ptr(),
+            wide(&format!("{hint}\r\n{}", state.feedback)).as_ptr(),
         );
     }
 }

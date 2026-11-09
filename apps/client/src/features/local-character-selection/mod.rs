@@ -2,6 +2,9 @@
 use oteryn_platform_client::native_login::{CharacterAvailability, OwnerCharacter};
 use oteryn_platform_contracts::DirectorySnapshot;
 
+mod training;
+pub use training::{TrainingQueue, TrainingSelection};
+
 #[cfg(windows)]
 mod native;
 
@@ -22,6 +25,9 @@ pub enum SelectionAction {
     Train {
         character_id: String,
         channel_id: Option<String>,
+    },
+    TrainMany {
+        characters: Vec<TrainingSelection>,
     },
     Create,
     AccountServices,

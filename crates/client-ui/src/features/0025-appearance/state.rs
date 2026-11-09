@@ -4,8 +4,10 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub memorial: super::MemorialPanel,
     pub selected: bool,
     pub open: bool,
+    pub preview_open: bool,
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 5],
@@ -126,5 +128,63 @@ impl Panel {
         }
         self.fields[1] = (addons ^ bit).to_string();
         true
+    }
+}
+
+impl Panel {
+    pub fn cycle_mount(&mut self, forward: bool) -> bool {
+        if self.pending || !self.selected {
+            return false;
+        }
+        let Some(catalogue) = &self.catalogue else {
+            return false;
+        };
+        let count = catalogue.mounts.len() + 1;
+        let current = catalogue
+            .mounts
+            .iter()
+            .position(|key| key == &self.fields[2])
+            .map_or(0, |index| index + 1);
+        let next = if forward {
+            (current + 1) % count
+        } else {
+            (current + count - 1) % count
+        };
+        self.fields[2] = if next == 0 {
+            String::new()
+        } else {
+            catalogue.mounts[next - 1].clone()
+        };
+        true
+    }
+}
+
+/// A draft projected from the currently granted outfit and palette.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Preview {
+    pub look_type: u32,
+    pub addons: u8,
+    pub colours: [[u8; 3]; 4],
+}
+impl Panel {
+    pub fn preview(&self) -> Option<Preview> {
+        if !self.selected {
+            return None;
+        }
+        let outfit = self
+            .catalogue
+            .as_ref()?
+            .outfits
+            .iter()
+            .find(|o| o.key == self.fields[0])?;
+        let addons = self.fields[1].parse::<u8>().ok()?;
+        if addons & !outfit.permitted_addons != 0 {
+            return None;
+        }
+        Some(Preview {
+            look_type: outfit.look_type,
+            addons,
+            colours: self.preview_colours()?,
+        })
     }
 }

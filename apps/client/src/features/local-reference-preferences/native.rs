@@ -1,5 +1,5 @@
 //! Native settings controls and menu, with preferences shared only on the shell thread boundary.
-// SAFETY: HWNDs and subclass data are created, used and destroyed on their owning thread.
+// SAFETY: Owned HWND lifetimes stay on their creating thread; cross-panel geometry and font changes are posted to their owners.
 #![allow(unsafe_code)]
 use oteryn_client::play::{
     PlayView, PreferenceStore, SettingsPage, SettingsState, preference_bindings,
@@ -22,11 +22,33 @@ use winit::{
     window::Window,
 };
 
+#[path = "native_tooltips.rs"]
+mod native_tooltips;
+#[path = "native_ui_scale.rs"]
+mod native_ui_scale;
+
 type Shared = SettingsState;
 #[path = "action_bar_controls.rs"]
 mod action_bar;
+#[path = "basic_native.rs"]
+mod basic_window;
+#[path = "controls_native.rs"]
+mod controls_window;
+#[path = "frames_native.rs"]
+mod frames_window;
+#[path = "help_native.rs"]
+mod help_window;
+#[path = "minimap_native.rs"]
+mod minimap_window;
+#[path = "profiles_native.rs"]
+mod profile_window;
 #[path = "screenshot_native.rs"]
 mod screenshot_native;
+
+#[path = "shortcuts_native.rs"]
+mod shortcuts_window;
+#[path = "subpages.rs"]
+mod subpages;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
         .lock()
@@ -41,6 +63,8 @@ fn wide(text: &str) -> Vec<u16> {
 
 pub(super) struct Settings {
     action_bar: Option<action_bar::Buttons>,
+    ui_scaler: std::cell::RefCell<native_ui_scale::UiScaler>,
+    tooltip: std::cell::RefCell<native_tooltips::NativeTooltip>,
     // Win32 borrows the Arc handle address; Box keeps it stable when Settings moves.
     #[allow(clippy::redundant_allocation)]
     shared: Box<Arc<Mutex<Shared>>>,
@@ -48,174 +72,8 @@ pub(super) struct Settings {
     shortcuts: Vec<HWND>,
     collapse: HWND,
 }
-impl Settings {
-    pub(super) fn new() -> Self {
-        Self {
-            action_bar: None,
-            shared: Box::new(Arc::new(Mutex::new(SettingsState::new(
-                PreferenceStore::path(),
-            )))),
-            parent: null_mut(),
-            shortcuts: Vec::new(),
-            collapse: null_mut(),
-        }
-    }
-    pub(super) fn attach(&mut self, window: &Window) {
-        let Ok(handle) = window.window_handle() else {
-            return;
-        };
-        let RawWindowHandle::Win32(handle) = handle.as_raw() else {
-            return;
-        };
-        self.parent = handle.hwnd.get() as HWND;
-        unsafe {
-            let menu = CreateMenu();
-            if !menu.is_null() {
-                AppendMenuW(menu, MF_STRING, 25001, wide(tr!("Settings...")).as_ptr());
-                let windows = CreatePopupMenu();
-                if !windows.is_null() {
-                    for (index, (_, label)) in
-                        oteryn_client::play::WINDOW_ACTIONS.iter().enumerate()
-                    {
-                        AppendMenuW(
-                            windows,
-                            MF_STRING,
-                            25100 + index,
-                            wide(oteryn_client_ui::localization::tr(label)).as_ptr(),
-                        );
-                    }
-                    AppendMenuW(
-                        menu,
-                        MF_POPUP,
-                        windows as usize,
-                        wide(tr!("Game windows")).as_ptr(),
-                    );
-                }
-                if SetMenu(self.parent, menu) == 0 {
-                    DestroyMenu(menu);
-                }
-                DrawMenuBar(self.parent);
-            }
-            self.collapse = control(
-                self.parent,
-                "BUTTON",
-                tr!("▼ Game"),
-                25200,
-                [8, 64, 150, 26],
-                0,
-            );
-            self.action_bar = action_bar::Buttons::new(self.parent);
-            self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
-                .iter()
-                .enumerate()
-                .map(|(index, (_, label))| {
-                    let label = oteryn_client_ui::localization::tr(label);
-                    control(
-                        self.parent,
-                        "BUTTON",
-                        &format!("◆ {label}"),
-                        25100 + index,
-                        [8, 94 + index as i32 * 28, 150, 26],
-                        0,
-                    )
-                })
-                .collect();
-            SetWindowSubclass(
-                self.parent,
-                Some(menu_proc),
-                25001,
-                (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
-            );
-        }
-    }
-    pub(super) fn take_window_events(
-        &self,
-        playing: bool,
-    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        let mut state = lock(&self.shared);
-        unsafe {
-            let mut rect: RECT = std::mem::zeroed();
-            GetClientRect(self.parent, &mut rect);
-            if let Some(bar) = &self.action_bar {
-                bar.show(
-                    &state.preferences,
-                    [rect.right.max(0) as u32, rect.bottom.max(0) as u32],
-                    playing,
-                );
-            }
-            let x = (rect.right - 160).max(0);
-            MoveWindow(self.collapse, x, 64, 150, 26, 1);
-            ShowWindow(self.collapse, if playing { SW_SHOW } else { SW_HIDE });
-            SetWindowTextW(
-                self.collapse,
-                wide(if state.preferences.shortcuts_collapsed {
-                    tr!("▶ Game")
-                } else {
-                    tr!("▼ Game")
-                })
-                .as_ptr(),
-            );
-            for (index, handle) in self.shortcuts.iter().enumerate() {
-                let id = oteryn_client::play::WINDOW_ACTIONS[index].0;
-                let position = state
-                    .preferences
-                    .shortcut_order
-                    .iter()
-                    .position(|key| key == id);
-                if let Some(position) = position {
-                    MoveWindow(*handle, x, 94 + position as i32 * 28, 150, 26, 1);
-                }
-                ShowWindow(
-                    *handle,
-                    if playing && position.is_some() && !state.preferences.shortcuts_collapsed {
-                        SW_SHOW
-                    } else {
-                        SW_HIDE
-                    },
-                );
-            }
-        }
-        state.take_window_events()
-    }
-    pub(super) fn input(
-        &mut self,
-        events: &[oteryn_input_actions::NormalizedInputEvent],
-    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        let (events, requested) = lock(&self.shared).input(events);
-        if requested {
-            spawn_window(Arc::clone(&self.shared));
-        }
-        events
-    }
-    pub(super) fn restore(&self, view: &mut PlayView, link: &oteryn_client::play::PlayLink) {
-        let mut viewport = [960, 540];
-        unsafe {
-            let mut rect: RECT = std::mem::zeroed();
-            if !self.parent.is_null() && GetClientRect(self.parent, &mut rect) != 0 {
-                viewport = [rect.right.max(0) as u32, rect.bottom.max(0) as u32];
-            }
-        }
-        let mut state = lock(&self.shared);
-        state.open_help_report(link);
-        oteryn_client_ui::localization::set_default(state.preferences.language());
-        match state.apply_minimap_transfer(view) {
-            Ok(true) => state.feedback = tr!("Minimap transfer saved").into(),
-            Err(error) => state.feedback = lfmt!("Minimap transfer failed: {error}", error = error),
-            Ok(false) => {}
-        }
-        state.sync_battle_lists(link);
-        state.sync_presentation(link);
-        if let Err(error) = state.restore(view, viewport) {
-            state.feedback = error.to_string();
-        }
-    }
-    pub(super) fn capture(&self, view: &mut PlayView) {
-        let mut state = lock(&self.shared);
-        if let Err(error) = state.capture(view) {
-            state.feedback = error.to_string();
-        }
-    }
-}
+#[path = "settings_native_state.rs"]
+mod settings_native_state;
 impl Drop for Settings {
     fn drop(&mut self) {
         lock(&self.shared).shutdown = true;
@@ -301,7 +159,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261 | 270..=271 | 280..=283)
+                && matches!(id, 103 | 106 | 110..=113 | 160..=166 | 223 | 225..=227 | 231..=233 | 241..=244 | 250..=251 | 260..=261 | 270..=271 | 280..=283)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -346,3 +204,9 @@ unsafe fn text(hwnd: HWND) -> String {
 
 #[path = "dialog.rs"]
 mod dialog;
+
+#[path = "transfer.rs"]
+mod transfer;
+
+#[path = "navigation_controls.rs"]
+mod navigation_controls;

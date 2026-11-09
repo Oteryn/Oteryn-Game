@@ -36,6 +36,18 @@ pub struct CatalogState {
     next_page: u32,
 }
 impl CatalogState {
+    pub fn set_options(&mut self, search: &str, filter: AchievementFilter, sort: AchievementSort) {
+        if search.len() > 512 || search.contains('\0') {
+            return;
+        }
+        if self.search != search || self.filter != filter || self.sort != sort {
+            self.page = 0;
+            self.search = search.to_owned();
+            self.filter = filter;
+            self.sort = sort;
+        }
+    }
+
     pub(super) fn begin(&mut self) {
         self.collecting = true;
         self.building.clear();

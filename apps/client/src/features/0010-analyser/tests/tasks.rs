@@ -100,6 +100,8 @@ fn analyser_hunting_task_tracker_reads_real_weekly_query_and_retains_refused_pro
     assert!(text.contains("Week 42 · kill 1 · tracker fox: 3/10 · active"));
     assert!(text.contains("delivery item #9 (available for delivery): 4/4 · active"));
     assert!(text.contains("Bounty · tracker wolf: 2/9 · active"));
+    assert!(text.contains("tracker fox: 3/10 · active · 7 remaining"));
+    assert!(text.contains("tracker wolf: 2/9 · active · 7 remaining"));
     assert!(text.contains("Race #7: 1 / 2 · 1 remaining"));
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
@@ -134,6 +136,17 @@ fn analyser_hunting_task_tracker_reads_real_weekly_query_and_retains_refused_pro
         payload: encode_reply(&refused).map_err(|_| "refusal")?,
     });
     assert_eq!(link.analyser_panel().task_progress, confirmed);
+    link.analyser_refresh_tasks();
+    commands.try_recv()?;
+    let mut complete = reply();
+    complete.weekly.kills[0].current = 10;
+    outbox.task_board_full_result(&oteryn_session::GatedCommandResult {
+        command_id: 4,
+        server_sequence: 4,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: encode_reply(&complete).map_err(|_| "complete")?,
+    });
+    assert!(link.analyser_text().contains("tracker fox: 10/10 · complete · 0 remaining"));
     outbox.logged_out();
     assert!(link.analyser_panel().task_progress.is_none());
     Ok(())

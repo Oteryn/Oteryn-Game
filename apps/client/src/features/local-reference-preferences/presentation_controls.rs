@@ -113,7 +113,7 @@ impl PresentationControls {
             self.graphics.show(page);
         }
         for (handles, selected) in [
-            (&self.console[..], SettingsPage::Console),
+            (&self.console[..], SettingsPage::ConsoleFilters),
             (&self.bar[..], SettingsPage::ActionBarLayout),
         ] {
             for handle in handles {

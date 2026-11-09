@@ -68,15 +68,35 @@ pub(super) async fn authorize(
             .await
             .map_err(retry_login)?;
         let rows = crate::character_selection::join(characters, &directory);
-        let selector = config.select_character.clone();
-        let preselect = config.character_id.clone();
-        let cancel = cancellation.clone();
-        let shown = rows.clone();
-        let action = tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
-            .await
-            .map_err(retry_login)?;
         use crate::character_selection::SelectionAction;
-        // Training uses the same owner and channel validation as ordinary play.
+        let action = if let Some(selection) = config.training_queue.next() {
+            SelectionAction::Train {
+                character_id: selection.character_id,
+                channel_id: selection.channel_id,
+            }
+        } else {
+            config.training_queue.clear();
+            let selector = config.select_character.clone();
+            let preselect = config.character_id.clone();
+            let cancel = cancellation.clone();
+            let shown = rows.clone();
+            tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
+                .await
+                .map_err(retry_login)?
+        };
+        let action = match action {
+            SelectionAction::TrainMany { characters } => {
+                let first = config
+                    .training_queue
+                    .start(&rows, characters)
+                    .ok_or_else(|| rejected(PublicClass::RetryLogin))?;
+                SelectionAction::Train {
+                    character_id: first.character_id,
+                    channel_id: first.channel_id,
+                }
+            }
+            action => action,
+        };
         let training_requested = matches!(&action, SelectionAction::Train { .. });
         match action {
             SelectionAction::Play {
@@ -102,6 +122,7 @@ pub(super) async fn authorize(
                     training_requested,
                 );
             }
+            SelectionAction::TrainMany { .. } => return Err(rejected(PublicClass::RetryLogin)),
             SelectionAction::Create => {
                 let url = format!(
                     "{}/account/characters/create",

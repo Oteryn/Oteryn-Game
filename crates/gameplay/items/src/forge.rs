@@ -81,6 +81,13 @@ pub struct ForgeQuote {
     max_tier: u8,
 }
 
+impl ForgeQuote {
+    /// Read-only UI projection; this quote never authorizes a mutation.
+    pub const fn preview(&self) -> (ForgeCost, u8, u8) {
+        (self.cost, self.success_percent, self.target_tier.get())
+    }
+}
+
 impl AsRef<ForgeCost> for ForgeQuote {
     fn as_ref(&self) -> &ForgeCost {
         &self.cost

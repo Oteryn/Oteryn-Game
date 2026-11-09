@@ -15,12 +15,14 @@ pub fn panel_text(panel: &Panel) -> String {
 
 pub fn bestiary_text(panel: &Panel) -> String {
     use std::fmt::Write;
-    let mut out = lfmt!("Bestiary — {:?}\r\n", panel.race_filter);
+    let mut out = super::catalogue::text(panel);
+    out.push_str(&format!("Bestiary progress — {:?}\r\n", panel.race_filter));
     if !panel.selected {
         return tr!("Bestiary unavailable in this session").into();
     }
     if panel.reply.is_none() {
-        return tr!("Query to load Bestiary progress").into();
+        out.push_str("Query to load Bestiary progress\r\n");
+        return out;
     }
     for race in panel.race_cards() {
         let _ = lwrite!(
@@ -50,7 +52,7 @@ pub fn bestiary_text(panel: &Panel) -> String {
         }
     }
     out.push_str(&bestiary_detail_text(panel));
-    out.push_str(tr!("Creature names, illustrations, combat statistics, resistances and loot are not supplied by this progress snapshot.\r\n"));
+
     out
 }
 

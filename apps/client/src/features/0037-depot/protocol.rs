@@ -20,6 +20,7 @@ impl Outbox {
         let outcome = session.depot_open_container(handle).await?;
         self.depot_publish(session);
         oteryn_client_ui::depot::apply_container(&mut lock(&self.0).depot, outcome);
+        self.item_forge_container_ready(handle);
         Ok(())
     }
     pub(in crate::play) async fn depot_run(

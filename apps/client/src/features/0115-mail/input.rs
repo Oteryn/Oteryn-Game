@@ -76,7 +76,7 @@ pub(in crate::play) fn edit(
     field: usize,
     value: String,
 ) {
-    if panel.pending || value.len() > 7996 || value.contains('\0') {
+    if panel.pending || !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&value, 7996) {
         return;
     }
     if let Some(slot) = panel.fields.get_mut(field) {

@@ -86,7 +86,11 @@ pub fn tracker_text(panel: &QuestPanel) -> String {
             line.quest_index,
             if line.completed { " (completed)" } else { "" }
         ));
-        for mission in &line.missions {
+        for mission in line
+            .missions
+            .iter()
+            .filter(|mission| !panel.tracker.hide_completed_missions || !mission.done)
+        {
             text.push_str(&format!(
                 "{}{}: {}\r\n",
                 mission.name,

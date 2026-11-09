@@ -129,3 +129,54 @@ pub fn vitals_text(vitals: Option<&ActorVitals>) -> String {
         }
     )
 }
+
+/// Labels for the docked row. Cooldown knowledge always comes from the server snapshot.
+#[must_use]
+pub fn slot_labels(
+    panel: &super::ActionBarPanel,
+    catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
+) -> Vec<String> {
+    let elapsed = panel.cooldown_received_at.map_or(0, |received| {
+        u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX)
+    });
+    slot_labels_after(panel, catalog, elapsed)
+}
+fn slot_labels_after(
+    panel: &super::ActionBarPanel,
+    catalog: &oteryn_client_runtime::spell_catalog::CatalogState,
+    elapsed: u64,
+) -> Vec<String> {
+    panel
+        .bar
+        .fields()
+        .iter()
+        .enumerate()
+        .map(|(slot, field)| {
+            let spell = field.parse().ok();
+            let entry = catalog
+                .entries()
+                .iter()
+                .find(|entry| Some(entry.cast_index) == spell);
+            let cooldown = spell.and_then(std::num::NonZeroU32::new).map(|spell| {
+                panel
+                    .bar
+                    .remaining_ms(
+                        spell,
+                        entry.map_or(&[], |entry| entry.cooldown_groups.as_slice()),
+                    )
+                    .saturating_sub(elapsed)
+            });
+            let state = match (panel.bar.cooldowns.as_ref(), cooldown) {
+                (_, None) => "Empty".into(),
+                (None, _) => "Cooldown ?".into(),
+                (Some(_), Some(0)) => "Ready".into(),
+                (Some(_), Some(ms)) => format!("{ms} ms"),
+            };
+            format!(
+                "{}: {}\n{state}",
+                slot + 1,
+                entry.map_or(field.as_str(), |entry| entry.name.as_str())
+            )
+        })
+        .collect()
+}

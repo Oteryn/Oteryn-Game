@@ -293,3 +293,8 @@ pub fn badge_text(p: &CyclopediaCharacterPanel) -> String {
     }
     text
 }
+
+/// Dedicated blessings window body, independent of the selected Cyclopedia target.
+pub fn blessings_text(p: &CyclopediaCharacterPanel) -> String {
+    p.blessings.text()
+}

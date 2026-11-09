@@ -71,7 +71,11 @@ fn open(
             AppendMenuW(popup, MF_STRING, index + 1, wide.as_ptr());
         }
         crate::play::feature_0098_quick_loot::view::decorate(
-            link, view.preferences().gameplay.inspect_context_menu, popup, menu, player,
+            link,
+            view.preferences().gameplay.inspect_context_menu,
+            popup,
+            menu,
+            player,
         );
         let mut point = POINT { x: 0, y: 0 };
         let owner = GetForegroundWindow();

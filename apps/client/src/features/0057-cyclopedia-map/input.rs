@@ -1,3 +1,5 @@
+#[path = "input/atlas.rs"]
+pub(in crate::play) mod atlas;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
@@ -75,3 +77,7 @@ pub(in crate::play) fn edit(
         *slot = value;
     }
 }
+
+#[cfg(test)]
+#[path = "input/tests/atlas.rs"]
+mod atlas_tests;

@@ -5,14 +5,19 @@ mod soulseals;
 pub use soulseals::{soulseals_key, soulseals_text};
 mod protocol;
 pub use input::{creature_choices, creature_name, open_key};
+#[path = "view/shop_names.rs"]
+mod shop_names;
 #[path = "protocol/talisman.rs"]
 pub mod talisman;
+#[path = "view/tree.rs"]
+mod tree;
+pub use tree::{TreeNode, tree_nodes};
 mod view;
 pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };
 pub use protocol::{FullIntent, apply_full_result, full_request};
-pub use view::shop_offer_text;
+pub use view::{shop_offer_choice, shop_offer_text};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -56,8 +61,7 @@ pub fn weekly_request(
 
 pub fn apply_weekly(panel: &mut TaskBoardPanel, reply: task_board::full::Reply) {
     panel.pending = false;
-    panel.feedback =
-        (reply.refusal != 0).then_some(tr!("The server refused the weekly Task Board action"));
+    panel.feedback = tree::refusal_message(reply.refusal);
     panel.weekly = Some(reply);
 }
 

@@ -1,7 +1,8 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
-    lfmt!(
-        "Training\r\n{}\r\n{}",
+    format!(
+        "Training\r\n{}\r\n{}\r\n{}",
+        panel.batch_summary,
         panel.summary,
         if panel.pending {
             tr!("Waiting for the server")

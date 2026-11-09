@@ -65,10 +65,16 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         match capability {
             98 => oteryn_client_ui::quick_loot::apply_result(&mut mailbox.discovery.loot, response),
-            132 => oteryn_client_ui::inspection::apply_result(
-                &mut mailbox.discovery.inspection,
-                response,
-            ),
+            132 => {
+                crate::play::feature_0068_imbue::protocol::equipment_inspection_result(
+                    &mut mailbox,
+                    response,
+                );
+                oteryn_client_ui::inspection::apply_result(
+                    &mut mailbox.discovery.inspection,
+                    response,
+                );
+            }
             200 => oteryn_client_ui::team_finder_leader::protocol::apply_result(
                 &mut mailbox.discovery.leader,
                 response,

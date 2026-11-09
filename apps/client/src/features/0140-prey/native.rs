@@ -134,245 +134,203 @@ unsafe fn window(owner: HWND, title: &str, width: i32, height: i32, actions: &mu
     }
 }
 
-unsafe fn slot_controls(parent: HWND, index: usize) -> SlotControls {
-    // SAFETY: all controls share the live parent and its owning thread.
+fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
+    // SAFETY: windows, controls, userdata and message dispatch remain on this thread.
     unsafe {
-        let x = 12 + index as i32 * 302;
-        let base = 1000 + index * 100;
-        let title = control(parent, "STATIC", "", base + 90, [x, 46, 290, 44], 0);
-        let creatures = (0..prey::MAX_CREATURES)
-            .map(|cell| {
-                let hwnd = control(
-                    parent,
-                    "BUTTON",
-                    "",
-                    base + cell,
-                    [
-                        x + (cell % 3) as i32 * 96,
-                        94 + (cell / 3) as i32 * 64,
-                        CELL_WIDTH,
-                        CELL_HEIGHT,
-                    ],
-                    BS_CHECKBOX as u32 | BS_PUSHLIKE as u32 | BS_MULTILINE as u32 | WS_TABSTOP,
-                );
-                ShowWindow(hwnd, SW_HIDE);
-                hwnd
-            })
-            .collect();
-        let tiers = std::array::from_fn(|tier| {
-            control(
-                parent,
-                "BUTTON",
-                &format!("{}★", tier + 1),
-                base + 70 + tier,
-                [x + tier as i32 * 57, 290, 56, 28],
-                BS_RADIOBUTTON as u32 | WS_TABSTOP,
-            )
-        });
-        let buttons = std::array::from_fn(|button| {
-            control(
-                parent,
-                "BUTTON",
-                [
-                    tr!("List reroll"),
-                    tr!("Bonus reroll"),
-                    tr!("Select"),
-                    tr!("Pick again…"),
-                    tr!("Manual"),
-                    tr!("Auto reroll"),
-                    tr!("Lock bonus"),
-                    tr!("Select any (5 cards)"),
-                ][button],
-                base + 80 + button,
-                [x, 324, 92, 28],
-                WS_TABSTOP,
-            )
-        });
-        let creature = control(
-            parent,
-            "EDIT",
-            "oteryn:",
-            base + 89,
-            [x, 420, 284, 28],
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(creature, EM_SETLIMITTEXT, 256, 0);
-        SlotControls {
-            title,
-            creatures,
-            tiers,
-            buttons,
-            creature,
+        let mut actions = Box::<Actions>::default();
+        let hwnd = window(null_mut(), tr!("Prey"), 936, 446, &mut actions);
+        if hwnd.is_null() {
+            close(&weak);
+            return;
         }
-    }
-}
-
-unsafe fn offered_window(parent: HWND, actions: &mut Actions) -> Offers {
-    // SAFETY: all HWNDs and the shared action pointer remain on this thread.
-    unsafe {
-        let hwnd = window(parent, tr!("Creatures offered today"), 640, 590, actions);
-        let rows = (0..prey::MAX_OFFERED_PAGE)
-            .map(|row| {
-                control(
-                    hwnd,
-                    "BUTTON",
-                    "",
-                    OFFER + row,
-                    [10, 10 + row as i32 * 30, 604, 28],
-                    WS_TABSTOP,
-                )
-            })
-            .collect();
-        let first = control(
+        let description = control(hwnd, "STATIC", "", 900, [12, 12, 770, 28], 0);
+        let refresh = control(
             hwnd,
             "BUTTON",
-            tr!("First page"),
-            FIRST,
-            [10, 506, 294, 28],
+            tr!("Refresh"),
+            REFRESH,
+            [796, 10, 110, 28],
             WS_TABSTOP,
         );
-        let next = control(
-            hwnd,
-            "BUTTON",
-            tr!("Next page"),
-            NEXT,
-            [320, 506, 294, 28],
-            WS_TABSTOP,
-        );
-        Offers {
-            window: hwnd,
-            rows,
-            first,
-            next,
+        let slots: Vec<_> = (0..3).map(|index| slot_controls(hwnd, index)).collect();
+        if description.is_null()
+            || refresh.is_null()
+            || slots.iter().any(|slot| {
+                slot.title.is_null()
+                    || slot.creature.is_null()
+                    || slot
+                        .creatures
+                        .iter()
+                        .chain(slot.tiers.iter())
+                        .chain(slot.buttons.iter())
+                        .any(|h| h.is_null())
+            })
+        {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
         }
-    }
-}
-
-unsafe fn render_slots(window: HWND, controls: &[SlotControls], panel: &PreyPanel) {
-    // SAFETY: controls are checked live on the window's owning thread.
-    unsafe {
-        let rows = GridLayout::for_panel(panel).rows as i32;
-        let tier_y = 94 + rows * 64;
-        SetWindowPos(
-            window,
-            null_mut(),
-            0,
-            0,
-            936,
-            tier_y + 260,
-            SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE,
-        );
-        for (index, controls) in controls.iter().enumerate() {
-            let slot_id = index as u8 + 1;
-            let state = panel.slot(slot_id);
-            let x = 12 + index as i32 * 302;
-            SetWindowTextW(
-                controls.title,
-                wide(&state.map_or_else(
-                    || lfmt!("Slot {slot_id} · Loading…", slot_id = slot_id),
-                    slot_text,
-                ))
-                .as_ptr(),
-            );
-            for (cell, &hwnd) in controls.creatures.iter().enumerate() {
-                if let Some(key) = state.and_then(|state| state.creatures.get(cell)) {
-                    SetWindowTextW(hwnd, wide(&creature_label(key)).as_ptr());
-                    ShowWindow(hwnd, SW_SHOW);
-                    EnableWindow(
-                        hwnd,
-                        i32::from(
-                            panel.pending.is_none() && state.is_some_and(|state| state.state == 1),
-                        ),
-                    );
-                    SendMessageW(
-                        hwnd,
-                        BM_SETCHECK,
-                        usize::from(panel.candidate[index] == Some(cell as u8 + 1)),
-                        0,
-                    );
-                } else {
-                    ShowWindow(hwnd, SW_HIDE);
+        let mut offers: Option<Offers> = None;
+        let mut held: Option<PreyPanel> = None;
+        let mut message: MSG = std::mem::zeroed();
+        loop {
+            while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                let dialog = offers
+                    .as_ref()
+                    .filter(|offers| IsWindow(offers.window) != 0)
+                    .map_or(hwnd, |offers| offers.window);
+                if IsDialogMessageW(dialog, &message) == 0 {
+                    TranslateMessage(&message);
+                    DispatchMessageW(&message);
                 }
             }
-            for (tier, (label, checked, enabled)) in
-                tier_choices(panel, slot_id).into_iter().enumerate()
+            if IsWindow(hwnd) == 0 {
+                break;
+            }
+            let Some(shared) = weak.upgrade() else {
+                break;
+            };
+            let mut mailbox = lock(&shared);
+            if mailbox.prey_shutdown {
+                break;
+            }
+            if offers
+                .as_ref()
+                .is_some_and(|offers| IsWindow(offers.window) == 0)
             {
-                let hwnd = controls.tiers[tier];
-                MoveWindow(hwnd, x + tier as i32 * 57, tier_y, 56, 28, 1);
-                SetWindowTextW(hwnd, wide(&label).as_ptr());
-                SendMessageW(hwnd, BM_SETCHECK, usize::from(checked), 0);
-                EnableWindow(hwnd, i32::from(enabled));
+                offers = None;
+                mailbox.prey.offered_slot = None;
             }
-            for (button, &hwnd) in controls.buttons.iter().enumerate() {
-                let (column, row, width) = match button {
-                    0..=2 => (button as i32, 32, 92),
-                    3 => (0, 66, 284),
-                    4..=6 => (button as i32 - 4, 100, 92),
-                    _ => (0, 168, 284),
-                };
-                MoveWindow(hwnd, x + column * 96, tier_y + row, width, 28, 1);
-                let enabled = panel.pending.is_none()
-                    && panel.unlocked(slot_id)
-                    && match button {
-                        1 => state.is_some_and(|state| state.state == 2),
-                        7 => state.is_some_and(|state| state.state == 1),
-                        2 => {
-                            state.is_some_and(|state| state.state == 1)
-                                && panel.candidate[index].is_some()
+            let mut confirmation = None;
+            for action in std::mem::take(&mut actions.0) {
+                let intent = if action == REFRESH {
+                    Some(Intent::Refresh)
+                } else if (OFFER..OFFER + prey::MAX_OFFERED_PAGE).contains(&action) {
+                    confirmation = mailbox.prey.confirm_offer(action - OFFER);
+                    None
+                } else if action == FIRST || action == NEXT {
+                    mailbox.prey.offered_slot.map(|slot| Intent::OfferedToday {
+                        slot,
+                        after: if action == FIRST {
+                            String::new()
+                        } else {
+                            mailbox.prey.offered_next.clone()
+                        },
+                    })
+                } else if (1000..1300).contains(&action) {
+                    let slot = ((action - 1000) / 100 + 1) as u8;
+                    let control = (action - 1000) % 100;
+                    match control {
+                        0..=63 => {
+                            mailbox.prey.choose_candidate(slot, control as u8 + 1);
+                            None
                         }
-                        _ => true,
-                    };
-                EnableWindow(hwnd, i32::from(enabled));
-            }
-            MoveWindow(controls.creature, x, tier_y + 134, 284, 28, 1);
-            EnableWindow(
-                controls.creature,
-                i32::from(panel.pending.is_none() && panel.unlocked(slot_id)),
-            );
-        }
-    }
-}
-
-unsafe fn render_offers(offers: &Offers, panel: &PreyPanel) {
-    // SAFETY: the offers window is still live and owned by this thread.
-    unsafe {
-        for (index, &hwnd) in offers.rows.iter().enumerate() {
-            if let Some(row) = panel.offered_today.get(index) {
-                let occupied =
-                    row.occupied_slot != 0 && Some(row.occupied_slot) != panel.offered_slot;
-                let suffix = if occupied {
-                    lfmt!(" · in slot {}", row.occupied_slot)
+                        70..=74 => Some(Intent::SetTier {
+                            slot,
+                            tier: (control - 69) as u8,
+                        }),
+                        80 => Some(Intent::ListReroll { slot }),
+                        81 => Some(Intent::BonusReroll { slot }),
+                        82 => Some(Intent::Select { slot }),
+                        83 => Some(Intent::OfferedToday {
+                            slot,
+                            after: String::new(),
+                        }),
+                        84..=86 => Some(Intent::SetOption {
+                            slot,
+                            option: (control - 84) as u8,
+                        }),
+                        87 => {
+                            let mut text = [0_u16; 257];
+                            let count = GetWindowTextW(
+                                slots[usize::from(slot - 1)].creature,
+                                text.as_mut_ptr(),
+                                text.len() as i32,
+                            );
+                            String::from_utf16(&text[..count as usize])
+                                .ok()
+                                .map(|creature| Intent::SelectAny { slot, creature })
+                        }
+                        _ => None,
+                    }
                 } else {
-                    String::new()
+                    None
                 };
-                SetWindowTextW(
+                if let Some(intent) = intent {
+                    super::super::input::enqueue(&mut mailbox, &commands, intent);
+                }
+            }
+            if mailbox.prey.offered_slot.is_some() && offers.is_none() {
+                let created = offered_window(hwnd, &mut actions);
+                if created.window.is_null()
+                    || created.rows.iter().any(|h| h.is_null())
+                    || created.first.is_null()
+                    || created.next.is_null()
+                {
+                    if !created.window.is_null() {
+                        DestroyWindow(created.window);
+                    }
+                    mailbox.prey.offered_slot = None;
+                    mailbox.prey.feedback = Some(tr!("Could not open the offered-creature list."));
+                } else {
+                    offers = Some(created);
+                }
+            }
+            if mailbox.prey.offered_slot.is_none()
+                && let Some(old) = offers.take()
+            {
+                DestroyWindow(old.window);
+            }
+            let panel = &mailbox.prey;
+            if held.as_ref() != Some(panel) {
+                SetWindowTextW(description, wide(&panel_text(panel)).as_ptr());
+                EnableWindow(
+                    refresh,
+                    i32::from(panel.selected && panel.pending.is_none()),
+                );
+                render_slots(hwnd, &slots, panel);
+                if let Some(offers) = &offers {
+                    render_offers(offers, panel);
+                }
+                held = Some(panel.clone());
+            }
+            drop(mailbox);
+            if let Some(confirmation) = confirmation {
+                let answer = MessageBoxW(
                     hwnd,
                     wide(&lfmt!(
-                        "{} · {} gold{}",
-                        creature_label(&row.creature),
-                        row.price_gold,
-                        suffix
+                        "Select {} again in slot {} for {} gold?",
+                        creature_label(&confirmation.creature),
+                        confirmation.slot,
+                        confirmation.price_gold
                     ))
                     .as_ptr(),
+                    wide(tr!("Confirm Prey purchase")).as_ptr(),
+                    MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
                 );
-                EnableWindow(hwnd, i32::from(!occupied && panel.pending.is_none()));
-                ShowWindow(hwnd, SW_SHOW);
-            } else {
-                ShowWindow(hwnd, SW_HIDE);
+                if answer == IDYES {
+                    super::super::input::enqueue(
+                        &mut lock(&shared),
+                        &commands,
+                        Intent::ConfirmPickAgain(confirmation),
+                    );
+                } else {
+                    lock(&shared).prey.confirmation = None;
+                }
             }
+            std::thread::sleep(Duration::from_millis(30));
         }
-        EnableWindow(offers.first, i32::from(panel.pending.is_none()));
-        EnableWindow(
-            offers.next,
-            i32::from(panel.pending.is_none() && !panel.offered_next.is_empty()),
-        );
+        if let Some(offers) = offers
+            && IsWindow(offers.window) != 0
+        {
+            DestroyWindow(offers.window);
+        }
+        if IsWindow(hwnd) != 0 {
+            DestroyWindow(hwnd);
+        }
+        close(&weak);
     }
 }
-
-#[path = "native_localized_12.rs"]
-mod native_localized_12;
-
-use native_localized_12::run;
 
 fn close(weak: &WeakMailbox) {
     if let Some(mailbox) = weak.upgrade() {
@@ -383,3 +341,7 @@ fn close(weak: &WeakMailbox) {
 #[cfg(test)]
 #[path = "native_tests.rs"]
 mod tests;
+
+#[path = "native_widgets.rs"]
+mod native_widgets;
+use native_widgets::{offered_window, render_offers, render_slots, slot_controls};

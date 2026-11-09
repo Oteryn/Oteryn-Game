@@ -9,7 +9,7 @@ pub(super) unsafe fn create() -> HWND {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            540,
+            650,
             null_mut(),
             null_mut(),
             null_mut(),
