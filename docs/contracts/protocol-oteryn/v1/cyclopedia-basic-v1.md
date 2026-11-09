@@ -65,25 +65,34 @@ idempotent while one is active. Sampling prefers spaced points outside the curre
 viewport; inside points and relaxed spacing allow seven POIs in dense, bounded
 subareas.
 
-Shuffle resets POIs and the found count even after completion. Earned discovery
-credit remains monotonic: area percent still counts every credited subarea.
-The wire `discovered` flag describes completion of the current POI run; it is false
-while a reset run is active, even when durable discovery credit was earned earlier.
-A completed run has found=7 and no visible POIs, preserving the v1 codec bounds.
-No command numbers, result layout or result codes change; historical receipts
-remain readable, including the retired Premium/no-exploration refusals.
+Shuffle resets POIs, found count and completion. A same-transaction typed reset
+receipt permits the affected canonical subarea to lose completion; other progress
+regressions remain rejected. Area percentages and completed-area census are derived
+from current subarea rows. Completion is persisted, not the resulting bonus.
 
 The seventh accepted STEP queues the completion banner through the existing
-capability-31 status-text channel, which sends only to clients that selected it.
-The capability-57 client also presents completion when confirmed exploration
-progress changes to seven points, and labels Shuffle as Reset POIs. Its native
-atlas details expose a hover tooltip with the official +100–195 speed envelope
-in fully discovered areas. The exact speed contribution remains evidence-gated:
-`docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md`, S4,
-explicitly leaves progress mapping and activation timing unknown. This amendment
-does not enable that unresolved speed calculation. Discovery reference:
-`docs/reference/tibia-manual/interface.md`, §3.2.2, and the owner's T186/T187
-2026-11-09 official update extract.
+capability-31 status-text channel. The capability-57 client presents completion
+and labels Shuffle as Reset POIs.
+
+### Discovery speed query
+
+Command 6178, capability 57, has an empty request and a two-byte little-endian
+u16 reply containing the current discovery speed contribution (zero when inactive).
+The client queues it after current-location map actions and shows the confirmed
+value in the native hover tooltip and accessible panel text. Legacy 72/73 layouts
+and receipt replay remain unchanged.
+
+Owner decision 2026-11-09 (T187) sets content-defined `PARITY_PENDING` starting
+endpoints in `content/cyclopedia/discovery-speed.json`. For n fully discovered
+areas among N discoverable areas, the bonus is
+`minimum + floor((maximum-minimum)*(n-1)/(N-1))`; N=1 uses maximum.
+The contribution applies only inside a fully discovered area. The existing actor
+speed owner adds it once alongside condition and equipment contributions. Actual
+movement refreshes it before stepping and after arrival/completion; reset refreshes
+it immediately. Runtime values are rebuilt from fenced PostgreSQL progress, never
+used as an independent source of completion truth. Official news 8834 establishes
+the 100–195 envelope; the formula is the owner's enabled starting interpretation,
+not a newly claimed official formula.
 
 ## Public atlas extension (O078)
 

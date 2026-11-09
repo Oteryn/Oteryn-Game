@@ -21,6 +21,8 @@ mod content;
 mod overview;
 #[path = "cyclopedia/respawn.rs"]
 mod respawn;
+#[path = "cyclopedia/speed.rs"]
+mod speed;
 #[path = "cyclopedia/step.rs"]
 mod step;
 
@@ -69,6 +71,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY {
+            return self.cyclopedia_speed_wire(admitted, id, payload).await;
+        }
         if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&128) {
             return self.cyclopedia_atlas_wire(admitted, id, payload).await;
         }
@@ -290,6 +295,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 drop(slot);
                 // The donation is complete; respawn initialization acquires its own lane.
                 drop(trade_permit);
+                self.refresh_cyclopedia_speed(actor, admitted.game_session_id)
+                    .await;
                 if self.initialize_cyclopedia_respawn().await.is_err() {
                     return GuildReply::Unavailable;
                 }

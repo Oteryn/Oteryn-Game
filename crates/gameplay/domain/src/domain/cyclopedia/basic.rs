@@ -182,6 +182,7 @@ impl BasicArea {
                         points.push(*point);
                     }
                 }
+                state.discovered = false;
                 state.exploration = Some(Exploration { points, found: 0 });
                 Ok(true)
             }
@@ -219,7 +220,7 @@ mod tests {
     #![allow(clippy::panic)]
     use super::*;
     #[test]
-    fn discovery_activates_without_premium_and_completed_pois_reset_without_losing_credit() {
+    fn discovery_activates_without_premium_and_reset_removes_completion() {
         let Some(area) = BasicArea::embedded() else {
             panic!("authored area")
         };
@@ -269,7 +270,7 @@ mod tests {
             ),
             Ok(true)
         );
-        assert!(progress.discovered);
+        assert!(!progress.discovered);
         let Some(exploration) = progress.exploration.as_ref() else {
             panic!("reset POIs")
         };
