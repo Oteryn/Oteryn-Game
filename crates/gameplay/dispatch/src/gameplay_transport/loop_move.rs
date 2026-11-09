@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+pub(super) mod elemental_arrival;
 mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
@@ -653,7 +654,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let refused = LoopMoveResult::Refused;
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
-    let Some(permit) = admission.spell_lane_permit().await else {
+    let Some(mut permit) = admission.spell_lane_permit().await else {
         return LoopMoveResult::Unknown;
     };
     if !admission.states.player_trades.physical(
@@ -831,8 +832,19 @@ pub(super) async fn move_loop_item_with_house_capacity(
     } else {
         None
     };
-    let seed_result = match seed_target {
-        Some(target) => {
+    let elemental_result = admission
+        .commit_elemental_arrival(
+            &mut permit,
+            actor,
+            command,
+            native,
+            &loop_request,
+            ground.as_deref(),
+        )
+        .await;
+    let seed_result = match (elemental_result, seed_target) {
+        (Some(result), _) => result.map(Some),
+        (None, Some(target)) => {
             admission
                 .root
                 .commit_item_loop_seed_drop(
@@ -847,7 +859,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
                 )
                 .await
         }
-        None => Ok(None),
+        (None, None) => Ok(None),
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),

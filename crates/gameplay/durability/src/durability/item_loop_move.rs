@@ -60,6 +60,7 @@ use oteryn_gameplay_items::item_capacity::{
 };
 use serde::Serialize;
 use serde_json::json;
+use sha2::Digest;
 use sqlx::{Postgres, Row, Transaction};
 
 /// BAGS-1: the deepest admitted placement (the main backpack's direct entries are depth 1).
@@ -1165,13 +1166,28 @@ async fn apply_loop_move<C: ItemLoopContent>(
         // Map-MINT's exact source proof binds its context to the bundle digest (0130),
         // whereas the destination loop drop uses the actor's frame. A loop drop keeps
         // its frame context; both sources must keep their map and Content pins.
-        if let LoopDestination::Ground(to) = &request.destination
-            && (row.try_get::<String, _>("ground_map")? != to.map_revision
+        if let LoopDestination::Ground(to) = &request.destination {
+            let source_map: String = row.try_get("ground_map")?;
+            let loop_drop: bool = row.try_get("loop_drop")?;
+            // A corpse MINT binds the native pin's revision-string digest.
+            // Its first loop drop binds the underlying bundle revision instead.
+            let native_map = native_corpse
+                && !loop_drop
+                && source_map
+                    == format!(
+                        "sha256:{}",
+                        sha2::Sha256::digest(to.map_revision.as_bytes())
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    );
+            if (source_map != to.map_revision && !native_map)
                 || row.try_get::<String, _>("ground_content")? != to.content_revision
-                || (row.try_get::<bool, _>("loop_drop")?
-                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context))
-        {
-            return refuse(LoopMoveRefusal::Stale);
+                || ((loop_drop || native_corpse)
+                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context)
+            {
+                return refuse(LoopMoveRefusal::Stale);
+            }
         }
         SourceKind::Ground
     } else {

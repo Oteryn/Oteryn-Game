@@ -3,17 +3,29 @@ use super::{ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[path = "qn1_elemental_world_pin/arrival.rs"]
+mod arrival;
+
 #[test]
 fn qn1_elemental_world_pass_accepts_native_bundle_pin() -> TestResult {
+    run("qn1-elemental-world-pin")
+}
+
+#[test]
+fn qn1_elemental_live_drop_consumes_corpse_and_projects_native_boss() -> TestResult {
+    run("qn1-elemental-arrival")
+}
+
+fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
+        .spawn(move || {
             super::quest_world_callbacks::scenario(
-                "qn1-elemental-world-pin",
+                name,
                 Position {
                     x: 33199,
                     y: 32103,
@@ -36,8 +48,8 @@ fn qn1_elemental_world_pass_accepts_native_bundle_pin() -> TestResult {
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
-    native_scene(
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene_with_appearances};
+    native_scene_with_appearances(
         native,
         vec![NativeCrop {
             bytes: include_bytes!(concat!(
@@ -54,12 +66,16 @@ pub(super) fn world(
             }],
         }],
         &[],
+        &[7745],
     )
 }
 
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &super::fixture::Harness,
+    name: &str,
+    actor: crate::foundation::ExactActorRef,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
 ) -> TestResult {
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&harness.pool)
@@ -94,6 +110,10 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut runtime)
         .map_err(super::fixture::debug)?;
+    if name == "qn1-elemental-arrival" {
+        drop(runtime);
+        return arrival::exercise(owner, harness, actor, fence).await;
+    }
     let binding = runtime.binding();
     let recipe = &oteryn_gameplay_quests::quest::elemental_arrival::RECIPES[1];
     let clock = crate::durability::item_loop_move::ElementalSummonClock {

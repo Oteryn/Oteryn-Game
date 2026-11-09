@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let qm48 = name == "qm48/mammoth";
-    let elemental_pin = name == "qn1-elemental-world-pin";
+    let elemental_pin = name.starts_with("qn1-elemental-");
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
@@ -657,7 +657,14 @@ fn scenario_case(
         }
         owner.admit_quest_session(&admitted).await;
         if elemental_pin {
-            super::super::qn1_elemental_world_pin::exercise(&owner, &h).await?;
+            super::super::qn1_elemental_world_pin::exercise(
+                &owner,
+                &h,
+                name,
+                deps.actor,
+                fence.item_fence(),
+            )
+            .await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if mead {
