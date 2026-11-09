@@ -52,6 +52,8 @@ mod guarded_routes;
 mod ice_islands_tests;
 mod imported_explore;
 #[cfg(test)]
+mod paid_step_tests;
+#[cfg(test)]
 mod scripted_teleport_tests;
 mod live_admission;
 mod native_trials;
@@ -176,6 +178,9 @@ pub struct ItemOnTarget {
     pub target_remove: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub reusable: bool,
+    /// Explicit automatic debit on a fenced native STEP, without a client tool handle.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub on_step: bool,
     /// Require the exact carried source selected by the fenced USE gesture.
     #[serde(default, skip_serializing_if = "is_false")]
     pub selected_instance: bool,
@@ -839,7 +844,16 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                             || callback.effects.transform.is_some()))
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.requires_durable_commit()
-                    || callback.trigger != Trigger::Use
+                    || if item.on_step {
+                        callback.trigger != Trigger::StepIn
+                            || !callback.requires_world_admission
+                            || callback.selector.native.is_none()
+                            || item.reusable
+                            || item.replacement.is_some()
+                            || item.target_replacement.is_some()
+                    } else {
+                        callback.trigger != Trigger::Use
+                    }
                     || (item.selected_instance && !callback.requires_world_admission)
                     || item.count == 0
                     || item.count > 100

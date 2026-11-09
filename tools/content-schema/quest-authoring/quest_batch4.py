@@ -65,6 +65,7 @@ CALLBACK_FIELDS = {
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
     'success_message', 'native_rule', 'sources', 'facing', 'effects',
+    'requires_world_admission',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -342,7 +343,7 @@ def validate_callback(callback, directory):
             key + ': foreign quest owner or owner not qualified')
     require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
     selector = callback['selector']
-    selector_fields = {'position', 'unique', 'action', 'appearance'}
+    selector_fields = {'position', 'unique', 'action', 'appearance', 'native'}
     fields(selector, set(), selector_fields, key + ': selector')
     require(any(selector.get(field) is not None for field in ('position', 'unique', 'action')),
             key + ': selector requires position, unique or action')
@@ -350,6 +351,15 @@ def validate_callback(callback, directory):
         position(selector['position'], key + ': selector')
     for field in ('unique', 'action', 'appearance'):
         nullable_id(selector.get(field), key + ': selector ' + field)
+    require(type(callback.get('requires_world_admission', False)) is bool,
+            key + ': invalid world admission')
+    native = selector.get('native')
+    if native is not None:
+        fields(native, {'position', 'ordinal', 'appearance'},
+               {'position', 'ordinal', 'appearance'}, key + ': native selector')
+        position(native['position'], key + ': native selector')
+        require(integer(native['ordinal'], 0, 255)
+                and integer(native['appearance'], 1, 65535), key + ': invalid native selector')
     for field in ('reversible', 'return_on_failure'):
         require(type(callback[field]) is bool, key + ': invalid ' + field)
     lever = callback.get('lever')
@@ -405,9 +415,17 @@ def validate_callback(callback, directory):
         seen.add(location)
     item = callback.get('item_on_target')
     if item is not None:
-        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives'}, key + ': item_on_target')
+        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives', 'on_step'}, key + ': item_on_target')
+        automatic = item.get('on_step', False)
+        require(type(automatic) is bool, key + ': invalid automatic STEP input')
+        trigger_matches = (callback['trigger'] == 'use' and not automatic) or (
+            callback['trigger'] == 'step_in' and automatic
+            and callback.get('requires_world_admission') is True
+            and callback['selector'].get('native') is not None
+            and not item.get('reusable', False) and item.get('replacement') is None
+            and item.get('target_replacement') is None)
         require(valid_key(item['item']) and integer(item['count'], 1, 100)
-                and bool(callback['storage']) and callback['trigger'] == 'use', key + ': invalid item_on_target')
+                and bool(callback['storage']) and trigger_matches, key + ': invalid item_on_target')
         if item.get('replacement') is not None:
             require(valid_key(item['replacement']) and item['count'] == 1, key + ': invalid item replacement')
         require(type(item.get('reusable', False)) is bool, key + ': invalid reusable')

@@ -6,6 +6,9 @@ import argparse
 import copy
 import importlib
 import first_dragon_item_profiles
+import m01c_key_door_equipment_pin
+import qengine_reward_equipment_pin
+import questpc4_treasure_reward_equipment_pin
 import json
 import os
 import re
@@ -339,6 +342,10 @@ def main():
     )
     original = TEST.read_text()
     source = first_dragon_item_profiles.cohort_receipt(original)
+    source = m01c_key_door_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/key-door-item-profiles.json").read_bytes()),
+    )
     source = questpc4_treasure_reward_equipment_pin.refresh(
         source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),

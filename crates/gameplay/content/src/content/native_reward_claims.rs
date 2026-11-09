@@ -176,13 +176,35 @@ fn placement_candidate(placement: &Value) -> Result<Option<CandidatePlacement>, 
             return Ok(None);
         }
         for child in contents {
-            // The same exact Item/count grammar applies to roots and children.
+            // Fluid subtype belongs to one vessel, never to its stack quantity.
+            let fluid_subtype = match child.get("fluid_subtype") {
+                None => None,
+                Some(value) => {
+                    let Some(fluid) = value
+                        .as_u64()
+                        .and_then(|value| u8::try_from(value).ok())
+                        .filter(|value| {
+                            *value != 0 && child.get("count").and_then(Value::as_u64) == Some(1)
+                        })
+                    else {
+                        return Ok(None);
+                    };
+                    Some(fluid)
+                }
+            };
+            let mut quantity = child.clone();
+            let Some(fields) = quantity.as_object_mut() else {
+                return Ok(None);
+            };
+            fields.remove("fluid_subtype");
+            // All remaining fields retain the existing exact Item/count grammar.
             let mut leaf = ordinary.clone();
-            leaf["reward"] = serde_json::json!({"items": [child]});
+            leaf["reward"] = serde_json::json!({"items": [quantity]});
             let Some(child) = candidate_placement(&leaf, false)? else {
                 return Ok(None);
             };
             result.contents.push(RewardContainerItem {
+                fluid_subtype,
                 fluid_subtype: None,
                 item: child.item,
                 count: child.count,
@@ -233,6 +255,42 @@ mod tests {
         }
         fn appearance(&self, ordinal: u8) -> Option<u16> {
             (ordinal == 1).then_some(2472)
+        }
+    }
+
+    #[test]
+    fn native_authored_fluid_child_keeps_subtype_and_rejects_ambiguous_counts() {
+        let mut source = definition();
+        let child = &mut source["placements"][0]["reward"]["contents"][0];
+        child["item"]["key"] = "oteryn:item.tibia.i2874".into();
+        child["count"] = 1.into();
+        child["fluid_subtype"] = 1.into();
+        let shard = serde_json::json!({"records":[{"definition":source}]}).to_string();
+        let report = bind_reward_claims(&Base, &[&shard], &|_| true).expect("binding");
+        assert_eq!(report.served.len(), 1);
+        assert_eq!(
+            report.served[0].placements[0].contents[0].fluid_subtype,
+            Some(1)
+        );
+        for mutation in 0..6 {
+            let mut invalid = source.clone();
+            let child = &mut invalid["placements"][0]["reward"]["contents"][0];
+            match mutation {
+                0 => child["count"] = 2.into(),
+                1 => child["fluid_subtype"] = 0.into(),
+                2 => child["fluid_subtype"] = 256.into(),
+                3 => child["fluid_subtype"] = true.into(),
+                4 => child["fluid_subtype"] = serde_json::Value::Null,
+                _ => child["key_number"] = 3012.into(),
+            }
+            let shard = serde_json::json!({"records":[{"definition":invalid}]}).to_string();
+            assert!(
+                bind_reward_claims(&Base, &[&shard], &|_| true)
+                    .expect("binding")
+                    .served
+                    .is_empty(),
+                "accepted fluid mutation {mutation}"
+            );
         }
     }
 

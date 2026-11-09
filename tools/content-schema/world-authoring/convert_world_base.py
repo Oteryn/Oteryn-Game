@@ -1202,6 +1202,9 @@ def build(
         import last_creep_arena
 
         last_creep_arena.overlay_outputs(out, ROOT)
+    import m01c_key_doors
+
+    m01c_key_doors.overlay_outputs(out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix()))
     return out
 
 
