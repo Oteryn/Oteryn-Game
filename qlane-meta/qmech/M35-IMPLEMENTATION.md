@@ -451,3 +451,26 @@ finding. No assertion was removed or loosened, and no generated file changed.
 M35 remains PARTIAL for the previously documented final-source binding,
 partial-charge and remaining real-caller proof requirements. Node boot was
 skipped as instructed.
+
+## Demona Ring and Double Hero real-caller qualification
+
+Crystal 201189f8 `chest.lua:1555-1569` binds Demona Ring UID6126
+at(32504,31596,14) and UID6127 at(32515,31596,14), both appearance2472,
+with stealth ring3049 x1 and energy ring3051 x1. `chest.lua:819-833`
+binds Double Hero UID6032 at(33109,31679,13) and UID6033
+at(33110,31679,13), both appearance2469, with red gem3039 x1 and club
+ring3093 x1. Each mounted PostgreSQL case drives both source orders through
+literal wire USE, production RewardClaim MINT and durable quest obligations.
+The existing completion, replay, fresh-repeat refusal, receipt and obligation
+checks remain strict; exact persisted reward assertions cover each new pair.
+Neither first chest may complete its quest, and state is reloaded between
+claims. No production content or grant behaviour changes.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; both live PostgreSQL cases (2 passed, 0 failed) in274.78
+seconds, printing `M35_DEMONA_RING_POSTGRES_CASE_COMPLETED` and
+`M35_DOUBLE_HERO_POSTGRES_CASE_COMPLETED`. Self-review covered the complete
+handwritten delta and donor source records; no significant finding. No
+assertion was removed or loosened and no generated file changed. Node boot
+was skipped as instructed. The documented final-binding, partial-charge and
+remaining caller-proof requirements still leave the complete M35 row PARTIAL.

@@ -71,6 +71,8 @@ enum Case {
     GoblinTemple,
     CrystalWand,
     CircleRoom,
+    DemonaRing,
+    DoubleHero,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -90,6 +92,44 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: Demona Ring's two independent rewards.
+#[test]
+fn m35_source_pair_demona_ring_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::DemonaRing).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Demona Ring scenario panicked")??;
+    println!("M35_DEMONA_RING_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: Double Hero's two independent rewards.
+#[test]
+fn m35_source_pair_double_hero_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::DoubleHero).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Double Hero scenario panicked")??;
+    println!("M35_DOUBLE_HERO_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua: Circle Room's two independent rewards.
@@ -276,6 +316,18 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::DemonaRing => (
+            (32504, 31596, -14),
+            2472,
+            "oteryn:quest.demona_ring_quest",
+            &[(32504, 6126), (32515, 6127)],
+        ),
+        Case::DoubleHero => (
+            (33109, 31679, -13),
+            2469,
+            "oteryn:quest.double_hero_quest",
+            &[(33109, 6032), (33110, 6033)],
+        ),
         Case::CircleRoom => (
             (32495, 31992, -14),
             2469,
@@ -418,6 +470,8 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::GoblinTemple
                     | Case::CrystalWand
                     | Case::CircleRoom
+                    | Case::DemonaRing
+                    | Case::DoubleHero
             ) {
                 2
             } else {
@@ -669,6 +723,8 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::GoblinTemple
                                 | Case::CrystalWand
                                 | Case::CircleRoom
+                                | Case::DemonaRing
+                                | Case::DoubleHero
                         ) && index == 1
                 );
             }
@@ -874,7 +930,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             }
             if matches!(
                 case,
-                Case::Koshei | Case::BlackKnight | Case::CrystalWand | Case::CircleRoom
+                Case::Koshei
+                    | Case::BlackKnight
+                    | Case::CrystalWand
+                    | Case::CircleRoom
+                    | Case::DemonaRing
+                    | Case::DoubleHero
             ) {
                 let rewards: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
@@ -893,6 +954,24 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 "oteryn:item.tibia.i3381"
                             } else {
                                 "oteryn:item.tibia.i3419"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::DemonaRing) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3049"
+                            } else {
+                                "oteryn:item.tibia.i3051"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::DoubleHero) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3039"
+                            } else {
+                                "oteryn:item.tibia.i3093"
                             },
                             1,
                         )
