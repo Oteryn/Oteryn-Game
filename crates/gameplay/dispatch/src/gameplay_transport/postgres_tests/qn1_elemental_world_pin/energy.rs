@@ -14,6 +14,8 @@ pub(super) async fn exercise(
     h: &Harness,
     actor: ExactActorRef,
     fence: CurrentCharacterItemFence,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    reset: bool,
 ) -> TestResult {
     eprintln!("QN1_ELEMENTAL_ENERGY_SOIL_PG_READY");
     super::super::quest_world_callbacks::input_item(
@@ -202,7 +204,11 @@ pub(super) async fn exercise(
     eprintln!("QN1_ELEMENTAL_ENERGY_FIELD_COUNT_PG_EXECUTED");
     tx.rollback().await?;
     drop(permit);
-    super::handoff::exercise(owner, h, field.item.item_instance_id).await?;
+    if reset {
+        super::reset::exercise(owner, h, admitted, field.item.item_instance_id).await?;
+    } else {
+        super::handoff::exercise(owner, h, field.item.item_instance_id).await?;
+    }
     eprintln!("QN1_ELEMENTAL_ENERGY_SOIL_PG_EXECUTED");
     Ok(())
 }

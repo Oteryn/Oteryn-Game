@@ -9,6 +9,8 @@ mod arrival;
 mod energy;
 #[path = "qn1_elemental_world_pin/handoff.rs"]
 mod handoff;
+#[path = "qn1_elemental_world_pin/reset.rs"]
+mod reset;
 #[path = "qn1_elemental_world_pin/soil.rs"]
 mod soil;
 
@@ -32,6 +34,11 @@ fn qn1_elemental_energy_soil_creates_field_without_replacing_altar() -> TestResu
     run("qn1-elemental-energy-soil")
 }
 
+#[test]
+fn qn1_elemental_energy_field_retires_once_through_world_reset() -> TestResult {
+    run("qn1-elemental-energy-reset")
+}
+
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -42,7 +49,7 @@ fn run(name: &'static str) -> TestResult {
         .spawn(move || {
             super::quest_world_callbacks::scenario(
                 name,
-                if name == "qn1-elemental-energy-soil" {
+                if name.starts_with("qn1-elemental-energy-") {
                     Position {
                         x: 33094,
                         y: 32189,
@@ -113,6 +120,7 @@ pub(super) async fn exercise(
     name: &str,
     actor: crate::foundation::ExactActorRef,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
 ) -> TestResult {
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&harness.pool)
@@ -147,9 +155,17 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut runtime)
         .map_err(super::fixture::debug)?;
-    if name == "qn1-elemental-energy-soil" {
+    if name.starts_with("qn1-elemental-energy-") {
         drop(runtime);
-        return energy::exercise(owner, harness, actor, fence).await;
+        return energy::exercise(
+            owner,
+            harness,
+            actor,
+            fence,
+            admitted,
+            name.ends_with("-reset"),
+        )
+        .await;
     }
     if name == "qn1-elemental-soil" {
         drop(runtime);
