@@ -25,7 +25,8 @@ impl PlayLink {
                     return None;
                 }
                 panel.catalogue = None;
-                oteryn_client_ui::store::catalogue(panel)
+                let b = panel.browser.clone();
+                oteryn_client_ui::store::browse(panel, &b.category, &b.search, b.sort, 0)
             });
             if let Some(command) = command {
                 let _ = commands.send(PlayCommand::ServerMechanic(command));

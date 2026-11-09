@@ -107,6 +107,7 @@ fn room_line(text: &str) -> ChatLine {
 #[test]
 fn the_advertised_set_carries_chat_and_stays_closed() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
+    // Store browse command 6118 uses existing capability 154.
     // Wheel presentation queries 6119 and 6121 use existing capability 148.
     // Chat console command 6117 uses existing capability 7; no new advertised capability.
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.

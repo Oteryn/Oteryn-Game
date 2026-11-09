@@ -22,6 +22,8 @@ use std::sync::{Arc, LazyLock};
 
 #[path = "store/catalogue.rs"]
 mod catalogue;
+#[path = "store/browse.rs"]
+mod browse;
 #[path = "store/prey_retry.rs"]
 mod prey_retry;
 #[path = "store/hireling.rs"]
@@ -145,6 +147,11 @@ pub(super) async fn execute(
     payload: &[u8],
 ) -> (CommandStatus, Vec<u8>) {
     let encoded = match command_type {
+        wire::browse::COMMAND_TYPE => {
+            let Ok(query)=wire::browse::Query::decode(payload) else {return REJECTED;};
+            let Some(page)=browse::execute(owner,admitted,&query).await else {return REJECTED;};
+            page.encode()
+        }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
                 return REJECTED;

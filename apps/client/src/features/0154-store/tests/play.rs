@@ -233,7 +233,8 @@ fn coin_gift_reviews_exact_recipient_amount_and_remains_disabled()
 include!("ledger.rs");
 
 #[test]
-fn store_category_navigation_sends_server_key_with_fresh_cursor() -> Result<(), Box<dyn std::error::Error>> {
+fn store_category_navigation_sends_server_key_with_fresh_cursor()
+-> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::cui3::store::*;
     let (link, mut rx, outbox) = play_channel();
     outbox.store_initialize(true);
@@ -241,8 +242,11 @@ fn store_category_navigation_sends_server_key_with_fresh_cursor() -> Result<(), 
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.store.catalogue_category = "consumables.exercise-weapons".into();
         mailbox.store.catalogue = Some(StoreCataloguePage {
-            catalog_revision: "previous-category".into(), offers: Vec::new(),
-            next_page_cursor: "previous-page".into(), total_coins: 0, transferable_coins: 0,
+            catalog_revision: "previous-category".into(),
+            offers: Vec::new(),
+            next_page_cursor: "previous-page".into(),
+            total_coins: 0,
+            transferable_coins: 0,
         });
     }
     assert!(link.store_category("houses.hirelings"));
@@ -255,3 +259,5 @@ fn store_category_navigation_sends_server_key_with_fresh_cursor() -> Result<(), 
     assert!(!link.store_category("not-a-category"));
     Ok(())
 }
+#[path = "browser.rs"]
+mod browser;
