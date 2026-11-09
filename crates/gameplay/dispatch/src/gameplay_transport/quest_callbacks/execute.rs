@@ -76,7 +76,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
-        let close = callback.trigger == Trigger::StepOut
+        let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
+        let close = tree_reset
+            || callback.trigger == Trigger::StepOut
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
@@ -157,12 +159,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Occupied;
             }
         }
+        let mut restored_trees = Vec::new();
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
         for passage_definition in &callback.passages {
             let passage = passage_definition;
             let p = tile(passage.position);
             if close
+                && !tree_reset
                 && super::super::map_door::doorway_occupied(
                     runtime,
                     actor,
@@ -251,6 +255,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 replacements.push((*passage, facts, !close));
             } else {
+                if tree_reset && map.facts.base_hidden(*passage) {
+                    restored_trees.push(p);
+                }
                 passages.push(*passage);
             }
         }
@@ -869,6 +876,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_EFFECT,
                 );
             }
+        }
+        for position in restored_trees {
+            map.facts.emit_movement_effect(position, 13);
         }
         for effect in &callback.effects {
             // Presentation uses the existing bounded movement occurrence stream;

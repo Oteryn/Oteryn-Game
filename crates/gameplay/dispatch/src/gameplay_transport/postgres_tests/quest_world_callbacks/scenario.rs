@@ -939,6 +939,8 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
+            super::super::m07_dreamer_ring_reset::exercise(&mut owner,&mut admitted,&callback,trigger).await?;
         } else if carrot {
             super::super::m07_dreamer_carrot::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,origin,name == "m07-carrot-premium").await?;
         } else if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {

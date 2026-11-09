@@ -33,6 +33,7 @@ pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
 pub mod dreamer_carrot;
+pub mod dreamer_death_ring;
 pub mod dreamer_fire_bug;
 pub mod elemental_spheres;
 pub mod fire_feathered_native;

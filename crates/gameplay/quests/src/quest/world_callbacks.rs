@@ -344,6 +344,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::dreamer_carrot::callback());
+    callbacks.push(super::dreamer_death_ring::reset_callback());
     callbacks.extend(super::dreamer_fire_bug::callbacks());
     callbacks.extend(super::lions_rock::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
@@ -405,6 +406,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
         if (callback.key == super::dreamer_fire_bug::IGNITE
             && !super::dreamer_fire_bug::callbacks().contains(callback))
+            || (callback.key == super::dreamer_death_ring::RESET
+                && !super::dreamer_death_ring::shared_reset(callback))
             || (callback.key == super::dreamer_carrot::KEY
                 && !super::dreamer_carrot::shared_input(callback))
             || (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
