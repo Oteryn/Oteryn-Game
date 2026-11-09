@@ -36,6 +36,8 @@ pub(super) struct NewhavenTravel {
     pub(super) holds: std::sync::Mutex<HashMap<GameSessionId, Invocation>>,
 }
 
+#[path = "newhaven_travel_landing.rs"]
+mod landing;
 #[path = "paid_travel.rs"]
 mod paid;
 
@@ -151,6 +153,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let now = self.owner_now().get() / 1000;
         let text = intent.text.trim().to_ascii_lowercase();
+        let offer = route.offer(&text);
+        if let Some(selected) = offer
+            && !self.tutorial_departure_admissible(selected).await
+        {
+            if let Ok(mut prompts) = self.states.newhaven_travel.prompts.lock() {
+                prompts.remove(&session);
+            }
+            return NpcConversations::bank_reply(
+                &intent,
+                "That passage is currently unavailable.".into(),
+            );
+        }
         let prompt = {
             let Ok(mut prompts) = self.states.newhaven_travel.prompts.lock() else {
                 return ordinary;
@@ -159,9 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 prompts.remove(&session);
                 return ordinary;
             }
-            if (route == NewhavenRoute::Anna && text == "passage")
-                || (route == NewhavenRoute::Seagull && text == "rookgaard")
-            {
+            if let Some(route) = offer {
                 prompts.insert(
                     session,
                     Prompt::new(
@@ -210,6 +222,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(route) = prompt else {
             return ordinary;
         };
+        // Recheck after confirmation before booking a new relocation obligation.
+        if !self.tutorial_departure_admissible(route).await {
+            return NpcConversations::bank_reply(
+                &intent,
+                "That passage is currently unavailable.".into(),
+            );
+        }
         let Ok(command_id) = crate::foundation::CommandId::new(command.command_id) else {
             return ordinary;
         };

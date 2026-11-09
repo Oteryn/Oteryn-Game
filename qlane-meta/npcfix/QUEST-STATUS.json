@@ -679,5 +679,25 @@
     ],
     "focused_tests": "3 PASS, 0 failed, 0 ignored, 115.47s total",
     "qualification": "Focused3 cases, policy crate units, strict durability/dispatch library Clippy, workspace all-target check, fmt, duplicate migration and unchanged-input pin-check PASS"
+  },
+  "targuna_native_anna_slice": {
+    "state": "GREEN_PUSH_READY",
+    "scope": "Explicit Anna Targuna offer, original-fence immediate consumption and fresh-owner admission recovery; existing Thais default retained. Not a full socket/auth reconnect proof or whole-M38 completion.",
+    "red": "Real native source Anna reached POSTGRES_STARTED and failed explicit Targuna offer missing: []",
+    "green_pg_seconds": {
+      "NPCFIX_M38_TARGUNA_P20": 70.946393543,
+      "NPCFIX_M38_TARGUNA_ATOMIC": 9.174088329,
+      "NPCFIX_M38_ANNA_NATIVE recovery=false": 188.552198508,
+      "NPCFIX_M38_ANNA_NATIVE recovery=true": 179.111730057
+    },
+    "tests": [
+      "npcfix_m38_targuna_anna_literal_story_postgres",
+      "npcfix_m38_targuna_anna_fresh_owner_arrival_recovery_postgres",
+      "npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres",
+      "npcfix_m38_targuna_p20_supersedes_pending_arrival_postgres"
+    ],
+    "qualification": "Workspace all-target check6m58s, route/policy units, paid-return PG regression, strict three-library Clippy, fmt, duplicate migrations and unchanged-input pin-check PASS",
+    "migration": "none; no canonical content input changed",
+    "remaining": "Other M38 presence/contact/guarded passage content bindings remain unfinished; node boot delegated to CI"
   }
 }

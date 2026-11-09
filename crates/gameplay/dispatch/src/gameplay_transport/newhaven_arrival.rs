@@ -4,6 +4,9 @@ use super::*;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::npc_travel::ConsumeReplay;
 
+#[path = "newhaven_arrival_consume.rs"]
+mod consume;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn newhaven_chase_step(
         &self,
@@ -52,20 +55,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             placed.record.rest = *rest;
             placed
         };
-        if self
-            .root
-            .consume_npc_pending_arrival_placed(
-                self.character,
-                self.holder,
-                fence,
-                pending.occurrence,
-                placed,
-            )
+        let Some((_, fence)) = self
+            .consume_travel_arrival(session, actor, fence, pending.occurrence, placed)
             .await
-            .is_err()
-        {
+        else {
             return false;
-        }
+        };
         self.track_respawned(session, actor, &placed, fence);
         true
     }
@@ -238,17 +233,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let placed = placed?;
-        let consumed = self
-            .root
-            .consume_npc_pending_arrival_placed(
-                self.character,
-                self.holder,
-                current,
-                frozen.arrival.occurrence,
-                placed,
-            )
-            .await
-            .ok()?;
+        let (consumed, current) = self
+            .consume_travel_arrival(session, actor, current, frozen.arrival.occurrence, placed)
+            .await?;
         if consumed == crate::durability::npc_travel::ArrivalConsume::Consumed {
             self.track_respawned(session, actor, &placed, current);
         }

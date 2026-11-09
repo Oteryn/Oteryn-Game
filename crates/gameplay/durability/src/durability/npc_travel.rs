@@ -28,6 +28,7 @@ use crate::domain::CharacterId;
 use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
 
+mod arrival_home_town;
 pub(crate) mod arrival_policy;
 mod paid;
 mod return_port;
@@ -235,13 +236,14 @@ pub(super) async fn consume_with_citizenship(
     if classify_consume(row, occurrence) == ConsumeReplay::Complete {
         return Ok(ArrivalConsume::NoOp);
     }
-    let targuna: bool = sqlx::query_scalar(
-        "SELECT route='targuna' FROM game_newhaven_travel_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid"
-    ).bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice())
-        .fetch_optional(&mut **tx).await?.unwrap_or(false);
+    let targuna = arrival_home_town::target(tx, fence.character_id, occurrence)
+        .await?
+        .is_some();
     // Only the hometown owner can consume this arrival, in its citizenship transaction.
     // Keep the placement owner's admitted fallback rules; a capture need not equal the
     // requested tile (runtime_actor_death.rs, NPC-0 §6.1).
+    // P20 independently resolves current Premium expiry and may supersede any pending
+    // arrival with Thais. Ordinary arrival completion must still choose Targuna itself.
     if targuna && !arrival_policy::targuna_citizenship_allowed(citizenship) {
         return Err(TravelStoreError::InvalidInput);
     }

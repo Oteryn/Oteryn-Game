@@ -260,13 +260,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         relocation: Option<crate::durability::character_home_town::HomeTownRelocation>,
         world: &Self,
     ) -> Option<u32> {
+        let fence = self.current_quest_fence(session).await.ok()??;
+        self.commit_home_town_at_fence(session, actor, (citizenship, relocation), world, fence)
+            .await
+    }
+
+    /// Retain the authority of an already captured placement across asynchronous reads.
+    pub(super) async fn commit_home_town_at_fence(
+        &self,
+        session: GameSessionId,
+        actor: Option<ExactActorRef>,
+        change: (
+            Option<u32>,
+            Option<crate::durability::character_home_town::HomeTownRelocation>,
+        ),
+        world: &Self,
+        mut fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    ) -> Option<u32> {
+        let (citizenship, relocation) = change;
         let map = world.bundle_map()?;
         let table = &map.overlay.base().subareas;
         let default = table.default_town?;
         if citizenship.is_some_and(|id| table.town(id).is_none()) {
             return None;
         }
-        let mut fence = self.current_quest_fence(session).await.ok()??;
         // A Channel must match this composed owner. An activity may read its
         // existing World citizenship, but cannot claim a private citizen tile.
         if fence.runtime_scope.world_id() != self.world_id

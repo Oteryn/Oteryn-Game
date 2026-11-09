@@ -55,6 +55,17 @@ fn npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres() -> TestResu
                     .bind(fence.character_id.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(destination.x).bind(destination.y).bind(destination.floor).execute(&mut *tx).await?;
                 tx.commit().await?;
                 eprintln!("POSTGRES_STARTED NPCFIX_M38_TARGUNA_ATOMIC");
+                assert_eq!(owner.root.npc_pending_arrival_home_town(owner.character,owner.holder,fence,occurrence).await.map_err(debug)?,Some(34));
+                let unrelated = TravelOccurrence::from_bytes(crate::gameplay_transport::npc_trade_command::derived(b"m38-targuna-unrelated", session, 48002)).map_err(debug)?;
+                assert_eq!(owner.root.npc_pending_arrival_home_town(owner.character,owner.holder,fence,unrelated).await.map_err(debug)?,None);
+                let mut stale = fence;
+                stale.character_lease_generation = stale.character_lease_generation.checked_add(1).ok_or("lease overflow")?;
+                assert!(owner.root.npc_pending_arrival_home_town(owner.character,owner.holder,stale,occurrence).await.is_err(),"metadata must retain current authority");
+                super::maintain_ready(owner.root).await?;
+                sqlx::query("UPDATE game_newhaven_travel_receipts SET route='rookgaard' WHERE occurrence_id=encode($1,'hex')::uuid").bind(occurrence.as_bytes().as_slice()).execute(&h.pool).await?;
+                assert_eq!(owner.root.npc_pending_arrival_home_town(owner.character,owner.holder,fence,occurrence).await.map_err(debug)?,None);
+                sqlx::query("UPDATE game_newhaven_travel_receipts SET route='targuna' WHERE occurrence_id=encode($1,'hex')::uuid").bind(occurrence.as_bytes().as_slice()).execute(&h.pool).await?;
+
                 let ordinary = owner.root.consume_npc_pending_arrival_placed(owner.character,owner.holder,fence,occurrence,placed).await;
                 assert!(ordinary.is_err(), "ordinary consume must not omit citizenship: {ordinary:?}");
                 for town in [6, 8, 33] {
@@ -83,6 +94,7 @@ fn npcfix_m38_targuna_arrival_requires_atomic_citizenship_postgres() -> TestResu
                 assert_eq!(owner.root.character_home_town(owner.character,owner.holder,fresh,33,Some(6),None).await.map_err(debug)?,6);
                 let replay_fence = owner.current_quest_fence(session).await.map_err(|()| "fence")?.ok_or("replay fence")?;
                 assert!(owner.root.character_home_town(owner.character,owner.holder,replay_fence,33,Some(34),Some(HomeTownRelocation{cause:crate::durability::character_home_town::HomeTownRelocationCause::Arrival,placed,respawn:None,arrival:Some(occurrence)})).await.is_err(),"replaying an old arrival must not rewind later citizenship");
+                assert_eq!(owner.root.npc_pending_arrival_home_town(owner.character,owner.holder,replay_fence,occurrence).await.map_err(debug)?,None,"retired arrival metadata cannot grant citizenship");
                 let town: i32 = sqlx::query_scalar("SELECT town_id FROM game_character_home_towns").fetch_one(&h.pool).await?;
                 assert_eq!(town,6);
 

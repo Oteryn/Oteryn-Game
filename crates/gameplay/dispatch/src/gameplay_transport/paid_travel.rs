@@ -3,7 +3,6 @@ use super::*;
 use crate::content::npc_catalogue::travel::TravelRoute;
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
-use crate::map::view::MapFacts;
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
@@ -327,21 +326,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: destination.y,
             floor: destination.floor,
         };
-        if !super::super::respawn_cell_admissible(
-            self.movement_cells().index(),
-            self.movement_cells().scope(),
-            self.world_id,
-            runtime.content_pin().server_artifact_digest(),
-            &std::collections::BTreeSet::new(),
-            cell,
-        ) || self.bundle_map().is_some_and(|map| {
-            crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
-                x: cell.x,
-                y: cell.y,
-                z: i32::from(cell.floor),
-            })
-            .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
-        }) {
+        if !self.travel_landing_admissible(&runtime, cell) {
             return None;
         }
         let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)?;
