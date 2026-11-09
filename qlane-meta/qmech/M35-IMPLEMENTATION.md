@@ -349,3 +349,29 @@ The live case passes in126.35 seconds and prints
 removed. The forward migration and its real-caller/negative proof form the
 coordinator's review packet for this persistence repair; no PR or review was
 requested by this single-agent lane.
+
+## Draconia complete charged-weapon bag and caller proof
+
+The new authoring check was RED because UID6023's complete bag was held on the
+canonical Ice Rapier3284 materialization flag. Its already-admitted native
+profile has exactly one charge and matching physical, custody and weapon facts.
+The scoped charged-item qualification now includes `kv/draconia1` and3284's
+one-charge definition. It also checks agreeing weapon facts; the regression
+rejects changed attack and charge count. The canonical Item and the entire
+published native Item provider remain byte-identical to the preceding head.
+
+The generated complete recipes increase72->73, held shapes33->32, and bag-member
+closure142->144 (Ice Rapier3284 and Serpent Sword3297). No source quantity,
+immutable capture, migration or protocol identity changes. The source roots are
+UID6023 at(32803,31582,2) and UID6024 at(32804,31582,2), both appearance2472.
+The actual caller grants bag2853 with3284+3297 and bag2853 with3081+3051,
+all one instance each. The PostgreSQL case checks either bag first remains
+incomplete, both together complete, exact roots/children, consumed obligations,
+duplicate replay and refusal of a fresh duplicate, with durable tracks reloaded
+between source claims.
+
+Fresh checks passed: formatting; content+dispatch all-features/all-target clippy
+with `-D warnings`; content decoder12; container authoring16 (RED before the fix,
+GREEN after regeneration); variant authoring13; callback generator14; existing
+authoring29; native-only generation/reproducibility. The live case passed
+in128.99 seconds with `M35_DRACONIA_POSTGRES_CASE_COMPLETED`. No local node boot.

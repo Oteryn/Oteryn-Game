@@ -23,6 +23,7 @@ ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
 # exact quest claims; neither global Item definitions nor other quests change.
 CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
+    'canary:reward-claim/kv/draconia1': 3284,
     'canary:reward-claim/kv/fireaxe1': 3085,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
@@ -44,7 +45,7 @@ def native_charge_item(item, profile):
         return item
     identity = item['identity']
     key = identity['key']
-    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
+    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
     semantics = profile['semantics']
     binding = profile['production_binding']
     if (charges is None or profile['production_definition'] != {
@@ -66,7 +67,7 @@ def native_charge_item(item, profile):
         return accepted == observed
 
     if (not all(agrees(item['semantics'][field], semantics[field]) for field in
-                ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal'))
+                ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal', 'weapon'))
             or any(fact({'semantics': semantics}, 'physical', field) is not True
                    for field in ('movable', 'pickupable'))
             or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):

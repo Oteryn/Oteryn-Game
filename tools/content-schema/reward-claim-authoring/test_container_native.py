@@ -16,6 +16,27 @@ class ContainerNativeTests(unittest.TestCase):
                     for r in json.loads(p.read_text())['records']]
         cls.bear = next(d for d in cls.rows if d['identity']['key'] == 'oteryn:reward-claim.kv.bear_chest1')
 
+    def test_draconia_bag_keeps_the_one_charge_ice_rapier_and_serpent_sword(self):
+        claim = next(d for d in self.rows if d['identity']['key'] ==
+                     'oteryn:reward-claim.kv.draconia1')
+        items = container_native.claim_items(claim['provenance']['pilot_key'], self.items)
+        recipe = container_native.derive(claim, items, plain.stack_problem)
+        self.assertIsNotNone(recipe)
+        self.assertEqual(recipe['placements'][0]['unique_id'], 6023)
+        self.assertEqual([(c['item']['key'], c['count']) for c in recipe['placements'][0]['contents']],
+                         [('oteryn:item.tibia.i3284', 1), ('oteryn:item.tibia.i3297', 1)])
+        key = 'oteryn:item.tibia.i3284'
+        self.assertFalse(self.items[key]['materializable'])
+        profiles = json.loads((plain.ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        profile = next(p for p in profiles['records'] if p['production_definition']['production_key'] == key)
+        self.assertTrue(container_native.native_charge_item(self.items[key], profile)['materializable'])
+        changed = copy.deepcopy(profile)
+        changed['semantics']['weapon']['value']['attack']['value'] += 1
+        self.assertIs(container_native.native_charge_item(self.items[key], changed), self.items[key])
+        changed = copy.deepcopy(profile)
+        changed['semantics']['charges']['value']['count']['value'] = 2
+        self.assertIs(container_native.native_charge_item(self.items[key], changed), self.items[key])
+
     def test_fire_axe_bag_preserves_the_full_definition_charge_necklace(self):
         claim = next(d for d in self.rows if d['identity']['key'] ==
                      'oteryn:reward-claim.kv.fireaxe1')

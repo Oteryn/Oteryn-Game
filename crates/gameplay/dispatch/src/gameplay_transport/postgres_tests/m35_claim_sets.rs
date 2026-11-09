@@ -67,6 +67,7 @@ enum Case {
     FireAxeBag,
     FireAxeAll,
     EmperorCookies,
+    Draconia,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -86,6 +87,24 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_draconia_dispatch_requires_both_complete_bags_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Draconia).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Draconia scenario panicked")??;
+    println!("M35_DRACONIA_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 #[test]
@@ -197,6 +216,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             2472,
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
+        ),
+        Case::Draconia => (
+            (32803, 31582, -2),
+            2472,
+            "oteryn:quest.draconia_quest",
+            &[(32803, 6023), (32804, 6024)],
         ),
         Case::EmperorCookies => (
             (32648, 31905, -3),
@@ -312,6 +337,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::BlackKnight
                     | Case::FireAxeAll
                     | Case::EmperorCookies
+                    | Case::Draconia
             ) {
                 2
             } else {
@@ -559,7 +585,39 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::BlackKnight
                                 | Case::FireAxeAll
                                 | Case::EmperorCookies
+                                | Case::Draconia
                         ) && index == 1
+                );
+            }
+            if matches!(case, Case::Draconia) {
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 5")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    for item in if pos == 0 {
+                        ["oteryn:item.tibia.i3284", "oteryn:item.tibia.i3297"]
+                    } else {
+                        ["oteryn:item.tibia.i3081", "oteryn:item.tibia.i3051"]
+                    } {
+                        expected.push((item.to_owned(), 1));
+                    }
+                }
+                expected.sort();
+                assert_eq!(children, expected);
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    roots,
+                    vec![("oteryn:item.tibia.i2853".to_owned(), 1); index + 1]
                 );
             }
             if matches!(case, Case::EmperorCookies) {
