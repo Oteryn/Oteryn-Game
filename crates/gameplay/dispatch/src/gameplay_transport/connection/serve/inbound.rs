@@ -57,7 +57,7 @@ where
             {
                 Ok(Some(())) => Ok(None),
                 Ok(None) => Err(ServeEnd::Disconnected),
-                Err(_) => Err(ServeEnd::ControlLost),
+                Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
         Next::Serene => {
@@ -145,7 +145,7 @@ where
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
                 Err(LivenessEnd::ControlLost) => {
-                    return Err(ServeEnd::ControlLost);
+                    return Err(ServeEnd::ControlLost("liveness_missed"));
                 }
                 Err(LivenessEnd::ProbesExhausted) => {
                     return Err(ServeEnd::Disconnected);
@@ -161,7 +161,7 @@ where
                 Ok(Err(_)) => {
                     return Err(ServeEnd::Disconnected);
                 }
-                Err(_) => return Err(ServeEnd::ControlLost),
+                Err(_) => return Err(ServeEnd::ControlLost("probe_write_timeout")),
             }
             // Existing periodic display work shares the liveness cadence. No independent
             // achievement timer or timestamp cursor is needed for committed kill/event facts.
@@ -181,7 +181,7 @@ where
             return match tokio::time::timeout(interval, updates).await {
                 Ok(Ok(())) => Ok(None),
                 Ok(Err(end)) => Err(end),
-                Err(_) => Err(ServeEnd::ControlLost),
+                Err(_) => Err(ServeEnd::ControlLost("updates_timeout")),
             };
         }
     };

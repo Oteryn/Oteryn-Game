@@ -200,7 +200,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     continue;
                 }
                 house_hireling::step::Event::Probe => {
-                    let probe = liveness.tick().map_err(|_| ServeEnd::ControlLost)?;
+                    let probe = liveness
+                        .tick()
+                        .map_err(|_| ServeEnd::ControlLost("house_transfer"))?;
                     let frame = encode_liveness_probe(generation, probe)
                         .map_err(|_| ServeEnd::Disconnected)?;
                     write_frame(stream, &frame)

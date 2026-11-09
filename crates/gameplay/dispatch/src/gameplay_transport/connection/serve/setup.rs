@@ -362,6 +362,7 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        input_after_refresh: false,
         activity_ack: None,
         cast_chat_revision: u64::from(cast_chat_active),
         require_session_binding: false,
