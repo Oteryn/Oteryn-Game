@@ -48,6 +48,9 @@ mod cookie_entry;
 #[path = "m01b_explore/moon_entry.rs"]
 mod moon_entry;
 
+#[path = "m01b_explore/crypt_entries.rs"]
+mod crypt_entries;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -318,6 +321,12 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if matches!(
+        name,
+        "m01b/inukaya/s1/inukaya" | "m01b/medusa-shield/s1/the_medusa_quest"
+    ) {
+        return crypt_entries::world(native, name);
     }
     if name == "m01b/grimvale-mini-world-change/s1/entry" {
         return moon_entry::world(native);

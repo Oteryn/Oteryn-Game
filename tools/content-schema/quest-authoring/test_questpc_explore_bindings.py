@@ -21,6 +21,42 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_crypt_distance_exception_does_not_widen_other_claims(self):
+        import questpc_fragment_approaches as fragments
+        key = 'canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir'
+        x,y,floor,appearance = fragments.APPROACHES[key]
+        with mock.patch.dict(fragments.APPROACHES, {key: (x+1,y,floor,appearance)}):
+            with self.assertRaisesRegex(ValueError, 'declared distance'):
+                fragments.resolve(ROOT, 'oteryn:quest.frost_dragon_quest', 'claim:' + key)
+        key = 'canary:reward-claim/quest/u8_0/shardsof_ancient_winters/inukaya'
+        with mock.patch.dict(fragments.DISTANCES, {key: 3}):
+            with self.assertRaisesRegex(ValueError, 'declared distance'):
+                fragments.resolve(ROOT, 'oteryn:quest.inukaya_quest', 'claim:' + key)
+
+    def test_inukaya_and_medusa_entries_are_activated(self):
+        callbacks = explore.callbacks(ROOT)
+        for quest in ('oteryn:quest.inukaya_quest', 'oteryn:quest.medusa_shield_quest'):
+            with self.subTest(quest=quest):
+                self.assertEqual(sum(c['quest'] == quest for c in callbacks), 1,
+                                 'one explicit crypt approach is activated')
+
+    def test_inukaya_and_medusa_source_approaches_keep_their_requirements(self):
+        bindings = (
+            ('oteryn:quest.inukaya_quest', 's1',
+             'claim:canary:reward-claim/quest/u8_0/shardsof_ancient_winters/inukaya',
+             'chosen-source/inukaya_quest'),
+            ('oteryn:quest.medusa_shield_quest', 's1',
+             'claim:canary:reward-claim/quest/u7_3/the_medusa_quest',
+             'chosen-source/medusa_shield_quest'),
+        )
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callbacks = explore.callbacks(ROOT)
+            self.assertEqual([c['selector']['position'] for c in callbacks], [
+                dict(x=32484,y=31109,floor=-8), dict(x=33050,y=32398,floor=-10)])
+            self.assertTrue(all(c['admission'] == {'premium': True} for c in callbacks))
+            self.assertEqual(callbacks[1]['minimum_level'], 60)
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_world_entry_owner_cannot_be_missing_held_or_ambiguous(self):
         import questpc_world_requirements as world
         quest = 'oteryn:quest.grimvale_mini_world_change'

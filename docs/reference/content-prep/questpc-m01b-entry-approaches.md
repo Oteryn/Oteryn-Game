@@ -123,3 +123,15 @@ crates/gameplay/durability/src/durability/world_event.rs current-reset reader.
 The predicate is `callback.world_change=grimvale`,not a retained UI moon snapshot.
 This counts a first-cycle surface visit during the committed full-moon day;
 it neither spawns Feroxa nor manufactures the encounter-owned portal.
+
+## Inukaya and Medusa crypt approaches
+
+Evidence: tools/content-schema/quest-authoring/samples/chests/claims.json,
+canonical claims `quest/u8_0/shardsof_ancient_winters/inukaya` and
+`quest/u7_3/the_medusa_quest`. Source: https://github.com/opentibiabr/canary/tree/04b83b51
+
+Inukaya source cache32483,31110,z8 retains6684+2523;its clear north-eastern
+approach32484,31109,z8 is6684,with eastern start6685. Medusa cache33049,32399,z10
+retains17544+17470+1983;its clear north-eastern approach33050,32398,z10 and
+eastern start are410. Both explicit distances are2 on the source floor.
+No source objects or collision rules change;no chest claim occurs on STEP.
