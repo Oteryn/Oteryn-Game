@@ -43,7 +43,11 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         }
     };
     callback.quest == rule.quest()
-        && callback.selector.native.is_none()
+        && callback.selector.native
+            == match rule {
+                NativeRule::BarbarianMead => Some(crate::quest::barbarian_mead::NATIVE),
+                _ => None,
+            }
         && callback.trigger == trigger
         && callback.selector.position
             == Some(Position {

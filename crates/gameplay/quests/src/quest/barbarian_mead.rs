@@ -1,5 +1,8 @@
 //! Replay-bound Barbarian Test booze outcomes, Crystal action_mead.lua:6-29.
-use super::{QuestRefusal, world_callbacks::Callback};
+use super::{
+    QuestRefusal,
+    world_callbacks::{Callback, NativeSelector, Position},
+};
 
 pub const KEY: &str = "oteryn:quest-callback/barbarian-test-mead";
 pub const QUEST: &str = "oteryn:quest.the_ice_islands_quest";
@@ -13,6 +16,16 @@ pub const TRACKS: [&str; 4] = [
 pub const DRAW: &str = "oteryn:quest-progress/native/barbarian_test/mead_draw";
 pub const NATIVE_TRACKS: [&str; 5] = [TRACKS[0], TRACKS[1], TRACKS[2], TRACKS[3], DRAW];
 pub const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_mead.lua:";
+/// Retained B3 source stack: floor408, wall2321, mead barrel7142.
+pub const NATIVE: NativeSelector = NativeSelector {
+    position: Position {
+        x: 32201,
+        y: 31154,
+        floor: -7,
+    },
+    ordinal: 2,
+    appearance: 7142,
+};
 
 pub fn callback() -> Result<Callback, String> {
     let storage: Vec<_> = NATIVE_TRACKS.into_iter().zip(RANGES).map(|(track,(minimum,maximum))|
@@ -20,7 +33,7 @@ pub fn callback() -> Result<Callback, String> {
     ).collect();
     super::world_callbacks::parse(&serde_json::json!({"schema":1,"callbacks":[{
         "key":KEY,"quest":QUEST,"trigger":"use",
-        "selector":{"position":{"x":32201,"y":31154,"floor":-7},"unique":null,"action":null,"appearance":null},
+        "selector":{"position":NATIVE.position,"unique":null,"action":null,"appearance":null,"native":NATIVE},
         "lever":null,"reversible":false,"passages":[],"teleport":null,
         "storage":storage,"offerings":[],"item_on_target":null,
         "native_rule":{"kind":"barbarian_mead"},
@@ -87,6 +100,38 @@ pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn m47_native_barrel_selector_is_closed() -> Result<(), String> {
+        let callback = callback()?;
+        let native = callback
+            .selector
+            .native
+            .clone()
+            .ok_or("missing native barrel selector")?;
+        assert_eq!(
+            (
+                native.position.x,
+                native.position.y,
+                native.position.floor,
+                native.ordinal,
+                native.appearance
+            ),
+            (32201, 31154, -7, 2, 7142)
+        );
+        for (ordinal, appearance) in [(0, 7142), (1, 7142), (2, 111)] {
+            let mut invalid = callback.clone();
+            let binding = invalid.selector.native.as_mut().ok_or("native barrel")?;
+            binding.ordinal = ordinal;
+            binding.appearance = appearance;
+            assert!(
+                super::super::world_callbacks::parse(
+                    &serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn m47_completed_mead_is_a_silent_progress_noop_with_source_feedback() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("m47-passed")
