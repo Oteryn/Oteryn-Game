@@ -355,6 +355,34 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
         None,
         "command replay must not recreate a consumed arrival"
     );
+    for changed_arrival in [
+        PendingArrival {
+            destination: LastPositionCell {
+                x: arrival.destination.x + 1,
+                ..arrival.destination
+            },
+            ..arrival
+        },
+        PendingArrival {
+            occurrence: TravelOccurrence::from_bytes(f::id(99)).map_err(f::debug)?,
+            ..arrival
+        },
+    ] {
+        assert!(matches!(
+            slot.commit_npc_teleport(
+                &h.root,
+                &authority,
+                &h.node,
+                &permit,
+                fence,
+                request.clone(),
+                catalogue.clone(),
+                &NoItems,
+                NpcTeleportAdmission { arrival: changed_arrival },
+            ).await,
+            Err(crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence)
+        ), "replay cannot substitute its admitted arrival");
+    }
     let mut changed = request.clone();
     changed.message = "trade".into();
     assert!(
