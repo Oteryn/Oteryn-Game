@@ -704,7 +704,7 @@ async fn mint_with_source(
                 fluid_subtype: i.fluid_subtype,
                 item: resolve(&i.item)?,
                 quantity: u32::from(i.count),
-                key_number: reward.key_number,
+                key_number: None,
                 text: None,
                 charges_remaining: None,
             })
@@ -719,7 +719,7 @@ async fn mint_with_source(
         sim_revision,
         achievement: None,
         quest_transition: None,
-        key_number: None,
+        key_number: reward.key_number,
     };
     validate_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?;
     let binding = intent_binding(&request, fence.character_id)
