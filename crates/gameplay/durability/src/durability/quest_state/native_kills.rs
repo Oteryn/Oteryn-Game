@@ -292,6 +292,9 @@ impl DurabilityRoot {
             None,
             Some(death),
             None,
+            None,
+            None,
+            None,
         )
         .await
     }

@@ -39,11 +39,11 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
             summary["source_lowered_consumer_lanes"],
         )
 
-    def test_every_stage_has_real_owner_and_is_unbound(self):
+    def test_every_stage_has_real_owner_and_only_two_selected_kills_are_bound(self):
         summary = self.report["summary"]
         self.assertEqual(1887, summary["plan_stages"])
-        self.assertEqual(1887, summary["unbound_dispatch_stages"])
-        self.assertEqual(0, summary["native_dispatch_bindings"])
+        self.assertEqual(1885, summary["unbound_dispatch_stages"])
+        self.assertEqual(2, summary["native_dispatch_bindings"])
         self.assertEqual(0, summary["native_reward_delivery_bindings"])
         self.assertEqual(
             {

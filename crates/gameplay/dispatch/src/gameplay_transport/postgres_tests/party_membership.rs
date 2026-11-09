@@ -56,7 +56,7 @@ fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     Ok(())
 }
 #[derive(Clone, Copy)]
-enum Step {
+pub(super) enum Step {
     Query,
     Invite(EntityRef),
     Accept,
@@ -66,7 +66,7 @@ enum Step {
     Malformed,
 }
 
-async fn roundtrip(
+pub(super) async fn roundtrip(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     steps: &[Step],

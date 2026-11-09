@@ -131,6 +131,8 @@ pub struct CastCostBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpellItemOperation {
+    /// Same physical Ground instance, source-qualified callback only.
+    TransformGround(DurableGroundItemTransform),
     ConsumeCorpse(DurableCorpseReservation),
     RemoveGround(DurableGroundItemReservation),
     MergeInventory(DurableInventoryGrantReservation),
@@ -216,6 +218,27 @@ pub struct DurableGroundItemReservation {
     pub placement: GroundPlacement,
     pub quantity: u32,
     pub contents: Vec<DurableContainedRetirement>,
+}
+
+/// Durable epoch projection of one retained source execution. Monotonic source
+/// time remains the callback ordering authority; this is only the timer bridge.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SourceIntrinsicDecayClock {
+    pub original_execution_us: u64,
+    pub execution_unix_ms: i64,
+    pub sampled_owner_us: u64,
+    pub sampled_unix_ms: i64,
+}
+
+/// Sealed by the existing scoped Item callback owner after a locked current
+/// Ground read. No external caller can construct a definition mutation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurableGroundItemTransform {
+    pub(super) current: DurableGroundItemReservation,
+    pub(super) target: QualifiedItemDefinition,
+    pub(super) intrinsic_decay_clock: Option<SourceIntrinsicDecayClock>,
+    pub(super) blocks_movement: bool,
+    pub(super) blocks_projectile: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

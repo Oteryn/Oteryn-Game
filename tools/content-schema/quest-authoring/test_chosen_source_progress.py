@@ -96,11 +96,11 @@ class ChosenSourceProgressTest(unittest.TestCase):
             merged["counts"]["quests"],
         )
         self.assertEqual(
-            base["counts"]["tracks"] + self.packet["summary"]["tracks"],
+            base["counts"]["tracks"] + self.packet["summary"]["tracks"] - 4,
             merged["counts"]["tracks"],
         )
         self.assertEqual(
-            base["counts"]["transitions"] + self.packet["summary"]["transitions"],
+            base["counts"]["transitions"] + self.packet["summary"]["transitions"] - 2,
             merged["counts"]["transitions"],
         )
         self.assertEqual(
@@ -133,12 +133,14 @@ class ChosenSourceProgressTest(unittest.TestCase):
                 key,
             )
             self.assertEqual(
-                overlay["tracks"],
+                [row for row in overlay["tracks"]
+                 if row["key"] not in {row["key"] for row in source["tracks"]}],
                 after["tracks"][len(source["tracks"]) :],
                 key,
             )
             self.assertEqual(
-                overlay["transitions"],
+                [row for row in overlay["transitions"]
+                 if row["key"] not in {row["key"] for row in source["transitions"]}],
                 after["transitions"][len(source["transitions"]) :],
                 key,
             )
@@ -149,6 +151,30 @@ class ChosenSourceProgressTest(unittest.TestCase):
             self.assertTrue(after["completion"]["source_progress_preserved"])
             self.assertFalse(after["completion"]["runtime_enabled"])
             self.assertFalse(after["completion"]["source_equivalence"])
+
+    def test_native_galthen_overlap_is_exact_and_partial_or_changed_is_refused(self):
+        base = json.loads(SOURCE_STATE.read_text(encoding="utf-8"))
+        quest = next(q for q in base['quests']
+                     if q['quest'] == 'oteryn:quest.adventures_of_galthen_quest')
+        overlay = next(q for q in self.packet['overlays'] if q['quest'] == quest['quest'])
+        for family, stages in [('tracks', ['s4', 's5', 's7', 's8']),
+                               ('transitions', ['s5', 's8'])]:
+            intersection = {r['key'] for r in quest[family]} & {r['key'] for r in overlay[family]}
+            prefix = ('oteryn:quest-progress/' if family == 'tracks'
+                      else 'oteryn:quest-transition/')
+            self.assertEqual(intersection, {
+                prefix + 'chosen-source/adventures_of_galthen_quest/' + stage for stage in stages})
+        for changed in ['track', 'transition', 'partial']:
+            fixture = copy.deepcopy(base)
+            target = next(q for q in fixture['quests'] if q['quest'] == quest['quest'])
+            if changed == 'track':
+                next(t for t in target['tracks'] if t['key'].endswith('/s5'))['max'] = 2
+            elif changed == 'transition':
+                next(t for t in target['transitions'] if t['key'].endswith('/s5'))['effects'][0]['from']['value'] = 0
+            else:
+                target['transitions'] = [t for t in target['transitions'] if not t['key'].endswith('/s5')]
+            with self.assertRaises(ValueError):
+                self.builder.merge(fixture, self.packet)
 
 
 if __name__ == "__main__":

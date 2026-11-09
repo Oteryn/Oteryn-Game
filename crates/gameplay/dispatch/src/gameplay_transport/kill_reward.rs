@@ -99,6 +99,14 @@ pub struct PendingKillSettlement {
     pub row: Option<Arc<CreatureRewardRow>>,
     /// Crystal player.cpp:6584-6607: Soulpit stack-40 XP has no ordinary loot binding.
     pub(super) soulpit_experience: Option<oteryn_simulation_determinism::ExactI64>,
+    /// A queued source onDeath must freeze its actual drop type before this
+    /// entry can reserve loot capacity or start any durable settlement.
+    source_death_pending: bool,
+    /// Scheduled multipliers sampled at the source task BEGIN, before handlers.
+    source_drop_rates: Option<oteryn_gameplay_foundation::scheduled_events::EventRates>,
+    source_completion: Option<
+        oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
+    >,
     pub bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
     pub(super) boss_slot_bonuses: Arc<OnceLock<BossSlotBonuses>>,
     pub ground: DeathGroundContext,
@@ -162,6 +170,7 @@ impl PendingKillSettlement {
         self.soulpit_experience
             .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
     }
+
     #[cfg(test)]
     pub(super) fn captured_talisman(
         &self,
@@ -219,6 +228,9 @@ impl PendingKillSettlement {
             boss_reward: None,
             activity_death: None,
             grizzly: None,
+            source_death_pending: false,
+            source_drop_rates: None,
+            source_completion: None,
             no_progression_logged: false,
         }
     }
@@ -411,6 +423,128 @@ impl KillSettlementQueue {
         &self.2
     }
 
+    /// Freeze the actual current native drop row at deferred task BEGIN,
+    /// before any old row can reserve MINT capacity. Retries use the stored
+    /// BEGIN rather than a later live type. Rowless source actors still own a
+    /// deferred task independently of the ordinary reward queue.
+    pub(super) fn freeze_source_drop_profile(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+    ) -> Result<(), ()> {
+        if !begin.current_for(runtime) || native.source_digest() != begin.content_digest() {
+            return Err(());
+        }
+        let row = native.reward_table().row(begin.definition_key()).ok();
+        let creature = begin.definition_key().to_owned();
+        let mut state = self.state();
+        if state
+            .in_flight
+            .iter()
+            .any(|(death, _, actor, _)| *death == begin.death_key() || *actor == begin.actor())
+        {
+            return Err(());
+        }
+        let matches = |entry: &PendingKillSettlement| {
+            entry.target == begin.actor() && entry.facts.death == begin.death_key()
+        };
+        for entry in state
+            .queued
+            .iter()
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
+            )
+            .filter(|entry| matches(entry))
+        {
+            if !entry.source_death_pending || (entry.boss_reward.is_some() && row.is_none()) {
+                return Err(());
+            }
+        }
+        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        let update = |entry: &mut PendingKillSettlement| {
+            entry.source_drop_rates.get_or_insert(event_rates);
+            // An unchanged native type already carries the ordinary frozen
+            // reward composition (including the principal's Gut product
+            // modifier). Refreshing that row from the base catalogue would
+            // erase it merely because this species has a deferred source task.
+            if entry.creature == creature {
+                return;
+            }
+            entry.creature.clone_from(&creature);
+            entry.row = row.clone();
+            if let (Some(boss), Some(reward)) = (&mut entry.boss_reward, &row) {
+                boss.reward = Arc::clone(reward);
+            }
+        };
+        for entry in state.queued.iter_mut().filter(|entry| matches(entry)) {
+            update(entry);
+        }
+        for mark in &mut state.releasing {
+            for (entry, _) in &mut mark.parked {
+                if matches(entry) {
+                    update(entry);
+                }
+            }
+        }
+        if let Some(row) = row {
+            state
+                .boss_contributions
+                .replace_source_drop_reward(begin.actor(), row);
+        }
+        Ok(())
+    }
+
+    pub(super) fn has_source_drop(
+        &self,
+        begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+    ) -> bool {
+        let state = self.state();
+        state
+            .queued
+            .iter()
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
+            )
+            .any(|entry| entry.target == begin.actor() && entry.facts.death == begin.death_key())
+    }
+
+    /// Release the pre-take barrier only after canonical source registration
+    /// completed. Physical corpse persistence may subsequently yield/retry.
+    pub(super) fn complete_source_drop(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        completed: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), ()> {
+        if !completed.current_for(runtime) {
+            return Err(());
+        }
+        let begin = completed.begin();
+        let mut state = self.state();
+        let matches = |entry: &PendingKillSettlement| {
+            entry.target == begin.actor() && entry.facts.death == begin.death_key()
+        };
+        for entry in state.queued.iter_mut().filter(|entry| matches(entry)) {
+            entry.source_completion = Some(completed.clone());
+            entry.source_death_pending = false;
+        }
+        for mark in &mut state.releasing {
+            for (entry, _) in &mut mark.parked {
+                if matches(entry) {
+                    entry.source_completion = Some(completed.clone());
+                    entry.source_death_pending = false;
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn analyser_receipts(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -588,6 +722,20 @@ impl KillSettlementQueue {
         state
             .proficiency_weapons
             .push((actor, session, revision, weapon.map(str::to_owned)));
+    }
+
+    /// Read the existing equipment witness for an authenticated scope successor.
+    /// Frozen death contributors remain owned by this queue and are not moved.
+    pub(super) fn activity_proficiency_equipment(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, Option<String>)> {
+        self.state()
+            .proficiency_weapons
+            .iter()
+            .find(|(held, current, _, _)| *held == actor && *current == session)
+            .map(|(_, _, revision, weapon)| (*revision, weapon.clone()))
     }
 
     fn freeze_proficiency(
@@ -929,6 +1077,55 @@ impl KillSettlementQueue {
             .collect()
     }
 
+    pub(super) fn core_head(
+        &self,
+    ) -> Result<
+        Option<(
+            ExactActorRef,
+            CreatureDeathOccurrenceKey,
+            Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+        )>,
+        (),
+    > {
+        let mut state = self.state();
+        state.prune_accepted_order();
+        let Some(death) = state.accepted_order.front() else {
+            return if state.entries() == 0 {
+                Ok(None)
+            } else {
+                Err(())
+            };
+        };
+        let entry = state
+            .queued
+            .iter()
+            .find(|entry| entry.facts.death == *death)
+            .ok_or(())?;
+        Ok(Some((
+            entry.target,
+            entry.facts.death,
+            entry.activity_observed_at,
+        )))
+    }
+
+    /// Read-only observation of the actual accepted core-death prefix.
+    #[cfg(test)]
+    pub(super) fn core_head_for_test(
+        &self,
+    ) -> Option<(
+        ExactActorRef,
+        CreatureDeathOccurrenceKey,
+        Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+    )> {
+        let state = self.state();
+        let death = state.accepted_order.front()?;
+        let entry = state
+            .queued
+            .iter()
+            .find(|entry| entry.facts.death == *death)?;
+        Some((entry.target, entry.facts.death, entry.activity_observed_at))
+    }
+
     #[cfg(test)]
     pub fn has_session(&self, session: GameSessionId) -> bool {
         self.state()
@@ -942,11 +1139,12 @@ impl KillSettlementQueue {
     /// reports it.
     #[cfg(test)]
     pub fn take(&self, session: GameSessionId, lease_generation: u64) -> TakeOutcome {
-        self.take_inner(session, lease_generation, false)
+        self.take_inner(session, lease_generation, false, None)
     }
 
+    #[cfg(test)]
     fn take_ordered(&self, session: GameSessionId, lease_generation: u64) -> TakeOutcome {
-        self.take_inner(session, lease_generation, true)
+        self.take_inner(session, lease_generation, true, None)
     }
 
     fn take_inner(
@@ -954,9 +1152,13 @@ impl KillSettlementQueue {
         session: GameSessionId,
         lease_generation: u64,
         ordered: bool,
+        expected: Option<CreatureDeathOccurrenceKey>,
     ) -> TakeOutcome {
         let mut state = self.state();
         state.prune_accepted_order();
+        if expected.is_some_and(|death| state.accepted_order.front() != Some(&death)) {
+            return TakeOutcome::CapacityWait;
+        }
         if ordered && !state.in_flight.is_empty() {
             return TakeOutcome::CapacityWait;
         }
@@ -972,8 +1174,23 @@ impl KillSettlementQueue {
             };
         };
         let entry = &state.queued[index];
+        // CPP's deferred death task freezes the current drop profile before
+        // handlers complete. Never reserve MINTs or yield an immutable Taken
+        // entry while that ordered source phase still owns this death.
+        if entry.source_death_pending {
+            return TakeOutcome::CapacityWait;
+        }
+        if entry.source_completion.as_ref().is_some_and(|completed| {
+            completed.actor() != entry.target
+                || completed.death_key() != entry.facts.death
+                || completed.begin().definition_key() != entry.creature
+        }) {
+            return TakeOutcome::CapacityWait;
+        }
         // One snapshot covers reservation and settlement, even across an event window edge.
-        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        let event_rates = entry
+            .source_drop_rates
+            .unwrap_or_else(oteryn_gameplay_foundation::scheduled_events::current_rates);
         let loot_mints = entry.row.as_ref().map_or(0, |row| {
             loot_table_mint_ceiling(
                 entry.facts.death,
@@ -1149,7 +1366,10 @@ fn loot_table_mint_ceiling(
     if event_loot_rate >= 200 && event_loot_rate.is_multiple_of(100) {
         apply_scheduled_loot_rate(&mut table, event_loot_rate);
     }
-    plan_creature_loot(loot_plan_seed(death), &row.loot_table_ref, &table)
+    let Some(reference) = &row.loot_table_ref else {
+        return table.entries.is_empty().then_some(0);
+    };
+    plan_creature_loot(loot_plan_seed(death), reference, &table)
         .ok()
         .map(|plan| plan.entries.len())
 }
@@ -1247,6 +1467,9 @@ fn refuse(reason: &str, creature: &str) {
     ));
 }
 
+/// The real lethal callback freezes the same contributors, equipment and party
+/// dependencies as ordinary XP. Only the source stack-40 non-summon is admitted.
+///
 /// Project `target`'s committed death and append its settle (§1.1–§1.3). `lethal` is the
 /// attacker whose committed hit was lethal; it is the principal only when no contributor was
 /// tracked. Runs under the runtime lock and never awaits.
@@ -1294,6 +1517,11 @@ pub fn record_creature_kill(
             .statistics()
             .source_gap(super::npc_trade_command::unix_ms_now());
     }
+    if let Some(states) = sink.prey {
+        states
+            .soul_war_callbacks
+            .record_committed_death(runtime, target, now_ms);
+    }
     if super::raid_live::continue_feroxa_death(runtime, target) {
         return;
     }
@@ -1308,6 +1536,7 @@ pub fn record_creature_kill(
     // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
     if runtime.soulpit_variant(target).is_some() {
         record_soulpit_kill(runtime, sink, target, lethal, now_ms, observed_at);
+
         return;
     }
     let snapshot = runtime.companion_snapshot_including_dead(target);
@@ -1563,6 +1792,9 @@ pub fn record_creature_kill(
                             boss_reward: None,
                             activity_death: None,
                             grizzly: None,
+                            source_death_pending: false,
+                            source_drop_rates: None,
+                            source_completion: None,
                             no_progression_logged: false,
                         },
                     );
@@ -1902,6 +2134,9 @@ pub fn record_creature_kill(
         boss_slot_bonuses: Arc::new(OnceLock::new()),
         ground,
         target,
+        source_death_pending: false,
+        source_drop_rates: None,
+        source_completion: None,
         no_progression_logged: false,
     };
     accept_encounter_kill(runtime, sink.queue, sink.prey, entry);
@@ -2012,6 +2247,17 @@ fn accept_encounter_kill(
     states: Option<&super::actor_spell::ChannelSpellStates>,
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
+    // A source-controlled lethal publication already reserved its deferred
+    // task in the canonical carrier FIFO. Hold the ordinary reward entry
+    // before append/take can reserve capacity from the pre-BEGIN profile.
+    // Rowless source deaths remain in that FIFO independently of this queue.
+    entry.source_death_pending = match runtime.source_creature_death_pending(entry.target) {
+        Ok(pending) => pending,
+        Err(_) => {
+            refuse("source_death_owner_unavailable", &entry.creature);
+            return AppendOutcome::Full;
+        }
+    };
     if entry.soulpit_experience.is_none() {
         super::grizzly_kills::capture(runtime, queue, &mut entry);
         if let Some(states) = states {
@@ -2020,6 +2266,7 @@ fn accept_encounter_kill(
                 .capture_terminal(runtime, states, &mut entry);
         }
     }
+
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -2279,18 +2526,20 @@ pub enum CorpseBind {
 pub fn bind_settled_corpse(
     runtime: &mut ChannelRuntimeV1,
     entry: &PendingKillSettlement,
-    loot: &Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
+    loot: &Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError>,
 ) -> CorpseBind {
     // A loot entry's refused MINT still leaves the corpse committed (D52).
     let committed = match loot {
-        Ok(loot) => &loot.corpse,
+        Ok(Some(loot)) => &loot.corpse,
         Err(CombatDeathRewardLootError::Mint(_, corpse)) => corpse,
-        Err(_) => return CorpseBind::NoCorpse,
+        Ok(None) | Err(_) => return CorpseBind::NoCorpse,
     };
     let Some(row) = &entry.row else {
         return CorpseBind::NoCorpse;
     };
-    let corpse = &row.corpse_item;
+    let Some(corpse) = &row.corpse_item else {
+        return CorpseBind::NoCorpse;
+    };
     match runtime.bind_corpse_item(
         entry.target,
         committed.item_instance_id,
@@ -2468,14 +2717,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(()) => return DrainOutcome::Deferred,
             };
+            let core_head = match self.states.attack.lock().await.kills().core_head() {
+                Ok(Some(head)) => head,
+                Ok(None) => continue,
+                Err(()) => return DrainOutcome::Deferred,
+            };
+            // The actual queued lethal owner clock bounds retained callbacks;
+            // an unavailable clock never authorizes skipping a Primal prefix.
+            if self.rooms().gate_monster_ai().is_some_and(|room| {
+                room.pinned_activity_source_room()
+                    == Some(
+                        crate::content::bosses::activity_template::PinnedActivitySourceRoom::Primal,
+                    )
+            }) {
+                let Some(cutoff) = core_head.2 else {
+                    return DrainOutcome::Deferred;
+                };
+                if self
+                    .drain_primal_core_prefix(core_head.0, cutoff.get())
+                    .await
+                    .is_err()
+                {
+                    return DrainOutcome::Deferred;
+                }
+            }
             let taken = {
                 let attack = self.states.attack.lock().await;
                 attack
                     .kills()
                     .discard_gone(principal.0, Some(fence.character_lease_generation));
-                attack
-                    .kills()
-                    .take_ordered(principal.0, fence.character_lease_generation)
+                attack.kills().take_inner(
+                    principal.0,
+                    fence.character_lease_generation,
+                    true,
+                    Some(core_head.1),
+                )
             };
             let mut taken = match taken {
                 TakeOutcome::Empty => continue,
@@ -2594,6 +2870,9 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 }
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
+        if entry.soulpit_experience.is_some() {
+            return self.settle_soulpit(entry).await;
+        }
         if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
@@ -2682,7 +2961,17 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                             no_progression: false,
                         };
                     }
-                    admission.states.level_refresh.mark(party.leveled);
+                    admission
+                        .states
+                        .level_refresh
+                        .mark(party.leveled.iter().copied());
+                    admission.states.title_refresh.mark(party.leveled);
+                    if let Ok(xp) = &party.xp {
+                        admission
+                            .states
+                            .soul_kills
+                            .mark(super::soul_kill_live::soul_hook(xp));
+                    }
                 }
                 Err(_) => {
                     return SettleReport {
@@ -2737,7 +3026,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         let seed = loot_plan_seed(entry.facts.death);
         let count = |table| {
-            plan_creature_loot(seed, &row.loot_table_ref, table)
+            row.loot_table_ref
+                .as_ref()
+                .and_then(|reference| plan_creature_loot(seed, reference, table).ok())
                 .map_or(0, |plan| plan.entries.len())
                 + entry.callback_loot.len()
         };
@@ -3357,8 +3648,23 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         {
             admission.states.loop_ground.invalidate();
         }
+        let source_plain_body = entry
+            .row
+            .as_ref()
+            .and_then(|row| row.corpse_item.as_ref())
+            .and_then(|body| {
+                admission
+                    .active_generation?
+                    .native_gameplay()?
+                    .item_policy(&body.production_key, &body.revision_ref)
+            })
+            .is_some_and(|policy| {
+                policy.record().semantics.container
+                    == crate::content::ReferenceItemField::NotApplicable
+            });
         let mut runtime = admission.runtime.lock().await;
-        if let Ok(outcome) = &outcome
+        if !source_plain_body
+            && let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =
                 bind_settled_corpse(&mut runtime, &entry, &outcome.rewards.loot)
         {
@@ -3366,6 +3672,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 "kill_reward_corpse_unbound creature={} reason={error:?}",
                 entry.creature
             ));
+        }
+        if source_plain_body && outcome.is_ok() {
+            admission.states.loop_ground.invalidate();
         }
         release_settled_corpse(&mut runtime, &entry, report.verdict);
         report
@@ -3498,6 +3807,9 @@ fn proficiency_points(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
 ) -> Option<u32> {
+    if entry.soulpit_experience.is_some() {
+        return Some(1500);
+    }
     use crate::domain::weapon_proficiency::{
         BossCategory, CreatureDifficulty, CreatureInfluence, boss_points, creature_points,
     };

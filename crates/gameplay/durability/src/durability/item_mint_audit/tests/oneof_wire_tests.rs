@@ -4,7 +4,8 @@
 use super::*;
 use crate::durability::item_fee_burn_audit::{
     FeeBurnCauseV1, OneItemAreaDonationV1, OneItemCharmUnassignV1, OneItemFeeBurnCauseV1,
-    OneItemImbuementV1, OneItemMarketFeeV1, OneItemNpcPurchaseV1, OneItemQuestRewardPaymentV1, OneItemTimedRepairV1,
+    OneItemImbuementV1, OneItemMarketFeeV1, OneItemNpcPurchaseV1, OneItemQuestRewardPaymentV1,
+    OneItemTimedRepairV1,
 };
 
 fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
@@ -158,9 +159,17 @@ fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
                 proof: vec![0x81, 0x07],
             }),
         ),
-        (20, "WriteOnce", OneItemOperationV1::WriteOnce(crate::durability::item_text::write_once::OneItemWriteOnceV1 {
-            state_revision_before: 129, state_revision_after: 130, ..Default::default()
-        })),
+        (
+            20,
+            "WriteOnce",
+            OneItemOperationV1::WriteOnce(
+                crate::durability::item_text::write_once::OneItemWriteOnceV1 {
+                    state_revision_before: 129,
+                    state_revision_after: 130,
+                    ..Default::default()
+                },
+            ),
+        ),
     ]
 }
 
@@ -364,8 +373,14 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("Forge", "08019a01040a028107"),
         ("WriteOnce", include_str!("write_once_wire.hex").trim()),
         ("ForgeFee", "72040a028107"),
-        ("QuestAccessPurchase", "7a2e0a286f746572796e3a736572766963652e71756573742e726f7474656e2d626c6f6f642e61636365737312028107"),
-        ("QuestRewardPayment", "9201290a220a186f746572796e3a71756573742d7265776172642f74657374120281071a0281071088271801"),
+        (
+            "QuestAccessPurchase",
+            "7a2e0a286f746572796e3a736572766963652e71756573742e726f7474656e2d626c6f6f642e61636365737312028107",
+        ),
+        (
+            "QuestRewardPayment",
+            "9201290a220a186f746572796e3a71756573742d7265776172642f74657374120281071a0281071088271801",
+        ),
         ("GemReveal", "4a0c0a0672657665616c12028107"),
         ("GemSwitchDomain", "520c0a0673776974636812028107"),
         ("GemGradeUp", "5a0b0a05677261646512028107"),
@@ -389,9 +404,15 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("MarketFee", "32080a02810712020809"),
         ("Imbuement", "3a070a028107208101"),
         ("NpcTravel", "420c0a0674726176656c12028107"),
-        ("ArenaEntry", "8a012a0a246f746572796e3a736572766963652e7376617267726f6e642d6172656e612e656e74727912028107"),
+        (
+            "ArenaEntry",
+            "8a012a0a246f746572796e3a736572766963652e7376617267726f6e642d6172656e612e656e74727912028107",
+        ),
         // E12 adds reserved cause472; every earlier codec golden remains unchanged.
-        ("HirelingService", "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007"),
+        (
+            "HirelingService",
+            "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007",
+        ),
         ("EventId", "0a028107"),
         ("Command", "12070a028107108101"),
         ("OperationId", "1a028107"),

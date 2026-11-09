@@ -42,6 +42,9 @@ impl DurabilityRoot {
             Some(admission),
             None,
             None,
+            None,
+            None,
+            None,
             vec![callback],
             Vec::new(),
         )
@@ -85,6 +88,9 @@ impl DurabilityRoot {
             reward_admission,
             None,
             None,
+            None,
+            None,
+            None,
             Vec::new(),
             vec![callback],
         )
@@ -125,6 +131,9 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
+            None,
+            None,
             Vec::new(),
             vec![callback],
         )
@@ -158,6 +167,9 @@ impl DurabilityRoot {
             None,
             None,
             &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            None,
             None,
             None,
             None,
@@ -215,6 +227,9 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -266,6 +281,9 @@ impl DurabilityRoot {
             None,
             None,
             admission,
+            None,
+            None,
+            None,
             None,
             None,
         )
@@ -355,6 +373,9 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -390,12 +411,18 @@ impl DurabilityRoot {
             Some(admission),
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(crate) async fn commit_quest_inner<G: grizzly::GrizzlyPremiumGate, const N: usize>(
+    pub(in crate::durability) async fn commit_quest_inner<
+        G: grizzly::GrizzlyPremiumGate,
+        const N: usize,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -422,6 +449,9 @@ impl DurabilityRoot {
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
+        essence: Option<super::rotten_essence::RottenEssenceUse>,
+        flame: Option<super::rotten_flame::RottenFlameUse>,
+        source_action: Option<super::QuestSourceAction>,
     ) -> Result<QuestTransitionOutcome> {
         let reward_callbacks =
             oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
@@ -444,6 +474,9 @@ impl DurabilityRoot {
             reward_admission,
             native,
             benevola,
+            essence,
+            flame,
+            source_action,
             reward_callbacks,
             world_callbacks,
         )
@@ -481,6 +514,9 @@ impl DurabilityRoot {
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
+        essence: Option<super::rotten_essence::RottenEssenceUse>,
+        flame: Option<super::rotten_flame::RottenFlameUse>,
+        source_action: Option<super::QuestSourceAction>,
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
@@ -508,6 +544,8 @@ impl DurabilityRoot {
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
+                .is_some()
+            || oteryn_gameplay_quests::quest::native_kills::counter(&request.transition_key)
                 .is_some();
         if native_key != native.is_some()
             || native
@@ -623,6 +661,60 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let source_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::soul_war::source_items::TRANSITION_PREFIX)
+            || catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|transition| {
+                    transition.quest == oteryn_gameplay_quests::quest::soul_war::source_items::QUEST
+                });
+        let area_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::rotten_blood::area_icons::PREFIX)
+            || catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|t| {
+                    t.quest == oteryn_gameplay_quests::quest::rotten_blood::area_icons::QUEST
+                });
+        let soul_input = matches!(&source_action, Some(super::QuestSourceAction::SoulWar(_)));
+        let area_input = matches!(
+            &source_action,
+            Some(super::QuestSourceAction::RottenArea(_))
+        );
+        if source_key != soul_input
+            || area_key != area_input
+            || source_action
+                .as_ref()
+                .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
+            || matches!(
+                &source_action,
+                Some(super::QuestSourceAction::SoulWar(input))
+                    if matches!(input.as_ref(), super::soul_war_source::SoulWarSourceAction::Step(_))
+            )
+            || matches!(request.cause, QuestCause::SourceStep(_))
+            || matches!(request.cause, QuestCause::SourceThink(_)) && !area_input
+            || source_action.is_some()
+                && (context.is_some() || payment.is_some() || essence.is_some() || flame.is_some())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        // A bare callback key/context must not manufacture a prepared boss phase.
+        // The closed native flame caller is mounted separately after its real USE RED.
+        let flame_key = request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::rotten_blood::flames::PREFIX)
+            || catalogue.transition(&request.transition_key).is_some_and(
+                oteryn_gameplay_quests::quest::rotten_blood::flames::source_only_transition,
+            );
+        if flame_key != flame.is_some()
+            || flame
+                .as_ref()
+                .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
+            || flame.is_some() && (context.is_none() || payment.is_some() || essence.is_some())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         // The specialised owner evaluates these computed rules under the locked snapshot.
         // A generic NPC transition cannot bypass the action/cause validation.
         let grizzly_key = request
@@ -661,6 +753,18 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let callback = if context.is_some() && !native_claim {
+        let essence_key = oteryn_gameplay_quests::quest::rotten_blood::ESSENCES
+            .iter()
+            .any(|source| source.transition == request.transition_key);
+        if essence_key != essence.is_some()
+            || (payment.is_some() && essence.is_some())
+            || essence
+                .as_ref()
+                .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let callback = if context.is_some() {
             Some(
                 world_callbacks
                     .iter()
@@ -755,6 +859,9 @@ impl DurabilityRoot {
                 || matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }),
                 |death| death.permits_scope(&fence),
             )
+            || (!matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+                && essence.is_none()
+                && source_action.is_none())
             || !valid_quest_key(&request.transition_key)
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -774,6 +881,15 @@ impl DurabilityRoot {
         );
         if let Some((_, handover)) = &benevola {
             handover.bind(&mut binding)?;
+        }
+        if let Some(input) = &essence {
+            binding = input.binding(fence.character_id, &request);
+        }
+        if let Some(input) = &source_action {
+            binding = input.binding(fence.character_id, &request);
+        }
+        if let Some(input) = &flame {
+            binding = input.binding(fence.character_id);
         }
         if let Some(action) = &grizzly_action {
             grizzly::bind_action(&mut binding, action);
@@ -830,7 +946,8 @@ impl DurabilityRoot {
                         let typed=begin_type2_transaction(holder,deadline).await?;
                         reward_tuple=Some(typed.tuple());
                         typed.into_inner()
-                    } else if let Some(payment)=&payment {
+                    } else if payment.is_some() || essence.is_some() || flame.is_some() || source_action.is_some() {
+
                         // The fee owner's activation fence is the first database
                         // read, before even recovery or admission statements.
                         let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -845,10 +962,27 @@ impl DurabilityRoot {
                             tx.commit(deadline).await?;
                             return Ok(Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)));
                         }
-                        match assert_gameplay_fence(&mut tx,&fence,&node).await? {
+                        match super::rotten_essence::assert_fence(&mut tx,&fence,&node,essence.is_some() || soul_input).await? {
                             Ok(_) => {}, Err(error) => return Ok(Err(error)),
                         }
-                        if !super::rotten_blood_access::consume(&mut tx,fence,payment).await? {
+                        if let Some(input)=&flame
+                            && !super::rotten_flame::admit(&mut tx,fence,input).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(payment)=&payment
+                            && !super::rotten_blood_access::consume(&mut tx,fence,payment).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(input)=&essence
+                            && !super::rotten_essence::consume(&mut tx,fence,input).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
+                            && !super::soul_war_source::consume(&mut tx,fence,input).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if let Some(super::QuestSourceAction::RottenArea(input))=&source_action
+                            && !input.validate_current_in_transaction(&mut tx,fence).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                         tx.into_inner()
@@ -912,6 +1046,7 @@ impl DurabilityRoot {
                         }
                     }
                     let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                    let root = match super::rotten_essence::assert_fence(&mut tx, &fence, &node, essence.is_some() || soul_input).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
@@ -1663,6 +1798,9 @@ impl DurabilityRoot {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    }
+                    if let Some(input)=&flame {
+                        super::rotten_flame::record(&mut tx,fence,input,&binding).await?;
                     }
                     for change in &changes {
                         let written = sqlx::query(

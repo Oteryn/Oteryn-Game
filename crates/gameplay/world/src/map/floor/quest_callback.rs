@@ -95,7 +95,14 @@ pub fn prepare_quest_encounter_ejection<'a>(
 
 impl CallbackTeleport<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            None,
+        )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));
         if ground_of(self.cells)(cell) != Ground::Walkable

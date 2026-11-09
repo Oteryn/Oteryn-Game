@@ -33,6 +33,11 @@ pub mod path_budget;
 pub mod path_search;
 pub mod relocate;
 pub mod source_floor_change;
+pub mod source_placement;
+#[cfg(test)]
+mod source_placement_tests;
+#[cfg(test)]
+mod source_query_tests;
 pub mod speed;
 
 pub const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;

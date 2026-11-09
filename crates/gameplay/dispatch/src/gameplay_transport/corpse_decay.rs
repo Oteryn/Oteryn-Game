@@ -40,7 +40,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|corpse| corpse.corpse_item_instance_id)
             .collect();
         for corpse in &schedule.corpses {
-            if corpse.decay_at_unix_ms > schedule.database_now_unix_ms {
+            if corpse
+                .decay_at_unix_ms
+                .is_none_or(|deadline| deadline > schedule.database_now_unix_ms)
+            {
                 continue;
             }
             match self
@@ -68,6 +71,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
             && runtime.binding().runtime_scope() == fence.runtime_scope
         {
+            self.states
+                .loop_ground
+                .reconcile_plain_corpses(fence.runtime_scope, &live);
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {
                 let _ = runtime.refresh_corpse_item(

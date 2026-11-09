@@ -12,6 +12,8 @@ mod cast_read;
 mod hotkey;
 #[path = "character_equipment/house_read.rs"]
 mod house_read;
+#[path = "character_equipment/instance_read.rs"]
+mod instance_read;
 pub use cast_read::{CastEquipmentReader, read_cast_equipment_in_transaction};
 pub(crate) use house_read::read_house_equipment_in_transaction;
 
@@ -120,14 +122,14 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,content| Box::pin(async move {
             let content=*content;
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
-            let authority=assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,None,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
-            let actual=read_equipment_in_transaction(&mut tx,&authority).await.map_err(|_| DurabilityError::Unavailable)?;
+            let actual=read_current_equipment_snapshot_in_transaction(&mut tx,&record,&node,&fence,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
+            let world=*fence.runtime_scope.world_id().as_bytes();
             if actual != expected { return Err(DurabilityError::Unavailable); }
             let mut entries=Vec::new();
             for slot in [10,6] {
                 let Some(quiver)=actual.items.iter().find(|i|i.slot==slot && content.is_quiver(&i.definition)) else { continue; };
                 let rows=sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
-                    .bind(quiver.item_instance_id.as_slice()).bind(authority.world.as_slice()).fetch_all(&mut *tx).await?;
+                    .bind(quiver.item_instance_id.as_slice()).bind(world.as_slice()).fetch_all(&mut *tx).await?;
                 if rows.len()>20 { return Err(DurabilityError::InvalidStoredState); }
                 for row in rows {
                     let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
@@ -351,6 +353,49 @@ pub(super) async fn assert_current_equipment_in_transaction(
         character_revision: number(character.try_get("character_revision")?)?,
         account: uuid(character.try_get("account_id")?)?,
     })
+}
+/// Read paths may use a real activity Instance. The Channel-only writer
+/// authority above remains unchanged and no Instance authority is returned.
+/// Read portable equipment under the actual current tagged session in the
+/// caller's physical transaction. This returns data, never writer authority.
+pub async fn read_current_equipment_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+) -> Result<EquipmentSnapshot> {
+    let recovery = recovery
+        .record_for(root)
+        .map_err(|_| rejected("equipment recovery"))?;
+    read_current_equipment_snapshot_in_transaction(tx, &recovery, node, fence, content_digest).await
+}
+
+async fn read_current_equipment_snapshot_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+) -> Result<EquipmentSnapshot> {
+    if matches!(
+        fence.runtime_scope,
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) {
+        return instance_read::read_instance_equipment_in_transaction(
+            tx,
+            recovery,
+            node,
+            fence,
+            content_digest,
+        )
+        .await;
+    }
+    let authority =
+        assert_current_equipment_in_transaction(tx, recovery, node, fence, None, content_digest)
+            .await?;
+    read_equipment_in_transaction(tx, &authority).await
 }
 /// Creates only the equipment owner's declared empty seed under the actual current fence.
 /// Its combat mode stays explicitly unknown until a real SetCombatMode command commits.
@@ -1170,19 +1215,15 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    let authority = assert_current_equipment_in_transaction(
+                    let equipment = read_current_equipment_snapshot_in_transaction(
                         &mut tx,
                         &record,
                         &node,
                         &fence,
-                        None,
                         content_digest,
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let equipment = read_equipment_in_transaction(&mut tx, &authority)
-                        .await
-                        .map_err(|_| DurabilityError::Unavailable)?;
                     super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(MovementEquipmentSnapshot { fence, equipment })
                 })

@@ -160,12 +160,19 @@ impl TeleportCycle {
         if now_ms < next_at_ms {
             return None;
         }
+        // Pinned Lua checks the global pause before looking up the current boss.
+        // A paused callback therefore keeps its recurring event even if that
+        // occurrence currently has no boss spectator.
+        if paused {
+            self.next_at_ms = Some(now_ms.saturating_add(TELEPORT_CYCLE_MS));
+            return None;
+        }
         if !boss_present {
             self.next_at_ms = None;
             return None;
         }
         self.next_at_ms = Some(now_ms.saturating_add(TELEPORT_CYCLE_MS));
-        if paused || !bloodjaw_present {
+        if !bloodjaw_present {
             return None;
         }
         Some(CentreTeleport {

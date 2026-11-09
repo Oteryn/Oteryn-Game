@@ -42,6 +42,8 @@ pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
+mod creature_visuals;
+pub use creature_visuals::{CreatureVisualCue, CreatureVisualKind};
 mod feroxa_map_phases;
 mod quest_callbacks;
 mod world_change_phases;
@@ -61,7 +63,47 @@ pub struct MovementSpeech {
     pub speaker: crate::foundation::ExactActorRef,
     pub position: TilePos,
     pub talk_type: u8,
-    pub text: &'static str,
+    pub text: String,
+    /// Captured before a source callback retires its speaking creature.
+    pub captured_name: Option<oteryn_protocol_oteryn::entity_names::EntityDisplayName>,
+}
+impl MovementSpeech {
+    pub fn capture_monster(
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: crate::foundation::ExactActorRef,
+        talk_type: u8,
+        text: &'static str,
+    ) -> Option<Self> {
+        runtime.owner_fence().ok()?;
+        if !runtime.contains_live_creature(actor)
+            || !matches!(talk_type, 36 | 37)
+            || text.is_empty()
+            || text.len() > oteryn_protocol_oteryn::chat::MAX_CHAT_TEXT_BYTES
+        {
+            return None;
+        }
+        let snapshot = runtime.read_actor_position(actor).ok()?;
+        if snapshot.context() != runtime.pinned_movement_context() {
+            return None;
+        }
+        let position = snapshot.position();
+        let creature = runtime.companion_snapshot(actor).ok()?;
+        let captured_name = oteryn_protocol_oteryn::entity_names::EntityDisplayName::new(
+            &creature.state.policy.display_name,
+        )
+        .ok()?;
+        Some(Self {
+            speaker: actor,
+            position: TilePos {
+                x: u16::try_from(position.x).ok()?,
+                y: u16::try_from(position.y).ok()?,
+                floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+            },
+            talk_type,
+            text: text.to_owned(),
+            captured_name: Some(captured_name),
+        })
+    }
 }
 
 /// One committed monster step, recorded for the dispatch trap owner (Crystal trap.lua:23-66).
@@ -103,6 +145,7 @@ impl From<LoadError> for FactsRefusal {
 /// The facts of one palette entry, and whether an Item entry is solid.
 #[derive(Debug, Clone, Copy)]
 struct PaletteFacts {
+    static_surface: bool,
     family: Family,
     id: u32,
     facts: EntryFacts,
@@ -268,7 +311,14 @@ impl BundleFacts {
 
     /// Retain static source facts, with fresh Instance-local mutable owners.
     pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
-        let inside = |pos: TilePos| super::activity_contains(bounds, pos);
+        self.activity_region_with_exit(bounds, None)
+    }
+    pub(super) fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        exit: Option<crate::content::LogicalCell>,
+    ) -> Self {
+        let inside = |pos| super::activity_footprint_contains(bounds, exit, pos);
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
@@ -908,9 +958,13 @@ impl BundleFacts {
         self.placements.get(found)?.1.attrs.depot
     }
 
-    /// Source action id of a named base placement. This is retained from the world bundle and
-    /// never accepted from a client.
+    /// Current source action id of a named base placement, including a canonical
+    /// callback transform. The original value comes from the admitted bundle.
     pub fn action_at(&self, key: u64) -> Option<u16> {
+        let state = self.callbacks.lock().ok()?;
+        if let Some(action) = state.actions.get(&key) {
+            return *action;
+        }
         let found = self
             .placements
             .binary_search_by_key(&key, |(key, _)| *key)
@@ -1074,6 +1128,31 @@ fn palette_facts(
         .as_ref()
         .is_some_and(|terrain| terrain.walkable == Some(false));
     let mut door = PaletteDoor::No;
+    let static_surface = crate::content::qualified_static_surface(&entry.key);
+    if let Some(surface) = static_surface {
+        let terrain = match surface.ground {
+            Some((walkable, speed)) => oteryn_world_bundle::bundle::Terrain {
+                kind: TerrainKind::Ground,
+                walkable: Some(walkable),
+                ground_speed: Some(speed),
+                blocks_projectile: Some(surface.blocks_projectile),
+            },
+            None => oteryn_world_bundle::bundle::Terrain {
+                kind: TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: Some(surface.blocks_projectile),
+            },
+        };
+        if entry.family != Family::Terrain
+            || entry.terrain != Some(terrain)
+            || crate::content::static_surface_definition_id(&entry.key) != Some(entry.id)
+        {
+            return Err(FactsRefusal::ItemReference);
+        }
+        solid = surface.block_solid;
+        facts.blocks_projectile = surface.blocks_projectile;
+    }
     if entry.family == Family::Item {
         let definition = item(&entry.key)
             .filter(|definition| definition.reference == reference)
@@ -1095,6 +1174,7 @@ fn palette_facts(
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
+        static_surface: static_surface.is_some(),
         family: entry.family,
         id: entry.id,
         facts,
@@ -1350,6 +1430,9 @@ mod house_base_tests;
 #[cfg(test)]
 mod pickup_tests;
 #[cfg(test)]
+#[path = "facts/source_static_tests.rs"]
+mod source_static_tests;
+#[cfg(test)]
 mod terrain_collision_tests;
 
 #[cfg(test)]
@@ -1466,6 +1549,68 @@ mod tests {
         );
         assert_eq!(MapFacts::movement_items(&two, pos)[0], unrelated);
         Ok(())
+    }
+
+    #[test]
+    fn srx3_house_effects_share_one_queue_but_never_cross_scope_or_generation() {
+        use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
+        let id = |n| {
+            let mut id = [n; 16];
+            id[6] = 0x70;
+            id[8] = 0x80;
+            id
+        };
+        let world = WorldId::decode(&id(1)).expect("world");
+        let house = RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(2),
+        };
+        let other_house = RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(3),
+        };
+        let generation = ScopeOwnershipGeneration::new(1).expect("generation");
+        let other_generation = ScopeOwnershipGeneration::new(2).expect("new generation");
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("palette");
+        let private = TilePos {
+            x: 300,
+            y: 301,
+            floor: -7,
+        };
+        assert!(facts.emit_movement_effect(private, 11));
+        assert!(facts.emit_scoped_movement_effect(house, generation, private, 13));
+        assert_eq!(facts.movement_effects_since(0), vec![(1, private, 11)]);
+        assert_eq!(
+            facts.scoped_movement_effects_since(house, generation, 0),
+            vec![(2, private, 13)]
+        );
+        assert!(
+            facts
+                .scoped_movement_effects_since(house, generation, 2)
+                .is_empty()
+        );
+        assert!(
+            facts
+                .scoped_movement_effects_since(other_house, generation, 0)
+                .is_empty()
+        );
+        assert!(
+            facts
+                .scoped_movement_effects_since(house, other_generation, 0)
+                .is_empty()
+        );
+        for _ in 0..512 {
+            assert!(facts.emit_movement_effect(private, 11));
+        }
+        assert!(
+            facts
+                .scoped_movement_effects_since(house, generation, 0)
+                .is_empty(),
+            "scoped entries share the existing bounded queue eviction"
+        );
+        assert_eq!(facts.movement_effects_since(0).len(), 512);
     }
 
     #[test]
@@ -1586,6 +1731,7 @@ mod tests {
             };
             let mut facts = BundleFacts::default();
             facts.palette.push(PaletteFacts {
+                static_surface: false,
                 family: Family::Item,
                 id: 0,
                 facts: before,

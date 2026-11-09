@@ -182,6 +182,12 @@ impl<T: Copy + Eq, L: Copy> AttackState<T, L> {
         self.target.map(|(target, _)| target)
     }
 
+    /// Read-only lineage of the existing held target. This is command DATA,
+    /// not permission to select a swing or commit any attack.
+    pub fn held_target_lineage(&self) -> Option<(T, L)> {
+        self.target
+    }
+
     /// Set a new target after [`TargetFacts::admit`]; the attack clock is kept, so changing
     /// targets never shortens the interval.
     pub fn set_target(

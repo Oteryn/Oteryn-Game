@@ -503,6 +503,12 @@ def validate_record(record):
     errors = schema_errors(family, record)
     if errors:
         return errors
+    import activity_static
+    if record["provenance"]["source"].get("profile") == 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1':
+        registry = json.loads(activity_static.outputs()[activity_static.REGISTRY])["records"]
+        expected = next((row['catalogue_record'] for row in registry
+                         if row['identity'] == record['identity']), None)
+        return [] if record == expected else ["static activity geometry differs from its qualified source"]
     if "item_pointer" not in record["provenance"]:
         import soulpit_static
 

@@ -32,10 +32,13 @@ pub(super) struct ActivityReturnAttemptKey {
     command: Option<u64>,
     server_reason: u8,
     death_occurrence: Option<[u8; 16]>,
+    native_step_occurrence: Option<[u8; 32]>,
 }
 
 pub(super) struct NativeActivityReturnAttempt<'a> {
     source: RegisteredRuntime<'a>,
+    source_exit: Option<super::source_boss_exit::SourceBossExitProof>,
+    exit_effect_start: Option<u64>,
     destination: RegisteredRuntime<'a>,
     admitted: AdmittedSession,
     // The original autonomous trigger keeps its exact retry identity even when
@@ -141,7 +144,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.prepare_native_activity_return(admitted, Some(command_id), reason)
+        self.prepare_native_activity_return(admitted, Some(command_id), reason, None)
             .await
     }
 
@@ -169,7 +172,41 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.prepare_native_activity_return(admitted, None, reason)
+        self.prepare_native_activity_return(admitted, None, reason, None)
+            .await
+    }
+
+    #[cfg(test)]
+    pub(super) async fn source_exit_movement_for_test(
+        &self,
+        session: GameSessionId,
+    ) -> Option<
+        oteryn_gameplay_entities::carrier::native_translation_events::CommittedMovementOccurrence,
+    > {
+        let attempts = self
+            .activity_runtimes
+            .returns
+            .lock()
+            .ok()?
+            .iter()
+            .filter(|(key, _)| key.session == session)
+            .map(|(_, held)| std::sync::Arc::clone(held))
+            .collect::<Vec<_>>();
+        for attempt in attempts {
+            let held = attempt.lock().await;
+            if let Some(proof) = &held.source_exit {
+                return Some(proof.movement());
+            }
+        }
+        None
+    }
+
+    pub(super) async fn return_source_boss_exit(
+        &self,
+        admitted: AdmittedSession,
+        proof: super::source_boss_exit::SourceBossExitProof,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.prepare_native_activity_return(admitted, None, ActivityReturnReason::Exit, Some(proof))
             .await
     }
 
@@ -239,6 +276,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         admitted: AdmittedSession,
         command: Option<u64>,
         reason: ActivityReturnReason,
+        source_exit: Option<super::source_boss_exit::SourceBossExitProof>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
         if matches!(reason, ActivityReturnReason::OwnerLost) {
@@ -261,6 +299,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 0
             } else {
                 match reason {
+                    ActivityReturnReason::Exit if source_exit.is_some() => 1,
                     ActivityReturnReason::Timeout => 2,
                     ActivityReturnReason::Defeated => 3,
                     ActivityReturnReason::Death { .. } => 5,
@@ -274,6 +313,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     _ => return refuse(ActivityRefusal::InvalidInput),
                 }
             },
+            native_step_occurrence: source_exit.as_ref().map(|proof| proof.movement().binding()),
             death_occurrence: match reason {
                 ActivityReturnReason::Death { occurrence } => Some(occurrence),
                 _ => None,
@@ -295,6 +335,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if let Some(pending) = existing {
             let held = pending.lock().await;
             if held.trigger_reason != reason
+                || held.source_exit != source_exit
                 || held.admitted.controller != admitted.controller
                 || held.admitted.item_fence != admitted.item_fence
             {
@@ -552,6 +593,20 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::AuthorityRejected);
         }
+        if let Some(proof) = source_exit.as_ref()
+            && matches!(reason, ActivityReturnReason::Exit)
+        {
+            let target = proof.destination();
+            if !proof.matches(&from, admitted)
+                || (
+                    placement.exit_position.cell.x,
+                    placement.exit_position.cell.y,
+                    i32::from(placement.exit_position.cell.floor),
+                ) != (target.x, target.y, target.z)
+            {
+                return refuse(ActivityRefusal::AuthorityRejected);
+            }
+        }
         let exit = placement.exit_position;
         if exit.coordinate_frame_digest != to.content_pin().frame_binding_digest()
             || exit.map_revision_digest != to.map_revision_digest()
@@ -703,6 +758,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             };
             let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityReturnAttempt {
                 source: source.clone(),
+                source_exit,
+                exit_effect_start: None,
                 destination: destination.clone(),
                 admitted,
                 trigger_reason,
@@ -775,9 +832,23 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .refresh_account_held(self.root, self.holder, &account)
                 .await
                 .map_err(|_| ())?;
-            let result = ActivityHandoffOwner::new(self.root.clone())
-                .return_participant(self.character, self.holder, attempt.request.clone())
-                .await;
+            let owner = ActivityHandoffOwner::new(self.root.clone());
+            let result = if let Some(proof) = attempt.source_exit.as_ref()
+                && matches!(attempt.request.reason, ActivityReturnReason::Exit)
+            {
+                owner
+                    .return_participant_for_native_step(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        proof.native_step(),
+                    )
+                    .await
+            } else {
+                owner
+                    .return_participant(self.character, self.holder, attempt.request.clone())
+                    .await
+            };
             evidence.release().await.map_err(|_| ())?;
             let result = result.map_err(|_| ())?;
             match result {
@@ -918,7 +989,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             ..old
         };
         if !attempt.ancillary_installed {
-            source_view.transfer_activity_session_state(&destination_view, old, next)?;
+            source_view
+                .transfer_activity_session_state(&destination_view, old, next)
+                .await?;
             attempt.ancillary_installed = true;
         }
         // M18: rebuild the destination death consumer from its transferred quest
@@ -931,6 +1004,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         drop(_slot);
         drop(_second_lane);
         drop(_first_lane);
+        if attempt.source_exit.is_some()
+            && matches!(attempt.request.reason, ActivityReturnReason::Exit)
+            && attempt.exit_effect_start.is_none()
+        {
+            match destination_view.emit_source_boss_exit_effect(next).await {
+                Ok(cursor) => attempt.exit_effect_start = Some(cursor),
+                Err(()) => super::operator_event("source_boss_exit_effect_unavailable"),
+            }
+            // No await separates this best-effort child and outcome publication
+            // below. A missing visual cannot strand committed session custody.
+        }
         if let ActivityReturnReason::Death { occurrence } = attempt.request.reason
             && !attempt.death_completed
         {
@@ -954,6 +1038,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             handoff_id: attempt.request.return_id,
             deadline_unix_ms: None,
             connections: vec![(old, next)],
+            entry_effect_starts: attempt
+                .exit_effect_start
+                .map(|cursor| vec![(next.game_session_id, cursor)])
+                .unwrap_or_default(),
         });
         attempt.outcome = Some(outcome.clone());
         Ok(outcome)

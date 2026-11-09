@@ -216,6 +216,7 @@ async fn resume_case(
             &owner,
             &supported_capabilities,
         )
+        .await
         .ok_or("selection")?;
     assert!(admitted.continuity.selected_capabilities.contains(67));
     assert!(
@@ -1507,7 +1508,6 @@ fn transfer_bundle(
     .map_err(debug)
 }
 
-
 #[test]
 fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneration() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -1515,10 +1515,15 @@ fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneratio
     }
     let started = std::time::Instant::now();
     eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_STARTED");
-    let result = std::thread::Builder::new().stack_size(256 << 20)
+    let result = std::thread::Builder::new()
+        .stack_size(256 << 20)
         .spawn(|| c08_logout_scenario().map_err(|e| e.to_string()))?
-        .join().map_err(|_| "C08 logout/login thread panicked");
-    eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_FINISHED duration={:.3}s", started.elapsed().as_secs_f64());
+        .join()
+        .map_err(|_| "C08 logout/login thread panicked");
+    eprintln!(
+        "C08_LOGOUT_LOGIN POSTGRES_CASE_FINISHED duration={:.3}s",
+        started.elapsed().as_secs_f64()
+    );
     result??;
     eprintln!("C08_LOGOUT_LOGIN POSTGRES_CASE_COMPLETED");
     Ok(())
@@ -1527,38 +1532,91 @@ fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneratio
 fn c08_logout_scenario() -> TestResult {
     let admin = crate::bestiary_postgres_harness::configured_admin().ok_or("PG route required")?;
     let rt = crate::bestiary_postgres_harness::runtime()?;
-    let h = rt.block_on(Harness::create_with_admission_seed(admin, "c08_logout_login", true, false))?;
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(c08_logout_case(&h))));
+    let h = rt.block_on(Harness::create_with_admission_seed(
+        admin,
+        "c08_logout_login",
+        true,
+        false,
+    ))?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        rt.block_on(c08_logout_case(&h))
+    }));
     let cleanup = rt.block_on(h.cleanup());
-    match result { Ok(result) => { result?; cleanup }, Err(panic) => std::panic::resume_unwind(panic) }
+    match result {
+        Ok(result) => {
+            result?;
+            cleanup
+        }
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
 }
 
 async fn c08_logout_case(h: &Harness) -> TestResult {
     use oteryn_gameplay_domain::domain::condition::ConditionValues;
-    use oteryn_gameplay_foundation::foundation::condition::{ApplicationFacts, ConditionDefinition, TickFacts};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, TickFacts,
+    };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let deps = Dependencies::new()?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &recovery.evidence;
     owner.clock_origin = std::time::Instant::now() - std::time::Duration::from_secs(10);
-    let character = crate::domain::CharacterId::from_bytes(super::fixture::id(41)).map_err(debug)?;
-    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(&h.root, &authority, character).await {
-        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready { facts, .. }
-        | crate::gameplay_transport::spell_character_facts::CastFactsLoad::NoVocation { facts, .. } => facts,
+    let character =
+        crate::domain::CharacterId::from_bytes(super::fixture::id(41)).map_err(debug)?;
+    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
+        &h.root, &authority, character,
+    )
+    .await
+    {
+        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
+            facts, ..
+        }
+        | crate::gameplay_transport::spell_character_facts::CastFactsLoad::NoVocation {
+            facts,
+            ..
+        } => facts,
         _ => return Err("fixture character facts".into()),
     };
-    let monk = owner.load_monk_state(character).await.ok_or("fixture monk state")?;
+    let monk = owner
+        .load_monk_state(character)
+        .await
+        .ok_or("fixture monk state")?;
     {
         let runtime = owner.runtime.lock().await;
-        assert!(owner.states.spell_states.lock().await.initialize(&runtime, deps.actor,
-            deps.admitted.game_session_id, facts, monk, owner.owner_now()).is_some());
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .initialize(
+                    &runtime,
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    facts,
+                    monk,
+                    owner.owner_now()
+                )
+                .is_some()
+        );
     }
-    owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
-    let (current, _) = FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(deps.admitted.game_session_id)
+        .await?;
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
@@ -1567,30 +1625,68 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
     let before = {
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
-        let state = states.get_mut(&runtime, deps.actor, admitted.game_session_id).ok_or("source state")?;
+        let state = states
+            .get_mut(&runtime, deps.actor, admitted.game_session_id)
+            .ok_or("source state")?;
         let expected = state.owned_conditions().clone();
         let mut next = expected.clone();
         let root = GameplayDecisionRoot::from_bytes([8; 32]);
-        let regeneration = ConditionDefinition::new("fixture:c08.regeneration", 1,
-            ConditionValues::SpellRegeneration { duration_ms: 60_000, sub_id: 0,
-                health_gain: 3, health_interval_ms: 2_000, mana_gain: 2, mana_interval_ms: 3_000 })
-            .ok_or("regeneration definition")?;
-        next.apply(&regeneration, None, oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
-            &[], &ApplicationFacts { now: before_at, base_speed: 220, mana_shield_capacity: 0,
-                target_reentry_protected: false, source_reentry_protected: false, target_is_player: true,
-                decision_root: &root, occurrence: DecisionOccurrenceId::from_bytes([8; 16]) }).map_err(debug)?;
+        let regeneration = ConditionDefinition::new(
+            "fixture:c08.regeneration",
+            1,
+            ConditionValues::SpellRegeneration {
+                duration_ms: 60_000,
+                sub_id: 0,
+                health_gain: 3,
+                health_interval_ms: 2_000,
+                mana_gain: 2,
+                mana_interval_ms: 3_000,
+            },
+        )
+        .ok_or("regeneration definition")?;
+        next.apply(
+            &regeneration,
+            None,
+            oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
+            &[],
+            &ApplicationFacts {
+                now: before_at,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([8; 16]),
+            },
+        )
+        .map_err(debug)?;
         // Advance through actual due ticks before saving; a reload must not restart a recipe.
         // Rebase the owner's clock by six seconds, without waiting on wall time.
         let ticks = next.take_due(before_at + 6_000_000, TickFacts::default());
         assert!(!ticks.is_empty());
-        state.apply_batch_conditions(&expected, &next).map_err(debug)?;
+        state
+            .apply_batch_conditions(&expected, &next)
+            .map_err(debug)?;
         next
     };
     owner.clock_origin -= std::time::Duration::from_secs(6);
     let logout_before = owner.owner_now().get();
-    assert_eq!(owner.logout_session(admitted).await,
-        crate::gameplay_transport::connection::LogoutReply::Result(oteryn_protocol_oteryn::logout::LogoutResult::Accepted));
-    assert!(owner.runtime.lock().await.player_control_facts(deps.actor, admitted.game_session_id).is_err(), "logout retires runtime authority");
+    assert_eq!(
+        owner.logout_session(admitted).await,
+        crate::gameplay_transport::connection::LogoutReply::Result(
+            oteryn_protocol_oteryn::logout::LogoutResult::Accepted
+        )
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(deps.actor, admitted.game_session_id)
+            .is_err(),
+        "logout retires runtime authority"
+    );
     let logout_after = owner.owner_now().get();
     drop(owner);
     // A new owner clock and an empty runtime: no same-session or in-memory copy can survive.
@@ -1598,38 +1694,94 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
     let mut fresh_owner = fresh_deps.owner(h, &authority);
     fresh_owner.evidence = &recovery.evidence;
     let token = RecoverySource::fresh_token(91)?;
-    let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
-        schema_revision: 1, character_id: crate::foundation::CharacterId::decode(admitted.item_fence.ok_or("fence")?.character_id.as_bytes()).map_err(debug)?,
-        admission_material: token.as_bytes(), client_build_id: "c08-conditions", supported_capabilities: &[],
-    }).map_err(debug)?;
+    let frame = oteryn_protocol_oteryn::encode_client_bootstrap(
+        &oteryn_protocol_oteryn::ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(
+                admitted.item_fence.ok_or("fence")?.character_id.as_bytes(),
+            )
+            .map_err(debug)?,
+            admission_material: token.as_bytes(),
+            client_build_id: "c08-conditions",
+            supported_capabilities: &[],
+        },
+    )
+    .map_err(debug)?;
     struct FreshIds;
     impl crate::gameplay_transport::connection::ConnectionIdentifiers for FreshIds {
-        fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> { crate::foundation::GameSessionId::decode(&super::fixture::id(91)).ok() }
-        fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> { crate::foundation::AuthenticatedTransportRefV1::decode(&[91; 16]).ok() }
+        fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+            crate::foundation::GameSessionId::decode(&super::fixture::id(91)).ok()
+        }
+        fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> {
+            crate::foundation::AuthenticatedTransportRefV1::decode(&[91; 16]).ok()
+        }
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let admission_before = fresh_owner.owner_now().get();
-    let fresh = crate::gameplay_transport::connection::admit_frame(&mut server, &frame, &fresh_owner, &FreshIds)
-        .await.map_err(|e| format!("C08 fresh admission: {e:?}"))?;
+    let fresh = crate::gameplay_transport::connection::admit_frame(
+        &mut server,
+        &frame,
+        &fresh_owner,
+        &FreshIds,
+    )
+    .await
+    .map_err(|e| format!("C08 fresh admission: {e:?}"))?;
     drop(server);
-    let mut output = Vec::new(); client.read_to_end(&mut output).await?;
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
     assert_ne!(fresh.game_session_id, admitted.game_session_id);
-    assert!(matches!(fresh.first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled), "C08 fresh placement: {:?}", fresh.first_entry);
+    assert!(
+        matches!(
+            fresh.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ),
+        "C08 fresh placement: {:?}",
+        fresh.first_entry
+    );
     let runtime = fresh_owner.runtime.lock().await;
     let states = fresh_owner.states.spell_states.lock().await;
-    let after = states.get(&runtime, fresh.runtime_actor.ok_or("fresh actor")?, fresh.game_session_id)
-        .ok_or("fresh state")?.owned_conditions();
-    assert_eq!(after.instances().len(), 3, "fresh login must restore poison, haste and regeneration");
+    let after = states
+        .get(
+            &runtime,
+            fresh.runtime_actor.ok_or("fresh actor")?,
+            fresh.game_session_id,
+        )
+        .ok_or("fresh state")?
+        .owned_conditions();
+    assert_eq!(
+        after.instances().len(),
+        3,
+        "fresh login must restore poison, haste and regeneration"
+    );
     let after_at = fresh_owner.owner_now().get();
     for old in before.instances() {
-        let new = after.instances().iter().find(|i| i.definition() == old.definition()).ok_or("restored definition")?;
-        assert_eq!(new.remaining_total(), old.remaining_total(), "remaining DOT damage");
+        let new = after
+            .instances()
+            .iter()
+            .find(|i| i.definition() == old.definition())
+            .ok_or("restored definition")?;
+        assert_eq!(
+            new.remaining_total(),
+            old.remaining_total(),
+            "remaining DOT damage"
+        );
         assert_eq!(new.speed_delta(), old.speed_delta(), "applied speed draw");
-        let upper = old.remaining_duration_ms(logout_before).ok_or("upper duration")?;
-        let lower = old.remaining_duration_ms(logout_after.saturating_add(after_at - admission_before).saturating_add(1000)).ok_or("lower duration")?;
+        let upper = old
+            .remaining_duration_ms(logout_before)
+            .ok_or("upper duration")?;
+        let lower = old
+            .remaining_duration_ms(
+                logout_after
+                    .saturating_add(after_at - admission_before)
+                    .saturating_add(1000),
+            )
+            .ok_or("lower duration")?;
         let restored = new.remaining_duration_ms(after_at).ok_or("new duration")?;
         if upper >= 0 {
-            assert!((lower..=upper).contains(&restored), "remaining duration {lower}..={upper} vs {restored}");
+            assert!(
+                (lower..=upper).contains(&restored),
+                "remaining duration {lower}..={upper} vs {restored}"
+            );
         }
     }
     drop(states);
@@ -1638,29 +1790,85 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
         let mut runtime = fresh_owner.runtime.lock().await;
         let mut states = fresh_owner.states.spell_states.lock().await;
         let actor = fresh.runtime_actor.ok_or("live fresh actor")?;
-        let result = states.tick_current_creature_field_damage(&mut runtime, actor, fresh.game_session_id,
-            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(after_at + 5_000_000), TickFacts::default(), None);
-        assert!(matches!(result, Some(Some(_))), "restored ticks must reach the current HP owner");
-        let poison = states.get(&runtime, actor, fresh.game_session_id).ok_or("ticked player")?
-            .owned_conditions().get(oteryn_gameplay_domain::domain::condition::ConflictKey::Element(
-                oteryn_gameplay_domain::domain::condition::DotElement::Poison)).ok_or("ticked poison")?;
-        assert!(poison.remaining_total() < before.instances().iter().find(|i| i.definition().key() == "fixture:reconnect.poison").ok_or("old poison")?.remaining_total());
+        let result = states.tick_current_creature_field_damage(
+            &mut runtime,
+            actor,
+            fresh.game_session_id,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(after_at + 5_000_000),
+            TickFacts::default(),
+            None,
+        );
+        assert!(
+            matches!(result, Some(Some(_))),
+            "restored ticks must reach the current HP owner"
+        );
+        let poison = states
+            .get(&runtime, actor, fresh.game_session_id)
+            .ok_or("ticked player")?
+            .owned_conditions()
+            .get(
+                oteryn_gameplay_domain::domain::condition::ConflictKey::Element(
+                    oteryn_gameplay_domain::domain::condition::DotElement::Poison,
+                ),
+            )
+            .ok_or("ticked poison")?;
+        assert!(
+            poison.remaining_total()
+                < before
+                    .instances()
+                    .iter()
+                    .find(|i| i.definition().key() == "fixture:reconnect.poison")
+                    .ok_or("old poison")?
+                    .remaining_total()
+        );
     }
     let fence = fresh.item_fence.ok_or("fresh fence")?;
-    let saved = h.root.read_character_conditions(&authority, fence.character_id).await.map_err(debug)?.ok_or("saved conditions")?;
+    let saved = h
+        .root
+        .read_character_conditions(&authority, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("saved conditions")?;
     assert!(saved.lease_generation < fence.character_lease_generation);
     for field in 0..3 {
         let mut stale = fence;
         match field {
             0 => stale.character_lease_generation += 1,
-            1 => stale.connection_generation = crate::foundation::ConnectionGeneration::new(2).map_err(debug)?,
-            _ => stale.scope_ownership_generation = crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?,
+            1 => {
+                stale.connection_generation =
+                    crate::foundation::ConnectionGeneration::new(2).map_err(debug)?
+            }
+            _ => {
+                stale.scope_ownership_generation =
+                    crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?
+            }
         }
         let mut candidate = saved.clone();
         candidate.lease_generation = stale.character_lease_generation;
-        assert!(matches!(h.root.save_character_conditions(&authority, &h.node, stale, *fresh.channel_id.as_bytes(), candidate).await,
-            Err(crate::durability::item_use::ItemUseError::AuthorityRejected)), "stale condition fence {field}");
+        assert!(
+            matches!(
+                h.root
+                    .save_character_conditions(
+                        &authority,
+                        &h.node,
+                        stale,
+                        *fresh.channel_id.as_bytes(),
+                        candidate
+                    )
+                    .await,
+                Err(crate::durability::item_use::ItemUseError::AuthorityRejected)
+            ),
+            "stale condition fence {field}"
+        );
     }
-    assert_eq!(h.root.read_character_conditions(&authority, fence.character_id).await.map_err(debug)?.ok_or("unchanged snapshot")?.conditions, saved.conditions);
+    assert_eq!(
+        h.root
+            .read_character_conditions(&authority, fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("unchanged snapshot")?
+            .conditions,
+        saved.conditions
+    );
     Ok(())
 }

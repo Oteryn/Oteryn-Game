@@ -22,6 +22,7 @@ mod personal_encounter;
 mod phase;
 mod rafzane_elevator;
 mod rewards;
+mod rotten_flame;
 mod shared_gate;
 mod soul_war_reward;
 mod timed_encounter;
@@ -58,7 +59,9 @@ struct Pending {
     cause: QuestCause,
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
+    flame: Option<crate::durability::quest_state::rotten_flame::RottenFlameUse>,
     ingress_settled: bool,
+    flame_effect_sent: bool,
 }
 
 /// A World observation is retained only until the native actor/object CAS. It is
@@ -306,7 +309,9 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
-                || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
+                || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE
+                || oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
+                    .is_some())
                 && selector.appearance.is_some_and(|appearance| {
                     // The Crystal plate callback is registered by item appearance. Plain
                     // placements are omitted from the sparse attribute index. Resolve
@@ -441,8 +446,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.active_generation.and_then(|generation| generation.native_gameplay()),
                 admission, &self.premium_coordinator,
             ).await {
+            let flame = pending.flame.clone();
+            let outcome = if let Some(input) = pending.flame {
+                slot.commit_rotten_flame_use(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    input,
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                )
+                .await
+            } else {
+                slot.commit_world_callback_with_items(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: pending.callback,
+                        cause: pending.cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    &permit,
+                    context,
+                    self.active_generation
+                        .and_then(|generation| generation.native_gameplay()),
+                    admission,
+                    &self.premium_coordinator,
+                )
+                .await
+            };
+            let disposition = match outcome {
+
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if flame.as_ref().and_then(|input|input.no_change()).is_some()=>UseDisposition::Committed,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
             };
             if self
@@ -1186,7 +1227,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         cause,
                         origin: Some(origin),
                         context: None,
+                        flame: None,
                         ingress_settled: false,
+                        flame_effect_sent: false,
                     });
                     pending.origin = Some(origin);
                 }
@@ -1503,4 +1546,12 @@ mod native_selector_tests {
         );
         Ok(())
     }
+/// Literal fixed external reset under the retained origin scope owner. This is
+/// source-event composition, not an invented USE command or a Character grant.
+pub(in crate::gameplay_transport) fn prepare_bak_public_reset(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    map: &crate::map::boot::BundleMap,
+    prepared: crate::durability::quest_state::rotten_flame::PreparedBakEssences,
+) -> Option<crate::durability::quest_state::rotten_flame::phase::BakPhasePublication> {
+    rotten_flame::prepare_public_reset(runtime, map, prepared)
 }

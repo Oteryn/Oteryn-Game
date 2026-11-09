@@ -391,6 +391,15 @@ def outputs(
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
     if include_qualified:
+        import activity_static
+        static_files = activity_static.outputs()
+        for name in activity_static.SHARDS.values():
+            files[name] = static_files[name]
+        files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]
+        for directory in ["terrain", "objects"]:
+            name = f"content/world/{directory}/index.json"
+            index = json.loads(files[name]); index["notes"] += activity_static.NOTE
+            files[name] = (json.dumps(index, indent=2, ensure_ascii=False)+"\n").encode()
         import soulpit_static
 
         files[soulpit_static.SHARD] = soulpit_static.outputs()[soulpit_static.SHARD]

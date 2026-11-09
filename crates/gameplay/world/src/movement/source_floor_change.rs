@@ -47,7 +47,14 @@ impl SourceStepProof<'_> {
         self.destination
     }
     pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            self.direction,
+        )?;
         let observed = if let Some(tiles) = &self.current_tiles {
             destination_with_lookup(self.expected.position(), self.direction, |p| {
                 current_tile(tiles, p)
@@ -118,7 +125,7 @@ pub fn prepare_source_step<'a>(
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
 ) -> Result<SourceStepProof<'a>, MovementError> {
-    qualify_origin(runtime, cells, actor, session, expected)?;
+    qualify_origin(runtime, cells, actor, session, expected, direction)?;
     let destination = destination(cells, expected.position(), direction)?;
     Ok(SourceStepProof {
         cells,
@@ -137,6 +144,7 @@ fn qualify_origin(
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
+    direction: CardinalStep,
 ) -> Result<(), MovementError> {
     if !is_source_profile(cells)
         || runtime.actor_spell_reserved(actor)
@@ -147,9 +155,7 @@ fn qualify_origin(
             .read_actor_position(actor)
             .map_err(MovementError::Actor)?
             != expected
-        || !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|c| c.control_loss.is_none())
+        || !runtime.player_step_allowed(actor, session, direction.delta())
     {
         return Err(MovementError::NotQualified);
     }
@@ -922,7 +928,14 @@ impl PreparedCurrentSourceStep<'_> {
             .and_then(|(tile, _, _)| tile.as_ref())
     }
     pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            self.direction,
+        )?;
         if destination_with_lookup(self.expected.position(), self.direction, |p| {
             current_tile(&self.tiles, p)
         })? != self.destination
@@ -954,7 +967,7 @@ pub async fn collect_current_source_step<'room>(
     direction: CardinalStep,
 ) -> Result<PreparedCurrentSourceStep<'room>, MovementError> {
     let cells = room.movement_cells();
-    qualify_origin(runtime, cells, actor, session, expected)?;
+    qualify_origin(runtime, cells, actor, session, expected, direction)?;
     let mut tiles = std::collections::BTreeMap::new();
     for _ in 0..128 {
         let requested = std::cell::Cell::new(None);
@@ -988,19 +1001,20 @@ pub async fn collect_current_source_step<'room>(
             room, runtime, position,
         )
         .map_err(|_| MovementError::NotQualified)?;
-        let read =
-            crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(
-                tx,
-                permit,
-                root,
-                recovery,
-                node,
-                fence,
-                runtime.content_pin().server_artifact_digest(),
-                &target,
-            )
-            .await
-            .map_err(|_| MovementError::NotQualified)?;
+        let read = crate::durability::spell_item_transaction::read_player_step_tile_in_transaction(
+            tx,
+            permit,
+            root,
+            recovery,
+            node,
+            fence,
+            runtime.content_pin().server_artifact_digest(),
+            &target,
+            runtime,
+            actor,
+        )
+        .await
+        .map_err(|_| MovementError::NotQualified)?;
         let logical = LogicalCell {
             x: position.x,
             y: position.y,

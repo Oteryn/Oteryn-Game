@@ -99,6 +99,19 @@ pub enum DefenseError {
 struct ChainSpellReader<'a, 'b, R: MonsterCombatReader>(&'a std::cell::RefCell<&'b mut R>);
 struct ChainMapReader<'a, 'b, R: MonsterCombatReader>(&'a std::cell::RefCell<&'b mut R>);
 impl<R: MonsterCombatReader> SpellWorldReader for ChainSpellReader<'_, '_, R> {
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        self.0
+            .borrow_mut()
+            .source_combat_component_damage(runtime, issuer, target, magnitude, now, stamp)
+    }
     fn current_players(
         &mut self,
         r: &ChannelRuntimeV1,
@@ -2264,6 +2277,18 @@ mod bone_map_admission_actual_tests {
 
 struct ComposedReader<'a, R>(&'a mut R);
 impl<R: MonsterCombatReader> SpellWorldReader for ComposedReader<'_, R> {
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        self.0
+            .source_combat_component_damage(runtime, issuer, target, magnitude, now, stamp)
+    }
     fn native_gameplay<'a>(
         &'a self,
         r: &ChannelRuntimeV1,

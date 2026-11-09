@@ -63,6 +63,7 @@ use oteryn_gameplay_items::item_capacity::{
 use serde::Serialize;
 use serde_json::json;
 use sha2::Digest;
+use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
 /// BAGS-1: the deepest admitted placement (the main backpack's direct entries are depth 1).
@@ -186,6 +187,11 @@ pub struct LoopContainer {
 pub struct LoopGroundItem {
     /// A committed creature-death corpse uses native cell and content-pin axes.
     pub native_corpse: bool,
+    /// Authenticated costless native callback MINT, including explicit Lua timers.
+    /// This is representation DATA; no custody or pickup authority is granted.
+    pub source_native_ground: bool,
+    /// Original source corpses use runtime coordinates independently of spell fields.
+    pub source_plain_corpse: bool,
     /// Spell fields use the runtime floor axis; the map projection converts it once.
     pub field_collision: Option<(bool, bool)>,
     pub stack_ordinal: u64,
@@ -1087,6 +1093,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) AS loop_pickup, \
                 game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
+                g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
+                COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
+                COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
+                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1174,6 +1184,13 @@ async fn apply_loop_move<C: ItemLoopContent>(
         if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse {
             return refuse(LoopMoveRefusal::NotSupported);
         }
+        let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
+        if source_plain_corpse
+            && row.try_get::<String, _>("ground_generation")?
+                != fence.scope_ownership_generation.get().to_string()
+        {
+            return refuse(LoopMoveRefusal::Stale);
+        }
         // Map-MINT's exact source proof binds its context to the bundle digest (0130),
         // whereas the destination loop drop uses the actor's frame. A loop drop keeps
         // its frame context; both sources must keep their map and Content pins.
@@ -1199,6 +1216,25 @@ async fn apply_loop_move<C: ItemLoopContent>(
             {
                 return refuse(LoopMoveRefusal::Stale);
             }
+        if let LoopDestination::Ground(to) = &request.destination
+            && (row.try_get::<String, _>("ground_map")?
+                != if source_plain_corpse {
+                    let digest = Sha256::digest(to.map_revision.as_bytes());
+                    format!(
+                        "sha256:{}",
+                        digest
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    )
+                } else {
+                    to.map_revision.clone()
+                }
+                || row.try_get::<String, _>("ground_content")? != to.content_revision
+                || ((row.try_get::<bool, _>("loop_drop")? || source_plain_corpse)
+                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context))
+        {
+            return refuse(LoopMoveRefusal::Stale);
         }
         SourceKind::Ground
     } else {
@@ -2188,7 +2224,7 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, \
+                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
                                 CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
                                 CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
@@ -2200,11 +2236,20 @@ impl DurabilityRoot {
                              AND EXISTS(SELECT 1 FROM game_item_audit_outbox ca WHERE ca.event_id=cr.event_id AND ca.transaction_id=cr.transaction_id AND ca.item_instance_id=cr.item_instance_id AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
                              AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding AND sha256(cv.envelope)=cr.envelope_sha256) \
                            LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
+                           LEFT JOIN game_spell_item_receipts sr ON sr.transaction_id=fl.transaction_id AND sr.cause_kind IN(1,2,3,4) \
+                            AND sr.world_id=g.world_id AND sr.runtime_scope_kind=g.scope_kind AND sr.ownership_generation=g.runtime_scope_ownership_generation \
+                            AND sr.channel_id IS NOT DISTINCT FROM g.channel_id AND sr.instance_id IS NOT DISTINCT FROM g.instance_id \
+                            AND fl.world_id=g.world_id AND fl.runtime_scope_kind=g.scope_kind \
+                            AND fl.channel_id IS NOT DISTINCT FROM g.channel_id AND fl.instance_id IS NOT DISTINCT FROM g.instance_id \
+                            AND fl.created_xact_id=sr.created_xact_id AND sr.binding=sha256(sr.intent) \
+                           LEFT JOIN game_spell_item_audit_outbox sa ON sa.transaction_id=sr.transaction_id \
+                            AND sa.event_id=sr.event_id AND sa.envelope=sr.intent AND sa.envelope_sha256=sr.binding AND sa.created_xact_id=sr.created_xact_id \
                            LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
                             AND (cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) \
+                                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) \
+                                 OR sa.transaction_id IS NOT NULL \
                                  OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",
@@ -2232,6 +2277,8 @@ impl DurabilityRoot {
                             .ok_or(DurabilityError::InvalidStoredState)?;
                         items.push(LoopGroundItem {
                             native_corpse: row.try_get("native_corpse")?,
+                            source_native_ground: row.try_get("source_native_ground")?,
+                            source_plain_corpse: row.try_get("source_plain_corpse")?,
                             field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
                             stack_ordinal,
                             item: GroundItemInstance {

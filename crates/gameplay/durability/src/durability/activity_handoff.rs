@@ -34,6 +34,11 @@ mod entry;
 mod quest_encounter;
 #[cfg(any(test, feature = "test-support"))]
 pub use quest_encounter::{fixture_first_dragon_trials_permit, fixture_first_dragon_entry_permit};
+pub use quest_encounter::fixture_first_dragon_trials_permit;
+mod outburst;
+mod primal;
+mod rotten_blood;
+mod soul_war;
 pub mod soulpit;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
@@ -50,6 +55,8 @@ mod retirement;
 pub use retirement::RetiringActivity;
 pub(crate) use retirement::read_retiring_activity_in_transaction;
 pub mod boss_room;
+mod native_step;
+pub use native_step::ActivityNativeStepExit;
 
 /// Existing boss group storage ceiling, not a client-controlled allocation size.
 pub const ACTIVITY_PARTICIPANTS_MAX: usize = 15;
@@ -178,7 +185,7 @@ pub enum ActivityReturnReason {
     },
 }
 impl ActivityReturnReason {
-    fn stored(self) -> i16 {
+    pub(super) fn stored(self) -> i16 {
         match self {
             Self::Exit => 1,
             Self::Timeout => 2,
@@ -244,6 +251,7 @@ pub type ActivityRecoveryOutcome = ActivityReturnOutcome;
 pub struct ActivityHandoffOwner {
     root: DurabilityRoot,
 }
+
 impl ActivityHandoffOwner {
     pub fn new(root: DurabilityRoot) -> Self {
         Self { root }
@@ -289,7 +297,9 @@ impl ActivityHandoffOwner {
         request
             .participants
             .sort_by_key(|p| *p.source.character_id.as_bytes());
-        if !entry::valid_request(&request, boss_room) {
+        if !entry::valid_request(&request, boss_room)
+            || request.activity_key == super::soulpit::SOULPIT_ACTIVITY_KEY
+        {
             return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
         }
         let recovery = authority
@@ -301,6 +311,10 @@ impl ActivityHandoffOwner {
         self.root
             .try_issue_semantic_pass()?
             .run_with_context(&mut premium, move |holder, deadline, premium| {
+        let mut context = ();
+        self.root
+            .try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, _context| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -329,7 +343,21 @@ impl ActivityHandoffOwner {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.return_inner(authority, node, request, false).await
+        self.return_inner(authority, node, request, false, None)
+            .await
+    }
+
+    /// Autonomous source STEP uses the same return transaction and exact
+    /// immutable movement receipt, without fabricating a client command.
+    pub async fn return_participant_for_native_step(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityReturnRequest,
+        movement: ActivityNativeStepExit,
+    ) -> Result<ActivityReturnOutcome> {
+        self.return_inner(authority, node, request, false, Some(movement))
+            .await
     }
 
     pub async fn recover(
@@ -341,7 +369,8 @@ impl ActivityHandoffOwner {
         request.reason = ActivityReturnReason::OwnerLost;
         request.command_id = None;
         request.destination_transport = None;
-        self.return_inner(authority, node, request, true).await
+        self.return_inner(authority, node, request, true, None)
+            .await
     }
 
     async fn return_inner(
@@ -350,6 +379,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityReturnRequest,
         recovering: bool,
+        movement: Option<ActivityNativeStepExit>,
     ) -> Result<ActivityReturnOutcome> {
         if request.command_id == Some(0)
             || matches!(request.reason, ActivityReturnReason::Abandoned { .. } | ActivityReturnReason::StaffKick { .. }
@@ -360,7 +390,14 @@ impl ActivityHandoffOwner {
                 && (request.command_id.is_some()
                     || request.destination_transport.is_none()
                     || recovering))
-            || (request.command_id.is_none() && request.reason == ActivityReturnReason::Exit)
+            || (movement.is_some()
+                && (recovering
+                    || !movement
+                        .as_ref()
+                        .is_some_and(|proof| proof.matches_request(&request))))
+            || (request.command_id.is_none()
+                && request.reason == ActivityReturnReason::Exit
+                && movement.is_none())
             || (request.reason == ActivityReturnReason::SoulpitTerminal
                 && (request.command_id.is_some() || recovering))
             || matches!(request.reason, ActivityReturnReason::Death { occurrence } if !uuid_v7(&occurrence) || request.command_id.is_some())
@@ -390,7 +427,12 @@ impl ActivityHandoffOwner {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = returning::return_in_transaction(
-                        &mut tx, &root, &node, &request, recovering,
+                        &mut tx,
+                        &root,
+                        &node,
+                        &request,
+                        recovering,
+                        movement.as_ref(),
                     )
                     .await?;
                     if !matches!(result, ActivityReturnOutcome::Refused(_)) {

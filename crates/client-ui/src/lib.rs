@@ -308,5 +308,8 @@ pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
 
+#[path = "features/0371-native-creature-icons/mod.rs"]
+pub mod native_creature_icons;
+
 #[path = "features/0449-personal-map-marks/mod.rs"]
 pub mod personal_map_marks;

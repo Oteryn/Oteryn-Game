@@ -90,6 +90,43 @@ def native_callback_closure(key, profiles):
     return closure["required_callbacks"], True
 
 
+# Exact selected Crystal source bodies. Canary's dangling iksupanBossesDeath
+# attachment is not a selected Crystal callback and grants no extra consumer.
+GALTHEN_CLOSURES = {
+    "oteryn:creature.ahau": (
+        "data-global/scripts/quests/adventures_of_galthen/actions_ahau.lua",
+        "637e8b3bac91884d5fc64be387847de05c5ad5fdaa2283134fd6f5777777911d",
+        "data-global/monster/bosses/ahau.lua",
+        "7cadc3ac4adc02a216df390e566704317470fc359c895de735041c296368e8c6",
+        "bcbcb86ca93364c98266cadf211cc5db18492ead42df59a04b57fe412e24f2c2",
+        [34002, 31706, 10],
+    ),
+    "oteryn:creature.mitmah_vanguard": (
+        "data-global/scripts/quests/adventures_of_galthen/actions_mitmah_vanguard.lua",
+        "47896b61cb0b2d1a4f04c72c9330cce5a4e3a885a1069117eeab5cf5150c170a",
+        "data-global/monster/bosses/mitmah_vanguard.lua",
+        "bb631589f2d316ad907ed3a2fa0bdfacbae29d0fe9ab1909805e39e6c0e8855e",
+        "d9ecdc5e3241798184e8fd5fbd1269b7f4ebe2ba771dabc798e942fb9277a568",
+        None,
+    ),
+}
+
+
+def galthen_callback_closure(root, path, key, profiles):
+    proof = GALTHEN_CLOSURES.get(key)
+    if proof is None:
+        return None
+    lever, lever_hash, monster, monster_hash, profile_hash, trigger = proof
+    monster_path = root / monster
+    if (path.relative_to(root).as_posix() != lever
+            or sha(path.read_bytes()) != lever_hash
+            or not monster_path.is_file()
+            or sha(monster_path.read_bytes()) != monster_hash
+            or key not in profiles or sha(canonical(profiles[key])) != profile_hash):
+        return None
+    return {"monster_path": monster, "monster_sha256": monster_hash}, trigger
+
+
 # Crystal 201189f the_primal_menace.lua:66-69,339-347 and the two
 # death handlers: the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:1-3,21
 # and primal_ordeal_quest/bosses_killed.lua:6-7,18. These are source facts, not native support.
@@ -152,6 +189,14 @@ def capture(root, path, profiles, defaults, *, configuration=None):
     if "zone:addArea" in (clean if configuration is None else config): blockers.append("additional_zone_closure")
     if configuration is None and len(re.findall(r"\bBossLever\s*\(",clean)) != 1: blockers.append("multiple_lever_constructors")
     hooks, callbacks_known = native_callback_closure(key, profiles)
+    galthen = galthen_callback_closure(root, path, key, profiles)
+    if galthen is not None:
+        hooks, callbacks_known = ["BossLeverOnDeath"], True
+        # Only the pinned, typed Ahau SimpleTeleport is supported, never a
+        # general exitTeleporter expression or another custom configuration.
+        if galthen[1] is not None:
+            blockers.remove("config.exitTeleporter")
+
     if key == "oteryn:creature.faceless_bane":
         monster = root/"data-global/monster/quests/the_dream_courts/bosses/faceless_bane.lua"
         callbacks = root/"data-global/scripts/quests/the_dream_courts/creaturescripts_faceless_bane.lua"
@@ -174,6 +219,9 @@ def capture(root, path, profiles, defaults, *, configuration=None):
         "required_callbacks":hooks,"callbacks_known":callbacks_known,
         "native_profile_sha256":sha(canonical(profiles[key])) if key in profiles else None,
     }
+    if galthen is not None:
+        row["source_callback_closure"] = galthen[0]
+        row["source_exit_teleporter"] = galthen[1]
     for target, source, default in [
         ("minimum_players","minPlayers",1),("minimum_level","requiredLevel",0),
         ("cooldown_seconds","timeToFightAgain",defaults["cooldown"]),

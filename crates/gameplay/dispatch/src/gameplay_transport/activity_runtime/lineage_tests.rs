@@ -107,6 +107,7 @@ fn subsequent_switch(
     })
     .map_err(debug)?;
     Ok(ActivityConnectionSwitch {
+        movement_effect_start: None,
         source,
         destination,
         payload,

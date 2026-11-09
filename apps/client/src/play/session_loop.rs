@@ -13,10 +13,24 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
+
+fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    super::session_initialize::initialize(session, outbox)?;
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
+    Ok(())
+}
+
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     mut session: T,
-    mut commands: UnboundedReceiver<PlayCommand>,
+    commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
     let personal_marks_selected = session.feature_selected(449);
@@ -123,6 +137,14 @@ pub async fn run_session<T: Stepper>(
     outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
+    let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
+    outbox.scope_receiver(&commands);
+    if let Err(error) = initialize(&session, &outbox) {
+        #[cfg(test)]
+        eprintln!("native initial projection failed: {error:?}");
+        outbox.end(public_class(&error));
+        return;
+    }
     let mut held = Vec::new();
     let mut personal_marks_refresh = std::time::Instant::now();
     loop {
@@ -144,8 +166,16 @@ pub async fn run_session<T: Stepper>(
             personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
         }
 
+        if outbox.scope_needs_initialize()
+            && let Err(error) = initialize(&session, &outbox)
+        {
+            #[cfg(test)]
+            eprintln!("native successor projection failed: {error:?}");
+            outbox.end(public_class(&error));
+            return;
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
-            outbox.death_command(&mut commands), session, outbox, held, publish;
+            outbox.scope_command(&commands), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
@@ -465,6 +495,12 @@ pub async fn run_session<T: Stepper>(
             publish(&mut session, &outbox, &mut held);
             continue;
         }
+        if matches!(ended, oteryn_session::SessionError::ScopeChanged) {
+            publish(&mut session, &outbox, &mut held);
+            continue;
+        }
+        #[cfg(test)]
+        eprintln!("native session task ended: {ended:?}");
         outbox.end(public_class(&ended));
         return;
     }

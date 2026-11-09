@@ -374,7 +374,8 @@ impl ChannelSpellStates {
                         speaker: actor,
                         position,
                         talk_type,
-                        text,
+                        text: text.to_owned(),
+                        captured_name: None,
                     });
                 changed |= map.facts.emit_movement_effect(position, effect);
             }
@@ -1047,8 +1048,12 @@ mod tests {
             let speech = map.facts.movement_speech_since(0);
             assert_eq!(speech.len(), 1);
             assert_eq!(
-                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
-                (actor, "Faaart!", 36)
+                (
+                    speech[0].1.speaker,
+                    speech[0].1.text.clone(),
+                    speech[0].1.talk_type
+                ),
+                (actor, "Faaart!".to_owned(), 36)
             );
             assert_eq!(
                 map.facts

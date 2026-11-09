@@ -144,7 +144,15 @@ impl CreatureAiTable {
                     for &(_, x, y, identity) in idle.range(low..=high) {
                         examined += 1;
                         let position = MovementLocalPosition { x, y, floor };
-                        if !taken.contains(&identity) && targeting::sees(*viewer, position) {
+                        if !taken.contains(&identity)
+                            && self.entries.get(&identity).is_some_and(|entry| {
+                                targeting::perceives(
+                                    entry.state.profile.is_native(),
+                                    position,
+                                    *viewer,
+                                )
+                            })
+                        {
                             seen.push((targeting::plane_distance(*viewer, position), identity));
                         }
                     }
@@ -287,9 +295,9 @@ impl CreatureAiTable {
     }
 }
 
-/// The reference view's plane half-extent (`VisibilitySettings::REFERENCE`, 18 x 14): a cell a
-/// player sees on floor `f` lies within it of the player's cell shifted by `player.floor - f`.
-const WAKE_VIEW_REACH: i64 = 9;
+/// Superset for the native eleven-tile and legacy reference viewports. The
+/// profile-specific predicate still decides each indexed actor independently.
+const WAKE_VIEW_REACH: i64 = 11;
 
 /// The cells of `floor` a player at `viewer` may see, as (columns, rows); `None` when it sees no
 /// cell of `floor`. A superset of `targeting::sees`, which still decides each cell: a native floor

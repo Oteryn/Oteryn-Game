@@ -58,6 +58,17 @@ pub(super) async fn capture_deaths(
     creature: &str,
     commands: &[u64],
 ) -> TestResult {
+    death_actor(owner, admitted, creature, command)
+        .await
+        .map(|_| ())
+}
+
+pub(super) async fn death_actor(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    command: u64,
+) -> TestResult<oteryn_gameplay_entities::ExactActorRef> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
     use crate::gameplay_transport::kill_reward::KillSink;
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -71,7 +82,7 @@ pub(super) async fn capture_deaths(
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
-    {
+    let target = {
         let mut runtime = owner.runtime.lock().await;
         let at = runtime
             .read_actor_position(actor)
@@ -132,6 +143,17 @@ pub(super) async fn capture_deaths(
         }
     }
     Ok(())
+        target
+    };
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    Ok(target)
 }
 
 async fn claim(

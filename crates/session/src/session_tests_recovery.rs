@@ -8,6 +8,8 @@ fn recovery_preserves_identity_sequences_and_selection() -> Result<(), BoxError>
                     let (client, mut server) = tokio::io::duplex(16384);
                     let previous = RecoveryState {
                         game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                        world_id: uuid_v7(2),
+                        activity_scope: None,
                         connection_generation: 1,
                         next_command_id: 7,
                         last_server_sequence: 40,

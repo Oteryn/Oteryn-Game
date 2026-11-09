@@ -100,23 +100,6 @@ pub(super) async fn prepare_channel(
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
     }
-    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
-    // The generation is the operator assignment just resolved above, not config.
-    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
-    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
-    let required_capabilities =
-        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-            &config.readiness.required_gameplay_capabilities,
-            scope,
-            generation,
-            &config.readiness.world_policy_revision,
-            crate::gameplay_transport::with_store_offer(
-                crate::gameplay_transport::world_required_capabilities::offered_for_scope(
-                    bundle.is_some(), active_content.active(),
-                ),
-                true, // The node's required Platform descriptor composes its Store client.
-            ),
-        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -176,6 +159,26 @@ pub(super) async fn prepare_channel(
             template.source_path()
         ));
     }
+    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
+    // The generation is the operator assignment just resolved above, not config.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
+    let required_capabilities =
+        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &config.readiness.required_gameplay_capabilities,
+            scope,
+            generation,
+            &config.readiness.world_policy_revision,
+            crate::gameplay_transport::world_required_capabilities::with_native_map_presentation_offer(
+             crate::gameplay_transport::with_store_offer(
+                crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                    bundle.is_some(), active_content.active(),
+                ),
+                true, // The node's required Platform descriptor composes its Store client.
+             ),
+             active_content.active(), combat_room.as_ref(), &channel_pin,
+            ),
+        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
         None => crate::spell::cast::v1_spell_book()

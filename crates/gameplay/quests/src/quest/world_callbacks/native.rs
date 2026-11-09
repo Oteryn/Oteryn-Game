@@ -12,6 +12,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             crate::quest::barbarian_mead::SOURCE,
         ),
     let (trigger, position, action, ranges, source) = match rule {
+        NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy => return false,
         NativeRule::IceSealPaint { seal } => {
             return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
         }
@@ -139,6 +140,7 @@ impl Callback {
                     None
                 }
             }
+            Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
             Some(NativeRule::IceSealPaint { .. }) => None,
             None => self.success_message.as_deref(),
         }

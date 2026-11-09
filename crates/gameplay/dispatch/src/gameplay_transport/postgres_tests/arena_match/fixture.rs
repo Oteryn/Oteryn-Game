@@ -289,12 +289,16 @@ pub(in super::super) fn runtime_at(
 }
 
 pub(in super::super) async fn equip_sword(h: &super::Harness) -> TestResult {
+    equip_weapon(h, "oteryn:item.tibia.i3271").await
+}
+
+pub(in super::super) async fn equip_weapon(h: &super::Harness, item_key: &str) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3271','definition-r1',1,1,encode($3,'hex')::uuid)")
-        .bind(id(210).as_slice()).bind(id(42).as_slice()).bind(id(211).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,'definition-r1',1,1,encode($3,'hex')::uuid)")
+        .bind(id(210).as_slice()).bind(id(42).as_slice()).bind(id(211).as_slice()).bind(item_key).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,6,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(id(41).as_slice()).bind(id(210).as_slice()).bind(id(42).as_slice()).bind(id(212).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;

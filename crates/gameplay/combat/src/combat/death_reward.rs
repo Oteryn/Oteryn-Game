@@ -234,8 +234,8 @@ pub struct CreatureDeathRewardInput<const N: usize> {
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
-    pub corpse_item: LootDefinitionRef,
-    pub loot_table_ref: LootDefinitionRef,
+    pub corpse_item: Option<LootDefinitionRef>,
+    pub loot_table_ref: Option<LootDefinitionRef>,
     pub loot_table: LootTableDefinition,
     pub ground: DeathGroundContext,
     pub inflight_loot_mints_before_this_death: usize,
@@ -379,7 +379,8 @@ pub struct CreatureDeathRewardOutcome {
     /// Advisory committed child details, including entries preceding a later MINT error.
     pub committed_loot: Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     pub death: CreatureDeathOccurrenceKey,
-    pub loot: Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
+    /// Ok(None) is an explicitly corpse-free source death, independent of XP.
+    pub loot: Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError>,
     pub xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
 }
 
@@ -460,13 +461,22 @@ async fn settle_loot(
     corpse: MovementLocalPosition,
     top_damage_character_id: [u8; 16],
     ground: &DeathGroundContext,
-    corpse_item: &LootDefinitionRef,
-    loot_table_ref: &LootDefinitionRef,
+    corpse_item: Option<&LootDefinitionRef>,
+    loot_table_ref: Option<&LootDefinitionRef>,
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_race: Option<BestiaryRace>,
-) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
+) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
+    let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
+        (None, None) if loot_table.entries.is_empty() => return Ok(None),
+        (Some(corpse), Some(table)) => (corpse, table),
+        _ => {
+            return Err(CombatDeathRewardLootError::Corpse(
+                ItemMintError::InvalidInput,
+            ));
+        }
+    };
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
@@ -584,7 +594,7 @@ async fn settle_loot(
                 .zip(&plan.entries)
                 .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
         );
-        return Ok(CommittedCorpseLoot { corpse, entries });
+        return Ok(Some(CommittedCorpseLoot { corpse, entries }));
     }
     let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
         session
@@ -654,10 +664,10 @@ async fn settle_loot(
         committed_loot.push((mint.clone(), entry.item.clone(), entry.quantity));
         entries.push(mint);
     }
-    Ok(CommittedCorpseLoot {
+    Ok(Some(CommittedCorpseLoot {
         corpse: corpse_mint,
         entries,
-    })
+    }))
 }
 
 fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {
@@ -813,8 +823,8 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         facts.corpse,
         *facts.top_damage_character.as_bytes(),
         &input.ground,
-        &input.corpse_item,
-        &input.loot_table_ref,
+        input.corpse_item.as_ref(),
+        input.loot_table_ref.as_ref(),
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,
@@ -1139,7 +1149,8 @@ mod tests {
     }
 
     #[test]
-    fn worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans() {
+    fn worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans()
+    -> std::result::Result<(), String> {
         use oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables;
         let mut identity = [1u8; 16];
         identity[6] = 0x71;
@@ -1163,16 +1174,21 @@ mod tests {
                 .reward_table()
                 .row(&creature)
                 .expect("source corpse and entire native loot closure must settle");
+            let corpse_item = row
+                .corpse_item
+                .as_ref()
+                .ok_or_else(|| format!("{creature}: actual source corpse required"))?;
+            let loot_table_ref = row
+                .loot_table_ref
+                .as_ref()
+                .ok_or_else(|| format!("{creature}: actual source loot table required"))?;
             assert_eq!(
-                row.corpse_item.production_key,
+                corpse_item.production_key,
                 format!("oteryn:item.tibia.i{corpse}")
             );
             assert!(
                 native
-                    .item_policy(
-                        &row.corpse_item.production_key,
-                        &row.corpse_item.revision_ref
-                    )
+                    .item_policy(&corpse_item.production_key, &corpse_item.revision_ref)
                     .expect("native corpse")
                     .record()
                     .admission
@@ -1215,7 +1231,7 @@ mod tests {
             let mut observed = false;
             for seed in 0..8192u32 {
                 let key = LootPlanDeathKey::new([1; 16], [2; 16], 1, seed, 1);
-                let plan = plan_creature_loot(key, &row.loot_table_ref, &row.loot_table)
+                let plan = plan_creature_loot(key, loot_table_ref, &row.loot_table)
                     .expect("unchanged native loot planner");
                 let top_level = plan
                     .entries
@@ -1258,6 +1274,7 @@ mod tests {
             .expect("source corpse facts");
         assert_eq!(seacrest.container_capacity, Some(36));
         assert!(check_corpse_container_capacity(31).is_err());
+        Ok(())
     }
 
     #[test]

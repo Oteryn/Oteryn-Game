@@ -46,6 +46,8 @@ struct NativeFrame {
 #[serde(deny_unknown_fields)]
 struct SourceItemPolicy {
     server_item_id: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_top_order: Option<u8>,
     ground: bool,
     ground_speed: u16,
     block_solid: bool,
@@ -101,7 +103,16 @@ struct SourceWorldDocument {
     imports: Vec<super::ImportBatch>,
     sources: Vec<super::ProjectV2Source>,
     source_bounds: [i32; 6],
-    source_town: SourceTown,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    source_regions: Vec<[i32; 6]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    registered_global_events: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ambient_xml_spawns: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_town: Option<SourceTown>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_entry: Option<[i32; 3]>,
     native_frame: NativeFrame,
     source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
     native_item_bindings: Vec<ProjectV2SourceIdentityBinding>,
@@ -174,10 +185,18 @@ pub struct QualifiedNativeSpellWorld {
     immutable_tiles: BTreeMap<LogicalCell, QualifiedSpellTile>,
     pending_placements: Vec<QualifiedMutableSourcePlacement>,
     native_item_bindings: BTreeMap<u32, ProjectV2SourceIdentityBinding>,
+    registered_global_events: Option<serde_json::Value>,
+    ambient_xml_spawns: Option<serde_json::Value>,
     bounds: [i32; 6],
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 impl QualifiedNativeSpellWorld {
+    pub(in crate::content) fn ambient_xml_spawn_data(&self) -> Option<&serde_json::Value> {
+        self.ambient_xml_spawns.as_ref()
+    }
+    pub(in crate::content) fn registered_global_event_data(&self) -> Option<&serde_json::Value> {
+        self.registered_global_events.as_ref()
+    }
     /// A bounded view of this already qualified source. It cannot add a tile,
     /// alter the source frame or expose another encounter's mutable placement.
     pub(in crate::content) fn activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
@@ -267,9 +286,9 @@ impl QualifiedNativeSpellWorld {
     }
     pub const fn entry_start(&self) -> super::NativeEntryStart {
         super::NativeEntryStart {
-            x: 0,
-            y: 0,
-            floor: -5,
+            x: self.temple.x,
+            y: self.temple.y,
+            floor: self.temple.z as i16,
         }
     }
     pub fn cell_count(&self) -> usize {
@@ -305,11 +324,233 @@ impl QualifiedNativeSpellWorld {
         self.bounds
     }
 }
+#[cfg_attr(test, track_caller)]
 fn invalid() -> ProjectError {
+    #[cfg(test)]
+    eprintln!(
+        "native source world refusal at {}",
+        std::panic::Location::caller()
+    );
     ProjectError::InvalidProject("native source world qualification")
 }
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Only these task-owned captures can instantiate an independent activity map.
+/// The caller supplies current activation authority; this selector grants none.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PinnedActivitySourceRoom {
+    CallbackAnomaly,
+    CallbackLadyTenebris,
+    CallbackMazoran,
+    CallbackOutburst,
+    CallbackPlagirath,
+    CallbackProfessorMaxxen,
+    CallbackRagiaz,
+    CallbackRazzagorn,
+    CallbackShulgrax,
+    CallbackTimeGuardian,
+    CallbackZamulosh,
+    Bakragore,
+    BrainHead,
+    Chagorz,
+    GoshnarsCruelty,
+    GoshnarsGreed,
+    GoshnarsHatred,
+    GoshnarsMalice,
+    GoshnarsMegalomania,
+    GoshnarsSpite,
+    Ichgahal,
+    Murcion,
+    Primal,
+    Soulpit,
+    Vemiath,
+}
+impl PinnedActivitySourceRoom {
+    /// Proves capture coverage, including genuinely absent donor tiles. The
+    /// enclosing bounds alone do not cover gaps between captured rectangles.
+    pub fn source_capture_covers(self, position: [i32; 3]) -> bool {
+        #[derive(Deserialize)]
+        struct Coverage {
+            source_regions: Vec<[i32; 6]>,
+        }
+        type Regions = Vec<(PinnedActivitySourceRoom, Vec<[i32; 6]>)>;
+        static REGIONS: std::sync::OnceLock<Option<Regions>> = std::sync::OnceLock::new();
+        let Some(regions) = REGIONS.get_or_init(|| {
+            Self::ALL
+                .into_iter()
+                .map(|source| {
+                    serde_json::from_slice::<Coverage>(source.bytes())
+                        .ok()
+                        .map(|coverage| (source, coverage.source_regions))
+                })
+                .collect()
+        }) else {
+            return false;
+        };
+        let [x, y, z] = position;
+        regions
+            .iter()
+            .find(|(source, _)| *source == self)
+            .is_some_and(|(_, regions)| {
+                regions.iter().any(|&[x0, y0, x1, y1, z0, z1]| {
+                    (x0..=x1).contains(&x) && (y0..=y1).contains(&y) && (z0..=z1).contains(&z)
+                })
+            })
+    }
+    pub const ALL: [Self; 25] = [
+        Self::CallbackAnomaly,
+        Self::CallbackLadyTenebris,
+        Self::CallbackMazoran,
+        Self::CallbackOutburst,
+        Self::CallbackPlagirath,
+        Self::CallbackProfessorMaxxen,
+        Self::CallbackRagiaz,
+        Self::CallbackRazzagorn,
+        Self::CallbackShulgrax,
+        Self::CallbackTimeGuardian,
+        Self::CallbackZamulosh,
+        Self::Bakragore,
+        Self::BrainHead,
+        Self::Chagorz,
+        Self::GoshnarsCruelty,
+        Self::GoshnarsGreed,
+        Self::GoshnarsHatred,
+        Self::GoshnarsMalice,
+        Self::GoshnarsMegalomania,
+        Self::GoshnarsSpite,
+        Self::Ichgahal,
+        Self::Murcion,
+        Self::Primal,
+        Self::Soulpit,
+        Self::Vemiath,
+    ];
+    pub fn bytes(self) -> &'static [u8] {
+        match self {
+            Self::CallbackAnomaly => include_bytes!(
+                "../../../../../../content/encounters/callback-anomaly/source-room.json"
+            ),
+            Self::CallbackLadyTenebris => include_bytes!(
+                "../../../../../../content/encounters/callback-lady-tenebris/source-room.json"
+            ),
+            Self::CallbackMazoran => include_bytes!(
+                "../../../../../../content/encounters/callback-mazoran/source-room.json"
+            ),
+            Self::CallbackOutburst => include_bytes!(
+                "../../../../../../content/encounters/callback-outburst/source-room.json"
+            ),
+            Self::CallbackPlagirath => include_bytes!(
+                "../../../../../../content/encounters/callback-plagirath/source-room.json"
+            ),
+            Self::CallbackProfessorMaxxen => include_bytes!(
+                "../../../../../../content/encounters/callback-professor-maxxen/source-room.json"
+            ),
+            Self::CallbackRagiaz => include_bytes!(
+                "../../../../../../content/encounters/callback-ragiaz/source-room.json"
+            ),
+            Self::CallbackRazzagorn => include_bytes!(
+                "../../../../../../content/encounters/callback-razzagorn/source-room.json"
+            ),
+            Self::CallbackShulgrax => include_bytes!(
+                "../../../../../../content/encounters/callback-shulgrax/source-room.json"
+            ),
+            Self::CallbackTimeGuardian => include_bytes!(
+                "../../../../../../content/encounters/callback-time-guardian/source-room.json"
+            ),
+            Self::CallbackZamulosh => include_bytes!(
+                "../../../../../../content/encounters/callback-zamulosh/source-room.json"
+            ),
+            Self::Bakragore => include_bytes!(
+                "../../../../../../content/encounters/rotten-blood-bakragore/source-room.json"
+            ),
+            Self::BrainHead => {
+                include_bytes!("../../../../../../content/encounters/brain-head/source-room.json")
+            }
+            Self::Chagorz => include_bytes!(
+                "../../../../../../content/encounters/rotten-blood-chagorz/source-room.json"
+            ),
+            Self::GoshnarsCruelty => include_bytes!(
+                "../../../../../../content/encounters/soul-war-cruelty/source-room.json"
+            ),
+            Self::GoshnarsGreed => include_bytes!(
+                "../../../../../../content/encounters/soul-war-greed/source-room.json"
+            ),
+            Self::GoshnarsHatred => include_bytes!(
+                "../../../../../../content/encounters/soul-war-hatred/source-room.json"
+            ),
+            Self::GoshnarsMalice => include_bytes!(
+                "../../../../../../content/encounters/soul-war-malice/source-room.json"
+            ),
+            Self::GoshnarsMegalomania => include_bytes!(
+                "../../../../../../content/encounters/soul-war-megalomania/source-room.json"
+            ),
+            Self::GoshnarsSpite => include_bytes!(
+                "../../../../../../content/encounters/soul-war-spite/source-room.json"
+            ),
+            Self::Ichgahal => include_bytes!(
+                "../../../../../../content/encounters/rotten-blood-ichgahal/source-room.json"
+            ),
+            Self::Murcion => include_bytes!(
+                "../../../../../../content/encounters/rotten-blood-murcion/source-room.json"
+            ),
+            Self::Primal => {
+                include_bytes!("../../../../../../content/encounters/primal/source-room.json")
+            }
+            Self::Soulpit => {
+                include_bytes!("../../../../../../content/encounters/soulpit/source-room.json")
+            }
+            Self::Vemiath => include_bytes!(
+                "../../../../../../content/encounters/rotten-blood-vemiath/source-room.json"
+            ),
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::CallbackAnomaly => "callback-anomaly",
+            Self::CallbackLadyTenebris => "callback-lady-tenebris",
+            Self::CallbackMazoran => "callback-mazoran",
+            Self::CallbackOutburst => "callback-outburst",
+            Self::CallbackPlagirath => "callback-plagirath",
+            Self::CallbackProfessorMaxxen => "callback-professor-maxxen",
+            Self::CallbackRagiaz => "callback-ragiaz",
+            Self::CallbackRazzagorn => "callback-razzagorn",
+            Self::CallbackShulgrax => "callback-shulgrax",
+            Self::CallbackTimeGuardian => "callback-time-guardian",
+            Self::CallbackZamulosh => "callback-zamulosh",
+            Self::Bakragore => "rotten-blood-bakragore",
+            Self::BrainHead => "brain-head",
+            Self::Chagorz => "rotten-blood-chagorz",
+            Self::GoshnarsCruelty => "soul-war-cruelty",
+            Self::GoshnarsGreed => "soul-war-greed",
+            Self::GoshnarsHatred => "soul-war-hatred",
+            Self::GoshnarsMalice => "soul-war-malice",
+            Self::GoshnarsMegalomania => "soul-war-megalomania",
+            Self::GoshnarsSpite => "soul-war-spite",
+            Self::Ichgahal => "rotten-blood-ichgahal",
+            Self::Murcion => "rotten-blood-murcion",
+            Self::Primal => "primal",
+            Self::Soulpit => "soulpit",
+            Self::Vemiath => "rotten-blood-vemiath",
+        }
+    }
+}
+fn activity_source(bytes: &[u8]) -> Option<PinnedActivitySourceRoom> {
+    PinnedActivitySourceRoom::ALL
+        .into_iter()
+        .find(|room| room.bytes() == bytes)
+}
+pub(in crate::content) fn source_frame(bytes: &[u8]) -> Result<(String, String), ProjectError> {
+    if let Some(room) = activity_source(bytes) {
+        return Ok((
+            format!("oteryn:frame/crystal-{}-activity-201189f", room.name()),
+            format!("oteryn:map/crystal-{}-activity-201189f", room.name()),
+        ));
+    }
+    if hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA {
+        return Err(invalid());
+    }
+    Ok((SOURCE_WORLD_FRAME.into(), SOURCE_WORLD_MAP.into()))
 }
 pub fn qualify(
     bytes: &[u8],
@@ -343,49 +584,107 @@ pub fn qualify(
         }
         return Ok(world);
     }
+    let activity = activity_source(bytes);
+    let (frame, map) = source_frame(bytes)?;
     if bytes.len() > MAX_BYTES
         || scope.generation_digest == [0; 32]
-        || scope.coordinate_frame.as_str() != SOURCE_WORLD_FRAME
-        || scope.map_revision.as_str() != SOURCE_WORLD_MAP
-        || hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA
+        || scope.coordinate_frame.as_str() != frame
+        || scope.map_revision.as_str() != map
     {
         return Err(invalid());
     }
     let doc: SourceWorldDocument = serde_json::from_slice(bytes).map_err(|_| invalid())?;
-    if doc.schema != "OTERYN_NATIVE_SPELL_SOURCE_WORLD/v1"
-        || doc.candidate_profile != SOURCE_WORLD_PROFILE
-        || doc.source_repository != "https://github.com/opentibiabr/canary"
-        || doc.source_revision != PIN
-        || doc.source_bounds != [5840, 5283, 5871, 5314, 5, 8]
-        || doc.source_town
-            != (SourceTown {
-                town_id: 6,
-                name: "Thalom".into(),
-                temple: [5854, 5298, 5],
+    if let Some(value) = &doc.ambient_xml_spawns
+        && activity
+            .and_then(crate::content::native_soul_war_spawns::expected)
+            .as_ref()
+            != Some(value)
+    {
+        return Err(invalid());
+    }
+    if let Some(value) = &doc.registered_global_events
+        && (activity != Some(PinnedActivitySourceRoom::GoshnarsSpite)
+            || !crate::content::native_soul_war_global_events::matches_capture(value))
+    {
+        return Err(invalid());
+    }
+    if activity.is_none()
+        && (doc.schema != "OTERYN_NATIVE_SPELL_SOURCE_WORLD/v1"
+            || doc.candidate_profile != SOURCE_WORLD_PROFILE
+            || doc.source_repository != "https://github.com/opentibiabr/canary"
+            || doc.source_revision != PIN
+            || doc.source_bounds != [5840, 5283, 5871, 5314, 5, 8]
+            || doc.source_town
+                != Some(SourceTown {
+                    town_id: 6,
+                    name: "Thalom".into(),
+                    temple: [5854, 5298, 5],
+                })
+            || doc.source_entry.is_some()
+            || doc.native_frame
+                != (NativeFrame {
+                    key: SOURCE_WORLD_FRAME.into(),
+                    map_revision: SOURCE_WORLD_MAP.into(),
+                    origin_x: 5854,
+                    origin_y: 5298,
+                    floor_transform: "native_floor=-source_z".into(),
+                })
+            || doc.tiles.len() != 2833
+            || doc.tiles.len() > 4096
+            || doc.source_closure.len() != 14)
+    {
+        return Err(invalid());
+    }
+    if let Some(room) = activity
+        && (doc.schema != "OTERYN_NATIVE_ACTIVITY_SOURCE_WORLD/v1"
+            || doc.source_revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+            || doc.source_repository != "https://github.com/zimbadev/crystalserver"
+            || doc.candidate_profile != format!("native-crystal-{}-activity-201189f", room.name())
+            || doc.native_frame.key != frame
+            || doc.native_frame.map_revision != map
+            || doc.native_frame.origin_x != 0
+            || doc.native_frame.origin_y != 0
+            || doc.native_frame.floor_transform != "native_floor=-source_z"
+            || doc.source_entry.is_none()
+            || doc.source_regions.is_empty()
+            || doc.source_regions.len() > 64
+            || doc.source_regions.iter().any(|&[x0, y0, x1, y1, z0, z1]| {
+                x0 > x1
+                    || y0 > y1
+                    || z0 > z1
+                    || x0 < doc.source_bounds[0]
+                    || y0 < doc.source_bounds[1]
+                    || x1 > doc.source_bounds[2]
+                    || y1 > doc.source_bounds[3]
+                    || z0 < doc.source_bounds[4]
+                    || z1 > doc.source_bounds[5]
             })
-        || doc.native_frame
-            != (NativeFrame {
-                key: SOURCE_WORLD_FRAME.into(),
-                map_revision: SOURCE_WORLD_MAP.into(),
-                origin_x: 5854,
-                origin_y: 5298,
-                floor_transform: "native_floor=-source_z".into(),
-            })
-        || doc.tiles.len() != 2833
-        || doc.tiles.len() > 4096
-        || doc.source_closure.len() != 14
+            || doc.source_town.is_some()
+            || doc.tiles.is_empty()
+            || doc.tiles.len() > 4096
+            || doc.source_closure.len() != 3)
     {
         return Err(invalid());
     }
     let mut policies = BTreeMap::new();
     for p in &doc.item_policies {
-        if p.server_item_id == 0
+        if (activity.is_some() && !matches!(p.source_top_order, Some(0..=3)))
+            || (activity.is_none() && p.source_top_order.is_some())
+            || p.server_item_id == 0
             || p.server_item_id > 65535
             || policies.insert(p.server_item_id, p).is_some()
         {
             return Err(invalid());
         }
     }
+    let source_pin = if activity.is_some() {
+        "201189f871d23597b82caf88fd611454a2ddefb8"
+    } else {
+        PIN
+    };
+    let source_key = activity
+        .map(|room| format!("oteryn:source/crystal-{}-activity-201189f", room.name()))
+        .unwrap_or_else(|| "oteryn:source/canary-spell-world-r3".into());
     let native_item_bindings: BTreeMap<u32, ProjectV2SourceIdentityBinding> = doc
         .native_item_bindings
         .iter()
@@ -394,15 +693,25 @@ pub fn qualify(
             if binding.external_id != id.to_string()
                 || binding.target.family != ProjectV2Family::Item
                 || binding.identity_namespace != "ots/item_server_id"
-                || binding.source_revision != "ff7ede593c69d4c658b382c97443e8155926924a"
-                || binding.source_key != "oteryn:source.crystalserver"
+                || binding.source_revision
+                    != if activity.is_some() {
+                        source_pin
+                    } else {
+                        "ff7ede593c69d4c658b382c97443e8155926924a"
+                    }
+                || binding.source_key
+                    != if activity.is_some() {
+                        source_key.as_str()
+                    } else {
+                        "oteryn:source.crystalserver"
+                    }
             {
                 return Err(invalid());
             }
             Ok((id, binding.clone()))
         })
         .collect::<Result<_, ProjectError>>()?;
-    if native_item_bindings.len() != 37
+    if (activity.is_none() && native_item_bindings.len() != 37)
         || native_item_bindings.len() != doc.native_item_bindings.len()
     {
         return Err(invalid());
@@ -411,19 +720,43 @@ pub fn qualify(
     for binding in &doc.source_identity_bindings {
         let id = binding.external_id.parse::<u32>().map_err(|_| invalid())?;
         let policy = policies.get(&id).ok_or_else(invalid)?;
-        let family = if policy.ground {
+        let static_surface = activity
+            .and_then(|_| crate::content::qualified_static_surface(&binding.target.key))
+            .filter(|facts| {
+                u32::from(facts.source_id) == id
+                    && facts.block_solid == policy.block_solid
+                    && facts.blocks_projectile == policy.block_projectile
+                    && !policy.movable
+                    && !policy.pickupable
+                    && policy.dynamic_kind.is_none()
+                    && facts.ground
+                        == policy
+                            .ground
+                            .then_some((!policy.block_solid, policy.ground_speed))
+            });
+        let family = if static_surface.is_some() {
+            if policy.ground {
+                ProjectV2Family::Terrain
+            } else {
+                ProjectV2Family::WorldObject
+            }
+        } else if policy.ground && activity.is_none() {
             ProjectV2Family::Terrain
         } else {
             ProjectV2Family::Item
         };
         let prefix = if policy.ground { "terrain" } else { "item" };
         if binding.external_id != id.to_string()
-            || binding.source_revision != PIN
-            || binding.source_key != "oteryn:source/canary-spell-world-r3"
+            || binding.source_revision != source_pin
+            || binding.source_key != source_key
             || binding.identity_namespace != "ots/item_server_id"
             || binding.disposition != ProjectV2SourceIdentityDisposition::AcceptedAlias
             || binding.target.family != family
-            || if let Some(native) = native_item_bindings.get(&id) {
+            || if activity.is_some() {
+                (static_surface.is_none()
+                    && binding.target.key != format!("oteryn:item.tibia.i{id}"))
+                    || binding.target.revision != "definition-r1"
+            } else if let Some(native) = native_item_bindings.get(&id) {
                 binding.target != native.target
             } else {
                 binding.target.key != format!("oteryn:{prefix}.source.canary.id{id}")
@@ -442,10 +775,19 @@ pub fn qualify(
     let mut pending_placements = Vec::new();
     for row in &doc.tiles {
         let [x, y, z] = row.source_position;
-        let native = [x - 5854, y - 5298, -z];
-        if !(5840..=5871).contains(&x)
-            || !(5283..=5314).contains(&y)
-            || !(5..=8).contains(&z)
+        let native = [
+            x - doc.native_frame.origin_x,
+            y - doc.native_frame.origin_y,
+            -z,
+        ];
+        let [x0, y0, x1, y1, z0, z1] = doc.source_bounds;
+        if !(x0..=x1).contains(&x)
+            || !(y0..=y1).contains(&y)
+            || !(z0..=z1).contains(&z)
+            || (activity.is_some()
+                && !doc.source_regions.iter().any(|&[a, b, c, d, e, f]| {
+                    (a..=c).contains(&x) && (b..=d).contains(&y) && (e..=f).contains(&z)
+                }))
             || row.native_position != native
             || row.house_id.is_some()
         {
@@ -614,22 +956,36 @@ pub fn qualify(
             return Err(invalid());
         }
     }
+    let entry = doc
+        .source_entry
+        .or_else(|| doc.source_town.as_ref().map(|town| town.temple))
+        .ok_or_else(invalid)?;
+    let temple = LogicalCell {
+        x: entry[0] - doc.native_frame.origin_x,
+        y: entry[1] - doc.native_frame.origin_y,
+        z: -entry[2],
+    };
     let start = cells
-        .get(&LogicalCell { x: 0, y: 0, z: -5 })
+        .get(&temple)
         .and_then(Option::as_ref)
         .ok_or_else(invalid)?;
     if !start.ground_present() || start.flags().block_solid {
         return Err(invalid());
     }
     Ok(QualifiedNativeSpellWorld {
+        registered_global_events: doc.registered_global_events,
+        ambient_xml_spawns: doc.ambient_xml_spawns,
         scope,
-        temple: LogicalCell {
-            x: doc.source_town.temple[0] - doc.native_frame.origin_x,
-            y: doc.source_town.temple[1] - doc.native_frame.origin_y,
-            z: -doc.source_town.temple[2],
-        },
+        temple,
         cells,
-        bounds: [-14, -15, 17, 16, -8, -5],
+        bounds: [
+            doc.source_bounds[0] - doc.native_frame.origin_x,
+            doc.source_bounds[1] - doc.native_frame.origin_y,
+            doc.source_bounds[2] - doc.native_frame.origin_x,
+            doc.source_bounds[3] - doc.native_frame.origin_y,
+            -doc.source_bounds[5],
+            -doc.source_bounds[4],
+        ],
         bindings: doc.source_identity_bindings,
         immutable_tiles,
         pending_placements,
@@ -688,9 +1044,10 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
         }
         return serde_json::to_vec(&client).map_err(|_| invalid());
     }
-    if bytes.len() > MAX_BYTES || hex(&crate::content::digest::sha256(bytes)) != DOCUMENT_SHA {
+    if bytes.len() > MAX_BYTES {
         return Err(invalid());
     }
+    let (frame, map) = source_frame(bytes)?;
     let doc: SourceWorldDocument = serde_json::from_slice(bytes).map_err(|_| invalid())?;
     let keys: BTreeMap<u32, String> = doc
         .source_identity_bindings
@@ -728,11 +1085,19 @@ pub fn client_projection(bytes: &[u8]) -> Result<Vec<u8>, ProjectError> {
             })
         })
         .collect::<Result<_, ProjectError>>()?;
+    let entry = doc
+        .source_entry
+        .or_else(|| doc.source_town.as_ref().map(|town| town.temple))
+        .ok_or_else(invalid)?;
     serde_json::to_vec(&SourceWorldClientDocument {
         schema: "OTERYN_NATIVE_SPELL_SOURCE_WORLD_CLIENT/v1".into(),
-        coordinate_frame: SOURCE_WORLD_FRAME.into(),
-        map_revision: SOURCE_WORLD_MAP.into(),
-        start: [0, 0, -5],
+        coordinate_frame: frame,
+        map_revision: map,
+        start: [
+            entry[0] - doc.native_frame.origin_x,
+            entry[1] - doc.native_frame.origin_y,
+            -entry[2],
+        ],
         cells,
     })
     .map_err(|_| invalid())
@@ -901,6 +1266,125 @@ fn qualify_captured_region(
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
+    #[test]
+    fn srx3_ambient_xml_source_metadata_is_exact_and_room_bound_without_native_factory()
+    -> Result<(), ProjectError> {
+        for (room, count) in [
+            (PinnedActivitySourceRoom::GoshnarsSpite, 3),
+            (PinnedActivitySourceRoom::GoshnarsHatred, 2),
+            (PinnedActivitySourceRoom::GoshnarsCruelty, 1),
+            (PinnedActivitySourceRoom::GoshnarsMegalomania, 3),
+            (PinnedActivitySourceRoom::CallbackRagiaz, 1),
+        ] {
+            let (frame, map) = source_frame(room.bytes())?;
+            let mut current = scope();
+            current.coordinate_frame =
+                crate::content::CoordinateFrameRef::new(&frame).map_err(|_| invalid())?;
+            current.map_revision =
+                crate::content::MapRevisionRef::new(&map).map_err(|_| invalid())?;
+            let qualified = qualify(room.bytes(), current.clone())?;
+            assert_eq!(
+                qualified
+                    .ambient_xml_spawn_data()
+                    .and_then(serde_json::Value::as_array)
+                    .map(Vec::len),
+                Some(count)
+            );
+            let mut changed: serde_json::Value =
+                serde_json::from_slice(room.bytes()).map_err(|_| invalid())?;
+            changed["ambient_xml_spawns"][0]["respawn_seconds"] = serde_json::json!(11);
+            assert!(
+                qualify(
+                    &serde_json::to_vec(&changed).map_err(|_| invalid())?,
+                    current.clone()
+                )
+                .is_err()
+            );
+            changed["ambient_xml_spawns"] = serde_json::json!([]);
+            assert!(
+                qualify(
+                    &serde_json::to_vec(&changed).map_err(|_| invalid())?,
+                    current
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn srx3_spite_source_world_strict_parser_without_native_factory() -> Result<(), ProjectError> {
+        let room = PinnedActivitySourceRoom::GoshnarsSpite;
+        let (frame, map) = source_frame(room.bytes())?;
+        let mut current = scope();
+        current.coordinate_frame =
+            crate::content::CoordinateFrameRef::new(&frame).map_err(|_| invalid())?;
+        current.map_revision = crate::content::MapRevisionRef::new(&map).map_err(|_| invalid())?;
+        let qualified = qualify(room.bytes(), current)?;
+        assert_eq!(qualified.cell_count(), 336);
+        assert!(qualified.registered_global_event_data().is_some());
+        Ok(())
+    }
+    #[test]
+    fn primal_source_room_admits_only_pinned_real_map_cells() -> Result<(), ProjectError> {
+        let bytes = include_bytes!("../../../../../../content/encounters/primal/source-room.json");
+        let mut current = scope();
+        current.coordinate_frame =
+            crate::content::CoordinateFrameRef::new("oteryn:frame/crystal-primal-activity-201189f")
+                .map_err(|_| invalid())?;
+        current.map_revision =
+            crate::content::MapRevisionRef::new("oteryn:map/crystal-primal-activity-201189f")
+                .map_err(|_| invalid())?;
+        let map = qualify(bytes, current.clone())?;
+        assert_eq!(
+            map.entry_start(),
+            super::super::NativeEntryStart {
+                x: 33565,
+                y: 32758,
+                floor: -15
+            }
+        );
+        assert_eq!(map.cell_count(), 537);
+        assert_eq!(
+            map.lookup(
+                &current,
+                LogicalCell {
+                    x: 33558,
+                    y: 32759,
+                    z: -15
+                }
+            ),
+            Ok(CollisionClass::Walkable)
+        );
+        assert_eq!(
+            map.lookup(
+                &current,
+                LogicalCell {
+                    x: 33565,
+                    y: 32758,
+                    z: -15
+                }
+            ),
+            Ok(CollisionClass::Walkable)
+        );
+        assert!(
+            map.lookup(
+                &current,
+                LogicalCell {
+                    x: 33565,
+                    y: 32758,
+                    z: -14
+                }
+            )
+            .is_err()
+        );
+        let mut forged = bytes.to_vec();
+        forged.push(b' ');
+        assert!(
+            qualify(&forged, current).is_err(),
+            "exact captured bytes remain pinned"
+        );
+        Ok(())
+    }
     fn scope() -> EngineeringStaticCellScope {
         let world = oteryn_protocol_oteryn::WorldId::decode(&[
             0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
@@ -1213,3 +1697,103 @@ mod tests {
         }
     }
 }
+
+/// Compare the real loaded bundle census and every source-qualified tile to a
+/// sealed capture. Matching coordinates or a caller's rectangle are insufficient.
+pub(in crate::content) fn qualifies_activity_bundle_cells(
+    room: &super::QualifiedNativeEntryRoom,
+    source: PinnedActivitySourceRoom,
+    cells: &super::NativeEntryMovementCells,
+) -> bool {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    let NativeMovementCollisionIndex::Bundle(bundle) = cells.index() else {
+        return false;
+    };
+    let Ok(doc) = serde_json::from_slice::<SourceWorldDocument>(source.bytes()) else {
+        return false;
+    };
+    if room.source_world().is_none()
+        || bundle.0.source_capture_cell_count() != Some(doc.tiles.len())
+    {
+        return false;
+    }
+    doc.tiles.iter().all(|tile| {
+        let [x, y, z] = tile.source_position;
+        let source_cell = LogicalCell { x, y, z: -z };
+        let target = LogicalCell { x, y, z };
+        let expected = room
+            .movement_cells()
+            .spell_tiles()
+            .lookup(room.movement_cells().scope(), source_cell);
+        let actual = cells.spell_tiles().lookup(cells.scope(), target);
+        match expected {
+            Ok(expected) => actual.is_ok_and(|actual| {
+                actual.flags() == expected.flags()
+                    && actual.ground_source_id() == expected.ground_source_id()
+                    && actual.ground_speed() == expected.ground_speed()
+                    && actual.top_source_ids() == expected.top_source_ids()
+            }),
+            Err(_) => {
+                bundle.lookup(cells.scope(), target) == Ok(CollisionClass::Blocked)
+                    && match actual {
+                        Ok(actual) => actual.flags().block_projectile,
+                        // A real pickupable/mutable placement retains UNKNOWN
+                        // spell facts. Closed collision is still mandatory;
+                        // absent geometry never qualifies this source cell.
+                        Err(crate::content::SpellTileLookupError::Unknown) => true,
+                        Err(_) => false,
+                    }
+            }
+        }
+    })
+}
+
+/// The source Channel may contain the full Tibia map. Only the fixed Primal
+/// staging slice and return anchor are required there; this grants no private
+/// scene role and accepts no caller-supplied coordinates or terrain.
+pub(in crate::content) fn qualifies_primal_lobby_cells(
+    room: &super::QualifiedNativeEntryRoom,
+) -> bool {
+    if !matches!(
+        room.movement_cells().index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+    ) || room.movement_cells().scope().coordinate_frame.as_str()
+        != "oteryn:frame/world-bundle-v3"
+    {
+        return false;
+    }
+    let Ok(doc) =
+        serde_json::from_slice::<SourceWorldDocument>(PinnedActivitySourceRoom::Primal.bytes())
+    else {
+        return false;
+    };
+    let selected = doc
+        .tiles
+        .iter()
+        .filter(|tile| {
+            let [x, y, z] = tile.source_position;
+            (z == 14 && (33546..=33553).contains(&x) && (32751..=32753).contains(&y))
+                || (z == 15 && (33519..=33521).contains(&x) && (32870..=32872).contains(&y))
+        })
+        .collect::<Vec<_>>();
+    selected.len() == 33
+        && selected.into_iter().all(|tile| {
+            let [x, y, z] = tile.source_position;
+            room.movement_cells()
+                .spell_tiles()
+                .lookup(room.movement_cells().scope(), LogicalCell { x, y, z })
+                .is_ok_and(|actual| {
+                    actual.flags() == tile.semantics.flags
+                        && actual.ground_source_id() == tile.semantics.ground
+                        && actual.ground_speed() == tile.semantics.ground_speed
+                        && actual.top_source_ids() == tile.semantics.top_ids
+                })
+        })
+}
+
+mod callback_context;
+pub use callback_context::{
+    CallbackBundleBasis, PublishedWorldBundleBasis, PublishedWorldSourceFrame,
+    QualifiedBundleSourceBases, QualifiedCallbackSourceContext, QualifiedPublishedWorldContext,
+    qualify_bundle_source_bases, qualify_callback_bundle_basis,
+};

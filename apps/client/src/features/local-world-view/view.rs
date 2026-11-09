@@ -123,6 +123,12 @@ impl PlayView {
             self.combat_line = None;
             self.target_walk_feedback = None;
         }
+        if let Some(scope) = &pushed.activity_scope {
+            self.apply_activity_scope(scope)?;
+        }
+        if let Some(identity) = pushed.own_identity {
+            self.set_own_identity(identity);
+        }
         if let Some(channel) = pushed.served_channel {
             oteryn_client_ui::channel_list::protocol::apply(&mut self.served_channel, channel);
         }

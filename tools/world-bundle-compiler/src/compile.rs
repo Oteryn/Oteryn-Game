@@ -61,6 +61,31 @@ pub trait KeyResolver: Sync {
     fn walkable_border(&self, _key: &str) -> bool {
         false
     }
+    /// A closed source-qualified static map surface needs the runtime semantics
+    /// named by this capability. An arbitrary key or common terrain does not.
+    fn source_static_surface(&self, _key: &str) -> bool {
+        false
+    }
+}
+fn identity_for_palette(
+    identity: &Identity,
+    palette: &[PaletteEntry],
+    resolver: &dyn KeyResolver,
+) -> Identity {
+    let mut identity = identity.clone();
+    let required = "source-static-surfaces-v1";
+    if palette
+        .iter()
+        .any(|entry| resolver.source_static_surface(&entry.key))
+        && !identity
+            .required_capabilities
+            .iter()
+            .any(|value| value == required)
+    {
+        identity.required_capabilities.push(required.into());
+        identity.required_capabilities.sort();
+    }
+    identity
 }
 
 pub struct Input<'a> {
@@ -299,7 +324,7 @@ fn cell_facts(
             Resolution::Resolved(family, _) => Some((
                 resolver.terrain(key),
                 resolver.floor_change(key),
-                family == Family::Item && resolver.solid(key),
+                (family == Family::Item || resolver.solid_stated(key)) && resolver.solid(key),
                 resolver.solid_stated(key),
                 resolver.walkable_border(key),
             )),
@@ -1138,6 +1163,7 @@ fn assemble(
     }
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
     let layers = layers::realize(input, state.resolver, &sectors)?;
+    let palette = state.used.into_values().collect::<Vec<_>>();
     let manifest = Manifest {
         subareas: subareas?,
         format: bundle::FORMAT.into(),
@@ -1145,9 +1171,9 @@ fn assemble(
         projection_class: "server".into(),
         compiler_version: bundle::compiler_version(),
         build_class: input.build_class,
-        identity: input.identity.clone(),
+        identity: identity_for_palette(&input.identity, &palette, state.resolver),
         world: input.world.clone(),
-        palette: state.used.into_values().collect(),
+        palette,
         draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())
             .into_iter()
             .collect(),
@@ -1318,7 +1344,7 @@ fn prove(
         projection_class: "server".into(),
         compiler_version: bundle::compiler_version(),
         build_class: input.build_class,
-        identity: input.identity.clone(),
+        identity: identity_for_palette(&input.identity, &palette, resolver),
         world: input.world.clone(),
         palette,
         draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())

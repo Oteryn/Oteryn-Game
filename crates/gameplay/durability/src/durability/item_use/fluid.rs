@@ -266,7 +266,11 @@ async fn write_fluid(
     request: &ItemFluidRequest,
     splash: Option<&ItemFluidSplash>,
 ) -> Result<ItemFluidOutcome> {
-    let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
         return Err(ItemUseError::AuthorityRejected);
     };
     let holder = *fence.character_id.as_bytes();

@@ -24,6 +24,7 @@ struct RaidRetry {
 #[derive(Default)]
 pub(super) struct RaidEffectProgress {
     seen_dead: BTreeSet<RaidSpawnIdentity>,
+    source_applied: BTreeMap<[u8; 16], u32>,
     closed_bosses: BTreeSet<[u8; 16]>,
     source_aborted: BTreeSet<[u8; 16]>,
     settled_ends: BTreeSet<[u8; 16]>,
@@ -31,6 +32,15 @@ pub(super) struct RaidEffectProgress {
 }
 
 impl RaidEffectProgress {
+    pub(super) fn source_applied(&self, firing: [u8; 16], ordinal: u32) -> bool {
+        self.source_applied
+            .get(&firing)
+            .is_some_and(|previous| *previous >= ordinal)
+    }
+    pub(super) fn mark_source_applied(&mut self, firing: [u8; 16], ordinal: u32) {
+        self.source_applied.insert(firing, ordinal);
+    }
+
     fn begin(&mut self, firing: [u8; 16], key: &crate::content::ProductionKey) -> Result<(), ()> {
         if let Some(retry) = self.retries.get(&firing) {
             return if &retry.key == key { Ok(()) } else { Err(()) };
@@ -75,6 +85,10 @@ impl RaidEffectProgress {
             .collect()
     }
 
+    pub(super) fn completed_source(&mut self, firing: [u8; 16]) {
+        self.source_applied.remove(&firing);
+        self.retries.remove(&firing);
+    }
     fn completed(&mut self, firing: [u8; 16]) {
         self.seen_dead
             .retain(|identity| identity.firing_id != firing);
@@ -544,6 +558,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.compact_settled_raid(terminal.identity, None).await?;
             progress.completed(firing);
             return Ok(());
+        }
+        if let Some(raid) =
+            oteryn_gameplay_encounter_rules::raid::source_claustrophobic::Raid::from_key(
+                key.as_str(),
+            )
+        {
+            return self
+                .drive_claustrophobic_raid(firing, raid, now_ms, progress)
+                .await;
         }
         let raid = catalogue.get(key).filter(|raid| raid.active).ok_or(())?;
         let selected = raid.select(seed, firing).map_err(|_| ())?;

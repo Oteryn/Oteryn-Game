@@ -381,6 +381,16 @@ impl ChannelRuntimeV1 {
             .read_position(&self.continuity, actor.0)
             .map(MovementPositionSnapshot)
     }
+    /// Read the existing Movement position of any currently placed role,
+    /// including NPCs. This grants no combat eligibility or mutation authority;
+    /// the combat/AI reader above deliberately continues to exclude NPCs.
+    pub fn read_movement_actor_position(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .read_movement_position(&self.continuity, actor.0)
+    }
     /// Complete bounded census of the owner's positioned committed players and
     /// live creatures. These current value snapshots grant no mutation authority;
     /// each consumer must revalidate exact actors, session and positions at commit.
@@ -710,6 +720,7 @@ impl ChannelActorCarrier {
                 (true, Some(-1 | 1), Some(1)) => MovementFacing::South,
                 _ => return Err(CarrierError::MovementNonCardinal),
             };
+            let order = self.next_tile_entry_order()?;
             let revision = position
                 .revision
                 .checked_add(1)
@@ -725,6 +736,7 @@ impl ChannelActorCarrier {
                 unreachable!("exclusively borrowed NPC slot remains current");
             };
             *position = version;
+            self.install_tile_entry_order(index, order);
             return Ok(MovementPositionSnapshot(PositionSnapshot {
                 actor_ref: expected.actor_ref,
                 version,
@@ -761,7 +773,8 @@ impl ChannelActorCarrier {
         let index = self.validate_ref(continuity, actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
         self.validate_position_context(context)?;
-        match &mut self.slots[index] {
+        let order = self.next_tile_entry_order()?;
+        let result = match &mut self.slots[index] {
             Slot::CreatureOccupied {
                 generation,
                 health: 0,
@@ -807,7 +820,11 @@ impl ChannelActorCarrier {
                 Err(CarrierError::PositionAlreadyInitialized)
             }
             _ => Err(CarrierError::StaleActorGeneration),
+        };
+        if result.is_ok() {
+            self.install_tile_entry_order(index, order);
         }
+        result
     }
     /// One direct occupied-slot read under the independently current owner.
     pub fn read_position(
@@ -880,6 +897,50 @@ impl ChannelActorCarrier {
         next_position: LocalPosition,
         allow_self_removal: bool,
     ) -> Result<PositionSnapshot, CarrierError> {
+        self.compare_commit_position_bounded(
+            continuity,
+            expected,
+            next_context,
+            next_position,
+            allow_self_removal,
+            false,
+        )
+    }
+    pub(super) fn compare_commit_registered_source_position(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        expected: PositionSnapshot,
+        next_context: PreProductionPositionContext,
+        next_position: LocalPosition,
+    ) -> Result<PositionSnapshot, CarrierError> {
+        let index = self.validate_ref(continuity, expected.actor_ref)?;
+        if !matches!(&self.slots[index], Slot::CreatureOccupied { health: 0, committed, spell_combat, .. }
+            if spell_combat.native_death_events.is_some() && !spell_combat.source_death_completed && committed.lethal().is_some())
+        {
+            return Err(CarrierError::CreatureNotActionable);
+        }
+        self.compare_commit_position_bounded(
+            continuity,
+            expected,
+            next_context,
+            next_position,
+            false,
+            true,
+        )
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "same canonical compare commit has separate closed retained-source and existing summon-lifecycle callers"
+    )]
+    fn compare_commit_position_bounded(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        expected: PositionSnapshot,
+        next_context: PreProductionPositionContext,
+        next_position: LocalPosition,
+        allow_self_removal: bool,
+        registered_source: bool,
+    ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
         // W17: the physical arena boundary prevents carrying a Drome exemption into
@@ -895,14 +956,16 @@ impl ChannelActorCarrier {
             return Err(CarrierError::PositionSnapshotMismatch);
         }
 
-        if matches!(
-            &self.slots[index],
-            Slot::CreatureOccupied {
-                generation,
-                health: 0,
-                ..
-            } if *generation == expected.actor_ref.actor_local_generation.0
-        ) {
+        if !registered_source
+            && matches!(
+                &self.slots[index],
+                Slot::CreatureOccupied {
+                    generation,
+                    health: 0,
+                    ..
+                } if *generation == expected.actor_ref.actor_local_generation.0
+            )
+        {
             return Err(CarrierError::CreatureNotActionable);
         }
         self.validate_position_context(next_context)?;
@@ -982,6 +1045,28 @@ impl ChannelActorCarrier {
                 _ => current.facing,
             },
         };
+        let movement = (next_position != current.position).then(|| {
+            native_translation_events::CommittedMovementOccurrence::from_commit(
+                expected,
+                version,
+                self.movement_observed_us,
+            )
+        });
+        if movement.is_some()
+            && !self
+                .movement_latest
+                .iter()
+                .any(|event| event.mover().0.actor_local_id == expected.actor_ref.actor_local_id)
+        {
+            self.movement_latest
+                .try_reserve(1)
+                .map_err(|_| CarrierError::CapacityExceeded)?;
+        }
+        let translation_events =
+            self.stage_rotten_translation(continuity, expected, version, movement)?;
+        let tile_entry = (next_position != current.position)
+            .then(|| self.next_tile_entry_order())
+            .transpose()?;
         match &mut self.slots[index] {
             Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
                 *position = Some(version)
@@ -1001,6 +1086,21 @@ impl ChannelActorCarrier {
             }
             return Err(error);
         }
+        if let Some(order) = tile_entry {
+            self.install_tile_entry_order(index, order);
+        }
+        if let Some(movement) = movement {
+            if let Some(existing) = self
+                .movement_latest
+                .iter_mut()
+                .find(|event| event.mover().0.actor_local_id == expected.actor_ref.actor_local_id)
+            {
+                *existing = movement;
+            } else {
+                self.movement_latest.push(movement);
+            }
+        }
+        self.native_move_events.extend(translation_events);
         Ok(PositionSnapshot {
             actor_ref: expected.actor_ref,
             version,

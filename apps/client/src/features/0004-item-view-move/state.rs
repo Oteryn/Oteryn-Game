@@ -80,6 +80,12 @@ pub(crate) fn entity_item(entity: &WorldSpatialEntity) -> Option<GroundItem> {
             item_definition_ref,
             quantity,
             item_handle,
+        }
+        | EntityDetail::ObjectWithAppearance {
+            item_definition_ref,
+            quantity,
+            item_handle,
+            ..
         } => Some(GroundItem::Entity {
             reference: entity.entity,
             position: entity.position,
@@ -87,6 +93,6 @@ pub(crate) fn entity_item(entity: &WorldSpatialEntity) -> Option<GroundItem> {
             quantity,
             handle: item_handle,
         }),
-        EntityDetail::Actor { .. } => None,
+        EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. } => None,
     }
 }

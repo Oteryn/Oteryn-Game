@@ -50,6 +50,70 @@ pub struct Case {
 pub use oteryn_gameplay_monster_ai::monster_combat_lane::SourceSpawnPlacement;
 /// Current map-owner translation/placement/terrain; None always refuses, never allow-default.
 pub trait SourceSpawnFacts {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source placement reads the exact child and original occurrence"
+    )]
+    fn source_spawn_child_position(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        parent: ExactActorRef,
+        _: &Ref,
+        placement: &SourceSpawnPlacement,
+        draw: u64,
+        ordinal: usize,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<MovementLocalPosition> {
+        self.source_spawn_position(runtime, parent, placement, draw, ordinal, stamp)
+    }
+    fn source_spawn_child_tile_allowed(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        parent: ExactActorRef,
+        _: &Ref,
+        position: MovementLocalPosition,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<bool> {
+        self.source_spawn_tile_allowed(runtime, parent, position, stamp)
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source placement reads the exact child and original occurrence"
+    )]
+    fn source_spawn_child_requested_center(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        parent: ExactActorRef,
+        _: &Ref,
+        placement: &SourceSpawnPlacement,
+        draw: u64,
+        ordinal: usize,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<MovementLocalPosition> {
+        self.source_spawn_requested_center(runtime, parent, placement, draw, ordinal, stamp)
+    }
+    fn current_native(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        None
+    }
+    /// Original Lua createMonster position, before the placement owner's fallback.
+    /// A selected fallback is never evidence for a forced requested center.
+    fn source_spawn_requested_center(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        parent: ExactActorRef,
+        placement: &SourceSpawnPlacement,
+        _: u64,
+        _: usize,
+        _: RuntimeWorkStamp,
+    ) -> Option<MovementLocalPosition> {
+        match placement {
+            SourceSpawnPlacement::Subject => runtime
+                .read_actor_position(parent)
+                .ok()
+                .map(|p| p.position()),
+            _ => None,
+        }
+    }
     fn source_spawn_position(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -97,6 +161,14 @@ pub enum Kind {
 pub struct Child {
     pub creature: Ref,
     pub health: i64,
+    source: Option<crate::content::native_monster_callbacks::QualifiedNativeCallbackSpawn>,
+}
+impl Child {
+    pub fn native_source(
+        &self,
+    ) -> Option<&crate::content::native_monster_callbacks::QualifiedNativeCallbackSpawn> {
+        self.source.as_ref()
+    }
 }
 #[derive(Clone)]
 pub struct SourceCallbackSpawn {
@@ -138,7 +210,109 @@ pub fn fixture() -> Result<Witness, AttackError> {
     ))
     .map_err(|_| AttackError::InvalidSource)
 }
+fn native_fixture() -> Result<&'static Witness, AttackError> {
+    static FIXTURE: std::sync::OnceLock<Option<Witness>> = std::sync::OnceLock::new();
+    FIXTURE
+        .get_or_init(|| fixture().ok())
+        .as_ref()
+        .ok_or(AttackError::InvalidSource)
+}
 impl SourceCallbackSpawn {
+    pub fn qualify_native(
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        caster: &Ref,
+        index: usize,
+        list: ScheduleList,
+    ) -> Result<Option<Self>, AttackError> {
+        let Some(proof) = super::native_witness::qualify(native, caster, index, list)? else {
+            return Ok(None);
+        };
+        let w = native_fixture()?;
+        let phase = if list == ScheduleList::Attack {
+            "attacks"
+        } else {
+            "defenses"
+        };
+        let Some(c) = w
+            .cases
+            .iter()
+            .find(|c| c.caster == caster.key && c.index == index && c.phase == phase)
+        else {
+            return Ok(None);
+        };
+        if proof.entry().ability.key != c.parent || proof.entry().encounter.key != c.encounter {
+            return Err(AttackError::InvalidSource);
+        }
+        let kind = kind(
+            caster
+                .key
+                .strip_prefix("oteryn:creature.")
+                .ok_or(AttackError::InvalidSource)?,
+            c.parent
+                .strip_prefix("oteryn:ability.spell.")
+                .ok_or(AttackError::InvalidSource)?,
+        )
+        .ok_or(AttackError::InvalidSource)?;
+        let mut children = Vec::new();
+        for name in child_names(kind) {
+            let target = Ref {
+                family: Family::Creature,
+                key: format!("oteryn:creature.{name}"),
+                revision: "definition-r1".into(),
+            };
+            let body = super::native_witness::native_creature(native, &target)?;
+            let health = i64::try_from(body.health.ok_or(AttackError::InvalidSource)?)
+                .map_err(|_| AttackError::NumericOverflow)?;
+            if health <= 0 {
+                return Err(AttackError::InvalidSource);
+            }
+            let source = native
+                .callback_spawn_source(
+                    caster,
+                    index,
+                    if list == ScheduleList::Attack {
+                        crate::content::native_monster_callbacks::NativeCallbackList::Attack
+                    } else {
+                        crate::content::native_monster_callbacks::NativeCallbackList::Defence
+                    },
+                    &target,
+                )
+                .map_err(|_| AttackError::InvalidSource)?
+                .ok_or(AttackError::InvalidSource)?;
+            children.push(Child {
+                creature: target,
+                health,
+                source: Some(source),
+            });
+        }
+        let record = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target == *caster)
+            .ok_or(AttackError::InvalidSource)?;
+        let Data::Behavior(behavior) = &record
+            .behavior
+            .as_ref()
+            .ok_or(AttackError::InvalidSource)?
+            .data
+        else {
+            return Err(AttackError::InvalidSource);
+        };
+        let entries = if list == ScheduleList::Attack {
+            &behavior.attacks
+        } else {
+            &behavior.defenses
+        };
+        let entry = entries.get(index).ok_or(AttackError::InvalidSource)?;
+        if serde_json::to_value(entry).map_err(|_| AttackError::InvalidSource)? != c.entry {
+            return Err(AttackError::InvalidSource);
+        }
+        Self::from_reviewed_case(w, c, caster, entry, children, proof.content()).map(Some)
+    }
+    pub fn anchors(&self) -> &[serde_json::Value] {
+        &self.anchors
+    }
     pub fn ability(&self) -> &Ref {
         &self.parent
     }
@@ -266,8 +440,35 @@ impl SourceCallbackSpawn {
             children.push(Child {
                 creature: p.target.clone(),
                 health,
+                source: None,
             });
         }
+        Self::from_reviewed_case(&w, c, caster, entry, children, content).map(Some)
+    }
+    fn from_reviewed_case(
+        w: &Witness,
+        c: &Case,
+        caster: &Ref,
+        entry: &crate::content::ProjectV2AbilitySchedule,
+        children: Vec<Child>,
+        content: [u8; 32],
+    ) -> Result<Self, AttackError> {
+        let kind = kind(
+            caster
+                .key
+                .strip_prefix("oteryn:creature.")
+                .ok_or(AttackError::InvalidSource)?,
+            c.parent
+                .strip_prefix("oteryn:ability.spell.")
+                .ok_or(AttackError::InvalidSource)?,
+        )
+        .ok_or(AttackError::InvalidSource)?;
+        let index = c.index;
+        let list = match c.phase.as_str() {
+            "attacks" => ScheduleList::Attack,
+            "defenses" => ScheduleList::Defence,
+            _ => return Err(AttackError::InvalidSource),
+        };
         let e = serde_json::to_value(
             w.profiles
                 .get(&c.encounter)
@@ -278,7 +479,7 @@ impl SourceCallbackSpawn {
             .as_array()
             .cloned()
             .unwrap_or_default();
-        Ok(Some(Self {
+        Ok(Self {
             kind,
             creature: caster.key.clone(),
             parent: entry.ability.clone(),
@@ -289,7 +490,7 @@ impl SourceCallbackSpawn {
             anchors,
             range: entry.range_tiles.unwrap_or(0),
             magnitude: entry.magnitude,
-        }))
+        })
     }
     fn child(&self, name: &str) -> Result<&Child, AttackError> {
         self.children
@@ -448,14 +649,20 @@ pub struct Pending {
     source: SourceCallbackSpawn,
     proposal: ProfileAbilityProposal,
 }
+impl Pending {
+    pub fn source(&self) -> &SourceCallbackSpawn {
+        &self.source
+    }
+    pub fn proposal(&self) -> &ProfileAbilityProposal {
+        &self.proposal
+    }
+}
 pub struct Memo {
     actor: ExactActorRef,
     ability: Ref,
     sequence: u64,
     at: u64,
     proposal: ProfileAbilityProposal,
-    counter: u32,
-    next_allowed: u64,
 }
 #[derive(Debug)]
 pub struct SpawnChildReceipt {
@@ -480,12 +687,37 @@ pub struct CallbackSpawnOwner {
     pub pending: Vec<Pending>,
     pub memos: Vec<Memo>,
     next: u64,
+    // gaz_functions.lua owns this across source boss incarnations. Keep it in
+    // the existing runtime-scope callback owner, never in an actor memo.
+    gaz_minions_now: u32,
+    heart_counts: [i64; 4],
+    heart_next_allowed: [u64; 2],
     speech: Vec<
         oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech,
     >,
     speech_errors: Vec<(ExactActorRef, AttackError)>,
 }
 impl CallbackSpawnOwner {
+    pub fn new_current(r: &ChannelRuntimeV1) -> Result<Self, AttackError> {
+        Self::new(r, r.owner_fence().map_err(|_| AttackError::StaleOwner)?)
+    }
+    pub fn schedule_current(
+        &mut self,
+        r: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        source: &SourceCallbackSpawn,
+        proposal: &ProfileAbilityProposal,
+        now: SemanticTimeMicros,
+    ) -> Result<bool, AttackError> {
+        self.schedule(
+            r,
+            r.owner_fence().map_err(|_| AttackError::StaleOwner)?,
+            stamp,
+            source,
+            proposal,
+            now,
+        )
+    }
     pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
         let b = r.binding();
         let scope = b.runtime_scope();
@@ -512,6 +744,9 @@ impl CallbackSpawnOwner {
             pending: Vec::new(),
             memos: Vec::new(),
             next: 1,
+            gaz_minions_now: 2,
+            heart_counts: [0; 4],
+            heart_next_allowed: [0; 2],
             speech: Vec::new(),
             speech_errors: Vec::new(),
         })
@@ -537,6 +772,17 @@ impl CallbackSpawnOwner {
             && self.generation == b.scope_generation()
             && f.is_current_for_scope(self.scope, self.generation)
             && f.accepts_stamp(stamp)
+    }
+    fn current_bound(
+        &self,
+        r: &ChannelRuntimeV1,
+        f: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+    ) -> bool {
+        match f {
+            Some(f) => self.current(r, f, stamp),
+            None => r.owner_fence().is_ok_and(|f| self.current(r, f, stamp)),
+        }
     }
     pub fn schedule(
         &mut self,
@@ -592,10 +838,10 @@ impl CallbackSpawnOwner {
             .map_err(|_| AttackError::LedgerFull)?;
         let token = self.next;
         let next = token.checked_add(1).ok_or(AttackError::NumericOverflow)?;
-        let delay = if s.kind == Kind::GeneratorRelease {
-            14000000
-        } else {
-            0
+        let delay = match s.kind {
+            Kind::GeneratorRelease => 14_000_000,
+            Kind::Mazoran => 3_000_000,
+            _ => 0,
         };
         let due = now
             .get()
@@ -626,8 +872,6 @@ impl CallbackSpawnOwner {
                 sequence,
                 at: now.get(),
                 proposal: p.clone(),
-                counter: 0,
-                next_allowed: 0,
             })
         }
         self.next = next;
@@ -638,7 +882,15 @@ impl CallbackSpawnOwner {
         });
         Ok(true)
     }
-    fn draw(
+    pub fn next_due_time(&self) -> Option<u64> {
+        self.timers.earliest_due().map(SemanticTimeMicros::get)
+    }
+    pub fn pending_due(&self, pending: &Pending) -> Option<u64> {
+        self.timers
+            .occurrence_due(Timer, Work(pending.token))
+            .map(SemanticTimeMicros::get)
+    }
+    pub fn draw(
         content: [u8; 32],
         p: &ProfileAbilityProposal,
         label: &str,
@@ -667,8 +919,19 @@ impl CallbackSpawnOwner {
         reader: &mut impl SourceSpawnFacts,
         now: SemanticTimeMicros,
     ) -> Result<CallbackSpawnReceipt, AttackError> {
+        self.execute_bound(r, Some(f), stamp, p, reader, now)
+    }
+    fn execute_bound(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        f: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        p: Pending,
+        reader: &mut impl SourceSpawnFacts,
+        now: SemanticTimeMicros,
+    ) -> Result<CallbackSpawnReceipt, AttackError> {
         let s = &p.source;
-        if !self.current(r, f, stamp) {
+        if !self.current_bound(r, f, stamp) {
             return Err(AttackError::StaleOwner);
         }
         if !s.current(r, p.proposal.issuer) {
@@ -677,29 +940,84 @@ impl CallbackSpawnOwner {
         let actor = p.proposal.issuer;
         let total = r.native_summon_count(actor, None);
         let draw = Self::draw(s.content, &p.proposal, "selection")?;
-        let memo_index = self
+        if !self
             .memos
             .iter()
-            .position(|m| m.actor == actor && m.ability == s.parent)
-            .ok_or(AttackError::InvalidPlan)?;
-        let counter = self.memos[memo_index].counter;
-        let available = self.memos[memo_index].next_allowed <= now.get();
+            .any(|m| m.actor == actor && m.ability == s.parent)
+        {
+            return Err(AttackError::InvalidPlan);
+        }
+        let heart_index = match s.kind {
+            Kind::Destruction => Some(0),
+            Kind::Hunger => Some(1),
+            Kind::Rage => Some(2),
+            Kind::Devourer => Some(3),
+            _ => None,
+        };
+        let counter = heart_index.map_or(0, |index| self.heart_counts[index]);
+        let available = match s.kind {
+            Kind::Destruction => self.heart_next_allowed[0] <= now.get(),
+            Kind::Hunger => self.heart_next_allowed[1] <= now.get(),
+            _ => true,
+        };
         let mut requests: Vec<(&str, u32, bool, SourceSpawnPlacement, u32)> = Vec::new();
+        let mut gaz_increment = false;
         match s.kind {
             Kind::Gaz => {
-                let count = match total {
-                    0 => 2,
-                    1 => 1,
-                    2..=6 if draw % 1000000 < 247525 => 1,
-                    _ => 0,
+                let center = r
+                    .read_actor_position(actor)
+                    .map_err(|_| AttackError::StaleIssuer)?;
+                let mut nearby = 0_u32;
+                for candidate in r.visible_entities().creatures {
+                    // The qualified caster is Gaz, not its named minion. Name
+                    // lookup is definition data, independent of companion linkage.
+                    if candidate.actor == actor {
+                        continue;
+                    }
+                    let position = r
+                        .read_actor_position(candidate.actor)
+                        .map_err(|_| AttackError::StaleTarget)?;
+                    if position.context() != center.context()
+                        || position.position().floor != center.position().floor
+                        || position.position().x.abs_diff(center.position().x) > 25
+                        || position.position().y.abs_diff(center.position().y) > 25
+                    {
+                        continue;
+                    }
+                    let identity = std::str::from_utf8(
+                        r.current_live_creature_identity(candidate.actor)
+                            .map_err(|_| AttackError::StaleTarget)?,
+                    )
+                    .map_err(|_| AttackError::InvalidSource)?;
+                    let policy = r
+                        .companion_policy(identity)
+                        .map_err(|_| AttackError::MissingCombatFacts)?;
+                    if policy.display_name == "Minion of Gaz'haragoth" {
+                        nearby = nearby.checked_add(1).ok_or(AttackError::NumericOverflow)?;
+                    }
+                }
+                let count = if nearby >= 7 {
+                    0
+                } else if nearby < self.gaz_minions_now {
+                    self.gaz_minions_now - nearby
+                } else if crate::spell::uniform_draw(draw, 0, 100) < 25 {
+                    1
+                } else {
+                    0
                 };
+                // Source calls newMinion:setSummon(unbound sum), which returns
+                // false. It never binds these children to the caster.
                 requests.push((
                     "minion_of_gaz_haragoth",
                     count,
-                    true,
+                    false,
                     SourceSpawnPlacement::Subject,
                     7,
                 ));
+                if nearby < 7 && nearby >= self.gaz_minions_now && count == 1 {
+                    // Publish only after all fallible preparation, below.
+                    gaz_increment = true;
+                }
             }
             Kind::GeneratorRelease => {
                 requests.push(("energy_pulse", 1, false, SourceSpawnPlacement::Subject, 16))
@@ -818,6 +1136,23 @@ impl CallbackSpawnOwner {
             _ => {}
         }
         let requested = requests.iter().map(|(_, n, _, _, _)| *n).sum();
+        let heart_update = if let Some(index) = heart_index.filter(|_| requested > 0) {
+            let count = self.heart_counts[index]
+                .checked_add(1)
+                .ok_or(AttackError::NumericOverflow)?;
+            let next = if index < 2 {
+                Some(
+                    now.get()
+                        .checked_add(15_000_000)
+                        .ok_or(AttackError::NumericOverflow)?,
+                )
+            } else {
+                None
+            };
+            Some((index, count, next))
+        } else {
+            None
+        };
         let mut output = CallbackSpawnReceipt {
             actor,
             ability: s.parent.clone(),
@@ -827,14 +1162,23 @@ impl CallbackSpawnOwner {
             flags: &[
                 "PROJECT_NATIVE_SUMMON_CAP16_SCOPE64",
                 "PROJECT_CURRENT_MAP_PLACEMENT_PROVIDER",
-                "PROJECT_PER_EXACT_ACTOR_WORLDEVOURER_COUNTER",
+                "SOURCE_SCOPE_SHARED_SIGNED_HEART_COUNTERS",
             ],
         };
         output
             .children
             .try_reserve_exact(requested as usize)
             .map_err(|_| AttackError::LedgerFull)?;
-        // Resolve every fallible current placement before the first physical mutation.
+        if s.children.iter().any(|child| child.source.is_some())
+            && !reader
+                .current_native()
+                .is_some_and(|native| native.source_digest() == s.content)
+        {
+            return Err(AttackError::MissingCombatFacts);
+        }
+        // Qualify and preallocate all immutable admission data before physical work.
+        // Placement itself reads the canonical census immediately before EACH
+        // source creation; prior children participate in the next queryAdd.
         let mut placements = Vec::new();
         placements
             .try_reserve_exact(requested as usize)
@@ -852,12 +1196,6 @@ impl CallbackSpawnOwner {
             }
             for _ in 0..*count {
                 let ordinal = placements.len();
-                let at = reader
-                    .source_spawn_position(r, actor, location, draw, ordinal, stamp)
-                    .ok_or(AttackError::MissingCombatFacts)?;
-                let allowed = reader
-                    .source_spawn_tile_allowed(r, actor, at, stamp)
-                    .ok_or(AttackError::MissingCombatFacts)?;
                 let spec = if *intrinsic {
                     Admission::Intrinsic(
                         NativeSummonAdmissionSpec::qualified_callback(
@@ -884,7 +1222,7 @@ impl CallbackSpawnOwner {
                         .map_err(|_| AttackError::InvalidSource)?,
                     )
                 };
-                placements.push((child.clone(), *intrinsic, spec, at, allowed));
+                placements.push((child.clone(), *intrinsic, spec, location.clone(), ordinal));
             }
         }
         // Preallocate fixed-source speech/errors before any physical admission; no late allocation refusal can erase committed child receipts.
@@ -897,32 +1235,183 @@ impl CallbackSpawnOwner {
         self.speech_errors
             .try_reserve(placements.len() + 1)
             .map_err(|_| AttackError::LedgerFull)?;
-        for (child, intrinsic, spec, at, allowed) in placements {
-            let mut cleanup = None;
-            let result = if !allowed {
-                Err(AttackError::OutOfRange)
+        let gaz_next = if gaz_increment {
+            Some(
+                self.gaz_minions_now
+                    .checked_add(1)
+                    .ok_or(AttackError::NumericOverflow)?,
+            )
+        } else {
+            None
+        };
+        let mut attempted = false;
+        for (child, intrinsic, spec, location, ordinal) in placements {
+            let requested_center = if child.source.is_some() {
+                reader.source_spawn_child_requested_center(
+                    r,
+                    actor,
+                    &child.creature,
+                    &location,
+                    draw,
+                    ordinal,
+                    stamp,
+                )
             } else {
-                match spec {
-                    Admission::Intrinsic(spec) => {
-                        match r.admit_native_summon(f, stamp, actor, &spec, at) {
-                            Err(_) => Err(AttackError::InvalidPlan),
-                            Ok(new) => match r.install_creature_policy(new, &child.creature.key) {
-                                Ok(()) => Ok(new),
-                                Err(_) => {
-                                    cleanup = Some(
-                                        r.retire_native_summon_registration_failure(f, stamp, new),
-                                    );
-                                    Err(AttackError::InvalidPlan)
+                None
+            };
+            let at = reader.source_spawn_child_position(
+                r,
+                actor,
+                &child.creature,
+                &location,
+                draw,
+                ordinal,
+                stamp,
+            );
+            let allowed = at.and_then(|at| {
+                reader.source_spawn_child_tile_allowed(r, actor, &child.creature, at, stamp)
+            });
+            let unavailable = (child.source.is_some() && requested_center.is_none())
+                || at.is_none()
+                || allowed.is_none();
+            if unavailable && !attempted {
+                // No source attempt or physical write has occurred: preserve
+                // the outer missing-facts refusal, including legacy callers.
+                return Err(AttackError::MissingCombatFacts);
+            }
+            if !unavailable {
+                if !attempted && let Some(next) = gaz_next {
+                    self.gaz_minions_now = next;
+                }
+                attempted = true;
+                if s.kind == Kind::Gaz {
+                    match oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech::spawn(r,actor,&s.creature) {
+                        Ok(Some(line))=>self.speech.push(line),
+                        Err(error)=>self.speech_errors.push((actor,error)),
+                        Ok(None)=>{},
+                    }
+                }
+            }
+            let mut cleanup = None;
+            let result = if child.source.is_some() && requested_center.is_none() {
+                Err(AttackError::MissingCombatFacts)
+            } else if let (Some(at), Some(allowed)) = (at, allowed) {
+                if !allowed {
+                    Err(AttackError::OutOfRange)
+                } else {
+                    match spec {
+                        Admission::Intrinsic(spec) => {
+                            let admitted = if let Some(source) = child.source.as_ref() {
+                                let native = reader
+                                    .current_native()
+                                    .ok_or(AttackError::MissingCombatFacts)?;
+                                let center =
+                                    requested_center.ok_or(AttackError::MissingCombatFacts)?;
+                                match f {
+                                    Some(f) => r.admit_native_callback_intrinsic(
+                                        native,
+                                        f,
+                                        stamp,
+                                        actor,
+                                        &spec,
+                                        source,
+                                        center,
+                                        at,
+                                        |_, _| Some(allowed),
+                                    ),
+                                    None => r.admit_current_native_callback_intrinsic(
+                                        native,
+                                        stamp,
+                                        actor,
+                                        &spec,
+                                        source,
+                                        center,
+                                        at,
+                                        |_, _| Some(allowed),
+                                    ),
                                 }
-                            },
+                            } else {
+                                match f {
+                                    Some(f) => r.admit_native_summon(f, stamp, actor, &spec, at),
+                                    None => r.admit_current_native_summon(stamp, actor, &spec, at),
+                                }
+                            };
+                            match admitted {
+                                Err(_) => Err(AttackError::InvalidPlan),
+                                Ok(new) => {
+                                    match r.install_creature_policy(new, &child.creature.key) {
+                                        Ok(()) => Ok(new),
+                                        Err(_) => {
+                                            cleanup = Some(match f {
+                                        Some(f) => r.retire_native_summon_registration_failure(
+                                            f, stamp, new,
+                                        ),
+                                        None => r
+                                            .retire_current_native_summon_registration_failure(
+                                                stamp, new,
+                                            ),
+                                    });
+                                            Err(AttackError::InvalidPlan)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Admission::Masterless(spec) => {
+                            if let Some(source) = child.source.as_ref() {
+                                let native = reader
+                                    .current_native()
+                                    .ok_or(AttackError::MissingCombatFacts)?;
+                                let center =
+                                    requested_center.ok_or(AttackError::MissingCombatFacts)?;
+                                match f {
+                                    Some(f) => r.admit_native_callback_masterless(
+                                        native,
+                                        f,
+                                        stamp,
+                                        actor,
+                                        &spec,
+                                        source,
+                                        center,
+                                        at,
+                                        |_, _| Some(allowed),
+                                    ),
+                                    None => r.admit_current_native_callback_masterless(
+                                        native,
+                                        stamp,
+                                        actor,
+                                        &spec,
+                                        source,
+                                        center,
+                                        at,
+                                        |_, _| Some(allowed),
+                                    ),
+                                }
+                            } else {
+                                match f {
+                                    Some(f) => r.admit_native_encounter_masterless(
+                                        f,
+                                        stamp,
+                                        actor,
+                                        &spec,
+                                        at,
+                                        |_, _| Some(allowed),
+                                    ),
+                                    None => r.admit_current_native_encounter_masterless(
+                                        stamp,
+                                        actor,
+                                        &spec,
+                                        at,
+                                        |_, _| Some(allowed),
+                                    ),
+                                }
+                            }
+                            .map_err(|_| AttackError::InvalidPlan)
                         }
                     }
-                    Admission::Masterless(spec) => r
-                        .admit_native_encounter_masterless(f, stamp, actor, &spec, at, |_, _| {
-                            Some(allowed)
-                        })
-                        .map_err(|_| AttackError::InvalidPlan),
                 }
+            } else {
+                Err(AttackError::MissingCombatFacts)
             };
             if let Ok(new) = &result {
                 let line = match s.kind {
@@ -943,41 +1432,108 @@ impl CallbackSpawnOwner {
                     Ok(None) => {}
                 }
             }
+            let failed = result.is_err();
+            let unavailable = matches!(result, Err(AttackError::MissingCombatFacts));
             output.children.push(SpawnChildReceipt {
                 creature: child.creature,
                 result,
                 intrinsic,
                 cleanup,
             });
-        }
-        // Source counters measure successful source casts; failed current-map admissions do not
-        // fabricate successful counts. This per-exact-actor project projection is explicit above.
-        if output.children.iter().any(|c| c.result.is_ok())
-            && matches!(
-                s.kind,
-                Kind::Destruction | Kind::Hunger | Kind::Rage | Kind::Devourer
-            )
-        {
-            let m = &mut self.memos[memo_index];
-            m.counter = m.counter.saturating_add(1);
-            if matches!(s.kind, Kind::Destruction | Kind::Hunger) {
-                m.next_allowed = now.get().saturating_add(15000000);
+            if unavailable
+                || (failed
+                    && matches!(
+                        s.kind,
+                        Kind::Mazoran | Kind::Plagirath | Kind::Razzagorn | Kind::Shulgrax
+                    ))
+            {
+                // Each donor loop returns immediately when createMonster returns nil.
+                break;
             }
         }
-        if output.children.iter().any(|c| c.result.is_ok())
-            && matches!(s.kind, Kind::Gaz | Kind::GeneratorRelease)
+        // Lua increments these shared counters after a createMonster attempt, including
+        // a proved nil result. Unavailable facts do not constitute a source attempt.
+        if let Some((index, count, next)) = heart_update
+            && output
+                .children
+                .iter()
+                .any(|child| !matches!(child.result, Err(AttackError::MissingCombatFacts)))
         {
+            self.heart_counts[index] = count;
+            if let Some(next) = next {
+                self.heart_next_allowed[index] = next;
+            }
+        }
+        if s.kind == Kind::GeneratorRelease {
             match oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech::spawn(r, actor, &s.creature) {
                 Ok(Some(line)) => self.speech.push(line),
                 Err(e) => self.speech_errors.push((actor, e)),
                 Ok(None) => {}
             }
         }
-        if s.kind == Kind::GeneratorRelease && output.children.iter().any(|c| c.result.is_ok()) {
-            output.remove =
-                Some(r.remove_native_encounter_subject(f, stamp, actor, &s.creature, s.content));
+        if s.kind == Kind::GeneratorRelease {
+            output.remove = Some(match f {
+                Some(f) => {
+                    r.remove_native_encounter_subject(f, stamp, actor, &s.creature, s.content)
+                }
+                None => {
+                    r.remove_current_native_encounter_subject(stamp, actor, &s.creature, s.content)
+                }
+            });
         }
         Ok(output)
+    }
+    pub fn drain_current(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        reader: &mut impl SourceSpawnFacts,
+        clock: &impl OwnerClock,
+    ) -> Result<Vec<Result<CallbackSpawnReceipt, AttackError>>, AttackError> {
+        self.drain_current_through(r, stamp, reader, clock, clock.now().get())
+    }
+    /// Restrict eligibility by original deadlines while using the actual owner
+    /// clock for all execution, map facts and child admission.
+    pub fn drain_current_through(
+        &mut self,
+        r: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        reader: &mut impl SourceSpawnFacts,
+        clock: &impl OwnerClock,
+        eligible_through_us: u64,
+    ) -> Result<Vec<Result<CallbackSpawnReceipt, AttackError>>, AttackError> {
+        if !self.current_bound(r, None, stamp) {
+            return Err(AttackError::StaleOwner);
+        }
+        let mut out = Vec::new();
+        out.try_reserve_exact(64)
+            .map_err(|_| AttackError::LedgerFull)?;
+        let eligible = self
+            .pending
+            .iter()
+            .filter_map(|pending| {
+                self.pending_due(pending)
+                    .filter(|due| *due <= eligible_through_us)
+                    .map(|_| Work(pending.token))
+            })
+            .collect::<Vec<_>>();
+        let due = self.timers.drain_due_matching(
+            clock,
+            r.owner_fence().map_err(|_| AttackError::StaleOwner)?,
+            |actor| r.contains_live_creature(actor),
+            |_, occurrence| eligible.contains(&occurrence),
+        );
+        for timer in due {
+            if let Some(index) = self
+                .pending
+                .iter()
+                .position(|p| p.token == timer.occurrence.0)
+            {
+                let pending = self.pending.remove(index);
+                out.push(self.execute_bound(r, None, stamp, pending, reader, clock.now()));
+            }
+        }
+        Ok(out)
     }
     pub fn drain(
         &mut self,

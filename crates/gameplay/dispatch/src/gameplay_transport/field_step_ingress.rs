@@ -75,9 +75,7 @@ impl StepIngressRead<'_, '_> {
             || self.origin.context() != runtime.pinned_movement_context()
             || states.get(runtime, actor, session) != self.before.as_ref()
             || states.has_pending_spell_commit(actor, session)
-            || !runtime
-                .player_control_facts(actor, session)
-                .is_ok_and(|f| f.control_loss.is_none())
+            || !runtime.player_step_allowed(actor, session, direction.delta())
             || fence.game_session_id != session
             || fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
@@ -403,7 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let(owner,runtime,states,blocking,outcome)=ctx;
             let mut tx=crate::durability::spell_item_transaction::begin_field_owner_transaction(holder,deadline).await?;
             let current=FreshAdmissionStore::from_root(owner.root.clone()).current_session_in_transaction(&mut tx,session).await?;
-            if current.session_state()!=GameSessionState::Active{return Err(crate::durability::DurabilityError::Unavailable)}
+            if current.session_state()!=GameSessionState::Active && !(current.session_state()==GameSessionState::Reconnectable && runtime.forced_player_step_current(actor,session)){return Err(crate::durability::DurabilityError::Unavailable)}
             let fence=CurrentCharacterItemFence{
                 character_id:crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()).map_err(|_|crate::durability::DurabilityError::Unavailable)?,
                 game_session_id:session,connection_generation:current.current_connection_generation(),character_lease_generation:current.current_character_lease().generation(),runtime_scope:current.current_runtime_scope(),scope_ownership_generation:current.current_scope_generation(),
@@ -416,7 +414,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {None};
             let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells(),actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-            let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            let read=crate::durability::spell_item_transaction::read_player_step_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target,runtime,actor).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let player_fields_current = if read.items().iter().any(|item| item.field_origin.is_some() && source.item_policy(&item.definition.production_key, &item.definition.revision_ref).is_none_or(|policy| {
                 !matches!(crate::durability::native_world_items::source_magic_field(policy), Ok(false))
             })) {

@@ -115,7 +115,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (pos, after)
             };
         if map.facts.object_revision(key) != expected_revision {
-            return UseDisposition::StaleState;
+            // A known-commit source visual batch may have published its first
+            // fixed object before a retry. Only that retained exact post-CAS
+            // revision is replayable; a later party's revision never aliases it.
+            let retained_flame = self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .ok()
+                .and_then(|records| records.get(&session).and_then(|p| p.flame.clone()));
+            let replayed_visual = retained_flame.as_ref().is_some_and(|input| {
+                input.current_scope(runtime)
+                    && input.visual_changes().iter().flatten().any(|visual| {
+                        visual.key == key
+                            && map.facts.object_revision(key) == visual.revision + 1
+                            && after.appearance_id == visual.after
+                    })
+            });
+            if !replayed_visual {
+                return UseDisposition::StaleState;
+            }
         }
         if !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
             callback,
@@ -388,7 +408,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    flame: None,
                     ingress_settled: false,
+                    flame_effect_sent: false,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -476,10 +498,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             }
         };
-        if !map
-            .facts
-            .quest_callback_capacity(key, expected_revision, callback.passages.len())
-        {
+        let source_flame =
+            oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key).is_some();
+        if !map.facts.quest_callback_capacity(
+            key,
+            if source_flame {
+                map.facts.object_revision(key)
+            } else {
+                expected_revision
+            },
+            if source_flame {
+                3
+            } else {
+                callback.passages.len()
+            },
+        ) {
             return UseDisposition::Exhausted;
         }
         if oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_some() {
@@ -517,7 +550,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    flame: None,
                     ingress_settled: false,
+                    flame_effect_sent: false,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -729,7 +764,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    flame: None,
                     ingress_settled: false,
+                    flame_effect_sent: false,
                 });
                 record.context.get_or_insert(context).clone()
             } else {
@@ -790,6 +827,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .commit_world_callback_with_requirements(
                 .commit_world_callback_with_items_and_premium(
                 .commit_world_callback_with_access(
+            let flame =
+                if oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
+                    .is_some()
+                {
+                    let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                        return UseDisposition::Rejected;
+                    };
+                    let Some(record) = records.get_mut(&session) else {
+                        return UseDisposition::Rejected;
+                    };
+                    if record.flame.is_none() {
+                        record.flame = super::rotten_flame::qualify(
+                            self,
+                            runtime,
+                            actor,
+                            cause,
+                            context.clone(),
+                            map,
+                            key,
+                            expected_revision,
+                        );
+                    }
+                    let Some(input) = record.flame.clone() else {
+                        return UseDisposition::Rejected;
+                    };
+                    Some(input)
+                } else {
+                    None
+                };
+            let outcome = if let Some(input) = &flame {
+                slot.commit_rotten_flame_use(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    input.clone(),
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                )
+                .await
+            } else {
+                slot.commit_world_callback_with_items(
                     self.root,
                     self.character,
                     self.holder,
@@ -806,7 +885,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     reward_admission,
                     &self.premium_coordinator,
                 )
-                .await;
+                .await
+            };
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(
@@ -835,6 +915,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     eprintln!("quest callback {} unavailable: {error:?}", callback.key);
                     // A storage error can hide a committed receipt; reconcile its original cause.
                     return UseDisposition::Rejected;
+                }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if flame.as_ref().and_then(|input|input.no_change()).is_some() => {
+                    if flame.as_ref().and_then(|input|input.no_change())==Some(crate::durability::quest_state::rotten_flame::FlameNoChange::AlreadyActive){
+                        self.states.chat.push_quest_feedback(session,"This flame has already been activated.");
+                    }
+                    if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
+                    return UseDisposition::Committed;
                 }
                 Ok(_) | Err(_) => {
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
@@ -876,16 +964,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return disposition;
         }
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-            projection.as_ref(),
-        ) {
-            return UseDisposition::Rejected;
+        let flame = self
+            .states
+            .quest_callbacks
+            .records
+            .lock()
+            .ok()
+            .and_then(|records| records.get(&session).and_then(|p| p.flame.clone()));
+        if let Some(input) = flame {
+            if !super::rotten_flame::publish(runtime, map, &input) {
+                return UseDisposition::Rejected;
+            }
+            let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                return UseDisposition::Rejected;
+            };
+            let Some(record) = records.get_mut(&session) else {
+                return UseDisposition::Rejected;
+            };
+            if !record.flame_effect_sent {
+                let Some(at) = native(expected.position()) else {
+                    return UseDisposition::Rejected;
+                };
+                if !map.facts.emit_movement_effect(at, 13) {
+                    return UseDisposition::Rejected;
+                }
+                record.flame_effect_sent = true;
+            }
+        } else {
+            if !map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+                projection.as_ref(),
+            ) {
+                return UseDisposition::Rejected;
+            }
         }
         if matches!(
             projection,
@@ -922,7 +1038,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     speaker: actor,
                     position: native(expected.position()).unwrap_or(pos),
                     talk_type: 36,
-                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
+                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH.into(),
+                    captured_name: None,
                 });
         }
         if callback.effects.restore_disguise {

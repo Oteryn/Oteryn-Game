@@ -21,6 +21,7 @@ pub const AGONY_ROOM_CENTRE: RoomPosition = RoomPosition {
     floor: 15,
 };
 pub const AGONY_ROOM_RANGE_TILES: u16 = 20;
+pub const AGONY_ROOM_DEFAULT_Y_TILES: u16 = 11;
 pub const AGONY_CHECK_INTERVAL_MS: u64 = 1_000;
 pub const SUMMON_COUNT_RANGE_TILES: u16 = 20;
 pub const SUMMON_OFFSET_TILES: u8 = 1;
@@ -202,9 +203,13 @@ pub fn counts_summon(boss: RoomPosition, other: RoomPosition) -> bool {
     boss.in_range(other, SUMMON_COUNT_RANGE_TILES)
 }
 
-/// The intended agony room box (fixes the donor's 41x1 strip).
+/// Crystal201189f bakragore.lua:443 passes20 in X and0 in Y.
+/// src/map/spectators.cpp:181–184 normalizes0 to the default viewport;
+/// src/map/map_const.hpp:20–23 defines its Y extent as6+5=11.
 pub fn in_agony_room(position: RoomPosition) -> bool {
-    AGONY_ROOM_CENTRE.in_range(position, AGONY_ROOM_RANGE_TILES)
+    position.floor == AGONY_ROOM_CENTRE.floor
+        && position.y.abs_diff(AGONY_ROOM_CENTRE.y) <= u32::from(AGONY_ROOM_DEFAULT_Y_TILES)
+        && position.x.abs_diff(AGONY_ROOM_CENTRE.x) <= u32::from(AGONY_ROOM_RANGE_TILES)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

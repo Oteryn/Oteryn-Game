@@ -351,3 +351,41 @@ fn command_result_decoder_fails_closed_on_unusable_results() {
         Err(FoundationProtocolError::StateRevisionMismatch)
     );
 }
+
+#[test]
+fn activity_session_command_binding_rejects_duplicate_and_malformed_field16()
+-> Result<(), FoundationProtocolError> {
+    let mut valid = vec![1; 16];
+    valid[6] = 0x70;
+    valid[8] = 0x80;
+    for bindings in [vec![vec![1; 15]], vec![valid.clone(), valid]] {
+        let mut body = Vec::new();
+        push_scalar(&mut body, 1, 1);
+        push_scalar(&mut body, 2, 1);
+        for binding in bindings { push_bytes(&mut body, 16, &binding); }
+        let mut frame = Vec::new();
+        push_scalar(&mut frame, 1, MessageType::ClientCommand as u64);
+        push_scalar(&mut frame, 2, 1);
+        push_bytes(&mut frame, 4, &body);
+        assert_eq!(decode_wire_envelope(&frame)?.client_command(1),
+            Err(FoundationProtocolError::MalformedEnvelope));
+    }
+    Ok(())
+}
+
+#[test]
+fn activity_session_command_binding_preserves_legacy_and_round_trips()
+-> Result<(), FoundationProtocolError> {
+    let mut session = [1; 16];
+    session[6] = 0x70;
+    session[8] = 0x80;
+    let value = ClientCommandValue { command_id: 1, command_type: 1, payload: &[8, 2] };
+    let legacy = encode_client_command(1, &value)?;
+    let legacy_view = decode_wire_envelope(&legacy)?;
+    assert_eq!(legacy_view.client_command_session_id()?, None);
+    let bound = encode_client_command_for_session(1, &value, &session)?;
+    let bound_view = decode_wire_envelope(&bound)?;
+    assert_eq!(bound_view.client_command_session_id()?, Some(session.as_slice()));
+    assert_eq!(bound_view.client_command(1)?, legacy_view.client_command(1)?);
+    Ok(())
+}

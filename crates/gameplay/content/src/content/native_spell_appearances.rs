@@ -333,6 +333,33 @@ fn qualified_crystal_stag(record: &SpellAppearanceRecord) -> bool {
             }
         })
 }
+
+/// W11 only: two boss callback selections, independently generated from the
+/// pinned Lua literals, Outfit_t defaults and actual outfit asset membership.
+/// No source revision-wide permission or casting rule is added.
+fn qualified_soul_war_callback(record: &SpellAppearanceRecord) -> bool {
+    static RECORDS: std::sync::OnceLock<Option<Vec<SpellAppearanceRecord>>> =
+        std::sync::OnceLock::new();
+    RECORDS
+        .get_or_init(|| {
+            let value: serde_json::Value = serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/srx3-soul-war-appearances.json"
+            ))
+            .ok()?;
+            if value.get("schema")?.as_str()? != "OTERYN_SOUL_WAR_CALLBACK_APPEARANCES/v1"
+                || value.get("source_revision")?.as_str()?
+                    != "201189f871d23597b82caf88fd611454a2ddefb8"
+            {
+                return None;
+            }
+            let records: Vec<SpellAppearanceRecord> =
+                serde_json::from_value(value.get("records")?.clone()).ok()?;
+            (records.len() == 2 && records.iter().map(|r| r.look_type).eq([242, 286]))
+                .then_some(records)
+        })
+        .as_ref()
+        .is_some_and(|records| records.contains(record))
+}
 pub fn compile(
     bytes: &[u8],
     outer_content_digest: [u8; 32],
@@ -367,8 +394,13 @@ pub fn compile(
         let crystal_stag = qualified_crystal_stag(record);
         let cached_canary = qualified_cached_canary_record(record);
         let project_illusionable = qualified_project_illusionable_record(record);
+        let soul_war_callback = qualified_soul_war_callback(record);
         let canary = record.source.revision == PIN && record.source.default_source.is_none();
-        if (!canary && !crystal_stag && !cached_canary && !project_illusionable)
+        if (!canary
+            && !crystal_stag
+            && !cached_canary
+            && !project_illusionable
+            && !soul_war_callback)
             || ((canary || cached_canary)
                 && record.outfit_key
                     != format!("oteryn:outfit.source.canary.look{}", record.look_type))
@@ -406,10 +438,11 @@ pub fn compile(
                 return Err(invalid());
             }
         } else if !fixed.insert(record.look_type)
-            || !record
-                .source
-                .path
-                .starts_with("data/scripts/spells/support/avatar_of_")
+            || (!soul_war_callback
+                && !record
+                    .source
+                    .path
+                    .starts_with("data/scripts/spells/support/avatar_of_"))
         {
             return Err(invalid());
         }
@@ -735,7 +768,14 @@ mod cached_canary_admission_regression_tests {
     #[test]
     fn actual_project_admits_exact40_cached_records_preserving_enclosing_source_pin() {
         let document = actual_document();
-        assert_eq!(document.records.len(), 334);
+        assert_eq!(
+            document
+                .records
+                .iter()
+                .filter(|record| !qualified_soul_war_callback(record))
+                .count(),
+            334
+        );
         assert_eq!(document.default_source_revision, PIN);
         let cached: Vec<_> = document
             .records
@@ -819,7 +859,14 @@ mod project_illusionable_admission_regression_tests {
     fn exact26_canonical_missing_illusionable_outfits_compile_without_object_grant_or_old40_scope_change()
      {
         let document = document();
-        assert_eq!(document.records.len(), 334);
+        assert_eq!(
+            document
+                .records
+                .iter()
+                .filter(|record| !qualified_soul_war_callback(record))
+                .count(),
+            334
+        );
         assert_eq!(document.default_source_revision, PIN);
         let added: Vec<_> = document
             .records
@@ -943,5 +990,47 @@ mod bounded_item_appearance_tests {
         let mut wrong = doc.clone();
         wrong["item_appearances"][0]["item"]["revision"] = serde_json::json!("definition-r2");
         assert!(compile(&serde_json::to_vec(&wrong).unwrap(), [9; 32]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod soul_war_callback_tests {
+    use super::*;
+
+    #[test]
+    fn srx3_soul_war_two_callback_outfits_bind_actual_registry_and_refuse_rebound_source()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let bytes =
+            include_bytes!("../../../../../content/presentations/bindings/spell-appearances.json");
+        let document: SpellAppearancesDocument = serde_json::from_slice(bytes)?;
+        let registry = compile(bytes, [9; 32])?;
+        for look in [242, 286] {
+            let selection = registry
+                .for_look_type(look)
+                .ok_or("callback outfit missing")?;
+            assert_eq!(selection.source_digest(), [9; 32]);
+            assert!(
+                registry
+                    .for_selection(look, &selection.selection())
+                    .is_some()
+            );
+            let mut changed = document.clone();
+            let record = changed
+                .records
+                .iter_mut()
+                .find(|record| record.look_type == look && qualified_soul_war_callback(record))
+                .ok_or("callback source record")?;
+            assert!(qualified_soul_war_callback(record));
+            record.source.sha256 = "0".repeat(64);
+            let mut value = serde_json::to_value(&*record)?;
+            value
+                .as_object_mut()
+                .ok_or("record object")?
+                .remove("qualification_sha256");
+            record.qualification_sha256 =
+                hex(&super::super::digest::sha256(&serde_json::to_vec(&value)?));
+            assert!(compile(&serde_json::to_vec(&changed)?, [9; 32]).is_err());
+        }
+        Ok(())
     }
 }

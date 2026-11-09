@@ -40,6 +40,8 @@ mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
+mod rotten_area;
+mod rotten_flame;
 mod world_access;
 #[cfg(test)]
 mod writer_registration_tests;
@@ -549,6 +551,69 @@ impl RevisionSlot {
                     permit,
                     handover.clone(),
                     Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
+    /// Source essence USE shares the Quest revision cursor with its Item burn.
+    pub async fn commit_rotten_blood_essence_use(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        input: super::quest_state::rotten_essence::RottenEssenceUse,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_rotten_blood_essence_use(
+                    authority,
+                    node,
+                    fence,
+                    input.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
+    /// Closed native Soul War Step/USE shares the existing Quest revision cursor.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the existing Quest cursor retains authority, the sealed source action and physical Step context"
+    )]
+    pub async fn commit_soul_war_source_action(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        input: super::quest_state::soul_war_source::SoulWarSourceAction,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        context: Option<(
+            &super::spell_owner_commit::SpellLanePermit,
+            super::quest_world_callback::QuestWorldContext,
+        )>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_soul_war_source_action(
+                    authority,
+                    node,
+                    fence,
+                    input.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    context.clone(),
                 )
             },
         )

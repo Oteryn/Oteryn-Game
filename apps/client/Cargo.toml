@@ -48,6 +48,7 @@ winit.workspace = true
 
 [dev-dependencies]
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
+oteryn-session = { version = "=0.1.0", path = "../../crates/session", features = ["test-support"] }
 rcgen.workspace = true
 tokio-rustls.workspace = true
 

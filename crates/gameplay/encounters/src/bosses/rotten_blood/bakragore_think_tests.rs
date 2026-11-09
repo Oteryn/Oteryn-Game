@@ -118,17 +118,23 @@ fn summons_top_up_bloodjaws_mushrooms_and_pillars_within_twenty_tiles_only_while
 }
 
 #[test]
-fn the_agony_room_is_the_full_square_not_the_donor_strip() {
+fn agony_room_applies_cpp_zero_y_default_41_by_23_viewport() {
     for inside in [
         position(33_044, 32_398, 15),
-        position(33_024, 32_378, 15),
-        position(33_064, 32_418, 15),
-        position(33_044, 32_410, 15),
+        position(33_024, 32_398, 15),
+        position(33_064, 32_398, 15),
+        position(33_044, 32_397, 15),
+        position(33_044, 32_399, 15),
+        position(33_024, 32_387, 15),
+        position(33_064, 32_409, 15),
     ] {
         assert!(in_agony_room(inside));
     }
     for outside in [
         position(33_065, 32_398, 15),
+        position(33_023, 32_398, 15),
+        position(33_044, 32_386, 15),
+        position(33_044, 32_410, 15),
         position(33_044, 32_419, 15),
         position(33_044, 32_398, 14),
     ] {
@@ -145,11 +151,21 @@ fn the_agony_room_is_the_full_square_not_the_donor_strip() {
             position: position(33_070, 32_398, 15),
             taint_level: 0,
         },
+        EchoPlayer {
+            actor: 3,
+            position: position(33_044, 32_398, 15),
+            taint_level: 0,
+        },
+        EchoPlayer {
+            actor: 4,
+            position: position(33_044, 32_409, 15),
+            taint_level: 0,
+        },
     ];
     let mut owner = BakragoreThinkOwner::default();
     let effects = owner.think(&fixture(&players));
     assert!(effects.contains(&BakragoreEffect::RunAgonyCheck {
-        room_players: vec![1]
+        room_players: vec![3, 4]
     }));
 }
 

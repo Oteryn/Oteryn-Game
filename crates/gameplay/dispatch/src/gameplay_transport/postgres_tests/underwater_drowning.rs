@@ -979,8 +979,12 @@ fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
             let speech = bundle.facts.movement_speech_since(0);
             assert_eq!(speech.len(), 1);
             assert_eq!(
-                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
-                (deps.actor, "Faaart!", 36)
+                (
+                    speech[0].1.speaker,
+                    speech[0].1.text.clone(),
+                    speech[0].1.talk_type
+                ),
+                (deps.actor, "Faaart!".to_owned(), 36)
             );
             assert_eq!(
                 bundle

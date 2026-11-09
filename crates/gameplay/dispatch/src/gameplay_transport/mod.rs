@@ -67,6 +67,7 @@ mod dawnport_trial;
 mod death_ml_loss_postgres;
 mod depot;
 mod echo_warden;
+mod effective_rooms;
 mod encounter_phases;
 mod endgame_entry;
 mod endgame_room_policy;
@@ -129,6 +130,7 @@ mod monster_quest_death;
 mod mount_taming;
 mod native_activity;
 mod native_activity_return;
+mod native_cue_offer;
 mod native_claim_reward;
 mod newhaven_arrival;
 mod newhaven_travel;
@@ -139,6 +141,7 @@ mod npc_talk;
 mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
+mod outburst_entry;
 mod paced_movement;
 pub mod party_command;
 mod party_kill_settlement;
@@ -148,6 +151,8 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod primal_callbacks;
+mod primal_entry;
 mod primal_menace;
 mod primal_pods;
 mod private_channel_world;
@@ -177,19 +182,31 @@ mod raid_schedule;
 mod resting_area;
 mod resume;
 mod reward_bag_use;
+mod rotten_blood_callbacks;
 pub mod rotten_blood_dispatch;
+mod rotten_blood_entry;
 mod rune_use_bridge;
 mod seam_rooms;
 pub mod server_save_countdown;
 mod serving;
 pub mod session_ingress;
 mod soul_kill_live;
+mod soul_war_callbacks;
+mod soul_war_cloak_blood;
+mod soul_war_entry;
+mod soul_war_malice;
+mod soul_war_scene;
+mod soul_war_world;
+mod soul_war_world_raid;
 mod soulpit;
+mod source_boss_exit;
+mod source_death;
+mod source_item_cycle;
+mod source_names;
 pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
 };
-mod source_item_cycle;
 mod source_pvp_expiry;
 mod source_volatile_items;
 pub mod spectate_session;
@@ -200,6 +217,7 @@ mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+mod spite_global;
 mod stash;
 mod tcp_tls;
 #[cfg(test)]
@@ -217,6 +235,7 @@ mod tutorial_session;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
+mod wire_position;
 mod world_event;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
@@ -540,10 +559,9 @@ impl SecureIdentifiers {
             .ok()?;
         Some(bytes)
     }
-}
-
-impl ConnectionIdentifiers for SecureIdentifiers {
-    fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+    /// Fresh server DATA occurrence, with no command or session authority.
+    /// Source owners retain this identity before their first asynchronous read.
+    pub(in crate::gameplay_transport) fn source_think_event_id(&self) -> Option<[u8; 16]> {
         let mut bytes: [u8; 16] = Self::random()?;
         let millis = u64::try_from(
             SystemTime::now()
@@ -555,7 +573,13 @@ impl ConnectionIdentifiers for SecureIdentifiers {
         bytes[..6].copy_from_slice(&millis.to_be_bytes()[2..]);
         bytes[6] = 0x70 | (bytes[6] & 0x0f);
         bytes[8] = 0x80 | (bytes[8] & 0x3f);
-        crate::foundation::GameSessionId::decode(&bytes).ok()
+        Some(bytes)
+    }
+}
+
+impl ConnectionIdentifiers for SecureIdentifiers {
+    fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+        crate::foundation::GameSessionId::decode(&self.source_think_event_id()?).ok()
     }
 
     fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> {

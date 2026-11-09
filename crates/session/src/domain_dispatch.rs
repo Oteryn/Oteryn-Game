@@ -222,14 +222,24 @@ impl<S: SessionStream> Session<S> {
                 check_delta(&delta, delta_type, self.chat_revision)?;
                 let event = match delta_type {
                     chat::DELTA_TYPE_CHAT_LINE_V1 => {
-                        let line =
+                        let mut line =
                             guild_chat::decode_line(delta.payload, &self.selected_capabilities)?;
+                        if crate::presentation::native_basis(self) {
+                            crate::presentation::project_legacy_chat(&mut line)?;
+                        }
                         SessionEvent::ChatLine(applied(
                             server_sequence,
                             base_revision,
                             new_revision,
                             line,
                         ))
+                    }
+                    oteryn_protocol_oteryn::native_map_cues::DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1 => {
+                        if !crate::presentation::native_basis(self) {
+                            return Err(SessionError::SessionUnusable);
+                        }
+                        let line = guild_chat::decode_native_line(delta.payload, &self.selected_capabilities)?;
+                        SessionEvent::ChatLine(applied(server_sequence, base_revision, new_revision, line))
                     }
                     oteryn_protocol_oteryn::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1 => {
                         use oteryn_protocol_oteryn::vip_presence as wire;

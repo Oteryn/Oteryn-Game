@@ -37,10 +37,10 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        // Crystal data/libs/functions/boss_lever.lua:241 and boss_lever_death.lua:1-39:
-        // a real isolated boss death retains its physical body. The committed MINT
-        // caller owns durable proof; this projection requires the exact typed owner
-        // scope, generation and retained lethal occurrence below, including Instance.
+        // Crystal boss_lever.lua:241 and boss_lever_death.lua:1-39 retain
+        // the physical body in an isolated Instance too. The durable caller
+        // supplies the committed MINT; this projection independently requires
+        // the same exact scope, ownership generation and lethal occurrence.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self
@@ -130,6 +130,7 @@ impl ChannelRuntimeV1 {
         production_key: &str,
         revision_ref: &str,
     ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
         self.carrier.bind_corpse_item_inner(
             actor,
             RuntimeCorpseItem {

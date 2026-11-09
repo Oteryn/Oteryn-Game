@@ -73,6 +73,11 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
                     duration,
                 )
                 .await;
+                if outcome.disposition == StepDisposition::Moved {
+                    authority
+                        .committed_paced_movement(session.admitted, outcome.moved_to)
+                        .await;
+                }
                 // STEP-PACE-WIRE-1: a moved step's receipt is the duration just recorded.
                 let wait = if outcome.disposition == StepDisposition::Moved {
                     moved_step_wait_ms(duration)

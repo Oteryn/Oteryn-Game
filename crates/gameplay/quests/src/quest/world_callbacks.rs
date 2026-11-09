@@ -482,6 +482,13 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::shared_switches::callbacks());
     callbacks.extend(super::last_creep_native::callbacks()?);
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
+    let flames = super::rotten_blood::flames::callbacks();
+    if callbacks
+        .len()
+        .checked_add(2)
+        .and_then(|count| count.checked_add(flames.len()))
+        .is_none_or(|count| count > MAX_CALLBACKS)
+    {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.extend(super::fire_feathered_native::callbacks());
@@ -493,11 +500,12 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
+    callbacks.extend(flames);
+    callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());
     }
-    callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
     if callbacks.len() > MAX_CALLBACKS {
         return Err("callback bounds including native access".into());
     }

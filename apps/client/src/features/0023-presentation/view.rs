@@ -126,6 +126,26 @@ impl PlayView {
                         )?;
                     }
                 }
+                PresentationEventKind::Missile { from, to, .. }
+                    if from.floor == self.floor && to.floor == self.floor =>
+                {
+                    // Preserve the server missile cue while official effect sprites
+                    // are unresolved, using the same bounded emissive palette as effects.
+                    let start = view.tile_to_screen(TileCoord::new(from.x, from.y));
+                    let end = view.tile_to_screen(TileCoord::new(to.x, to.y));
+                    let half = view.tile_px() as f32 / 2.0;
+                    pixel(
+                        batch,
+                        view,
+                        atlas,
+                        [
+                            start[0] + (end[0] - start[0]) * progress + half,
+                            start[1] + (end[1] - start[1]) * progress + half,
+                        ],
+                        [4.0, 4.0],
+                        PresentationColor::Yellow,
+                    )?;
+                }
                 _ => {}
             }
         }

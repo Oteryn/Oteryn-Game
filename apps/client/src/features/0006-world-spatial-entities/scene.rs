@@ -28,6 +28,7 @@ impl Scene {
             next.cache.reset_atlas();
         }
         next.own_identity = self.own_identity;
+        next.drome_hazards = std::mem::take(&mut self.drome_hazards);
         *self = next;
         Ok(())
     }
@@ -51,14 +52,43 @@ impl Scene {
         root: Option<std::path::PathBuf>,
     ) -> Result<(), BatchError> {
         self.actor_draws.clear();
+        self.object_draws.clear();
         self.own_draws = None;
         self.names.clear();
         if !entries.is_empty() {
             self.cache.begin(self.world.atlas(), root);
         }
         for entry in entries {
-            let entity = &entry.entity;
-            if !matches!(entity.detail, EntityDetail::Actor { .. }) {
+            let entity = oteryn_client_ui::native_creature_icons::project(&entry.entity);
+            if let EntityDetail::ObjectWithAppearance {
+                item_definition_ref,
+                quantity,
+                appearance_id,
+                item_handle,
+            } = entity.detail
+            {
+                if !matches!(
+                    entity.kind,
+                    oteryn_session::EntityKind::Corpse | oteryn_session::EntityKind::GroundItem
+                ) || entity.entity.generation != 0
+                    || item_definition_ref == 0
+                    || quantity == 0
+                    || item_handle.is_none()
+                {
+                    continue;
+                }
+                if entity.position.floor == floor
+                    && let Some(draws) = self.cache.item(appearance_id, entity.position, quantity)
+                {
+                    self.object_draws
+                        .push((entity.position, item_definition_ref, draws));
+                }
+                continue;
+            }
+            if !matches!(
+                entity.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            ) {
                 continue;
             }
             let is_own = self.own_identity == Some(entity.entity.identity);
@@ -84,7 +114,8 @@ impl Scene {
                 oteryn_client_ui::diagonal_movement::facing(self.facing)
             } else {
                 match entity.detail {
-                    EntityDetail::Actor { direction, .. } => match direction {
+                    EntityDetail::Actor { direction, .. }
+                    | EntityDetail::ActorWithIcons { direction, .. } => match direction {
                         oteryn_session::StepDirection::North => 0,
                         oteryn_session::StepDirection::East => 1,
                         oteryn_session::StepDirection::South => 2,
@@ -110,8 +141,18 @@ impl Scene {
                     .display_name
                     .as_ref()
                     .and_then(|name| name.as_str().ok());
-                if let Some(name) = name.or_else(|| marker.map(|_| "Creature")) {
-                    let label = oteryn_client_ui::forge_creature::label(name, marker);
+                let mut label = name
+                    .or_else(|| marker.map(|_| "Creature"))
+                    .map(|name| oteryn_client_ui::forge_creature::label(name, marker))
+                    .unwrap_or_default();
+                let icons = oteryn_client_ui::native_creature_icons::labels(entity).join(" ");
+                if !icons.is_empty() {
+                    if !label.is_empty() {
+                        label.push(' ');
+                    }
+                    label.push_str(&icons);
+                }
+                if !label.is_empty() {
                     self.names.push((tile, self.cache.name(&label)));
                 }
             }

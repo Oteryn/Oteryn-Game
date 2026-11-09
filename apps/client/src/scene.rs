@@ -29,6 +29,7 @@ const _: () = assert!(
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    drome_hazards: Vec<drome_hazards::GroundWarning>,
     minimap: bool,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     minimap_floor: i16,
@@ -48,10 +49,44 @@ pub struct Scene {
     own_identity: Option<[u8; 16]>,
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    object_draws: Vec<(oteryn_session::ActorPosition, u32, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
 }
 
 impl Scene {
+    #[cfg(test)]
+    pub(crate) fn native_name_fragment_rendered(&self, text: &str) -> bool {
+        let mut cache = self.cache.clone();
+        let expected = cache.name(text);
+        !expected.is_empty()
+            && self.names.iter().any(|(_, cells)| {
+                cells
+                    .windows(expected.len())
+                    .any(|part| part == expected.as_slice())
+            })
+    }
+    #[cfg(test)]
+    pub(crate) fn native_item_rendered_at(
+        &self,
+        at: oteryn_session::ActorPosition,
+        reference: u32,
+    ) -> bool {
+        (self.world.native_item_resolved_at(at, reference)
+            && self
+                .world
+                .tile(at.x, at.y)
+                .is_some_and(|tile| !tile.under.is_empty() || !tile.over.is_empty())
+            || self.object_draws.iter().any(|(position, item, draws)| {
+                *position == at && *item == reference && !draws.is_empty()
+            }))
+            && (at.x - self.own.x).abs() <= 8
+            && (at.y - self.own.y).abs() <= 6
+            && !self.tiles.is_empty()
+    }
+    #[cfg(test)]
+    pub(crate) fn drome_hazard_tiles(&self) -> usize {
+        self.drome_hazards.len()
+    }
     /// The view centred on `own`, the player facing `facing`, with one marker per overlay
     /// object tile.
     pub fn centered_on(
@@ -98,6 +133,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            drome_hazards: Vec::new(),
             minimap: false,
             minimap_state: None,
             minimap_floor: -7,
@@ -116,6 +152,7 @@ impl Scene {
             own_identity: None,
             own_draws: None,
             actor_draws: Vec::new(),
+            object_draws: Vec::new(),
             names: Vec::new(),
         };
         scene.rebuild_sprites()?;
@@ -243,8 +280,17 @@ impl Scene {
                             let marker = self.visible.iter().any(|v| {
                                 v.tile == tile
                                     && ((v.kind == TargetKind::Object
+                                        && !v.item.is_some_and(|item| {
+                                            self.object_draws.iter().any(
+                                                |(position, reference, _)| {
+                                                    position.x == tile.x
+                                                        && position.y == tile.y
+                                                        && *reference == item.definition()
+                                                },
+                                            )
+                                        })
                                         && (v.glyph || v.item.is_none()))
-                                        || (v.glyph && !has_actor))
+                                        || (v.glyph && v.kind != TargetKind::Object && !has_actor))
                             });
                             marker
                                 .then_some(Draw {
@@ -252,6 +298,14 @@ impl Scene {
                                     offset: [0, 0],
                                 })
                                 .into_iter()
+                                .chain(
+                                    self.object_draws
+                                        .iter()
+                                        .filter(|(position, _, _)| {
+                                            position.x == tile.x && position.y == tile.y
+                                        })
+                                        .flat_map(|(_, _, draws)| draws.iter().copied()),
+                                )
                                 .chain(
                                     self.actor_draws
                                         .iter()
@@ -267,6 +321,7 @@ impl Scene {
             },
             self.target.map(|target| target.tile),
         )?;
+        self.draw_drome_hazards(&mut sprites, atlas)?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
             let left = (x + 24.0 - cells.len() as f32 * 4.0).max(0.0);
@@ -331,6 +386,10 @@ mod minimap;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+
+#[path = "features/0170-arena/scene.rs"]
+mod drome_hazards;
+pub(crate) use drome_hazards::GroundWarning;
 
 #[path = "features/0449-personal-map-marks/scene.rs"]
 mod personal_map_marks;

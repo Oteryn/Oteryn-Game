@@ -69,18 +69,26 @@ pub enum QuestCallbackProjection {
     },
 }
 
+type EffectScope = (
+    crate::foundation::RuntimeScopeRefV1,
+    crate::foundation::ScopeOwnershipGeneration,
+);
+type ScopedMovementEffect = (u64, Option<EffectScope>, TilePos, u16);
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
     pub(super) feroxa_phase: Option<Arc<super::feroxa_map_phases::FeroxaMapPhase>>,
     pub(super) reserved: BTreeSet<u64>,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
+    pub(super) actions: BTreeMap<u64, Option<u16>>,
     pub(super) hidden: BTreeSet<u64>,
     passable: BTreeMap<u64, bool>,
     arena_pillars: BTreeMap<u64, [u8; 16]>,
     arena_recreated: BTreeMap<TilePos, arena_pillars::RecreatedPillar>,
     pub(super) movement_items: BTreeMap<TilePos, Vec<view::ComposedEntry>>,
     movement_sequence: u64,
-    pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
+    pub(super) movement_effects: std::collections::VecDeque<ScopedMovementEffect>,
+    pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
@@ -338,9 +346,12 @@ impl CallbackStates {
         let used = self.arena_pillars.len()
             + self.arena_recreated.len()
             + self.changed.len()
+        let used = self.changed.len()
+            + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
+            + self.creature_visuals.len()
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
@@ -419,6 +430,46 @@ impl BundleFacts {
         Some(mask)
     }
 
+    pub fn emit_creature_visual(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        cue: CreatureVisualCue,
+    ) -> bool {
+        if !cue.current(runtime) {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        if !states.has_capacity(usize::from(states.creature_visuals.len() < 512)) {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        states.movement_sequence = sequence;
+        if states.creature_visuals.len() == 512 {
+            states.creature_visuals.pop_front();
+        }
+        states
+            .creature_visuals
+            .push_back((sequence, cue.into_kind()));
+        true
+    }
+    pub fn creature_visuals_since(&self, after: u64) -> Vec<(u64, CreatureVisualKind)> {
+        self.callbacks
+            .lock()
+            .map(|states| {
+                states
+                    .creature_visuals
+                    .iter()
+                    .filter(|(sequence, _)| *sequence > after)
+                    .copied()
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {
@@ -570,6 +621,67 @@ impl BundleFacts {
         entries.next().is_none().then_some(facts)
     }
 
+    /// Transform the actual current source object and its action under the same
+    /// callback owner commit. Other bound attributes, including destination,
+    /// unique id and description, remain on the same physical placement.
+    pub fn transform_movement_item_with_action(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        expected_appearance: u16,
+        appearance: u16,
+        action: Option<u16>,
+    ) -> bool {
+        if self.object_revision(key) != expected_revision {
+            return false;
+        }
+        let Some(mut after) = self.movement_item_facts(appearance) else {
+            return false;
+        };
+        if appearance == 26100 {
+            after.pickupable = false;
+        }
+        let Some(original) = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .and_then(|index| self.palette.get(self.placements[index].1.palette as usize))
+        else {
+            return false;
+        };
+        let passable = self.palette.iter().find_map(|entry| {
+            (entry.static_surface
+                && entry.facts.definition == after.definition
+                && entry.facts.appearance_id == appearance)
+                .then_some(!entry.solid)
+        });
+        let Ok(mut state) = self.callbacks.lock() else {
+            return false;
+        };
+        let current = state.changed.get(&key);
+        if current.map_or(0, |(revision, _)| *revision) != expected_revision
+            || current.map_or(original.facts.appearance_id, |(_, facts)| {
+                facts.appearance_id
+            }) != expected_appearance
+            || state.hidden.contains(&key)
+            || expected_revision == u64::MAX
+            || !state.has_capacity(
+                usize::from(!state.changed.contains_key(&key))
+                    + usize::from(!state.actions.contains_key(&key))
+                    + usize::from(passable.is_some() && !state.passable.contains_key(&key)),
+            )
+        {
+            return false;
+        }
+        let state = Arc::make_mut(&mut state);
+        state.changed.insert(key, (expected_revision + 1, after));
+        state.actions.insert(key, action);
+        if let Some(passable) = passable {
+            state.passable.insert(key, passable);
+        }
+        true
+    }
+
     /// The bath's occupied state cannot be picked up while its player stands inside it.
     pub fn transform_movement_item(&self, key: u64, appearance: u16) -> bool {
         if key >> 62 == 2 {
@@ -584,6 +696,25 @@ impl BundleFacts {
         };
         if appearance == 26100 {
             after.pickupable = false;
+        }
+        // These source-published states have no inventory Item identity. Their
+        // native collision must change in the same existing map callback commit
+        // as their visible state (Bakragore's four flame pairs).
+        if let Some(passable) = self.palette.iter().find_map(|entry| {
+            (entry.static_surface
+                && entry.facts.definition == after.definition
+                && entry.facts.appearance_id == appearance)
+                .then_some(!entry.solid)
+        }) {
+            return self.apply_quest_callback(
+                key,
+                self.object_revision(key),
+                after,
+                &[],
+                &[(key, after, passable)],
+                false,
+                None,
+            );
         }
         self.apply_quest_callback(key, self.object_revision(key), after, &[], &[], false, None)
     }
@@ -636,6 +767,12 @@ impl BundleFacts {
 
     /// Crystal yellow_pillow.lua:9: native monster-say, independent of the player's chat limiter.
     pub fn emit_movement_speech(&self, speech: MovementSpeech) -> bool {
+        if speech.text.is_empty()
+            || speech.text.len() > oteryn_protocol_oteryn::chat::MAX_CHAT_TEXT_BYTES
+            || !matches!(speech.talk_type, 36 | 37)
+        {
+            return false;
+        }
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
@@ -668,6 +805,25 @@ impl BundleFacts {
     }
     /// Native movement magic effects share the map callback's bounded occurrence stream.
     pub fn emit_movement_effect(&self, pos: TilePos, effect: u16) -> bool {
+        self.emit_effect_in_scope(None, pos, effect)
+    }
+
+    /// A private owner uses the same bounded map outbox and sequence. This is
+    /// presentation data only; the caller must prove current scope custody.
+    pub fn emit_scoped_movement_effect(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+        pos: TilePos,
+        effect: u16,
+    ) -> bool {
+        if !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+            return false;
+        }
+        self.emit_effect_in_scope(Some((scope, generation)), pos, effect)
+    }
+
+    fn emit_effect_in_scope(&self, scope: Option<EffectScope>, pos: TilePos, effect: u16) -> bool {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
@@ -682,7 +838,9 @@ impl BundleFacts {
         if states.movement_effects.len() == 512 {
             states.movement_effects.pop_front();
         }
-        states.movement_effects.push_back((sequence, pos, effect));
+        states
+            .movement_effects
+            .push_back((sequence, scope, pos, effect));
         true
     }
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
@@ -725,7 +883,9 @@ impl BundleFacts {
         if states.movement_effects.len() == 512 {
             states.movement_effects.pop_front();
         }
-        states.movement_effects.push_back((sequence, pos, effect));
+        states
+            .movement_effects
+            .push_back((sequence, None, pos, effect));
         true
     }
 
@@ -933,7 +1093,32 @@ impl BundleFacts {
                 s.movement_effects
                     .iter()
                     .copied()
-                    .filter(|(sequence, _, _)| *sequence > after)
+                    .filter(|(sequence, scope, _, _)| *sequence > after && scope.is_none())
+                    .map(|(sequence, _, pos, effect)| (sequence, pos, effect))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Read only this exact private scope and owner generation. Legacy Channel
+    /// effects and another House's entries are never a fallback.
+    pub fn scoped_movement_effects_since(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+        after: u64,
+    ) -> Vec<(u64, TilePos, u16)> {
+        self.callbacks
+            .lock()
+            .map(|states| {
+                states
+                    .movement_effects
+                    .iter()
+                    .copied()
+                    .filter(|(sequence, owner, _, _)| {
+                        *sequence > after && *owner == Some((scope, generation))
+                    })
+                    .map(|(sequence, _, pos, effect)| (sequence, pos, effect))
                     .collect()
             })
             .unwrap_or_default()
