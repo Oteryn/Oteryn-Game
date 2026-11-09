@@ -270,15 +270,16 @@ async fn run(
                 }
                 operation => operation,
             };
-            let result = apply_durable(
+            let result = apply_durable_with_lease(
                 &mut owner,
                 &root,
                 &node,
                 access.as_ref(),
                 &accounts,
                 operation,
-                now,
+                u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX),
                 privacy.version(),
+                Some(privacy.valid_until()),
             )
             .await;
             let committed = persist_pending(&mut owner, &root, &node).await;
@@ -503,10 +504,48 @@ pub async fn apply_durable(
     node: &NodeIncarnationProof,
     access: &impl preferences::PreferencesStore,
     accounts: &HashMap<GameSessionId, [u8; 16]>,
-    mut op: Operation,
+    op: Operation,
     now: u64,
     privacy_version: i64,
 ) -> Result<Reply, Error> {
+    apply_durable_with_lease(
+        owner,
+        root,
+        node,
+        access,
+        accounts,
+        op,
+        now,
+        privacy_version,
+        None,
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the worker additionally supplies its local consent lease fence"
+)]
+async fn apply_durable_with_lease(
+    owner: &mut CastOwner,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    access: &impl preferences::PreferencesStore,
+    accounts: &HashMap<GameSessionId, [u8; 16]>,
+    mut op: Operation,
+    now: u64,
+    privacy_version: i64,
+    privacy_until: Option<std::time::Instant>,
+) -> Result<Reply, Error> {
+    let started = std::time::Instant::now();
+    // Leave time for the next worker turn (including its 100 ms receive wait)
+    // to refresh consent. A busy holder must not consume the media lease.
+    let retry_until = privacy_until.map_or(started + std::time::Duration::from_secs(1), |until| {
+        until
+            .checked_sub(std::time::Duration::from_millis(250))
+            .unwrap_or(started)
+            .min(started + std::time::Duration::from_secs(1))
+    });
     match &mut op {
         Operation::Start(_, settings, account) => {
             *settings = preferences::authorize(access, *account, *settings)
@@ -529,8 +568,10 @@ pub async fn apply_durable(
                 .map(|(t, _)| t)
                 .ok_or(Error::Unavailable)?;
             let account = accounts.get(target).ok_or(Error::Unavailable)?;
-            if retry_busy_holder(root, || root.cast_account_banned(node, *account, a.account))
-                .await?
+            if retry_busy_holder(root, retry_until, || {
+                root.cast_account_banned(node, *account, a.account)
+            })
+            .await?
             {
                 return Err(Error::Unavailable);
             }
@@ -550,7 +591,7 @@ pub async fn apply_durable(
                 subject_account: Some(subject.to_vec()),
                 ..Default::default()
             };
-            retry_busy_holder(root, || {
+            retry_busy_holder(root, retry_until, || {
                 root.ban_cast_account(node, account, subject, record.clone())
             })
             .await?;
@@ -564,18 +605,33 @@ pub async fn apply_durable(
         }
         _ => {}
     }
+    let now = if privacy_until.is_some() && matches!(op, Operation::Join(_) | Operation::Renew(..))
+    {
+        if privacy_until.is_some_and(|until| std::time::Instant::now() >= until) {
+            return Err(Error::Unavailable);
+        }
+        // Admission can expire while waiting for the holder. Re-run the owner's
+        // expiry/epoch/access checks against the clock after IO, under this fence.
+        now.saturating_add(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX))
+    } else {
+        now
+    };
     apply(owner, op, now, privacy_version)
 }
 
 // Retry only acquisition refusal: a storage/receipt failure must never replay
-// the operation. Join, renewal and moderation use the same window as cast audit.
+// the operation. The worker caps this window by its remaining consent lease.
 async fn retry_busy_holder<T, F: std::future::Future<Output = Result<T, DurabilityError>>>(
     root: &DurabilityRoot,
+    deadline: std::time::Instant,
     mut operation: impl FnMut() -> F,
 ) -> Result<T, Error> {
     use tokio::time::Instant;
-    let deadline = Instant::now() + std::time::Duration::from_secs(1);
+    let deadline = Instant::from_std(deadline);
     loop {
+        if Instant::now() >= deadline {
+            return Err(Error::Unavailable);
+        }
         match operation().await {
             Ok(value) => return Ok(value),
             Err(DurabilityError::RootUnavailable) if Instant::now() < deadline => {

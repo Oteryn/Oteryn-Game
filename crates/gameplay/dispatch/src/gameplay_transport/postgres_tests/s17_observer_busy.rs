@@ -83,3 +83,112 @@ fn s17c_observer_postgres_busy_join_renew_and_ban_wait_without_retrying_storage(
         })
     })
 }
+
+#[test]
+fn nbcast_busy_observer_retry_preserves_consent_lease_postgres() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            use oteryn_gameplay_social::cast::service::CastService;
+            use std::time::{Duration, Instant};
+
+            let h = Harness::create(admin, "nbcast_consent_lease", true).await?;
+            let (access, host) =
+                super::s17_client::settings_host::host(*h.node.fact().node_id().as_bytes()).await?;
+            let upkeep_root = h.root.clone();
+            let upkeep = tokio::spawn(async move {
+                let mut cadence = tokio::time::interval(Duration::from_millis(10));
+                loop {
+                    cadence.tick().await;
+                    if upkeep_root.has_ready_demand()
+                        && upkeep_root.maintain_ready_once().await.is_err()
+                    {
+                        upkeep_root.request_ready();
+                    }
+                }
+            });
+            let result = async {
+                let service = CastService::spawn(h.root.clone(), h.node.clone(), 8, access.clone())?;
+                let target = facts(1, 1, 1);
+                let f = target.authority;
+                let mut other = target;
+                let commit = crate::foundation::FreshAdmissionCommit::from_facts(
+                    crate::foundation::GameSessionId::decode(&super::fixture::id(201))?,
+                    crate::foundation::FreshAdmissionFacts::new(
+                        [8; 32], crate::foundation::CharacterId::decode(&super::fixture::id(202))?,
+                        f.commit().world_id(), f.commit().channel_id(), 1, 1,
+                    )?,
+                    f.current_transport().ok_or("caster transport")?,
+                )?;
+                other.authority = crate::foundation::GameSessionAuthoritySnapshot::new(
+                    commit, f.session_state(), f.current_connection_generation(),
+                    f.current_transport(), crate::foundation::CharacterLease::new(commit.character_id(), 1)?,
+                    f.current_scope_generation(),
+                );
+                service.apply(Operation::Start(other, Settings::default(), [2; 16])).await?;
+                service.apply(Operation::Start(target, Settings::default(), [1; 16])).await?;
+                for cast in [target, other] {
+                    service.apply(Operation::State(cast.authority.current_game_session_id())).await?;
+                }
+                let ticket = format!("ocv1.01{}01", "ab".repeat(30));
+                let proof = access.consume(ticket.as_bytes(), &|| service.clock()).await?;
+                let reservation = proof.reservation_id();
+                let Reply::Observer(observer) = service.apply(Operation::Join(proof)).await? else {
+                    return Err("observer reply".into());
+                };
+                let started = Instant::now();
+                for renew in [false, true] {
+                    let proof = if renew {
+                        access.renew(reservation, &|| service.clock()).await?
+                    } else {
+                        let ticket = format!("ocv1.02{}02", "ab".repeat(30));
+                        access.consume(ticket.as_bytes(), &|| service.clock()).await?
+                    };
+                    let operation = if renew {
+                        Operation::Renew(observer, proof)
+                    } else {
+                        Operation::Join(proof)
+                    };
+                    let before: i64 = sqlx::query_scalar(
+                        "SELECT expires_at_ms FROM game_cast_consent_workers LIMIT 1",
+                    ).fetch_one(&h.pool).await?;
+                    let held = h.root.try_issue_semantic_pass()?;
+                    // Keep storage unavailable through the command's entire retry
+                    // budget. Release on its reply so the worker can renew consent;
+                    // an uninterrupted outage longer than the lease must fail closed.
+                    let reply = tokio::time::timeout(Duration::from_secs(2), service.apply(operation)).await?;
+                    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                    assert!(matches!(reply, Err(oteryn_gameplay_social::cast::Error::Unavailable)));
+                    for cast in [target, other] {
+                        assert!(matches!(
+                            service.apply(Operation::State(cast.authority.current_game_session_id())).await,
+                            Ok(Reply::State(_))
+                        ), "busy observer retry must not expire consent or end either cast");
+                    }
+                    service.apply(Operation::ObserverState(observer)).await?;
+                    tokio::time::timeout(Duration::from_secs(1), async {
+                        loop {
+                            let after: i64 = sqlx::query_scalar(
+                                "SELECT expires_at_ms FROM game_cast_consent_workers LIMIT 1",
+                            ).fetch_one(&h.pool).await?;
+                            if after > before {
+                                return Ok::<(), Box<dyn std::error::Error>>(());
+                            }
+                            for cast in [target, other] {
+                                service.apply(Operation::State(cast.authority.current_game_session_id())).await?;
+                            }
+                            service.apply(Operation::ObserverState(observer)).await?;
+                            tokio::time::sleep(Duration::from_millis(10)).await;
+                        }
+                    }).await.map_err(|_| "consent refresh must still be serviced")??;
+                }
+                service.apply(Operation::Shutdown).await?;
+                eprintln!("NBCAST real worker PostgreSQL Join/Renew consent refresh executed; elapsed_ms={}", started.elapsed().as_millis());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }.await;
+            upkeep.abort();
+            host.abort();
+            h.cleanup().await?;
+            result
+        })
+    })
+}
