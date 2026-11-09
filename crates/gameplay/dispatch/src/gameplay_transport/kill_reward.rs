@@ -2422,6 +2422,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// bounty may be changed by any earlier kill. Each entry gets its own current
     /// fence, and no later entry passes an in-flight, parked or retrying predecessor.
     pub(super) async fn drain_kill_rewards(&self, _session: GameSessionId) -> DrainOutcome {
+        if !self.drain_native_quest_hits().await {
+            return DrainOutcome::Deferred;
+        }
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
             let principal = match self.states.attack.lock().await.kills().ordered_principal() {
                 Ok(Some(principal)) => principal,

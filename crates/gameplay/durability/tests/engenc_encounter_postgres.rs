@@ -14,6 +14,10 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 #[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
 mod fixture;
 
+// Execute the production queue directly without compiling dispatch's unrelated lib-test suite.
+#[path = "../../dispatch/src/gameplay_transport/quest_hits/queue.rs"]
+mod dispatcher_hit_queue;
+
 use durability::character_progression::ExperienceRewardOccurrence;
 use durability::quest_state::encounter_deaths::EncounterDeathContext;
 use durability::quest_state::native_kills::{NativeDeathSource, NativeQuestDeath};
@@ -944,6 +948,265 @@ async fn exercise_prepared_hit(h: &fixture::Harness) -> fixture::TestResult {
         .await
         .map_err(fixture::debug)?;
     assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    assert_eq!(h.root_revision().await?, "2");
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='native_hit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 1);
+    Ok(())
+}
+
+#[test]
+fn engenc_dispatch_hit_queue_retains_unknown_outcome_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h =
+                        fixture::Harness::create(admin, "engenc_dispatch_hit_queue", true).await?;
+                    let result = exercise_dispatch_hit_queue(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_DISPATCH_HIT_QUEUE_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC dispatch hit queue PG worker panicked")?
+        .map_err(Into::into)
+}
+
+async fn exercise_dispatch_hit_queue(h: &fixture::Harness) -> fixture::TestResult {
+    use dispatcher_hit_queue::{HitQueue, Snapshot};
+    use durability::character_revision_sequencer::CharacterRevisionSequencer;
+    let catalogue = hit_catalogue()?;
+    let fence = fixture::fence(1)?;
+    let (mut runtime, actor, target, command) = native_hit_runtime(1)?;
+    let lease = runtime
+        .bound_attacker_lease(actor, fence.game_session_id)
+        .map_err(fixture::debug)?;
+    let mut queue = HitQueue::default();
+    assert!(queue.install(
+        &runtime,
+        fence.game_session_id,
+        Snapshot::new(
+            Arc::clone(&catalogue),
+            actor,
+            fence.game_session_id,
+            lease,
+            1,
+            &Default::default()
+        )
+    ));
+    {
+        let abandoned = queue
+            .prepare(
+                &runtime,
+                actor,
+                target,
+                command,
+                0,
+                "oteryn:creature.rat",
+                "oteryn:item.spear",
+                None,
+            )
+            .map_err(fixture::debug)?;
+        drop(abandoned);
+    }
+    assert!(!queue.has_pending());
+    {
+        let mut capture = queue
+            .prepare(
+                &runtime,
+                actor,
+                target,
+                command,
+                0,
+                "oteryn:creature.rat",
+                "oteryn:item.spear",
+                None,
+            )
+            .map_err(fixture::debug)?;
+        let mut native = runtime.borrow_exact_actor_commit();
+        native
+            .commit_damage_for_bound_attacker(
+                target,
+                actor,
+                command,
+                0,
+                foundation::OwnerDamageCommand {
+                    target: b"engenc:training",
+                    occurrence: &[],
+                    binding: b"engenc:queued-hit",
+                    damage: 5,
+                },
+            )
+            .map_err(fixture::debug)?;
+        let witness = native
+            .committed_hit_for_bound_attacker(target, actor, command, 0)
+            .map_err(fixture::debug)?
+            .ok_or("native hit")?;
+        assert_eq!(
+            capture.capture(witness, "oteryn:creature.rat", "oteryn:item.spear", None),
+            1
+        );
+    }
+    let first = queue.pending();
+    assert_eq!(first.len(), 1);
+    assert_eq!(first[0].actor, actor);
+    assert_eq!(first[0].session, fence.game_session_id);
+    assert_eq!(first[0].lease, lease);
+    assert_eq!(
+        first[0].transition,
+        "oteryn:quest-transition/native-hits/training"
+    );
+    let occurrence = first[0].hit.occurrence();
+    drop(first); // Cancellation before acknowledgement leaves the original source retained.
+    assert_eq!(queue.pending()[0].hit.occurrence(), occurrence);
+    assert!(queue.install(
+        &runtime,
+        fence.game_session_id,
+        Snapshot::new(
+            Arc::clone(&catalogue),
+            actor,
+            fence.game_session_id,
+            lease,
+            1,
+            &Default::default()
+        )
+    ));
+    assert_eq!(queue.pending()[0].hit.occurrence(), occurrence);
+
+    {
+        let later = foundation::CommandRef::new(
+            command.game_session_id(),
+            foundation::CommandId::new(2).map_err(fixture::debug)?,
+        );
+        let mut capture = queue
+            .prepare(
+                &runtime,
+                actor,
+                target,
+                later,
+                0,
+                "oteryn:creature.rat",
+                "oteryn:item.spear",
+                None,
+            )
+            .map_err(fixture::debug)?;
+        let mut native = runtime.borrow_exact_actor_commit();
+        native
+            .commit_damage_for_bound_attacker(
+                target,
+                actor,
+                later,
+                0,
+                foundation::OwnerDamageCommand {
+                    target: b"engenc:training",
+                    occurrence: &[],
+                    binding: b"engenc:later-hit",
+                    damage: 5,
+                },
+            )
+            .map_err(fixture::debug)?;
+        let witness = native
+            .committed_hit_for_bound_attacker(target, actor, later, 0)
+            .map_err(fixture::debug)?
+            .ok_or("later hit")?;
+        assert_eq!(
+            capture.capture(witness, "oteryn:creature.rat", "oteryn:item.spear", None),
+            0
+        );
+    }
+    assert_eq!(queue.pending()[0].hit.occurrence(), occurrence);
+    let pending = queue.pending().remove(0);
+    let mut stale_ack = pending.clone();
+    stale_ack.hit = durability::quest_state::native_hits::NativeQuestHit::from_committed(
+        pending.transition.clone(),
+        "oteryn:creature.rat".into(),
+        "oteryn:item.spear".into(),
+        None,
+        1,
+        catalogue.definition_hash(QUEST).ok_or("hash")?,
+        native_hit_witness(2)?,
+    );
+    assert!(!queue.acknowledge(&stale_ack));
+    assert_eq!(queue.pending()[0].hit.occurrence(), occurrence);
+
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    assert!(pending.current_for(&catalogue));
+    let mut rebound = catalogue.authored_bindings().ok_or("bindings")?.clone();
+    rebound.quests[0]
+        .sources
+        .push("changed source qualification witness".into());
+    let base = QuestStateCatalogue::empty("content-1").ok_or("base")?;
+    let changed = Arc::new(rebound.attach(&base)?);
+    assert!(!pending.current_for(&changed));
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(fence.character_id).await;
+    assert!(
+        slot.commit_native_quest_hit(&h.root, &authority, &h.node, fence, &pending.hit, changed)
+            .await
+            .is_err()
+    );
+    assert_eq!(h.root_revision().await?, "1");
+
+    let committed = slot
+        .commit_native_quest_hit(
+            &h.root,
+            &authority,
+            &h.node,
+            fence,
+            &pending.hit,
+            Arc::clone(&pending.catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    // Simulate losing the acknowledgement after COMMIT, followed by a coherent refresh.
+    assert!(queue.install(&runtime, fence.game_session_id, None));
+    assert!(
+        queue.has_pending(),
+        "refresh must retain a committed-but-unacknowledged hit"
+    );
+    let retry = queue.pending().remove(0);
+    assert_eq!(retry.hit.occurrence(), occurrence);
+    let replay = slot
+        .commit_native_quest_hit(
+            &h.root,
+            &authority,
+            &h.node,
+            fixture::fence(2)?,
+            &retry.hit,
+            Arc::clone(&retry.catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(
+        replay,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    assert!(queue.acknowledge(&retry));
+    assert!(!queue.has_pending());
+    assert!(!queue.acknowledge(&retry));
     assert_eq!(h.root_revision().await?, "2");
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='native_hit'",

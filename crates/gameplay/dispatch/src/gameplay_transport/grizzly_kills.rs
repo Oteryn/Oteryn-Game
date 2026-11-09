@@ -88,6 +88,7 @@ pub(super) struct GrizzlyCaptureCache {
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
     encounters: Vec<encounters::EncounterRun>,
+    pub(super) hits: super::quest_hits::queue::HitQueue,
 }
 
 impl GrizzlyCaptureCache {
@@ -367,28 +368,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .find(|(_, _, observed)| *observed == Some(session))?
                         .0;
                     let lease = runtime.bound_attacker_lease(actor, session).ok()?;
-                    Some(TaskSnapshot {
-                        actor,
-                        session,
-                        character: *lease.character_id().as_bytes(),
-                        lease_generation: lease.generation(),
-                        observed_revision: revision,
-                        active_tasks,
-                        native_counters: self
-                            .quest_catalogue
-                            .as_deref()
-                            .map(|catalogue| capture_native(catalogue, copy.tracks()))
-                            .unwrap_or_default(),
-                        source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
+                    let hit_snapshot = self.quest_catalogue.as_ref().and_then(|catalogue| {
+                        super::quest_hits::queue::Snapshot::new(
+                            Arc::clone(catalogue),
+                            actor,
+                            session,
+                            lease,
+                            revision,
                             copy.tracks(),
-                        ),
-                    })
+                        )
+                    });
+                    Some((
+                        TaskSnapshot {
+                            actor,
+                            session,
+                            character: *lease.character_id().as_bytes(),
+                            lease_generation: lease.generation(),
+                            observed_revision: revision,
+                            active_tasks,
+                            native_counters: self
+                                .quest_catalogue
+                                .as_deref()
+                                .map(|catalogue| capture_native(catalogue, copy.tracks()))
+                                .unwrap_or_default(),
+                            source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
+                                copy.tracks(),
+                            ),
+                        },
+                        hit_snapshot,
+                    ))
                 })
+        };
+        let (snapshot, hit_snapshot) = match snapshot {
+            Some((snapshot, hit_snapshot)) => (Some(snapshot), hit_snapshot),
+            None => (None, None),
         };
         let attack = self.states.attack.lock().await;
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };
+        if !cache.hits.install(&runtime, session, hit_snapshot) {
+            super::operator_event("quest_hit_snapshot_capacity_refused");
+        }
         cache.sessions.retain(|snapshot| {
             snapshot.session != session
                 && runtime
