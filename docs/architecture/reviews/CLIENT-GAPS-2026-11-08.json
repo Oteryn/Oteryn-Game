@@ -984,7 +984,8 @@
   "feature": "Katalog/search/buy/confirmation/result",
   "status": "PARTIAL",
   "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0154-store/input.rs:33 + store_category_navigation_sends_server_key_with_fresh_cursor (category navigation; graphical preview remains)"
  },
  {
   "id": "T131",

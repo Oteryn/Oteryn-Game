@@ -30,6 +30,17 @@ pub(in crate::play) fn gift_submit(
 }
 
 impl PlayLink {
+    pub fn store_category(&self, key: &str) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let Some(command) = oteryn_client_ui::store::select_category(&mut mailbox.store, key) else { return false; };
+        if self.commands.send(PlayCommand::ServerMechanic(command)).is_err() {
+            mailbox.store.pending = false;
+            mailbox.store.feedback = Some("The session has ended".into());
+            return false;
+        }
+        true
+    }
+
     pub fn store_request(&self, command_type: u32, payload: Vec<u8>) {
         let mut mailbox = lock(&self.mailbox);
         let Some(command) = oteryn_client_ui::store::command(command_type, payload) else {
