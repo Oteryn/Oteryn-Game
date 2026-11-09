@@ -18,6 +18,10 @@ pub(super) fn admitted(callback: &Callback) -> bool {
         && callback.trigger == Trigger::StepIn
         && callback.actor_kind == ActorKind::Player
         && callback.requires_world_admission
+        && callback
+            .admission
+            .as_ref()
+            .is_none_or(|a| a.premium && !a.regular_blessings && !a.promotion)
         && callback.selector.position == Some(native.position)
         && callback.selector.appearance == Some(native.appearance)
         && native.ordinal == 0
@@ -59,10 +63,13 @@ pub(super) fn admitted(callback: &Callback) -> bool {
             })
             .count()
             == 1
-        && callback
-            .sources
-            .iter()
-            .any(|s| s == "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only")
+        && callback.sources.iter().any(|s| {
+            matches!(
+                s.as_str(),
+                "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+                    | "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+            )
+        })
 }
 
 pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
@@ -79,6 +86,110 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::super::*;
+
+    #[test]
+    fn imported_explore_world_requirement_is_part_of_the_native_binding() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/grimvale-mini-world-change/s1/entry")
+            .ok_or("bound current-moon entry")?;
+        assert!(super::admitted(&callback));
+        assert_eq!(callback.world_change.as_deref(), Some("grimvale"));
+        let required = gated_binding(&callback)?;
+        assert!(required.is_some(), "native World-bound occurrence");
+        let mut stripped = callback;
+        stripped.world_change = None;
+        assert_ne!(
+            gated_binding(&stripped)?,
+            required,
+            "the admitted native occurrence cannot lose its current-World predicate"
+        );
+        stripped.world_change = Some("fury_gates".into());
+        assert_ne!(
+            gated_binding(&stripped)?,
+            required,
+            "a different World event cannot substitute for the admitted moon predicate"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn alawar_source_approach_is_bound_without_changing_its_teleport() -> Result<(), String> {
+        let callbacks = load()?;
+        let approach = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry")
+            .ok_or("bound Alawar approach")?;
+        assert!(super::admitted(approach));
+        assert!(approach.teleport.is_none());
+        let original = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/alawars-vault-entrance")
+            .ok_or("original Alawar portal")?;
+        assert_eq!(
+            original.teleport,
+            Some(Position {
+                x: 32107,
+                y: 31567,
+                floor: -9
+            })
+        );
+        assert!(original.storage.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn asura_explore_binding_cannot_strip_current_premium() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/asura-palace/s1/entry")
+            .ok_or("bound Asura entry")?;
+        assert!(callback.admission.as_ref().is_some_and(|a| a.premium));
+        assert!(super::admitted(&callback));
+        let mut unsupported = callback.clone();
+        unsupported
+            .admission
+            .as_mut()
+            .ok_or("Premium policy")?
+            .promotion = true;
+        assert!(
+            !super::admitted(&unsupported),
+            "this bounded explore profile cannot silently admit an unsupported predicate"
+        );
+        let required = gated_binding(&callback)?.ok_or("bound Premium occurrence")?;
+        let mut stripped = callback;
+        stripped.admission = None;
+        assert_ne!(
+            gated_binding(&stripped)?,
+            Some(required),
+            "a native occurrence admitted for a different access policy cannot be substituted"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn geomancer_explore_entry_has_its_own_zero_initial_counter() -> Result<(), String> {
+        let callbacks = load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/geomancer/s1/entry")
+            .ok_or("bound Geomancer entry")?;
+        assert!(super::admitted(callback));
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::new("content-1", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+            std::slice::from_ref(callback),
+        )?;
+        let track = catalogue
+            .track("oteryn:quest-progress/chosen-source/geomancer_quest/s1")
+            .ok_or("Geomancer explore counter")?;
+        assert_eq!((track.initial, track.min, track.max), (0, 0, 1));
+        assert!(
+            catalogue
+                .track("oteryn:quest-progress/chosen-source/longsword_quest/s1")
+                .is_none()
+        );
+        Ok(())
+    }
 
     #[test]
     fn qm55_chakoya_premium_entry_credits_the_canonical_stage_once() -> Result<(), String> {

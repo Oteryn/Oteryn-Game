@@ -36,6 +36,7 @@ pub use clear_area::ClearArea;
 mod character_requirements;
 pub use character_requirements::CharacterRequirements;
 mod clock;
+mod completed_quests;
 mod counterparts;
 mod craft_epoch;
 mod effects;
@@ -312,6 +313,9 @@ pub struct Callback {
     pub character_requirements: Option<CharacterRequirements>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
+    /// Own-character completion, checked under the same native writer fence.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -578,6 +582,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
         if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
+        if !completed_quests::valid(callback)
             || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
             || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS

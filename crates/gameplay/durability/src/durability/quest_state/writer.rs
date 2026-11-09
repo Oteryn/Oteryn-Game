@@ -884,6 +884,16 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    // Premium's shared latch precedes the Character root lock. Historical
+                    // receipts above replay without evaluating current entrance eligibility.
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium) {
+                        let account: String = sqlx::query_scalar(
+                            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+                        ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
                         Some(oteryn_gameplay_quests::quest::arena_completion::rule().map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };

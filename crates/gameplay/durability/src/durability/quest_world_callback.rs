@@ -1,5 +1,6 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
+mod completed_quests;
 pub(crate) mod character_requirements;
 pub(super) mod completion;
 #[cfg(feature = "test-support")]
@@ -61,6 +62,17 @@ pub struct QuestWorldContext {
     pub reset_epoch: u64,
     pub actor_placement: [u8; 16],
     pub movement_revision: u64,
+}
+
+/// Lifted PostgreSQL fixtures retain the production predicate and transaction-bound scope.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn fixture_ground_stack_matches(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+    target: &super::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
 }
 
 #[path = "quest_world_callback/reward_inputs.rs"]
@@ -261,6 +273,9 @@ pub(super) async fn consume(
         return Ok(false);
     }
     if !context_is_current(tx, permit, fence, context).await? {
+        return Ok(false);
+    }
+    if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }
     if let Some(change) = &callback.world_change

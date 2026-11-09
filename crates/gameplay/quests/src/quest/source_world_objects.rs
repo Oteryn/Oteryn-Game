@@ -10,6 +10,7 @@ pub(crate) fn uneasy_crystal() -> Callback {
     effects.transform = Some(10187);
     effects.reset_after_ms = Some(10_000);
     Callback { admission: None, requires_premium: false,
+    Callback { required_completed_quests: Vec::new(), admission: None,
         world_change: None,
         actor_kind: Default::default(),
         opening_only: false,

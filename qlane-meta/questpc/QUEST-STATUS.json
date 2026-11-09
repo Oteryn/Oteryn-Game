@@ -13,6 +13,7 @@
     "TODO": 12
   },
   "batch_state": "M01b Geomancer entry slice validated for publication; qmech41edb50ef merged and one missing creature_use initializer repaired; whole M01b remains IN_PROGRESS.",
+  "batch_state": "M01b17/56wired,20anchors,13PG-proven. FrostGREEN61.803s;4newentries31Python/5Rust/strictClippy4m27sGREEN,nativePGbuilding.29routes/39stages remain;PARTIAL.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1099,6 +1100,13 @@
       "Geomancer Quest"
     ],
     "validation": "Post-merge356 quest units,111 authoring modules/checks/tree,workspace/fmt and changed-target Clippy PASS;PG3/3 before package merge128.51s;post-merge PG pending cadence exception"
+    "wired_explore_stages": 3,
+    "wired_routes": [
+      "Longsword Quest",
+      "Geomancer Quest",
+      "Asura Palace Quest"
+    ],
+    "validation": "4realPGcases PASS190.89s on PostgreSQL18.6;Asura61.343279739s;4Rust profile tests and11Python authoring tests PASS"
   },
   "publication_validation": {
     "postgres_cases": 17,
@@ -1112,5 +1120,7 @@
     "fmt": "PASS",
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
-  }
+  },
+  "m01b_latest_batch": "Deeplings PG GREEN64.396295735s. WIP FireEarth survey:strictClippy5m15s,6profile0.06s,115modules/1206authoringtests/checks/tree/fmt/pins PASS. OwnnativePG building;NOTqualified.34wiredroutes35stages,33PG-provenroutes34stages;M01b PARTIAL.",
+  "m01b_latest_slice": "Fury first-survey resolver/factory tested;livebindingandnativePGpending.34PG-proven routes/35stages. No merges."
 }

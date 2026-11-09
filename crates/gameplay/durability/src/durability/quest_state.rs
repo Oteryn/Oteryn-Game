@@ -658,6 +658,7 @@ mod tests;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 
+mod world_access;
 mod writer;
 use storage::*;
 

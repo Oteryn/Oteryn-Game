@@ -435,6 +435,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
                 self.active_generation.and_then(|generation| generation.native_gameplay()),
+            let disposition = match slot.commit_world_callback_with_access(self.root, self.character, self.holder, fence,
+                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
+                std::sync::Arc::clone(catalogue), &permit, context,
+                self.active_generation.and_then(|generation| generation.native_gameplay()),
                 admission, &self.premium_coordinator,
             ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,

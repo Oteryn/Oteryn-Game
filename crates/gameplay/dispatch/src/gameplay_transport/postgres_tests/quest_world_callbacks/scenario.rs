@@ -106,6 +106,8 @@ fn scenario_case(
         }
     let start = if name.starts_with("qengine-rewards-m39-tomes") {
         super::super::m39_tomes_journey::world::start()?
+    let start = if m01b_explore {
+        super::super::m01b_explore::start(name, trigger)
     } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
@@ -614,6 +616,8 @@ fn scenario_case(
         ) || name.contains("l6-beggar-")
         let premium = if name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
+        let premium = if (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+            || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -767,6 +771,7 @@ fn scenario_case(
         deps.initialize(&owner).await;
         if mead || name == "npcfix-m38-mistrock" {
         if mead || m07_lion || m07_realm {
+        if mead || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium)) {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;

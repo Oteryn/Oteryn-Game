@@ -789,6 +789,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .commit_world_callback_with_items_selected(
                 .commit_world_callback_with_requirements(
                 .commit_world_callback_with_items_and_premium(
+                .commit_world_callback_with_access(
                     self.root,
                     self.character,
                     self.holder,
@@ -829,7 +830,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.apply_committed_quest_copy(session, fresh, committed);
                     self.schedule_quest_refresh(session);
                 }
-                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                Err(ref error) if matches!(error, crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                    #[cfg(test)]
+                    eprintln!("quest callback {} unavailable: {error:?}", callback.key);
                     // A storage error can hide a committed receipt; reconcile its original cause.
                     return UseDisposition::Rejected;
                 }
