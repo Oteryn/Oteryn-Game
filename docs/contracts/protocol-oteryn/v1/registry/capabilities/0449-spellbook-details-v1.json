@@ -1,0 +1,15 @@
+{
+  "id": 449,
+  "name": "SPELLBOOK_DETAILS_V1",
+  "owner_decision": "CLIENTGAP-OPTIONS spellbook filters",
+  "owner": "current spell book / exact actor known-spell owner",
+  "command_types": [
+    733
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES includes this read-only query only when native gameplay is active; the original capability 287 catalog is unchanged.",
+  "requires": [
+    287
+  ]
+}

@@ -219,3 +219,5 @@ fn npc_shop_retains_twenty_fifth_container_source_only_when_negotiated()
     }
     Ok(())
 }
+
+include!("options.rs");

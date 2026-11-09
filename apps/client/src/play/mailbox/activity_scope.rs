@@ -55,6 +55,7 @@ impl Mailbox {
         self.boss_rewards.pending = Default::default();
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
+        self.discovery.inspection.invalidate_catalogue();
         self.discovery.leader.pending = Default::default();
         self.discovery.teams.pending = Default::default();
         self.discovery.history.pending = Default::default();
@@ -64,6 +65,7 @@ impl Mailbox {
         self.properties.raid_schedule.pending = Default::default();
         self.properties.container_sort.pending = Default::default();
         self.properties.cyclopedia_map.pending = Default::default();
+        self.properties.cyclopedia_map.invalidate_atlas();
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();

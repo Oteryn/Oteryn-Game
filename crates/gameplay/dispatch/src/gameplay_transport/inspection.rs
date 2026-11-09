@@ -12,6 +12,8 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::inspection::{InspectedItem, Reply, Request};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::{collections::HashMap, sync::Mutex};
+#[path = "inspection/catalogue.rs"]
+mod catalogue;
 #[path = "inspection_imbuements.rs"]
 mod imbuement_text;
 
@@ -68,6 +70,7 @@ pub(super) async fn inspect(
         pinned_index(&runtime, owner.active_generation)?;
     }
     match request {
+        Request::CatalogueQuery(query) => catalogue::inspect(owner, admitted, query).await,
         Request::Item(handle) => {
             let _permit = owner.spell_lane_permit().await?;
             let views = views?;
