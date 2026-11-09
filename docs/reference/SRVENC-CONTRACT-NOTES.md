@@ -2299,3 +2299,19 @@ Other own PG: runtime role6.566619958s, native origin6.569492612s, pit custody
 6.572658424s. M51 remains PARTIAL for nonterminal departure/reset closure.
 Durability clippy --all-targets -D warnings PASS77.968s; cargo fmt --all --check
 PASS15.234s; engine-only pin identity equals the committed identity.
+
+## M51: actual Character death releases current shared-pit custody
+
+The fenced Character-death commit clears its exact Character/session/world/
+Channel/scope-generation lease after inserting the immutable death receipt, in
+that same transaction. The already-held Character root serializes a later run;
+old death replay returns before the deletion and cannot clear later custody.
+Refused death commits retain the lease. Instance death stays on its own owner.
+Source: Crystal201189f svargrond_arena.lua:259-313 (kick/reset custody).
+RED actual fenced death writer: PG5.35s, committed death wrongly leaves one lease.
+GREEN10 M51 tests35.060s including build; actual death commit/refusal/replay PG
+5.410638624s. Other PG: terminal5.677646709s, custody
+5.713720696s, origin5.713844757s, runtime role5.727044504s. No new migration or id.
+M51 remains PARTIAL for departure and full source reset closure.
+Durability clippy --all-targets -D warnings PASS80.717s; cargo fmt --all --check
+PASS15.382s; engine-only pin identity unchanged.
