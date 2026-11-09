@@ -9,17 +9,24 @@ use oteryn_gameplay_foundation::foundation::condition::{
 use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(clippy::too_many_arguments)]
     pub(super) async fn tick_creature_fields(
         &self,
         map: &mut crate::movement::monster_map::CurrentMonsterMap<'_, '_>,
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
-        room: &crate::content::QualifiedNativeEntryRoom,
         native: &crate::content::native_gameplay::NativeGameplayState,
         now: u64,
     ) -> Result<(), DurabilityError> {
-        for visible in runtime.visible_entities().creatures {
+        let creatures = runtime.visible_entities().creatures;
+        // Passive source creatures are outside the AI table, but still own field conditions.
+        let positions = creatures
+            .iter()
+            .map(|visible| visible.position)
+            .collect::<Vec<_>>();
+        map.prefetch_empty_tiles(runtime, &positions)
+            .await
+            .map_err(|_| DurabilityError::Unavailable)?;
+        for visible in creatures {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
             };
@@ -27,29 +34,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_items(runtime, visible.position)
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-            let cell = crate::content::LogicalCell {
-                x: visible.position.x,
-                y: visible.position.y,
-                z: i32::from(visible.position.floor),
-            };
-            let in_protection_zone = if matches!(
-                room.movement_cells().index(),
-                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
-            ) {
-                // A pickupable stack makes spell collision metadata unknown, but
-                // the pinned bundle still owns this tile's immutable zone flags.
-                // Reuse logout's current-map proof; never infer that the tile is safe.
-                self.logout_zones_for_cell(runtime, cell)
-                    .and_then(|zones| zones.protection_zone)
-                    .ok_or(DurabilityError::Unavailable)?
-            } else {
-                room.movement_cells()
-                    .spell_tiles()
-                    .lookup(room.movement_cells().scope(), cell)
-                    .map_err(|_| DurabilityError::Unavailable)?
-                    .flags()
-                    .protection_zone
-            };
+            let protection_zone = map
+                .protection_zone(runtime, visible.position)
+                .ok_or(DurabilityError::Unavailable)?;
             let mut entry = None;
             let mut standing = None;
             for item in &read.items {
@@ -66,7 +53,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(values) = recipe
                     .condition_values()
                     .map_err(|_| DurabilityError::Unavailable)?
-                    && !in_protection_zone
+                    && !protection_zone
                 {
                     let definition = ConditionDefinition::new(
                         &format!(
@@ -134,7 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     runtime,
                     visible.actor,
                     TickFacts {
-                        in_protection_zone,
+                        in_protection_zone: protection_zone,
                         standing_on_field: standing,
                     },
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),

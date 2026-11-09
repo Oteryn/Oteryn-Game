@@ -218,6 +218,59 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     pub fn view(&self) -> &MonsterMap {
         &self.view
     }
+    /// Retained map zone flags do not depend on a mutable Item stack's spell facts.
+    /// This proves only the zone; it never makes an Unknown movement/spell tile known.
+    pub fn protection_zone(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        at: MovementLocalPosition,
+    ) -> Option<bool> {
+        if !self.view.matches(runtime)
+            || self.authority.runtime_scope() != runtime.binding().runtime_scope()
+            || self.authority.generation() != runtime.binding().scope_generation().get()
+            || self.content.source_digest() != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        crate::native_world_read::qualified_static_owner(self.room, runtime, self.objects).ok()?;
+        let cells = self.room.movement_cells();
+        let cell = LogicalCell {
+            x: at.x,
+            y: at.y,
+            z: i32::from(at.floor),
+        };
+        if let NativeMovementCollisionIndex::Bundle(index) = cells.index() {
+            // Check the child index before reading its map: activity views may share a
+            // parent's immutable base while admitting only their own clipped cells.
+            index.lookup(cells.scope(), cell).ok()?;
+            let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+            return Some(
+                index
+                    .map()
+                    .overlay
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)?
+                    .protection_zone(),
+            );
+        }
+        if let NativeMovementCollisionIndex::Source(world) = cells.index() {
+            return Some(
+                world
+                    .immutable_tile(cells.scope(), cell)
+                    .ok()?
+                    .flags()
+                    .protection_zone,
+            );
+        }
+        Some(
+            cells
+                .spell_tiles()
+                .lookup(cells.scope(), cell)
+                .ok()?
+                .flags()
+                .protection_zone,
+        )
+    }
     /// Prefetch the current census's exact addresses in bounded SQL batches. A sparse
     /// World must not read 256 neighbouring cells for every occupied 16x16 chunk.
     /// These observations remain scoped to this borrowed physical transaction;
