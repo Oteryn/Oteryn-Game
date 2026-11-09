@@ -88,6 +88,7 @@ fn collection_preserves_existing_quest_hashes_and_metadata() -> Result<(), Strin
     assert_eq!(attached.native_recipe_evidence, base.native_recipe_evidence);
     assert_eq!(attached.npc_legacy, base.npc_legacy);
     assert_eq!(attached.predecessors, base.predecessors);
+    assert_eq!(attached.authored_bindings, base.authored_bindings);
     assert_eq!(
         attached.definition_hash(crate::quest::rotten_blood::QUEST),
         Some(before)

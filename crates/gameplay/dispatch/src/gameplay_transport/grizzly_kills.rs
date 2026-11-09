@@ -3,6 +3,7 @@
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
+mod encounters;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -34,6 +35,7 @@ struct NativeCounterCapture {
     transition: String,
     creature: String,
     definition_hash: Option<[u8; 32]>,
+    encounter_source: Option<String>,
 }
 
 fn capture_native(
@@ -54,6 +56,7 @@ fn capture_native(
                 transition: key.clone(),
                 creature: counter.creature.into(),
                 definition_hash,
+                encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
         .collect()
@@ -84,6 +87,8 @@ pub(super) struct FrozenGrizzlyDeath {
 pub(super) struct GrizzlyCaptureCache {
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
+    encounters: Vec<encounters::EncounterRun>,
+    pub(super) hits: super::quest_hits::queue::HitQueue,
 }
 
 impl GrizzlyCaptureCache {
@@ -91,12 +96,12 @@ impl GrizzlyCaptureCache {
         &mut self,
         target: ExactActorRef,
         occurrence: [u8; 16],
-        captured: impl FnOnce(&[TaskSnapshot]) -> FrozenGrizzlyDeath,
+        captured: impl FnOnce(&[TaskSnapshot], &[encounters::EncounterRun]) -> FrozenGrizzlyDeath,
     ) -> Arc<FrozenGrizzlyDeath> {
         if let Some((_, _, death)) = self.deaths.iter().find(|(_, id, _)| *id == occurrence) {
             return Arc::clone(death);
         }
-        let frozen = Arc::new(captured(&self.sessions));
+        let frozen = Arc::new(captured(&self.sessions, &self.encounters));
         self.deaths.push((target, occurrence, Arc::clone(&frozen)));
         frozen
     }
@@ -156,7 +161,7 @@ fn freeze(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature {
+            if counter.creature == creature && counter.encounter_source.is_none() {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -260,6 +265,9 @@ pub(super) fn capture(
     });
     if !runtime.retains_corpse_projection(entry.target) {
         return;
+    }
+    for run in &mut cache.encounters {
+        let _ = run.roster.record_death(entry.facts.death);
     }
     let principal = entry.facts.principal;
     // Gone and untracked contributors make the ordinary queue use a lethal-hit fallback.
@@ -372,6 +380,50 @@ pub(super) fn capture(
             frozen
         }),
     );
+    entry.grizzly =
+        Some(
+            cache.remember(entry.target, entry.facts.occurrence, |snapshots, runs| {
+                let live: Vec<_> = snapshots
+                    .iter()
+                    .filter(|snapshot| {
+                        runtime
+                            .bound_attacker_lease(snapshot.actor, snapshot.session)
+                            .is_ok_and(|lease| {
+                                lease.character_id().as_bytes() == &snapshot.character
+                                    && lease.generation() == snapshot.lease_generation
+                            })
+                    })
+                    .cloned()
+                    .collect();
+                let mut frozen = freeze(
+                    source,
+                    *principal.character.as_bytes(),
+                    principal_present,
+                    &entry.creature,
+                    &live,
+                );
+                frozen.native.extend(encounters::capture(
+                    runtime,
+                    entry,
+                    &live,
+                    runs,
+                    principal_present,
+                ));
+                frozen.native.extend(super::quest_batch3_c::capture(
+                    runtime,
+                    entry,
+                    live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
+                        actor: snapshot.actor,
+                        session: snapshot.session,
+                        character: snapshot.character,
+                        lease_generation: snapshot.lease_generation,
+                        observed_revision: snapshot.observed_revision,
+                        objectives: snapshot.source_objectives.clone(),
+                    }),
+                ));
+                frozen
+            }),
+        );
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -399,28 +451,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .find(|(_, _, observed)| *observed == Some(session))?
                         .0;
                     let lease = runtime.bound_attacker_lease(actor, session).ok()?;
-                    Some(TaskSnapshot {
-                        actor,
-                        session,
-                        character: *lease.character_id().as_bytes(),
-                        lease_generation: lease.generation(),
-                        observed_revision: revision,
-                        active_tasks,
-                        native_counters: self
-                            .quest_catalogue
-                            .as_deref()
-                            .map(|catalogue| capture_native(catalogue, copy.tracks()))
-                            .unwrap_or_default(),
-                        source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
+                    let hit_snapshot = self.quest_catalogue.as_ref().and_then(|catalogue| {
+                        super::quest_hits::queue::Snapshot::new(
+                            Arc::clone(catalogue),
+                            actor,
+                            session,
+                            lease,
+                            revision,
                             copy.tracks(),
-                        ),
-                    })
+                        )
+                    });
+                    Some((
+                        TaskSnapshot {
+                            actor,
+                            session,
+                            character: *lease.character_id().as_bytes(),
+                            lease_generation: lease.generation(),
+                            observed_revision: revision,
+                            active_tasks,
+                            native_counters: self
+                                .quest_catalogue
+                                .as_deref()
+                                .map(|catalogue| capture_native(catalogue, copy.tracks()))
+                                .unwrap_or_default(),
+                            source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
+                                copy.tracks(),
+                            ),
+                        },
+                        hit_snapshot,
+                    ))
                 })
+        };
+        let (snapshot, hit_snapshot) = match snapshot {
+            Some((snapshot, hit_snapshot)) => (Some(snapshot), hit_snapshot),
+            None => (None, None),
         };
         let attack = self.states.attack.lock().await;
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };
+        if !cache.hits.install(&runtime, session, hit_snapshot) {
+            super::operator_event("quest_hit_snapshot_capacity_refused");
+        }
         cache.sessions.retain(|snapshot| {
             snapshot.session != session
                 && runtime

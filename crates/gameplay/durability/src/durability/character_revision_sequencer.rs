@@ -35,6 +35,7 @@ mod cyclopedia;
 mod death_promotion;
 mod grizzly;
 mod native_kills;
+mod native_hits;
 mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;

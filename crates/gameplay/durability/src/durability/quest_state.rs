@@ -84,6 +84,8 @@ pub enum QuestCause {
     Step(CommandRef),
     /// A reward-claim obligation (§5.4): the claim's CommandRef.
     ClaimObligation(CommandRef),
+    /// An exact committed native damage occurrence, independent of player USE.
+    NativeHit(native_hits::QuestHitOccurrence),
     /// A creature-death reward occurrence.
     CreatureDeath(ExperienceRewardOccurrence),
 }
@@ -92,6 +94,7 @@ impl QuestCause {
     const fn kind(self) -> &'static str {
         match self {
             Self::ServerTimer(_) => "server_timer",
+            Self::NativeHit(_) => "native_hit",
             Self::Command(_) => "command",
             Self::Use(_) => "use",
             Self::Step(_) => "step",
@@ -112,6 +115,7 @@ impl QuestCause {
                 command.command_id().get(),
             ),
             Self::ServerTimer(occurrence) => (*occurrence.as_bytes(), 0),
+            Self::NativeHit(occurrence) => (*occurrence.as_bytes(), 0),
             Self::CreatureDeath(occurrence) => (*occurrence.as_bytes(), 0),
         }
     }
@@ -128,6 +132,7 @@ impl QuestCause {
             "server_timer" if ordinal == 0 => {
                 Self::ServerTimer(server_timer::QuestTimerOccurrence::from_bytes(id)?)
             }
+            "native_hit" if ordinal == 0 => Self::NativeHit(native_hits::QuestHitOccurrence::from_bytes(id)?),
             "command" => Self::Command(command()?),
             "use" => Self::Use(command()?),
             "step" => Self::Step(command()?),
@@ -552,10 +557,14 @@ pub(super) fn report_refused_experience(
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
 mod collection;
+pub mod encounter_deaths;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod native_kills;
+pub mod native_hits;
+pub mod native_hit_capture;
+pub(crate) mod native_events;
 mod planegazer_finale;
 pub mod rotten_blood;
 pub mod rotten_blood_access;

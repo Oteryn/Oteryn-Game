@@ -188,6 +188,16 @@ impl ChannelRuntimeV1 {
     }
 
     fn quest_encounter_entry<P: SourceStepCommitProof>(
+        self.commit_quest_encounter_prepared(
+            players,
+            monsters,
+            |positions, actors| Ok((positions, actors)),
+            project,
+        )
+    }
+
+    /// Build the participant-bound defender owner before the map CAS; every failure rolls back.
+    pub fn commit_quest_encounter_entry_with_defenders<P: SourceStepCommitProof>(
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
@@ -205,6 +215,38 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
+    ) -> Result<(Vec<MovementPositionSnapshot>, EncounterDefenders), CarrierError> {
+        if !(1..=8).contains(&players.len()) || !(1..=8).contains(&monsters.len()) {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut participants = Vec::new();
+        participants
+            .try_reserve(players.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        participants.extend(players.iter().map(|proof| proof.parts().0));
+        self.commit_quest_encounter_prepared(
+            players,
+            monsters,
+            |positions, actors| {
+                Ok((
+                    positions,
+                    EncounterDefenders::from_admission(participants, actors)?,
+                ))
+            },
+            project,
+        )
+    }
+
+    fn commit_quest_encounter_prepared<P: SourceStepCommitProof, T>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        prepare: impl FnOnce(
+            Vec<MovementPositionSnapshot>,
+            Vec<ExactActorRef>,
+        ) -> Result<T, CarrierError>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<T, CarrierError> {
         if players.is_empty() || players.len() > 8 || monsters.is_empty() || monsters.len() > 8 {
         self.commit_quest_encounter_with_phase(players, monsters, |_, _| Ok(()), project)
             .map(|(positions, ())| positions)
@@ -255,6 +297,11 @@ impl ChannelRuntimeV1 {
             }
             Ok((snapshots, actors))
             Ok((snapshots, phase))
+            let prepared = prepare(snapshots, actors)?;
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(prepared)
         })();
         if !publish || result.is_err() {
             self.carrier = before;

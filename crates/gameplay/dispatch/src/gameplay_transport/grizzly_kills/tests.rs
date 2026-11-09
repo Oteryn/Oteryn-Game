@@ -184,9 +184,10 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
             snapshot(3, &[1], 12),
         ],
         deaths: Vec::new(),
+        encounters: Vec::new(),
     };
     let original_party = party(1, &[1, 2], true);
-    let original = cache.remember(actor(70), id(71), |snapshots| {
+    let original = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(original_party.clone()),
             id(1),
@@ -200,7 +201,7 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
     cache.sessions[0] = snapshot(1, &[1], 20);
     let mut later_party = party(1, &[1, 2, 3], true);
     later_party.revision = Some(2);
-    let replay = cache.remember(actor(70), id(71), |snapshots| {
+    let replay = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(later_party.clone()),
             id(1),
@@ -214,7 +215,7 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
     assert_eq!(replay.source, Some(original_party));
     assert_eq!(cache.deaths.len(), 1);
     // A genuinely later death sees both changes, under a different occurrence.
-    let next = cache.remember(actor(72), id(73), |snapshots| {
+    let next = cache.remember(actor(72), id(73), |snapshots, _| {
         freeze(Some(later_party), id(1), true, "crocodile", snapshots)
     });
     assert_eq!(credited(&next), vec![id(1), id(2), id(3)]);
@@ -225,8 +226,9 @@ fn grizzly_death_preserves_original_run_revision_across_cancel_and_restart() {
     let mut cache = GrizzlyCaptureCache {
         sessions: vec![snapshot(1, &[1], 10)],
         deaths: Vec::new(),
+        encounters: Vec::new(),
     };
-    let original = cache.remember(actor(70), id(71), |snapshots| {
+    let original = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(party(1, &[], false)),
             id(1),
@@ -236,7 +238,7 @@ fn grizzly_death_preserves_original_run_revision_across_cancel_and_restart() {
         )
     });
     cache.sessions[0] = snapshot(1, &[1], 30);
-    let replay = cache.remember(actor(70), id(71), |snapshots| {
+    let replay = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(party(1, &[], false)),
             id(1),

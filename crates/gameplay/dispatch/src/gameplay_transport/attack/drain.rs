@@ -736,14 +736,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
                 // hit, the death time the kill reward reads (§1.2).
-                let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                    &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
-                    &resolved,
-                    &plan,
-                    entry.actor,
-                    swing.lineage,
-                    ordinal,
-                );
+                let committed = {
+                    let Ok(mut cache) = kills.1.lock() else {
+                        continue;
+                    };
+                    let item = selected.weapon.item_key.as_deref().unwrap_or("");
+                    let creature = if extension { "" } else { race_key.as_str() };
+                    let Ok(mut hits) = cache.hits.prepare(
+                        &runtime,
+                        entry.actor,
+                        target,
+                        swing.lineage,
+                        ordinal,
+                        creature,
+                        item,
+                        None,
+                    ) else {
+                        continue;
+                    };
+                    let committed = crate::ability::commit::commit_exact_owner_swing_damage(
+                        &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
+                        &resolved,
+                        &plan,
+                        entry.actor,
+                        swing.lineage,
+                        ordinal,
+                    );
+
+                    if committed
+                        .as_ref()
+                        .is_ok_and(|result| result.committed_health_loss().is_some())
+                        && let Ok(Some(witness)) = runtime
+                            .borrow_exact_actor_commit_at(now.get() / 1_000)
+                            .committed_hit_for_bound_attacker(
+                                target,
+                                entry.actor,
+                                swing.lineage,
+                                ordinal,
+                            )
+                    {
+                        hits.capture(witness, creature, item, None);
+                    }
+                    committed
+                };
                 let Ok(result) = committed else {
                     if !extension {
                         entry.clear_target();
@@ -866,8 +901,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &offence,
                     &result,
                 );
-                if result.applied
-                    && result.health_after < result.health_before
+                if result.committed_health_loss().is_some()
                     && snapshot.state.master.is_none()
                     && !snapshot.state.policy.is_familiar
                 {
@@ -886,13 +920,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &result,
                     &mut activity_cells,
                 );
-                if result.applied && result.health_after < result.health_before {
+                if result.committed_health_loss().is_some() {
                     kills.boss_damage_dealt(&runtime, target, entry.actor, entry.session);
                 }
                 // Source-qualified leaf damage uses the existing independent replay stream.
                 // It neither consumes another player command nor re-enters Charm evaluation.
                 let mut lethal_result = result;
-                if result.applied && result.health_before > result.health_after {
+                if result.committed_health_loss().is_some() {
                     for outcome in &outcomes {
                         if let Some(CharmEffectOutcome::PreventCreatureFlee { duration_ms }) =
                             charm_combat::effect(outcome)
@@ -1164,6 +1198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(runtime);
         drop(pvp_permit);
         self.save_trained_levels(trained).await;
+        let _ = self.drain_native_quest_hits().await;
     }
 }
 

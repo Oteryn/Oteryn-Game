@@ -13,6 +13,7 @@ pub enum NativeDeathSource {
         source: Arc<crate::foundation::PartySnapshot>,
         position: (u16, u16, i8),
     },
+    Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
 }
 
@@ -66,6 +67,19 @@ impl NativeQuestDeath {
                             }
                     })
                 }
+                NativeDeathSource::Encounter(source) => {
+                    oteryn_gameplay_quests::quest::native_kills::counter_for(
+                        catalogue,
+                        &self.transition,
+                    )
+                    .is_some_and(|counter| {
+                        counter.creature == self.creature
+                            && counter.encounter_source == Some(source.source.as_str())
+                            && self.definition_hash.is_some_and(|hash| {
+                                catalogue.definition_hash(counter.quest) == Some(hash)
+                            })
+                    })
+                }
                 NativeDeathSource::Source(_) => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
@@ -93,6 +107,8 @@ impl NativeQuestDeath {
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
             | NativeDeathSource::PositionedParty { source, .. } => Some(source.as_ref()),
             NativeDeathSource::Source(_) => None,
+            NativeDeathSource::Party(source) => Some(source.as_ref()),
+            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
         }
     }
 
@@ -125,6 +141,7 @@ impl NativeQuestDeath {
                 binding[1..].copy_from_slice(&digest);
             }
             NativeDeathSource::Source(source) => source.bind(binding),
+            NativeDeathSource::Encounter(source) => source.bind(binding),
         }
         let mut digest = Sha256::new()
             .chain_update(*binding)
@@ -181,6 +198,10 @@ impl NativeQuestDeath {
             if !permitted {
                 return Ok(false);
             }
+        if let NativeDeathSource::Encounter(source) = &self.source
+            && !source.matches(fence)
+        {
+            return Ok(false);
         }
         let character = fence.character_id;
         let counter =
@@ -230,7 +251,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(death),
+            Some(super::native_events::NativeQuestEvent::Death(death)),
             None,
         )
         .await

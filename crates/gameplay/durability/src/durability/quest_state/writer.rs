@@ -373,7 +373,7 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
-        native: Option<super::native_kills::NativeQuestDeath>,
+        native: Option<super::native_events::NativeQuestEvent>,
         benevola: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
@@ -432,7 +432,7 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
-        native: Option<super::native_kills::NativeQuestDeath>,
+        native: Option<super::native_events::NativeQuestEvent>,
         benevola: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
@@ -440,6 +440,10 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
+        let hit_key = request.transition_key.starts_with(oteryn_gameplay_quests::quest::authored_bindings::hits::PREFIX);
+        if hit_key != matches!(request.cause,QuestCause::NativeHit(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let required_mint = oteryn_gameplay_quests::quest::completion_sets::required_mint_claim(
             &request.transition_key,
         )
@@ -451,7 +455,7 @@ impl DurabilityRoot {
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let native_key = request
+        let native_key = hit_key || request
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
