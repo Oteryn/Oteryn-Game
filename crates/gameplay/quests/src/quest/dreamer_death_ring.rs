@@ -47,6 +47,8 @@ pub(crate) fn reset_callback() -> super::world_callbacks::Callback {
             appearance: 3636,
             replacement: None,
             create_on_close: None,
+            if_present: false,
+            replacement_passable: None,
         })
         .collect();
     callback.teleport = Some(DESTINATION);

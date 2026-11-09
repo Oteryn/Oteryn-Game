@@ -36,10 +36,13 @@ class VariantStackSerializationTests(unittest.TestCase):
                 self.assertEqual(d['data_holds'], [])
         self.assertEqual(len(changed), 2)
         # W15b's 67 recipes include these stack normalizations (PR2770 Q4/A).
-        # Item and fluid admissions qualify four more without changing raw source witnesses.
+        # Exact Item, charged-weapon and water-vial admissions qualify six more
+        # without changing the raw source witnesses (see container_native tests).
         errors = variants.native_lowering_errors(self.records)
-        self.assertEqual(len(errors), 33)
-        qualified = {'oteryn:reward-claim.kv.fireaxe1',
+        self.assertEqual(len(errors), 31)
+        qualified = {'oteryn:reward-claim.kv.draconia1',
+                     'oteryn:reward-claim.kv.fireaxe1',
+                     'oteryn:reward-claim.kv.goblintemple2',
                      'oteryn:reward-claim.kv.ornamentedshield',
                      'oteryn:reward-claim.kv.triangletower',
                      'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine'}

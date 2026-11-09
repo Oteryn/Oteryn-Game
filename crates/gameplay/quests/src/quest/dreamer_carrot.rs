@@ -35,6 +35,9 @@ pub(crate) fn callback() -> Callback {
         replacement: None,
         target_replacement: None,
         reusable: false,
+        selected_instance: false,
+        target_remove: false,
+        ingredients: Vec::new(),
     });
     callback.sources=vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:9-32".into()];
     callback

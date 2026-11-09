@@ -27,6 +27,9 @@ fn source_portals_require_read_only_retained_tool_admission() -> Result<(), Stri
         replacement: None,
         target_replacement: None,
         reusable: true,
+        selected_instance: false,
+        target_remove: false,
+        ingredients: Vec::new(),
     });
     let mut value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
     value["effects"] = serde_json::json!({"source_portal":{

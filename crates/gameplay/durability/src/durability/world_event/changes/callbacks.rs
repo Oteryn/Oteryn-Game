@@ -124,7 +124,7 @@ impl DurabilityRoot {
                         // SourcePortal validation permits exactly one retained input,
                         // no offering, replacement, personal effect or value write.
                         if !crate::durability::quest_world_callback::consume(&mut tx,lane,fence,
-                            &request,source,&context,(&recovery,&node)).await? { return Ok(false); }
+                            &request,source,&[],&context.clone().into(),(&recovery,&node)).await? { return Ok(false); }
                     }
                     if let Some(requirements) = &ground
                         && !crate::durability::quest_world_callback::ground_stack::matches_requirements(
