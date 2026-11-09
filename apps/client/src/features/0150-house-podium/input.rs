@@ -86,6 +86,7 @@ pub(in crate::play) fn edit(
             return;
         }
         *slot = value;
+        panel.artwork = None;
         if field == 0 {
             panel.summary.clear();
             panel.projection.clear();

@@ -1,3 +1,12 @@
+#[cfg(windows)]
+#[path = "graphic_window.rs"]
+mod graphic_window;
+#[cfg(any(windows, test))]
+#[path = "preview.rs"]
+mod preview;
+#[cfg(windows)]
+#[path = "preview_assets.rs"]
+mod preview_assets;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn house_podium_panel(&self) -> oteryn_client_ui::house_podium::Panel {
@@ -25,6 +34,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Mount",
                 "Creature",
                 "Turn clockwise",
+                "Preview artwork",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.house_podium;
@@ -61,10 +71,15 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     0 => oteryn_client_ui::house_podium::Intent::Refresh,
                     1 => oteryn_client_ui::house_podium::Intent::Projection,
                     2 => oteryn_client_ui::house_podium::Intent::Set,
+                    7 => {
+                        panel.preview_requested = true;
+                        oteryn_client_ui::house_podium::Intent::Preview
+                    }
                     _ => return,
                 };
                 super::input::submit(mailbox, commands, intent);
             },
         },
     );
+    graphic_window::start(link);
 }

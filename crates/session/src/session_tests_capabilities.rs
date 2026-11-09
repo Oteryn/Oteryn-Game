@@ -183,7 +183,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (147, &[170], &[]),
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424], &[]),
-        (150, &[174, 175, 176], &[]),
+        (150, &[174, 175, 176, 739], &[]),
         // Live balances use their own selected capability without changing Atelier V1.
         (272, &[484], &[]),
         // pkg4 additions: raid server messages arrive on domain 57 under 92 zones_nologout;

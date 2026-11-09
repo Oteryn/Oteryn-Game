@@ -209,3 +209,6 @@ mod tests {
         assert!(decode_item(&[4; 17]).is_none());
     }
 }
+
+#[path = "house_podium/preview.rs"]
+pub mod preview;

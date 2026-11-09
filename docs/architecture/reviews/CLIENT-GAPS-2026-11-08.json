@@ -1026,10 +1026,10 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Podium: outfit/mount/creature/item",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Set/projection są; brak preview i kompletu przełączników creature podium.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0150-house-podium/view.rs:21; apps/client/src/features/0150-house-podium/input.rs:37 + podium_creature_selector_updates_the_real_panel_without_sending; creature/outfit/mount and rotation selectors wired, graphical preview remains open"
+  "evidence": "apps/client/src/features/0150-house-podium/graphic_window.rs:18; apps/client/src/features/0150-house-podium/preview_assets.rs:25; crates/gameplay/dispatch/src/gameplay_transport/house_podium.rs:183 + cp01_house_podium_scenario (observed red/green); podium_preview_composites_and_clips_real_sprite_cells; podium_artwork_route_decodes_draft_and_returns_real_artwork_codec"
  },
  {
   "id": "T137",

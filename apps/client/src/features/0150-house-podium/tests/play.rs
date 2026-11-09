@@ -160,6 +160,41 @@ fn cp01_house_podium_scenario() -> Result<(), Error> {
                     for (i, value) in [(1, "1"), (2, "2"), (3, "citizen")] {
                         link.house_podium_edit(i, value.into());
                     }
+                    for (kind, looks, object) in [
+                        (1, [128, 136], false),
+                        (2, [368, 368], false),
+                        (3, [2122, 2122], true),
+                    ] {
+                        assert!(link.house_podium_choose_display(kind, 1));
+                        let preview = wire::preview::Request {
+                            display_kind: kind,
+                            direction: 1,
+                            key: "citizen".into(),
+                        };
+                        let artwork = wire::preview::Artwork {
+                            object,
+                            direction: 1,
+                            looks,
+                        };
+                        send(
+                            &link,
+                            &exchanges,
+                            Intent::Preview,
+                            wire::preview::COMMAND_PREVIEW,
+                            preview.encode().ok_or("preview request")?,
+                            CommandStatus::Accepted,
+                            wire::preview::Artwork::encode(Some(artwork)).ok_or("preview reply")?,
+                        )
+                        .await?;
+                        assert_eq!(link.house_podium_panel().artwork, Some(artwork));
+                        assert_eq!(
+                            link.house_podium_panel().revision,
+                            Some(0),
+                            "preview cannot mutate the podium"
+                        );
+                    }
+                    assert!(link.house_podium_choose_display(1, 2));
+                    assert!(link.house_podium_panel().artwork.is_none());
                     let set = wire::SetRequest {
                         item: ITEM,
                         expected_revision: 0,
