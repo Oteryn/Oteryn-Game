@@ -5,7 +5,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
 };
 use sqlx::{Acquire, Row};
 
-pub(super) struct Context<'a> {
+pub(crate) struct Context<'a> {
     pub world: &'a [u8; 16],
     pub channel: &'a [u8; 16],
     pub generation: u64,
@@ -14,7 +14,7 @@ pub(super) struct Context<'a> {
     pub placement: &'a [u8],
 }
 
-pub(super) async fn matches(
+pub(crate) async fn matches(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     context: &Context<'_>,
     position: Position,

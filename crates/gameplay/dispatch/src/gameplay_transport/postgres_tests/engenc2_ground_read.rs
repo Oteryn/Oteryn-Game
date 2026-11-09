@@ -1,6 +1,5 @@
 //! Isolated SQL read/locking qualification; this does not replace full callback admission tests.
-#[path = "../../../../durability/src/durability/quest_world_callback/ground_read.rs"]
-mod ground_read;
+use super::engenc2_ground_support as ground_read;
 
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Position,

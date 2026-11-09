@@ -1,7 +1,6 @@
 //! Execute the production Nomads s4 Ground recipe against real PostgreSQL custody reads.
 //! These isolated readset tables do not claim to qualify the complete USE/quest receipt path.
-#[path = "../../../../durability/src/durability/quest_world_callback/ground_read.rs"]
-mod ground_read;
+use super::engenc2_ground_support as ground_read;
 use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, WorldRequirement};
 use sqlx::Connection;
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;

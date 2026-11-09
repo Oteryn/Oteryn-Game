@@ -1,6 +1,5 @@
 //! A busy Item row must refuse a Ground prerequisite without aborting its quest transaction.
-#[path = "../../../../durability/src/durability/quest_world_callback/ground_read.rs"]
-mod ground_read;
+use super::engenc2_ground_support as ground_read;
 use oteryn_gameplay_quests::quest::world_callbacks::{
     Position,
     ground::{GroundStackItem, GroundStackRequirement},
