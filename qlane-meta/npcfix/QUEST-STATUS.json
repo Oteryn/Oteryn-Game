@@ -542,7 +542,7 @@
     }
   },
   "m38_ticket_clock_binding": {
-    "state": "GREEN_READY_TO_PUSH",
+    "state": "GREEN_PUSHED",
     "scope": "Bind timestamp-only paid callback payment terms into its primary quest hash. New bound SetNow effect uses the unchanged evaluator transaction time; no native purchase/data activation.",
     "reused_from": "qengine2 790996f8e52fef43fe728ec3af4309078f319cd4 (inspected at 6c0bf0ccb)",
     "encoding_integration_note": "Qengine2 currently encodes both SetNowWithBinding and SetWhenAtLeast with tag11. Preserve published SetWhenAtLeast=11 and SetNow=3; new bound-clock tag=12 on this branch. Coordinator must retain unique tags during integration.",
@@ -561,6 +561,30 @@
     },
     "sql_changes": false,
     "pg": "No new SQL/storage mutation path; pure effect encoding/lowering/evaluation change. No new PG claim.",
-    "workspace_all_targets": "PENDING following owner-directed immediate publication"
+    "workspace_all_targets": "PASS 17m54s after publication",
+    "head": "ebbcdddb83b1b5b4108ac7a04be22cae3ef91f75"
+  },
+  "m38_targuna_town_catalogue": {
+    "state": "GREEN_READY_TO_PUSH",
+    "scope": "Retain source town34/area526/Targuna temple31934,31925,7; preserve Newhaven default33. No Anna route activation.",
+    "red": "Source::load returns subarea admission: Targuna town is not admitted; actual failing test8.23s",
+    "green": {
+      "compiler_units": 8,
+      "unit_seconds": 11.21,
+      "real_mask_integration": 1,
+      "integration_seconds": 101.14,
+      "clippy": "PASS world-bundle-compiler all-targets12.60s",
+      "release_tool": "Rebuilt successfully59.31s",
+      "pin_refresh": "PASS repo release tool, rebuilt from current source, isolated copy",
+      "pin_check": "PASS",
+      "fmt": "PASS cargo fmt --all --check",
+      "duplicate_migrations": "PASS HEAD"
+    },
+    "source_evidence": "docs/reference/content-prep/npcfix-m38/anna-targuna.md",
+    "sql_or_migration_changes": false,
+    "world_digest": "fce3240094398fbb07d98014b56583818fa6b6b234cc77eaa580b5b05fa48399",
+    "integration_handoff": "Coordinator must refresh protected deploy/synology-game/preprod-topology.toml to generated digest; lane did not edit it.",
+    "tree_validation": "PASS 34111 items,1282 NPC records,399 services; canonical inputs unchanged",
+    "workspace_all_targets": "PENDING after publication"
   }
 }

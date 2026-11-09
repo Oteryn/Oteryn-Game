@@ -15,6 +15,8 @@ const MAX_INPUT: usize = 16 << 20;
 const MAX_ASSET: usize = 64 << 10;
 const MAX_PIXELS: usize = 1 << 20;
 const MAX_BMP: usize = MAX_PIXELS * 4 + 122;
+mod source_towns;
+
 const TOWN_SOURCE: &str =
     "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json";
 
@@ -364,33 +366,9 @@ impl Source {
             .as_array()
             .filter(|a| a.len() <= subarea::MAX_AREAS)
             .ok_or_else(|| fail("source towns"))?;
-        // Keep the starter town even when a later reviewed pin moves its entry elsewhere:
-        // existing Characters may still be its citizens after that World reset.
-        let mut matching = towns.iter().filter(|t| t["name"] == "Newhaven");
-        let town = matching
-            .next()
-            .ok_or_else(|| fail("Newhaven source town"))?;
-        if matching.next().is_some() {
-            return Err(fail("ambiguous Newhaven town"));
-        }
-        let town_id = town["town_id"]
-            .as_u64()
-            .and_then(|id| u32::try_from(id).ok())
-            .ok_or_else(|| fail("Newhaven town id"))?;
-        let temple: Position = serde_json::from_value(town["temple"].clone()).map_err(fail)?;
-        let starter = source
-            .table
-            .areas
-            .iter_mut()
-            .find(|a| a.id == 514 && a.name == "Newhaven")
-            .ok_or_else(|| fail("Newhaven source area"))?;
-        starter.town_id = Some(town_id);
-        starter.hometown = true;
-        starter.temple = Some(subarea::Temple {
-            x: temple.x,
-            y: temple.y,
-            floor: native_floor(temple.z)?,
-        });
+        // Keep both reviewed tutorial towns when a later pin moves the entry:
+        // existing Characters may still be their citizens after that World reset.
+        source_towns::admit(&mut source, towns)?;
         let area = &source.table.areas[area_index];
         let region = area.parent.unwrap_or(area.id);
         if let Some(id) = area.town_id {
@@ -648,7 +626,30 @@ mod tests {
                 floor: -7
             })
         );
-        assert_eq!(source.table.areas.iter().filter(|a| a.hometown).count(), 20);
+        assert_eq!(source.table.areas.iter().filter(|a| a.hometown).count(), 21);
+        assert!(source.table.town(999).is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn m38_targuna_town_retains_the_pinned_temple_without_changing_default() -> Result<(), Error> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source = Source::load(&root)?;
+        assert_eq!(source.table.default_town, Some(33));
+        let town = source
+            .table
+            .town(34)
+            .ok_or_else(|| fail("Targuna town is not admitted"))?;
+        assert_eq!((town.id, town.name.as_str()), (526, "Targuna"));
+        assert!(town.hometown);
+        assert_eq!(
+            town.temple,
+            Some(subarea::Temple {
+                x: 31934,
+                y: 31925,
+                floor: -7
+            })
+        );
         assert!(source.table.town(999).is_none());
         Ok(())
     }
