@@ -336,7 +336,15 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, 
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    parse_documents(DOCUMENTS).map(|document| document.callbacks)
+    embedded_document().map(|document| document.callbacks)
+}
+
+fn embedded_document() -> Result<Document, String> {
+    let mut document = parse_documents(DOCUMENTS)?;
+    document
+        .callbacks
+        .extend(super::world_change_journals::npc_callbacks()?);
+    validate_document(document)
 }
 
 fn parse_documents(sources: &[&str]) -> Result<Document, String> {
@@ -657,6 +665,9 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
         && callback.carried_target.is_none()
+        && !callback
+            .key
+            .starts_with("oteryn:quest-reward/worldchg-m31/")
     {
         return Ok(None);
     }
@@ -688,7 +699,7 @@ pub fn participant_key(callback: &str, index: usize) -> String {
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let document = parse_documents(DOCUMENTS)?;
+    let document = embedded_document()?;
     for declaration in document.tracks {
         let declared = QuestTrack {
             key: declaration.key,

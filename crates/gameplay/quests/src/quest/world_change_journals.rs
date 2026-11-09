@@ -128,7 +128,7 @@ fn parse(source: &'static str) -> Result<Document, String> {
         if !program.runtime_enabled {
             continue;
         }
-        if program.achievement.is_some()
+        if (program.achievement.is_some() && program.npc_callbacks.is_empty())
             || program.taming.is_some()
             || program.completion.counter_track.is_some()
             || program.completion.counter_target.is_some()
@@ -141,9 +141,6 @@ fn parse(source: &'static str) -> Result<Document, String> {
             })
             .to_string(),
         )?;
-        if !program.npc_callbacks.is_empty() {
-            return Err("unsupported enabled journal NPC policy".into());
-        }
         let mut events = BTreeSet::new();
         for callback in callbacks {
             if callback.quest != program.quest
@@ -162,6 +159,14 @@ fn parse(source: &'static str) -> Result<Document, String> {
             }
             events.insert(callback.key);
         }
+        let npc_callbacks = lower_npc_callbacks(program)?;
+        for callback in &npc_callbacks {
+            events.insert(callback.key.clone());
+        }
+        program.npc_callbacks = npc_callbacks
+            .into_iter()
+            .map(|callback| serde_json::to_value(callback).map_err(|error| error.to_string()))
+            .collect::<Result<_, _>>()?;
         for counter in &mut program.counters {
             let [x0, x1, y0, y1, z0, z1] = counter.area;
             if counter.quest != program.quest
@@ -213,6 +218,68 @@ fn parse(source: &'static str) -> Result<Document, String> {
         }
     }
     Ok(document)
+}
+
+fn lower_npc_callbacks(
+    program: &Program,
+) -> Result<Vec<super::reward_callbacks::RewardCallback>, String> {
+    if program.npc_callbacks.len() > 16 {
+        return Err("personal journal NPC callback bound".into());
+    }
+    let mut callbacks = Vec::new();
+    for value in &program.npc_callbacks {
+        let mut value = value.clone();
+        let fields = value.as_object_mut().ok_or("NPC callback object")?;
+        // These are programme requirements, not optional per-dialogue overrides.
+        fields.insert("requires_premium".into(), program.requires_premium.into());
+        fields.insert(
+            "minimum_level".into(),
+            (program.minimum_level > 0)
+                .then_some(program.minimum_level)
+                .into(),
+        );
+        let callback: super::reward_callbacks::RewardCallback =
+            serde_json::from_value(value).map_err(|error| error.to_string())?;
+        if callback.quest != program.quest
+            || !callback
+                .key
+                .starts_with("oteryn:quest-reward/worldchg-m31/")
+            || callback.carried_item.is_some()
+            || callback.completes != program.completion.callbacks.contains(&callback.key)
+            || callback.achievement.as_ref().is_some_and(|achievement| {
+                !callback.completes || program.achievement.as_ref() != Some(achievement)
+            })
+            || callback
+                .storage
+                .iter()
+                .map(|storage| &storage.track)
+                .chain(callback.state_ops.iter().map(|operation| &operation.track))
+                .any(|key| !program.tracks.iter().any(|track| &track.key == key))
+        {
+            return Err("personal journal NPC callback ownership".into());
+        }
+        callbacks.push(callback);
+    }
+    if program.achievement.is_some()
+        && !callbacks
+            .iter()
+            .any(|callback| callback.achievement.is_some())
+    {
+        return Err("personal journal achievement has no final NPC receipt".into());
+    }
+    super::reward_callbacks::validate_callbacks(&callbacks)?;
+    Ok(callbacks)
+}
+
+pub(super) fn npc_callbacks() -> Result<Vec<super::reward_callbacks::RewardCallback>, String> {
+    document()?
+        .programs
+        .iter()
+        .filter(|program| program.runtime_enabled)
+        .flat_map(|program| &program.npc_callbacks)
+        .cloned()
+        .map(|value| serde_json::from_value(value).map_err(|error| error.to_string()))
+        .collect()
 }
 
 pub(super) fn callbacks() -> Result<Vec<super::world_callbacks::Callback>, String> {
@@ -340,6 +407,7 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
         let end = p
             .world_callbacks
             .iter()
+            .chain(&p.npc_callbacks)
             .filter(|c| {
                 p.completion
                     .callbacks
@@ -387,6 +455,135 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
 
 #[cfg(test)]
 mod tests {
+    fn npc_programme_fixture() -> Result<serde_json::Value, String> {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/world-change-journals.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        for program in value["programs"].as_array_mut().ok_or("programmes")? {
+            let selected = program["key"].as_str() == Some("lumberjack");
+            program["runtime_enabled"] = selected.into();
+            if selected {
+                program["minimum_level"] = 17.into();
+                program["requires_premium"] = true.into();
+                for callback in program["world_callbacks"]
+                    .as_array_mut()
+                    .ok_or("world callbacks")?
+                {
+                    callback["minimum_level"] = 17.into();
+                }
+            }
+        }
+        Ok(value)
+    }
+
+    #[test]
+    fn native_npc_journals_inherit_recipe_gates_and_complete_with_the_achievement()
+    -> Result<(), String> {
+        let value = npc_programme_fixture()?;
+        let source: &'static str = Box::leak(value.to_string().into_boxed_str());
+        let document = super::parse(source)?;
+        let program = document
+            .programs
+            .iter()
+            .find(|p| p.runtime_enabled)
+            .ok_or("NPC programme")?;
+        let callbacks: Vec<super::super::reward_callbacks::RewardCallback> = program
+            .npc_callbacks
+            .iter()
+            .cloned()
+            .map(serde_json::from_value)
+            .collect::<Result<_, _>>()
+            .map_err(|error| error.to_string())?;
+        assert_eq!(callbacks.len(), 2);
+        assert!(
+            callbacks
+                .iter()
+                .all(|callback| callback.requires_premium && callback.minimum_level == Some(17))
+        );
+        let completion = callbacks
+            .iter()
+            .find(|callback| callback.completes)
+            .ok_or("completion")?;
+        assert_eq!(
+            completion.achievement.as_deref(),
+            Some("oteryn:achievement/whistle_blower")
+        );
+        assert!(program.completion.callbacks.contains(&completion.key));
+        Ok(())
+    }
+    #[test]
+    fn npc_journals_reject_foreign_storage_and_unbound_achievements() -> Result<(), String> {
+        for case in 0..4 {
+            let mut value = npc_programme_fixture()?;
+            let program = value["programs"]
+                .as_array_mut()
+                .ok_or("programmes")?
+                .iter_mut()
+                .find(|program| program["runtime_enabled"] == true)
+                .ok_or("NPC programme")?;
+            match case {
+                0 => {
+                    program["npc_callbacks"][0]["storage"][0]["track"] =
+                        "oteryn:quest-progress/world-change-journal/grimvale/phase".into()
+                }
+                1 => {
+                    program["npc_callbacks"][1]["achievement"] =
+                        "oteryn:achievement/loyal_subject".into()
+                }
+                2 => {
+                    program["npc_callbacks"][0]["achievement"] =
+                        "oteryn:achievement/whistle_blower".into()
+                }
+                _ => program["npc_callbacks"][1]["completes"] = false.into(),
+            }
+            let source: &'static str = Box::leak(value.to_string().into_boxed_str());
+            assert!(
+                super::parse(source).is_err(),
+                "unbound NPC policy case {case}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn npc_bindings_cover_ungated_achievement_and_completion_terms() -> Result<(), String> {
+        let value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/world-change-journals.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let program = value["programs"]
+            .as_array()
+            .ok_or("programmes")?
+            .iter()
+            .find(|program| program["key"] == "kingsday")
+            .ok_or("Kingsday")?;
+        let mut callback: super::super::reward_callbacks::RewardCallback =
+            serde_json::from_value(program["npc_callbacks"][0].clone())
+                .map_err(|error| error.to_string())?;
+        assert!(callback.minimum_level.is_none());
+        let before =
+            super::super::reward_callbacks::gated_binding(&callback)?.ok_or("NPC binding")?;
+        callback.reply.push("Display-only revision".into());
+        assert_eq!(
+            Some(before),
+            super::super::reward_callbacks::gated_binding(&callback)?
+        );
+        callback.achievement = Some("oteryn:achievement/whistle_blower".into());
+        assert_ne!(
+            Some(before),
+            super::super::reward_callbacks::gated_binding(&callback)?
+        );
+        callback = serde_json::from_value(program["npc_callbacks"][0].clone())
+            .map_err(|error| error.to_string())?;
+        callback.completes = false;
+        assert_ne!(
+            Some(before),
+            super::super::reward_callbacks::gated_binding(&callback)?
+        );
+        Ok(())
+    }
+
     #[test]
     fn activation_policy_binds_death_area_and_goal_but_not_display_text() -> Result<(), String> {
         let mut document = super::parse(include_str!(
