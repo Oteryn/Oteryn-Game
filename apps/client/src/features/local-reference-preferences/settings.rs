@@ -46,6 +46,7 @@ mod tooltips;
 mod ui_geometry;
 pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
 pub use tooltips::{HoverTooltip, TooltipTarget};
+pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
@@ -166,6 +167,14 @@ pub struct ReferencePreferences {
     pub controls: ControlPreferences,
     #[serde(default)]
     pub skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout,
+    #[serde(default)]
+    pub active_battle_list: usize,
+    #[serde(default)]
+    pub action_keys: crate::play::feature_local_spell_action_bar::view::ActionKeys,
+    #[serde(default)]
+    pub bar_layout: crate::play::feature_local_spell_action_bar::view::BarLayout,
+    #[serde(default)]
+    pub bar_actions: crate::play::feature_local_spell_action_bar::view::BarActions,
     #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
     pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
@@ -235,6 +244,10 @@ impl Default for ReferencePreferences {
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
+            active_battle_list: Default::default(),
+            action_keys: Default::default(),
+            bar_layout: Default::default(),
+            bar_actions: Default::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
@@ -250,13 +263,11 @@ impl Default for ReferencePreferences {
 }
 impl ReferencePreferences {
     pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
-
     pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
         if index >= Self::MOUSE_PRESETS.len() { return Err(PreferenceError); }
         self.swap_mouse_buttons = index == 1;
         Ok(())
     }
-
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;
@@ -269,6 +280,7 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
+        if self.active_battle_list >= self.battle_lists.len() || !self.bar_actions.valid() || !self.bar_layout.valid() || !self.action_keys.valid(self) { return Err(PreferenceError); }
         if self.tooltip_delay_ms > 3000 || self.arc_opacity > 100
             || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
@@ -300,12 +312,7 @@ impl ReferencePreferences {
         }
         Ok(())
     }
-
-
-
-
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreferenceError;
 

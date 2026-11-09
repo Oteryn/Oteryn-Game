@@ -385,3 +385,8 @@ mod presentation;
 mod shortcuts;
 #[path = "graphics.rs"]
 mod graphics;
+
+#[path = "compatibility_1.rs"]
+mod compatibility_1;
+#[path = "compatibility_2.rs"]
+mod compatibility_2;
