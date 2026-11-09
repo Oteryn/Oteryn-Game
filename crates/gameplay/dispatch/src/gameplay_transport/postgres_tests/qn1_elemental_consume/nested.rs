@@ -87,3 +87,16 @@ pub(super) async fn mint(
     eprintln!("QN1_ELEMENTAL_NESTED_LOOT_PG_READY");
     Ok(ids)
 }
+
+/// Snapshot only genuinely minted items; never a row-seeding or authority port.
+pub(super) async fn snapshot(
+    pool: &sqlx::PgPool,
+    item: &[u8; 16],
+) -> f::TestResult<(
+    serde_json::Value,
+    Option<serde_json::Value>,
+    Option<serde_json::Value>,
+)> {
+    Ok(sqlx::query_as("SELECT to_jsonb(i),to_jsonb(c),to_jsonb(n) FROM game_item_instances i LEFT JOIN game_item_corpse_container_entries c USING(item_instance_id) LEFT JOIN game_item_nested_entries n USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice()).fetch_one(pool).await?)
+}

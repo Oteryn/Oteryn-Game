@@ -159,6 +159,10 @@ fn qn1_elemental_arrival_consumes_text_loot_without_auditing_its_body() -> f::Te
 fn qn1_elemental_arrival_consumes_nested_kill_loot_child_first() -> f::TestResult {
     run(true, 6)
 }
+#[test]
+fn qn1_elemental_arrival_rolls_back_nested_loot_for_parent_failure() -> f::TestResult {
+    run(true, 7)
+}
 fn run(native: bool, loot: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
@@ -179,6 +183,7 @@ fn run(native: bool, loot: u8) -> f::TestResult {
                             (_, 4) => "qn1_elemental_corpse_handoff",
                             (_, 5) => "qn1_elemental_text_loot",
                             (_, 6) => "qn1_elemental_nested_loot",
+                            (_, 7) => "qn1_elemental_nested_rollback",
                             (true, _) => "qn1_elemental_native",
                             (false, _) => "qn1_elemental_consume",
                         },
@@ -297,7 +302,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             .freeze_item_mint(&authority, &h.node, request)
             .await
             .map_err(f::debug)?;
-        if loot == 6 {
+        if loot >= 6 {
             loot_ids = nested::mint(h, &authority, &mut candidate).await?;
         } else {
             let permit = candidate.fresh_death_lane_permit().await;
@@ -323,7 +328,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
     if loot == 4 {
         return handoff::exercise(h, &authority, &content, item).await;
     }
-    if loot > 0 && loot != 6 {
+    if loot > 0 && loot < 6 {
         use crate::durability::item_mint::{
             CorpseContainerPlacement, CorpseLootMintRequest, ItemMintCause, ItemMintOutcome,
         };
@@ -407,7 +412,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
     } else {
         None
     };
-    let fluid_index = if loot == 6 { 2 } else { 1 };
+    let fluid_index = if loot >= 6 { 2 } else { 1 };
     let fluid_before: Option<serde_json::Value> = if loot >= 2 {
         sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
             .bind(loot_ids[fluid_index].as_slice()).fetch_optional(&h.pool).await?
@@ -420,7 +425,11 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             "fixture must mint a real fluid state"
         );
     }
-    if loot == 2 {
+    let mut children_before = Vec::new();
+    for child in &loot_ids {
+        children_before.push(nested::snapshot(&h.pool, child).await?);
+    }
+    if loot == 2 || loot == 7 {
         // A nontransactional sequence witnesses that the injected failure ran only
         // after every child retired and the real parent admission guard accepted.
         sqlx::raw_sql("CREATE SEQUENCE qn1_elemental_parent_fault_hits;
@@ -653,7 +662,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         )
         .await
         .map_err(f::debug)?;
-    if loot == 2 {
+    if loot == 2 || loot == 7 {
         assert!(matches!(
             result,
             Err(crate::durability::item_loop_move::LoopMoveRefusal::Rejected)
@@ -661,12 +670,10 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         assert!(!window.commit_called());
         window.release();
         for (ordinal, child) in loot_ids.iter().enumerate() {
-            let state: (i64, i16, i64) = sqlx::query_as("SELECT i.quantity,i.lifecycle,(SELECT count(*) FROM game_item_corpse_container_entries e WHERE e.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
-                .bind(child.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
-                state,
-                (if ordinal == 0 { 60 } else { 1 }, 1, 1),
-                "refusal must roll back an earlier child retirement"
+                nested::snapshot(&h.pool, child).await?,
+                children_before[ordinal],
+                "parent refusal restores each exact item and its original custody"
             );
         }
         let body: (i64, i16, String) = sqlx::query_as("SELECT quantity,lifecycle,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -686,12 +693,15 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
         assert_eq!(
             fault,
             (1, true),
-            "must fail at parent admission after retiring both children"
+            "must fail at parent admission after retiring every child"
         );
         let restored: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
             .bind(loot_ids[fluid_index].as_slice()).fetch_optional(&h.pool).await?;
         assert_eq!(restored, fluid_before);
         eprintln!("QN1_ELEMENTAL_LOOT_ROLLBACK_PG_EXECUTED");
+        if loot == 7 {
+            eprintln!("QN1_ELEMENTAL_NESTED_ROLLBACK_PG_EXECUTED");
+        }
         return Ok(());
     }
     let receipt = result.map_err(|e| format!("arrival refused {e:?}"))?;
@@ -710,7 +720,7 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             "arrival must retire and audit each loot entry"
         );
     }
-    if loot == 6 {
+    if loot >= 6 {
         let proof: (i64, i64, i64) = sqlx::query_as("SELECT count(*),count(*) FILTER(WHERE entry_kind=2),count(*) FILTER(WHERE ground_root_item_instance_id=encode($1,'hex')::uuid) FROM game_elemental_loot_retire_receipts")
             .bind(item.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(
