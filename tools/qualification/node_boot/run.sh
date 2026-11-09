@@ -22,7 +22,9 @@ readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
 readonly INTENT_NAMES=("Qualification One" "Qualification Two")
-readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 nb-content-1 nb-starter-1)
+# Runtime build writers bind to the shipped training formula's content revision,
+# just as the S3-B seam does; progression is initialized from this interpretation.
+readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
@@ -450,7 +452,63 @@ stage() { # name prerequisite... -- function
   else
     STATUS[$name]="FAIL(exit $rc)"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
-    echo "--- last node events"; tail -n 40 "$node_log" 2>/dev/null || true
+    echo "--- session close events"
+    grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
+    echo "--- last node events"; grep -v 'DURABILITY_' "$node_log" 2>/dev/null | tail -n 40 || true
+    # Repeated background-pass retries hide the event that took the root down.
+    echo "--- node events without background retries"
+    grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused|DURABILITY_' "$node_log" 2>/dev/null | tail -n 150 || true
+    echo "--- first root-not-ready"
+    grep -n -m 1 -B 40 'root is not ready' "$node_log" 2>/dev/null | tail -n 41 || true
+    # Which node events dominate, and what admission reported, beyond the tail above.
+    echo "--- node event counts"
+    grep -oE 'event=[a-z_]+' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
+    # Which semantic passes kept the single holder long or retired it (NBDIAG-3).
+    echo "--- durability holder reports"
+    grep -oE 'DURABILITY_[A-Z_]+( caller=[^ ]+)?( reason=[a-z_]+)?' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
+    echo "--- slowest durability passes"
+    grep -oE 'DURABILITY_PASS_SLOW caller=[^ ]+ held_ms=[0-9]+ deadline_exceeded=[a-z]+' "$node_log" 2>/dev/null | sort -t= -k3 -n -r | head -n 25 || true
+    echo "--- holder kept or dropped by a pass"
+    grep -oE 'DURABILITY_(HOLDER_STUCK|PASS_DROPPED) caller=[^ ]+( held_ms=[0-9]+)?' "$node_log" 2>/dev/null | head -n 25 || true
+    # How busy the single holder was and who kept it (NBDIAG-5).
+    echo "--- holder usage windows"
+    grep -oE 'DURABILITY_HOLDER_WINDOW .*' "$node_log" 2>/dev/null | head -n 60 || true
+    echo "--- holder usage by caller over the run"
+    grep -oE 'DURABILITY_HOLDER_USAGE caller=[^ ]+ passes=[0-9]+ held_ms=[0-9]+ refused=[0-9]+' "$node_log" 2>/dev/null \
+        | awk '{split($2,c,"=");split($3,p,"=");split($4,h,"=");split($5,r,"=");P[c[2]]+=p[2];H[c[2]]+=h[2];R[c[2]]+=r[2]} END {for (k in H) print H[k], P[k], R[k], k}' \
+        | sort -rn | head -n 30 || true
+    echo "--- node message kinds"
+    sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
+    echo "--- node admission and session events"
+    grep -iE 'admission|admit|refus|serve_|session_' "$node_log" 2>/dev/null | grep -vE 'quest_log_excluded|DURABILITY_' | tail -n 60 || true
+    # How each gameplay connection entered and ended, and whether the shared listener task
+    # was kept by one poll (NBDIAG-6).
+    echo "--- connection entry and admission outcomes"
+    grep -oE 'event=(connection_[a-z_]+|listener_[a-z_]+)( [a-z_]+=[a-z_]+)*' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 30 || true
+    echo "--- connection and listener events"
+    grep -E 'event=(connection_|listener_)' "$node_log" 2>/dev/null | sed -E 's/^.*(event=)/\1/' | head -n 80 || true
+    echo "--- postgres sessions"
+    echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND pid <> pg_backend_pid() ORDER BY backend_start" \
+      | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
+    # The holder is alive but always busy: show which statements and tables keep it so.
+    echo "--- postgres statements on the holder (200 samples)"
+    for _ in $(seq 1 200); do
+      echo "SELECT state || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 200) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND usename <> 'oteryn_node_boot_admin'" \
+        | psql_admin oteryn_node_boot 2>/dev/null || true
+      sleep 0.02
+    done | sort | uniq -c | sort -rn | head -n 25
+    echo "--- postgres table writes and scans over 10 s"
+    psql_admin oteryn_node_boot 2>&1 <<'SQL' | tail -n 30 || true
+CREATE TEMP TABLE node_boot_stat_before AS
+  SELECT relid, n_tup_ins + n_tup_upd + n_tup_del AS writes, coalesce(seq_scan, 0) + coalesce(idx_scan, 0) AS scans
+  FROM pg_stat_user_tables;
+SELECT pg_sleep(10);
+SELECT pg_stat_clear_snapshot();
+SELECT s.relname, (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes AS writes, (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans AS scans
+  FROM pg_stat_user_tables s JOIN node_boot_stat_before b USING (relid)
+  WHERE (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes + (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans > 0
+  ORDER BY 2 DESC, 3 DESC LIMIT 25;
+SQL
     echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
     echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
   fi
@@ -531,6 +589,20 @@ SQL
   ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    # World admission prepares Cyclopedia/boost state against the admitted epoch.
+    # A fresh database has none: initialize through the existing Control owner,
+    # with the actual bundle and issued content, before any Character admission.
+    local epoch_result
+    epoch_result="$({
+      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+    evidence "world_epoch=0 source=control_initializer bundle=compiled content=issued replay=idempotent"
+  fi
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
   evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"

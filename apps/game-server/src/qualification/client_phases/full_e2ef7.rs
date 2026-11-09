@@ -91,7 +91,8 @@ async fn exchange(
     Ok(client
         .session_mut()
         .gated_command(command.capability, command.command_type, &command.payload)
-        .await?)
+        .await
+        .map_err(|error| format!("ranking query {query:?}: {error}"))?)
 }
 
 async fn query(
@@ -221,7 +222,9 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xa0).await?;
+    let mut client = connect_world(clients, 0xa0)
+        .await
+        .map_err(|error| format!("ranking initial admission: {error}"))?;
     let initial_session = client.join_snapshot().game_session_id;
     let mut saved = Vec::new();
     let result: TestResult = async {
@@ -454,6 +457,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             }
         }
     }
+    drop(client);
     row.finish(result);
     additional_rows(clients).await;
     continuation_rows(clients).await;
@@ -907,6 +911,7 @@ async fn additional_rows(clients: &SeamClients<'_>) {
             }
         }
     }
+    drop(light);
     row.finish(&result);
 
     let mut gate = JourneyRow::new("S13a", PARTY_GATE_ACTIONS);
@@ -971,20 +976,6 @@ fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleW
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )
-}
-fn qualification_spell_book() -> TestResult<crate::spell::SpellBook> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
-    let catalog =
-        crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
-    let selections = crate::spell::executable_catalog::compile_source_selection(
-        &input.source_selection.bytes,
-        &input.source_selection.sha256,
-        &catalog,
-    )?;
-    Ok(catalog.into_spell_book_with_selections(&selections)?)
 }
 fn qualification_spell_index(
     book: &crate::spell::SpellBook,
@@ -1442,7 +1433,7 @@ async fn light_journey(
     connection: &mut Option<LightClient>,
     clients: &SeamClients<'_>,
 ) -> TestResult {
-    let book = qualification_spell_book()?;
+    let book = native_spell_book()?;
     *connection = Some(LightClient::connect(clients, 0xe0).await?);
     row.pass("admission");
     for (words, level, mana, seconds, paid, refused, relog, tag, expired) in [
@@ -1484,7 +1475,7 @@ async fn light_journey(
         if client.light.is_some() {
             return Err("personal-light preexisting light prevents isolated cast assertion".into());
         }
-        let index = qualification_spell_index(&book, words)?;
+        let index = qualification_spell_index(book, words)?;
         let before = client.vitals;
         let own_updates = client.own_updates;
         let started = std::time::Instant::now();
@@ -1797,7 +1788,7 @@ async fn party_spell_journey(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let book = qualification_spell_book()?;
+    let book = native_spell_book()?;
     pair[0] = Some(connect_character(clients, 0xe2, 1).await?);
     pair[1] = Some(connect_character(clients, 0xe3, 0).await?);
     let (caster, peer) = pair_mut(pair)?;
@@ -1827,7 +1818,7 @@ async fn party_spell_journey(
         Some("monk") => "utevo mas sio",
         _ => return Err(format!("party-prerequisite-blocked:served-vocation={};served-level={};required=class,level-32,premium;ordinary-admission-has-no-party-spell-vocation", own.vocation, own.level).into()),
     };
-    let index = qualification_spell_index(&book, words)?;
+    let index = qualification_spell_index(book, words)?;
     let spell = book.indexed(index).ok_or("party compiled index absent")?;
     let before = caster
         .actor_vitals()
@@ -2040,7 +2031,7 @@ mod continuation_tests {
     }
     #[test]
     fn journey_spell_indices_resolve_against_the_pinned_book() -> TestResult {
-        let book = qualification_spell_book()?;
+        let book = native_spell_book()?;
         for words in [
             "utevo lux",
             "utevo gran lux",
@@ -2051,13 +2042,13 @@ mod continuation_tests {
             "utito mas sio",
             "utevo mas sio",
         ] {
-            let index = qualification_spell_index(&book, words)?;
+            let index = qualification_spell_index(book, words)?;
             assert_eq!(
                 book.indexed(index).map(|s| &s.key),
                 book.spoken(words).map(|s| &s.spell.key)
             );
         }
-        assert!(qualification_spell_index(&book, "missing-qualification-spell").is_err());
+        assert!(qualification_spell_index(book, "missing-qualification-spell").is_err());
         Ok(())
     }
     #[test]
@@ -3252,13 +3243,11 @@ async fn imbuement_journey(
     *connection = Some(connect_character(clients, 0xf6, 1).await?);
     let client = connection.as_mut().ok_or("imbuement admission absent")?;
     let definitions = provisioning::item_index()?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
+    let input = native_input()?;
     let profiles: crate::content::native_gameplay::ItemProfilesDocument = serde_json::from_slice(
         &input
             .item_profiles
+            .as_ref()
             .ok_or("pinned item profiles absent")?
             .bytes,
     )?;

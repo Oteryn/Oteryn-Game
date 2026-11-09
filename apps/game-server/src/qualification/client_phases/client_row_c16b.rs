@@ -38,7 +38,7 @@ async fn capture(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let book = full_e2ef5::book(&full_e2ef5::input()?)?;
+    let book = native_spell_book()?;
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
