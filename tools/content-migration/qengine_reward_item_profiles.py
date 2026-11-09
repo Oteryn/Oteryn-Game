@@ -15,6 +15,7 @@ import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
 sys.path.insert(0,str(ROOT/'tools/content-schema/quest-authoring'))
 import qmech_m39
+import m07_lion_flower_profile as lion_flower
 
 IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
@@ -41,6 +42,14 @@ IDS |= {9106}
 IDS |= {27654}
 IDS |= {21504, 21505, 21506, 21507, 9106}
 IDS |= qmech_m39.ITEMS
+# Lion trials: exact holy-water vessel plus separately qualified inactive flower duration.
+IDS |= {21466, 21389}
+# M07 retained Realm key and source bricklayers kit for the assigned repair stages.
+IDS |= {14682, 7785}
+# M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
+IDS |= {5467}
+# M07 Too Hot cleaning, column and floor-repair tools from the same pinned source.
+IDS |= {36543, 36544, 36545}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -92,6 +101,8 @@ def capture(root=ROOT, *, ids=IDS):
     for item_id in sorted(ids):
         node=xml[item_id]
         if item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        flower = lion_flower.admitted(item_id, source.attrs(node))
+        if not flower and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
@@ -101,6 +112,10 @@ def capture(root=ROOT, *, ids=IDS):
         semantics = definition.get('semantics', {})
         for group in ('physical','stack','container','temporal'):
             if accepted.known_conflict(semantics.get(group, source.U),record['semantics'][group]):
+        if flower:
+            record=lion_flower.temporal(record, definition, accepted.known_conflict)
+        for group in ('physical','stack','container'):
+            if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')

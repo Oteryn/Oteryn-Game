@@ -2503,6 +2503,93 @@ mod tests {
     }
 
     #[test]
+    fn m07_too_hot_tools_survive_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for item in [36543, 36544, 36545] {
+            let key = format!("oteryn:item.tibia.i{item}");
+            let record = decoded
+                .state
+                .item_policy(&key, "definition-r1")
+                .expect("qualified Too Hot tool")
+                .record();
+            assert!(record.admission.materializable);
+            assert_eq!(
+                record.admission.legal_destinations,
+                [
+                    NativeItemDestination::CharacterInventory,
+                    NativeItemDestination::Ground
+                ]
+            );
+            assert!(matches!(&record.semantics.physical, F::Known(physical)
+                if physical.movable == F::Known(true) && physical.weight == F::Known(850)));
+        }
+    }
+
+    #[test]
+    fn m07_fire_bug_profile_survives_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i5467", "definition-r1")
+            .expect("qualified Machinery Fire Bug")
+            .record();
+        assert!(record.admission.materializable);
+        assert_eq!(
+            record.admission.legal_destinations,
+            [
+                NativeItemDestination::CharacterInventory,
+                NativeItemDestination::Ground
+            ]
+        );
+        assert!(matches!(&record.semantics.physical, F::Known(physical)
+            if physical.movable == F::Known(true) && physical.weight == F::Known(3050)));
+    }
+
+    #[test]
+    fn m07_lion_flower_profile_preserves_annotation_without_an_active_deadline() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i21389", "definition-r1")
+            .expect("qualified Lion Beauty input")
+            .record();
+        assert!(record.admission.materializable);
+        let F::Known(temporal) = &record.semantics.temporal else {
+            panic!("source duration annotation must survive artifact loading");
+        };
+        assert_eq!(
+            temporal.duration,
+            F::Known(super::super::ReferenceMilliseconds(3_600_000))
+        );
+        assert_eq!(temporal.consumption_mode, F::NotApplicable);
+        assert_eq!(temporal.decay_target, F::NotApplicable);
+    }
+
+    #[test]
     fn writable_profiles_survive_native_artifact_and_preserve_definition_admission() {
         use super::super::ReferenceItemField as F;
         let world = test_source(1).unwrap().world_id;

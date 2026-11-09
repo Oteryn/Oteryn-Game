@@ -55,6 +55,9 @@ pub struct CallbackEffects {
     /// An existing, preserved local quest epoch; commands never create reward cycles.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward_cycle: Option<String>,
+    /// Source-authored renewable pickup: one mint for each admitted USE command.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub item_reward_per_use: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     /// Source-authored public player MONSTER_SAY, emitted only after commit.
@@ -64,6 +67,9 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
+    /// Restore remote passage objects independently of the source object.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
@@ -277,6 +283,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || text.trim() != text.as_str()
             || text.chars().any(char::is_control)
     }) {
+    if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
         return false;
     }
     if effects.player_speech.as_ref().is_some_and(|text| {
@@ -364,6 +371,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     .item_reward_cycle
                     .as_deref()
                     .is_some_and(|track| callback.craft_reward_epoch(track)))
+            || (!effects.item_reward_per_use
+                && callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
             || reward.additional.len() > 19
@@ -428,7 +440,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.item_presence.is_some()
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
-                || !callback.passages.is_empty()
+                || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
+        })
+        || effects.passages_reset_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || callback.actor_kind != ActorKind::Player
+                || callback.trigger != Trigger::Use
+                || callback.reversible
+                || callback.passages.is_empty()
+                || callback
+                    .passages
+                    .iter()
+                    .any(|p| p.create_on_close.is_some())
+                || effects.portals.is_some()
+                || effects.item_presence.is_some()
+                || effects.item_cycle.is_some()
+                || effects.encounter.is_some()
         })
         || effects.mount_reward.as_ref().is_some_and(|r| {
             !callback.requires_world_admission

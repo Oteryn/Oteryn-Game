@@ -41,6 +41,20 @@ pub(super) fn valid(quest: &BoundQuest, operation: &StateOperation) -> bool {
             // Unconditional and elapsed predicates may read without changing the track.
             None => value == 0,
         },
+        StateMutation::AddAtLeast {
+            value,
+            minimum: floor,
+        } => {
+            (track.minimum..=track.maximum).contains(&floor)
+                && match bounds {
+                    Some((minimum, maximum)) => [minimum, maximum].into_iter().all(|before| {
+                        before.checked_add(value).is_some_and(|after| {
+                            (track.minimum..=track.maximum).contains(&after.max(floor))
+                        })
+                    }),
+                    None => value == 0 && floor <= track.minimum,
+                }
+        }
         // Only the existing SQL transaction clock stamps a native timestamp track.
         StateMutation::SetNow => track.minimum == 0 && track.maximum == i64::MAX,
     }

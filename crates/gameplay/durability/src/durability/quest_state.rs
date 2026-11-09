@@ -592,3 +592,7 @@ pub(super) async fn inquisition_blessing_eligible(
 
 /// Durable source-expiry admissions and complete immutable proofs.
 pub mod server_timer;
+
+#[cfg(test)]
+#[path = "m07_counter_postgres_tests.rs"]
+mod m07_counter_postgres_tests;

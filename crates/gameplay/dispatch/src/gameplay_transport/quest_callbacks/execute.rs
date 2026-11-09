@@ -151,6 +151,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        // Both lifecycle deadlines belong to this operation, even when preparing
+        // its remote object read set takes time.
+        let lifecycle_now = self.owner_now().get();
         if callback
             .item_on_target
             .as_ref()
@@ -166,7 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         if !close && let Some(delay) = callback.effects.reset_after_ms {
-            let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
+            let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
             projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
@@ -244,10 +247,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ((f.appearance_id == passage.appearance
                         || passage.replacement == Some(f.appearance_id)
                         || passage.create_on_close == Some(f.appearance_id))
-                        && !map.facts.house_tile(p))
+                        && !map.facts.house_tile(p)
+                        && (!passage.if_present || !map.facts.base_hidden(k)))
                     .then_some(k)
                 })
                 .collect::<Vec<_>>();
+            if candidates.is_empty() && passage.if_present {
+                continue;
+            }
             let [passage] = candidates.as_slice() else {
                 return UseDisposition::Rejected;
             };
@@ -302,6 +309,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 passages.push(*passage);
             }
         }
+        projection = match super::timed_passages::prepare(
+            map,
+            callback,
+            (key, expected_revision),
+            lifecycle_now,
+            projection,
+            &mut passages,
+            &mut replacements,
+        ) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return UseDisposition::Rejected;
         };
@@ -863,6 +882,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             projection,
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
         ) || callback.effects.reset_after_ms.is_some()
+            || callback.effects.passages_reset_after_ms.is_some()
             || callback
                 .effects
                 .portals

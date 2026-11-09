@@ -48,6 +48,8 @@ mod live_admission;
 pub mod phase;
 #[cfg(test)]
 mod selected_tool_tests;
+mod native_trials;
+mod per_use_reward;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence, MagicEffect,
@@ -87,6 +89,9 @@ pub struct Selector {
 pub struct Passage {
     pub position: Position,
     pub appearance: u16,
+    /// Literal source lookup: skip an absent object, never an ambiguous one.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub if_present: bool,
     #[serde(default)]
     pub replacement: Option<u16>,
     /// Source-asymmetric lever: remove `appearance`, then create this different wall.
@@ -424,6 +429,21 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(super::world_change_journals::callbacks()?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-lion-offerings.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-burn.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-catapults.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-realm-trial.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -533,6 +553,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             .as_deref()
             .is_some_and(|track| callback.craft_reward_epoch(track));
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
+        let passage_positions: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
+        let unique_passages: BTreeSet<_> = callback
+            .passages
+            .iter()
+            .map(|p| (p.position, p.appearance))
+            .collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
         if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
@@ -545,7 +571,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.reversible
                     || callback.opening_only
                     || callback.native_rule.is_some()
-                    || !callback.world_requirements.is_empty()))
+                    || (!callback.world_requirements.is_empty()
+                        && !callback.requires_world_admission)))
             || !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
@@ -630,10 +657,15 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
                     || callback.requires_premium
+                    || ((!callback.offerings.is_empty() || callback.item_on_target.is_some())
+                        && !callback.requires_world_admission)
+                    || (callback.minimum_level.is_some()
+                        && !native_trials::level_guard_admitted(callback))
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
-                    || callback.effects.item_reward.is_some()
+                    || (callback.effects.item_reward.is_some()
+                        && !per_use_reward::admitted(callback))
                     || callback.effects.outfit_reward.is_some()
                     || callback.effects.mount_reward.is_some()))
             || !effects::valid(callback)
@@ -648,6 +680,12 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || unique_materials.len() != callback.offerings.len()
             || (unique_offerings.len() != callback.offerings.len() && !paid_workbench)
             || unique_passages.len() != callback.passages.len()
+            || (callback.effects.passages_reset_after_ms.is_none()
+                && passage_positions.len() != callback.passages.len())
+            || callback
+                .passages
+                .iter()
+                .any(|p| p.if_present && callback.effects.passages_reset_after_ms.is_none())
             || unique_storage.len() != callback.storage.len()
             || callback.passages.len() > MAX_EFFECTS
             || callback.passages.iter().any(|p| {

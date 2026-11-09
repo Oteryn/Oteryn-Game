@@ -490,6 +490,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ])
     );
     // QENGINE2 identities: generated end
+    assert_eq!(added_keys.len(), 71);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -586,6 +587,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ("qengine-reward-item-profiles.json", 63),
         ("qengine-reward-item-profiles.json", QENGINE_SOURCE_PROFILES),
         ("qengine-reward-item-profiles.json", 62),
+        ("qengine-reward-item-profiles.json", 71),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

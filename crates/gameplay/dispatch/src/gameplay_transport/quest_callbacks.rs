@@ -23,6 +23,7 @@ mod rewards;
 mod shared_gate;
 mod soul_war_reward;
 mod timed_encounter;
+mod timed_passages;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{

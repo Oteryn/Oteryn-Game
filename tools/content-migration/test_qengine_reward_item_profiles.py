@@ -92,6 +92,65 @@ class NativeFactJoin(unittest.TestCase):
                 self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
                 self.assertEqual(record['semantics']['physical']['state'], 'KNOWN')
                 self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 800 if item == 17669 else 350)
+    def test_lion_holy_water_source_profile_has_exact_portable_custody(self):
+        record = next((r for r in q.capture()['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21466'), None)
+        self.assertIsNotNone(record, 'Lion Tears needs its exact holy-water vessel')
+        self.assertEqual(record['production_binding']['external_id'], '21466')
+        self.assertTrue(record['admission']['materializable'])
+        self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 1750)
+
+    def test_lion_flower_preserves_inactive_source_duration_without_inventing_expiry(self):
+        record = next((r for r in q.capture()['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21389'), None)
+        self.assertIsNotNone(record, 'Lion Beauty requires its exact portable flower')
+        self.assertEqual(record['production_binding']['external_id'], '21389')
+        self.assertTrue(record['admission']['materializable'])
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 100)
+        temporal = record['semantics']['temporal']['value']
+        self.assertEqual(temporal['duration'], {'state': 'KNOWN', 'value': 3600000})
+        self.assertEqual(temporal['consumption_mode'], {'state': 'NOT_APPLICABLE'})
+        self.assertEqual(temporal['decay_target'], {'state': 'NOT_APPLICABLE'})
+
+    def test_lion_flower_exception_is_finite_and_rejects_new_instance_mechanisms(self):
+        attributes = {'duration': '3600', 'weight': '100', 'description': 'source'}
+        self.assertTrue(q.lion_flower.admitted(21389, attributes))
+        self.assertFalse(q.lion_flower.admitted(21466, attributes))
+        for field, value in [('duration', '3601'), ('weight', '101'), ('charges', '1'),
+                             ('decayto', '0'), ('stopduration', '1'), ('transformto', '1')]:
+            self.assertFalse(q.lion_flower.admitted(21389, dict(attributes, **{field: value})), field)
+
+    def test_m07_realm_key_and_repair_kit_have_exact_portable_source_facts(self):
+        records = {r['production_definition']['production_key']: r for r in q.capture()['records']}
+        for item, weight in [(14682, 100), (7785, 1800)]:
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(key in records, f'assigned Realm/repair mechanic needs {key}')
+            record = records[key]
+            self.assertEqual(record['production_binding']['external_id'], str(item))
+            self.assertTrue(record['admission']['materializable'])
+            self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], weight)
+
+    def test_m07_fire_bug_has_exact_portable_source_custody(self):
+        record = next((r for r in q.capture()['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i5467'), None)
+        self.assertIsNotNone(record, 'Machinery burn actions require their exact carried Fire Bug')
+        self.assertEqual(record['production_binding']['external_id'], '5467')
+        self.assertTrue(record['admission']['materializable'])
+        self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 3050)
+
+    def test_m07_too_hot_tools_have_exact_portable_source_custody(self):
+        records = {r['production_definition']['production_key']: r for r in q.capture()['records']}
+        for item in (36543, 36544, 36545):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(key in records, f'Too Hot native interactions require exact tool {key}')
+            record = records[key]
+            self.assertEqual(record['production_binding']['external_id'], str(item))
+            self.assertTrue(record['admission']['materializable'])
+            self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 850)
 
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
