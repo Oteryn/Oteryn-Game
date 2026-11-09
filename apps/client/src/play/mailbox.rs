@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 mod activity_scope;
+mod own_identity;
 
 /// What the session task reports to the shell.
 #[derive(Debug)]
@@ -51,6 +52,8 @@ pub struct Pushed {
     pub server_messages: ServerMessageInbox,
     /// The latest own-actor position pushed by domain 1.
     pub own: Option<ActorPosition>,
+    /// The current own actor identity, replaced across activity handoffs.
+    pub own_identity: Option<[u8; 16]>,
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
     pub appearances: Option<Vec<oteryn_session::VisibleAppearance>>,
@@ -88,6 +91,7 @@ impl Pushed {
         self.world_weather = newer.world_weather.or(self.world_weather);
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
+        self.own_identity = newer.own_identity.or(self.own_identity);
         self.entities = newer.entities.or(self.entities.take());
         self.appearances = newer.appearances.or(self.appearances.take());
         self.server_messages.append(newer.server_messages);
@@ -116,6 +120,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) own_actor_identity: Option<[u8; 16]>,
     pub(super) activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub(super) scope_pending: bool,
     pub(super) scope_initialize: bool,
@@ -370,15 +375,6 @@ impl Outbox {
         {
             mailbox.hireling.target = Some((x, y, floor));
         }
-    }
-
-    pub(super) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
-        let mut mailbox = lock(&self.0);
-        oteryn_client_ui::player_typing::protocol::retain_visible(
-            &mut mailbox.player_typing,
-            &entities,
-        );
-        mailbox.pushed.entities = Some(entities);
     }
 
     pub(super) fn logout_refused(&self, result: Option<LogoutResult>) {

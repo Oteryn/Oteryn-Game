@@ -55,13 +55,6 @@ pub struct Scene {
 
 impl Scene {
     #[cfg(test)]
-    pub(crate) fn native_own_rendered(&self) -> bool {
-        self.own_draws
-            .as_ref()
-            .is_some_and(|draws| !draws.is_empty())
-    }
-
-    #[cfg(test)]
     pub(crate) fn native_name_fragment_rendered(&self, text: &str) -> bool {
         let mut cache = self.cache.clone();
         let expected = cache.name(text);

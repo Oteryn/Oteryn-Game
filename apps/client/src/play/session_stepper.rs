@@ -176,6 +176,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> {
         Session::visible_appearances(self)
     }
+    fn own_identity(&self) -> Option<[u8; 16]> {
+        self.world_entities()
+            .map(|entities| *entities.own_identity())
+    }
     fn task_board_selected(&self) -> bool {
         self.is_selected(oteryn_session::task_board::CAPABILITY_TASK_BOARD_V1)
     }
@@ -411,9 +415,15 @@ pub(super) fn publish<T: Stepper>(
     held: &mut Vec<WorldSpatialEntity>,
 ) {
     if outbox.scope_publish(session) {
+        outbox.own_identity(session.own_identity());
+        outbox.appearances(session.visible_appearances());
+        if let Some(entities) = session.entities_changed(&[]) {
+            outbox.entities(entities);
+        }
         held.clear();
         return;
     }
+    outbox.own_identity(session.own_identity());
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.chat_private_publish(session);
     outbox.targeting_refresh(session);

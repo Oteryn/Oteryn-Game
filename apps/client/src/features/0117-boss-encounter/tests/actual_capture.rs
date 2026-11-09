@@ -80,22 +80,63 @@ async fn m25_gesture(capture: &Capture, entering: bool) -> Result<(), Error> {
     if !entering {
         assert_eq!(at, oteryn_renderer::TileCoord::new(34036, 31717));
     }
-    render_until(
+    let rendered = render_until(
         &mut view,
         &link,
         at,
         floor,
         if entering {
-            "Entered boss instance"
+            "Entered activity instance. Use the exit to return."
         } else {
-            "Returned to channel"
+            "Returned to the channel."
         },
     )
-    .await?;
+    .await;
+    if let Err(error) = rendered {
+        if peer.is_finished() {
+            return Err(format!("{error}; actual replay peer: {:?}", peer.await?).into());
+        }
+        return Err(error);
+    }
+    tokio::time::timeout(Duration::from_secs(10), async {
+        while !view.scene().native_own_rendered() {
+            view.tick(&link)
+                .map_err(|error| format!("native Ahau own appearance tick: {error:?}"))?;
+            tokio::task::yield_now().await;
+        }
+        Ok::<(), Error>(())
+    })
+    .await
+    .map_err(|_| format!("actual Ahau own actor identity was not projected after handoff: {:?}; appearances={:?}", view.scene().native_own_state(), view.appearances))??;
     assert!(
         view.scene().native_own_rendered(),
         "actual scope handoff must retain the player's native appearance pixels"
     );
+    if !entering {
+        tokio::time::timeout(Duration::from_secs(10), async {
+            loop {
+                view.tick(&link)
+                    .map_err(|error| format!("native Ahau exit effect tick: {error:?}"))?;
+                if view.visuals.iter().any(|cue| matches!(cue.kind,
+                    oteryn_session::PresentationEventKind::MagicEffect { position, effect_id: 11, .. }
+                    if position.x == at.x && position.y == at.y && position.floor == floor))
+                {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+            Ok::<(), Error>(())
+        })
+        .await
+        .map_err(|_| "actual Ahau destination teleport effect was not rendered")??;
+        let mut quiet = view.clone();
+        quiet.visuals.clear();
+        quiet.rebuild()?;
+        assert!(
+            view.scene().sprites().len() > quiet.scene().sprites().len(),
+            "the source-qualified destination effect must add native draw quads"
+        );
+    }
     drop(link);
     runner.await?;
     trigger.send(()).await?;
@@ -173,7 +214,12 @@ async fn render_until(
         Ok::<(), Error>(())
     })
     .await
-    .map_err(|_| format!("actual Primal scope not rendered: {text}"))??;
+    .map_err(|_| {
+        format!(
+            "actual native scope not rendered: {text}; wanted={at:?}/{floor}, actual={:?}/{}, action={:?}",
+            view.own(), view.floor, view.action_line
+        )
+    })??;
     assert!(!view.scene().sprites().is_empty());
     assert!(!view.scene().tiles().is_empty());
     Ok(())
