@@ -8,6 +8,23 @@ import authored_static_item_constructors as producer
 ROOT = Path(__file__).resolve().parents[2]
 
 class StaticConstructors(unittest.TestCase):
+    def test_house_defaults_preserve_exact_constructor_admissions(self):
+        import house_decoration_actions as house
+        profiles, admissions = producer.prepare(
+            ROOT, json.loads((ROOT / producer.INTENT).read_bytes()))
+        before = copy.deepcopy(profiles)
+        overlay = json.loads((ROOT / house.PROFILES).read_bytes())
+        house.apply_top_order(profiles, overlay)
+        self.assertEqual(profiles, before)
+        for profile in profiles:
+            self.assertTrue(producer.matches_admission(profile, admissions))
+        identifier = profiles[0]['production_binding']['external_id']
+        self.assertEqual(overlay['always_on_top'][identifier], 0)
+        overlay['always_on_top'][identifier] = 1
+        with self.assertRaisesRegex(ValueError, 'HOUSE_AUTHORED_TOP_ORDER_CONFLICT'):
+            house.apply_top_order(profiles, overlay)
+        self.assertEqual(profiles, before)
+
     def test_declared_four_plain_custody_records_keep_nonphysical_semantics(self):
         intent = json.loads((ROOT / producer.INTENT).read_bytes())
         profiles, admissions = producer.prepare(ROOT, intent)
