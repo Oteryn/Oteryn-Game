@@ -121,6 +121,70 @@ pub(super) async fn exercise(
         fields, 1,
         "one real persistent field, including after exact replay"
     );
+    let ground = owner
+        .root
+        .read_item_loop_ground(owner.world_id, owner.channel_id)
+        .await
+        .map_err(super::super::fixture::debug)?;
+    let field = ground
+        .iter()
+        .find(|entry| entry.item.definition.production_key == "oteryn:item.tibia.i2126")
+        .ok_or("the actual energy field must enter the altar Ground readset")?;
+    assert_eq!(field.field_collision, Some((false, false)));
+    assert!(!field.native_corpse);
+    let projection =
+        crate::gameplay_transport::loop_move::loop_ground(owner, map.overlay.base(), Some(index))
+            .await
+            .ok_or("current energy field projection")?;
+    assert_eq!(
+        projection
+            .ground_entry(&field.item.item_instance_id)
+            .ok_or("projected field")?
+            .0,
+        pos
+    );
+    let permit = owner.spell_lane_permit().await.ok_or("field read lane")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let authority =
+        crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
+            &mut tx,
+            &permit,
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence.runtime_scope,
+            fence.scope_ownership_generation.get(),
+        )
+        .await
+        .map_err(super::super::fixture::debug)?;
+    let read =
+        crate::durability::spell_item_transaction::read_qualification_scope_tile_in_transaction(
+            &mut tx,
+            &authority,
+            &crate::durability::native_world_items::SpellGroundTarget {
+                spatial_position: field.item.ground.spatial_position.clone(),
+                map_revision: field.item.ground.map_revision.clone(),
+                content_revision: field.item.ground.content_revision.clone(),
+                placement_context: field.item.ground.native_room_placement_context.clone(),
+            },
+        )
+        .await
+        .map_err(super::super::fixture::debug)?;
+    let visible = read
+        .items
+        .iter()
+        .find(|entry| entry.item_instance_id == field.item.item_instance_id)
+        .ok_or("energy field in the exact current tile read")?;
+    assert!(!visible.native_map_origin);
+    assert!(visible.environment_field_origin);
+    assert!(visible.field_origin.is_none());
+    assert!(visible.creature_field_origin.is_none());
+    assert!(!visible.blocks_movement);
+    assert!(!visible.blocks_projectile);
+    tx.rollback().await?;
     eprintln!("QN1_ELEMENTAL_ENERGY_SOIL_PG_EXECUTED");
     Ok(())
 }

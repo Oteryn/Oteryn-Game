@@ -138,6 +138,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     assert_eq!(read.items.len(), 1);
     let item = &read.items[0];
     assert_eq!(item.item_instance_id, minted[0].item_instance_id);
+    assert!(!item.environment_field_origin);
     assert!(item.field_origin.is_none());
     assert!(item.creature_field_origin.is_none());
     assert!(

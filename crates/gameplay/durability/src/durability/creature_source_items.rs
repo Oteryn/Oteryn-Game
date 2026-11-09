@@ -1464,6 +1464,7 @@ mod conservative_destroy_tests {
             field_origin: None,
             creature_field_origin: None,
             native_map_origin: false,
+            environment_field_origin: false,
         }
     }
     #[test]

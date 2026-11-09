@@ -233,6 +233,8 @@ pub struct DurableTileItem {
     /// Positive receipt evidence for this exact current native-map placement.
     /// Missing player or creature attribution alone is never environmental proof.
     pub native_map_origin: bool,
+    /// Positive script-created field provenance; current tile ownership is checked separately.
+    pub environment_field_origin: bool,
 }
 
 /// Historical creation source only. A field tick must independently resolve

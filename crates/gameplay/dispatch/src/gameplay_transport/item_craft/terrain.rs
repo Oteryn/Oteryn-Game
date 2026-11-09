@@ -43,6 +43,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let encoded =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        // Drop also invalidates a projection after a cancelled/unknown COMMIT.
+        let _ground_change = super::super::loop_move::GroundChange(
+            intent
+                .use_with_map_item
+                .as_ref()
+                .map(|_| &self.states.loop_ground),
+        );
         let permit = self.spell_lane_permit().await.ok_or(())?;
         if let Some(result) = self
             .root

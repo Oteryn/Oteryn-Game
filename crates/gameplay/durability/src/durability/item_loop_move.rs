@@ -2161,8 +2161,8 @@ impl DurabilityRoot {
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
                                 g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, \
-                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
-                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
+                                CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
+                                CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
                            JOIN game_item_instances i USING (item_instance_id, world_id) \
                            LEFT JOIN game_item_mint_receipts cr ON cr.item_instance_id=i.item_instance_id AND cr.transaction_id=i.minted_transaction_id \
@@ -2170,11 +2170,12 @@ impl DurabilityRoot {
                              AND cr.death_world_id=g.world_id AND cr.death_channel_id IS NOT DISTINCT FROM g.channel_id AND cr.death_instance_id IS NOT DISTINCT FROM g.instance_id \
                              AND EXISTS(SELECT 1 FROM game_item_audit_outbox ca WHERE ca.event_id=cr.event_id AND ca.transaction_id=cr.transaction_id AND ca.item_instance_id=cr.item_instance_id AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
                              AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding AND sha256(cv.envelope)=cr.envelope_sha256) \
+                           LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) \
                            LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
                            LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
-                            AND (cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
+                            AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
                                  OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) \
                                  OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \

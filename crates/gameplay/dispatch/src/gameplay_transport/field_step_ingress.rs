@@ -153,17 +153,17 @@ impl StepIngressRead<'_, '_> {
                     let values = recipe
                         .condition_values()
                         .map_err(|_| MovementError::NotQualified)?;
-                    if item.native_map_origin
+                    if (item.native_map_origin || item.environment_field_origin)
                         && (item.field_origin.is_some() || item.creature_field_origin.is_some())
                     {
                         return Err(MovementError::NotQualified);
                     }
-                    // The receipt join proves this exact native placement; an
+                    // Receipt joins prove this exact native or scripted field; an
                     // absent caster alone cannot bypass player-field policy.
                     // M49's 2126 has one entry hit and no residual DOT schedule.
                     if let Some(values) = values
                         && !tile.flags().protection_zone
-                        && item.native_map_origin
+                        && (item.native_map_origin || item.environment_field_origin)
                         && item.definition.production_key == "oteryn:item.tibia.i2126"
                     {
                         let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
