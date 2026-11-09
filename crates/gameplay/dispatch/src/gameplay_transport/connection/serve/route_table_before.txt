@@ -26,6 +26,7 @@
 45 party
 46 party
 13 chat
+6117 chat
 7 npc
 8 npc_trade
 11 attack

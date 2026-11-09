@@ -121,25 +121,6 @@ impl DurabilityRoot {
             }).await?
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn wheel_presentation_budget_keeps_task_pilgrimage_and_grade_iv_distinct()
-    -> std::result::Result<(), DurabilityError> {
-        assert_eq!(
-            compose_budget(100, 9, true, 10, 4)?,
-            WheelPointBudget {
-                unlock_points: 69,
-                available: 73
-            }
-        );
-        assert_eq!(compose_budget(100, 9, false, 10, 4)?.unlock_points, 59);
-        assert!(compose_budget(u32::MAX, u32::MAX, true, 10, 4).is_err());
-        Ok(())
-    }
-}
-
 impl WheelPresentationRead {
     pub fn validate_draft(
         &self,
@@ -168,5 +149,24 @@ impl WheelPresentationRead {
             self.budget.unlock_points,
             removal,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn wheel_presentation_budget_keeps_task_pilgrimage_and_grade_iv_distinct()
+    -> std::result::Result<(), DurabilityError> {
+        assert_eq!(
+            compose_budget(100, 9, true, 10, 4)?,
+            WheelPointBudget {
+                unlock_points: 69,
+                available: 73
+            }
+        );
+        assert_eq!(compose_budget(100, 9, false, 10, 4)?.unlock_points, 59);
+        assert!(compose_budget(u32::MAX, u32::MAX, true, 10, 4).is_err());
+        Ok(())
     }
 }
