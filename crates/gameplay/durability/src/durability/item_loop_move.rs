@@ -19,7 +19,7 @@
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
 mod altar_arrival;
-pub use altar_arrival::{AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss};
+pub use altar_arrival::{AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
 
 mod floor_assembly;
 pub(in crate::durability) mod floor_transform;

@@ -1,13 +1,14 @@
 -- M49: an ordinary item arrival, complete corpse retirement, audit and pending
 -- boss latch share one physical transaction. Existing custody guards stay intact.
 CREATE TABLE game_elemental_altar_rules (
- rule TEXT PRIMARY KEY, corpse_key TEXT NOT NULL UNIQUE, creature_key TEXT NOT NULL UNIQUE
+ rule TEXT PRIMARY KEY, corpse_key TEXT NOT NULL UNIQUE, creature_key TEXT NOT NULL UNIQUE,
+ corpse_duration_ms BIGINT NOT NULL CHECK(corpse_duration_ms>0)
 );
 INSERT INTO game_elemental_altar_rules VALUES
- ('oteryn:item-arrival/elemental_spheres/energy_overlord','oteryn:item.tibia.i8139','oteryn:creature.energy_overlord'),
- ('oteryn:item-arrival/elemental_spheres/fire_overlord','oteryn:item.tibia.i8141','oteryn:creature.fire_overlord'),
- ('oteryn:item-arrival/elemental_spheres/ice_overlord','oteryn:item.tibia.i8140','oteryn:creature.ice_overlord'),
- ('oteryn:item-arrival/elemental_spheres/earth_overlord','oteryn:item.tibia.i8106','oteryn:creature.earth_overlord');
+ ('oteryn:item-arrival/elemental_spheres/energy_overlord','oteryn:item.tibia.i8139','oteryn:creature.energy_overlord',500000),
+ ('oteryn:item-arrival/elemental_spheres/fire_overlord','oteryn:item.tibia.i8141','oteryn:creature.fire_overlord',500000),
+ ('oteryn:item-arrival/elemental_spheres/ice_overlord','oteryn:item.tibia.i8140','oteryn:creature.ice_overlord',500000),
+ ('oteryn:item-arrival/elemental_spheres/earth_overlord','oteryn:item.tibia.i8106','oteryn:creature.earth_overlord',300000);
 CREATE TABLE game_elemental_altar_receipts (
  transaction_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(transaction_id)),
  event_id UUID NOT NULL UNIQUE CHECK(game_character_is_uuid_v7(event_id)),
@@ -43,7 +44,7 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
    WHERE i.item_instance_id=p_item AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item'
      AND i.minted_transaction_id=m.transaction_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION'
      AND m.draw_ordinal=0 AND m.materialized_at IS NOT NULL
-     AND m.materialized_at+60000>floor(extract(epoch FROM statement_timestamp())*1000)::bigint
+     AND m.materialized_at+p.corpse_duration_ms>floor(extract(epoch FROM statement_timestamp())*1000)::bigint
      AND g.scope_kind=1 AND g.instance_id IS NULL AND g.world_id=i.world_id
      AND m.death_world_id=g.world_id AND m.death_channel_id=g.channel_id
      AND m.death_scope_ownership_generation=g.runtime_scope_ownership_generation

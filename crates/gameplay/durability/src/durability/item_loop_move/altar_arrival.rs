@@ -1,4 +1,7 @@
 //! M49: retire the exact arriving corpse and retain a pending boss in the move's transaction.
+mod lifecycle;
+pub use lifecycle::PendingAltarRealization;
+
 use super::*;
 use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::spell_item_transaction::{
