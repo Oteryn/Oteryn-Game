@@ -52,3 +52,16 @@ pub(super) fn default_panels() -> Vec<String> {
         .map(str::to_owned)
         .collect()
 }
+
+pub(super) fn default_boss_opacity() -> u8 {
+    100
+}
+pub(super) fn default_opacity() -> [u8; 3] {
+    [100; 3]
+}
+pub(super) fn default_foreground_fps() -> u16 {
+    60
+}
+pub(super) fn default_background_fps() -> u16 {
+    15
+}

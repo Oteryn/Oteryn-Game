@@ -7,6 +7,18 @@ pub mod achievements;
 
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
+pub mod offence;
+#[path = "cyclopedia_character/profile.rs"]
+pub mod profile;
+
+#[path = "cyclopedia_character/gallery.rs"]
+pub mod gallery;
+
+#[path = "cyclopedia_character/items.rs"]
+pub mod items;
+
+#[path = "cyclopedia_character/protection.rs"]
+pub mod protection;
 
 pub const CAPABILITY_CYCLOPEDIA_CHARACTER_V1: u32 = 199;
 pub const COMMAND_TYPE_CYCLOPEDIA_BADGES: u32 = 387;

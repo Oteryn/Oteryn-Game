@@ -320,7 +320,7 @@ fn run(
                 held_page = Some(state.page.clone());
             }
             let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).unwrap_or(0);
-            let mut detail_text = state.text(row);
+            let mut detail_text = super::book_detail::text(&lock(&shared), row);
             if archive_mode {
                 detail_text.push_str("\r\n\r\nSaved action bindings (resolved against the current server catalog):\r\n");
                 detail_text.push_str(&state.archive.labels().join("\r\n"));

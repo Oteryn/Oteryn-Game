@@ -3,8 +3,8 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 
 pub(crate) struct FrameControls {
-    labels: [HWND; 6],
-    edits: [HWND; 6],
+    labels: [HWND; 7],
+    edits: [HWND; 7],
 }
 impl FrameControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
@@ -16,9 +16,10 @@ impl FrameControls {
                 "Own effect opacity %",
                 "Other players opacity %",
                 "Creature effect opacity %",
+                "Boss-area effect opacity %",
             ]
             .map(|label| control(hwnd, "STATIC", label, 0, [0, 0, 340, 26], 0));
-            let edits = [60, 15, 0, 100, 100, 100].map(|fps| {
+            let edits = [60, 15, 0, 100, 100, 100, 100].map(|fps| {
                 control(
                     hwnd,
                     "EDIT",
@@ -28,13 +29,9 @@ impl FrameControls {
                     WS_BORDER | ES_NUMBER as u32,
                 )
             });
-            for i in 0..3 {
-                MoveWindow(labels[i], 10, 185 + i as i32 * 40, 340, 26, 1);
-                MoveWindow(edits[i], 380, 185 + i as i32 * 40, 100, 26, 1);
-            }
-            for i in 3..6 {
-                MoveWindow(labels[i], 10 + (i - 3) as i32 * 230, 50, 220, 26, 1);
-                MoveWindow(edits[i], 10 + (i - 3) as i32 * 230, 80, 100, 26, 1);
+            for i in 0..7 {
+                MoveWindow(labels[i], 10, 100 + i as i32 * 35, 340, 26, 1);
+                MoveWindow(edits[i], 380, 100 + i as i32 * 35, 100, 26, 1);
             }
             (!labels.iter().chain(&edits).any(|handle| handle.is_null()))
                 .then_some(Self { labels, edits })
@@ -58,11 +55,14 @@ impl FrameControls {
             preferences.ambient_brightness = text(self.edits[2])
                 .parse()
                 .map_err(|_| "Enter ambient brightness from 0 to 100")?;
-            for (value, handle) in preferences.effect_opacity.iter_mut().zip(&self.edits[3..]) {
+            for (value, handle) in preferences.effect_opacity.iter_mut().zip(&self.edits[3..6]) {
                 *value = text(*handle)
                     .parse()
                     .map_err(|_| "Enter effect opacity from 0 to 100")?;
             }
+            preferences.boss_area_opacity = text(self.edits[6])
+                .parse()
+                .map_err(|_| "Enter boss-area opacity from 0 to 100")?;
             preferences.frames.foreground = preferences.foreground_fps;
             preferences.frames.background = preferences.background_fps;
             Ok(())
@@ -77,6 +77,7 @@ impl FrameControls {
                 u16::from(preferences.effect_opacity[0]),
                 u16::from(preferences.effect_opacity[1]),
                 u16::from(preferences.effect_opacity[2]),
+                u16::from(preferences.boss_area_opacity),
             ]) {
                 SetWindowTextW(*handle, wide(&value.to_string()).as_ptr());
             }

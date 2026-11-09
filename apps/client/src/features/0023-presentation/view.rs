@@ -44,11 +44,13 @@ impl PlayView {
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
         // Palette pixels remain emissive: overlays must be legible in dark areas.
-        let atlas = self.local.world();
-        let atlas = atlas.atlas();
+        let world = self.local.world();
+        let atlas = world.atlas();
         let resource_options = resources::Options::from(self.preferences());
         let opacity = self.preferences().effect_opacity;
+        let boss_opacity = self.preferences().boss_area_opacity;
         let effects = self.preferences().show_effects;
+        let game_window = self.preferences().game_window;
         let own_ref = self.scene.own_identity().and_then(|identity| {
             self.appearances
                 .iter()
@@ -81,6 +83,9 @@ impl PlayView {
         }
         let mut lines = std::collections::BTreeMap::new();
         for cue in &self.visuals {
+            if !game_window.visible(&cue.kind) {
+                continue;
+            }
             let age = now.saturating_duration_since(cue.received);
             if age >= VISUAL_LIFETIME {
                 continue;
@@ -112,11 +117,15 @@ impl PlayView {
                     effect_id,
                     source,
                 } if position.floor == self.floor && progress < 0.5 => {
-                    let alpha = match source {
-                        oteryn_session::PresentationSource::Own => opacity[0],
-                        oteryn_session::PresentationSource::Others => opacity[1],
-                        oteryn_session::PresentationSource::Creatures => opacity[2],
-                        oteryn_session::PresentationSource::Global => 100,
+                    let alpha = if world.effects().is_boss_area(effect_id) {
+                        boss_opacity
+                    } else {
+                        match source {
+                            oteryn_session::PresentationSource::Own => opacity[0],
+                            oteryn_session::PresentationSource::Others => opacity[1],
+                            oteryn_session::PresentationSource::Creatures => opacity[2],
+                            oteryn_session::PresentationSource::Global => 100,
+                        }
                     };
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {

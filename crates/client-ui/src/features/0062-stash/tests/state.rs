@@ -29,8 +29,9 @@ fn browse_and_withdraw_use_server_rows_and_render_refusals() -> Result<(), &'sta
     };
     let browse = request(&mut panel, Intent::Refresh).ok_or("browse command")?;
     assert_eq!(
-        stash::decode_stash_intent(&browse.payload)
+        stash::decode_stash_query(&browse.payload)
             .map_err(|_| "browse payload")?
+            .0
             .action,
         stash::StashAction::Browse
     );
@@ -38,8 +39,9 @@ fn browse_and_withdraw_use_server_rows_and_render_refusals() -> Result<(), &'sta
     let withdraw =
         request(&mut panel, Intent::Withdraw { row: 0, amount: 3 }).ok_or("withdraw command")?;
     assert_eq!(
-        stash::decode_stash_intent(&withdraw.payload)
+        stash::decode_stash_query(&withdraw.payload)
             .map_err(|_| "withdraw payload")?
+            .0
             .action,
         stash::StashAction::Withdraw {
             row: [1; 16],
@@ -79,8 +81,9 @@ fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
     let handle = panel.carried[0].handle;
     let command = request(&mut panel, Intent::Stow(handle)).ok_or("stow command")?;
     assert_eq!(
-        stash::decode_stash_intent(&command.payload)
+        stash::decode_stash_query(&command.payload)
             .map_err(|_| "payload")?
+            .0
             .action,
         stash::StashAction::Stow(item.handle)
     );
@@ -141,8 +144,9 @@ fn filtered_sorted_stash_withdraws_the_displayed_server_handle() -> Result<(), &
     let intent = visible_withdraw(&panel, 0, 3).ok_or("visible selection")?;
     let command = request(&mut panel, intent).ok_or("withdraw")?;
     assert_eq!(
-        stash::decode_stash_intent(&command.payload)
+        stash::decode_stash_query(&command.payload)
             .map_err(|_| "wire")?
+            .0
             .action,
         stash::StashAction::Withdraw {
             row: [3; 16],
@@ -152,6 +156,41 @@ fn filtered_sorted_stash_withdraws_the_displayed_server_handle() -> Result<(), &
     panel.pending = false;
     panel.query = "no match".into();
     assert!(visible_withdraw(&panel, 0, 1).is_none());
-    assert!(panel_text(&panel).contains("No matching items on this page"));
+    assert!(panel_text(&panel).contains("No matching items"));
     Ok(())
+}
+
+#[test]
+fn stash_search_and_sort_reach_the_server_before_pagination() -> Result<(), &'static str> {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let unfiltered = request(&mut panel, Intent::Refresh).ok_or("browse")?;
+    panel.pending = false;
+    panel.query = "apple".into();
+    panel.sort = Sort::Stock;
+    let filtered = request(&mut panel, Intent::Refresh).ok_or("filtered browse")?;
+    assert_ne!(
+        unfiltered.payload, filtered.payload,
+        "global filters must travel to the server, not only hide rows on a page"
+    );
+    Ok(())
+}
+
+#[test]
+fn invalid_stash_filter_is_reported_without_sending_a_command() {
+    let mut panel = StashPanel {
+        selected: true,
+        query: "x".repeat(129),
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Filter).is_none());
+    assert!(!panel.pending);
+    assert!(
+        panel
+            .feedback
+            .as_deref()
+            .is_some_and(|message| message.contains("128 UTF-8 bytes"))
+    );
 }

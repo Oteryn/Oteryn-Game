@@ -25,6 +25,7 @@ const MAX_WINDOW_CELLS: usize = 1024 * 1024;
 
 /// Resolved immutable placements and the pinned sheets from which their pixels are read.
 pub struct ResolvedWindow {
+    pub effects: crate::EffectCatalog,
     pub entries: Vec<((i32, i32), Vec<Item>)>,
     /// Outfit patterns in north, east, south, west order.
     pub player: [Vec<DrawCell>; 4],
@@ -47,6 +48,7 @@ impl ResolvedWindow {
             MANIFEST_SHA256,
         )
         .map_err(|error| format!("assets: {error}"))?;
+        let effects = store.effects().clone();
         let catalog = Catalog::load(&store).map_err(|error| format!("catalog: {error}"))?;
         let index = AppearanceIndex::load(&store, &catalog)
             .map_err(|error| format!("appearances: {error}"))?;
@@ -162,6 +164,7 @@ impl ResolvedWindow {
         }
 
         Ok(Self {
+            effects,
             entries,
             player,
             sheets,

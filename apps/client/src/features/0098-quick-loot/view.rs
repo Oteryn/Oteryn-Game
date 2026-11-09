@@ -1,7 +1,12 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn discovery_panel(&self) -> oteryn_client_ui::quick_loot::Discovery {
-        lock(&self.mailbox).discovery.clone()
+        let mailbox = lock(&self.mailbox);
+        let mut projection = mailbox.discovery.clone();
+        if !mailbox.local_preferences.game_window.loot_messages {
+            projection.loot.result = None;
+        }
+        projection
     }
     pub fn discovery_open(&self, panel: u32) {
         #[cfg(windows)]

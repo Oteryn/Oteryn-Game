@@ -241,6 +241,10 @@ impl Settings {
             .borrow_mut()
             .refresh(self.parent, view, enabled, delay, font);
     }
+    pub(super) fn graphics_settings(&self) -> (oteryn_client::play::GraphicsPreferences, u16) {
+        let state = lock(&self.shared);
+        (state.preferences.graphics, state.preferences.ui_scale)
+    }
     pub(super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);
         if let Err(error) = state.capture(view) {
@@ -326,7 +330,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 160..=166 | 223 | 225..=227 | 231..=233 | 241..=244)
+                && matches!(id, 103 | 106 | 110..=113 | 160..=166 | 223 | 225..=227 | 231..=233 | 241..=244 | 260..=263)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

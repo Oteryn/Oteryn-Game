@@ -40,6 +40,7 @@ pub enum ShellError {
     RendererResize,
     RendererRender,
     RendererClose,
+    RendererConfiguration,
 }
 impl Display for ShellError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
@@ -54,12 +55,17 @@ impl Display for ShellError {
             Self::RendererSuspend => "client renderer suspend failed",
             Self::RendererResize => "client renderer resize failed",
             Self::RendererRender => "client renderer render failed",
+            Self::RendererConfiguration => "client renderer configuration failed",
             Self::RendererClose => "client renderer close failed",
         })
     }
 }
 impl std::error::Error for ShellError {}
+
+mod graphics;
+
 struct Application {
+    applied_graphics: Option<oteryn_client::play::GraphicsPreferences>,
     frame_timing: frame_native::FrameTiming,
     captures: capture::Captures,
     settings: settings::Settings,
@@ -100,6 +106,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            applied_graphics: None,
             frame_timing: frame_native::FrameTiming::default(),
             captures: Default::default(),
             settings: settings::Settings::new(),

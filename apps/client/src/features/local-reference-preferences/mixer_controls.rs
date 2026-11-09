@@ -6,7 +6,11 @@ pub(crate) struct MixerControls {
     edits: [HWND; 4],
 }
 impl MixerControls {
-    pub(crate) unsafe fn position_apply(&self, handle: HWND, active: bool) {
+    pub(crate) unsafe fn position_apply(&self, handle: HWND, page: SettingsPage) {
+        let active = matches!(
+            page,
+            SettingsPage::Mixer | SettingsPage::Battle | SettingsPage::Effects
+        );
         let [x, y] = if active { [550, 280] } else { [380, 145] };
         unsafe {
             MoveWindow(handle, x, y, 110, 26, 1);

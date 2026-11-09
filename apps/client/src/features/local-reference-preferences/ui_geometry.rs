@@ -32,3 +32,17 @@ impl super::ReferencePreferences {
             .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
     }
 }
+
+impl super::PlayView {
+    pub(in crate::play) fn apply_preference_scale(
+        &mut self,
+    ) -> Result<(), oteryn_renderer::BatchError> {
+        self.scene
+            .set_label_scale(self.preferences().interface_scale);
+        self.scene.set_tile_px(
+            self.preferences()
+                .graphics
+                .tile_pixels(self.preferences().ui_scale, self.local.viewport),
+        )
+    }
+}

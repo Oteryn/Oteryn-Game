@@ -5,6 +5,12 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "shortcut_controls.rs"]
+mod shortcut_controls;
+use shortcut_controls::ShortcutControls;
+#[path = "graphics_controls.rs"]
+mod graphics_controls;
+use graphics_controls::GraphicsControls;
 #[path = "layout_controls.rs"]
 mod layout_controls;
 use layout_controls::LayoutControls;
@@ -29,6 +35,8 @@ use mixer_controls::MixerControls;
 mod battle_filter_controls;
 use battle_filter_controls::BattleFilterControls;
 pub(super) struct Controls {
+    pub(super) graphics: GraphicsControls,
+    pub(super) shortcuts: ShortcutControls,
     pub(super) battle_filters: BattleFilterControls,
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
@@ -85,7 +93,7 @@ impl Controls {
             match page {
                 SettingsPage::Battle => battle_filters.read(preferences),
                 SettingsPage::Mixer => mixer.read(preferences),
-                SettingsPage::Graphics => frames.read(preferences),
+                SettingsPage::Effects => frames.read(preferences),
                 SettingsPage::Sound => battle.read(preferences),
                 _ => Ok(()),
             }

@@ -2,6 +2,9 @@ use super::*;
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if self.boss_area_opacity > 100 {
+            return Err(PreferenceError);
+        }
         if self.audio_device.len() > 256 || self.audio_device.chars().any(char::is_control) {
             return Err(PreferenceError);
         }

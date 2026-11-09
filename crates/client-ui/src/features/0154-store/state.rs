@@ -6,10 +6,12 @@ pub enum StorePage {
     #[default]
     Catalogue,
     History,
+    CoinHistory,
     Inbox,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StorePanel {
+    pub coin_history: super::CoinHistory,
     pub gift_open: bool,
     pub gift_fields: [String; 2],
     pub gift_reviewed: Option<GiftDraft>,

@@ -29,7 +29,7 @@ fn lock<T>(value: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 }
 fn key(panel: &Panel) -> Key {
     (
-        panel.atlas.revision,
+        panel.geometry.revision,
         panel.hide_pois,
         panel
             .map
@@ -46,7 +46,7 @@ pub(super) fn refresh(panel: &Panel) {
     };
     let mut frame = lock(&shared);
     let key = key(panel);
-    if Weak::ptr_eq(&frame.owner, &Arc::downgrade(&panel.atlas.lifetime)) && frame.key != key {
+    if Weak::ptr_eq(&frame.owner, &Arc::downgrade(&panel.geometry.lifetime)) && frame.key != key {
         frame.key = key;
         frame.drawing = Arc::new(project(panel));
         frame.version = frame.version.wrapping_add(1);
@@ -58,7 +58,7 @@ pub(super) fn open(panel: &Panel, commands: &Commands) {
         let mut frame = lock(&shared);
         frame.key = key(panel);
         frame.drawing = Arc::new(project(panel));
-        frame.owner = Arc::downgrade(&panel.atlas.lifetime);
+        frame.owner = Arc::downgrade(&panel.geometry.lifetime);
         frame.commands = commands.clone();
         frame.version = frame.version.wrapping_add(1);
         return;
@@ -67,7 +67,7 @@ pub(super) fn open(panel: &Panel, commands: &Commands) {
         key: key(panel),
         version: 1,
         drawing: Arc::new(project(panel)),
-        owner: Arc::downgrade(&panel.atlas.lifetime),
+        owner: Arc::downgrade(&panel.geometry.lifetime),
         commands: commands.clone(),
     }));
     *active = Arc::downgrade(&shared);

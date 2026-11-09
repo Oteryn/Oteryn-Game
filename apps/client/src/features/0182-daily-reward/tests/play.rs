@@ -148,3 +148,5 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
         .join()
         .map_err(|_| "Daily reward UI test thread panicked")?
 }
+#[path = "details.rs"]
+mod details;

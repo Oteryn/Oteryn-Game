@@ -19,23 +19,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Town key",
                 "House row (1 onwards)",
                 "Bid / notice Unix time",
-                "Member UUIDs (space separated)",
+                "Member UUIDs (space/newline separated)",
                 "Door: x y floor (uses current house ACL revision)",
                 "Type CONFIRM for changes",
             ],
-            buttons: &[
-                "Query",
-                "Next",
-                "Bid",
-                "Guests",
-                "Subowners",
-                "Door",
-                "Kick",
-                "Leave",
-                "Notice",
-                "Cancel notice",
-                "Show entrance map",
-            ],
+            buttons: super::input::BUTTONS,
             snapshot: |mailbox| {
                 let p = &mailbox.properties.house;
                 (

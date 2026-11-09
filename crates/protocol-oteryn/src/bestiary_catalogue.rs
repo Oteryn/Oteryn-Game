@@ -165,9 +165,43 @@ pub fn decode_page(body: &[u8]) -> Result<Page> {
     Ok(page)
 }
 
+/// Charm names use the same bounded card/page reply, with a distinct opt-in request prefix.
+pub fn encode_charm_request(after: u16) -> Result<Vec<u8>> {
+    if u32::from(after) > crate::charm::MAX_CHARM {
+        return Err(Error::LimitExceeded);
+    }
+    Ok(vec![
+        254,
+        1,
+        u8::try_from(after).map_err(|_| Error::LimitExceeded)?,
+    ])
+}
+pub fn decode_charm_request(bytes: &[u8]) -> Result<u16> {
+    let [254, 1, after] = bytes else {
+        return Err(Error::Malformed);
+    };
+    let after = u16::from(*after);
+    encode_charm_request(after)?;
+    Ok(after)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn charm_catalogue_prefix_is_bounded_and_distinct_from_creatures() -> Result<()> {
+        assert_eq!(encode_charm_request(20)?, vec![254, 1, 20]);
+        assert_eq!(decode_charm_request(&[254, 1, 20])?, 20);
+        for len in 0..3 {
+            assert!(decode_charm_request(&[254, 1, 20][..len]).is_err());
+        }
+        assert!(decode_charm_request(&[254, 1, 20, 0]).is_err());
+        assert!(decode_charm_request(&[255, 1, 20]).is_err());
+        assert!(encode_charm_request(33).is_err());
+        assert!(decode_charm_request(&[254, 1, 33]).is_err());
+        Ok(())
+    }
+
     #[test]
     fn catalogue_wire_checks_bounds_duplicates_and_round_trip() -> Result<()> {
         let request = Request {

@@ -2,6 +2,8 @@
 use super::*;
 #[path = "controls.rs"]
 mod controls;
+#[path = "resource_checks.rs"]
+mod resource_checks;
 use controls::Controls;
 #[path = "transfer.rs"]
 mod transfer;
@@ -21,6 +23,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            graphics,
+            mut shortcuts,
             actor_hud,
             manual,
             console,
@@ -121,6 +125,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            shortcuts.show(state.page == SettingsPage::Shortcuts);
+            graphics.show(state.page == SettingsPage::Graphics);
             for handle in &navigation {
                 ShowWindow(*handle, SW_SHOW);
             }
@@ -130,11 +136,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             battle_sounds.show(state.page == SettingsPage::Sound);
             battle_filters.show(state.page == SettingsPage::Battle);
             mixer.show(state.page == SettingsPage::Mixer);
-            mixer.position_apply(
-                apply,
-                matches!(state.page, SettingsPage::Mixer | SettingsPage::Battle),
-            );
-            frames.show(state.page == SettingsPage::Graphics);
+            mixer.position_apply(apply, state.page);
+            frames.show(state.page == SettingsPage::Effects);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
@@ -189,6 +192,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         | SettingsPage::Status
                         | SettingsPage::Sound
                         | SettingsPage::Mixer
+                        | SettingsPage::Effects
                         | SettingsPage::Battle
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
@@ -210,6 +214,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if shortcuts.handle(action, &mut state) {
+                    continue;
+                }
                 if (160..=166).contains(&action) {
                     drop(state);
                     subpages::open(action, Arc::clone(&shared), hwnd);
@@ -298,21 +305,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
-                            preferences.hud_bars =
-                                SendMessageW(hud_checks[0], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_harmony =
-                                SendMessageW(hud_checks[1], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_serene =
-                                SendMessageW(hud_checks[2], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_lights =
-                                SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_effects =
-                                SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
-                            preferences.creature_bars =
-                                SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
-                            preferences.health_circle =
-                                SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
+                            resource_checks::read(&hud_checks, &mut preferences);
                             let result = match state.page {
+                                SettingsPage::Graphics => {
+                                    graphics.read(&mut preferences);
+                                    Ok(())
+                                }
                                 SettingsPage::Interface => interface.read(&mut preferences),
                                 SettingsPage::Arcs => arcs.read(&mut preferences),
                                 SettingsPage::Status => layout.read(&mut preferences),
@@ -334,6 +332,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                shortcuts.refresh(&state);
+                graphics.refresh(&state.preferences);
                 actor_hud.refresh(&state.preferences);
                 console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);

@@ -1,13 +1,14 @@
 //! Local-only preferences whose keys come from the audited client reference surface.
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
-
+#[path = "game_window.rs"]
+mod game_window;
 use crate::map::World;
 use crate::play::PlayView;
+pub use game_window::GameWindowPreferences;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
-
 #[path = "arcs.rs"]
 mod arcs;
 pub use arcs::{ArcLayout, ArcPreferences};
@@ -21,6 +22,8 @@ mod controls;
 #[path = "frames.rs"]
 mod frames;
 pub use frames::{FramePacer, FramePreferences};
+#[path = "graphics.rs"]
+mod graphics;
 #[path = "help.rs"]
 mod help;
 #[path = "profile_contexts.rs"]
@@ -35,6 +38,8 @@ mod status_order;
 mod store;
 #[path = "sync.rs"]
 mod sync;
+pub use graphics::GraphicsPreferences;
+pub use shortcuts::ShortcutEdit;
 #[path = "tooltips.rs"]
 mod tooltips;
 #[path = "ui_geometry.rs"]
@@ -46,9 +51,6 @@ pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
-pub use tooltips::{HoverTooltip, TooltipTarget};
-pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
-
 const PANEL_IDS: &[&str] = &[
     "battle",
     "chat",
@@ -68,24 +70,20 @@ const PANEL_IDS: &[&str] = &[
     "vip",
     "wheel",
 ];
-
 #[path = "defaults.rs"]
 mod defaults;
 use defaults::*;
-fn default_opacity() -> [u8; 3] {
-    [100; 3]
-}
-fn default_foreground_fps() -> u16 {
-    60
-}
-fn default_background_fps() -> u16 {
-    15
-}
 
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_boss_opacity")]
+    pub boss_area_opacity: u8,
+    #[serde(default)]
+    pub graphics: GraphicsPreferences,
+    #[serde(default)]
+    pub game_window: GameWindowPreferences,
     #[serde(default = "enabled")]
     pub tooltips_enabled: bool,
     #[serde(default = "default_tooltip_delay")]
@@ -205,10 +203,11 @@ pub struct ReferencePreferences {
     #[serde(default = "default_panels")]
     pub visible_panels: Vec<String>,
 }
-
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            boss_area_opacity: default_boss_opacity(),
+            graphics: GraphicsPreferences::default(),
             tooltips_enabled: true,
             tooltip_delay_ms: 500,
             hud_health: true,
@@ -240,6 +239,7 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            game_window: Default::default(),
             show_effects: true,
             show_lights: true,
             show_harmony: true,
@@ -269,7 +269,6 @@ impl Default for ReferencePreferences {
         }
     }
 }
-
 impl ReferencePreferences {
     pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
 
@@ -346,18 +345,6 @@ impl PlayView {
         self.local.character = Some(character);
     }
 
-    pub(in crate::play) fn apply_preference_scale(
-        &mut self,
-    ) -> Result<(), oteryn_renderer::BatchError> {
-        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
-        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
-            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
-            .max(1);
-        self.scene
-            .set_label_scale(self.preferences().interface_scale);
-        self.scene.set_tile_px(pixels.min(fit))
-    }
-
     pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {
         if viewport.contains(&0) || self.local.viewport == viewport {
             return Ok(());
@@ -391,3 +378,6 @@ impl PlayView {
 
 #[path = "validation.rs"]
 mod validation;
+
+pub use tooltips::{HoverTooltip, TooltipTarget};
+pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
