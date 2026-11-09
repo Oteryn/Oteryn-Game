@@ -60,7 +60,7 @@ same day.
 3. Run what the PR gate never runs on the batch tree, on a PC lane when one is
    available: Node boot and the integration shards (`oteryn-dev`
    `references/local-checks.md`, *Jobs that only run after the merge*). Label the
-   batch `heavy-tests`; the batch's Codex review is part of the review trial
+   batch `heavy-tests`; the batch's Codex review follows the per-PR rule
    (`oteryn-review`, *Independent review by Codex*).
 4. Batch red: bisect it by member and fix the member, not the batch. A member
    that goes red or changes after the batch tested it stops the landing: merge
