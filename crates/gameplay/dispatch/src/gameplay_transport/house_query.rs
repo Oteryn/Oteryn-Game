@@ -78,7 +78,7 @@ pub(super) fn entrance(key: &str) -> Option<crate::foundation::LocalPosition> {
         floor: record.entrance.z,
     })
 }
-fn details(key: &str) -> Option<wire::HouseDetails> {
+pub(super) fn details(key: &str) -> Option<wire::HouseDetails> {
     let metadata = catalogue()?.iter().find(|h| h.identity.key == key)?;
     Some(wire::HouseDetails {
         name: metadata.name.clone(),

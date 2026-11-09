@@ -53,3 +53,9 @@ pub fn panel_text(panel: &Panel) -> String {
     });
     text
 }
+
+#[path = "view/ownership.rs"]
+mod ownership;
+pub fn ownership_text(panel: &super::sale::OwnershipPanel) -> String {
+    ownership::text(panel)
+}

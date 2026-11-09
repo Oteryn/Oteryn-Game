@@ -7,7 +7,7 @@ pub use oteryn_protocol_oteryn::{
 
 #[path = "property_services/forge_preview.rs"]
 pub mod forge_preview;
-pub use oteryn_protocol_oteryn::{house, house_move_out};
+pub use oteryn_protocol_oteryn::{house, house_move_out, house_sale};
 #[path = "property_services/house_handoff.rs"]
 mod house_handoff;
 #[path = "property_services/house_transfer.rs"]

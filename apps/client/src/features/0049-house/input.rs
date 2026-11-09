@@ -1,3 +1,5 @@
+#[path = "input/ownership.rs"]
+pub(in crate::play) mod ownership;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
@@ -23,6 +25,7 @@ pub(in crate::play) const BUTTONS: &[&str] = &[
     "Load guests",
     "Load subowners",
     "Load door",
+    "Ownership and move-out",
 ];
 
 pub(in crate::play) fn prepare(
@@ -146,6 +149,7 @@ impl PlayLink {
         lock(&self.mailbox).properties.house.fields[0] = world.into();
     }
     pub fn house_request(&self, selection: usize) {
+        if matches!(selection,8|9|14) {self.house_ownership_open();return;}
         submit(&mut lock(&self.mailbox), &self.commands, selection);
     }
     pub fn house_edit(&self, field: usize, value: String) {

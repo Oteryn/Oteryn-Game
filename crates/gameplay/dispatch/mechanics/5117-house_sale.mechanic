@@ -1,0 +1,7 @@
+name=house_sale
+commands=6126
+transport=house_sale
+composed=house_sale
+authority=house_sale
+[route]
+match routing::house_sale::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }
