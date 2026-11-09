@@ -52,6 +52,14 @@ class ConvertPlacementsTest(unittest.TestCase):
                            {v['sha256'] for v in candidate['provenance'].values()}
                            for p in actual[0]['provenance']))
 
+    def test_m31_king_keeps_the_reviewed_royal_source_cell(self):
+        rows = [r['declaration'] for r in self.records
+                if r['declaration']['npc'] == 'oteryn:npc.king_tibianus']
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['cell'], {'x': 32311, 'y': 32172, 'floor': 6})
+        self.assertEqual(rows[0]['direction'], 'north')
+        self.assertEqual({p['origin'] for p in rows[0]['provenance']}, {'canary', 'crystal'})
+
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})

@@ -22,10 +22,26 @@ class WorldChangeItemProfiles(unittest.TestCase):
 
     def test_committed_overlay_reproduces_exact_pinned_sources(self):
         self.assertEqual(builder.OUTPUT.read_bytes(), builder.encoded(self.document))
-        self.assertEqual(len(admission.validate(self.document)), 41)
+        self.assertEqual(len(admission.validate(self.document)), 42)
         self.assertEqual(self.document["reserved_ids_excluded"], [12064])
         self.assertNotIn("oteryn:item.tibia.i12064", {
             row["production_definition"]["production_key"] for row in self.document["records"]})
+
+    def test_m31_royal_carpet_is_walkable_without_portable_custody(self):
+        key = 'oteryn:item.tibia.i2576'
+        records = {r['production_definition']['production_key']: r for r in self.document['records']}
+        self.assertIn(key, records)
+        record = records[key]
+        self.assertFalse(record['attributes']['blocks_movement'])
+        self.assertFalse(record['attributes']['blocks_projectile'])
+        self.assertEqual(record['admission']['legal_destinations'], ['Ground'])
+        physical = record['semantics']['physical']['value']
+        self.assertEqual(physical['movable'], {'state': 'KNOWN', 'value': False})
+        self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': False})
+        row = next(r for r in self.document['source_rows'] if r['id'] == 2576)
+        self.assertEqual(row['xml_name'], 'red carpet')
+        self.assertFalse(row['projected_physical']['block_solid'])
+        self.assertFalse(row['projected_physical']['block_pathfind'])
 
     def test_names_ground_speeds_and_tool_portability_come_from_sources(self):
         rows = {row["id"]: row for row in self.document["source_rows"]}
@@ -191,7 +207,7 @@ class WorldChangeItemProfiles(unittest.TestCase):
             else:
                 admission.admit(builder.ROOT, generated, "items", "manifest", order, canonical)
                 records = json.loads(generated["items"])["records"]
-                self.assertEqual(len(records), 41)
+                self.assertEqual(len(records), 42)
                 self.assertEqual(next(row for row in records if row["production_definition"] == wolf["production_definition"]), wolf)
 
     def test_existing_registry_admission_regenerates_manifest_and_rejects_duplicate(self):
@@ -200,7 +216,7 @@ class WorldChangeItemProfiles(unittest.TestCase):
                      "manifest": canonical({"item_profiles": {"sha256": "before"}})}
         order = lambda row: row["production_definition"]["production_key"]
         admission.admit(builder.ROOT, generated, "items", "manifest", order, canonical)
-        self.assertEqual(len(json.loads(generated["items"])["records"]), 41)
+        self.assertEqual(len(json.loads(generated["items"])["records"]), 42)
         self.assertEqual(json.loads(generated["manifest"])["item_profiles"]["sha256"],
                          hashlib.sha256(generated["items"]).hexdigest())
         with self.assertRaisesRegex(ValueError, "WORLD_CHANGE_ITEM_PROFILE_DUPLICATE"):

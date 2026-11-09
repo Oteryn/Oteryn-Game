@@ -614,3 +614,20 @@ scan also found no lumberjack/Chip script. No executable-source price evidence
 was located. These negative searches are bounded observations, not proof no
 implementation exists anywhere; the now-accessible public shop tables supply
 the concrete price reference without inventing50gold per undefined quest event.
+
+### Kingsday's native royal cell and its carpet
+
+The captured NPC placement is `(32311,32172,6)`, facing north, agreeing in the
+Canary and Crystal promotion candidates. The committed B3 tile contains ground
+464 and red carpet2576. Native parity originally held the King as `BlockSolid`:
+the carpet had no native physical profile, so the collision owner failed closed.
+This was an unknown-profile fallback, not a positive source blocking flag.
+
+The existing World-change item normalizer verifies retained Crystal XML at
+<https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data/items/items.xml>
+and the pinned official15.30 appearances in the client-assets manifest. Both
+identify2576 as a nonmovable, nonpickupable red carpet: movement, projectile and
+pathfinding blocking are false; there is no floor change or height. M31 adds
+that single source-derived profile through the existing closed World-change
+provider, retaining Ground-only custody. The NPC compiler's strict cell rule
+and player/creature collision rules remain intact.

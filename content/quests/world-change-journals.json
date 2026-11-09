@@ -2145,7 +2145,7 @@
       "quest": "oteryn:quest.authored.kingsday_mini_world_change",
       "repeat": "once",
       "requires_premium": false,
-      "runtime_enabled": false,
+      "runtime_enabled": true,
       "sources": [
         "https://tibia.fandom.com/index.php?curid=76244&oldid=845148",
         "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"

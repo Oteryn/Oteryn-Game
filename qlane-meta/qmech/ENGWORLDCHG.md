@@ -46,8 +46,22 @@ unit cases also pass. The authoring checks pass, and all 115 authoring unit
 modules pass (1,148 tests, with the existing module skips unchanged).
 
 Fury Gates also has programme wiring and lowering tests; its own personal
-journey PostgreSQL case is still pending. Seven other programmes remain disabled
+journey PostgreSQL case is still pending. Six other programmes remain disabled
 until their remaining engine paths and focused proofs are implemented.
-Pending M31 includes native NPC and achievement composition, counter-goal
+Kingsday's royal contact now has its captured native placement at
+`(32311,32172,6)`, facing north. The real-dispatch case passed in 175.683 seconds:
+visiting the castle is required, and the King grants Loyal Subject and personal
+completion once, including replay and completed journal checks.
+The final regenerated-tree PG rerun passed Kingsday in 194.415 seconds,
+Grimvale in 146.975 seconds and Hive Outpost in 146.980 seconds. All 115
+quest-authoring unit modules and checks pass; content-tree validation is 97/97.
+
+Full-World parity exposed the previously missing physical profile of red carpet
+2576 beneath the King. The existing source normalizer verifies that carpet as
+passable, nonmovable and nonpickupable; its Ground-only profile makes the actual
+royal cell admissible without changing the NPC compiler's strict collision rule.
+The profile's red-then-green source tests and official parity check pass.
+
+Pending M31 includes the remaining native NPC and achievement composition, counter-goal
 completion, personal Hive favour/access, and Horse Station's taming receipt.
 Independent package review and protected integration belong to the coordinator.

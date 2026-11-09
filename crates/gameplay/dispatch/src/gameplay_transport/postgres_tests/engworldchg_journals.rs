@@ -16,6 +16,10 @@ fn engworldchg_grimvale_personal_native_journal_postgres() -> TestResult {
     scenario("grimvale", "island", "survey", "werewolf", 10)
 }
 #[test]
+fn engworldchg_kingsday_native_npc_journal_postgres() -> TestResult {
+    scenario("kingsday", "royal-visit", "royal-visit", "", 0)
+}
+#[test]
 fn engworldchg_outpost_personal_native_journal_postgres() -> TestResult {
     scenario("hive_outpost", "outpost", "survey", "insectoid_worker", 20)
 }
@@ -200,166 +204,176 @@ fn scenario(
                 .map_err(debug)?;
             let phase = format!("oteryn:quest-progress/world-change-journal/{program}/phase");
             let kills = format!("oteryn:quest-progress/world-change-journal/{program}/kills");
-            // Before entry, actual source-area deaths have no active personal predecessor.
-            super::qengine_kill_stories::death(
-                &owner,
-                &admitted,
-                &format!("oteryn:creature.{creature}"),
-                21000,
-            )
-            .await?;
-            assert_eq!(value(&h, &kills).await?, 0);
-            owner.premium_coordinator = None;
-            step(&owner, &mut admitted, 1, StepDirection::West).await?;
-            assert_eq!(
-                value(&h, &phase).await?,
-                0,
-                "an absent native Premium authority cannot open the personal hunt"
-            );
-            assert!(
-                live_creatures(&owner, &format!("oteryn:creature.{creature}"))
-                    .await?
-                    .is_empty(),
-                "preflight cannot publish actors before a fenced journal receipt"
-            );
-            step(&owner, &mut admitted, 2, StepDirection::East).await?;
-            owner.premium_coordinator = Some(&premium);
-            step(&owner, &mut admitted, 3, StepDirection::West).await?;
-            assert_eq!(value(&h, &phase).await?, 1);
-            assert_eq!(
-                use_marker(&owner, &mut admitted, &final_callback, 4).await?,
-                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
-            );
-            if program == "grimvale" {
-                for wave in 0..2_u64 {
-                    let cohort = live_creatures(&owner, "oteryn:creature.werewolf").await?;
-                    assert_eq!(
-                        cohort.len(),
-                        5,
-                        "the real admitted STEP must supply the selected island encounter"
-                    );
-                    let survivor = if wave == 0 {
-                        let target = cohort[0];
-                        let mut runtime = owner.runtime.lock().await;
-                        let from = runtime
-                            .read_actor_position(target)
-                            .map_err(debug)?
-                            .position();
-                        let moved = runtime
-                            .commit_quest_platform_displacement(
-                                from,
-                                origin,
-                                |_, _, _| true,
-                                || true,
-                            )
-                            .map_err(debug)?;
-                        assert_eq!(moved.len(), 1);
-                        Some(target)
-                    } else {
-                        None
-                    };
-                    for (n, target) in cohort.into_iter().enumerate() {
-                        if Some(target) == survivor {
-                            continue;
-                        }
-                        let ordinal = if wave == 0 {
-                            n.checked_sub(1).ok_or("cohort order")?
+            if program == "kingsday" {
+                super::engworldchg_kingsday::exercise(&mut owner, &mut admitted, &h, &authority)
+                    .await?;
+            } else {
+                // Before entry, actual source-area deaths have no active personal predecessor.
+                super::qengine_kill_stories::death(
+                    &owner,
+                    &admitted,
+                    &format!("oteryn:creature.{creature}"),
+                    21000,
+                )
+                .await?;
+                assert_eq!(value(&h, &kills).await?, 0);
+                owner.premium_coordinator = None;
+                step(&owner, &mut admitted, 1, StepDirection::West).await?;
+                assert_eq!(
+                    value(&h, &phase).await?,
+                    0,
+                    "an absent native Premium authority cannot open the personal hunt"
+                );
+                assert!(
+                    live_creatures(&owner, &format!("oteryn:creature.{creature}"))
+                        .await?
+                        .is_empty(),
+                    "preflight cannot publish actors before a fenced journal receipt"
+                );
+                step(&owner, &mut admitted, 2, StepDirection::East).await?;
+                owner.premium_coordinator = Some(&premium);
+                step(&owner, &mut admitted, 3, StepDirection::West).await?;
+                assert_eq!(value(&h, &phase).await?, 1);
+                assert_eq!(
+                    use_marker(&owner, &mut admitted, &final_callback, 4).await?,
+                    oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
+                );
+                if program == "grimvale" {
+                    for wave in 0..2_u64 {
+                        let cohort = live_creatures(&owner, "oteryn:creature.werewolf").await?;
+                        assert_eq!(
+                            cohort.len(),
+                            5,
+                            "the real admitted STEP must supply the selected island encounter"
+                        );
+                        let survivor = if wave == 0 {
+                            let target = cohort[0];
+                            let mut runtime = owner.runtime.lock().await;
+                            let from = runtime
+                                .read_actor_position(target)
+                                .map_err(debug)?
+                                .position();
+                            let moved = runtime
+                                .commit_quest_platform_displacement(
+                                    from,
+                                    origin,
+                                    |_, _, _| true,
+                                    || true,
+                                )
+                                .map_err(debug)?;
+                            assert_eq!(moved.len(), 1);
+                            Some(target)
                         } else {
-                            n
+                            None
                         };
-                        kill_actor(
+                        for (n, target) in cohort.into_iter().enumerate() {
+                            if Some(target) == survivor {
+                                continue;
+                            }
+                            let ordinal = if wave == 0 {
+                                n.checked_sub(1).ok_or("cohort order")?
+                            } else {
+                                n
+                            };
+                            kill_actor(
+                                &owner,
+                                &admitted,
+                                target,
+                                22000 + wave * 5 + u64::try_from(ordinal)?,
+                            )
+                            .await?;
+                        }
+                        if let Some(survivor) = survivor {
+                            assert_eq!(value(&h, &kills).await?, 4);
+                            step(&owner, &mut admitted, 5, StepDirection::North).await?;
+                            assert_eq!(
+                                value(
+                                    &h,
+                                    "oteryn:quest-progress/world-change-journal/grimvale/waves"
+                                )
+                                .await?,
+                                1,
+                                "a live admitted actor outside the room still owns its wave"
+                            );
+                            assert_eq!(
+                                live_creatures(&owner, "oteryn:creature.werewolf").await?,
+                                vec![survivor]
+                            );
+                            kill_actor(&owner, &admitted, survivor, 22004).await?;
+                            assert_eq!(value(&h, &kills).await?, 5);
+                            step(&owner, &mut admitted, 6, StepDirection::East).await?;
+                            step(&owner, &mut admitted, 7, StepDirection::West).await?;
+                        }
+                    }
+                } else {
+                    for n in 0..goal {
+                        super::qengine_kill_stories::death(
                             &owner,
                             &admitted,
-                            target,
-                            22000 + wave * 5 + u64::try_from(ordinal)?,
+                            &format!("oteryn:creature.{creature}"),
+                            22000 + u64::try_from(n)?,
                         )
                         .await?;
                     }
-                    if let Some(survivor) = survivor {
-                        assert_eq!(value(&h, &kills).await?, 4);
-                        step(&owner, &mut admitted, 5, StepDirection::North).await?;
-                        assert_eq!(
-                            value(
-                                &h,
-                                "oteryn:quest-progress/world-change-journal/grimvale/waves"
-                            )
-                            .await?,
-                            1,
-                            "a live admitted actor outside the room still owns its wave"
-                        );
-                        assert_eq!(
-                            live_creatures(&owner, "oteryn:creature.werewolf").await?,
-                            vec![survivor]
-                        );
-                        kill_actor(&owner, &admitted, survivor, 22004).await?;
-                        assert_eq!(value(&h, &kills).await?, 5);
-                        step(&owner, &mut admitted, 6, StepDirection::East).await?;
-                        step(&owner, &mut admitted, 7, StepDirection::West).await?;
-                    }
                 }
-            } else {
-                for n in 0..goal {
-                    super::qengine_kill_stories::death(
-                        &owner,
-                        &admitted,
-                        &format!("oteryn:creature.{creature}"),
-                        22000 + u64::try_from(n)?,
-                    )
-                    .await?;
+                assert_eq!(value(&h, &kills).await?, goal);
+                if program == "grimvale" {
+                    step(&owner, &mut admitted, 8, StepDirection::North).await?;
+                    assert!(
+                        live_creatures(&owner, "oteryn:creature.werewolf")
+                            .await?
+                            .is_empty(),
+                        "a finished hunt cannot emit another group"
+                    );
+                    assert_eq!(
+                        value(
+                            &h,
+                            "oteryn:quest-progress/world-change-journal/grimvale/waves"
+                        )
+                        .await?,
+                        2
+                    );
                 }
-            }
-            assert_eq!(value(&h, &kills).await?, goal);
-            if program == "grimvale" {
-                step(&owner, &mut admitted, 8, StepDirection::North).await?;
-                assert!(
-                    live_creatures(&owner, "oteryn:creature.werewolf")
-                        .await?
-                        .is_empty(),
-                    "a finished hunt cannot emit another group"
-                );
+                let completion_command = if program == "grimvale" { 9 } else { 5 };
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                 assert_eq!(
-                    value(
-                        &h,
-                        "oteryn:quest-progress/world-change-journal/grimvale/waves"
+                    use_marker(&owner, &mut admitted, &final_callback, completion_command).await?,
+                    oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+                );
+                assert_eq!(value(&h, &phase).await?, 4);
+                let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes")
+                .bind(&final_callback.quest).fetch_one(&h.pool).await?;
+                assert_eq!(receipts, 1);
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                assert_eq!(
+                    use_marker(
+                        &owner,
+                        &mut admitted,
+                        &final_callback,
+                        completion_command + 1
                     )
                     .await?,
-                    2
+                    oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
                 );
+                let loaded = h
+                    .root
+                    .read_character_quest_state(&authority, fence.character_id)
+                    .await
+                    .map_err(debug)?;
+                assert_eq!(loaded.tracks().get(&phase), Some(&4));
+                assert_eq!(loaded.tracks().get(&kills), Some(&goal));
             }
-            let completion_command = if program == "grimvale" { 9 } else { 5 };
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            assert_eq!(
-                use_marker(&owner, &mut admitted, &final_callback, completion_command).await?,
-                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
-            );
-            assert_eq!(value(&h, &phase).await?, 4);
-            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes")
-                .bind(&final_callback.quest).fetch_one(&h.pool).await?;
-            assert_eq!(receipts, 1);
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            assert_eq!(
-                use_marker(
-                    &owner,
-                    &mut admitted,
-                    &final_callback,
-                    completion_command + 1
-                )
-                .await?,
-                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
-            );
-            let loaded = h
-                .root
-                .read_character_quest_state(&authority, fence.character_id)
-                .await
-                .map_err(debug)?;
-            assert_eq!(loaded.tracks().get(&phase), Some(&4));
-            assert_eq!(loaded.tracks().get(&kills), Some(&goal));
+            let journal_command = match program {
+                "grimvale" => 11,
+                "hive_outpost" => 7,
+                _ => 3,
+            };
             prove_journal_wire(
                 &owner,
                 admitted,
-                &final_callback.quest,
-                goal,
-                completion_command + 2,
+                &entry_callback.quest,
+                (goal > 0).then_some(goal),
+                journal_command,
             )
             .await?;
             eprintln!(
@@ -375,7 +389,7 @@ fn scenario(
     })
 }
 
-async fn value(h: &Harness, track: &str) -> TestResult<i64> {
+pub(super) async fn value(h: &Harness, track: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)",
     )
@@ -452,7 +466,7 @@ fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::Bu
                     attrs: Default::default(),
                 });
             }
-            if (x, y) == (target.x, target.y) {
+            if (x, y) == (target.x, target.y) && (x, y) != (at.x, at.y) {
                 items.push(sector::Item {
                     palette: 2,
                     depth: 0,
@@ -517,7 +531,7 @@ async fn prove_journal_wire(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: super::AdmittedSession,
     quest: &str,
-    goal: i64,
+    goal: Option<i64>,
     command_id: u64,
 ) -> TestResult {
     use oteryn_protocol_oteryn::quest_log::{
@@ -572,10 +586,11 @@ async fn prove_journal_wire(
                 if let Some(QuestLogView::Line(line)) = log.view {
                     found |= line.completed
                         && line.quest_index == index
-                        && line
-                            .missions
-                            .iter()
-                            .any(|m| m.done && m.text.contains(&format!("{goal}/{goal}")));
+                        && line.missions.iter().any(|m| {
+                            m.done
+                                && goal
+                                    .is_none_or(|goal| m.text.contains(&format!("{goal}/{goal}")))
+                        });
                 }
             }
         }
@@ -683,7 +698,7 @@ async fn kill_actor(
     Ok(())
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut super::AdmittedSession,
     command: u64,
