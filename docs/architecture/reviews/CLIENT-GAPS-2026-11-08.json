@@ -35,9 +35,9 @@
   "area": "Login",
   "feature": "Launcher, wersja, kontrola/aktualizacja pakietów",
   "status": "PARTIAL",
-  "gap": "Jest kontrola pięciu pól tożsamości wydania, ścieżek, rozmiaru i SHA-256 pakietów przed loginem oraz rzeczywisty --check-packages wywoływany przez diagnostykę launchera. Pozostaje wykonanie aktualizacji/naprawy: brak zaakceptowanego endpointu Platform channel-pointer; CLIENT-INSTALLER-0 §5.1 nakazuje wyłączony updater i zabrania zastępczego serwera Game.",
+  "gap": "Kontrola pakietów i rzeczywisty caller diagnostyki są gotowe. Platform ma zaakceptowane TUF i GET /updates/{channel}/metadata, nie prosty channel-pointer z kandydata Game. Pozostaje uzgodnienie bootstrapu publicznego Root, mapowania kanałów/tożsamości wydania oraz originu/formatu instalatora i wdrożenie zaufanego klienta TUF z wykonaniem aktualizacji/naprawy; kompatybilność launchera jest jawnie nieudowodniona w README Platform.",
   "lane": "cg_ui",
-  "evidence": "apps/client/tests/package_integrity.rs:90 + executable_verifies_packages_then_rejects_same_size_corruption; apps/client/tests/package_integrity.rs:201 + launcher_diagnosis_runs_the_active_release_verifier; Pozostaje: wykonanie aktualizacji/naprawy po zaakceptowaniu endpointu Platform (CLIENT-INSTALLER-0:155)."
+  "evidence": "apps/client/tests/package_integrity.rs:90 + executable_verifies_packages_then_rejects_same_size_corruption; apps/client/tests/package_integrity.rs:201 + launcher_diagnosis_runs_the_active_release_verifier; docs/architecture/reviews/T005-UPDATER-PLATFORM-COMPATIBILITY-2026-11-09.md:39 + pinned Platform bc6f88346e6aaf1347f0a5a798b33a5ede00bc04 compatibility evidence; Pozostaje: uzgodniony profil/Root/mapowanie tożsamości i wykonanie TUF update/repair."
  },
  {
   "id": "T010",

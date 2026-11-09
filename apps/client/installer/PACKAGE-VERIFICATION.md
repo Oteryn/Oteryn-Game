@@ -29,11 +29,13 @@ A retained older release is not compared to the newer launcher's identity or
 started with a potentially unsupported new diagnostic flag. Diagnostics are
 bounded and direct the player to the active release's trusted installer.
 
-Automatic installer download/execution is **not enabled**. The distribution
-interface is owned by Platform. CLIENT-INSTALLER-0 section 5.1 says:
+Automatic installer download/execution is **not enabled**. Platform has an
+accepted TUF architecture and metadata GET implementation; it does not implement
+the simple unsigned channel-pointer shape in the older Game candidate. The
+client still needs an agreed public Root bootstrap, channel/release-identity
+mapping, artifact origin and installer activation/confirmation profile.
 
-> until it exists the updater is disabled and the client behaves exactly as today. No Game-hosted stand-in server is built.
-
-An accepted Platform channel-pointer endpoint and serving contract remain
-necessary to implement update/repair execution; local package verification does
-not create distribution authority or a replacement service.
+See the [pinned compatibility evidence](../../../docs/architecture/reviews/T005-UPDATER-PLATFORM-COMPATIBILITY-2026-11-09.md).
+Platform's Downloads README explicitly leaves real launcher compatibility and
+activation unproved. Local package integrity is not publisher authentication or
+TUF freshness/rollback verification, and creates no distribution authority.
