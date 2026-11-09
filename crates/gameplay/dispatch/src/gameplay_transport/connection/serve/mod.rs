@@ -45,6 +45,7 @@ struct ServeState {
     push_window: crate::gameplay_transport::attack::IntentWindow,
     push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
+    input_after_refresh: bool,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: Option<BufferedStep>,
@@ -100,7 +101,7 @@ struct ServeState {
 enum ServeEnd {
     Transferred(Box<AdmittedSession>),
     Disconnected,
-    ControlLost,
+    ControlLost(&'static str),
     LoggedOut,
     Closed(FoundationProtocolError),
 }
@@ -111,12 +112,16 @@ impl ServeEnd {
         let reason = match &self {
             Self::Transferred(_) => "transferred",
             Self::Disconnected => "disconnected",
-            Self::ControlLost => "control_lost",
+            Self::ControlLost(_) => "control_lost",
             Self::LoggedOut => "logged_out",
             Self::Closed(_) => "protocol_error",
         };
+        let path = match &self {
+            Self::ControlLost(path) => format!(" path={path}"),
+            _ => String::new(),
+        };
         operator_event(&format!(
-            "event=serve_end reason={reason} source={} next_command_id={} server_sequence={}",
+            "event=serve_end reason={reason}{path} source={} next_command_id={} server_sequence={}",
             std::panic::Location::caller(),
             admitted.continuity.next_command_id,
             admitted.continuity.server_sequence,
@@ -124,7 +129,7 @@ impl ServeEnd {
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
             Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
-            Self::ControlLost => ConnectionEnd::AdmittedThenControlLost(admitted),
+            Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),
         }
