@@ -167,6 +167,22 @@ fn t135_unbound_contents_go_to_seller_not_depositor() -> TestResult {
     Ok(())
 }
 fn scenario_contents(bound: bool) -> TestResult {
+    scenario_with_furniture(bound, false)
+}
+
+#[test]
+fn t135_move_out_wraps_furniture_before_depot_delivery() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_with_furniture(false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "T135 wrapping thread failed")??;
+    Ok(())
+}
+fn scenario_with_furniture(bound: bool, wrap: bool) -> TestResult {
     run(async |admin| {
         reset();
         let mut h =
@@ -185,6 +201,11 @@ fn scenario_contents(bound: bool) -> TestResult {
         if bound {
             seed::bind_fixture_items(&h).await?;
         }
+        let furniture = if wrap {
+            Some(seed::furniture_item(&h).await?)
+        } else {
+            None
+        };
         seed::assert_unproven_removal_closed(&h).await?;
         h.root = seed::runtime_root(&h, &admin).await?;
         let deps = Dependencies::new()?;
@@ -411,6 +432,9 @@ fn scenario_contents(bound: bool) -> TestResult {
                 // Observe both final commit and replay using a newly recovered Root.
                 h.root = seed::runtime_root(&h, &admin).await?;
                 seed::assert_final(&h, *recipient.as_bytes(), bound).await?;
+                if let Some(item) = furniture {
+                    seed::assert_wrapped(&h, item).await?;
+                }
             }
         }
         seed::assert_runtime_privileges(&h).await?;

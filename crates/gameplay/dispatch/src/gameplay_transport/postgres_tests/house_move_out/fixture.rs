@@ -456,3 +456,27 @@ pub(super) async fn bind_fixture_items(h: &Harness) -> TestResult {
     tx.commit().await?;
     Ok(())
 }
+
+pub(super) async fn furniture_item(h: &Harness) -> TestResult<[u8; 16]> {
+    let item:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_house_interior_locations WHERE house_key=$1 ORDER BY item_instance_id LIMIT 1").bind(HOUSE).fetch_one(&h.pool).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i6355',definition_revision_ref='definition-r1' WHERE item_instance_id=encode($1,'hex')::uuid").bind(&item).execute(&mut *tx).await?;
+    tx.commit().await?;
+    item.try_into().map_err(|_| "fixture item UUID".into())
+}
+pub(super) async fn assert_wrapped(h: &Harness, item: [u8; 16]) -> TestResult {
+    let row:(String,i64,i16)=sqlx::query_as("SELECT i.definition_production_key,i.quantity,i.lifecycle FROM game_item_instances i JOIN game_item_character_inbox_locations l USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND l.character_id=encode($2,'hex')::uuid").bind(item.as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        row,
+        ("oteryn:item.tibia.i23398".into(), 1, 1),
+        "Canary wrapItem uses a decoration kit and preserves the source identity"
+    );
+    let seal=h.recovery.seal_current().map_err(debug)?;
+    let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let target=h.root.house_furniture_kit_target(&authority,item).await?.ok_or("wrapped origin must remain usable")?;
+    assert_eq!((target.family.as_str(),target.production_key.as_str(),target.revision_ref.as_str()),("Item","oteryn:item.tibia.i6355","definition-r1"));
+    Ok(())
+}

@@ -18,6 +18,9 @@ Canary commit `99902524`, `src/map/house/house.cpp`:
 - Line 356 moves the item to `targetPlayer->getInbox()`. This is the depot mail
   inbox. `getStoreInbox()` is not used by this reference file.
 - Failed moves are logged and leave the item in its current location.
+- `src/game/game.cpp:5593-5621` converts furniture to decoration kit `23398`
+  and records its original form for unwrapping. This automatic disposition path
+  does not select a legacy manual-wrap kit.
 
 ## Required Game behavior
 
