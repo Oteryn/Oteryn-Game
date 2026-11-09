@@ -10,6 +10,7 @@ impl PlayLink {
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
+    lock(&link.mailbox).properties.house.ownership.context=std::sync::Arc::downgrade(&link.mailbox);
     open(
         link,
         Form {
@@ -18,7 +19,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "World UUID",
                 "Town key",
                 "House row (1 onwards)",
-                "Bid / notice Unix time",
+                "Bid amount (gold)",
                 "Member UUIDs (space/newline separated)",
                 "Door: x y floor (uses current house ACL revision)",
                 "Type CONFIRM for changes",
@@ -41,7 +42,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (slot, value) in mailbox.properties.house.fields.iter_mut().zip(fields) {
                     *slot = value;
                 }
-                if selection == 10 {
+                if matches!(selection,8|9|14) {
+                    let weak=mailbox.properties.house.ownership.context.clone();
+                    ownership_window::open_from_mailbox(mailbox,weak,commands);
+                } else if selection == 10 {
                     let panel = &mut mailbox.properties.house;
                     if let Some(index) = panel.fields[2]
                         .trim()
@@ -80,3 +84,7 @@ fn text(panel: &oteryn_client_ui::house::Panel) -> String {
     }
     text
 }
+
+#[cfg(windows)]
+#[path = "view/ownership_window.rs"]
+pub(super) mod ownership_window;

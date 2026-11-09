@@ -306,3 +306,6 @@ fn house_catalogue_details_reach_production_panel() -> Result<(), Box<dyn std::e
     assert_eq!(map[0].label, "1: Home");
     Ok(())
 }
+
+#[path = "ownership.rs"]
+mod ownership;

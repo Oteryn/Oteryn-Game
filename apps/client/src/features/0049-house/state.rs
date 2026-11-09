@@ -1,8 +1,11 @@
+#[path = "state/ownership.rs"]
+pub mod ownership;
 #[derive(Clone, Debug, Default)]
 pub struct Panel {
     pub map_running: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub model: oteryn_client_ui::house::Panel,
     pub fields: [String; 7],
+    pub ownership: ownership::Ownership,
 }
 
 impl Panel {
@@ -11,6 +14,9 @@ impl Panel {
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,
         result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
     ) {
+        if command.kind==oteryn_client_runtime::house::house_sale::COMMAND {
+            self.ownership.apply(command,result);return;
+        }
         let acl_read = self.model.pending_acl_read && self.model.pending.as_ref() == Some(command);
         self.model.apply(command, result);
         if acl_read && let Some(snapshot) = &self.model.acl_snapshot {
@@ -34,6 +40,8 @@ impl Panel {
         }
     }
     pub(in crate::play) fn invalidate(&mut self) {
+        self.ownership.model.admitted(if self.model.selected {&[49]} else {&[]});
+        self.ownership.navigation=None;self.ownership.fields=Default::default();
         self.model.pending = None;
         self.model.pending_acl_read = false;
         self.model.pending_acl = false;
@@ -48,8 +56,11 @@ impl Panel {
     }
     pub(in crate::play) fn initialize(&mut self, selected: bool) {
         let world = std::mem::take(&mut self.fields[0]);
+        let context=self.ownership.context.clone();
         *self = Self::default();
         self.model.selected = selected;
+        self.ownership.context=context;
+        self.ownership.model.admitted(if selected {&[49]} else {&[]});
         self.fields[0] = world;
     }
 }
