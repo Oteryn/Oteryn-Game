@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let qm48 = name == "qm48/mammoth";
+    let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
@@ -41,7 +42,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = nomads_window
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -57,7 +59,13 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if qm48 {
+    let start = if nomads_window {
+        Position {
+            x: 33217,
+            y: 32854,
+            floor: -9,
+        }
+    } else if qm48 {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
@@ -141,7 +149,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_signs || diprath_room {
+    let mut callback = if nomads_window {
+        callback(super::super::qengine_m02_use::NAME)?
+    } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
         callback("ancient-tombs-morguthis-seven-flame-gate")?
@@ -337,7 +347,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if nomads_window {
+            super::super::qengine_m02_use::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("Nomads native policies")?,
+            )?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -650,7 +666,16 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m01b_explore {
+        if nomads_window {
+            super::super::qengine_m02_use::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                name.ends_with("-wrong-order"),
+            )
+            .await?;
+        } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)

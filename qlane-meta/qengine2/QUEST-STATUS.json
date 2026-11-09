@@ -2265,13 +2265,22 @@
     "red_log": "/tmp/qengine2-batch7-red.log"
   },
   "current_mechanic_batch": {
-    "mechanic": "M01a",
-    "status": "PARTIAL",
-    "scope": "Sven/Barbarian Test Premium-gated starter; no whole-quest promotion.",
-    "postgres_test": "m01a_sven_premium_production_talk_postgres",
+    "mechanic": "M02",
+    "status": "QUALIFIED_NATIVE_USE",
+    "scope": "Nomads Land exact ordered mutable Ground window predicate; not whole-quest completion.",
     "postgres_version": "18.6",
-    "postgres_duration_seconds": 147.394634101,
-    "remaining": "Cover all remaining assigned TALK routes.",
-    "red_evidence": "Real PG missing production route: 87.308413892s; positive fixture then corrected to use the existing delivered-Premium coordinator."
+    "cases": [
+      {
+        "test": "m02_nomads_native_use_observes_both_live_stacks_postgres",
+        "duration_seconds": 92.568041532
+      },
+      {
+        "test": "m02_nomads_native_use_refuses_same_counts_in_wrong_order_postgres",
+        "duration_seconds": 77.87562718
+      }
+    ],
+    "caller": "ordinary command 2 USE against the committed native window at 33216,32855,-9 ordinal1",
+    "remaining": "M01a remaining TALK routes; M03 Pits binding and remaining time-machine pieces.",
+    "verification_at_push": "Own PG, fmt, architecture and pin check pass; clippy running under owner immediate-push direction."
   }
 }

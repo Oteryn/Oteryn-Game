@@ -4,6 +4,22 @@ Work branch: `claude/happy-davinci-ijz3wy-qm-qengine2`. Push only this branch;
 no qmech/main merge, no force/rebase, no shared CLAIMS.md edits. Earlier outfit
 ledger and branch instructions below are historical, not the current queue.
 
+M02 native caller qualification (2026-11-09): reused the existing SRV7/SRVWLD
+engine and canonical Nomads window binding, now through normal command2 USE
+in the unchanged B3 source crop. PostgreSQL18.6 positive PASS92.568041532s;
+same counts in wrong order PASS77.87562718s. Empty/one-pile/extra-root layouts
+refuse, correct piles admit repeatedly, and all observations preserve items,
+quest tracks and receipts. Both fenced Root and live projection are asserted.
+The first real caller regression ran RED81.606797517s; layer isolation then
+proved Root accepted the piles but generic corpse-tagged fixture MINTs were
+intentionally excluded from the loose Ground reader. Fixture setup now uses
+Root MINT with the existing loose-drop custody reference; no SQL write or
+production provenance guard was relaxed. This qualifies M02's physical
+predicate, not the remaining Nomads quest stages. Fmt, architecture and pins
+pass; clippy is running at the owner-directed immediate push. The cancelled
+qmech merge was aborted without a commit; M02 files were restored from stash.
+Sven's subsequent changed-crate clippy passed in7m00s.
+
 M01a Sven slice (2026-11-09): the chosen Barbarian Test starter now binds
 its real Sven caller and retains Premium. Authoring regression and real PG
 ran RED before binding. PostgreSQL18.6 production transport PASS147.394634101s:
