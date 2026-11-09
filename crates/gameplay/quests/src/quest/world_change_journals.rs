@@ -130,8 +130,6 @@ fn parse(source: &'static str) -> Result<Document, String> {
         }
         if (program.achievement.is_some() && program.npc_callbacks.is_empty())
             || program.taming.is_some()
-            || program.completion.counter_track.is_some()
-            || program.completion.counter_target.is_some()
         {
             return Err("unsupported enabled journal reward policy".into());
         }
@@ -207,7 +205,8 @@ fn parse(source: &'static str) -> Result<Document, String> {
             .values()
             .flatten()
             .any(|event| !events.contains(event))
-            || program.completion.callbacks.is_empty()
+            || (program.completion.callbacks.is_empty()
+                && program.completion.counter_track.is_none())
             || program
                 .completion
                 .callbacks
@@ -215,6 +214,25 @@ fn parse(source: &'static str) -> Result<Document, String> {
                 .any(|event| !events.contains(event))
         {
             return Err("unbound personal journal stage".into());
+        }
+        match (
+            &program.completion.counter_track,
+            program.completion.counter_target,
+        ) {
+            (None, None) => {}
+            (Some(track), Some(target))
+                if program.completion.callbacks.is_empty()
+                    && target > 0
+                    && program
+                        .counters
+                        .iter()
+                        .any(|counter| counter.track == track)
+                    && program
+                        .counters
+                        .iter()
+                        .filter(|counter| counter.track == track)
+                        .all(|counter| counter.maximum == target) => {}
+            _ => return Err("unbound personal journal counter goal".into()),
         }
     }
     Ok(document)
@@ -353,8 +371,44 @@ pub(super) fn completes(callback: &str) -> bool {
         d.programs
             .iter()
             .filter(|p| p.runtime_enabled)
-            .any(|p| p.completion.callbacks.iter().any(|key| key == callback))
+            .any(|p| completion_matches(p, callback))
     })
+}
+
+fn completion_matches(program: &Program, event: &str) -> bool {
+    program.completion.callbacks.iter().any(|key| key == event)
+        || program.counters.iter().any(|counter| {
+            counter.transition == event
+                && program.completion.counter_track.as_deref() == Some(counter.track)
+                && program.completion.counter_target == Some(counter.maximum)
+        })
+}
+
+fn journal_end(p: &Program) -> Result<(String, i64), String> {
+    if let (Some(track), Some(target)) = (&p.completion.counter_track, p.completion.counter_target)
+    {
+        return Ok((track.clone(), target));
+    }
+    let end = p
+        .world_callbacks
+        .iter()
+        .chain(&p.npc_callbacks)
+        .filter(|c| {
+            p.completion
+                .callbacks
+                .iter()
+                .any(|key| c["key"].as_str() == Some(key))
+        })
+        .filter_map(|c| {
+            c["storage"]
+                .as_array()?
+                .iter()
+                .find(|s| s["track"].as_str() == Some(&p.phase_track))?["set"]
+                .as_i64()
+        })
+        .max()
+        .ok_or("journal completion phase")?;
+    Ok((p.phase_track.clone(), end))
 }
 /// Requirement terms are included in the callback binding and read in its fenced transaction.
 #[must_use]
@@ -404,25 +458,7 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
         JournalPiece, JournalText, QuestJournal, QuestLogKind, QuestLogMission, QuestLogQuest,
     };
     for p in document()?.programs.iter().filter(|p| p.runtime_enabled) {
-        let end = p
-            .world_callbacks
-            .iter()
-            .chain(&p.npc_callbacks)
-            .filter(|c| {
-                p.completion
-                    .callbacks
-                    .iter()
-                    .any(|key| c["key"].as_str() == Some(key))
-            })
-            .filter_map(|c| {
-                c["storage"]
-                    .as_array()?
-                    .iter()
-                    .find(|s| s["track"].as_str() == Some(&p.phase_track))?["set"]
-                    .as_i64()
-            })
-            .max()
-            .ok_or("journal completion phase")?;
+        let (mission_track, end) = journal_end(p)?;
         let mut pieces = vec![JournalPiece::Text(p.journal.objectives.join(" "))];
         let mut seen = BTreeSet::new();
         for counter in &p.counters {
@@ -443,8 +479,8 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
             hide_when_completed: false,
             missions: vec![QuestLogMission {
                 name: p.journal.name.clone(),
-                track: p.phase_track.clone(),
-                start_value: 1,
+                track: mission_track,
+                start_value: i64::from(p.completion.counter_track.is_none()),
                 end_value: end,
                 journal: QuestJournal::Fixed(JournalText::Template(pieces)),
             }],
@@ -455,6 +491,104 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn personal_counter_goal_programmes_lower_without_premature_completion() -> Result<(), String> {
+        for selected in ["insectoid_invasion", "jungle_camp"] {
+            let mut value: serde_json::Value = serde_json::from_str(include_str!(
+                "../../../../../content/quests/world-change-journals.json"
+            ))
+            .map_err(|error| error.to_string())?;
+            for program in value["programs"].as_array_mut().ok_or("programmes")? {
+                program["runtime_enabled"] = (program["key"] == selected).into();
+            }
+            let source = Box::leak(value.to_string().into_boxed_str());
+            let document = super::parse(source)?;
+            let programme = document
+                .programs
+                .iter()
+                .find(|p| p.runtime_enabled)
+                .ok_or("programme")?;
+            assert!(programme.completion.callbacks.is_empty());
+            assert!(programme.completion.counter_track.is_some());
+            let (track, target) = super::journal_end(programme)?;
+            assert_eq!(
+                Some(track.as_str()),
+                programme.completion.counter_track.as_deref()
+            );
+            assert_eq!(Some(target), programme.completion.counter_target);
+            for counter in &programme.counters {
+                assert_eq!(
+                    super::completion_matches(programme, counter.transition),
+                    counter.track == track
+                );
+            }
+            assert!(!super::completion_matches(
+                programme,
+                "oteryn:quest-transition/native-kills/m31/foreign/scout"
+            ));
+            assert!(
+                programme
+                    .world_callbacks
+                    .iter()
+                    .all(|callback| !super::completion_matches(
+                        programme,
+                        callback["key"].as_str().unwrap_or_default()
+                    ))
+            );
+            for invalid in [
+                serde_json::json!({"callbacks": [], "counter_track": track, "counter_target": 0}),
+                serde_json::json!({"callbacks": [], "counter_track": track, "counter_target": target + 1}),
+                serde_json::json!({"callbacks": [], "counter_track": "oteryn:quest-progress/foreign", "counter_target": target}),
+                serde_json::json!({"callbacks": [], "counter_track": track, "counter_target": null}),
+                serde_json::json!({"callbacks": [], "counter_track": null, "counter_target": target}),
+                serde_json::json!({"callbacks": [programme.world_callbacks[0]["key"]], "counter_track": track, "counter_target": target}),
+            ] {
+                let mut bad = value.clone();
+                let selected = bad["programs"]
+                    .as_array_mut()
+                    .ok_or("programmes")?
+                    .iter_mut()
+                    .find(|p| p["runtime_enabled"] == true)
+                    .ok_or("programme")?;
+                selected["completion"] = invalid;
+                assert!(super::parse(Box::leak(bad.to_string().into_boxed_str())).is_err());
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn native_counter_completion_requires_the_actual_goal_change() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("m31-goal-test")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        let key = "oteryn:quest-transition/native-kills/m31/grimvale/werewolf";
+        let counter = super::super::native_kills::counter(key).ok_or("counter")?;
+        let mut transition = catalogue.transition(key).ok_or("transition")?.clone();
+        transition.completes = true;
+        for after in 1..=counter.maximum {
+            let change = super::super::QuestTrackChange {
+                track: counter.track.into(),
+                before: after - 1,
+                after,
+            };
+            assert_eq!(
+                catalogue.completes_after(&transition, &[change]),
+                after == counter.maximum
+            );
+        }
+        assert!(!catalogue.completes_after(&transition, &[]));
+        assert!(!catalogue.completes_after(
+            &transition,
+            &[super::super::QuestTrackChange {
+                track: counter.gate.into(),
+                before: 0,
+                after: counter.maximum,
+            }]
+        ));
+        Ok(())
+    }
+
     fn npc_programme_fixture() -> Result<serde_json::Value, String> {
         let mut value: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../../content/quests/world-change-journals.json"

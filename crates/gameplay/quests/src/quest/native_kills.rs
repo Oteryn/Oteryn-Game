@@ -38,7 +38,7 @@ impl Counter {
                     effect: QuestEffectKind::Add(1),
                 },
             ],
-            completes: false,
+            completes: super::world_change_journals::completes(self.transition),
             experience: None,
         }
     }
