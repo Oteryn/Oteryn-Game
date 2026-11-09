@@ -4062,7 +4062,7 @@
       },
       "shared_world_switch_personal_expiry": {
         "status": "QUALIFIED",
-        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
+        "scope": "Generic original online actor/session server-timer consequences: Thalas<=0→1, Diprath<=1→2, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
         "migration": "1258_quest_source_expiry.sql",
         "postgres": {
           "status": "GREEN",
@@ -9667,7 +9667,7 @@
         "requires_world_admission_unknown_field": 51.489982592,
         "renamed_stripped_binding_committed_protected_story": 89.599955017
       },
-      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
+      "shadow_actual": "Ok(Committed), story-1→1 and character revision1→2 through weaker generic API; this is the concrete gap, not a hypothetical"
     },
     "implemented": [
       "opening_only durable work only on opening, restricted value-free close",
@@ -11109,5 +11109,23 @@
     "duplicate_migrations": "PASS",
     "workspace_check": "PASS --workspace --all-targets",
     "fmt": "PASS"
+  },
+  "m07_lion_tears_input": {
+    "status": "PARTIAL",
+    "item": "oteryn:item.tibia.i21466",
+    "red": "source capture omitted exact item21466",
+    "green": "NativeFactJoin: 4 tests passed in5.048s",
+    "remaining": "Holy-water input qualified; well producer and Tears offering remain unwired; M07 PARTIAL",
+    "validation": {
+      "authoring_checks_seconds": 388.256,
+      "authoring_unit_tests_seconds": 552.321,
+      "content_tree_seconds": 265.857,
+      "workspace_check_seconds": 354.454,
+      "clippy_dispatch_seconds": 257.484,
+      "fmt": "PASS",
+      "equipment_profile_pin": "PASS 5796",
+      "focused_importer_tests": "4 passed; red missing21466 before implementation",
+      "equipment_rust_regression": "compiling; publication cadence exception, result pending"
+    }
   }
 }

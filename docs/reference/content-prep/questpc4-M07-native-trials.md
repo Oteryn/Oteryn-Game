@@ -15,3 +15,15 @@ Area-clear decision: use the current Channel carrier and exact registered creatu
 Dreamer control mapping decision: captured `content/world/placements/region-z14-x127-y126.b3` has plain2772 levers at32761,32289;32763,32289;32761,32291;32763,32291 (all z14, ordinal1) and no UID tags. Oteryn explicitly binds those controls to north/east/west/south respectively. This is an authored control mapping, not a claim that the lost donor UID mapping was recovered. The literal source wall sets and7s/8s deadlines are retained. Source lookup is conditional: both1027 and1272 occur in the north configuration at32760,32288, but the captured map contains only1272; an absent1027 is skipped and never invented or recreated.
 
 Strength wiring retains the established native TibiaTales Questline key (see existing inner-sanctum callback). The new Strength flag uses the Crystal namespace, since no corresponding Canary flag alias exists in the checked lowered tracks. Its default-1 source gate becomes1 only with one consumed9634 and an unlit native pagoda; Questline uses the shared checked max(old+1,2) operation. Premium admission follows the selected Oteryn recipe. Native B3source tuples are statue[19271,21390],pagoda[499,2074],player start[499].
+
+### Lion Tears input qualification
+
+`imports/canary/items-xml/items.xml:42634-42637` at pinned revision
+`47dfd51f45280a59a1d3e50ba7edd573d7234446` (SHA-256
+`1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`)
+defines item21466, “ewer with holy water”, with weight1750 and no duration,
+charges or decay attributes. The pinned client appearance also passes the existing
+non-fluid portable-item admission checks. Qualify this exact existing identity
+through the shared source importer; do not invent a fluid subtype or evaporation
+timer from descriptive prose. This input qualification alone does not implement
+the well producer or the Tears offering.

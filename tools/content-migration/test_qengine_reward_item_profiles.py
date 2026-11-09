@@ -20,6 +20,15 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
         self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
 
+    def test_lion_holy_water_source_profile_has_exact_portable_custody(self):
+        record = next((r for r in q.capture()['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21466'), None)
+        self.assertIsNotNone(record, 'Lion Tears needs its exact holy-water vessel')
+        self.assertEqual(record['production_binding']['external_id'], '21466')
+        self.assertTrue(record['admission']['materializable'])
+        self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 1750)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)
