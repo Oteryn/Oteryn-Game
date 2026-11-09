@@ -99,7 +99,7 @@ class PreyDifficultyTests(unittest.TestCase):
                     prey.LOOT: prey.encoded({"tables": [], "items": [],
                         "creature_loot": [{"creature": {"key": key}, "loot": None}]}),
                 })
-                generated[prey.LOOT] = prey.encoded({"tables": [], "creature_loot": [
+                generated[prey.LOOT] = prey.encoded({"tables": [], "items": [], "creature_loot": [
                     {"creature": {"key": key}, "loot": None}]})
                 return generated
 
