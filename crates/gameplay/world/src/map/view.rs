@@ -58,6 +58,10 @@ pub struct EntryFacts {
 /// The bundle and content facts of a map view, held by the owner of the bundle palette and the
 /// content generation.
 pub trait MapFacts {
+    /// A current scoped map phase replaces the complete base stack of this cell.
+    fn phase_tile(&self, _pos: TilePos) -> Result<Option<ComposedTile>, ViewError> {
+        Ok(None)
+    }
     /// Resolve a movement-created volatile item in this exact fact snapshot.
     fn movement_item(&self, _id: u64) -> Option<(TilePos, EntryId)> {
         None
@@ -223,7 +227,10 @@ pub fn compose_into(
     out: &mut Vec<ComposedEntry>,
 ) -> Result<u16, ViewError> {
     let mut ground_speed = 0;
-    if let Some(tile) = base.tile(pos.x, pos.y, pos.floor) {
+    if let Some(tile) = facts.phase_tile(pos)? {
+        ground_speed = tile.ground_speed;
+        out.extend(tile.entries);
+    } else if let Some(tile) = base.tile(pos.x, pos.y, pos.floor) {
         ground_speed = tile.stored_ground_speed();
         let (ids, depths) = (tile.ids(), tile.depths());
         let mut ordinal: u16 = 0;

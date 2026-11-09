@@ -7,6 +7,8 @@ use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
+mod feroxa_trap;
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum NoveltyKind {
@@ -433,6 +435,9 @@ pub fn house_transform_for_key(key: &str) -> Option<&'static HouseTransformRule>
 }
 
 pub fn is_ground_action(key: &str) -> bool {
+    if feroxa_trap::is_closed(key) {
+        return true;
+    }
     crate::event_items::is_event_reward(key)
         || house_transform_for_key(key).is_some()
         || rule_for_key(key).is_some_and(|rule| rule.kind != NoveltyKind::EquippedEffect)
@@ -472,6 +477,27 @@ pub fn select_ground(
         selected.effects.achievement_progress = rule.achievement_progress.iter().cloned().collect();
     }
     Some(selected)
+}
+
+/// Source ground actions whose admission also depends on the actual actor position.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing ground action inputs plus its current native actor position"
+)]
+pub fn plan_ground_for_actor(
+    native: &NativeGameplayState,
+    used: &TypedDefinitionRef,
+    session: [u8; 16],
+    command: u64,
+    source: [u8; 16],
+    ground: GroundEffect,
+    in_house: bool,
+    actor: GroundEffect,
+) -> Option<NoveltyPlan> {
+    if feroxa_trap::is_closed(&used.production_key) {
+        return feroxa_trap::plan(native, used, ground, actor);
+    }
+    plan_ground(native, used, session, command, source, ground, in_house)
 }
 
 /// Ground toys retain their source tile and the ground-only rocket branch. A

@@ -205,19 +205,53 @@ impl ChannelRuntimeV1 {
     }
 
     pub(super) fn preflight_native_masterless_removal(
+    pub(super) fn native_masterless_subject_index(
         &self,
         actor: ExactActorRef,
         expected_key: &str,
         expected_content: [u8; 32],
+        death: bool,
     ) -> Result<usize, CarrierError> {
         if self.content_pin().server_artifact_digest() != expected_content
-            || !self.matches_live_creature_identity(actor, expected_key.as_bytes())
+            || (!death && !self.matches_live_creature_identity(actor, expected_key.as_bytes()))
         {
             return Err(CarrierError::CreatureTargetMismatch);
         }
         let index = self
             .carrier
             .validate_summon_actor(&self.continuity, actor)?;
+        if death
+            && !matches!(&self.carrier.slots[index], Slot::CreatureOccupied { health: 0, target_identity, .. }
+            if target_identity.as_ref() == expected_key.as_bytes())
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        Ok(index)
+    }
+
+    pub(super) fn preflight_native_masterless_removal(
+        &self,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+    ) -> Result<usize, CarrierError> {
+        self.preflight_native_masterless_removal_with_liveness(
+            actor,
+            expected_key,
+            expected_content,
+            false,
+        )
+    }
+
+    pub(super) fn preflight_native_masterless_removal_with_liveness(
+        &self,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+        death: bool,
+    ) -> Result<usize, CarrierError> {
+        let index =
+            self.native_masterless_subject_index(actor, expected_key, expected_content, death)?;
         self.carrier.assert_slot_spell_unreserved(index)?;
         // Existing removal cascades intrinsic children. Preflight every fallible current-slot
         // check before entering it; no mutation can occur between checks in this owner turn.
@@ -245,6 +279,16 @@ impl ChannelRuntimeV1 {
         expected_content: [u8; 32],
     ) -> Result<(), CarrierError> {
         self.preflight_native_masterless_removal(actor, expected_key, expected_content)?;
+        self.carrier.remove(&self.continuity, actor.0).map(|_| ())
+    }
+    pub(super) fn remove_native_raid_body_subject(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+        content: [u8; 32],
+        death: bool,
+    ) -> Result<(), CarrierError> {
+        self.preflight_native_masterless_removal_with_liveness(actor, key, content, death)?;
         self.carrier.remove(&self.continuity, actor.0).map(|_| ())
     }
 }

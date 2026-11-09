@@ -192,6 +192,13 @@ impl DurabilityRoot {
                 let definition = feroxa_definition.as_ref().unwrap_or(&candidate.definition);
                 let action = if feroxa_definition.is_some() {
                     if request.now_ms < before.next_check_at_ms { continue; }
+                    // The runner advances source Active under firing -> occurrence
+                    // locks. Match that order before selected() locks the occurrence;
+                    // write_transition() also updates this existing firing below.
+                    if let Some(firing) = &before.latest_firing {
+                        sqlx::query("SELECT 1 FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+                            .bind(firing.firing_id.as_slice()).execute(&mut *tx).await?;
+                    }
                     let prior = before.latest_firing.as_ref()
                         .filter(|firing| firing.reset_epoch == request.reset_epoch)
                         .map(|firing| firing.fired_at_ms);

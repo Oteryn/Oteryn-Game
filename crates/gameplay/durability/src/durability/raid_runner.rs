@@ -2,6 +2,9 @@
 pub mod cake;
 mod effects;
 mod end;
+mod feroxa;
+mod feroxa_map_clock;
+pub use feroxa_map_clock::feroxa_map_elapsed_in_transaction;
 mod live_guard;
 mod pending;
 pub use live_guard::raid_effect_pending_in_transaction;
@@ -240,7 +243,7 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(None);
             }
-            let firing = sqlx::query("SELECT fired_at_ms,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+            let firing = sqlx::query("SELECT fired_at_ms,state,raid_key FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(firing_id.as_slice()).fetch_one(&mut *tx).await?;
             let target: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
                 .bind(firing_id.as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
@@ -265,6 +268,13 @@ impl DurabilityRoot {
                 let effect = effects::lose(&mut tx, identity, state, &owner, now_ms).await?;
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(effect);
+            }
+            // Source timers continue independently of announcement delivery.
+            // The current World/reset, node and target generation were proved above.
+            if state == 1 && firing.try_get::<i16, _>("state")? == 1
+                && firing.try_get::<String, _>("raid_key")? == super::raid_schedule::FEROXA_KEY
+            {
+                feroxa::advance_active_in_transaction(&mut tx, firing_id, now_ms).await?;
             }
             if let Some(pending) = effects::pending(&mut tx, identity).await? {
                 commit_semantic_transaction(tx, deadline).await?;
@@ -491,7 +501,7 @@ impl DurabilityRoot {
         });
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let mut rows = sqlx::query("SELECT uuid_send(f.firing_id),f.raid_key,f.fired_at_ms FROM game_world_raid_targets t JOIN game_world_raid_firings f USING(firing_id) JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=t.channel_id AND a.scope_kind=1 AND a.state=1 WHERE t.channel_id=encode($1,'hex')::uuid AND (f.fired_at_ms,f.firing_id)>($2,encode($3,'hex')::uuid) AND (f.state=1 OR EXISTS(SELECT 1 FROM game_world_raid_channel_runs r WHERE r.firing_id=f.firing_id AND r.channel_id=t.channel_id AND r.state=1 AND (f.state=3 OR r.owner_generation<>a.ownership_generation)) OR EXISTS(SELECT 1 FROM game_world_raid_effects e WHERE e.firing_id=f.firing_id AND e.channel_id=t.channel_id AND e.state=1) OR EXISTS(SELECT 1 FROM game_world_raid_creatures c WHERE c.firing_id=f.firing_id AND c.channel_id=t.channel_id AND c.state=1)) ORDER BY f.fired_at_ms,f.firing_id LIMIT $4")
+            let mut rows = sqlx::query("SELECT uuid_send(f.firing_id),f.raid_key,f.fired_at_ms FROM game_world_raid_targets t JOIN game_world_raid_firings f USING(firing_id) JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=t.channel_id AND a.scope_kind=1 AND a.state=1 WHERE t.channel_id=encode($1,'hex')::uuid AND (f.fired_at_ms,f.firing_id)>($2,encode($3,'hex')::uuid) AND (f.state=1 OR (f.raid_key='raid:edron.feroxa' AND f.state=2 AND EXISTS(SELECT 1 FROM game_world_reset_active active WHERE active.world_id=f.world_id AND active.reset_epoch=f.reset_epoch)) OR EXISTS(SELECT 1 FROM game_world_raid_channel_runs r WHERE r.firing_id=f.firing_id AND r.channel_id=t.channel_id AND r.state=1 AND (f.state=3 OR r.owner_generation<>a.ownership_generation)) OR EXISTS(SELECT 1 FROM game_world_raid_effects e WHERE e.firing_id=f.firing_id AND e.channel_id=t.channel_id AND e.state=1) OR EXISTS(SELECT 1 FROM game_world_raid_creatures c WHERE c.firing_id=f.firing_id AND c.channel_id=t.channel_id AND c.state=1)) ORDER BY f.fired_at_ms,f.firing_id LIMIT $4")
                 .bind(channel.as_bytes().as_slice()).bind(after.fired_at_ms).bind(after.firing_id.as_slice())
                 .bind(i64::try_from(MAX_CANDIDATES + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .fetch_all(&mut *tx).await?;

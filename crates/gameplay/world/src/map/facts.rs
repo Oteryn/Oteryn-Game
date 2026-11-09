@@ -40,8 +40,10 @@ pub use source_container_capacity::captured_source_capacity;
 mod source_containers;
 pub use source_containers::CapturedMapItem;
 
+mod feroxa_map_phases;
 mod quest_callbacks;
 mod world_change_phases;
+pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
 
@@ -136,7 +138,7 @@ pub struct BundleFacts {
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
-    callbacks: Mutex<Arc<CallbackStates>>,
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
@@ -251,7 +253,7 @@ impl BundleFacts {
                 .collect(),
             doors: self.doors.activity_copy(inside),
             rotations: Mutex::new(Arc::new(BTreeMap::new())),
-            callbacks: Mutex::new(Arc::new(CallbackStates::default())),
+            callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
             monster_steps: Mutex::new(VecDeque::new()),
         }
     }
@@ -315,6 +317,7 @@ impl BundleFacts {
             1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
             12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
             14163, 14164, 14255, 17939, 21804, 21805, 21812, 26077, 26087, 26100,
+            14163, 14164, 14255, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -349,7 +352,7 @@ impl BundleFacts {
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
-            callbacks: Mutex::default(),
+            callbacks: Arc::default(),
             monster_steps: Mutex::default(),
         })
     }
@@ -1142,6 +1145,13 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        Ok(self
+            .callbacks
+            .lock()
+            .map_err(|_| view::ViewError::MissingFacts)?
+            .phase_composition(pos))
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.lock().ok()?.movement_item(id)
     }
@@ -1169,6 +1179,9 @@ impl MapFacts for BundleFacts {
         {
             return Some(*facts);
         }
+        if let Some(entry) = self.callbacks.lock().ok()?.phase_entry(pos, ordinal) {
+            return entry;
+        }
         let rotations = self.rotations.lock().ok()?;
         self.entry(pos, ordinal, id, None, &rotations)
     }
@@ -1195,6 +1208,11 @@ impl MapFacts for BundleFacts {
         {
             return *r;
         }
+        if let Ok(s) = self.callbacks.lock()
+            && let Some(revision) = s.phase_revision(placement_key)
+        {
+            return revision;
+        }
         self.rotations.lock().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
                 || self.doors.revision(placement_key),
@@ -1213,6 +1231,13 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        Ok(self
+            .callbacks
+            .as_ref()
+            .ok_or(view::ViewError::MissingFacts)?
+            .phase_composition(pos))
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.as_ref()?.movement_item(id)
     }
@@ -1233,6 +1258,9 @@ impl MapFacts for PinnedFacts<'_> {
             .get(&placement_key(pos, ordinal)?)
         {
             return Some(*facts);
+        }
+        if let Some(entry) = self.callbacks.as_ref()?.phase_entry(pos, ordinal) {
+            return entry;
         }
         self.facts.entry(
             pos,
@@ -1262,6 +1290,11 @@ impl MapFacts for PinnedFacts<'_> {
             && let Some((r, _)) = s.changed.get(&placement_key)
         {
             return *r;
+        }
+        if let Some(s) = &self.callbacks
+            && let Some(revision) = s.phase_revision(placement_key)
+        {
+            return revision;
         }
         self.rotations.as_ref().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
@@ -1423,6 +1456,33 @@ mod tests {
         assert!(facts.movement_effects_since(0).is_empty());
         assert!(!facts.create_world_change_item(pos, 1));
         assert_eq!(MapFacts::movement_items(&facts, pos).len(), 1);
+    }
+
+    #[test]
+    fn qn5_feroxa_trap_counterparts_resolve_without_a_base_placement()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let items = |key: &str| {
+            if matches!(key, "oteryn:item.tibia.i22059" | "oteryn:item.tibia.i22074") {
+                let mut definition = fixture::items("item:coin")?;
+                definition.pickupable = key.ends_with("22074");
+                Some(definition)
+            } else {
+                fixture::items(key)
+            }
+        };
+        let facts =
+            BundleFacts::palette(&bundle.manifest, items).map_err(|error| format!("{error:?}"))?;
+        let open = facts
+            .movement_item_facts(22059)
+            .ok_or("unplaced open trap counterpart")?;
+        let closed = facts
+            .movement_item_facts(22074)
+            .ok_or("unplaced closed trap counterpart")?;
+        assert!(!open.pickupable);
+        assert!(closed.pickupable);
+        Ok(())
     }
 
     #[test]

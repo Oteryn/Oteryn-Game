@@ -399,7 +399,7 @@ impl QualifiedSpellTiles {
         &self,
         active_scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
-    ) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
+    ) -> Result<std::borrow::Cow<'_, QualifiedSpellTile>, SpellTileLookupError> {
         if active_scope != &self.scope {
             return Err(SpellTileLookupError::ScopeMismatch);
         }
@@ -424,6 +424,7 @@ impl QualifiedSpellTiles {
             .as_ref()
             .ok_or(SpellTileLookupError::Unknown)?
             .get(&cell)
+            .map(std::borrow::Cow::Borrowed)
             .ok_or(SpellTileLookupError::Absent)
     }
 }

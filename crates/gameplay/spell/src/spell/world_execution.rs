@@ -126,7 +126,8 @@ fn qualified_static_owner<'owner>(
 fn tile(
     room: &crate::content::QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
-) -> Result<Option<&crate::content::QualifiedSpellTile>, WorldRelocationError> {
+) -> Result<Option<std::borrow::Cow<'_, crate::content::QualifiedSpellTile>>, WorldRelocationError>
+{
     crate::native_world_read::tile::<crate::world_runtime::WorldRuntimeError>(room, position)
         .map_err(WorldRelocationError::from)
 }
@@ -137,7 +138,10 @@ async fn tile_in_transaction<'owner>(
     room: &'owner crate::content::QualifiedNativeEntryRoom,
     runtime: &ChannelRuntimeV1,
     position: MovementLocalPosition,
-) -> Result<Option<&'owner crate::content::QualifiedSpellTile>, WorldRelocationError> {
+) -> Result<
+    Option<std::borrow::Cow<'owner, crate::content::QualifiedSpellTile>>,
+    WorldRelocationError,
+> {
     crate::native_world_read::tile_in_transaction::<crate::world_runtime::WorldRuntimeError>(
         tx, authority, room, runtime, position,
     )

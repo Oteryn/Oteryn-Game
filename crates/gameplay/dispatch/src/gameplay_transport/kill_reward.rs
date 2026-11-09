@@ -1294,6 +1294,9 @@ pub fn record_creature_kill(
             .statistics()
             .source_gap(super::npc_trade_command::unix_ms_now());
     }
+    if super::raid_live::continue_feroxa_death(runtime, target) {
+        return;
+    }
     if runtime.is_tibiadrome(target) {
         let _ = crate::combat::project_fixed_one_creature_death(
             &mut runtime.borrow_combat_death(),

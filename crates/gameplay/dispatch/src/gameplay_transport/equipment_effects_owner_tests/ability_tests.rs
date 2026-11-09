@@ -328,6 +328,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("SV16-ECHO-CATALYSTS", 3),
     // WORLDCHG: 42 source-captured definitions; 12369 is already in ITEMHOLD-Q.
     ("WORLDCHG", 41),
+    // WORLDCHG: 43 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 42),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
     // BEGIN GENERATED NPCFIX2 M22 PROFILE ADDITIONS
@@ -386,6 +388,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // QENGINE2: generated witness of the producer's explicit IDS set.
     // QENGINE2 captures 53 shared Items, seven portable QUESTPC4 Items,
     // Oramond root 21291 and QN4 recipe ingredients 21504/21505.
+    // QENGINE2 captures 53 shared Items, seven QUESTPC4 Items, Juicy Roots,
+    // and two QN4 Medusa Oil ingredients.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -540,6 +544,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .as_array()
         .ok_or("world-change profiles")?;
     assert_eq!(world_change_records.len(), 42);
+    assert_eq!(world_change_records.len(), 43);
     for source in world_change_records {
         let key = source["production_definition"]["production_key"]
             .as_str()

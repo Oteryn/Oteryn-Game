@@ -43,6 +43,10 @@ pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use platform::prepare_quest_platform_rider;
 pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
+pub use quest_callback::{
+    prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
+    prepare_quest_encounter_ejection,
+};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -472,6 +476,9 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
         return None;
     };
     let bundle = index.map();
+    if let Some(destination) = bundle.facts.phase_teleport(at) {
+        return destination;
+    }
     bundle.floors.teleport_for_source(at, |ordinal| {
         let key = placement_key(at, ordinal)?;
         if bundle.facts.base_hidden(key) {
