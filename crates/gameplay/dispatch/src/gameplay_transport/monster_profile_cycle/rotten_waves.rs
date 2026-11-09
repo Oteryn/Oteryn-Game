@@ -34,7 +34,7 @@ struct SourceRoomBinding {
     content: [u8; 32],
 }
 impl RoomWaveStates {
-    /// Observe the whole donor boss family, independently of the two wave planners.
+    /// Observe source bosses and minions independently of the two wave planners.
     /// Keep minion callbacks alive after departure, only for this exact runtime binding.
     pub(super) fn observe_source_attempt(&mut self, runtime: &ChannelRuntimeV1) -> bool {
         if runtime.owner_fence().is_err() {
@@ -54,9 +54,10 @@ impl RoomWaveStates {
         }
         if runtime.positioned_melee_census().is_ok_and(|rows| {
             rows.iter().any(|(actor, _, _)| {
-                runtime
-                    .companion_snapshot(*actor)
-                    .is_ok_and(|row| is_rotten_blood_boss(&row.state.policy.definition_key))
+                runtime.companion_snapshot(*actor).is_ok_and(|row| {
+                    let key = row.state.policy.definition_key.as_str();
+                    is_rotten_blood_boss(key) || matches!(key, ELDER_BLOODJAW_KEY | MUSHROOM_KEY)
+                })
             })
         }) {
             self.source_attempt = Some(current);

@@ -39,6 +39,7 @@ pub(super) async fn check(
         position,
         now,
         "oteryn:creature.chagorz",
+        u16::MAX - 1,
     )
     .await?;
     let bloodjaw = admit_source_actor(
@@ -51,6 +52,7 @@ pub(super) async fn check(
         position,
         now,
         "oteryn:creature.elder_bloodjaw",
+        u16::MAX - 2,
     )
     .await?;
     let mushroom = admit_source_actor(
@@ -63,6 +65,7 @@ pub(super) async fn check(
         position,
         now,
         "oteryn:creature.mushroom",
+        u16::MAX - 3,
     )
     .await?;
     drive(
@@ -113,10 +116,58 @@ pub(super) async fn check(
     );
     assert!(states.monster_melee.creature_ai.state(bloodjaw).is_none());
     assert!(!states.rotten_waves.has_attempts());
+    // Fresh callback ownership must not require a previously observed boss.
+    // The preceding assertions prove there are no live source bosses or wave owners.
+    states.rotten_waves = Default::default();
+    let mut initial_orphans = Vec::new();
+    for (key, source_id) in [
+        ("oteryn:creature.elder_bloodjaw", u16::MAX - 4),
+        ("oteryn:creature.mushroom", u16::MAX - 5),
+    ] {
+        initial_orphans.push(
+            admit_source_actor(
+                owner,
+                runtime,
+                states,
+                permit,
+                room,
+                native,
+                position,
+                now + 2_000_000,
+                key,
+                source_id,
+            )
+            .await?,
+        );
+    }
+    drive(
+        owner,
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        permit,
+        revisions,
+        position,
+        now + 2_000_000,
+    )
+    .await?;
+    for actor in initial_orphans {
+        assert!(
+            runtime.read_actor_position(actor).is_err(),
+            "a source minion's first callback removes it without prior boss observation"
+        );
+        assert!(
+            states.monster_melee.creature_ai.state(actor).is_none(),
+            "initial orphan removal clears its native AI registration"
+        );
+    }
+    assert!(!states.rotten_waves.has_attempts());
     eprintln!(
-        "M26_ROTTEN_FAMILY production_driver=true chagorz=true no_wave_owner=true bloodjaw_target=true distinct_mushroom_rule=true orphan_cleanup=true"
+        "M26_ROTTEN_FAMILY production_driver=true chagorz=true no_wave_owner=true bloodjaw_target=true distinct_mushroom_rule=true orphan_cleanup=true initial_orphan_cleanup=true"
     );
-    Ok(now + 2_000_000)
+    Ok(now + 3_000_000)
 }
 
 #[allow(

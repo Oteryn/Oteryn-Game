@@ -76,6 +76,7 @@ pub(super) async fn check(
         position,
         now,
         KEY,
+        u16::MAX,
     )
     .await?;
     let mut first_wave = Vec::new();
@@ -324,18 +325,20 @@ pub(super) async fn admit_source_actor(
     position: MovementLocalPosition,
     now: u64,
     key: &'static str,
+    source_id: u16,
 ) -> Result<crate::foundation::ExactActorRef, Box<dyn std::error::Error>> {
     use crate::durability::spell_item_transaction::{
         assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
     };
     let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
     let mut context = (
-        owner, runtime, states, permit, room, native, position, now, key,
+        owner, runtime, states, permit, room, native, position, now, key, source_id,
     );
     let boss = pass
         .run_with_context(&mut context, |holder, deadline, context| {
             Box::pin(async move {
-                let (owner, runtime, states, permit, room, native, position, now, key) = context;
+                let (owner, runtime, states, permit, room, native, position, now, key, source_id) =
+                    context;
                 let key = *key;
                 let now = *now;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
@@ -407,15 +410,8 @@ pub(super) async fn admit_source_actor(
                 let pin = runtime.content_pin().clone();
                 // Distinct qualification identities use the existing multi-source
                 // spawn owner; a single source cannot represent several live definitions.
-                let source_id = match key {
-                    "oteryn:creature.ichgahal" => u16::MAX,
-                    "oteryn:creature.chagorz" => u16::MAX - 1,
-                    "oteryn:creature.elder_bloodjaw" => u16::MAX - 2,
-                    "oteryn:creature.mushroom" => u16::MAX - 3,
-                    _ => return Err(crate::durability::DurabilityError::InvalidStoredState),
-                };
                 let boss = runtime
-                    .realize_native_qualification_spawn_for_source(source_id, pin, key, at)
+                    .realize_native_qualification_spawn_for_source(*source_id, pin, key, at)
                     .map_err(|error| {
                         eprintln!("M26_SOURCE_QUALIFICATION key={key} error={error:?}");
                         crate::durability::DurabilityError::Unavailable
