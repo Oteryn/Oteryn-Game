@@ -144,43 +144,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 panel.feedback.unwrap_or("")
             };
             SetWindowTextW(status_label, wide(status).as_ptr());
-            let badges = panel.command_kind == 387;
-            let table = !badges && panel.history_tab == Some(panel.tab);
-            let pvp = panel.tab
-                == oteryn_client_runtime::cyclopedia_character::CharacterTab::RecentPvpKills;
-            for id in 114..=116 {
-                ShowWindow(GetDlgItem(hwnd, id), if pvp { SW_SHOW } else { SW_HIDE });
-            }
-            let overview = !badges
-                && panel.general.is_some()
-                && panel.tab
-                    == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
-            let combat = !badges && panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
-            let store = !badges
-                && panel.store.is_some()
-                && panel.tab
-                    == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
-            let misc = !badges
-                && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
-            super::misc_layout::layout(&cards, [stamina_bar, training_bar], heading, detail, misc);
-            character_widgets::render_cards(
-                panel,
-                &cards,
-                [stamina_bar, training_bar],
-                output,
-                [table, overview, combat, store, misc],
-            );
-            for handle in [heading, detail] {
-                ShowWindow(handle, if table || combat { SW_SHOW } else { SW_HIDE });
-            }
-            ShowWindow(
-                history,
-                if table || combat || store {
-                    SW_SHOW
-                } else {
-                    SW_HIDE
-                },
-            );
+            super::character_paint::paint(panel,hwnd,[output,stamina_bar,training_bar,heading,detail,history],&cards,&mut tables);
             drop(mailbox);
             if let Some(browser) = browser {
                 browser.open(weak.clone(), commands.clone());

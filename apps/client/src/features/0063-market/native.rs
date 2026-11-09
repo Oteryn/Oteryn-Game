@@ -189,6 +189,7 @@ fn run(
             WS_TABSTOP,
         );
         let mut displayed_rows: Vec<usize> = Vec::new();
+        control(hwnd,"STATIC","Coin market and coin transactions: Ctrl+Alt+F8",26,[10,575,680,20],0);
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();

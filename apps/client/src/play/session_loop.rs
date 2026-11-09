@@ -88,6 +88,7 @@ pub async fn run_session<T: Stepper>(
                             290 => outbox.cast_control_result(&response),
                             291 => outbox.cast_chat_result(&response),
                             292 => outbox.cast_consent_result(&response),
+                            63 if request.command_type==oteryn_client_runtime::coin_market::COMMAND => outbox.coin_market_result(&response),
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),

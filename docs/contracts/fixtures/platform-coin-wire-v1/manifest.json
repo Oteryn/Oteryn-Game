@@ -1,0 +1,230 @@
+{
+  "routes": [
+    {
+      "name": "transfers",
+      "method": "POST",
+      "path": "/internal/v1/coins/transfers",
+      "request": "transfers-request.json",
+      "response": "transfers-ok.json"
+    },
+    {
+      "name": "offers",
+      "method": "POST",
+      "path": "/internal/v1/coins/market/offers",
+      "request": "offers-request.json",
+      "response": "offers-ok.json"
+    },
+    {
+      "name": "settlements",
+      "method": "POST",
+      "path": "/internal/v1/coins/market/settlements",
+      "request": "settlements-request.json",
+      "response": "settlements-ok.json"
+    },
+    {
+      "name": "cancellations",
+      "method": "POST",
+      "path": "/internal/v1/coins/market/cancellations",
+      "request": "cancellations-request.json",
+      "response": "cancellations-ok.json"
+    },
+    {
+      "name": "operation",
+      "method": "GET",
+      "path": "/internal/v1/coins/operations/019a65f0-0000-7000-8000-000000000003",
+      "request": "operation-request.json",
+      "response": "operation-ok.json"
+    },
+    {
+      "name": "balance",
+      "method": "GET",
+      "path": "/internal/v1/coins/accounts/019a65f0-0000-7000-8000-000000000001/balance",
+      "request": "balance-request.json",
+      "response": "balance-ok.json"
+    },
+    {
+      "name": "history",
+      "method": "GET",
+      "path": "/internal/v1/coins/accounts/019a65f0-0000-7000-8000-000000000001/history?limit=25",
+      "request": "history-request.json",
+      "response": "history-ok.json"
+    }
+  ],
+  "valid": {
+    "transfers-request.json": {
+      "canonical_bytes": 190,
+      "sha256": "2aa15d183c5722f61ac815f9362396b5eb39bd63ce7b166ae9c3284833e628b0"
+    },
+    "transfers-ok.json": {
+      "canonical_bytes": 343,
+      "sha256": "e5c6b8c330665daab5fc486022695db0c3a6001cdf70be1a745932342ca21234"
+    },
+    "offers-request.json": {
+      "canonical_bytes": 147,
+      "sha256": "9b6e95371e8ee6b7996730aa8faa53207a9cfc148c9783c313499ab94736b98d"
+    },
+    "offers-ok.json": {
+      "canonical_bytes": 309,
+      "sha256": "9f49820a71278222ef51010abaea51320984e674d7e80dace54005dffa18f9af"
+    },
+    "settlements-request.json": {
+      "canonical_bytes": 183,
+      "sha256": "025c13f75f9ce8e806ca31a9205154105f729dc6dc4749f6e5fecc47b29fae8d"
+    },
+    "settlements-ok.json": {
+      "canonical_bytes": 346,
+      "sha256": "9f5ee493ba83dfd122459758d903416787d2fee4f7da3d548cf8dec81f857994"
+    },
+    "cancellations-request.json": {
+      "canonical_bytes": 170,
+      "sha256": "9c8ea7ba0efdc70e95f3113be3e2944338d609dde0ba13299984dc1da23fc044"
+    },
+    "cancellations-ok.json": {
+      "canonical_bytes": 308,
+      "sha256": "e6a7b195abc6f37748deee0053d38a3cc1682bd3b2e111b913e0ec49e2aec426"
+    },
+    "operation-request.json": {
+      "canonical_bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "operation-ok.json": {
+      "canonical_bytes": 343,
+      "sha256": "e5c6b8c330665daab5fc486022695db0c3a6001cdf70be1a745932342ca21234"
+    },
+    "balance-request.json": {
+      "canonical_bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "balance-ok.json": {
+      "canonical_bytes": 125,
+      "sha256": "3b6c0fa82447c52c97a1c74611f62a4b6abd862a716a4df5c2c57751aedfbd47"
+    },
+    "history-request.json": {
+      "canonical_bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "history-ok.json": {
+      "canonical_bytes": 379,
+      "sha256": "ee2cac6e78b0d56f9332e1b6a1144f67ff0c2aac68eec40f1ce738a441b6a1bd"
+    },
+    "replay.json": {
+      "canonical_bytes": 347,
+      "sha256": "8c466ab1bd43a1784013b845d338aecbb38e2aac55cc2b1416d5e906d7b40616"
+    },
+    "insufficient_transferable.json": {
+      "canonical_bytes": 38,
+      "sha256": "be4526fdde06882b6e7375416684fd2042651de64f3301061b2f485196d70c5f"
+    },
+    "account_inactive.json": {
+      "canonical_bytes": 29,
+      "sha256": "a1a5ce8a5addafa22426affaa26ba4962ccf5c1d680d0dc7063084991ce55789"
+    },
+    "transfer_blocked.json": {
+      "canonical_bytes": 29,
+      "sha256": "9e2c90b234d0c9e66c8c02a7d1088269c49b3f8d472438247573333ff3fb06ef"
+    },
+    "unknown_account.json": {
+      "canonical_bytes": 28,
+      "sha256": "57eb1d5ec29d6bf69fd429ae0b5f0dd04f83765e31bccc55eb5170f68accdd59"
+    },
+    "idempotency_conflict.json": {
+      "canonical_bytes": 33,
+      "sha256": "f86e49b84a322883d401bea87a5e148e53e7fb70e734a7e11fe1cfb365ecfd4d"
+    },
+    "invalid.json": {
+      "canonical_bytes": 20,
+      "sha256": "1dd616497dbfa4efc92c99c762b4e7cdd83db4d422b27ef2c7e1eb45c40e1881"
+    },
+    "unavailable.json": {
+      "canonical_bytes": 24,
+      "sha256": "beabaa6c436d94a325a297d152f81267a57d4fa4c11b63378956fc57f9799b0e"
+    },
+    "invalid-zero.json": {
+      "canonical_bytes": 189,
+      "sha256": "093daf599d602634e587326d71d2cbe663b2e91777f117ccd1bc65ff2188f772"
+    },
+    "invalid-negative.json": {
+      "canonical_bytes": 190,
+      "sha256": "c9832f9b256ec08f124b805e08bbb2542d1f75b6f457d6658e612c8bad0c4e3b"
+    },
+    "invalid-overflow.json": {
+      "canonical_bytes": 207,
+      "sha256": "b11c57ed6b6f18712a849cba776035e09dac05d211ca90ba183802c3690aa99f"
+    },
+    "invalid-same-account.json": {
+      "canonical_bytes": 190,
+      "sha256": "964c0fd1cc4e5916f40f2fd83e5b92bb15c2af742cb8fc2159f116eb770b8094"
+    },
+    "invalid-extra.json": {
+      "canonical_bytes": 160,
+      "sha256": "5290307daab5edf6473c1b2a02c00ea3c4675ee09d1f7bbc64a520e0307f22c5"
+    },
+    "invalid-bad-key.json": {
+      "canonical_bytes": 190,
+      "sha256": "7fd5f7a8553139d363e83c5edd63591e86a559ea0d97b1ad250d2b294bb329eb"
+    }
+  },
+  "invalid_cases": [
+    {
+      "name": "zero",
+      "route": "transfers",
+      "body": {
+        "operation_id": "019a65f0-0000-7000-8000-000000000003",
+        "sender_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "recipient_account_id": "019a65f0-0000-7000-8000-000000000002",
+        "amount": "0"
+      }
+    },
+    {
+      "name": "negative",
+      "route": "transfers",
+      "body": {
+        "operation_id": "019a65f0-0000-7000-8000-000000000003",
+        "sender_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "recipient_account_id": "019a65f0-0000-7000-8000-000000000002",
+        "amount": "-1"
+      }
+    },
+    {
+      "name": "overflow",
+      "route": "transfers",
+      "body": {
+        "operation_id": "019a65f0-0000-7000-8000-000000000003",
+        "sender_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "recipient_account_id": "019a65f0-0000-7000-8000-000000000002",
+        "amount": "9223372036854775808"
+      }
+    },
+    {
+      "name": "same-account",
+      "route": "transfers",
+      "body": {
+        "operation_id": "019a65f0-0000-7000-8000-000000000003",
+        "sender_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "recipient_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "amount": "10"
+      }
+    },
+    {
+      "name": "extra",
+      "route": "offers",
+      "body": {
+        "operation_id": "019a65f0-0000-7000-8000-000000000004",
+        "seller_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "amount": "30",
+        "gold_price": "100",
+        "extra": true
+      }
+    },
+    {
+      "name": "bad-key",
+      "route": "transfers",
+      "body": {
+        "operation_id": "019a65f0-0000-4000-8000-000000000001",
+        "sender_account_id": "019a65f0-0000-7000-8000-000000000001",
+        "recipient_account_id": "019a65f0-0000-7000-8000-000000000002",
+        "amount": "10"
+      }
+    }
+  ]
+}

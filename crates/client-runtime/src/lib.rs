@@ -337,3 +337,5 @@ pub mod cui3 {
 
 #[path = "features/0450-server-modal/protocol.rs"]
 pub mod server_modal;
+
+pub use oteryn_session::coin_market;
