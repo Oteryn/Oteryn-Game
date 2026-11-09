@@ -61,7 +61,7 @@
               "offerings": [],
               "item_on_target": null,
               "world_requirements": [],
-              "return_on_failure": false,
+              "return_on_failure": true,
               "minimum_level": 20,
               "admission": {
                 "regular_blessings": true,
@@ -71,13 +71,31 @@
               "failure_message": "The machine requires level 20, Premium, promotion and the five regular blessings.",
               "success_message": "The time machine carries you into Temporal Tides.",
               "sources": [
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
                 "content/quests/definitions/quests-00200-00299.json: chosen recipe s1",
-                "https://www.tibiawiki.com.br/index.php?title=25_Years_of_Tibia_Quest&action=raw:30-38",
-                "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml:48329-48332",
                 "content/world/placements/region-z08-x126-y125.b3:32430,32166,8/ordinal1",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:48329-48332",
                 "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa09caaf3b5227d8571e6d406bf159d881dd67b8:1-12,25-36",
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:48329-48332"
-              ]
+                "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml:48329-48332",
+                "https://www.tibiawiki.com.br/index.php?title=25_Years_of_Tibia_Quest&action=raw:30-38"
+              ],
+              "effects": {
+                "scripted_teleport": true
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              },
+              "requires_world_admission": true
             }
           }
         },
@@ -136,6 +154,1169 @@
                 "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa09caaf3b5227d8571e6d406bf159d881dd67b8:1-12,25-36",
                 "content/world/placements/region-z08-x130-y121.b3:33453,31029,8/ordinal1",
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:48329-48332"
+              ],
+              "effects": {
+                "scripted_teleport": true
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25091",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25091",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32429,
+                  "y": 32164,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25091,
+                "native": {
+                  "position": {
+                    "x": 32429,
+                    "y": 32164,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25091
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25092",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25092",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32430,
+                  "y": 32164,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25092,
+                "native": {
+                  "position": {
+                    "x": 32430,
+                    "y": 32164,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25092
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25093",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25093",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32431,
+                  "y": 32164,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25093,
+                "native": {
+                  "position": {
+                    "x": 32431,
+                    "y": 32164,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25093
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25094",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25094",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32429,
+                  "y": 32165,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25094,
+                "native": {
+                  "position": {
+                    "x": 32429,
+                    "y": 32165,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25094
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25095",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25095",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32430,
+                  "y": 32165,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25095,
+                "native": {
+                  "position": {
+                    "x": 32430,
+                    "y": 32165,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25095
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25096",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32431,
+                  "y": 32165,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25096,
+                "native": {
+                  "position": {
+                    "x": 32431,
+                    "y": 32165,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25096
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25097",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25097",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32429,
+                  "y": 32166,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25097,
+                "native": {
+                  "position": {
+                    "x": 32429,
+                    "y": 32166,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25097
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-part-25099",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-25099",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32431,
+                  "y": 32166,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25099,
+                "native": {
+                  "position": {
+                    "x": 32431,
+                    "y": 32166,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25099
+                }
+              },
+              "admission": {
+                "regular_blessings": true,
+                "promotion": true,
+                "premium": true
+              },
+              "minimum_level": 20,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33453,
+                "y": 31030,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "at_least": true
+                }
+              ],
+              "requires_world_admission": true,
+              "offerings": [],
+              "return_on_failure": true,
+              "failure_message": "You do not meet the entrance requirements.",
+              "sources": [
+                "OTERYN_CHOSEN_ADMISSION:recipe.requirements;initial-entry-only",
+                "OTERYN_CHOSEN_ENTRY_REQUIREMENTS:25-years;first-stage-counter",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "content/quests/definitions/quests-00200-00299.json#/records/67",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-11,26-49",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49"
+              ],
+              "track_initials": {
+                "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1": 0
+              },
+              "character_requirements": {
+                "premium": true,
+                "promoted": true,
+                "blessings": [
+                  "oteryn:blessing.the_embrace_of_tibia",
+                  "oteryn:blessing.the_fire_of_the_suns",
+                  "oteryn:blessing.the_spark_of_the_phoenix",
+                  "oteryn:blessing.the_spiritual_shielding",
+                  "oteryn:blessing.the_wisdom_of_solitude"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25091",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25091",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33452,
+                  "y": 31027,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25091,
+                "native": {
+                  "position": {
+                    "x": 33452,
+                    "y": 31027,
+                    "floor": -8
+                  },
+                  "ordinal": 2,
+                  "appearance": 25091
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25092",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25092",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33453,
+                  "y": 31027,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25092,
+                "native": {
+                  "position": {
+                    "x": 33453,
+                    "y": 31027,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25092
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25093",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25093",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33454,
+                  "y": 31027,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25093,
+                "native": {
+                  "position": {
+                    "x": 33454,
+                    "y": 31027,
+                    "floor": -8
+                  },
+                  "ordinal": 2,
+                  "appearance": 25093
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25094",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25094",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33452,
+                  "y": 31028,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25094,
+                "native": {
+                  "position": {
+                    "x": 33452,
+                    "y": 31028,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25094
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25095",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25095",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33453,
+                  "y": 31028,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25095,
+                "native": {
+                  "position": {
+                    "x": 33453,
+                    "y": 31028,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25095
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25096",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25096",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33454,
+                  "y": 31028,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25096,
+                "native": {
+                  "position": {
+                    "x": 33454,
+                    "y": 31028,
+                    "floor": -8
+                  },
+                  "ordinal": 2,
+                  "appearance": 25096
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25097",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25097",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33452,
+                  "y": 31029,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25097,
+                "native": {
+                  "position": {
+                    "x": 33452,
+                    "y": 31029,
+                    "floor": -8
+                  },
+                  "ordinal": 2,
+                  "appearance": 25097
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s1-return-part-25099",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/qm03/anniversary-return-25099",
+              "quest": "oteryn:quest.25_years_of_tibia_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33454,
+                  "y": 31029,
+                  "floor": -8
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 25099,
+                "native": {
+                  "position": {
+                    "x": 33454,
+                    "y": 31029,
+                    "floor": -8
+                  },
+                  "ordinal": 1,
+                  "appearance": 25099
+                }
+              },
+              "admission": null,
+              "minimum_level": null,
+              "effects": {
+                "scripted_teleport": true
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 32430,
+                "y": 32167,
+                "floor": -8
+              },
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/25_years_of_tibia_quest/s1",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                }
+              ],
+              "requires_world_admission": false,
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/25_years_of _tibia_quest/actions_time_machine.lua:1-49",
+                "OTERYN_SOURCE_USE:retained-time-machine-counterpart",
+                "OTERYN_SOURCE_RETURN:ungated;progress-preserving;retained-machine-counterpart"
               ]
             }
           }

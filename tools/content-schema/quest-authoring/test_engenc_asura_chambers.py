@@ -45,6 +45,7 @@ class AsuraChambers(unittest.TestCase):
                     )
                     self.assertTrue(tile(position)[5])
                 self.assertTrue(tile(chamber["entry"])[5])
+                self.assertTrue(tile(chamber.get("staging", chamber["entry"]))[5])
                 door = tile(chamber["door"])[5]
                 self.assertEqual(
                     palette[door[1][0]]["source_item_id"], chamber["door_appearance"]

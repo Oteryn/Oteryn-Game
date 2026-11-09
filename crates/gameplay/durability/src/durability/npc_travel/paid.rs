@@ -63,6 +63,13 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if let Some(requirement) = &route.return_origin {
+        let last =
+            super::return_port::latest(tx, *fence.character_id.as_bytes(), requirement).await?;
+        if !requirement.permits_latest_completed(last.as_deref()) {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     if let Some(change) = &route.world_change
         && !crate::durability::world_event::change_active(
             tx,
@@ -198,6 +205,7 @@ impl DurabilityRoot {
             let destination = &route.route.destination;
             if request.command.game_session_id()!=fence.game_session_id
                 || arrival.world_id!=fence.runtime_scope.world_id()
+                || route.return_origin.as_ref().is_some_and(|requirement| !requirement.is_valid())
                 || (arrival.destination.x,arrival.destination.y,arrival.destination.floor)!=(destination.x,destination.y,destination.floor)
                 || request.fee.cause != (crate::durability::item_fee_burn::FeeBurnCause::NpcTravel { service: route.service.clone(), occurrence: arrival.occurrence.as_bytes() })
             {return Ok(Err(CharacterProgressionError::InvalidInput));}
@@ -221,6 +229,15 @@ impl DurabilityRoot {
             if let Some(track) = &route.quest_gate { hash.update(track.as_bytes()); }
             if let Some(track) = &route.quest_clear_gate { clear_gate::bind(&mut hash, track); }
             if let Some(requirement) = &route.ticket { ticket::bind(&mut hash, requirement); }
+            // None preserves existing v1 receipts; Some binds both port and selection group.
+            if let Some(requirement) = &route.return_origin {
+                hash.update(b"return-origin:v1");
+                hash.update((requirement.inbound_routes.len() as u64).to_be_bytes());
+                for text in std::iter::once(&requirement.return_from).chain(requirement.inbound_routes.iter()) {
+                    hash.update((text.len() as u64).to_be_bytes());
+                    hash.update(text.as_bytes());
+                }
+            }
             hash.update(arrival.destination.x.to_be_bytes());
             hash.update(arrival.destination.y.to_be_bytes());
             hash.update(arrival.destination.floor.to_be_bytes());

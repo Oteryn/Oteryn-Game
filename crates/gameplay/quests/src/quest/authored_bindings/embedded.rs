@@ -6,6 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 include!(concat!(env!("OUT_DIR"), "/authored_binding_documents.rs"));
 const INDEX: &str = include_str!("../../../../../../content/quests/definitions/index.json");
+#[path = "native_claim_item_evidence.rs"]
+mod native_claim_item_evidence;
 
 impl Bindings {
     /// Combine a complete trusted binding snapshot; names never imply another source document.
@@ -154,6 +156,7 @@ impl RecipeEvidence {
                                 | "authored_trigger_and_delivery_bindings_missing"
                         )
                     ) || (selected.original_source_gaps && entry["code"] == "reported_source_gap")
+                        || native_claim_item_evidence::resolves(&definition, entry)
                 });
             let minimum_level = selected
                 .recipe

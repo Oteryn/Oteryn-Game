@@ -37,9 +37,8 @@ pub(super) async fn validate_new_write(
             _ => None,
         })
         .collect();
-    // Permanent M49 Energy charges consume the same bounded field budget.
-    let active:i64=sqlx::query_scalar("SELECT count(*) FROM (SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.transaction_id=i.minted_transaction_id AND l.operation_kind=1 WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND NOT (uuid_send(i.item_instance_id)=ANY($3::bytea[])) AND (l.expires_at_unix_ms IS NOT NULL OR (l.definition_production_key='oteryn:item.tibia.i2126' AND (l.definition_family,l.definition_production_key,l.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) OR EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules p WHERE p.item_instance_id=i.item_instance_id AND p.source_transaction_id=l.transaction_id)) LIMIT $4) fields")
-        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(&removed).bind(super::field_removal::CHANNEL_FIELDS_MAX+1).fetch_one(&mut **tx).await?;
+    let active:i64=sqlx::query_scalar("SELECT game_live_channel_field_count(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::bytea[])")
+        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(&removed).fetch_one(&mut **tx).await?;
     if active
         .checked_add(i64::try_from(created).map_err(|_| SpellItemError::FieldCapabilityRefused)?)
         .is_none_or(|count| count > super::field_removal::CHANNEL_FIELDS_MAX)

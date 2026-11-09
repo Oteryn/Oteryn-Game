@@ -229,6 +229,10 @@ pub enum QuestEffectKind {
     },
     /// The database transaction time, in Unix seconds.
     SetNow,
+    /// The same database transaction clock, pinned to physical admission terms.
+    SetNowWithBinding {
+        binding: [u8; 32],
+    },
     /// A source `computed: expression` effect with no closed kind yet: its transition is
     /// `NOT_SUPPORTED` until an amendment adds one (§4).
     Computed,
@@ -279,6 +283,11 @@ impl QuestEffectKind {
                 out.extend_from_slice(&binding);
             }
             Self::SetNow => out.push(3),
+            Self::SetNowWithBinding { binding } => {
+                // Tag 11 already belongs to SetWhenAtLeast on this published base.
+                out.push(12);
+                out.extend_from_slice(&binding);
+            }
             Self::Computed => out.push(4),
             Self::Native(rule) => {
                 out.push(5);
@@ -731,7 +740,9 @@ impl QuestStateCatalogue {
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))
                     }
-                    QuestEffectKind::SetNow => Some(now),
+                    QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
+                        Some(now)
+                    }
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::SetWhenAtLeast {
                         other_effect,

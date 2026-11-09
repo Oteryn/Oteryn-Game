@@ -2,6 +2,47 @@ use super::Bindings;
 use std::collections::BTreeMap;
 
 #[test]
+fn production_draconia_binds_native_key_3012_without_completing_the_route() -> Result<(), String> {
+    let bindings = Bindings::parse(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/quests/authored-bindings/qmech-m01c-draconia.json"
+    )))?;
+    bindings.verify_embedded_recipe_evidence()?;
+    let mut completion = bindings.clone();
+    completion.quests[0].stages[0].completes = true;
+    assert!(completion.verify_embedded_recipe_evidence().is_err());
+    let catalogue = bindings
+        .attach(&crate::quest::QuestStateCatalogue::empty("draconia-native").ok_or("catalogue")?)?;
+    for (x, y) in [(32675_u64, 31649_u64), (32676, 31671)] {
+        let mut placement = vec![19; 32];
+        placement.extend_from_slice(&((x << 32) | (y << 16) | (246 << 8) | 1).to_be_bytes());
+        let candidates =
+            bindings.door_use_candidates(&catalogue, &BTreeMap::new(), &placement, 3012);
+        assert_eq!(candidates.len(), 1);
+        assert!(
+            bindings
+                .door_use_candidates(&catalogue, &BTreeMap::new(), &placement, 3013)
+                .is_empty()
+        );
+        let transition = catalogue.transition(&candidates[0]).ok_or("transition")?;
+        let changes = catalogue
+            .evaluate(transition, &BTreeMap::new(), 0)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(!catalogue.completes_after(transition, &changes));
+        let progressed = changes
+            .into_iter()
+            .map(|change| (change.track, change.after))
+            .collect();
+        assert!(
+            bindings
+                .door_use_candidates(&catalogue, &progressed, &placement, 3012)
+                .is_empty()
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn door_use_binding_requires_exact_native_placement_key_number_and_active_phase()
 -> Result<(), String> {
     let bindings = Bindings::parse(include_bytes!("fixtures/door_use.json"))?;

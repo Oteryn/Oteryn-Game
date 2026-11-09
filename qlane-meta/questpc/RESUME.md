@@ -1,3 +1,27 @@
+# Current questpc continuation: M01b
+
+Work branch: `claude/happy-davinci-ijz3wy-qm-questpc`. Normal push only; verify
+every push with git ls-remote. Never merge qmech/main or edit CLAIMS.md.
+Old publication instructions below are historical.
+
+Packet audit:46 routes,56 EXPLORE stages.38 routes/45 stages/59 native anchors
+have stage-level PG proofs;8 routes/11 stages remain unwired. This does not claim
+whole-quest completion. Latest slice:Chakoya s3 selected northern ice-walled
+chamber, guarded by the real first survey,three kills and CurrentPremium.
+
+Real-dispatch PG:chamber66.819570055s,first-visit regression64.969116186s;
+2 passed,0 failed,0 ignored,total131.79s. RED native footprint mismatch retained
+all six assertions;fixed half-open crop bounds,then both cases GREEN.
+Full124 modules/1234 authoring tests,checks/tree/regeneration/pins/duplicates,
+strict all-feature Clippy,workspace all-targets and Cargo/explicit Rust fmt PASS.
+
+Remaining stages:Chyllfroest s1,Deeplings s4,Devovorga Essence s1,Down the Drain
+s1,Fury Gates s2,Hive Outpost s1,Insectoid Invasion s1,Jungle Camp s1+s3,Kingsday
+s1,Lumberjack s1. Preserve admitted World mechanics and exact native evidence;
+never replace an actual visit with a nearby landmark or synthetic activation.
+
+## Historical continuation notes
+
 # questpc continuation
 
 Publish to claude/happy-davinci-ijz3wy-qmech only. Earlier lane branches frozen.
@@ -218,3 +242,25 @@ StationpublicationgatesALLGREEN:nativePG70.018382489s,381questunits185.02s,Clipp
 Native selector generation now checks actual retained B3 sectors before emitting M01b callbacks: exact public ground required; missing region/tile, changed ground and house ownership reject. Two callback-factory tests RED before the guard;4 new tests GREEN1.616s and65 binding regressions GREEN59.795s. Real Horse Station dispatch PG regression GREEN118.467654971s. No generated quest data or qualification counts changed:36routes/39stages proven,10routes/17stages unwired. Workspace/full authoring gates running;no qmech/main merge.
 
 Native-anchor publication gates PASS:120authoringmodules1222tests,0failingmodules (existing skips unchanged);authoringchecks/content-tree/callbackregenerationandcheck/equipment5795pin/dupmigrations/workspacealltargets7m15s/fmt/diffcheck. PG118.467654971s and4newguardtests. Python-only change;no Rust crate or SQL changed. All53 current anchors remain valid;10routes17stages still unwired.
+
+Bewitched s1cauldronresolver PREPARED INACTIVE. Exactchosenpersonal-dailyadaptation/objective/spoilerhash+actualhugecauldroncorner32732,31935,z12[7272,12023]required. Clearapproach32733,31935,-12ground7272,startEast32734,31935.2focusedtestsRED->GREEN0.588s;121modules1224authoringtests0failures,workspacealltargets8m35s/fmt/checksPASS;treepending. NoWorldeventflag/ingredient/combat/rewardcredit. NoBINDINGSactivationyet;nativecasepreparedin.lane/cauldron_entry.rs.36routes39stages53anchorsPG-provenunchanged.
+
+Bewitched preparation finalgates ALLGREEN:121modules1224tests,checks/tree/callbackcheck/equipment5795pin/dupmigrations/workspacealltargets8m35s/fmt. PublishinactivehelperthenactivateandprovePG;no routecountincreaseyet.
+
+Bewitched s1 nativePG GREEN71.68814649s:realSTEPWest,FACC/noPremiumprovider,once/replay/revisit,laterstagetracks0,wholecompletion0,globalbewitchedeventrows0.37routes40stages54anchorsPG-proven;9routes16stagesunwired. Authoring121modules1225testsGREEN;Clippy/workspace/checks/tree in progress. M01b PARTIAL.
+
+Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9routes16stagesunwired.121modules1225authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS. Strictquests+dispatchClippy5m11s andworkspacealltargets4m49sPASS. Additionaldispatchall-featureClippy running at owner-requested publication. First survey only;M01b PARTIAL.
+
+Chakoya s1fixedpersonalexpeditionresolver PREPARED INACTIVE. Exactrecipeadaptation/once/objective/spoilerhashandArea75507rev1117033+nativeicebergstack[799,7152]required;Premiumretained;globalWorldHELDunchanged. Target32622,32585,-7ground6585,startSouth32622,32586ground6582.3focusedtestsRED->GREEN0.680s;4nativeanchor+3cauldrontestsGREEN. ExistingBewitchednativePGregressionGREEN181.037823667s,NOTChakqualification. Fullgatesrunning;noBINDINGSactivation/noChakPGclaim.37routes40stages54anchorsprovenunchanged;9routes16stagesremain. OwnPremiumcasepreparedin.lane/iceberg_entry.rs.
+
+IcebergpreparedpublicationgatesALLGREEN:122modules1228tests,checks/tree/callbackcheck/equipment5795pin/dupmigrations/workspacealltargets8m23s/fmt. ExistingrealBewitchedPGregression181.037823667s. NoChakoyacallbackactivation/noChakPGclaimyet;counts37routes40stages54anchorsunchanged. NextactivateBINDINGSandmountpreparedPremiumcase;nativeSouthstartmustbeexplicit,andgenericexercise_premiumneedsNorth/Southdirectionselectionforexactnewkey. BewitchedadditionalallfeaturesClippy4m12sPASSon07594.
+
+Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s:realPremiumguard/refusedreplay/freshonce/revisit,actualsnow/iceSourcepreserved;kill/chambertracks0,wholecompletion0,globalWorldstate0.38routes41stages55anchorsPG-proven;8routes15stagesunwired. M01bPARTIAL;finalClippy/workspace gatesrunning. Packet-auditconfirms46routes56Explorestages;earlierhandoffclaimallnonWorldextrasfinishedwasWRONG. NextprioritizeDragonCorpse s3,DragonTower s3,EdronGoblin s3;exactsingleclaimplacementsandclearapproachcandidatesretainedlocally. OtherremainingstagesChakoya3,Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.
+
+Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s.38routes41stages55anchorsPG-proven;8routes15stagesunwired.122modules1229authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s. FirstsurveyONLY;M01bPARTIAL.
+
+Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain. Full123modules1231testsGREENafterordering/exact-two-keyfix;Clippy/workspacepending. M01bPARTIAL,notfullquestcompletion.
+
+Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.
+
+Chakoya s3 chamber nativePG GREEN66.819570055s;oldfirstvisitregressionGREEN64.969116186s;2passed0failed0ignored,total131.79s.38routes45stages59anchorsPG-proven;8routes11stagesunwired.124modules1234authoringtests/checks/tree/pins/fmtGREEN;Clippy/workspacepending. M01bPARTIAL;no wholequestclaim.

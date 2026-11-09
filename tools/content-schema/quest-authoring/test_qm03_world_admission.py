@@ -30,8 +30,9 @@ class WorldAdmissionTests(unittest.TestCase):
             self.assertEqual(generated, profile)
 
     def callbacks(self):
-        return [c for c in qengine_access.document()['callbacks']
-                if c['key'].startswith('oteryn:quest-callback/qm03/')]
+        return [c for c in qengine_access.registered_callbacks()
+                if c['key'] == 'oteryn:quest-callback/qm03/pits'
+                or (c['quest'] == 'oteryn:quest.25_years_of_tibia_quest' and c.get('admission'))]
 
     def test_entrances_require_the_chosen_live_facts(self):
         callbacks = self.callbacks()
@@ -85,7 +86,8 @@ class WorldAdmissionTests(unittest.TestCase):
             with mock.patch.object(qengine_access, 'ROOT', Path(directory)), \
                     mock.patch('questpc_explore_bindings.callbacks', return_value=[]), \
                     mock.patch('qmech_m03_entry_bindings.callbacks', return_value=[]):
-                rows = self.callbacks()
+                import qm03_world_admission
+                rows = qm03_world_admission.callbacks(qengine_access.ROOT)
             anniversary = next(c for c in rows if c['key'].endswith('/anniversary'))
             pits = next(c for c in rows if c['key'].endswith('/pits'))
             self.assertEqual(anniversary['minimum_level'], 21)
@@ -99,7 +101,8 @@ class WorldAdmissionTests(unittest.TestCase):
                     mock.patch('questpc_explore_bindings.callbacks', return_value=[]), \
                     mock.patch('qmech_m03_entry_bindings.callbacks', return_value=[]):
                 with self.assertRaisesRegex(ValueError, 'unsupported prerequisite'):
-                    self.callbacks()
+                    import qm03_world_admission
+                    qm03_world_admission.callbacks(qengine_access.ROOT)
 
     def test_selectors_exist_in_retained_native_map(self):
         sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))

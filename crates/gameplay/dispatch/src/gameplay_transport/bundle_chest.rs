@@ -184,6 +184,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return outcome(UseDisposition::Rejected);
                 };
+                // Match the quest reward owner's variable-vessel admission. A
+                // content fluid modifier cannot turn an ordinary Item into a vessel.
+                if bound.contents.iter().any(|child| {
+                    child.fluid_subtype.is_some()
+                        && !native
+                            .item_policy(child.item.key().as_str(), child.item.revision().as_str())
+                            .is_some_and(|policy| {
+                                matches!(
+                                    &policy.record().semantics.fluid,
+                                    crate::content::ReferenceItemField::Known(
+                                        crate::content::ReferenceItemFluid {
+                                            fluid_type:
+                                                crate::content::ReferenceItemField::NotApplicable
+                                        }
+                                    )
+                                )
+                            })
+                }) {
+                    return outcome(UseDisposition::Rejected);
+                }
                 let contents = bound
                     .contents
                     .iter()

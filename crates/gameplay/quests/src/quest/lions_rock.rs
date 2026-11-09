@@ -56,7 +56,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
             set:0,preserve:true,increment:false,at_least:false,
         }).collect();
         callback.passages = vec![Passage {position:Position{x:px,y:py,floor:-8},appearance:2074,replacement:Some(2075),replacement_passable: None,create_on_close:None,if_present:false}];
-        callback.item_on_target = Some(ItemOnTarget {item:format!("oteryn:item.tibia.i{}",ITEMS[index]),alternatives:vec![],count:1,replacement:None,target_replacement:None,target_remove:false,reusable:false,selected_instance:false,ingredients:vec![]});
+        callback.item_on_target = Some(ItemOnTarget { on_step: false,item:format!("oteryn:item.tibia.i{}",ITEMS[index]),alternatives:vec![],count:1,replacement:None,target_replacement:None,target_remove:false,reusable:false,selected_instance:false,ingredients:vec![]});
         callback.success_message = Some(MESSAGES[index].into());
         callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:13-79".into()];
         callback

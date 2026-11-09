@@ -20,7 +20,7 @@ def refresh(source, packet):
         or len(keys) != len(expected)
         or set(keys) != expected
     ):
-        raise ValueError("QENGINE_EQUIPMENT_SOURCE_COHORT")
+        raise ValueError("QENGINE_REWARD_SOURCE_COHORT")
     marker = r'    // QENGINE2 identities: generated begin\n.*?    // QENGINE2 identities: generated end\n'
     pattern = marker if '// QENGINE2 identities: generated begin' in source else r'^\s*assert_eq!\(added_keys\.len\(\), [0-9_]+\);\n'
     identities = '\n'.join(f'            "{key}",' for key in sorted(expected))

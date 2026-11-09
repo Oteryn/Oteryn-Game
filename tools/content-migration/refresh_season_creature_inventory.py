@@ -40,6 +40,10 @@ def generated(root):
     # Admit its four schedules only after exact full-body source qualification.
     from engenc2_fugue_profile import inventory_extension
     extra_native, extra_schedules = inventory_extension(root, native)
+    from engenc_elemental_profiles import inventory_extension as elemental_inventory
+    elemental_native, elemental_schedules = elemental_inventory(native)
+    extra_native += elemental_native
+    extra_schedules += elemental_schedules
     if len(rows) != 1863 + 1 or len(native) != len(rows) + extra_native or schedules != 7201 + 4 + extra_schedules:
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
     result = {}
@@ -56,6 +60,11 @@ def generated(root):
             f'assert_eq!(creatures.len(), {len(rows)}, "complete canonical Creature corpus");')
     replace('crates/gameplay/monster-ai/src/ai_think/native_profile_tests.rs',
             r'\([0-9_]+, [0-9_]+, 15, 8\)', f'({len(native)}, {schedules}, 15, 8)')
+    # The two source-qualified authored Elementals each reuse one CreateItem
+    # schedule. Keep the source-census assertion exact for those occurrences.
+    replace('crates/gameplay/content/src/content/native_gameplay.rs',
+            r'assert_eq!\(\(create, remove\), \([0-9_]+, [0-9_]+\)\);',
+            f'assert_eq!((create, remove), ({62 + elemental_native}, 20));')
     # Crystal cake_golem.lua:77-81 adds one melee and two native spell slots.
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'

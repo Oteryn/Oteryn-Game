@@ -49,3 +49,13 @@ transition API: a command alone cannot witness a volatile door opening. The
 PG regression first committed without that guard, then refused with no track
 write after the guard. No production door binding is enabled by this slice;
 the captured-opening consumer remains to be wired.
+
+Ancient Aucar parent gate: the chosen first step names "Galthen and the City of
+Gold"; the canonical parent identity is `oteryn:quest.adventures_of_galthen_quest`
+(`content/quests/definitions/quests-00100-00199.json`). Its recipe combines the
+City of Gold journeys with additional Galthen missions. The current binding
+conservatively requires full parent completion, retaining the original requirement
+label; it does not infer chapter completion from an outfit, item or creature kill.
+This is a stricter prerequisite until a separately qualified chapter checkpoint
+is available. A native Ahau death advances only the first route phase; acquiring
+and using the Living Idol, later armor steps and rewards remain separate.

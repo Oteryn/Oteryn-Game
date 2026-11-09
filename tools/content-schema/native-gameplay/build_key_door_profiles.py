@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source-derived profiles for the M06 key-door and level-door playable path.
+"""Source-derived profiles for the M06/M01c key-door and level-door playable path.
 
 Crystal 201189f data/libs/tables/doors.lua:4,9,265,273 supplies the identities.
 The Vampire Shield level70 placements are startup/tables/door_level.lua:152-158.
@@ -13,7 +13,7 @@ from build_tool_item_profiles import build as source_profiles
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1646, 1647, 2967, 2968, 5102, 5103}
+IDS = {1628, 1646, 1647, 2967, 2968, 5097, 5102, 5103, 6248}
 
 
 def build(directory):

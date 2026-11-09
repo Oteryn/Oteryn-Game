@@ -13,7 +13,7 @@ class M03EntryTests(unittest.TestCase):
     def test_committed_access_packet_includes_generated_m03_bindings(self):
         committed = json.loads((ROOT / 'content/quests/shared-access-callbacks.json').read_text())
         self.assertEqual(committed, qengine_access.document())
-        rows = {row['key']: row for row in committed['callbacks'] if '/m03/' in row['key'] or '/qm03/anniversary' in row['key']}
+        rows = {row['key']: row for row in qengine_access.registered_callbacks() if '/m03/' in row['key'] or '/qm03/anniversary' in row['key']}
         self.assertEqual(len(rows), 19)
         entry = rows['oteryn:quest-callback/qm03/anniversary-25095']
         guards = entry['character_requirements']
@@ -24,8 +24,8 @@ class M03EntryTests(unittest.TestCase):
         self.assertEqual(entry['minimum_level'], 20)
 
     def test_machine_has_one_owner_per_selector_and_keeps_both_guard_profiles(self):
-        rows = qengine_access.document()['callbacks']
-        entrances = [row for row in rows if row['key'].startswith('oteryn:quest-callback/qm03/anniversary')]
+        rows = qengine_access.registered_callbacks()
+        entrances = [row for row in rows if row['quest'] == 'oteryn:quest.25_years_of_tibia_quest' and row.get('admission')]
         self.assertEqual(len(entrances), 9)
         for entry in entrances:
             peers = [row for row in rows if (row['trigger'], row['selector']) ==

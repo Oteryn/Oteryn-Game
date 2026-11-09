@@ -241,7 +241,7 @@ mod tests {
         creature: &str,
         health: i64,
     ) -> Result<(u16, u16, i64, i64), BoxError> {
-        trap_case_source(trap, protection_zone, creature, health, false)
+        trap_case_source(trap, protection_zone, creature, health, false, false)
     }
 
     fn trap_case_source(
@@ -250,6 +250,7 @@ mod tests {
         creature: &str,
         health: i64,
         volatile: bool,
+        phase: bool,
     ) -> Result<(u16, u16, i64, i64), BoxError> {
         let (mut runtime, actor, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x72);
@@ -263,18 +264,34 @@ mod tests {
         );
         let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&key, 0), (&other, 1));
         let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
-        if volatile {
+        if volatile || phase {
             for tile in &mut bundle.sectors[0].tiles {
                 if tile.x == 6 {
                     tile.items.truncate(1);
                 }
             }
         }
-        if protection_zone {
+        if protection_zone && !phase {
             for tile in &mut bundle.sectors[0].tiles {
                 if tile.x == 6 {
                     tile.flags = 1;
                 }
+            }
+        }
+        if phase {
+            bundle.manifest.world.min_x += 33409;
+            bundle.manifest.world.max_x += 33409;
+            bundle.manifest.world.min_y += 31522;
+            bundle.manifest.world.max_y += 31522;
+            bundle.manifest.world.floors = vec![-11];
+            for sector in &mut bundle.sectors {
+                sector.floor = -11;
+                for tile in &mut sector.tiles {
+                    tile.x += 33409;
+                    tile.y += 31522;
+                }
+                sector.sx = sector.tiles.first().ok_or("phase sector")?.x / 32;
+                sector.sy = sector.tiles.first().ok_or("phase sector")?.y / 32;
             }
         }
         let bytes = oteryn_world_bundle::writer::write(
@@ -284,9 +301,9 @@ mod tests {
         )?;
         pins.digest = oteryn_world_bundle::writer::read(&bytes)?.digest;
         let pos = TilePos {
-            x: 6,
-            y: 0,
-            floor: -7,
+            x: if phase { 33415 } else { 6 },
+            y: if phase { 31522 } else { 0 },
+            floor: if phase { -11 } else { -7 },
         };
         let base = crate::map::load(&bytes, &pins).map_err(|error| format!("{error:?}"))?;
         let booted = boot::boot(
@@ -326,6 +343,36 @@ mod tests {
             return Err("bundle collision".into());
         };
         let map = collision.map();
+        if phase {
+            use crate::content::{NativeSpellTileFlags, QualifiedSpellTile};
+            let ground = map.facts.base_entry(pos, 0, 0).ok_or("phase ground")?;
+            let trap_entry = map.facts.movement_item_facts(trap).ok_or("phase trap")?;
+            assert!(map.publish_feroxa_phase(
+                *actor.world_id().as_bytes(),
+                1,
+                [4; 32],
+                vec![crate::map::facts::FeroxaPhaseTile {
+                    position: pos,
+                    entries: vec![ground, trap_entry],
+                    no_logout: false,
+                    teleport: None,
+                    spell: QualifiedSpellTile::from_bundle(
+                        Some((u32::from(ground.appearance_id), 150)),
+                        vec![u32::from(trap)],
+                        NativeSpellTileFlags {
+                            protection_zone,
+                            block_solid: false,
+                            block_projectile: false,
+                            immovable_block_solid: false,
+                            immovable_block_item: false,
+                            immovable_nonfield_block_item: false,
+                            floor_change: false
+                        },
+                        Some((false, false)),
+                    ),
+                },]
+            ));
+        }
         if volatile {
             assert!(map.facts.create_movement_item(pos, trap, 0, || true));
         }
@@ -349,11 +396,11 @@ mod tests {
             }
         };
         let at = MovementLocalPosition {
-            x: 6,
-            y: 0,
-            floor: 7,
+            x: i32::from(pos.x),
+            y: i32::from(pos.y),
+            floor: -i16::from(pos.floor),
         };
-        let away = MovementLocalPosition { x: 5, ..at };
+        let away = MovementLocalPosition { x: at.x - 1, ..at };
         let server_digest = runtime.content_pin().server_artifact_digest();
         runtime.install_companion_policies(CompiledCreaturePolicies::from_active_artifact(
             server_digest,
@@ -469,19 +516,39 @@ mod tests {
     }
 
     #[test]
+    fn qn5_feroxa_phase_only_trap_contact_reads_the_current_stack_and_zone() -> Result<(), BoxError>
+    {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), BoxError> {
+                assert_eq!(
+                    trap_case_source(22059, true, "oteryn:creature.feroxa2", 50_000, false, true)?,
+                    (22074, 22074, 50_000, 49_000)
+                );
+                assert_eq!(
+                    trap_case_source(2145, true, "oteryn:creature.rat", 1_000, false, true)?,
+                    (2145, 2145, 1_000, 1_000)
+                );
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "phase trap test thread panicked")?
+    }
+
+    #[test]
     fn qn5_callback_created_traps_trigger_and_retain_their_native_identity() -> Result<(), BoxError>
     {
         std::thread::Builder::new()
             .stack_size(64 << 20)
             .spawn(|| -> Result<(), BoxError> {
                 let (closed, exited, before, after) =
-                    trap_case_source(22059, false, "oteryn:creature.feroxa2", 50_000, true)?;
+                    trap_case_source(22059, false, "oteryn:creature.feroxa2", 50_000, true, false)?;
                 assert_eq!(
                     (closed, exited, before, after),
                     (22074, 22074, 50_000, 49_000)
                 );
                 let (closed, exited, before, after) =
-                    trap_case_source(2145, false, "oteryn:creature.rat", 1_000, true)?;
+                    trap_case_source(2145, false, "oteryn:creature.rat", 1_000, true, false)?;
                 assert_eq!((closed, exited), (2146, 2145));
                 assert!(after < before);
                 Ok(())

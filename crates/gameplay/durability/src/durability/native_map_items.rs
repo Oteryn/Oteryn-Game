@@ -11,6 +11,8 @@ use serde_json::json;
 use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeSet;
 
+mod elemental_energy;
+
 type Result<T> = std::result::Result<T, SpellItemError>;
 fn hex(v: &[u8]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
@@ -82,6 +84,9 @@ pub async fn initialize_in_transaction(
     .bind(binding.channel.as_bytes().as_slice())
     .execute(&mut **tx)
     .await?;
+    // Immutable script creation records identify candidates only. The actual
+    // current recovery, Scope, Node and map owner were checked above.
+    elemental_energy::adopt(tx, &binding, node, epoch).await?;
     let mut keys = BTreeSet::new();
     let mut out = Vec::new();
     for p in proof.placements() {

@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering = name == "m07-ring-offering";
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
@@ -29,7 +30,10 @@ fn scenario_case(
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
     let m07_realm = name.starts_with("m07/realm-");
-    let lion_trial = matches!(name, "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears");
+    let lion_trial = matches!(
+        name,
+        "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears"
+    );
     let m07_lion = name.starts_with("m07/lion-");
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let m49 = name.starts_with("m49-");
@@ -39,8 +43,10 @@ fn scenario_case(
     let m44_amphora = name == "m44-lions-amphora-1";
     let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
+    let m44 =
+        name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
+    let m03_use = name == super::super::qengine_m03_use::NAME;
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
@@ -66,7 +72,9 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m49
+    let native_crop = m03_use
+        || engenc_asura
+        || m49
         || qm03
         || qm47
         || qm50
@@ -99,7 +107,15 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m07_too_hot {
+    let start = if m03_use {
+        Position {
+            x: 32429,
+            y: 32167,
+            floor: -8,
+        }
+    } else if engenc_asura {
+        super::super::engenc_asura_dispatch::start(name)?
+    } else if m07_too_hot {
         super::super::m07_too_hot_columns::start()
     } else if m07_repair {
         super::super::m07_machinery_repairs::start()
@@ -116,15 +132,33 @@ fn scenario_case(
     } else if m07_lion {
         super::super::m07_lion_offerings::start(name)
     } else if m07_dreamer {
-        Position { x: 32762, y: 32289, floor: -14 }
+        Position {
+            x: 32762,
+            y: 32289,
+            floor: -14,
+        }
     } else if m44_flower {
-        Position { x: trigger.x + 1, ..trigger }
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
     } else if m44_amphora {
-        Position { y: trigger.y - 1, ..trigger }
+        Position {
+            y: trigger.y - 1,
+            ..trigger
+        }
     } else if m03_pits {
-        Position { x: 32791, y: 32332, floor: -10 }
+        Position {
+            x: 32791,
+            y: 32332,
+            floor: -10,
+        }
     } else if nomads_window {
-        Position { x: 33217, y: 32854, floor: -9 }
+        Position {
+            x: 33217,
+            y: 32854,
+            floor: -9,
+        }
     } else if qready_workbench {
         super::super::qready1_workbenches::start(name)?
     } else if qready_craft {
@@ -248,7 +282,11 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if m03_pits {
+    let mut callback = if m03_use {
+        super::super::qengine_m03_use::callback()?
+    } else if engenc_asura {
+        super::super::engenc_asura_dispatch::callback(name)?
+    } else if m03_pits {
         callback("qm03/pits")?
     } else if nomads_window {
         callback(super::super::qengine_m02_use::NAME)?
@@ -510,22 +548,39 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_pits {
+        let world = if m03_use {
+            super::super::qengine_m03_use::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("machine native policies")?,
+            )?
+        } else if engenc_asura {
+            super::super::engenc_asura_dispatch::world(
+                generation.native_gameplay().ok_or("native Asura")?,
+                name,
+            )?
+        } else if m03_pits {
             super::super::qengine_m03_pits::world(
                 generation.native_gameplay().ok_or("Pits native policies")?,
             )?
         } else if m44_flower {
-            super::super::m44_flower_lifecycle::world(generation.native_gameplay().ok_or("flower policies")?)?
+            super::super::m44_flower_lifecycle::world(
+                generation.native_gameplay().ok_or("flower policies")?,
+            )?
         } else if m44_amphora {
             super::super::m44_amphora_lifecycle::world(
                 generation.native_gameplay().ok_or("amphora policies")?,
             )?
         } else if nomads_window {
-            super::super::qengine_m02_use::world(generation.native_gameplay().ok_or("Nomads native policies")?)?
+            super::super::qengine_m02_use::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("Nomads native policies")?,
+            )?
         } else if elemental_pin {
             super::super::qn1_elemental_world_pin::world(
                 generation.native_gameplay().ok_or("elemental policies")?,
-                name == "qn1-elemental-energy-soil",
+                name.starts_with("qn1-elemental-energy-"),
             )?
         } else if qready_workbench {
             super::super::qready1_workbenches::world(
@@ -668,9 +723,15 @@ fn scenario_case(
                     .ok_or("native Spirit policies")?,
             )?
         } else if m07_too_hot {
-            super::super::m07_too_hot_columns::world(generation.native_gameplay().ok_or("Too Hot policies")?)?
+            super::super::m07_too_hot_columns::world(
+                generation.native_gameplay().ok_or("Too Hot policies")?,
+            )?
         } else if m07_repair {
-            super::super::m07_machinery_repairs::world(generation.native_gameplay().ok_or("Machinery repair policies")?)?
+            super::super::m07_machinery_repairs::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("Machinery repair policies")?,
+            )?
         } else if m07_machinery {
             super::super::m07_machinery_burn::world(
                 generation.native_gameplay().ok_or("Machinery policies")?,
@@ -683,7 +744,10 @@ fn scenario_case(
         } else if m07_lion || lion_trial {
             super::super::m07_lion_offerings::world(
                 generation.native_gameplay().ok_or("native Lion policies")?,
-                callback.key.strip_prefix("oteryn:quest-callback/").ok_or("Lion callback key")?,
+                callback
+                    .key
+                    .strip_prefix("oteryn:quest-callback/")
+                    .ok_or("Lion callback key")?,
             )?
         } else if m07_dreamer {
             super::super::m07_dreamer_levers::world(
@@ -775,7 +839,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name == "m07-carrot-premium" || m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+        let premium = if name == "m07-carrot-premium" || m03_use || engenc_asura || m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
             || matches!(
                 name,
                 "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
@@ -851,9 +915,19 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if engenc_asura {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::engenc_asura_dispatch::catalogue(name)?,
+            ));
+        }
         if m44_flower {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::m44_flower_lifecycle::catalogue(
-                owner.quest_catalogue.as_ref().ok_or("flower catalogue")?, &callback, name.ends_with("/later"))?));
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::m44_flower_lifecycle::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("flower catalogue")?,
+                    &callback,
+                    name.ends_with("/later"),
+                )?,
+            ));
         } else if m44_amphora {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle::catalogue(
@@ -971,13 +1045,24 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_pits {
+        if m03_use {
+            super::super::qengine_m03_use::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if engenc_asura {
+            super::super::engenc_asura_dispatch::exercise(&mut owner, &mut admitted, &h, name)
+                .await?;
+        } else if m03_pits {
             super::super::qengine_m03_pits::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
         } else if nomads_window {
             super::super::qengine_m02_use::exercise(
-                &mut owner, &mut admitted, &h, &callback, name.ends_with("-wrong-order"),
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                name.ends_with("-wrong-order"),
+            )
+            .await?;
         } else if elemental_pin {
             super::super::qn1_elemental_world_pin::exercise(
                 &owner,
@@ -985,6 +1070,7 @@ fn scenario_case(
                 name,
                 deps.actor,
                 fence.item_fence(),
+                admitted,
             )
             .await?;
         } else if qready_workbench {
@@ -1023,9 +1109,23 @@ fn scenario_case(
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if m07_too_hot {
-            Box::pin(super::super::m07_too_hot_columns::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+            Box::pin(super::super::m07_too_hot_columns::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            ))
+            .await?;
         } else if m07_repair {
-            Box::pin(super::super::m07_machinery_repairs::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+            Box::pin(super::super::m07_machinery_repairs::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+            ))
+            .await?;
         } else if m07_machinery {
             Box::pin(super::super::m07_machinery_burn::exercise(
                 &mut owner,
@@ -1165,7 +1265,14 @@ fn scenario_case(
             )
             .await?;
         } else if m44_flower {
-            super::super::m44_flower_lifecycle::exercise(&owner, &mut admitted, &h, name.ends_with("/later"), name.ends_with("/uncertain")).await?;
+            super::super::m44_flower_lifecycle::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                name.ends_with("/later"),
+                name.ends_with("/uncertain"),
+            )
+            .await?;
         } else if m44_amphora {
             super::super::m44_amphora_lifecycle::exercise(&owner, &mut admitted, &h).await?;
         } else if m44_lions {
@@ -1430,7 +1537,16 @@ fn scenario_case(
             )
             .await?;
         } else if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
-            super::super::m07_dreamer_fire_bug::exercise(&mut owner,&mut admitted,&h,&authority,fence,&callback,trigger).await?;
+            super::super::m07_dreamer_fire_bug::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if callback.effects != Default::default()
             || callback.quest == "oteryn:quest.waterfall_quest" && stateless_destination.is_none()
         {

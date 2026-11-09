@@ -9,7 +9,13 @@
           "key": "oteryn:quest-progress/qn5/grimvale-entry",
           "initial": 0,
           "minimum": 0,
-          "maximum": 1
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/qn5/grimvale-werewolves",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 10
         }
       ],
       "stages": [
@@ -79,12 +85,42 @@
               ]
             }
           }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/qn5-grimvale-werewolves",
+              "creature": "oteryn:creature.werewolf",
+              "track": "oteryn:quest-progress/qn5/grimvale-werewolves",
+              "gate": "oteryn:quest-progress/qn5/grimvale-entry",
+              "gate_value": 1,
+              "maximum": 10,
+              "advance_gate_to": 2,
+              "world_change": "grimvale",
+              "death_area": {
+                "minimum": [
+                  33385,
+                  31532,
+                  10
+                ],
+                "maximum": [
+                  33492,
+                  31619,
+                  11
+                ]
+              }
+            }
+          }
         }
       ],
       "sources": [
-        "Chosen Oteryn recipe s1 only: Reach Grimvale during the authored full-moon encounter; not original-source quest completion.",
+        "Chosen Oteryn recipe stages s1-s2 only: encounter entry and ten Werewolves inside the authored island bounds; not original-source quest completion.",
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua; encounter ingress 22761 at 33430,31537,11. This chosen personal stage is an Oteryn adaptation.",
-        "Existing native island landing-adjacent ground 104 at 33420,31539,10; no fabricated marker, cure, reward or completion."
+        "Existing native island landing-adjacent ground 104 at 33420,31539,10; no fabricated marker, cure, reward or completion.",
+        "Chosen Oteryn s2: ten Werewolves, no source completion or reward. The inclusive encounter bounds are the extent of 43 admitted Werewolf spawn points around Grimvale, in content/world/spawns/spawns-30000-31999.json and spawns-36000-37999.json (native positive floors 10-11). Kill eligibility uses the victim position frozen at the lethal event; it does not follow later player movement."
       ]
     }
   ]

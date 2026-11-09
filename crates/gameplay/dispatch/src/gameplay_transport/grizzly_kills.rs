@@ -35,6 +35,7 @@ struct NativeCounterCapture {
     transition: String,
     creature: String,
     definition_hash: Option<[u8; 32]>,
+    death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
 }
 
@@ -56,6 +57,7 @@ fn capture_native(
                 transition: key.clone(),
                 creature: counter.creature.into(),
                 definition_hash,
+                death_area: counter.death_area,
                 encounter_source: counter.encounter_source.map(str::to_owned),
             })
         })
@@ -124,12 +126,31 @@ fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 
     })
 }
 
+#[cfg(test)]
 fn freeze(
     source: Option<PartySnapshot>,
     principal: [u8; 16],
     principal_present: bool,
     creature: &str,
     snapshots: &[TaskSnapshot],
+) -> FrozenGrizzlyDeath {
+    freeze_at(
+        source,
+        principal,
+        principal_present,
+        creature,
+        snapshots,
+        None,
+    )
+}
+
+fn freeze_at(
+    source: Option<PartySnapshot>,
+    principal: [u8; 16],
+    principal_present: bool,
+    creature: &str,
+    snapshots: &[TaskSnapshot],
+    death_position: Option<[i32; 3]>,
 ) -> FrozenGrizzlyDeath {
     if !principal_present {
         return FrozenGrizzlyDeath::default();
@@ -161,7 +182,12 @@ fn freeze(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature && counter.encounter_source.is_none() {
+            if counter.creature == creature
+                && counter.encounter_source.is_none()
+                && counter.death_area.is_none_or(|area| {
+                    death_position.is_some_and(|position| area.contains(position))
+                })
+            {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -311,12 +337,17 @@ pub(super) fn capture(
                 })
                 .cloned()
                 .collect();
-            let mut frozen = freeze(
+            let mut frozen = freeze_at(
                 source,
                 *principal.character.as_bytes(),
                 principal_present,
                 &entry.creature,
                 &live,
+                Some([
+                    entry.facts.corpse.x,
+                    entry.facts.corpse.y,
+                    i32::from(entry.facts.corpse.floor),
+                ]),
             );
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
@@ -407,6 +438,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
         let runtime = self.runtime.lock().await;
+        let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(&runtime, session);
+        let attack = self.states.attack.lock().await;
+        let Ok(mut cache) = attack.kills().1.lock() else {
+            return;
+        };
+        if !cache.hits.install(&runtime, session, hit_snapshot) {
+            super::operator_event("quest_hit_snapshot_capacity_refused");
+        }
+        cache.sessions.retain(|snapshot| {
+            snapshot.session != session
+                && runtime
+                    .player_control_facts(snapshot.actor, snapshot.session)
+                    .is_ok()
+        });
+        if let Some(snapshot) = snapshot {
+            cache.sessions.push(snapshot);
+        }
+    }
+
+    fn grizzly_kill_snapshots_in_turn(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) -> (
+        Option<TaskSnapshot>,
+        Option<super::quest_hits::queue::Snapshot>,
+    ) {
         let snapshot = {
             let sessions = self.states.quest_sessions.lock().ok();
             sessions
@@ -461,22 +519,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some((snapshot, hit_snapshot)) => (Some(snapshot), hit_snapshot),
             None => (None, None),
         };
-        let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().1.lock() else {
-            return;
+        (snapshot, hit_snapshot)
+    }
+
+    /// The quest callback already holds the Channel turn; never reacquire runtime here.
+    pub(super) fn refresh_grizzly_kill_snapshot_in_turn(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) -> bool {
+        let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(runtime, session);
+        let Some(snapshot) = snapshot else {
+            return false;
         };
-        if !cache.hits.install(&runtime, session, hit_snapshot) {
-            super::operator_event("quest_hit_snapshot_capacity_refused");
+        let Ok(attack) = self.states.attack.try_lock() else {
+            return false;
+        };
+        let Ok(mut cache) = attack.kills().1.lock() else {
+            return false;
+        };
+        if !cache.hits.install(runtime, session, hit_snapshot) {
+            return false;
         }
-        cache.sessions.retain(|snapshot| {
-            snapshot.session != session
-                && runtime
-                    .player_control_facts(snapshot.actor, snapshot.session)
-                    .is_ok()
+        cache.sessions.retain(|old| {
+            old.session != session && runtime.player_control_facts(old.actor, old.session).is_ok()
         });
-        if let Some(snapshot) = snapshot {
-            cache.sessions.push(snapshot);
-        }
+        cache.sessions.push(snapshot);
+        true
     }
 
     async fn credit_grizzly_death(&self, entry: &PendingKillSettlement) -> bool {

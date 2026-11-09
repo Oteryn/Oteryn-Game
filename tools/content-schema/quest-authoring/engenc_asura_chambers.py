@@ -102,7 +102,10 @@ def attach_chambers(document, root):
             "encounter": {
                 "minimum_level": 1,
                 "players": [
-                    {"from": pos(chamber["entry"]), "to": pos(chamber["landing"])}
+                    {
+                        "from": pos(chamber.get("staging", chamber["entry"])),
+                        "to": pos(chamber["landing"]),
+                    }
                 ],
                 "monsters": [
                     {"position": pos(p), "creature": chamber["creature"]}
