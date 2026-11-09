@@ -28,6 +28,9 @@ impl MountReward {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Opt in to source-script displacement onto a present blocked pad.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub scripted_teleport: bool,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -222,6 +225,13 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.scripted_teleport
+        && (callback.teleport.is_none()
+            || callback.selector.native.is_none()
+            || callback.actor_kind != ActorKind::Player)
+    {
+        return false;
+    }
     if effects.completes_quest
         && (!callback.requires_world_admission
             || callback.actor_kind != ActorKind::Player

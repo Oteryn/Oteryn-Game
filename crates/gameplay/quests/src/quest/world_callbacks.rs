@@ -37,6 +37,8 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+#[cfg(test)]
+mod scripted_teleport_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
