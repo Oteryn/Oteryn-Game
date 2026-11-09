@@ -28,110 +28,217 @@ pub(in crate::play) struct Panels {
     pub training: oteryn_client_ui::training::Panel,
     pub guild_bank: oteryn_client_ui::guild_bank::Panel,
 }
-impl Panels {
-    pub fn end(&mut self) {
-        self.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel {
-            feedback: "The session has ended".into(),
+
+impl Outbox {
+    pub(in crate::play) fn properties_initialize<T: Stepper>(&self, session: &T) {
+        let mut shared = lock(&self.0);
+        shared.item_forge.preview.selected = session.feature_selected(152);
+        shared.imbue.details_selected = session.feature_selected(447);
+        shared
+            .properties
+            .house
+            .initialize(session.feature_selected(49));
+        shared.properties.staff = super::super::feature_0051_staff::state::Panel {
+            selected: session.feature_selected(51),
+            tools: session.feature_selected(330),
             ..Default::default()
         };
-        self.house = Default::default();
-        self.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.party_skull = oteryn_client_ui::party_skull::Panel {
+            selected: session.feature_selected(134),
             ..Default::default()
         };
-        self.staff = super::super::feature_0051_staff::state::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {
+            selected: session.feature_selected(57),
             ..Default::default()
         };
-        self.party_skull = oteryn_client_ui::party_skull::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.timed_item = oteryn_client_ui::timed_item::Panel {
+            selected: session.feature_selected(39),
             ..Default::default()
         };
-        self.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.character_info = oteryn_client_ui::character_info::Panel {
+            selected: session.feature_selected(97),
             ..Default::default()
         };
-        self.timed_item = oteryn_client_ui::timed_item::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
+            selected: session.feature_selected(149),
             ..Default::default()
         };
-        self.raid_schedule = oteryn_client_ui::raid_schedule::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.container_sort = oteryn_client_ui::container_sort::Panel {
+            selected: session.feature_selected(146),
             ..Default::default()
         };
-        self.character_info = oteryn_client_ui::character_info::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.guild_war = oteryn_client_ui::guild_war::Panel {
+            selected: session.feature_selected(103),
             ..Default::default()
         };
-        self.guildhall = oteryn_client_ui::guildhall::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.house_move_out = oteryn_client_ui::house_move_out::Panel {
+            selected: session.feature_selected(59),
             ..Default::default()
         };
-        self.house_transfer = oteryn_client_ui::house_transfer::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.house_transfer = oteryn_client_ui::house_transfer::Panel {
+            selected: session.feature_selected(86),
             ..Default::default()
         };
-        self.house_move_out = oteryn_client_ui::house_move_out::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.guildhall = oteryn_client_ui::guildhall::Panel {
+            selected: session.feature_selected(99),
             ..Default::default()
         };
-        self.container_sort = oteryn_client_ui::container_sort::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.player_report = oteryn_client_ui::player_report::Panel {
+            selected: session.feature_selected(76),
             ..Default::default()
         };
-        self.guild_war = oteryn_client_ui::guild_war::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.appearance = oteryn_client_ui::appearance::Panel {
+            selected: session.feature_selected(25),
             ..Default::default()
         };
-        self.player_report = oteryn_client_ui::player_report::Panel {
-            feedback: "The session has ended".into(),
+        shared.properties.charm_progression = oteryn_client_ui::charm_progression::Panel {
+            selected: session.feature_selected(67),
             ..Default::default()
         };
-        for (open, pending, feedback) in [
-            (
-                &mut self.mail.open,
-                &mut self.mail.pending,
-                &mut self.mail.feedback,
-            ),
-            (
-                &mut self.house_podium.open,
-                &mut self.house_podium.pending,
-                &mut self.house_podium.feedback,
-            ),
-            (
-                &mut self.training.open,
-                &mut self.training.pending,
-                &mut self.training.feedback,
-            ),
-            (
-                &mut self.guild_bank.open,
-                &mut self.guild_bank.pending,
-                &mut self.guild_bank.feedback,
-            ),
-        ] {
-            *open = false;
-            *pending = false;
-            *feedback = "The session has ended".into();
+        shared.properties.pvp_expert = oteryn_client_ui::pvp_expert::Panel {
+            selected: session.feature_selected(87),
+            ..Default::default()
+        };
+        // Publish selection and its confirmed snapshot together, including on re-admission.
+        super::super::feature_0087_pvp_expert::protocol::initialize(
+            &mut shared.properties.pvp_expert,
+            session,
+        );
+        shared.properties.mail.selected = session.feature_selected(115);
+        shared.properties.house_furniture_rotation =
+            oteryn_client_ui::house_furniture_rotation::Panel {
+                selected: session.feature_selected(445),
+                ..Default::default()
+            };
+        shared.properties.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {
+            selected: session.feature_selected(207),
+            ..Default::default()
+        };
+        shared.properties.house_podium.selected = session.feature_selected(150);
+        shared.properties.training.selected = session.feature_selected(54);
+        shared.properties.guild_bank.selected = session.feature_selected(55);
+    }
+    pub(in crate::play) fn properties_result(
+        &self,
+        command: &FeatureCommand,
+        result: &GatedCommandResult,
+    ) {
+        let mut shared = lock(&self.0);
+        if command.capability == 152 {
+            oteryn_client_ui::item_forge::preview::apply(&mut shared.item_forge, command, result);
+            return;
         }
-        self.appearance = oteryn_client_ui::appearance::Panel {
-            feedback: "The session has ended".into(),
-            ..Default::default()
-        };
-        self.charm_progression = oteryn_client_ui::charm_progression::Panel {
-            feedback: "The session has ended".into(),
-            ..Default::default()
-        };
-        self.pvp_expert = oteryn_client_ui::pvp_expert::Panel {
-            feedback: "The session has ended".into(),
-            ..Default::default()
-        };
-        self.mail.selected = false;
-        self.house_podium.selected = false;
-        self.training.selected = false;
-        self.guild_bank.selected = false;
+        if command.capability == 447 {
+            oteryn_client_ui::imbue::details::apply(&mut shared.imbue, command, result);
+            return;
+        }
+        match command.capability {
+            49 => shared.properties.house.model.apply(command, result),
+            51 | 330 => super::super::feature_0051_staff::protocol::apply(
+                &mut shared.properties.staff,
+                command,
+                result,
+            ),
+            25 => super::super::feature_0025_appearance::protocol::apply(
+                &mut shared.properties.appearance,
+                command,
+                result,
+            ),
+            39 => super::super::feature_0039_timed_item::protocol::apply(
+                &mut shared.properties.timed_item,
+                command,
+                result,
+            ),
+            54 => super::super::feature_0054_training::protocol::apply(
+                &mut shared.properties.training,
+                command,
+                result,
+            ),
+            55 => super::super::feature_0055_guild_bank::protocol::apply(
+                &mut shared.properties.guild_bank,
+                command,
+                result,
+            ),
+            57 => super::super::feature_0057_cyclopedia_map::protocol::apply(
+                &mut shared.properties.cyclopedia_map,
+                command,
+                result,
+            ),
+            59 => super::super::feature_0059_house_move_out::protocol::apply(
+                &mut shared.properties.house_move_out,
+                command,
+                result,
+            ),
+            67 => super::super::feature_0067_bestiary_charm_progression::protocol::apply(
+                &mut shared.properties.charm_progression,
+                command,
+                result,
+            ),
+            76 => super::super::feature_0076_player_report::protocol::apply(
+                &mut shared.properties.player_report,
+                command,
+                result,
+            ),
+            86 => super::super::feature_0086_house_transfer::protocol::apply(
+                &mut shared.properties.house_transfer,
+                command,
+                result,
+            ),
+            87 => super::super::feature_0087_pvp_expert::protocol::apply(
+                &mut shared.properties.pvp_expert,
+                command,
+                result,
+            ),
+            97 => super::super::feature_0097_character_info::protocol::apply(
+                &mut shared.properties.character_info,
+                command,
+                result,
+            ),
+            99 => super::super::feature_0099_guildhall::protocol::apply(
+                &mut shared.properties.guildhall,
+                command,
+                result,
+            ),
+            103 => super::super::feature_0103_guild_war::protocol::apply(
+                &mut shared.properties.guild_war,
+                command,
+                result,
+            ),
+            445 => super::super::feature_0445_house_furniture_rotation::protocol::apply(
+                &mut shared.properties.house_furniture_rotation,
+                command,
+                result,
+            ),
+            207 => super::super::feature_0207_house_furniture_wrap::protocol::apply(
+                &mut shared.properties.house_furniture_wrap,
+                command,
+                result,
+            ),
+            115 => apply(&mut shared.properties.mail, command, result),
+            134 => super::super::feature_0134_party_skull::protocol::apply(
+                &mut shared.properties.party_skull,
+                command,
+                result,
+            ),
+            146 => super::super::feature_0146_container_sort::protocol::apply(
+                &mut shared.properties.container_sort,
+                command,
+                result,
+            ),
+            149 => super::super::feature_0149_raid_schedule::protocol::apply(
+                &mut shared.properties.raid_schedule,
+                command,
+                result,
+            ),
+            150 => super::super::feature_0150_house_podium::protocol::apply(
+                &mut shared.properties.house_podium,
+                command,
+                result,
+            ),
+            _ => {}
+        }
     }
 }
-include!("protocol/methods.rs");
 pub(in crate::play) fn accepted(result: &GatedCommandResult) -> bool {
     matches!(
         result.status,
@@ -203,3 +310,6 @@ fn apply(panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResul
     }
     .into();
 }
+
+#[path = "panel_lifecycle.rs"]
+mod panel_lifecycle;

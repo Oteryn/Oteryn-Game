@@ -22,6 +22,9 @@ impl PlayLink {
         }
     }
     pub fn spell_catalog_open(&self) {
+        if self.spellbook_open() {
+            return;
+        }
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]

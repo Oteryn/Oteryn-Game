@@ -1,3 +1,6 @@
+mod capture;
+#[path = "features/local-reference-preferences/frame_native.rs"]
+mod frame_native;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -62,6 +65,8 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    frame_timing: frame_native::FrameTiming,
+    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -102,6 +107,8 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            frame_timing: frame_native::FrameTiming::default(),
+            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -157,6 +164,10 @@ impl Application {
     }
 
     fn leave_play(&mut self, message: &str) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.cancel_capture();
+        }
+        self.captures = Default::default();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {
@@ -196,7 +207,8 @@ const fn redraw_eligible(phase: Option<SurfacePhase>) -> bool {
     matches!(phase, Some(SurfacePhase::Configured))
 }
 
-include!("windows_shell_methods_1.rs");
+#[path = "windows_shell/application_handler.rs"]
+mod application_handler;
 
 pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
@@ -216,24 +228,4 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fatal_retention_keeps_the_first_error() {
-        let mut error = None;
-        retain_first_error(&mut error, ShellError::RendererResize);
-        retain_first_error(&mut error, ShellError::RendererRender);
-        assert_eq!(error, Some(ShellError::RendererResize));
-    }
-
-    #[test]
-    fn redraw_requires_a_configured_renderer() {
-        assert!(redraw_eligible(Some(SurfacePhase::Configured)));
-        assert!(!redraw_eligible(None));
-        assert!(!redraw_eligible(Some(SurfacePhase::Unconfigured)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
-    }
-}
+mod tests;

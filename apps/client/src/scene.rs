@@ -31,7 +31,9 @@ const _: () = assert!(
 pub struct Scene {
     minimap: bool,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
-    minimap_floor: i16,
+    pub(crate) minimap_memory: crate::play::MinimapMemory,
+    pub(crate) minimap_floor: i16,
+    pub(crate) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
     lit_atlas: Option<AtlasImage>,
     /// `None` draws no map: the session is on a floor the loaded map does not cover.
@@ -50,6 +52,9 @@ pub struct Scene {
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
     name_visibility: [bool; 3],
+    name_marks: bool,
+    npc_names: bool,
+    label_scale: u16,
 }
 
 impl Scene {
@@ -102,6 +107,8 @@ impl Scene {
             minimap: false,
             minimap_state: None,
             minimap_floor: -7,
+            minimap_memory: Default::default(),
+            minimap_origin: None,
             world,
             lit_atlas: None,
             anchor,
@@ -119,6 +126,9 @@ impl Scene {
             actor_draws: Vec::new(),
             names: Vec::new(),
             name_visibility: [true; 3],
+            name_marks: true,
+            npc_names: true,
+            label_scale: 100,
         };
         scene.rebuild_sprites()?;
         Ok(scene)
@@ -277,17 +287,24 @@ impl Scene {
         )?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
-            let left = (x + 24.0 - cells.len() as f32 * 4.0).max(0.0);
+            let scale = f32::from(self.label_scale) / 100.0;
+            let left =
+                (x + self.view.tile_px() as f32 / 2.0 - cells.len() as f32 * 4.0 * scale).max(0.0);
             for (index, cell) in cells.iter().enumerate() {
-                oteryn_renderer::name_text::label_quad(
+                oteryn_renderer::name_text::label_quad_scaled(
                     &mut sprites,
                     atlas,
                     *cell,
-                    [left + index as f32 * 8.0, (y - 14.0).max(0.0)],
+                    [
+                        left + index as f32 * 8.0 * scale,
+                        (y - 14.0 * scale).max(0.0),
+                    ],
+                    self.label_scale,
                 )?;
             }
         }
         sprites.lighting.clone_from(&self.sprites.lighting);
+        sprites.lighting.opacity.clear();
         self.sprites = sprites;
         if self.minimap {
             self.draw_minimap()?;
@@ -336,6 +353,8 @@ mod tests;
 mod live_entities;
 #[path = "features/local-minimap/scene.rs"]
 mod minimap;
+#[path = "features/local-reference-preferences/scene_hud.rs"]
+mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;

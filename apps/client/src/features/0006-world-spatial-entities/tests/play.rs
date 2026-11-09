@@ -308,4 +308,5 @@ fn echo_portal_click_walks_and_reward_remains_in_native_container()
     Ok(())
 }
 
-include!("play_skinning_decoded_stationary_corpse_updates_native_look_target_1.rs");
+#[path = "play_additional.rs"]
+mod additional;

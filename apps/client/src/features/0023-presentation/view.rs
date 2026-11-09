@@ -3,6 +3,8 @@
 //! Magic effects and missiles resolve the verified catalog, with bounded offline placeholders.
 #[path = "visual.rs"]
 mod visual;
+#[path = "actor_hud.rs"]
+mod actor_hud;
 #[path = "icons.rs"]
 mod icons;
 #[path = "resources.rs"]

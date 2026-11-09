@@ -17,6 +17,7 @@ use std::num::NonZeroU32;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    game_notifications: feature_local_game_notifications::state::State,
     creature_drag: feature_0082_creature_push::state::CreatureDrag,
     world_context_feedback: Option<String>,
     death: feature_local_death_respawn::protocol::DeathState,
@@ -76,6 +77,7 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            game_notifications: Default::default(),
             creature_drag: Default::default(),
             world_context_feedback: None,
             death: Default::default(),
@@ -145,11 +147,15 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsPage,
-    SettingsState, WINDOW_ACTIONS, preference_bindings,
+    ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences,
+    FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, HelpTopic, HoverTooltip, MousePreset,
+    MovementKeys, PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences,
+    RotationModifier, SHORTCUTS, SettingsPage, SettingsState, TooltipTarget, WINDOW_ACTIONS,
+    fit_ui_scale, help_text, preference_bindings, rescale_ui_rect, scale_ui_rect,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;
+pub use feature_local_minimap::view::{MinimapBinding, MinimapMark, MinimapMemory};
 
 pub use feature_0023_presentation::state::*;
 
@@ -163,3 +169,7 @@ pub use session_loop::Stepper;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "screenshots_live_tests.rs"]
+mod screenshots_live_tests;

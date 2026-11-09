@@ -236,4 +236,6 @@ fn specs(
         ),
     }
 }
-include!("native/window.rs");
+#[path = "native/paint.rs"]
+mod paint;
+use paint::window;

@@ -182,4 +182,6 @@ pub(in crate::play) fn visual_submit(
 
 #[cfg(windows)]
 pub(in crate::play) use window::open_window;
-include!("native/window_host.rs");
+#[cfg(windows)]
+#[path = "native_window.rs"]
+mod window;

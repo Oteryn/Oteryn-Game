@@ -30,6 +30,7 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        link.cyclopedia_atlas_pump();
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;
@@ -39,7 +40,9 @@ impl PlayView {
         self.sync_resource_hud(link);
         let party = link.party_skull_panel();
         let icon_now = std::time::Instant::now();
-        if self.preferences().creature_bars
+        if (self.preferences().creature_bars
+            || self.preferences().hud_marks_own
+            || self.preferences().hud_marks_other)
             && party.selected
             && !party.pending
             && self.party_icons_refresh.is_none_or(|last| {

@@ -264,4 +264,5 @@ fn native_inventory_targeting_keeps_other_panels_alive() -> Result<(), Box<dyn s
     Ok(())
 }
 
-include!("play_soulpit_native_core_obelisk_scope_and_exit_walkthrough_1.rs");
+#[path = "play_additional.rs"]
+mod additional;

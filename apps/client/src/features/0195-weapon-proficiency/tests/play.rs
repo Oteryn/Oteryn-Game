@@ -285,45 +285,12 @@ fn nx8_proficiency_catalogue_displays_experience_full_perks_and_pages() {
     assert!(panel.feedback.is_some());
 }
 
-include!(
-    "play_proficiency_visual_selection_uses_named_server_choices_and_exact_track_revision_1.rs"
-);
-
-#[test]
-fn proficiency_unknown_paid_reply_and_scope_change_never_repeat_a_mutation() {
-    let mut panel = WeaponProficiencyPanel {
-        selected: true,
-        state_selected: true,
-        weapon: 258,
-        pending: true,
-        command_kind: 380,
-        ..Default::default()
-    };
-    assert!(!apply_result(
-        &mut panel,
-        &GatedCommandResult {
-            command_id: 1,
-            status: CommandStatus::Accepted,
-            server_sequence: 1,
-            payload: vec![255]
-        }
-    ));
-    assert!(panel.mutation_uncertain);
-    assert_eq!(panel.revision, 0);
-    assert!(request(&mut panel, Intent::RankUp).is_none());
-    assert!(request(&mut panel, Intent::State).is_some());
-    panel.pending = true;
-    panel.command_kind = 379;
-    panel.mutation_uncertain = false;
-    panel.invalidate_observation();
-    assert!(panel.mutation_uncertain);
-    assert!(!panel.pending);
-    assert!(request(&mut panel, Intent::Modify).is_none());
-}
-
 mod live_state {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/src/features/0195-weapon-proficiency/tests/live_state.rs"
     ));
 }
+
+#[path = "play_additional.rs"]
+mod additional;

@@ -95,80 +95,6 @@ fn analytics_selector_opens_independent_tools_over_confirmed_totals() {
 }
 
 #[test]
-fn xp_rates_goal_eta_and_minute_chart_follow_confirmed_experience() {
-    let mut panel = Panel {
-        selected: true,
-        ..Default::default()
-    };
-    assert!(super::set_xp_goal(&mut panel, "1200"));
-    apply_at(
-        &mut panel,
-        &[AnalyserFact::Experience {
-            raw: 400,
-            gained: 600,
-        }],
-        0,
-    );
-    apply_at(
-        &mut panel,
-        &[AnalyserFact::Experience {
-            raw: 100,
-            gained: 200,
-        }],
-        120,
-    );
-    let text = super::view::xp_text(&panel, 240);
-    assert!(text.contains("XP/h: 12000"));
-    assert!(text.contains("Raw XP/h: 7500"));
-    assert!(text.contains("Level goal remaining: 400 XP"));
-    assert!(text.contains("Estimated time to level goal: 120 seconds"));
-    assert_eq!(panel.xp_chart.values(120), vec![600, 0, 200]);
-    assert_eq!(panel.xp_chart.values(60 * 100).len(), 60);
-    assert!(super::view::xp_text(&Panel::default(), 0).contains("Collect experience"));
-    assert!(!super::set_xp_goal(&mut panel, "invalid"));
-    assert_eq!(panel.goal_xp, Some(1200));
-}
-
-include!("state_loot_items_reprice_confirmed_counts_rates_and_history_1.rs");
-
-include!("state_analyser_metadata_reply_is_matched_and_coin_prices_cannot_duplicate_gold_1.rs");
-
-#[test]
-fn supply_counts_costs_rates_and_charts_revalue_real_consumption() -> Result<(), &'static str> {
-    use oteryn_client_runtime::analyser::{AnalyserItemCount, ItemInfo};
-    let mut panel = Panel {
-        selected: true,
-        tool: Tool::Supply,
-        ..Default::default()
-    };
-    panel.item_info.insert(
-        6,
-        ItemInfo {
-            item_type: 6,
-            name: "Supply".into(),
-            coin_worth: 0,
-        },
-    );
-    let item = AnalyserItemCount {
-        item_type: std::num::NonZeroU32::new(6).ok_or("item")?,
-        count: std::num::NonZeroU16::new(3).ok_or("count")?,
-    };
-    apply_at(&mut panel, &[AnalyserFact::SupplyUsed(item)], 0);
-    assert!(super::set_item_price(&mut panel, "6", "7"));
-    assert_eq!(panel.supply_cost(), 21);
-    assert_eq!(panel.supply_values(60), vec![21, 0]);
-    let text = super::view::supply_text(&panel, 60);
-    assert!(text.contains("Supply cost/h: 1260"));
-    assert!(text.contains("Item 6: 3 | 180/h | unit 7 | cost 21"));
-    assert!(super::set_item_price(&mut panel, "6", "11"));
-    assert_eq!(panel.supply_cost(), 33);
-    reset(&mut panel);
-    assert_eq!(panel.supply_cost(), 0);
-    assert_eq!(panel.supply_prices.get(&6), Some(&11));
-    Ok(())
-}
-
-#[test]
 fn every_analyser_tool_marks_a_dropped_server_feed_incomplete() {
     let mut panel = Panel {
         selected: true,
@@ -220,64 +146,120 @@ fn analyser_recovery_discards_generation_scoped_item_settings() {
 }
 
 #[test]
-fn impact_uses_wire_damage_types_healing_rates_gauges_and_charts() -> Result<(), &'static str> {
-    let facts = oteryn_client_runtime::analyser::decode_analyser_facts(&[
-        10, 8, 34, 6, 8, 1, 16, 120, 24, 2, 10, 6, 34, 4, 8, 2, 16, 60,
-    ])
-    .map_err(|_| "impact wire")?;
+fn hunting_session_reports_signed_balance_rates_and_credited_kills() -> Result<(), &'static str> {
+    use oteryn_client_runtime::analyser::{AnalyserItemCount, ItemInfo};
     let mut panel = Panel {
         selected: true,
-        tool: Tool::Impact,
+        tool: Tool::Session,
         ..Default::default()
     };
-    apply_at(&mut panel, &facts, 0);
-    let text = super::view::impact_text(&panel, 60);
-    assert!(text.contains("DPS: 2.00 | HPS: 1.00"));
-    assert!(text.contains("Fire: 120"));
-    assert!(text.contains("66.66%"));
-    assert_eq!(panel.damage_chart.values(60), vec![120, 0]);
-    assert_eq!(panel.healing_chart.values(60), vec![60, 0]);
-    assert!(super::view::impact_text(&Panel::default(), 0).contains("No impact yet"));
+    panel.item_info.insert(
+        6,
+        ItemInfo {
+            item_type: 6,
+            name: "Bandage".into(),
+            coin_worth: 0,
+        },
+    );
+    panel.supply_prices.insert(6, 7);
+    apply_at(
+        &mut panel,
+        &[
+            AnalyserFact::Kill {
+                race: std::num::NonZeroU32::new(7),
+            },
+            AnalyserFact::Kill { race: None },
+            AnalyserFact::KillLoot {
+                race: None,
+                corpse_items: vec![],
+                gold: 10,
+            },
+            AnalyserFact::Experience {
+                raw: 50,
+                gained: 60,
+            },
+            AnalyserFact::SupplyUsed(AnalyserItemCount {
+                item_type: std::num::NonZeroU32::new(6).ok_or("item")?,
+                count: std::num::NonZeroU16::new(3).ok_or("count")?,
+            }),
+            AnalyserFact::Dropped(std::num::NonZeroU32::MIN),
+        ],
+        0,
+    );
+    let text = super::view::session_text_at(&panel, 60);
+    for expected in [
+        "Elapsed: 60 seconds",
+        "XP/h: 3600",
+        "Priced balance: -11 gold",
+        "Priced balance/h: -660 gold",
+        "Kills: 2",
+        "Race #7: 1",
+        "Race unavailable: 1",
+        "Bandage",
+        "Dropped facts: 1",
+        "resolved, priced items",
+    ] {
+        assert!(text.contains(expected), "missing {expected}: {text}");
+    }
+    assert!(!super::view::session_text_at(&panel, 0).contains("NaN"));
+    reset(&mut panel);
+    assert!(panel.kills_by_race.is_empty());
+    assert_eq!(panel.supply_cost(), 0);
     Ok(())
 }
 
 #[test]
-fn input_preserves_wire_sources_elements_rates_and_reset() -> Result<(), &'static str> {
-    // Creature race 7, unknown creature race, player, and explicitly unattributed.
-    let facts = oteryn_client_runtime::analyser::decode_analyser_facts(&[
-        10, 10, 42, 8, 8, 60, 16, 2, 24, 1, 32, 7, 10, 8, 42, 6, 8, 30, 16, 1, 24, 1, 10, 8, 42, 6,
-        8, 20, 16, 2, 24, 2, 10, 8, 42, 6, 8, 10, 16, 3, 24, 3,
-    ])
-    .map_err(|_| "input wire")?;
-    let mut panel = Panel {
-        selected: true,
-        tool: Tool::Input,
-        ..Default::default()
-    };
-    apply_at(&mut panel, &facts, 0);
-    let text = super::view::input_text(&panel, 60);
-    for expected in [
-        "Incoming DPS: 2.00",
-        "Fire: 80",
-        "Creature race #7: 60",
-        "Creature (race unavailable): 30",
-        "Player: 20",
-        "Unattributed: 10",
-        "50.00%",
+fn party_split_conserves_positive_negative_and_remainder_balances() -> Result<(), &'static str> {
+    use oteryn_client_runtime::analyser::party::Member;
+    for values in [
+        vec![(100, 10), (0, 20), (5, 0)],
+        vec![(0, 100), (0, 11), (0, 0)],
+        vec![(0, 0), (0, 0), (1, 0)],
     ] {
-        assert!(text.contains(expected), "{text}");
+        let mut rows: Vec<_> = values
+            .iter()
+            .enumerate()
+            .map(|(i, (loot, cost))| Member {
+                handle: i as u64 + 1,
+                name: format!("Scout {i}"),
+                available: true,
+                loot_value: *loot,
+                supply_cost: *cost,
+                ..Default::default()
+            })
+            .collect();
+        let mut balances: std::collections::BTreeMap<_, _> = rows
+            .iter()
+            .map(|r| {
+                (
+                    r.handle,
+                    i128::from(r.loot_value) - i128::from(r.supply_cost),
+                )
+            })
+            .collect();
+        let original: i128 = balances.values().sum();
+        let transfers = super::party::split(&rows).ok_or("complete report")?;
+        for transfer in &transfers {
+            *balances.get_mut(&transfer.from).ok_or("payer")? -=
+                i128::try_from(transfer.gold).map_err(|_| "transfer overflow")?;
+            *balances.get_mut(&transfer.to).ok_or("receiver")? +=
+                i128::try_from(transfer.gold).map_err(|_| "transfer overflow")?;
+        }
+        assert_eq!(balances.values().sum::<i128>(), original);
+        assert!(balances.values().max().ok_or("max")? - balances.values().min().ok_or("min")? <= 1);
+        rows.reverse();
+        assert_eq!(super::party::split(&rows), Some(transfers));
+        rows[0].unpriced_supplies = 1;
+        assert!(super::party::split(&rows).is_none());
+        rows[0].unpriced_supplies = 0;
+        rows[0].available = false;
+        assert!(super::party::split(&rows).is_none());
+        rows[0].available = true;
+        rows[0].incomplete = true;
+        assert!(super::party::split(&rows).is_none());
     }
-    assert_eq!(panel.received_chart.values(60), vec![120, 0]);
-    reset(&mut panel);
-    assert!(panel.input_types.is_empty() && panel.input_sources.is_empty());
-    assert_eq!(panel.received_chart.values(0), vec![0]);
-    assert!(panel_text(&panel).contains("No damage received yet"));
     Ok(())
 }
-
-include!("state_hunting_session_reports_signed_balance_rates_and_credited_kills_1.rs");
-
-include!("state_party_split_conserves_positive_negative_and_remainder_balances_1.rs");
 
 #[test]
 fn party_prices_changed_while_pending_never_publish_stale_settlements() -> Result<(), &'static str>

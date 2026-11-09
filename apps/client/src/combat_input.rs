@@ -21,6 +21,7 @@ pub enum PlayCommand {
     ServerMechanic(oteryn_client_runtime::server_mechanic::ServerMechanicCommand),
     Step(StepDir),
     TargetWalk(oteryn_session::ActorPosition),
+    MoveContainerContents(Vec<oteryn_client_runtime::inventory::MoveRequest>),
     MoveItem(oteryn_client_runtime::inventory::MoveRequest),
     ContainerView(oteryn_client_runtime::container_tree::ContainerViewIntent),
     WorldContext(oteryn_client_runtime::world_interaction::Command),

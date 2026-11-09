@@ -10,8 +10,6 @@ use oteryn_session::{
 use std::future::Future;
 use std::time::Duration;
 
-include!("session_stepper_methods_1.rs");
-
 /// Hands the shell what the session pushed, and the visible entities when they changed.
 pub(super) fn publish<T: Stepper>(
     session: &mut T,
@@ -24,6 +22,7 @@ pub(super) fn publish<T: Stepper>(
     outbox.achievement_notices_publish(session);
     outbox.guild_chat_publish(session);
     outbox.depot_publish(session);
+    outbox.item_forge_publish(session);
     outbox.stash_publish(session);
     if let Some(inventory) = session.inventory() {
         outbox.browse_field_inventory(inventory);
@@ -42,3 +41,6 @@ pub(super) fn publish<T: Stepper>(
         outbox.chat_public_state(rooms, lines);
     }
 }
+
+#[path = "session_adapter.rs"]
+mod session_adapter;

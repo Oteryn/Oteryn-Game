@@ -21,9 +21,14 @@ pub fn request(panel: &mut BossDifficultyPanel, intent: Intent) -> Option<Featur
         return None;
     }
     let typed = match intent {
-        Intent::Open => Request::Open {
-            boss_key: panel.boss_key.clone(),
-        },
+        Intent::Open => {
+            // Opening another draft must never reuse a previous boss context.
+            panel.context = None;
+            panel.reply = None;
+            Request::Open {
+                boss_key: panel.boss_key.clone(),
+            }
+        }
         Intent::Preview => Request::Preview {
             context: panel.context?,
             difficulty: panel.difficulty,
@@ -73,7 +78,7 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
             Some(*context)
         }
         Reply::Closed { .. } => None,
-        Reply::Refused { context, .. } => *context,
+        Reply::Refused { .. } => None,
     };
     panel.feedback = if matches!(reply, Reply::Refused { .. }) {
         Some("The server refused the difficulty choice")

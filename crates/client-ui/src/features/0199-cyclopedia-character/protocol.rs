@@ -1,3 +1,9 @@
+#[path = "protocol/decode.rs"]
+mod decode;
+use decode::{decode_badges, decode_general, decode_history, decode_store, decode_tab};
+#[path = "protocol/blessings.rs"]
+mod blessings;
+pub use blessings::{BlessingsPanel, request_blessings};
 #[path = "protocol/stamina.rs"]
 mod stamina;
 use super::CyclopediaCharacterPanel;
@@ -21,7 +27,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Feature unavailable in this session");
         return None;
     }
-    if p.pending {
+    if p.pending || p.blessings.pending {
         p.feedback = Some("Waiting for the server");
         return None;
     }
@@ -101,6 +107,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.blessings.pending {
+        return blessings::apply(&mut p.blessings, r);
+    }
     if p.achievement_pending {
         return super::achievements::apply(p, r);
     }
@@ -193,145 +202,4 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             false
         }
     }
-}
-fn decode_badges(b: &[u8]) -> Option<String> {
-    let (&count, ids) = b.split_first()?;
-    (usize::from(count) == ids.len()
-        && ids
-            .iter()
-            .all(|id| cyclopedia_character::Badge::from_id(*id).is_some()))
-    .then(|| {
-        format!(
-            "Badges: {}",
-            ids.iter()
-                .filter_map(|id| cyclopedia_character::Badge::from_id(*id))
-                .map(|v| v.name())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    })
-}
-// Crystal 201189f protocolgame.cpp:4341-5265 supplies the tab facts. The accepted
-// native layout/unknown-field differences are recorded in cyclopedia-character-v1.md.
-include!("protocol/decode_tab.rs");
-
-struct Reader<'a>(&'a [u8]);
-impl<'a> Reader<'a> {
-    fn bytes<const N: usize>(&mut self) -> Option<[u8; N]> {
-        let bytes = self.0.get(..N)?.try_into().ok()?;
-        self.0 = &self.0[N..];
-        Some(bytes)
-    }
-    fn u8(&mut self) -> Option<u8> {
-        Some(u8::from_le_bytes(self.bytes()?))
-    }
-    fn u16(&mut self) -> Option<u16> {
-        Some(u16::from_le_bytes(self.bytes()?))
-    }
-    fn u32(&mut self) -> Option<u32> {
-        Some(u32::from_le_bytes(self.bytes()?))
-    }
-    fn u64(&mut self) -> Option<u64> {
-        Some(u64::from_le_bytes(self.bytes()?))
-    }
-    fn count(&mut self, limit: u8) -> Option<u16> {
-        let count = self.u16()?;
-        (count <= u16::from(limit.min(50))).then_some(count)
-    }
-    fn text(&mut self) -> Option<&'a str> {
-        let len = usize::from(self.u8()?);
-        self.string(len)
-    }
-    fn string(&mut self, len: usize) -> Option<&'a str> {
-        let text = std::str::from_utf8(self.0.get(..len)?).ok()?;
-        self.0 = &self.0[len..];
-        Some(text)
-    }
-}
-
-fn decode_history(
-    b: &[u8],
-    tab: cyclopedia_character::CharacterTab,
-    limit: u8,
-) -> Option<Vec<super::HistoryRow>> {
-    use cyclopedia_character::{CharacterTab, KillStatus};
-    if b.first() != Some(&(tab as u8)) {
-        return None;
-    }
-    let mut r = Reader(&b[1..]);
-    let count = r.count(limit)?;
-    let mut rows = Vec::with_capacity(usize::from(count));
-    for _ in 0..count {
-        let at = i64::from_le_bytes(r.bytes()?);
-        let status = if tab == CharacterTab::RecentPvpKills {
-            Some(match r.u8()? {
-                1 => KillStatus::Unjustified,
-                2 => KillStatus::GuildWar,
-                _ => return None,
-            })
-        } else {
-            None
-        };
-        rows.push(super::HistoryRow {
-            at,
-            status,
-            description: r.text()?.into(),
-        });
-    }
-    r.0.is_empty().then_some(rows)
-}
-
-fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralStats> {
-    if b.first() != Some(&(cyclopedia_character::CharacterTab::GeneralStats as u8)) {
-        return None;
-    }
-    let mut r = Reader(&b[1..]);
-    let experience = r.u64()?;
-    let level = r.u32()?;
-    let magic_level = r.u16()?;
-    let mut skills = [0; 7];
-    for skill in &mut skills {
-        *skill = r.u16()?;
-    }
-    let stamina_minutes = r.u16()?;
-    let offline_training_minutes = r.u16()?;
-    let known = r.u8()?;
-    let (health, mana) = (r.u32()?, r.u32()?);
-    let last_vitals = match known {
-        0 if health == 0 && mana == 0 => None,
-        1 => Some((health, mana)),
-        _ => return None,
-    };
-    r.0.is_empty()
-        .then_some(cyclopedia_character::GeneralStats {
-            experience,
-            level,
-            magic_level,
-            skills,
-            stamina_minutes,
-            offline_training_minutes,
-            last_vitals,
-        })
-}
-
-fn decode_store(b: &[u8]) -> Option<cyclopedia_character::StoreSummary> {
-    if b.first() != Some(&(cyclopedia_character::CharacterTab::StoreSummary as u8)) {
-        return None;
-    }
-    let mut r = Reader(&b[1..]);
-    let count = r.u8()?;
-    let mut blessings = Vec::with_capacity(usize::from(count));
-    for _ in 0..count {
-        blessings.push(r.text()?.into());
-    }
-    let permanent_prey_slots = r.u8()?;
-    let prey_wildcards = r.u8()?;
-    let hirelings = r.u8()?;
-    r.0.is_empty()
-        .then_some(cyclopedia_character::StoreSummary {
-            blessings,
-            permanent_prey_slots,
-            prey_wildcards,
-            hirelings,
-        })
 }

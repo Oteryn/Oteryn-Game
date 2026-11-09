@@ -36,7 +36,14 @@ impl PlayView {
         }
         let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
-        let creature_bars = self.preferences().creature_bars;
+        let own_ref = self.scene.own_identity().and_then(|identity| {
+            self.appearances
+                .iter()
+                .find(|entry| entry.entity.entity.identity == identity)
+                .map(|entry| entry.entity.entity)
+        });
+        let age = now.saturating_duration_since(self.party_icon_epoch);
+        let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref, age);
         let (view, atlas, batch) = self.scene.presentation_base()?;
         resources::draw(
             batch,
@@ -46,46 +53,15 @@ impl PlayView {
             self.own,
             resource_options,
         )?;
-        if creature_bars {
-            for entity in &self.entities {
-                let oteryn_session::EntityDetail::Actor { health_percent, .. } = entity.detail
-                else {
-                    continue;
-                };
-                let tile = TileCoord::new(entity.position.x, entity.position.y);
-                if entity.position.floor != self.floor || !view.contains(tile) {
-                    continue;
-                }
-                let [x, y] = view.tile_to_screen(tile);
-                let at = [x + 2.0, y + view.tile_px() as f32 - 5.0];
-                let width = (view.tile_px() as f32 - 4.0).max(1.0);
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [width, 3.0],
-                    PresentationColor::DarkRed,
-                )?;
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [width * f32::from(health_percent.min(100)) / 100.0, 3.0],
-                    PresentationColor::LightGreen,
-                )?;
-                if let Some(icon) = self
-                    .party_icons
-                    .iter()
-                    .find(|icon| icon.entity == entity.entity)
-                {
-                    let age = now.saturating_duration_since(self.party_icon_epoch);
-                    icons::draw(batch, view, atlas, [x, y], icon.shield, false, age)?;
-                    icons::draw(batch, view, atlas, [x + 16.0, y], icon.skull, true, age)?;
-                }
-            }
-        }
+        actor_hud::draw(
+            batch,
+            view,
+            atlas,
+            self.own,
+            &self.entities,
+            &self.party_icons,
+            actor_options,
+        )?;
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         if !effects {
             return Ok(());

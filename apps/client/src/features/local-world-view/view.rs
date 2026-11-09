@@ -50,6 +50,7 @@ impl PlayView {
         next.local.set_world(Arc::new(world));
         next.live_map = true;
         super::super::feature_local_minimap::state::lock(&next.minimap).observe(map);
+        next.remember_minimap(map);
         next.rebuild()?;
         *self = next;
         Ok(())
@@ -91,11 +92,18 @@ impl PlayView {
         )?;
         self.apply_preference_scale()?;
         self.scene.set_name_visibility(self.preferences().hud_names);
+        self.scene.set_name_options(
+            self.preferences().hud_marks_other,
+            self.preferences()
+                .hud_npc_names
+                .unwrap_or(self.preferences().hud_names[2]),
+        );
         self.scene
             .set_presentations(&self.appearances, self.floor)?;
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.weather_scene();
+        self.project_minimap_memory();
         self.scene.set_minimap(
             self.live_map && self.preferences().panel_visible("minimap"),
             self.minimap.clone(),

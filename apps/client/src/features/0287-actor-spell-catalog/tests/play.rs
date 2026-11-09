@@ -70,7 +70,21 @@ fn t033_selected_spell_assigns_slot_without_sending_a_cast()
         "19"
     );
     assert!(commands.try_recv().is_err());
-    assert!(!link.spell_catalog_assign(4));
+    let capacity = crate::play::mailbox::lock(&link.mailbox)
+        .spell_bar
+        .bar
+        .fields()
+        .len();
+    assert!(link.spell_catalog_assign(capacity - 1));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .spell_bar
+            .bar
+            .fields()[capacity - 1],
+        "19"
+    );
+    assert!(!link.spell_catalog_assign(capacity));
+    assert!(commands.try_recv().is_err());
     outbox.logged_out();
     assert!(!link.spell_catalog_assign(2));
     Ok(())
