@@ -23,3 +23,13 @@ route to s3 at ten. This slice follows the structured species/count contract;
 it does not add a geographic predicate from the objective's prose. The PG
 fixture exercises trusted native-death notification admission at Root, not
 transport capture or an end-to-end completed Grimvale quest.
+
+Native prerequisite identities use their registered completion owner. In
+particular `oteryn:quest/rotten-blood` owns `game_character_rotten_blood.completed`:
+`crates/gameplay/durability/src/durability/quest_state/rotten_blood.rs:569`,
+commit `c68395ccc0029cb3c8511ec804dfe3536afd4cc6`. Admission reads this existing
+flag under the Character root lock; it never creates a generic completion row
+or falls back to one when the native owner says false. Other prerequisite keys
+retain the generic completed-CharacterRevision rule. The PG query component
+fixture rolls back its native rows with ownership guards enabled; it proves
+the read path, not a Native boss victory or playable Decaying Defender route.

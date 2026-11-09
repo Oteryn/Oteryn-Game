@@ -15,6 +15,7 @@ Level and premium requirements are supported. Premium uses the existing
 registered owner before locking the Character root; missing or negative
 permission fails closed. No local premium state is introduced. Prerequisites declare their exact chosen requirement label and the native
 quest owner key. The Character-root-locked reader requires every declared
-owner to have a non-null completion revision. Merely started quests do not
-satisfy the gate, and this reader never writes another quest's state. It does
-not qualify quest rewards or completion.
+owner to report completion. Registered Native owners supply their existing
+completion flag; other owners require a non-null completion revision. Merely
+started quests do not satisfy the gate. This reader never writes another
+quest's state and does not qualify quest rewards or completion.

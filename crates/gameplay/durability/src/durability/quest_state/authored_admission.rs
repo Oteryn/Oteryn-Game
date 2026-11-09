@@ -50,12 +50,19 @@ pub(super) async fn prerequisites_hold(
     if admission.prerequisites.is_empty() {
         return Ok(true);
     }
-    let keys: Vec<_> = admission
-        .prerequisites
-        .iter()
-        .map(|required| required.quest.as_str())
-        .collect();
+    let mut keys = Vec::with_capacity(admission.prerequisites.len());
+    for required in &admission.prerequisites {
+        match super::native_prerequisites::completed(tx, character, &required.quest).await? {
+            Some(true) => {}
+            Some(false) => return Ok(false),
+            None => keys.push(required.quest.as_str()),
+        }
+    }
+    if keys.is_empty() {
+        return Ok(true);
+    }
+    let required = keys.len();
     let completed: i64 = sqlx::query_scalar("SELECT count(*)::bigint FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=ANY($2::text[]) AND completed_character_revision IS NOT NULL")
         .bind(character).bind(keys).fetch_one(&mut **tx).await?;
-    Ok(usize::try_from(completed).ok() == Some(admission.prerequisites.len()))
+    Ok(usize::try_from(completed).ok() == Some(required))
 }
