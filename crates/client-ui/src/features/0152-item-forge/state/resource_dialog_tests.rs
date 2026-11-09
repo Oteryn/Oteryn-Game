@@ -1,5 +1,5 @@
 use super::*;
-mod tests {
+mod confirmation_tests {
     use super::*;
     #[test]
     fn forge_resource_confirmation_is_explicit_single_use_and_scope_fenced()

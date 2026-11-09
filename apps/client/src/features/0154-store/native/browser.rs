@@ -54,6 +54,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 return;
             };
             let link = PlayLink {
+                owns_session: false,
                 mailbox: shared,
                 commands,
             };
@@ -266,9 +267,13 @@ unsafe fn run(link: &PlayLink) {
             if let Some(pixels) = &pixels {
                 controls::paint(image, pixels);
             }
-            displayed_quote = panel.catalogue.clone().filter(|quote|
-                panel.confirmed_purchase.is_some() || product.is_some_and(|product|
-                    quote.catalog_revision == product.revision && quote.offers.first() == Some(&product.offer)));
+            displayed_quote = panel.catalogue.clone().filter(|quote| {
+                panel.confirmed_purchase.is_some()
+                    || product.is_some_and(|product| {
+                        quote.catalog_revision == product.revision
+                            && quote.offers.first() == Some(&product.offer)
+                    })
+            });
             EnableWindow(buy, i32::from(!panel.pending && displayed_quote.is_some()));
             MsgWaitForMultipleObjects(0, null(), 0, 30, QS_ALLINPUT);
         }

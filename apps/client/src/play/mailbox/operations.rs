@@ -221,6 +221,7 @@ impl Outbox {
 /// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
 #[derive(Debug)]
 pub struct PlayLink {
+    pub(in crate::play) owns_session: bool,
     pub(in crate::play) commands: UnboundedSender<PlayCommand>,
     pub(in crate::play) mailbox: SharedMailbox,
 }
@@ -290,6 +291,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
     let mailbox = SharedMailbox::default();
     (
         PlayLink {
+            owns_session: true,
             commands,
             mailbox: Arc::clone(&mailbox),
         },
@@ -300,6 +302,9 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 
 impl Drop for PlayLink {
     fn drop(&mut self) {
+        if !self.owns_session {
+            return;
+        }
         let mut mailbox = lock(&self.mailbox);
         mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
@@ -351,3 +356,7 @@ impl Drop for PlayLink {
         mailbox.boss_rewards_shutdown = true;
     }
 }
+
+#[cfg(test)]
+#[path = "window_lifetime_tests.rs"]
+mod window_lifetime_tests;

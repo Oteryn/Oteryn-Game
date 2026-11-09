@@ -141,7 +141,7 @@ impl Controls {
         &mut self,
         mailbox: &mut crate::play::mailbox::Mailbox,
         commands: &UnboundedSender<PlayCommand>,
-        transcript: HWND,
+        _transcript: HWND,
     ) {
         unsafe {
             let display = mailbox.chat.console.display;

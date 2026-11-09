@@ -251,6 +251,7 @@ fn pc04_house_transfer_scenario() -> Result<(), Error> {
                     assert!(ended.feedback.contains("ended"));
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };

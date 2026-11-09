@@ -18,6 +18,7 @@ use std::{
 use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::{
     Foundation::*,
+    System::SystemServices::SS_NOTIFY,
     UI::{Input::KeyboardAndMouse::EnableWindow, WindowsAndMessaging::*},
 };
 #[path = "wheel_window.rs"]
@@ -50,7 +51,7 @@ fn run(
             let mut events = Box::<Events>::default();
             SetWindowLongPtrW(h, GWLP_USERDATA, (&mut *events as *mut Events) as isize);
             SetWindowLongPtrW(h, GWLP_WNDPROC, procedure as *const () as isize);
-            let surface = control(h, "STATIC", "", 1, [12, 12, 384, 384], SS_NOTIFY as u32);
+            let surface = control(h, "STATIC", "", 1, [12, 12, 384, 384], SS_NOTIFY);
             SetWindowLongPtrW(
                 surface,
                 GWLP_USERDATA,
@@ -237,8 +238,10 @@ fn run(
                         })
                         .as_ptr(),
                     );
-                    let editing =
-                        p.ready() && p.diagram.pending.is_none() && p.gems.review.is_none() && p.gems.pending.is_none();
+                    let editing = p.ready()
+                        && p.diagram.pending.is_none()
+                        && p.gems.review.is_none()
+                        && p.gems.pending.is_none();
                     for button in [slot, points, set, reset] {
                         EnableWindow(
                             button,

@@ -250,6 +250,7 @@ fn pc03_raid_schedule_scenario() -> Result<(), Error> {
                     assert!(!link.raid_schedule_panel().pending);
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };

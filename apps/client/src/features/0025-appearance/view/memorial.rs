@@ -64,6 +64,7 @@ pub(super) fn watch(link: &PlayLink) {
                 if std::mem::take(&mut mailbox.properties.appearance.memorial.requested) {
                     drop(mailbox);
                     let link = PlayLink {
+                        owns_session: false,
                         mailbox: shared,
                         commands: commands.clone(),
                     };

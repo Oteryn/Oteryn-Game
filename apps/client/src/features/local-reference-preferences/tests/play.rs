@@ -367,10 +367,5 @@ include!("hud_layout.rs");
 #[path = "shortcuts.rs"]
 mod shortcuts;
 
-#[path = "compatibility_1.rs"]
-mod compatibility_1;
-#[path = "compatibility_2.rs"]
-mod compatibility_2;
-
 #[path = "reserved.rs"]
 mod reserved;

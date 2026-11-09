@@ -4,6 +4,18 @@ use std::{
     time::{Duration, Instant},
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+// Test executables are immutable. Hard-linking avoids a transient writable executable
+// on overlay filesystems; a copy remains available for separate filesystems/volumes.
+fn publish_executable(
+    source: &std::path::Path,
+    destination: &std::path::Path,
+) -> std::io::Result<()> {
+    if destination.exists() {
+        return Ok(());
+    }
+    std::fs::hard_link(source, destination)
+        .or_else(|_| std::fs::copy(source, destination).map(|_| ()))
+}
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Result<Self, Box<dyn std::error::Error>> {
@@ -22,7 +34,10 @@ impl Fixture {
         } else {
             "oteryn-client"
         });
-        std::fs::copy(env!("CARGO_BIN_EXE_oteryn-client"), &path)?;
+        publish_executable(
+            std::path::Path::new(env!("CARGO_BIN_EXE_oteryn-client")),
+            &path,
+        )?;
         let mut command = Command::new(path);
         command
             .arg("--check-packages")
@@ -208,12 +223,15 @@ fn launcher_diagnosis_runs_the_active_release_verifier() -> TestResult {
         serde_json::to_vec(&manifest())?,
     )?;
     std::fs::write(fixture.0.join("current.txt"), oteryn_client::RELEASE_ID)?;
-    std::fs::copy(
-        env!("CARGO_BIN_EXE_oteryn-client"),
-        release.join("oteryn-client.exe"),
+    publish_executable(
+        std::path::Path::new(env!("CARGO_BIN_EXE_oteryn-client")),
+        &release.join("oteryn-client.exe"),
     )?;
     let launcher = fixture.0.join("oteryn-launcher");
-    std::fs::copy(env!("CARGO_BIN_EXE_oteryn-launcher"), &launcher)?;
+    publish_executable(
+        std::path::Path::new(env!("CARGO_BIN_EXE_oteryn-launcher")),
+        &launcher,
+    )?;
     for (bytes, expected) in [
         (b"abc", "Verified 1 presentation package"),
         (b"abd", "integrity mismatch"),

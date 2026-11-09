@@ -279,6 +279,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     assert!(!link.cyclopedia_map_panel().pending);
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };

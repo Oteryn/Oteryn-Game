@@ -1,73 +1,73 @@
 // Win32 handles and callback userdata stay on the creating thread.
-    #![allow(unsafe_code)]
-    use super::*;
-    use crate::play::{PlayLink, mailbox::lock};
-    use std::ptr::{null, null_mut};
-    use windows_sys::Win32::Foundation::*;
-    use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
-    use windows_sys::Win32::UI::WindowsAndMessaging::*;
+#![allow(unsafe_code)]
+use super::*;
+use crate::play::{PlayLink, mailbox::lock};
+use std::ptr::{null, null_mut};
+use windows_sys::Win32::Foundation::*;
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
+use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
-    fn wide(text: &str) -> Vec<u16> {
-        text.replace('\0', "\u{fffd}")
-            .encode_utf16()
-            .chain(Some(0))
-            .collect()
-    }
+fn wide(text: &str) -> Vec<u16> {
+    text.replace('\0', "\u{fffd}")
+        .encode_utf16()
+        .chain(Some(0))
+        .collect()
+}
 
-    unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
-        unsafe {
-            if msg == WM_COMMAND {
-                let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<usize>;
-                if !actions.is_null() && (*actions).len() < 32 {
-                    (*actions).push(w & 0xffff);
-                }
-                return 0;
+unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+    unsafe {
+        if msg == WM_COMMAND {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Vec<usize>;
+            if !actions.is_null() && (*actions).len() < 32 {
+                (*actions).push(w & 0xffff);
             }
-            DefWindowProcW(hwnd, msg, w, l)
+            return 0;
         }
+        DefWindowProcW(hwnd, msg, w, l)
     }
+}
 
-    unsafe fn control(
-        parent: HWND,
-        class: &str,
-        text: &str,
-        id: usize,
-        y: i32,
-        height: i32,
-        style: u32,
-    ) -> HWND {
-        unsafe {
-            CreateWindowExW(
-                0,
-                wide(class).as_ptr(),
-                wide(text).as_ptr(),
-                WS_CHILD | WS_VISIBLE | style,
-                10,
-                y,
-                440,
-                height,
-                parent,
-                id as _,
-                null_mut(),
-                null(),
-            )
-        }
+unsafe fn control(
+    parent: HWND,
+    class: &str,
+    text: &str,
+    id: usize,
+    y: i32,
+    height: i32,
+    style: u32,
+) -> HWND {
+    unsafe {
+        CreateWindowExW(
+            0,
+            wide(class).as_ptr(),
+            wide(text).as_ptr(),
+            WS_CHILD | WS_VISIBLE | style,
+            10,
+            y,
+            440,
+            height,
+            parent,
+            id as _,
+            null_mut(),
+            null(),
+        )
     }
+}
 
-    pub(in crate::play) fn open_window(link: &PlayLink) {
-        {
-            let mut mailbox = lock(&link.mailbox);
-            if mailbox.store.classic_open {
-                return;
-            }
-            mailbox.store.classic_open = true;
+pub(in crate::play) fn open_window(link: &PlayLink) {
+    {
+        let mut mailbox = lock(&link.mailbox);
+        if mailbox.store.classic_open {
+            return;
         }
-        link.discovery_open(285);
-        let weak = std::sync::Arc::downgrade(&link.mailbox);
-        let rollback = weak.clone();
-        let commands = link.commands.clone();
-        let coin_shop = lock(&link.mailbox).coin_shop.clone();
-        if std::thread::Builder::new()
+        mailbox.store.classic_open = true;
+    }
+    link.discovery_open(285);
+    let weak = std::sync::Arc::downgrade(&link.mailbox);
+    let rollback = weak.clone();
+    let commands = link.commands.clone();
+    let coin_shop = lock(&link.mailbox).coin_shop.clone();
+    if std::thread::Builder::new()
             .name("store-panel".into())
             .spawn(move || {
                 unsafe {
@@ -142,7 +142,7 @@
                             for action in std::mem::take(&mut actions) {
                                 if action == 13 {
                                     drop(mailbox);
-                                    PlayLink { mailbox: shared.clone(), commands: commands.clone() }.store_gift_open();
+                                    PlayLink { owns_session: false, mailbox: shared.clone(), commands: commands.clone() }.store_gift_open();
                                     mailbox = lock(&shared);
                                     continue;
                                 }
@@ -298,4 +298,4 @@
         {
             lock(&shared).store.classic_open = false;
         }
-    }
+}

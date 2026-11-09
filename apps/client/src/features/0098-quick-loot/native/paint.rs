@@ -102,12 +102,12 @@ pub(super) unsafe fn window(
             if ended {
                 break;
             }
-            // This temporary facade borrows the live session; running PlayLink::drop
-            // here would shut the session down after the first panel repaint.
-            let mut link = std::mem::ManuallyDrop::new(PlayLink {
+            // A dialog handle borrows the live session and releases only its own references.
+            let link = PlayLink {
+                owns_session: false,
                 mailbox: shared,
                 commands: commands.clone(),
-            });
+            };
             for action in std::mem::take(&mut actions.0) {
                 let values: Vec<String> = inputs
                     .iter()
@@ -236,9 +236,7 @@ pub(super) unsafe fn window(
                 };
                 EnableWindow(*button, i32::from(enable));
             }
-            // Release both cloned handles without invoking the owning facade's destructor.
-            std::ptr::drop_in_place(&mut link.mailbox);
-            std::ptr::drop_in_place(&mut link.commands);
+            drop(link);
             MsgWaitForMultipleObjects(0, null(), 0, 50, QS_ALLINPUT);
         }
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
