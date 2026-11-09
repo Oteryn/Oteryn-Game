@@ -3,9 +3,9 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::UseIntent;
-use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
-/// A live target proof borrows its runtime owner until the quest commit ends.
+/// A live target proof binds the complete decoded tool intent and borrows its
+/// runtime owner until the quest commit ends.
 /// Mutating or releasing that owner while retaining the proof is forbidden.
 ///
 /// ```compile_fail
@@ -23,7 +23,7 @@ pub struct QuestCreatureUseProof<'runtime> {
     command: CommandRef,
     callback: String,
     key: String,
-    target: EntityRef,
+    intent: UseIntent,
     _runtime: std::marker::PhantomData<&'runtime ()>,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
@@ -66,7 +66,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             command,
             callback: callback.key.clone(),
             key: key.clone(),
-            target,
+            intent: intent.clone(),
             _runtime: std::marker::PhantomData,
         })
     }
@@ -86,7 +86,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 &carried.intent,
             )
             .is_ok_and(|intent| {
-                intent.use_with == Some(self.target)
+                intent == self.intent
                     && intent.use_with_map_item.is_none()
                     && intent.use_with_position.is_none()
             })
