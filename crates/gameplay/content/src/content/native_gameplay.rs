@@ -4753,7 +4753,7 @@ mod source_item_closure_tests {
                 }
             }
         }
-        assert_eq!((create, remove), (62, 20));
+        assert_eq!((create, remove), (64, 20));
         Ok(())
     }
     #[test]

@@ -337,8 +337,8 @@ fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> 
         assert_eq!(capture(Some(position)).native.len(), 1);
     }
     let mut cache = GrizzlyCaptureCache::default();
-    let first = cache.remember(actor(1), id(22), |_| capture(Some([33420, 31539, 10])));
-    let replay = cache.remember(actor(1), id(22), |_| capture(Some([0, 0, 0])));
+    let first = cache.remember(actor(1), id(22), |_, _| capture(Some([33420, 31539, 10])));
+    let replay = cache.remember(actor(1), id(22), |_, _| capture(Some([0, 0, 0])));
     assert_eq!(
         first, replay,
         "later movement cannot rewrite eligibility of a queued death"

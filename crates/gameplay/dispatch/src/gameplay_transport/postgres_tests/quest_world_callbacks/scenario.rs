@@ -823,7 +823,9 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if engenc_asura || m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+        let premium = if engenc_asura
+            || m03_pits
+            || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
             || matches!(
                 name,
                 "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
