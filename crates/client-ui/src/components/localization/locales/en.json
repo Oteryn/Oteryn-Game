@@ -276,5 +276,15 @@
  "Welcome back!": "Welcome back!",
  "Refresh reward": "Refresh reward",
  "Claim gift": "Claim gift",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.",
+ "Enter a member name from the displayed party session": "Enter a member name from the displayed party session",
+ "Extra costs must be whole nonnegative gold amounts": "Extra costs must be whole nonnegative gold amounts",
+ "excluded": "excluded",
+ "included": "included",
+ "{} | extra cost {} | {}\r\n": "{} | extra cost {} | {}\r\n",
+ "Item / creature race number, boss death id, or party member name": "Item / creature race number, boss death id, or party member name",
+ "Unit item value (gold), kill target, or party extra cost": "Unit item value (gold), kill target, or party extra cost",
+ "Set party extra cost": "Set party extra cost",
+ "Exclude party member": "Exclude party member",
+ "Include party member": "Include party member"
 }

@@ -276,5 +276,15 @@
  "Welcome back!": "Witaj ponownie!",
  "Refresh reward": "Odśwież nagrodę",
  "Claim gift": "Odbierz prezent",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Czeka prezent powitalny. Otwórz nagrodę dzienną (Ctrl+D), a następnie nagrodę za powrót, aby go odebrać."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Czeka prezent powitalny. Otwórz nagrodę dzienną (Ctrl+D), a następnie nagrodę za powrót, aby go odebrać.",
+ "Enter a member name from the displayed party session": "Wpisz nazwę uczestnika wyświetlonej sesji drużyny",
+ "Extra costs must be whole nonnegative gold amounts": "Dodatkowe koszty muszą być nieujemnymi całkowitymi kwotami złota",
+ "excluded": "wykluczony",
+ "included": "uwzględniony",
+ "{} | extra cost {} | {}\r\n": "{} | dodatkowy koszt {} | {}\r\n",
+ "Item / creature race number, boss death id, or party member name": "Numer przedmiotu/potwora, identyfikator śmierci bossa lub nazwa uczestnika",
+ "Unit item value (gold), kill target, or party extra cost": "Cena jednostkowa (złoto), cel zabójstw lub dodatkowy koszt",
+ "Set party extra cost": "Ustaw dodatkowy koszt",
+ "Exclude party member": "Wyklucz uczestnika",
+ "Include party member": "Uwzględnij uczestnika"
 }

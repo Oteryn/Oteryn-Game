@@ -74,3 +74,23 @@ fn party_summary_rejects_ambiguous_malformed_unbounded_and_incomplete_inputs() -
     assert!(Summary::parse(&many).is_err());
     Ok(())
 }
+
+#[test]
+fn adjusted_party_summary_rejects_invalid_costs_flags_and_columns() -> Result {
+    let header = "OTERYN-PARTY-SUMMARY\t2\nName\tLoot\tSupplies\tExtraCost\tExcluded\n";
+    for row in [
+        "Alice\t10\t2\t-1\t0",
+        "Alice\t10\t2\t1.5\t0",
+        "Alice\t10\t2\t18446744073709551616\t0",
+        "Alice\t10\t2\t0\ttrue",
+        "Alice\t10\t2\t0",
+        "Alice\t10\t2\t0\t0\textra",
+    ] {
+        assert!(Summary::parse(&format!("{header}{row}\n")).is_err());
+    }
+    let source = format!("{header}Alice\t10\t2\t18446744073709551615\t1\n");
+    let summary = Summary::parse(&source)?;
+    assert_eq!(summary.export()?, source);
+    assert!(summary.text().contains("Split unavailable"));
+    Ok(())
+}

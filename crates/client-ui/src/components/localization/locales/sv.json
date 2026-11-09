@@ -276,5 +276,15 @@
  "Welcome back!": "Välkommen tillbaka!",
  "Refresh reward": "Uppdatera belöning",
  "Claim gift": "Hämta gåva",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den.",
+ "Enter a member name from the displayed party session": "Ange ett medlemsnamn från den visade gruppsessionen",
+ "Extra costs must be whole nonnegative gold amounts": "Extra kostnader måste vara hela icke-negativa guldbelopp",
+ "excluded": "utesluten",
+ "included": "inkluderad",
+ "{} | extra cost {} | {}\r\n": "{} | extra kostnad {} | {}\r\n",
+ "Item / creature race number, boss death id, or party member name": "Föremåls-/varelsenummer, bossens döds-ID eller medlemsnamn",
+ "Unit item value (gold), kill target, or party extra cost": "Styckvärde (guld), dödsmål eller extra gruppkostnad",
+ "Set party extra cost": "Ange extra kostnad",
+ "Exclude party member": "Uteslut medlem",
+ "Include party member": "Inkludera medlem"
 }
