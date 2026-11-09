@@ -2509,18 +2509,19 @@
     "src": "TIBAUD-2-NEW",
     "area": "Action bars",
     "feature": "Multi-Action: trzy akcje zastępcze według cooldownu",
-    "official_evidence": "https://www.tibia.com/gameguides/?subtopic=manual&section=interface (§interface; zapis właściciela 2026-09-28); docs/reference/tibia-manual/interface.md:254",
-    "official_url": "https://www.tibia.com/gameguides/?subtopic=manual&section=interface",
-    "official_capture": "2026-09-28",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8560; https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9; newsid wydania 8570; ekstrakt przeglądarki koordynatora 2026-11-09",
+    "official_url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8560",
+    "official_capture": "2026-11-09",
     "official_live_verified": false,
     "evidence": "apps/client/src/features/local-spell-action-bar/assignments.rs:17; apps/client/src/features/local-spell-action-bar/assignments.rs:123; apps/client/src/features/local-spell-action-bar/view.rs:107",
     "status": "MISSING",
-    "gap": "Brak przypisania trzech akcji do jednego przycisku oraz wyboru II/III po cooldownie I/II. Istnieją pojedyncze spell/item/text/passive; nie jest to sekwencja makro.",
+    "gap": "Brak przypisania trzech akcji do jednego przycisku, wyboru pierwszej bez cooldownu, ikony następnej akcji i menu Assign Multiaction. Istnieją wyłącznie pojedyncze przypisania spell/item/text/passive.",
     "baseline_status": null,
     "closed_status": null,
-    "verification": "DERIVED: porównanie zachowanych notatek manuala z aktualnym kodem; bez świeżego odczytu strony.",
-    "novelty": "Nowy wiersz względem TIBAUD-1; data wprowadzenia do oficjalnego klienta UNKNOWN.",
-    "negative_search": "multi.?action|cooldown.?fallback|fallback.?spell|action.?sequence|multi.?spell"
+    "verification": "DERIVED: kod main wobec ekstraktu news 8560 dostarczonego przez koordynatora; bez własnego odczytu strony.",
+    "novelty": "Nowy wiersz względem TIBAUD-1; funkcja Winter 2025.",
+    "negative_search": "multi.?action|cooldown.?fallback|fallback.?spell|action.?sequence|multi.?spell",
+    "note": "CONFLICT źródeł: wcześniejszy skrót wiki mówił o cyklicznym przełączaniu. Późniejszy ekstrakt pierwotnego news 8560 potwierdza pierwszą akcję bez cooldownu; zachowano ten opis zgodnie z korektą właściciela."
   },
   {
     "id": "T169",
@@ -2538,7 +2539,8 @@
     "closed_status": null,
     "verification": "DERIVED: porównanie zachowanych notatek manuala z aktualnym kodem; bez świeżego odczytu strony.",
     "novelty": "Nowy wiersz względem TIBAUD-1; data wprowadzenia do oficjalnego klienta UNKNOWN.",
-    "negative_search": ""
+    "negative_search": "",
+    "note": "Publiczny manual §interface, potwierdzony jako aktualny przez właściciela 2026-11-09; brak przypisanego newsid dla tej powierzchni, nie dopisano niepowiązanego news 8560."
   },
   {
     "id": "T170",
@@ -2556,7 +2558,8 @@
     "closed_status": null,
     "verification": "DERIVED: porównanie zachowanych notatek manuala z aktualnym kodem; bez świeżego odczytu strony.",
     "novelty": "Nowy wiersz względem TIBAUD-1; data wprowadzenia do oficjalnego klienta UNKNOWN.",
-    "negative_search": "mirror|mirrored|mirror_console|split.?console|clone.?tab"
+    "negative_search": "mirror|mirrored|mirror_console|split.?console|clone.?tab",
+    "note": "Publiczny manual §interface, potwierdzony jako aktualny przez właściciela 2026-11-09; brak przypisanego newsid dla tej powierzchni, nie dopisano niepowiązanego news 8560."
   },
   {
     "id": "T171",
@@ -2574,7 +2577,8 @@
     "closed_status": null,
     "verification": "DERIVED: porównanie zachowanych notatek manuala z aktualnym kodem; bez świeżego odczytu strony.",
     "novelty": "Nowy wiersz względem TIBAUD-1; data wprowadzenia do oficjalnego klienta UNKNOWN.",
-    "negative_search": "cooldown.?bar|cooldownBarEnabled"
+    "negative_search": "cooldown.?bar|cooldownBarEnabled",
+    "note": "Publiczny manual §interface, potwierdzony jako aktualny przez właściciela 2026-11-09; brak przypisanego newsid dla tej powierzchni, nie dopisano niepowiązanego news 8560."
   },
   {
     "id": "T172",
@@ -2592,6 +2596,742 @@
     "closed_status": null,
     "verification": "DERIVED: porównanie zachowanych notatek manuala z aktualnym kodem; bez świeżego odczytu strony.",
     "novelty": "Nowy wiersz względem TIBAUD-1; data wprowadzenia do oficjalnego klienta UNKNOWN.",
-    "negative_search": "party.?list|party.?portrait|party.?mana"
+    "negative_search": "party.?list|party.?portrait|party.?mana",
+    "note": "Publiczny manual §interface, potwierdzony jako aktualny przez właściciela 2026-11-09; brak przypisanego newsid dla tej powierzchni, nie dopisano niepowiązanego news 8560."
+  },
+  {
+    "id": "T173",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Imbuing",
+    "feature": "Shrine: rzeczywiste sloty, 100% sukcesu i ceny 7500/60000/250000",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8396; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8396"
+    ],
+    "newsids": [
+      8396
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0068-imbue/native.rs:263; apps/client/src/features/0068-imbue/input.rs:51; crates/client-ui/src/features/0068-imbue/view.rs:41; crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs:92; crates/gameplay/items/src/imbuement.rs:289",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Lista slotów iteruje do window.slot_count; ceny przychodzą w ofercie serwera, a serwer korzysta z aktualnych reguł 100%."
+  },
+  {
+    "id": "T174",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Imbuing",
+    "feature": "Blank/Powerful Scroll, multiuse, Market i cleansing/Etcher",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8396; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8396"
+    ],
+    "newsids": [
+      8396
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0068-imbue/input.rs:51; crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs:108; crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs:168; crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs:550; crates/gameplay/items/src/imbuement.rs:42",
+    "status": "PARTIAL",
+    "gap": "Shrine tworzy scrolle, multiuse i usunięcie wszystkich imbuementów mają właściciela. Katalog ma jednak 18 Powerful i 18 Intricate; wobec 24 Powerful w ekstrakcie brak 6 typów (komentarz wyłącza damage-conversion i Vibrancy). Nie wykazano pełnego katalogu Market ani zakupu Etchera za 30000 u Albiniusa.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nie uznano obecności samego item id za pełny przepływ; istniejący writer Inscribe i Etch są rzeczywiste. Rozbieżność 18/24 jest konkretną luką, pozostałe elementy bez kwalifikacji."
+  },
+  {
+    "id": "T175",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Game window",
+    "feature": "Special Conditions: ikony obok łuku HP, sześć + wielokropek",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8414; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8414"
+    ],
+    "newsids": [
+      8414
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0023-presentation/resources.rs:126; apps/client/src/features/0023-presentation/view/methods.rs:53; apps/client/src/features/local-spell-action-bar/native.rs:114; apps/client/src/play/resource_hud.rs:227",
+    "status": "PARTIAL",
+    "gap": "Potwierdzone stany są tekstem w panelu HUD. Rysowanie łuków nie pobiera conditions; brak pionowych ikon po lewej, limitu 6 + ..., ciemnego tła i wspólnej opacity przy niezależności od arcs on/off.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Źródło określa geometrię i niezależność widoczności; sam tekst conditions nie spełnia tego zakresu."
+  },
+  {
+    "id": "T176",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Options",
+    "feature": "Special Conditions: dwa checkboxy, wspólna kolejność i grupowanie",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8414; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8414"
+    ],
+    "newsids": [
+      8414
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/local-reference-preferences/settings.rs:143; apps/client/src/features/local-reference-preferences/layout_controls.rs:18; crates/client-ui/src/features/0276-condition-status/state.rs:3; crates/client-ui/src/features/0276-condition-status/view.rs:3",
+    "status": "PARTIAL",
+    "gap": "Jest zapisana kolejność i globalna widoczność conditions; brak macierzy status bar/HUD dla każdego stanu oraz grup Resting Area/Soul War/Rotten Blood/Mana Shield. Wspólna lista ikon zawiera Mana shield, ale nie pełną konfigurację grup.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Ograniczony katalog i jeden order nie dowodzą dwóch niezależnych miejsc wyświetlania."
+  },
+  {
+    "id": "T177",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Proficiency",
+    "feature": "Lista wszystkich broni: filtry, sortowanie, drzewo, mastery i podsumowanie",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8421; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8421"
+    ],
+    "newsids": [
+      8421
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0195-weapon-proficiency/input.rs:25; apps/client/src/features/0195-weapon-proficiency/native_window.rs:85; apps/client/src/features/0195-weapon-proficiency/native_window.rs:237; crates/client-ui/src/features/0195-weapon-proficiency/view.rs:25; crates/protocol-oteryn/src/weapon_proficiency.rs:17",
+    "status": "PARTIAL",
+    "gap": "Katalog broni, XP i wybór perków dla maksymalnie 7 poziomów są podłączone. UI używa comboboxów; brak filtrów całego katalogu, sortowania progress/name, drzewa i dedykowanej prezentacji mastery/podsumowania.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nie obniża wąskiego T123 operacji select/shape; tu oceniono rozszerzony UI news 8421."
+  },
+  {
+    "id": "T178",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Proficiency",
+    "feature": "Powiadomienie awansu i klikalny pasek postępu przy status barze",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8421; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8421"
+    ],
+    "newsids": [
+      8421
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0195-weapon-proficiency/input.rs:25; apps/client/src/features/local-spell-action-bar/native.rs:111; crates/client-ui/src/features/0195-weapon-proficiency/view.rs:95",
+    "status": "MISSING",
+    "gap": "Jest ręczne otwarcie katalogu i tekst postępu. Brak dedykowanej ikony po awansie, otwarcia właściwej broni z tej ikony oraz klikalnego paska postępu obok status baru.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Wyszukiwanie powiązań proficiency z status/HUD/level-up nie wykazało konsumenta tego wejścia."
+  },
+  {
+    "id": "T179",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Proficiency",
+    "feature": "Zmiana wybranego perka wyłącznie w Protection Zone",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8421; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8421"
+    ],
+    "newsids": [
+      8421
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0195-weapon-proficiency/input.rs:16; crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs:113; crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_select.rs:308; crates/gameplay/domain/src/domain/weapon_proficiency.rs:328",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Komenda SelectPerk dociera do serwera; PZ jest wyznaczane z pozycji aktora. Zmiana istniejącego wyboru poza PZ jest odrzucana; pierwszy wybór ma osobną regułę."
+  },
+  {
+    "id": "T180",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Cyclopedia / Character",
+    "feature": "Bazowy crit 5%/10% i suma w Offence Stats",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.10.46b862; https://www.tibia.com/news/?subtopic=newsarchive&id=8421; newsid wydania 8436; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.10.46b862",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8421"
+    ],
+    "newsids": [
+      8421
+    ],
+    "release_newsid": 8436,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs:33; crates/gameplay/dispatch/src/gameplay_transport/attack/cyclopedia.rs:253; apps/client/src/features/0199-cyclopedia-character/native.rs:56; crates/client-ui/src/features/0199-cyclopedia-character/view.rs:138",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Intrinsic chance +500 i damage +1000 (1/100%) są dodawane do sprzętu/imbuementów; te same wyniki i baza trafiają do zapytania Character/Offence i tabeli statystyk."
+  },
+  {
+    "id": "T181",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Options",
+    "feature": "Graphics/Effects: trzy suwaki opacity 0–100 co 1 i tooltip",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9; https://www.tibia.com/news/?subtopic=newsarchive&id=8552; newsid wydania 8570; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8552"
+    ],
+    "newsids": [
+      8552
+    ],
+    "release_newsid": 8570,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/local-reference-preferences/frame_controls.rs:12; apps/client/src/features/local-reference-preferences/frame_controls.rs:58; apps/client/src/features/0023-presentation/view/methods.rs:110",
+    "status": "PARTIAL",
+    "gap": "Trzy niezależne wartości 0–100 rzeczywiście sterują alpha własnych/innych/monster effects. Są jednak polami liczbowymi EDIT w ustawieniach Frames, bez trzech suwaków i ich tooltipów na stronie Graphics/Effects.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "T063 pozostaje DONE w dawnym zakresie parametrów opacity; ten wiersz ocenia wyraźnie wskazany układ sterowania nowej strony."
+  },
+  {
+    "id": "T182",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Action bars / Battle list",
+    "feature": "Use at cursor position dla obiektów i run",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9; https://www.tibia.com/news/?subtopic=newsarchive&id=8560; newsid wydania 8570; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8560"
+    ],
+    "newsids": [
+      8560
+    ],
+    "release_newsid": 8570,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/local-spell-action-bar/item_actions.rs:21; apps/client/src/features/local-spell-action-bar/item_actions.rs:37; apps/client/src/features/0015-item-use/input.rs:89; apps/client/src/features/local-spell-action-bar/input.rs:166",
+    "status": "PARTIAL",
+    "gap": "Tryby self/target/cursor istnieją. Cursor wywołuje begin_targeting i czeka na wskazanie celu; brak natychmiastowego multiuse pod bieżącym kursorem po aktywacji akcji oraz analogicznego kompletnego wejścia Battle List.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nazwa Cursor nie dowodzi użycia bez drugiego kliknięcia; jawny return po begin_targeting to odmienny przepływ."
+  },
+  {
+    "id": "T183",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Hunting tasks",
+    "feature": "Bounty: trzy oferty, cztery trudności, listy i Ring/Talisman",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9; https://www.tibia.com/news/?subtopic=newsarchive&id=8566; newsid wydania 8570; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8566"
+    ],
+    "newsids": [
+      8566
+    ],
+    "release_newsid": 8570,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0072-task-board/native.rs:163; apps/client/src/features/0072-task-board/input.rs:31; crates/client-ui/src/features/0072-task-board/view.rs:55; crates/protocol-oteryn/src/task_board_full.rs:7; crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:40",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Istnieją serwerowe trzy oferty, trudności 0–3 i grade (Silver/Gold), preferred/unwanted, punkty i obsługa Talisman przez własnego właściciela. Oceniono funkcjonalne operacje; nie zgodność grafiki ani pełne tłumaczenie nazw poziomów."
+  },
+  {
+    "id": "T184",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Hunting tasks",
+    "feature": "Weekly: 6+6/9+9, poniedziałkowe okno nagród, Soulseals i shop",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9; https://www.tibia.com/news/?subtopic=newsarchive&id=8567; newsid wydania 8570; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.20.7a5cc9",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8567"
+    ],
+    "newsids": [
+      8567
+    ],
+    "release_newsid": 8570,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0072-task-board/native.rs:161; apps/client/src/features/0072-task-board/input.rs:31; crates/client-ui/src/features/0072-task-board/view.rs:12; crates/protocol-oteryn/src/task_board_full.rs:7; crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:45",
+    "status": "PARTIAL",
+    "gap": "Weekly/delivery, cztery trudności, rozszerzenie do 9+9, Soulseals i Task Shop mają rzeczywiste komendy. Brak osobnego poniedziałkowego okna nagród z wyborem trudności; bieżący przepływ to ręcznie otwierany Task Board.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nie zaliczono braku nowych questów/map; różnica dotyczy konkretnego okna i jego wyzwalacza."
+  },
+  {
+    "id": "T185",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Bestiary",
+    "feature": "Echo Raids: postęp Echo Warden jak Animus Mastery",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; https://www.tibia.com/news/?subtopic=newsarchive&id=8834; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8834"
+    ],
+    "newsids": [
+      8834
+    ],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0004-item-view-move/state.rs:58; crates/gameplay/dispatch/src/gameplay_transport/echo_warden.rs:77; crates/gameplay/durability/src/durability/charm_state/echo_warden.rs:23; apps/client/src/features/0067-bestiary-charm-progression/input/catalogue.rs:13; crates/protocol-oteryn/src/bestiary_catalogue.rs:17",
+    "status": "PARTIAL",
+    "gap": "Echo portal/step-in i trwałe nagrody Warden istnieją. Katalog klienta ma ogólną kartę stworzenia i zwykły progress; brak jawnej projekcji postępu Echo Warden w Bestiary analogicznej do Animus Mastery.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Obecność mechaniki serwera i sumy Charm Points nie dowodzi nowego widoku postępu; nie oceniano zawartości raidów/map."
+  },
+  {
+    "id": "T186",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Cyclopedia / Discovery",
+    "feature": "Wszystkie podobszary aktywne automatycznie",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; https://www.tibia.com/news/?subtopic=newsarchive&id=8834; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8834"
+    ],
+    "newsids": [
+      8834
+    ],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0057-cyclopedia-map/input.rs:12; crates/client-ui/src/features/0057-cyclopedia-map/state.rs:7; crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:182; crates/gameplay/domain/src/domain/cyclopedia/basic.rs:132",
+    "status": "PARTIAL",
+    "gap": "Oteryn ma query/start/shuffle/find, ale nadal wymaga Start i Premium dla rozpoczęcia eksploracji, zamiast automatycznej aktywacji wszystkich podobszarów.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Oceniono zachowanie Discovery i komendy, nie kompletność geometrii świata."
+  },
+  {
+    "id": "T187",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Cyclopedia / Discovery",
+    "feature": "Reset POI, baner odkrycia i tooltip bonusu prędkości 100–195",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; https://www.tibia.com/news/?subtopic=newsarchive&id=8834; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8834"
+    ],
+    "newsids": [
+      8834
+    ],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0057-cyclopedia-map/input.rs:12; crates/client-ui/src/features/0057-cyclopedia-map/state.rs:2; crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:184; crates/gameplay/domain/src/domain/cyclopedia/basic.rs:5; crates/gameplay/domain/src/domain/cyclopedia.rs:27",
+    "status": "PARTIAL",
+    "gap": "Shuffle/Find i widoczne POI istnieją. Shuffle odrzuca obszar już odkryty; brak równoważnego resetu POI po ukończeniu, banera ukończenia i tooltipu bonusu 100–195. Basic rules jawnie nie wnoszą bonusu speed; Reference-qualified granica pozostaje niewired.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nie utożsamiono samego Shuffle z pełną nową operacją resetowania odkrytego obszaru."
+  },
+  {
+    "id": "T188",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Boss",
+    "feature": "Boss Difficulty: wybór, odblokowania per postać i pity tracker",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad"
+    ],
+    "newsids": [],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0225-boss-difficulty/input.rs:6; crates/client-ui/src/features/0225-boss-difficulty/view.rs:6; crates/protocol-oteryn/src/boss_difficulty.rs:149; crates/protocol-oteryn/src/boss_difficulty.rs:165; crates/gameplay/dispatch/src/gameplay_transport/boss_difficulty.rs:6",
+    "status": "PARTIAL",
+    "gap": "Open/Preview/Start/Cancel i wybrana trudność mają rzeczywistą ścieżkę. Reply::Window nie przenosi personal-highest/unlock ani bad-luck/pity; brak ich widoku i trackera.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Jawny komentarz kodeka wyłącza te dane. Typ kontekstu serwera nie zastępuje odblokowań per postać."
+  },
+  {
+    "id": "T189",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Highscores",
+    "feature": "Phosphorus Record — wybór kategorii i tabela",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad"
+    ],
+    "newsids": [],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "crates/client-ui/src/features/0009-highscores/mod.rs:10; apps/client/src/features/0009-highscores/native.rs:94; crates/gameplay/dispatch/src/gameplay_transport/highscores.rs:5",
+    "status": "MISSING",
+    "gap": "Kategoria 16 (Phosphorus) jest jawnie reserved i nie występuje w CATEGORY_IDS, z którego działa combo. Nie ma osiągalnej tabeli Phosphorus Record.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Istnienie bossa lub kodu jego obrażeń nie dowodzi klientowej kategorii highscores."
+  },
+  {
+    "id": "T190",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Proficiency",
+    "feature": "Dwa sloty Dust: refine/maximise/reshape/clear, potwierdzenie i PZ",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; https://www.tibia.com/news/?subtopic=newsarchive&id=8850; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8850"
+    ],
+    "newsids": [
+      8850
+    ],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0195-weapon-proficiency/native_window.rs:120; apps/client/src/features/0195-weapon-proficiency/native_window.rs:205; crates/client-ui/src/features/0195-weapon-proficiency/protocol.rs:125; crates/gameplay/dispatch/src/gameplay_transport/weapon_proficiency_shaping.rs:54; crates/gameplay/domain/src/domain/weapon_proficiency.rs:878",
+    "status": "PARTIAL",
+    "gap": "Dwa sloty, Modify/RankUp/OrbRank, trzy reshape choices, Clear i serwerowa bramka PZ istnieją. Native wysyła komendę od razu po visual_submit; brak jawnego potwierdzenia Clear i nowej wizualnej ramki modyfikowanego slotu.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Mapowanie refine/maximise na istniejące RankUp/OrbRank jest funkcjonalne; nie uznano tekstowej etykiety rank za całą nową ramkę."
+  },
+  {
+    "id": "T191",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Forge",
+    "feature": "Większy limit Dust i zwiększanie go z Forge",
+    "official_evidence": "https://tibia.fandom.com/wiki/Updates/15.30.a30dad; https://www.tibia.com/news/?subtopic=newsarchive&id=8850; newsid wydania 8845; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://tibia.fandom.com/wiki/Updates/15.30.a30dad",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8850"
+    ],
+    "newsids": [
+      8850
+    ],
+    "release_newsid": 8845,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "wydanie 2025–2026",
+    "evidence": "apps/client/src/features/0152-item-forge/window.rs:178; apps/client/src/features/0152-item-forge/controller.rs:90; crates/protocol-oteryn/src/forge_preview.rs:117; crates/gameplay/domain/src/domain/forge_dust.rs:13; crates/gameplay/durability/src/durability/character_forge_dust.rs:706",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Przycisk DustLimit prowadzi przez quote/confirm do serwerowego writera; limit 100+20*n do 4600, 225 podniesień. To rzeczywista ścieżka, nie sam większy typ liczbowy."
+  },
+  {
+    "id": "T192",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Rewards",
+    "feature": "Daily Reward: odbiór nowych nagród jednym kliknięciem",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8998; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8998"
+    ],
+    "newsids": [
+      8998
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "apps/client/src/features/0182-daily-reward/native.rs:108; apps/client/src/features/0182-daily-reward/input.rs:14; apps/client/src/features/0182-daily-reward/input.rs:39; crates/gameplay/durability/src/durability/daily_reward_effects.rs:9",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Claim reward uruchamia istniejącą transakcję przyznającą wszystkie linie nagród dnia. Osobny item picker pozostaje dla nagród wymagających wyboru; nie wymaga się go dla samych walut/boostów."
+  },
+  {
+    "id": "T193",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Rewards / Store",
+    "feature": "Cosmetic Tokens jako nagroda i waluta Store",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8998; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8998"
+    ],
+    "newsids": [
+      8998
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "crates/client-ui/src/features/0182-daily-reward/state/details.rs:75; crates/gameplay/durability/src/durability/daily_reward_effects.rs:34; crates/client-ui/src/features/0154-store/view.rs:8; crates/client-ui/src/features/0154-store/protocol.rs:90",
+    "status": "PARTIAL",
+    "gap": "Daily catalogue pokazuje cosmetic_tokens i transakcja przyznaje saldo. Nie wykazano połączonego klientowego salda i zakupu Store za Cosmetic Tokens; aktualny główny Store pokazuje Oteryn Coins.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Ogólne tekstowe pole currency w ofercie nie wystarcza do potwierdzenia drugiej waluty i jej rzeczywistego rozliczenia."
+  },
+  {
+    "id": "T194",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Rewards",
+    "feature": "Stackowanie czasu XP boostów z Daily Rewards i Store",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8998; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8998"
+    ],
+    "newsids": [
+      8998
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "apps/client/src/features/0182-daily-reward/input.rs:39; crates/client-ui/src/features/0182-daily-reward/state/details.rs:75; crates/gameplay/durability/src/durability/daily_reward_effects.rs:72",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Claim trafia do grant, którego endpoint wybiera maksimum końca aktywnych boostów Store/Daily i dopisuje czas; nie zastępuje dotychczasowego czasu."
+  },
+  {
+    "id": "T195",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Rewards / Task Board",
+    "feature": "Darmowy Reroll Token z Daily, usunięty z Bounty Board",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8998; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8998"
+    ],
+    "newsids": [
+      8998
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "crates/gameplay/dispatch/src/gameplay_transport/daily_reward/details.rs:37; crates/gameplay/durability/src/durability/daily_reward_effects.rs:33; apps/client/src/features/0072-task-board/native.rs:168; crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:52",
+    "status": "PARTIAL",
+    "gap": "Daily przyznaje BOUNTY_REROLL, ale Bounty Board nadal ma przycisk Daily reroll i rzeczywistą obsługę ClaimDailyReroll. Brak relokacji usuwającej starą ścieżkę.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Porównanie do zapowiedzi, nie twierdzenie o regresji względem wydanego klienta."
+  },
+  {
+    "id": "T196",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Rewards",
+    "feature": "Daily streak: prezentacja bonusu do weapon proficiency XP",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8998; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8998"
+    ],
+    "newsids": [
+      8998
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "crates/gameplay/progression/src/daily_reward.rs:17; crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:3425; crates/client-ui/src/features/0182-daily-reward/view.rs:9; crates/protocol-oteryn/src/daily_reward.rs:60",
+    "status": "PARTIAL",
+    "gap": "Serwer rzeczywiście stosuje bonus podwojenia proficiency XP zależny od streak. Klient pokazuje sam streak, bez wartości/szansy bonusu i dedykowanego objaśnienia w Daily Reward UI.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Mechanika serwera nie jest brakująca; luka to jej nowa prezentacja klientowa."
+  },
+  {
+    "id": "T197",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Boss",
+    "feature": "Zapowiedź Archfoe: regulowana trudność i pity tracker",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=8999; https://www.tibia.com/news/?subtopic=newsarchive&id=9027; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=8999",
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=9027"
+    ],
+    "newsids": [
+      8999,
+      9027
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "crates/client-ui/src/features/0117-boss-encounter/view/browser.rs:18; apps/client/src/features/0225-boss-difficulty/input.rs:6; crates/protocol-oteryn/src/boss_difficulty.rs:165",
+    "status": "PARTIAL",
+    "gap": "Archfoe filter i generyczny wybór trudności istnieją; brak zintegrowanego Archfoe UI z potwierdzonym pity/unlock stanem. Protokół jawnie nie zawiera bad-luck figures.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Zakres zapowiedzi z ekstraktu koordynatora, bez dopisywania nieprzekazanych parametrów bossa i bez audytu questów."
+  },
+  {
+    "id": "T198",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Minimap",
+    "feature": "Hotkey dodawania znacznika w bieżącej pozycji",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=9004; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=9004"
+    ],
+    "newsids": [
+      9004
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "crates/client-ui/src/features/local-minimap/input.rs:2; apps/client/src/features/local-minimap/input.rs:55; apps/client/src/features/local-minimap/native.rs:105; apps/client/src/features/local-minimap/native.rs:239; apps/client/src/features/local-minimap/state.rs:228",
+    "status": "DONE",
+    "gap": "",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Istniejący chord otwiera edytor znacznika z own.x/own.y/floor; zapis trafia do edit_marker i trwałego pliku. DONE dotyczy otwarcia dodawania w bieżącej pozycji, nie pominięcia edycji nazwy."
+  },
+  {
+    "id": "T199",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Stash / Market",
+    "feature": "Stashback: powrót do Stash z zachowaniem search/filter/sort",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=9004; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=9004"
+    ],
+    "newsids": [
+      9004
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "apps/client/src/features/0062-stash/input.rs:33; crates/client-ui/src/features/0062-stash/state.rs:4; apps/client/src/features/0063-market/input.rs:1; apps/client/src/features/0062-stash/protocol.rs:24",
+    "status": "PARTIAL",
+    "gap": "Stash ma wyszukiwanie, filtry i sort; Market ma własny przepływ. Brak jawnego Stashback i przywracania kontekstu Stash po wyjściu z Market.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nie oceniano kompletności przedmiotów ani cen Market, tylko przejście między oknami."
+  },
+  {
+    "id": "T200",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Stash",
+    "feature": "Trwałe sortowanie Stash między sesjami",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=9004; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=9004"
+    ],
+    "newsids": [
+      9004
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "crates/client-ui/src/features/0062-stash/state.rs:9; crates/client-ui/src/features/0062-stash/state.rs:23; apps/client/src/features/0062-stash/protocol.rs:24; apps/client/src/features/local-reference-preferences/settings.rs:98",
+    "status": "PARTIAL",
+    "gap": "Sort Name/Stock istnieje w panelu sesji, ale stash_end resetuje cały panel do Default. Brak zapisu/odtworzenia sortowania Stash w trwałych preferencjach.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Rzeczywisty sort działa; brakuje tylko trwałości wymaganej w zapowiedzi."
+  },
+  {
+    "id": "T201",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Hunting tasks",
+    "feature": "Elite checkbox i Platinum tasks w Bounty Board",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=9004; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=9004"
+    ],
+    "newsids": [
+      9004
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "apps/client/src/features/0072-task-board/native.rs:161; crates/protocol-oteryn/src/task_board_full.rs:13; crates/client-ui/src/features/0072-task-board/view.rs:55",
+    "status": "MISSING",
+    "gap": "Nie ma checkboxa Elite ani dedykowanej obsługi Platinum tasks; bieżące pola i komendy Bounty to wybór oferty/trudności/listy/reroll oraz ogólny grade.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Nie utożsamiono istniejącego liczbowego grade z nową osiągalną ścieżką Elite/Platinum."
+  },
+  {
+    "id": "T202",
+    "src": "TIBAUD-2-UPDATES-2025-2026",
+    "area": "Action bars / Spells",
+    "feature": "Fale/wiązki: kierunek patrzenia, kursor lub cel przy przypisaniu",
+    "official_evidence": "https://www.tibia.com/news/?subtopic=newsarchive&id=9004; ekstrakt koordynatora 2026-11-09",
+    "official_urls": [
+      "https://www.tibia.com/news/?subtopic=newsarchive&id=9004"
+    ],
+    "newsids": [
+      9004
+    ],
+    "release_newsid": null,
+    "source_capture": "2026-11-09",
+    "source_provenance": "Ekstrakt przekazany przez właściciela: TibiaWiki/MediaWiki API; doprecyzowania tibia.com z prawdziwej przeglądarki koordynatora.",
+    "release_state": "zapowiedź Winter 2026",
+    "evidence": "apps/client/src/features/local-spell-action-bar/input.rs:16; crates/client-runtime/src/features/local-spell-action-bar/bar.rs:5; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90; apps/client/src/features/local-spell-action-bar/view.rs:107",
+    "status": "PARTIAL",
+    "gap": "Spell slot zapisuje tylko cast index i wysyła CombatCommand::Cast. Brak per-przypisanie wyboru facing/cursor/target i przekazania kierunku pod kursorem do realnego cast caller. Archive ma przypisania, lecz nie tę trójkę trybów.",
+    "baseline_status": null,
+    "closed_status": null,
+    "verification": "DERIVED: świeży statyczny odczyt main; bez GUI/E2E i bez własnego pobrania stron.",
+    "note": "Brak opcji w Magical Archive sam nie dowodzi zamierzonego przeniesienia — musi istnieć odpowiednik w przypisaniu przycisku."
   }
 ]
