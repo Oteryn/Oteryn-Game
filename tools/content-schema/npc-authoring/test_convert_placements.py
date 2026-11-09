@@ -59,6 +59,18 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual(rows[0]['cell'], {'x': 32311, 'y': 32172, 'floor': 6})
         self.assertEqual(rows[0]['direction'], 'north')
         self.assertEqual({p['origin'] for p in rows[0]['provenance']}, {'canary', 'crystal'})
+    def test_m38_mistrock_keeps_the_native_beregar_contact_anchor(self):
+        actual = [r['declaration'] for r in self.records
+                  if r['declaration']['npc'] == 'oteryn:npc.maris_mistrock']
+        self.assertEqual(len(actual), 1)
+        self.assertEqual(actual[0]['cell'], {'x': 32640, 'y': 31437, 'floor': 7})
+        candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())['candidates']
+                         if c['identity']['key'] == 'oteryn:npc.maris_mistrock')
+        self.assertEqual(candidate['placements'][0]['position'],
+                         {'x': 32640, 'y': 31437, 'z': 7})
+        self.assertTrue(all(p['definition_sha256'] in
+                           {v['sha256'] for v in candidate['provenance'].values()}
+                           for p in actual[0]['provenance']))
 
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])

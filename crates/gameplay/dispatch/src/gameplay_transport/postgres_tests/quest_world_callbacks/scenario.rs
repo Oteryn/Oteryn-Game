@@ -147,6 +147,10 @@ fn scenario_case(
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
     let classic_npc = name.starts_with("engoutfit-") || qengine_reward
+    let classic_npc = qengine_reward
+        || name.starts_with("npcfix-m38-mistrock")
+        || name == "npcfix-m38-minzy"
+        || name == "npcfix-m38-rascalio"
         || matches!(
             name,
             "engnpc-m04"
@@ -568,6 +572,8 @@ fn scenario_case(
             name,
             "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
         ) || name.contains("l6-beggar-")
+        let premium = if name.contains("l6-beggar-")
+            || name == "npcfix-m38-mistrock"
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -719,7 +725,7 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead {
+        if mead || name == "npcfix-m38-mistrock" {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
@@ -1082,6 +1088,19 @@ fn scenario_case(
             .await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "npcfix-m38-minzy" {
+            super::super::npcfix_m38_minzy::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "npcfix-m38-rascalio" {
+            super::super::npcfix_m38_rascalio::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name.starts_with("npcfix-m38-mistrock") {
+            super::super::npcfix_m38_mistrock::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                !name.ends_with("-free"),
+            )
+            .await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,

@@ -24,6 +24,9 @@ mod state_ops;
 pub use inventory::InventoryRequirement;
 #[cfg(test)]
 mod inventory_tests;
+mod temporal_payment;
+#[cfg(test)]
+mod temporal_payment_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
 fn is_false(value: &bool) -> bool {
@@ -343,6 +346,7 @@ impl RewardCallback {
         (self.repeatable
             && (!self.take.is_empty() || self.fee.is_some())
             && (self.give.is_some() || self.experience.is_some()))
+        temporal_payment::guarded(self)
             || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0

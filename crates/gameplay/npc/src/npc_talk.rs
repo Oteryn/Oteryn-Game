@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+mod literal_contacts;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -315,7 +316,7 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -338,6 +339,7 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
+                literal_contacts::REVISION_MATERIAL,
             )),
             ..Self::default()
         };
@@ -504,15 +506,10 @@ impl NpcTalkBook {
                     None,
                     dialogue.keywords.clone(),
                 )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-            ) && npc.services.is_empty()
-            {
-                // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                // literal, single-line lore is qualified here. Quest callbacks and
-                // multipart/stateful branches remain outside the talk consumer.
+            } else if literal_contacts::admitted(&reference.key) && npc.services.is_empty() {
+                // The historical `bank_dialogue` carrier also holds these explicitly
+                // qualified lore contacts. Per-contact topic scope and the literal
+                // matcher keep quest callbacks and exchange topics outside this path.
                 let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
@@ -520,13 +517,17 @@ impl NpcTalkBook {
                     continue;
                 }
                 (
-                    dialogue.greet[0].clone(),
+                    literal_contacts::greeting(&reference.key)
+                        .unwrap_or(&dialogue.greet[0])
+                        .to_owned(),
                     dialogue.farewell[0].clone(),
                     None,
                     dialogue
                         .keywords
                         .iter()
-                        .filter(|keyword| literal_keyword(keyword))
+                        .filter(|keyword| {
+                            literal_contacts::keyword_allowed(&reference.key, keyword)
+                        })
                         .cloned()
                         .collect(),
                 )
@@ -587,6 +588,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
                         || dark_messages.is_some()

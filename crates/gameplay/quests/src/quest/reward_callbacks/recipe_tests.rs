@@ -218,6 +218,9 @@ fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs_
 mod collector_copy {
     use super::*;
 
+mod collected_tests {
+    use super::*;
+
     #[test]
     fn m20_carried_recipe_requires_two_explicit_inputs_and_binds_target() -> Result<(), String> {
         let mut document: serde_json::Value =
