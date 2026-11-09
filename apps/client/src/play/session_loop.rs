@@ -113,6 +113,7 @@ pub async fn run_session<T: Stepper>(
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
+    outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
@@ -133,6 +134,7 @@ pub async fn run_session<T: Stepper>(
                         53 => outbox.world_event_result(&result),
                         54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
+                        97 if command.kind == 113 && command.payload == [5] => outbox.premium_game_result(&command,&result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
                         76 | 103 | 146 | 447 => outbox.properties_result(&command, &result),

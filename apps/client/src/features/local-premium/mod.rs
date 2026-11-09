@@ -1,4 +1,7 @@
 //! Dedicated read-only Premium overview. No entitlement is granted by this UI.
+pub(crate) mod game;
+#[cfg(test)]
+mod game_tests;
 #[cfg(windows)]
 mod native;
 #[cfg(test)]
@@ -17,6 +20,7 @@ pub enum Action {
 }
 #[derive(Debug, Default)]
 pub struct View {
+    game_status: Option<oteryn_client_runtime::premium_overview::Overview>,
     pub status: Option<PremiumStatus>,
     pub feedback: String,
     requested_at: Option<Instant>,
@@ -27,6 +31,9 @@ impl View {
         self.fresh_until.is_some_and(|t| t > Instant::now())
     }
     pub fn status_text(&self) -> String {
+        if let Some(status) = &self.game_status {
+            return game::text(self, status);
+        }
         let mut text = self.feedback.clone();
         let Some(status) = &self.status else {
             text.push_str("\nPremium status unavailable. Refresh to try again.");

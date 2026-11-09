@@ -159,7 +159,7 @@ pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
 pub use oteryn_protocol_oteryn::{
     arena, boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
-    weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,
+    premium_overview, weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,
 };
 mod vip_presence;
 pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};

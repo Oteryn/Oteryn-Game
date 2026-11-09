@@ -22,6 +22,13 @@ pub(in crate::play) mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
 
+#[path = "../local-premium/game_play.rs"]
+mod premium_game;
+#[cfg(windows)]
+#[path = "../local-premium/game_native.rs"]
+mod premium_native;
+
+
 #[cfg(windows)]
 fn open_gift(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};

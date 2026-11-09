@@ -100,6 +100,7 @@ pub mod player_report;
 pub mod player_trade;
 pub mod player_typing;
 pub mod potion_durations;
+pub mod premium_overview;
 pub mod presentation;
 pub mod prey;
 pub mod pvp_expert;

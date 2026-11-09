@@ -144,6 +144,7 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod premium_overview;
 mod primal_menace;
 mod primal_pods;
 mod private_channel_world;

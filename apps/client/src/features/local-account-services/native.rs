@@ -12,7 +12,6 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
         cancel,
     )?;
     window.button("Browse auctions", 1, [15, 15, 160, 30])?;
-    window.button("Premium overview", 14, [645, 15, 220, 30])?;
     window.button("My auctions", 2, [185, 15, 150, 30])?;
     window.button("Auction history", 3, [345, 15, 150, 30])?;
     let next = window.button("Next page", 4, [505, 15, 120, 30])?;
@@ -176,7 +175,6 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
             10 => return Some(Action::Retry),
             11 => return Some(Action::Status),
             13 => return Some(Action::CoinShop),
-            14 => return Some(Action::Premium),
             99 => return Some(Action::Back),
             _ => {}
         }
