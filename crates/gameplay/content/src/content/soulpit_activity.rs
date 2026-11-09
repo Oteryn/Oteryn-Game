@@ -89,6 +89,7 @@ mod tests {
             scope,
             BundleCollisionIndex(source.clone()),
             Arc::new(BundleSpellTiles {
+                phases: Default::default(),
                 base: source,
                 tiles: vec![],
                 shapes: vec![],

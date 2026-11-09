@@ -185,7 +185,10 @@ fn tile(
             z: i32::from(p.floor),
         },
     ) {
-        Ok(t) => Ok(Some(t)),
+        Ok(std::borrow::Cow::Borrowed(t)) => Ok(Some(t)),
+        // This port proves immutable SOURCE stairs. Bundle phase tiles use the
+        // bundle floor owner and cannot supply SOURCE height/stair evidence.
+        Ok(std::borrow::Cow::Owned(_)) => Err(MovementError::NotQualified),
         Err(SpellTileLookupError::Absent) => Ok(None),
         Err(SpellTileLookupError::Unknown) => Err(MovementError::NotQualified),
         Err(SpellTileLookupError::ScopeMismatch) => Err(MovementError::ScopeMismatch),

@@ -288,6 +288,7 @@ impl SpellTilesBuilder {
         }
         self.shapes.shrink_to_fit();
         Ok(BundleSpellTiles {
+            phases: Default::default(),
             base: self.base,
             tiles: self.tiles,
             shapes: self.shapes,
@@ -656,7 +657,7 @@ pub mod tests {
         // Grass: a walkable ground with its id and stored speed, nothing on top.
         let grass = lookup(1).expect("grass");
         assert_eq!(
-            grass,
+            grass.as_ref(),
             &tile(
                 Some((100, 150)),
                 &[],
@@ -674,7 +675,7 @@ pub mod tests {
         assert!(lookup(2).expect("zone").flags().protection_zone);
         // A non-walkable ground blocks.
         assert_eq!(
-            lookup(3).expect("water"),
+            lookup(3).expect("water").as_ref(),
             &tile(
                 Some((598, 0)),
                 &[],
@@ -683,7 +684,7 @@ pub mod tests {
         );
         // A wall blocks movement and projectiles.
         assert_eq!(
-            lookup(4).expect("wall"),
+            lookup(4).expect("wall").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[1100],
@@ -692,7 +693,7 @@ pub mod tests {
         );
         // A catalogue floor change.
         assert_eq!(
-            lookup(5).expect("stair"),
+            lookup(5).expect("stair").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[1950],
@@ -701,7 +702,7 @@ pub mod tests {
         );
         // An Item without a profile blocks movement and projectiles.
         assert_eq!(
-            lookup(9).expect("unprofiled"),
+            lookup(9).expect("unprofiled").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[2000],
@@ -716,7 +717,7 @@ pub mod tests {
         assert_eq!(groundless.top_source_ids(), &[2000]);
         // A sealed (house) door is a static wall.
         assert_eq!(
-            lookup(12).expect("sealed door"),
+            lookup(12).expect("sealed door").as_ref(),
             &tile(
                 Some((100, 150)),
                 &[1629],
@@ -907,8 +908,8 @@ pub mod tests {
         let (_, cells) = cells(&first);
         let lookup = |x| cells.spell_tiles().lookup(cells.scope(), at(x));
         assert!(std::ptr::eq(
-            lookup(1).expect("x 1"),
-            lookup(13).expect("x 13")
+            lookup(1).expect("x 1").as_ref(),
+            lookup(13).expect("x 13").as_ref()
         ));
     }
 

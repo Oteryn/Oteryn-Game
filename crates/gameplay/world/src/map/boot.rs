@@ -859,6 +859,7 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
             tile_shapes.push(*self.map.spell_tiles.tiles.get(old)?);
         }
         let spell_tiles = Arc::new(BundleSpellTiles {
+            phases: Default::default(),
             base: Arc::clone(&base) as Arc<dyn crate::content::bundle_spell_tiles::BundleTileBase>,
             tiles: tile_shapes,
             shapes: self.map.spell_tiles.shapes.clone(),
