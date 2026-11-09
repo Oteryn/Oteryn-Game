@@ -1,8 +1,11 @@
 //! Console filters and action-bar geometry apply through the persisted settings owner.
 use super::*;
 use oteryn_client::play::ReferencePreferences;
+#[path = "graphics_controls.rs"]
+mod graphics_controls;
 
 pub(crate) struct PresentationControls {
+    graphics: graphics_controls::GraphicsControls,
     console: [HWND; 11],
     bar: [HWND; 14],
 }
@@ -98,10 +101,17 @@ impl PresentationControls {
             if console.iter().chain(&bar).any(|handle| handle.is_null()) {
                 return None;
             }
-            Some(Self { console, bar })
+            Some(Self {
+                graphics: graphics_controls::GraphicsControls::new(hwnd)?,
+                console,
+                bar,
+            })
         }
     }
     pub(crate) unsafe fn show(&self, page: SettingsPage) {
+        unsafe {
+            self.graphics.show(page);
+        }
         for (handles, selected) in [
             (&self.console[..], SettingsPage::Console),
             (&self.bar[..], SettingsPage::ActionBarLayout),
@@ -115,6 +125,7 @@ impl PresentationControls {
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
+            self.graphics.refresh(preferences);
             let settings = &preferences.console;
             for (handle, checked) in
                 self.console[..8]
@@ -149,6 +160,9 @@ impl PresentationControls {
         }
     }
     pub(crate) unsafe fn action(&self, action: usize, state: &mut SettingsState) -> bool {
+        if unsafe { self.graphics.action(action, state) } {
+            return true;
+        }
         if !matches!(action, 280 | 281) {
             return false;
         }

@@ -136,7 +136,7 @@ Zasady przeciw dublowaniu:
 | T059 | Options | Interface / Shortcuts: available/displayed, add/remove/order | PARTIAL | Rejestr akcji i visible_panels są; brak selektora i ustalania kolejności przycisków. |
 | T060 | Options | Graphics: engine, AA, fullscreen, VSync, integral scaling | MISSING | Brak strony konfiguracji obsługiwanych parametrów renderera/okna. |
 | T061 | Options | Graphics: foreground/background FPS i FPS/latency indicator | MISSING | Brak równoważnych kontrolek limitów i wskaźników w Settings. |
-| T062 | Options | Graphics / Effects: ambient/separator/indoor/cloud attenuation | PARTIAL | Światło jest; brak grupy ambient/separator/attenuation. |
+| T062 | Options | Graphics / Effects: ambient/separator/indoor/cloud attenuation | DONE | evidence: apps/client/src/features/0019-world-light/view.rs:7 + apps/client/src/features/local-reference-preferences/graphics_controls.rs:6 + graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation (apps/client/src/features/local-reference-preferences/tests/graphics.rs:4) |
 | T063 | Options | Graphics / Effects: own/other/creature/boss-area opacity | MISSING | Brak ustawień opacity według źródła efektu. |
 | T064 | Options | Sound: master/mute/device/music/ambient/items/events/UI | PARTIAL | Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera. |
 | T065 | Options | Sound / Battle Sounds: own/others/creatures, attack/heal/support | PARTIAL | Playback istnieje; brak suwaków i filtrów walki. |

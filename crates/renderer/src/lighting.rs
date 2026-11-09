@@ -16,6 +16,8 @@ pub struct SceneLighting {
     pub sources: Vec<PointLight>,
     /// Emissive UI palette, in atlas UV coordinates.
     pub palette: Option<[f32; 4]>,
+    /// Dimming of bounded painter-order ranges (lower floors); UI quads lie outside them.
+    pub dimmed: Vec<(std::ops::Range<usize>, u8)>,
 }
 
 impl Default for SceneLighting {
@@ -24,6 +26,7 @@ impl Default for SceneLighting {
             ambient: [255; 3],
             sources: Vec::new(),
             palette: None,
+            dimmed: Vec::new(),
         }
     }
 }
@@ -59,7 +62,7 @@ impl SceneLighting {
     #[must_use]
     pub fn instance_bytes(&self, instances: &[QuadInstance]) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(instances.len() * LIT_INSTANCE_BYTES);
-        for quad in instances {
+        for (index, quad) in instances.iter().enumerate() {
             bytes.extend_from_slice(&quad.to_bytes());
             let emissive = self.palette.is_some_and(|p| {
                 quad.uv[0] >= p[0] && quad.uv[1] >= p[1] && quad.uv[2] <= p[2] && quad.uv[3] <= p[3]
@@ -72,7 +75,14 @@ impl SceneLighting {
                     quad.position[1] + quad.size[1] / 2.0,
                 ])
             };
-            for value in rgb {
+            let brightness = self
+                .dimmed
+                .iter()
+                .find(|(range, _)| range.contains(&index))
+                .map_or(1.0, |(_, dimming)| {
+                    1.0 - f32::from((*dimming).min(100)) / 100.0
+                });
+            for value in rgb.map(|value| value * brightness) {
                 let linear = if value <= 0.04045 {
                     value / 12.92
                 } else {
@@ -98,6 +108,7 @@ mod tests {
                 color: light_color(180),
             }],
             palette: Some([0.5, 0.5, 1.0, 1.0]),
+            dimmed: Vec::new(),
         };
         assert_eq!(lighting.sample([16.0; 2]), [1.0, 0.0, 0.0]);
         assert_eq!(lighting.sample([48.0, 16.0]), [0.5, 0.0, 0.0]);

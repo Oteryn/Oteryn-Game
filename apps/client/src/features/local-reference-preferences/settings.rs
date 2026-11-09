@@ -12,6 +12,8 @@ use std::sync::Arc;
 mod bindings;
 #[path = "gameplay.rs"]
 mod gameplay;
+#[path = "graphics.rs"]
+mod graphics;
 #[path = "help.rs"]
 pub mod help;
 #[path = "localization.rs"]
@@ -98,6 +100,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub graphics: graphics::GraphicsPreferences,
+    #[serde(default)]
     pub language_code: Option<String>,
     #[serde(default)]
     pub console: presentation::ConsolePreferences,
@@ -165,6 +169,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            graphics: Default::default(),
             language_code: None,
             console: Default::default(),
             action_bar: Default::default(),
@@ -201,6 +206,9 @@ impl Default for ReferencePreferences {
 
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
+        if !self.graphics.valid() {
+            return Err(PreferenceError);
+        }
         if self
             .language_code
             .as_deref()

@@ -373,9 +373,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: ambient/separator/indoor/cloud attenuation",
-  "status": "PARTIAL",
-  "gap": "Światło jest; brak grupy ambient/separator/attenuation.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0019-world-light/view.rs:7 + apps/client/src/features/local-reference-preferences/graphics_controls.rs:6 + graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation (apps/client/src/features/local-reference-preferences/tests/graphics.rs:4)"
  },
  {
   "id": "T063",

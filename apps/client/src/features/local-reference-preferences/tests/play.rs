@@ -15,6 +15,9 @@ mod help;
 #[path = "localization.rs"]
 mod localization;
 
+#[path = "graphics.rs"]
+mod graphics;
+
 #[path = "screenshots.rs"]
 mod screenshots;
 
