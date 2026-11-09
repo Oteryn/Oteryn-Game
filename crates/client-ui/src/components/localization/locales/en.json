@@ -1,4 +1,5 @@
 {
+ "Stashback": "Stashback",
  "Read-only mirror: drag a channel tab here": "Read-only mirror: drag a channel tab here",
  "Active client": "Active client",
  "\n\nPremium features (reported by Oteryn):": "\n\nPremium features (reported by Oteryn):", "\n\nThis overview grants no access. Game checks current eligibility for every action.": "\n\nThis overview grants no access. Game checks current eligibility for every action.", "\n  Candidates: {}": "\n  Candidates: {}", "\nBackpack rows:": "\nBackpack rows:", "\nBalance: {} Oteryn Coins": "\nBalance: {} Oteryn Coins", "\nBalance: {} coins; available {}; transferable {}.{}": "\nBalance: {} coins; available {}; transferable {}.{}", "\nBonus: {}": "\nBonus: {}", "\nBoss details: {key}": "\nBoss details: {key}", "\nBosstiary browser — {:?}\n": "\nBosstiary browser — {:?}\n", "\nBounty Talisman upgrade paths\n": "\nBounty Talisman upgrade paths\n", "\nBuild details: {}; OS: {}; architecture: {}": "\nBuild details: {}; OS: {}; architecture: {}", "\nChange sex of Hireling: {}": "\nChange sex of Hireling: {}",

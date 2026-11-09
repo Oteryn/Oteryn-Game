@@ -1,4 +1,5 @@
 {
+ "Stashback": "Stashback",
  "Read-only mirror: drag a channel tab here": "Kopia tylko do odczytu: przeciągnij tu kartę kanału",
  "Active client": "Aktywny klient",
  "\n\nPremium features (reported by Oteryn):": "\n\nFunkcje premium (reportowane przez Oteryn):", "\n\nThis overview grants no access. Game checks current eligibility for every action.": "\n\nTen przegląd nie daje dostępu. gra sprawdza aktualną kwalifikację dla każdej akcji.", "\n  Candidates: {}": "\n  kandydatów : {}", "\nBackpack rows:": "\nBackpack z rzęsami:", "\nBalance: {} Oteryn Coins": "\nW równowadze : {} Monety Oteryn", "\nBalance: {} coins; available {}; transferable {}.{}": "\nW równowadze : {} monety; dostępne {}• Przekazywane {}.{}", "\nBonus: {}": "\nBonusy dla: {}", "\nBoss details: {key}": "\nSzczegóły szefa: {key}", "\nBosstiary browser — {:?}\n": "\nPrzeglądarka Bosstiary - {:?}\n", "\nBounty Talisman upgrade paths\n": "\nBounty Talisman podróże upgrade\n", "\nBuild details: {}; OS: {}; architecture: {}": "\nZbuduj szczegóły : {}i my: {}• Architektura : {}", "\nChange sex of Hireling: {}": "\nZmiana płci z Hireling: {}",
