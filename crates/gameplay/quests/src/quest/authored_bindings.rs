@@ -297,6 +297,10 @@ impl Bindings {
     }
     fn attach_normalized(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
         self.validate()?;
+        if self.quests.is_empty() {
+            // An empty addition must retain the existing immutable binding witnesses.
+            return Ok(base.clone());
+        }
         if let Some(evidence) = &base.native_recipe_evidence {
             evidence.verify(self)?;
         }
@@ -430,6 +434,9 @@ fn digest(value: &str) -> bool {
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         && value.bytes().any(|b| b != b'0')
 }
+
+#[cfg(test)]
+mod asura_palace_tests;
 
 #[cfg(test)]
 mod collection_tests;

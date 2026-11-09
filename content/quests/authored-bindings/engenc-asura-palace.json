@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.authored.asura_palace_quest",
+      "recipe_sha256": "7c0f4f04555ae36224591fed46b6948d796e4af31faf4a2b9f78580d61830d8e",
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json",
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json",
+        "content/world/placements/region-z07-x128-y127.b3"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/asura_palace_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/authored/asura_palace_quest/s1/visited/entry",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/m01b/asura-palace/s1/entry",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "step_in",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32953,
+                  "y": 32685,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 923,
+                "native": {
+                  "position": {
+                    "x": 32953,
+                    "y": 32685,
+                    "floor": -7
+                  },
+                  "ordinal": 0,
+                  "appearance": 923
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/asura_palace_quest/s1/visited/entry",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/authored/asura_palace_quest/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1,
+                  "increment": true
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "content/world/areas/hunting-places/hunting-places-00000-00444.json",
+                "content/world/placements/region-z07-x128-y127.b3",
+                "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
