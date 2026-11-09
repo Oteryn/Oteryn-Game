@@ -688,6 +688,65 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/elvenbane/s2/entry",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32591,
+          "y": 31645,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32591,
+            "y": 31645,
+            "floor": -5
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s2/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/spawns/spawns-02000-03999.json#/records/1440/declaration/points/0",
+        "content/world/placements/region-z05-x127-y123.b3",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/emperor-s-cookies/s1/id3800",
       "quest": "oteryn:quest.emperor_s_cookies_quest",
       "trigger": "step_in",

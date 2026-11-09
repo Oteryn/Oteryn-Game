@@ -48,6 +48,8 @@ BINDINGS = (
      'oteryn:area.hunting_place.lion_s_rock', 'chosen-source/lions_rock'),
     ('oteryn:quest.authored.elvenbane_quest', 's1',
      'oteryn:area.hunting_place.elvenbane', 'authored/elvenbane_quest'),
+    ('oteryn:quest.authored.elvenbane_quest', 's2',
+     'spawn-approach:oteryn:spawn.x32590_y31645_z5#0', 'authored/elvenbane_quest'),
     ('oteryn:quest.alawar_s_vault_quest', 's1',
      'callback:oteryn:quest-callback/alawars-vault-entrance', 'chosen-source/alawar_s_vault_quest'),
     ('oteryn:quest.longsword_quest', 's1',

@@ -40,7 +40,7 @@
       "Ghoul Room Quest",
       "Hero of Rathleton Quest"
     ],
-    "wired_explore_stages": 31,
+    "wired_explore_stages": 32,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -74,7 +74,8 @@
       "Ghoul Room Quest",
       "Hero of Rathleton Quest"
     ],
-    "wired_native_visit_anchors": 45
+    "wired_native_visit_anchors": 46,
+    "pg_proven_explore_stages": 32
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -184,9 +185,17 @@
     "hero_authoring": "RED missing source/binding -> GREEN59Python21.553s",
     "hero_clippy": "GREEN quests+dispatch all-targets strict4m09s",
     "hero_profile": "GREEN6Rustprofiletests0.04s",
-    "hero_postgres": "GREEN62.061107841s:real native STEP,CurrentPremium refusal,old replay no retro-credit,freshonce,revisit no farming,wholecompletion0"
+    "hero_postgres": "GREEN62.061107841s:real native STEP,CurrentPremium refusal,old replay no retro-credit,freshonce,revisit no farming,wholecompletion0",
+    "hero_workspace_all_targets": "GREEN cargo check --workspace --all-targets8m18s",
+    "elvenbane_later_stage": "Resolver REDunsupported0.181s -> GREEN0.461s;activation REDmissing0.391s -> GREEN61Python21.711s;exact same-quest predecessor guard retained",
+    "elvenbane_later_postgres": "GREEN61.199793615s after RED60.716739216s:actual s2 refuses before s1;actual s1 then permits fresh s2;expired old command rejected exactly;replay/revisit no farming,wholecompletion0",
+    "elvenbane_later_clippy": "GREEN strict dispatch all-targets4m30s after expired-replay correction",
+    "elvenbane_later_profile": "GREEN6Rustprofiletests0.04s",
+    "elvenbane_later_authoring_checks": "GREEN run_checks.py --part checks and content-tree validation",
+    "elvenbane_later_authoring_units": "GREEN full quest-authoring runner112modules1196tests;0failing modules;8preexisting skips",
+    "elvenbane_later_regeneration": "GREEN regenerate_content.py --native-only;provider/pin outputs unchanged"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "31wiredstage/routes,31PG-proven entry routes,45nativeanchors;15routes/25stages unwired. M01b PARTIAL."
+  "continuation": "31wiredroutes/32PG-proven EXPLOREstages,46nativeanchors;15routes/24stages unwired. NextLionTrophy prerequisite guard prepared,not connected. M01b PARTIAL."
 }

@@ -163,3 +163,7 @@ starting east32508,32175ground409. Neither hook crosses or unlocks its door.
 ## Hero of Rathleton pipe-room approach
 
 Source geometry: samples/promotion-candidates-v1.json, Strange Pipe at33533,31950,z14; https://tibia.fandom.com/index.php?curid=69693&oldid=1116848 . This is an OTS-hypothesis geometry reference, not NPC placement promotion. Chosen entry33533,31951,z14 retains native20545ground; eastern start33534,31951 retains20533. Canonical CurrentPremium remains required. This first investigation precedes the workshop and dungeon-access stages; it grants no later-stage credit.
+
+## Elvenbane dragon-floor second visit
+
+Canonical chosen recipe s2 requires reaching the dragon floor after s1 basement entry. Sources: https://tibia.fandom.com/index.php?curid=8007&oldid=265159 and retained content/world/spawns/spawns-02000-03999.json, oteryn:spawn.x32590_y31645_z5 point0 (Dragon). Chosen approach32591,31645,z5 and eastern start32592,31645 both retain436ground. The first-stage track is checked read-only at exactly1; this approach grants no kill, treasure or whole-quest completion.

@@ -21,6 +21,22 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_elvenbane_dragon_floor_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest']=='oteryn:quest.authored.elvenbane_quest' and '/s2/' in c['key']]
+        self.assertEqual(len(callbacks),1,'later dragon-floor stage must be bound')
+
+    def test_elvenbane_dragon_floor_requires_its_first_explore_stage(self):
+        bindings = (('oteryn:quest.authored.elvenbane_quest','s2',
+                     'spawn-approach:oteryn:spawn.x32590_y31645_z5#0','authored/elvenbane_quest'),)
+        with mock.patch.object(explore,'BINDINGS',bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position':{'x':32591,'y':31645,'floor':-5},'ordinal':0,'appearance':436})
+            self.assertIn({'track':'oteryn:quest-progress/authored/elvenbane_quest/s1',
+                           'minimum':1,'maximum':1,'set':1,'preserve':True},callback['storage'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_hero_rathleton_first_voice_entry_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT)
                      if c['quest']=='oteryn:quest.hero_of_rathleton_quest' and '/s1/' in c['key']]

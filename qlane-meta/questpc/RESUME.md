@@ -144,3 +144,11 @@ Prison nativePG GREEN60.245623787s. Bear/Ghoul first entries ACTIVE outside lock
 Hero s1 pipe-room approach ACTIVE33533,31951,z14 ground20545,starteast20533. Source StrangePipe candidate is geometry only;noNPCpromotion.59Python21.553s,strictClippy4m09s,6Rustprofile0.04s GREEN. OwnnativePG compiling,not claimed green. Bear59.612522805s/Ghoul59.795926699s nativePG GREEN.31wired/30PG-proven,45anchors;15routes/25stages remain;Hero laterstage3 unwired. No shared branch merges.
 
 Hero nativePG GREEN62.061107841s:CurrentPremium refusal,old replay cannot retro-credit,fresh entry once,revisit no farming,wholecompletion0.31wired/31PG-proven;15routes/25stages remain.
+
+Hero workspace all-targets GREEN8m18s. Elvenbane s2 ACTIVE32591,31645,z5 ground436,starteast32592. Exact source dragon spawn32590,31645,z5 retained;existing s1 read-only guard must equal1. Resolver RED0.181s ->GREEN0.461s;activation RED0.391s ->GREEN61Python21.711s. Own two-floor nativePG pending.31routes/32stages,46anchors;15routes/24stages remain;M01b PARTIAL. No merges.
+
+Elvenbane s2 strictquests+dispatch all-targets Clippy GREEN4m13s;6Rustprofile0.04s;fullauthoring checks/content-tree/fmt/generator/duplicate-migration checks GREEN. NativePG compiling and fullquest-authoring unit runner2workers running.
+
+Fullauthoring unit runner GREEN112modules1196tests (8preexisting skips);provider/pin regeneration unchanged. Elvenbane nativePG RED60.716739216s:server correctly closes oldcommand1 aftercommand2 with CommandOutcomeExpired,but helper expectedmovement. Fixed test to require exact expiry fault and unchanged next_command_id/counters,then continue freshcommand3. StrictClippy/nativePG retry running;do not claimthisslicePGgreen yet.
+
+Elvenbane s2 nativePG GREEN61.199793615s after RED60.716739216s. Actual s2 refuses before s1;actual s1 enables freshs2. Oldcommand explicitly rejected CommandOutcomeExpired with unchanged counters/nextid;freshstep/replay/revisit remain correct. StrictClippy4m30s GREEN;fullauthoring1196tests/112modules GREEN.31routes/32PG-proven stages;15routes/24stages remain. NextLion prerequisite files prepared but unconnected/unpublished.

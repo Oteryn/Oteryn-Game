@@ -1114,5 +1114,5 @@
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
-  "m01b_latest_batch": "Hero nativePG GREEN62.061107841s;59Python21.553s,strictClippy4m09s,6Rustprofile0.04s GREEN. Bear59.612522805s/Ghoul59.795926699s nativePG GREEN.31wired/31PG-proven;M01b PARTIAL."
+  "m01b_latest_batch": "Elvenbane s2 nativePG GREEN61.199793615s;ordered predecessor/expiry/replay/revisit proven.61focusedPython21.711s,1196fullauthoringtests/112modules,strictClippy4m30s,6Rustprofile0.04s GREEN.31routes/32PG-proven stages;M01b PARTIAL."
 }
