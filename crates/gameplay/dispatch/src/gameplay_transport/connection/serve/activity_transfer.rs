@@ -84,7 +84,7 @@ where
         read_acknowledgement(stream, &mut session.frames, session.generation, expected),
     )
     .await
-    .map_err(|_| ServeEnd::ControlLost)??;
+    .map_err(|_| ServeEnd::ControlLost("activity_transfer"))??;
     let envelope = decode_wire_envelope(&frame).map_err(|_| ServeEnd::Disconnected)?;
     let command = envelope
         .client_command(session.generation)

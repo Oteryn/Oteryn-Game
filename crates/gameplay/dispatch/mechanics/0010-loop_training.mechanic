@@ -15,6 +15,6 @@ let Some(result) = crate::gameplay_transport::loop_training::wire::dispatch(
 )
 .await
 else {
-    return Err(ServeEnd::ControlLost);
+    return Err(ServeEnd::ControlLost("loop_training"));
 };
 Dispatch::Training(result)
