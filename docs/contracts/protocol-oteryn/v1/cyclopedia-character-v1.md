@@ -207,6 +207,60 @@ Command 388 also accepts opt-in selector 128: `128:u8, page:u8`, optionally foll
 
 The rich reply is `128:u8, character:[u8;16], name_bytes:u8, name:UTF-8`, followed by the existing AccountAchievementsResult codec. The name is 2–29 bytes. Metadata and earned timestamps come from the activated catalogue and immutable grant-request provenance. The same recovery/session-generation fence and foreign-target VIP consent apply. The total command result budget is 32,836 bytes; legacy replies remain bounded at 16,384 bytes. Unsupported, over-limit or unreadable target data is refused without an invented empty list.
 
+## Appearance gallery
+
+Command 388 additionally accepts selector 129 followed by `offset:u16`.
+This is a self-only, session-fenced read. It returns available outfits (including
+starter choices) and owned mounts from the same qualified cosmetics projection
+used for appearance selection. Familiar entries describe the active content
+catalogue; they do not assert an account unlock or summon eligibility.
+
+Reply: `129:u8, offset:u16, total:u16, count:u8`, then `count` entries of
+`kind:u8, look_type:u32, key:text`. Kinds are outfit=1, mount=2, familiar=3.
+Entries are sorted by kind and key, with exactly `min(24, total-offset)` rows.
+Look ids must be positive; keys are nonempty UTF-8 of at most 255 bytes without
+NUL/newlines. Maximum reply: 6270 bytes. The client resolves these confirmed ids
+through its pinned local sprite loader, without packaging additional art.
+
+## Item summary
+
+Selector 130 on command 388 accepts `offset:u16` and reads only the requesting
+Character under its current item/session fence. The single statement includes
+main backpack and equipment roots, legacy and nested bag edges, depot boxes,
+Character inboxes, and World-scoped stash balances. Closed bags are included.
+
+Reply: `130:u8, offset:u16, total:u16, count:u8`, then `count` rows of
+`definition_len:u16, definition:UTF-8, inventory:u64, depot:u64, stash:u64, inbox:u64`.
+There are exactly `min(24,total-offset)` rows, sorted by definition in byte
+order; keys are nonempty, at most 512 bytes, and contain no NUL/newlines.
+At least one quantity per row is positive. Maximum reply: 13110 bytes.
+Filters on the client apply to the confirmed page; pagination retains the
+complete server custody projection and does not require opening containers.
+
+## Death loss forecast
+
+Command 388 accepts the single-byte selector 131 for a self-only forecast under
+the current Character/session fence. It is read-only: it neither samples a
+future lost-item set nor consumes a blessing or creates a death receipt.
+
+The reply is at most 51 bytes: `131:u8, observed_at_unix_ms:u64, level:u32,
+experience:u64, regular_blessings:u8, flags:u8`, followed by a creature-death scenario and an optional
+player-death scenario. The latter is present only when flag 16 is set; without
+it the reply is 37 bytes and carries no player-death estimates. Each scenario is `experience_lost:u64,
+equipment_per_mille:u16, container_per_mille:u16, consumption:u8,
+amulet_consumed:u8`. Consumption is keep=0, regular=1, PvP safeguard=2.
+Flags are owned Twist=1, current promotion benefit=2, effective red/black skull=4,
+Adventurer PvP exemption=8, and published PvP available in this scope=16.
+Reserved flags, invalid bool/enumeration tags, chances above 1000, XP loss above
+current XP, trailing bytes and truncation are rejected.
+
+The server uses the same XP formula, blessing disposition, item-loss ladders,
+Amulet of Loss, vocation/level exemptions and Adventurer owner as normal death
+settlement. Promotion includes the current Premium gate. A player-death scenario
+is displayed only with a published compatible World policy. XP is the baseline
+before attacker-specific Bless reductions; final death settlement re-reads its
+facts and determines actual item loss. A lost backpack includes its contents.
+
 ## Coherent profile (opt-in selector 129, command 388)
 
 Request: `129:u8` plus optional `target:16 bytes`; absent target selects self.

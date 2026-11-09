@@ -12,14 +12,8 @@ fn native_character_navigation_and_input_gates() -> Result<(), &'static str> {
     for tab in 1..=10 {
         p.pending = false;
         let c = native_controls::submit(&mut p, 100 + tab, ["258", "20", ""]);
-        assert_eq!(
-            c.map(|c| c.payload),
-            Some(if tab == 7 {
-                vec![129]
-            } else {
-                vec![tab as u8, 2, 1, 20]
-            })
-        );
+        let expected = if tab == 4 { vec![128, 0] } else if tab == 7 { vec![129] } else { vec![tab as u8, 2, 1, 20] };
+        assert_eq!(c.map(|c| c.payload), Some(expected));
         assert!(native_controls::submit(&mut p, 100 + tab, ["258", "20", ""]).is_none());
     }
     p.pending = false;

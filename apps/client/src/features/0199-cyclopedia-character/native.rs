@@ -79,6 +79,7 @@ pub(in crate::play) fn submit(
         match id {
             112 => Intent::Previous,
             113 => Intent::Next,
+            104 => Intent::Achievements,
             _ => Intent::Tab,
         },
     )
@@ -103,6 +104,21 @@ mod controls;
 #[cfg(windows)]
 #[path = "view/misc_layout.rs"]
 mod misc_layout;
+
+#[cfg(windows)]
+#[path = "view/gallery_window.rs"]
+mod gallery_window;
+
+#[cfg(windows)]
+#[path = "view/browsers.rs"]
+mod browsers;
+#[cfg(windows)]
+#[path = "view/items_window.rs"]
+mod items_window;
+
+#[cfg(windows)]
+#[path = "view/protection_window.rs"]
+mod protection_window;
 #[cfg(windows)]
 #[path = "view/profile_table.rs"]
 mod profile_table;

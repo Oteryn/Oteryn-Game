@@ -1,6 +1,18 @@
 //! Native cyclopedia character panel and admitted command mapping.
 #[path = "protocol/achievements.rs"]
 mod achievements;
+#[path = "state/gallery.rs"]
+mod gallery;
+pub use gallery::Gallery;
+#[path = "state/items.rs"]
+mod items;
+pub use items::ItemSummary;
+#[path = "state/protection.rs"]
+mod protection;
+pub use protection::Protection;
+#[path = "view/protection.rs"]
+mod protection_view;
+pub use protection_view::{PROTECTION_NOTE, protection_cards, protection_heading};
 #[path = "view/augments.rs"]
 mod augment_view;
 #[path = "protocol/augments.rs"]
