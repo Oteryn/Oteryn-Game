@@ -1367,7 +1367,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/presentation.rs:72 + console_and_action_bar_settings_reach_received_chat_and_cast_caller; existing graphics projection covered by t012_visual_preferences_control_live_effect_projection"
+  "evidence": "apps/client/src/features/local-reference-preferences/dialog.rs:232; apps/client/src/features/local-reference-preferences/presentation.rs:27; apps/client/src/features/local-reference-preferences/presentation.rs:41; apps/client/src/features/local-reference-preferences/settings_native_state.rs:258; apps/client/src/windows_shell/graphics.rs:5; apps/client/src/features/local-reference-preferences/settings_actions.rs:283; apps/client/src/features/local-reference-preferences/tests/presentation_options.rs:4; apps/client/src/features/local-reference-preferences/tests/presentation.rs:61"
  },
  {
   "id": "O010",

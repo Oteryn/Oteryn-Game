@@ -318,7 +318,7 @@
     "otclient_path": [
       "modules/client_options/options.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/local-reference-preferences/native.rs",
@@ -334,12 +334,52 @@
         "path": "apps/client/src/features/local-reference-preferences/presentation.rs",
         "line": 15,
         "detail": "Odczyt statyczny: fn default() -> Self {"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/dialog.rs",
+        "line": 232,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/presentation.rs",
+        "line": 27,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/presentation.rs",
+        "line": 41,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings_native_state.rs",
+        "line": 258,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/windows_shell/graphics.rs",
+        "line": 5,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/settings_actions.rs",
+        "line": 283,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/tests/presentation_options.rs",
+        "line": 4,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/tests/presentation.rs",
+        "line": 61,
+        "detail": "Produkcja ustawień, zapis, konsument lub istniejący test."
       }
     ],
     "mechanics_row": [
       "UI-PREFERENCES"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Opcje i ustawienia. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O006",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -347,7 +387,7 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Istnieją natywne ustawienia konsoli, grafiki i geometrii paska akcji; akcja formularza zapisuje preferencje, sync_presentation zmienia widok otrzymanego czatu, queue_bar_slot prowadzi do istniejącego cast caller, apply_graphics ustawia okno i renderer. Ustawienia są lokalną projekcją istniejących danych protokołu.",
     "otclient_evidence": [
       {
         "path": "modules/client_options/options.lua",
