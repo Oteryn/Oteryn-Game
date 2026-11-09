@@ -255,6 +255,77 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);
+    let door_key = format!("oteryn:quest-callback/engenc/asura/{}/door", stage(name)?);
+    let door = bindings()?
+        .world_callbacks()
+        .find(|callback| callback.key == door_key)
+        .cloned()
+        .ok_or("chamber door")?;
+    let selector = door.selector.native.as_ref().ok_or("native door")?;
+    // Walk through the retained native floor, avoiding the two live defenders.
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    use std::collections::{BTreeSet, VecDeque};
+    let scene = world(native, name)?;
+    let origin = encounter.players[0].to;
+    let goal = (selector.position.x - 1, selector.position.y);
+    let mut queue = VecDeque::from([((origin.x, origin.y), Vec::new())]);
+    let mut seen = BTreeSet::new();
+    let route = loop {
+        let (at, path) = queue.pop_front().ok_or("native route to chamber door")?;
+        if at == goal { break path; }
+        if !seen.insert(at) { continue; }
+        for (dx, dy, direction) in [
+            (1, 0, StepDirection::East), (-1, 0, StepDirection::West),
+            (0, 1, StepDirection::South), (0, -1, StepDirection::North),
+        ] {
+            let Some(x) = at.0.checked_add_signed(dx) else { continue; };
+            let Some(y) = at.1.checked_add_signed(dy) else { continue; };
+            let next = (x, y);
+            if next.0.abs_diff(origin.x) > 12 || next.1.abs_diff(origin.y) > 12
+                || encounter.monsters.iter().any(|m| (m.position.x, m.position.y) == next)
+                || !scene.enterable(crate::map::overlay::TilePos {
+                    x: next.0, y: next.1, floor: origin.floor,
+                }) { continue; }
+            let mut path = path.clone();
+            path.push(direction);
+            queue.push_back((next, path));
+        }
+    };
+    let mut next_command = command + 1;
+    for direction in route {
+        super::quest_world_callbacks::wire(owner, admitted, next_command, 1,
+            oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction)).await?;
+        next_command += 1;
+    }
+    assert_eq!(owner.runtime.lock().await.read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?.position(), super::quest_world_callbacks::local(Position {
+            x: goal.0, y: goal.1, floor: origin.floor,
+        }));
+    let key = oteryn_world_bundle::bundle::placement_key(
+        selector.position.floor, selector.position.x, selector.position.y, selector.ordinal,
+    ).ok_or("door placement")?;
+    let map = owner.bundle_map().ok_or("map")?;
+    let revision = map.facts.object_revision(key);
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
+        &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+            placement, expected_revision: revision,
+        },
+    ).map_err(debug)?;
+    let reply = super::quest_world_callbacks::wire(owner, admitted, next_command, 2, payload).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+        oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
+        "the admitted participant must defeat both defenders before opening the door"
+    );
+    assert_eq!(owner.bundle_map().ok_or("map")?.facts.object_revision(key), revision);
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    ).bind(&door_key).fetch_one(&h.pool).await?;
+    assert_eq!(receipts, 0);
+    assert_eq!(owner.runtime.lock().await.visible_entities().creatures.len(), 2);
+    eprintln!("M30_ASURA_DISPATCH_EARLY_DOOR_REFUSED {}", stage(name)?);
     eprintln!("M30_ASURA_DISPATCH_ADMISSION_EXECUTED {}", stage(name)?);
     Ok(())
 }

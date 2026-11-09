@@ -233,3 +233,11 @@ clears that record on committed execution, matching the ordinary callback path.
 The Destroyer literal USE test was observed failing before this correction and
 passing afterward. Ordinary defender deaths and participant-scoped door opening
 through all three real callers remain to be qualified.
+
+The native admission PostgreSQL cases additionally exercise early door USE with
+both defenders still alive. A bounded route search uses the retained native
+floor and avoids the admitted defender positions; literal STEP commands move
+the participant beside the exact native door before literal USE. The checks
+require refusal, no door receipt, an unchanged object revision and both live
+defenders. These are negative door qualifications; successful personal opening
+after ordinary combat deaths remains separate work.
