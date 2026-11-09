@@ -6,9 +6,6 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 #[path = "m01b_explore/area_entries.rs"]
 mod area_entries;
 
-#[path = "m01b_explore/cauldron_entry.rs"]
-mod cauldron_entry;
-
 #[path = "m01b_explore/claim_entries.rs"]
 mod claim_entries;
 
@@ -36,20 +33,11 @@ mod treasure_entries;
 #[path = "m01b_explore/cave_entry.rs"]
 mod cave_entry;
 
-#[path = "m01b_explore/iceberg_chamber.rs"]
-mod iceberg_chamber;
-
-#[path = "m01b_explore/iceberg_entry.rs"]
-mod iceberg_entry;
-
 #[path = "m01b_explore/infernal_entry.rs"]
 mod infernal_entry;
 
 #[path = "m01b_explore/breach_entry.rs"]
 mod breach_entry;
-
-#[path = "m01b_explore/followup_entries.rs"]
-mod followup_entries;
 
 #[path = "m01b_explore/grave_danger.rs"]
 mod grave_danger;
@@ -340,19 +328,6 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 }
 
 pub(super) fn start(name: &str, trigger: Position) -> Position {
-    if let Some(start) = followup_entries::start(name) {
-        return start;
-    }
-    if matches!(
-        name,
-        "m01b/chakoya-iceberg-mini-world-change/s1/entry"
-            | "m01b/chakoya-iceberg-mini-world-change/s3/entry"
-    ) {
-        return Position {
-            y: trigger.y + 1,
-            ..trigger
-        };
-    }
     if name == "m01b/horse-station-world-change/s1/entry" {
         return Position {
             y: trigger.y - 1,
@@ -399,25 +374,8 @@ pub(super) fn world(
     ) {
         return camp_temple_entries::world(native, name);
     }
-    if matches!(
-        name,
-        "m01b/dragon-corpse/s3/dragoncorpse"
-            | "m01b/dragon-tower/s3/backpack1"
-            | "m01b/edron-goblin/s3/edrongoblin1"
-    ) {
-        return followup_entries::world(native, name);
-    }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
-    }
-    if name == "m01b/chakoya-iceberg-mini-world-change/s3/entry" {
-        return iceberg_chamber::world(native);
-    }
-    if name == "m01b/chakoya-iceberg-mini-world-change/s1/entry" {
-        return iceberg_entry::world(native);
-    }
-    if name == "m01b/bewitched/s1/entry" {
-        return cauldron_entry::world(native);
     }
     if name == "m01b/horse-station-world-change/s1/entry" {
         return station_entry::world(native);
@@ -654,21 +612,6 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
-    if callback.key.ends_with("m01b/dragon-corpse/s3/dragoncorpse")
-        || callback.key.ends_with("m01b/dragon-tower/s3/backpack1")
-        || callback.key.ends_with("m01b/edron-goblin/s3/edrongoblin1")
-    {
-        return followup_entries::exercise(owner, admitted, h, callback).await;
-    }
-    if callback.key == "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s3/entry" {
-        return iceberg_chamber::exercise(owner, admitted, h).await;
-    }
-    if callback.key == "oteryn:quest-callback/m01b/chakoya-iceberg-mini-world-change/s1/entry" {
-        return iceberg_entry::exercise(owner, admitted, h, callback).await;
-    }
-    if callback.key == "oteryn:quest-callback/m01b/bewitched/s1/entry" {
-        return cauldron_entry::exercise(owner, admitted, h).await;
-    }
     if callback.key == "oteryn:quest-callback/m01b/horse-station-world-change/s1/entry" {
         return station_entry::exercise(owner, admitted, h).await;
     }
@@ -883,12 +826,7 @@ async fn exercise_premium(
     if let Some(minimum) = callback.minimum_level {
         koshei::seed_level(h, i64::from(minimum)).await?;
     }
-    let (entry, exit) = if callback
-        .key
-        .ends_with("m01b/chakoya-iceberg-mini-world-change/s1/entry")
-    {
-        (StepDirection::North, StepDirection::South)
-    } else if callback.key.ends_with("m01b/fire-axe/s1/entry")
+    let (entry, exit) = if callback.key.ends_with("m01b/fire-axe/s1/entry")
         || callback
             .key
             .ends_with("m01b/berserker-treasure/s1/white_pearls")

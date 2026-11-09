@@ -17,9 +17,6 @@ class NativeAnchors:
         self.sectors = {}
 
     def validate(self, at, appearance):
-        self.require(at, [appearance])
-
-    def require(self, at, entries):
         x, y, z = at['x'], at['y'], -at['floor']
         sector = (z, x // 32, y // 32)
         if sector not in self.sectors:
@@ -44,5 +41,5 @@ class NativeAnchors:
                     tiles[(tx, ty)] = (house, ground)
             self.sectors[sector] = tiles
         tile = self.sectors[sector].get((x, y))
-        if tile is None or tile[0] != 0 or tile[1] != entries:
+        if tile is None or tile[0] != 0 or tile[1] != [appearance]:
             raise ValueError('Missing, private or changed native EXPLORE ground: ' + str(at))
