@@ -345,6 +345,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .step_grizzly_boss(&permit, actor, session, origin, snapshot)
                             .await;
                         self.dawnport_trial_step(actor, session, snapshot).await;
+                        self.cake_errand_step(&permit, actor, session, snapshot)
+                            .await;
                         snapshot
                     }
                     None => snapshot,
