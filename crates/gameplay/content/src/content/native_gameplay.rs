@@ -2432,6 +2432,34 @@ mod tests {
     }
 
     #[test]
+    fn m07_lion_flower_profile_preserves_annotation_without_an_active_deadline() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i21389", "definition-r1")
+            .expect("qualified Lion Beauty input")
+            .record();
+        assert!(record.admission.materializable);
+        let F::Known(temporal) = &record.semantics.temporal else {
+            panic!("source duration annotation must survive artifact loading");
+        };
+        assert_eq!(
+            temporal.duration,
+            F::Known(super::super::ReferenceMilliseconds(3_600_000))
+        );
+        assert_eq!(temporal.consumption_mode, F::NotApplicable);
+        assert_eq!(temporal.decay_target, F::NotApplicable);
+    }
+
+    #[test]
     fn writable_profiles_survive_native_artifact_and_preserve_definition_admission() {
         use super::super::ReferenceItemField as F;
         let world = test_source(1).unwrap().world_id;

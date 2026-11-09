@@ -11171,8 +11171,29 @@
       "fmt": "PASS",
       "pin_check_seconds": 27.818,
       "duplicate_migrations": "PASS",
-      "cursor_workspace_seconds": 218.055
+      "cursor_workspace_seconds": 218.055,
+      "pg_well_green_seconds": 60.478245469,
+      "pg_well_result": "PASS PostgreSQL18.6: two fresh grants, exact replay, stale refusal, source cursors1/2; source test1e70"
     },
-    "remaining": "Compiling WIP published under owner cadence exception; corrected native well PG rerun pending (second fresh grant, replay/stale receipt assertions); M07 not DONE"
+    "remaining": "Well producer slice PG-qualified; whole M07 still PARTIAL"
+  },
+  "m07_lion_flower_input": {
+    "status": "QUALIFIED",
+    "red": "missing exact portable flower21389; five tests7.923s with1failure",
+    "green": {
+      "source_profile_tests": "6/6 7.923s",
+      "native_runtime_artifact_test_seconds": 12.192,
+      "authoring_checks_seconds": 330.176,
+      "authoring_unit_seconds": 512.015,
+      "content_tree_seconds": 167.741,
+      "clippy_content_dispatch_seconds": 255.952,
+      "workspace_all_targets_seconds": 246.58,
+      "fmt": "PASS",
+      "equipment_profile_pin": "PASS 5797 union /65engine profiles",
+      "pin_check_seconds": 26.462,
+      "duplicate_migrations": "PASS"
+    },
+    "decision": "chosen recipe excludes original schedules; pinned donor duration alone does not enable decay",
+    "remaining": "Profile slice qualified; Beauty offering/picker and rest of M07 not finished"
   }
 }

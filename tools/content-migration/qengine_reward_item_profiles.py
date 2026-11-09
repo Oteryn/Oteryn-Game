@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+import m07_lion_flower_profile as lion_flower
 
 IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
@@ -22,8 +23,8 @@ IDS |= {21291}
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505}
-# Lion's Rock Tears offering: exact portable holy-water vessel, not a fluid container.
-IDS |= {21466}
+# Lion trials: exact holy-water vessel plus separately qualified inactive flower duration.
+IDS |= {21466, 21389}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -51,13 +52,16 @@ def capture(root=ROOT):
     records=[]
     for item_id in sorted(IDS):
         node=xml[item_id]
-        if {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        flower = lion_flower.admitted(item_id, source.attrs(node))
+        if not flower and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        if flower:
+            record=lion_flower.temporal(record, definition, accepted.known_conflict)
         for group in ('physical','stack','container'):
             if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
