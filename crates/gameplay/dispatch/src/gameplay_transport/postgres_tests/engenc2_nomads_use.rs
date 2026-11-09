@@ -20,11 +20,16 @@ fn engenc2_nomads_flat_source_crate_materializes_once_postgres() -> TestResult {
 fn engenc2_nomads_amphora_ground_relocation_refuses_inventory_postgres() -> TestResult {
     scenario(Scenario::Amphora)
 }
+#[test]
+fn engenc2_nomads_native_amphora_push_dispatch_postgres() -> TestResult {
+    scenario(Scenario::SourceAmphora)
+}
 #[derive(Clone, Copy)]
 enum Scenario {
     Window,
     Crate,
     Amphora,
+    SourceAmphora,
 }
 fn scenario(mode: Scenario) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -49,6 +54,11 @@ fn scenario(mode: Scenario) -> TestResult {
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
+            let start = if matches!(mode, Scenario::SourceAmphora) {
+                (33217, 32854)
+            } else {
+                (33216, 32856)
+            };
             let world = super::l6_world_pickups::native_crop(
                 native,
                 super::l6_world_pickups::NativeCrop {
@@ -58,7 +68,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     )),
                     region: (9, 129, 128),
                     bounds: (33213, 32852, 33220, 32859),
-                    start: (33216, 32856),
+                    start,
                     expected: vec![super::l6_world_pickups::ExpectedTile {
                         position: (33216, 32855),
                         ids: vec![7358, 1744],
@@ -77,8 +87,8 @@ fn scenario(mode: Scenario) -> TestResult {
                     frame,
                     world.map_revision_digest(),
                     crate::content::NativeEntryStart {
-                        x: 33216,
-                        y: 32856,
+                        x: i32::from(start.0),
+                        y: i32::from(start.1),
                         floor: 9,
                     },
                 )
@@ -90,7 +100,7 @@ fn scenario(mode: Scenario) -> TestResult {
                 generation.identity().client_artifact_digest(),
                 frame,
                 world.map_revision_digest(),
-                (33216, 32856, 9),
+                (i32::from(start.0), i32::from(start.1), 9),
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
                 deps.admitted.world_id,
@@ -112,8 +122,8 @@ fn scenario(mode: Scenario) -> TestResult {
                 .initialize_pinned_test_position(
                     deps.actor,
                     MovementLocalPosition {
-                        x: 33216,
-                        y: 32856,
+                        x: i32::from(start.0),
+                        y: i32::from(start.1),
                         floor: 9,
                     },
                 )
@@ -207,6 +217,98 @@ fn scenario(mode: Scenario) -> TestResult {
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
+
+            if matches!(mode, Scenario::SourceAmphora) {
+                use crate::gameplay_transport::item_move::{
+                    LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget,
+                };
+                use crate::gameplay_transport::item_view::ItemKey;
+                let key = oteryn_world_bundle::bundle::placement_key(-9, 33218, 32853, 1)
+                    .ok_or("amphora key")?;
+                let source = ItemKey::MapBase {
+                    bundle_digest: world.base().digest(),
+                    placement_key: key,
+                    reset_epoch: 0,
+                };
+                let command = |id| -> TestResult<UseCommand> {
+                    Ok(UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: id,
+                        item_fence: Some(fence.item_fence()),
+                    })
+                };
+                let result = owner
+                    .move_loop_item(
+                        deps.actor,
+                        command(900)?,
+                        LoopMove {
+                            item: source,
+                            count: None,
+                            target: LoopTarget::Ground(
+                                oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                                    x: 33216,
+                                    y: 32854,
+                                    floor: -9,
+                                },
+                            ),
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    result,
+                    LoopMoveResult::Committed,
+                    "native empty amphora must push through the real dispatcher"
+                );
+                let (item, cell): (Vec<u8>, Vec<u8>) = sqlx::query_as(
+                    "SELECT uuid_send(g.item_instance_id),g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i2904' LIMIT 2"
+                ).fetch_one(&h.pool).await?;
+                let item: [u8; 16] = item.try_into().map_err(|_| "amphora GUID")?;
+                assert_eq!(
+                    cell,
+                    [
+                        33216_i32.to_be_bytes().as_slice(),
+                        32854_i32.to_be_bytes().as_slice(),
+                        (-9_i16).to_be_bytes().as_slice()
+                    ]
+                    .concat()
+                );
+                let repeated = owner
+                    .move_loop_item(
+                        deps.actor,
+                        command(901)?,
+                        LoopMove {
+                            item: source,
+                            count: None,
+                            target: LoopTarget::MainBackpack,
+                        },
+                    )
+                    .await;
+                assert_eq!(repeated, LoopMoveResult::Refused(LoopMoveRefusal::Stale));
+                let refused = owner
+                    .move_loop_item(
+                        deps.actor,
+                        command(902)?,
+                        LoopMove {
+                            item: ItemKey::Instance(item),
+                            count: None,
+                            target: LoopTarget::MainBackpack,
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    refused,
+                    LoopMoveResult::Refused(LoopMoveRefusal::NotSupported)
+                );
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_map_item_mint_receipts")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(receipts, 1);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
 
             if !matches!(mode, Scenario::Window) {
                 let amphora = matches!(mode, Scenario::Amphora);

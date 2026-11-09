@@ -34,6 +34,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod empty_amphora;
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;

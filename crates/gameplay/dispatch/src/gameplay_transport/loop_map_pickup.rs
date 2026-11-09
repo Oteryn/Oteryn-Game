@@ -20,37 +20,6 @@ pub(super) async fn move_map_item(
     let ground_cache = &admission.states.loop_ground;
     let refused = LoopMoveResult::Refused;
     let stale = refused(LoopMoveRefusal::Stale);
-    let destination = match request.target {
-        LoopTarget::MainBackpack => LoopDestination::MainBackpack,
-        LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
-        LoopTarget::Ground(to) if door_origin.is_some() => {
-            let Some(from) = door_origin else {
-                return refused(LoopMoveRefusal::Rejected);
-            };
-            let Some(map) = admission.bundle_map() else {
-                return refused(LoopMoveRefusal::NotSupported);
-            };
-            let Some(active) = admission.active_generation else {
-                return refused(LoopMoveRefusal::Rejected);
-            };
-            let runtime = admission.runtime.lock().await;
-            let spatial_position = match drop_cell(
-                map.overlay.base(),
-                (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
-                to,
-            ) {
-                Ok(cell) => cell,
-                Err(result) => return result,
-            };
-            LoopDestination::Ground(LoopGround {
-                spatial_position,
-                map_revision: map_revision(map.overlay.base()),
-                content_revision: sha256_revision(active.identity().server_artifact_digest()),
-                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
-            })
-        }
-        _ => return refused(LoopMoveRefusal::NotSupported),
-    };
     let Some(fence) = command.item_fence else {
         return refused(LoopMoveRefusal::Rejected);
     };
@@ -87,6 +56,27 @@ pub(super) async fn move_map_item(
     else {
         return refused(LoopMoveRefusal::NotSupported);
     };
+    let destination = match request.target {
+        LoopTarget::MainBackpack => LoopDestination::MainBackpack,
+        LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
+        LoopTarget::Ground(to) => {
+            let reach = door_origin.map_or((at.at.x, at.at.y, at.at.floor), |from| {
+                (i32::from(from.x), i32::from(from.y), i16::from(from.floor))
+            });
+            let spatial_position = match drop_cell(at.map.overlay.base(), reach, to) {
+                Ok(cell) => cell,
+                Err(result) => return result,
+            };
+            let runtime = admission.runtime.lock().await;
+            LoopDestination::Ground(LoopGround {
+                spatial_position,
+                map_revision: map_revision(at.map.overlay.base()),
+                content_revision: sha256_revision(native.source_digest()),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            })
+        }
+        _ => return refused(LoopMoveRefusal::NotSupported),
+    };
     let base = at.map.overlay.base();
     // Only boot's durable active epoch may name this physical map generation.
     if bundle_digest != base.digest() || reset_epoch != admission.reset_epoch {
@@ -111,9 +101,6 @@ pub(super) async fn move_map_item(
     else {
         return stale;
     };
-    let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
-        return stale;
-    };
     let Some(EntryFacts {
         definition: MapDefinition::Item(reference),
         ..
@@ -125,7 +112,33 @@ pub(super) async fn move_map_item(
     else {
         return stale;
     };
-    let Ok(item) = generation_item_facts(native, &definition) else {
+    let ground_push = matches!(destination, LoopDestination::Ground(_));
+    let entry = at
+        .map
+        .facts
+        .pickup_entry(pos, ordinal, id)
+        .or_else(|reason| {
+            if ground_push {
+                at.map.facts.empty_amphora_push_entry(
+                    pos,
+                    ordinal,
+                    id,
+                    tile.depths(),
+                    &definition.production_key,
+                )
+            } else {
+                Err(reason)
+            }
+        });
+    let Ok(entry) = entry else {
+        return stale;
+    };
+    let item = if ground_push {
+        oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(native, &definition)
+    } else {
+        generation_item_facts(native, &definition)
+    };
+    let Ok(item) = item else {
         return stale;
     };
     let mint = MapItemMintRequest {
