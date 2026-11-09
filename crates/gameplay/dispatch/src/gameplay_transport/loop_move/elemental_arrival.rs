@@ -48,7 +48,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let LoopDestination::Ground(to) = &request.destination else {
             return None;
         };
-        let source = ground?.facts.get(&request.item)?;
+        let ground = ground?;
+        let source = ground.facts.get(&request.item)?;
         if !rules::RECIPES
             .iter()
             .any(|recipe| recipe.corpse == source.appearance_id)
@@ -143,7 +144,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content: native.source_digest(),
                 reset_epoch: self.reset_epoch,
             };
-            let plan = map.facts.observe_elemental_arrival(
+            let ground_facts = ground.facts(&map.facts);
+            let ground_view = Some((
+                ground.overlay(),
+                &ground_facts as &dyn crate::map::view::MapFacts,
+            ));
+            let plan = map.facts.observe_elemental_arrival_with_ground(
                 map.overlay.base(),
                 scope,
                 TilePos {
@@ -153,11 +159,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 corpse,
                 busy,
+                ground_view,
             )?;
-            let Some(reservation) =
-                map.facts
-                    .reserve_elemental_arrival(map.overlay.base(), &plan, wake)
-            else {
+            let Some(reservation) = map.facts.reserve_elemental_arrival_with_ground(
+                map.overlay.base(),
+                &plan,
+                wake,
+                ground_view,
+            ) else {
                 return Some(Ok(Err(LoopMoveRefusal::Stale)));
             };
             (plan, reservation)
