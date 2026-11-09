@@ -88,3 +88,21 @@ minutes. This literal source position corroborates the retained bare B3 ashes;
 it does not bind the separate Death Ring AddItem tile. The shared-input writer and five-minute native portal lifecycle are now implemented
 and qualified in [the Fire Bug slice](qmech-m07-dreamer-fire-bug.md). The separate
 UID2243 movement handler is not assigned to the newly created, unkeyed teleport.
+
+## Final M07 owner verification
+
+At implementation head `d76b00cd5124dfe1b3cfa3e62c83fbac839ec3a4`, the complete
+`m07_` dispatch filter passes9/9 with PostgreSQL enabled: eight mounted real-caller
+PostgreSQL cases plus the existing area-census unit. The cases cover both Carrot
+accounts, shared Fire Bug ignition/traversal/reset, Death Ring ADDITEM debit and
+STEP restoration, and all three Lion offerings and pagoda resets. The route-less
+filter also passes9/9. The final durability/dispatch checks and all-target,
+all-feature Clippy pass; formatting is checked. Builds use two jobs with
+incremental compilation disabled.
+
+The full Quest unit sweep has410 passes and only the unchanged, pre-existing
+`quest::reward_callbacks::tests::published_ungated_quest_hash_baseline` failure
+for Ice Islands (`ca68476c…` observed, `ce91fb47…` expected). Its assertion is
+unchanged. Local node boot remains skipped as instructed. This completes M07's
+assigned shared offering/trial/reset owner boundary; generic authored routes
+remain M01 and NPC finales remain M04, without a full-quest completion claim.
