@@ -6,11 +6,16 @@ use crate::durability::item_mint::{
     ItemMintRequest, TypedDefinitionRef,
 };
 use crate::durability::spell_item_transaction::{
-    assert_spell_item_scope_in_transaction, corpse_target::read_current_fresh,
+    assert_spell_item_authority_in_transaction, assert_spell_item_scope_in_transaction,
+    corpse_target::{FreshCorpseTarget, read_current_fresh, read_for_actor},
 };
 use crate::durability::spell_items_abi::SpellGroundTarget;
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::foundation::ScopeOwnershipGeneration;
+use crate::foundation::{
+    ChannelContentPin, ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId,
+    CommandRef, ConnectionGeneration, ExactActorRef, GameSessionId, NodeId,
+    ScopeOwnershipGeneration, WorldId,
+};
 use oteryn_gameplay_entities::carrier::CombatDeathFixture;
 use std::num::NonZeroU32;
 
@@ -125,6 +130,21 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     };
     let permit = SpellLanePermit::of_fresh_scope(scope).await?;
     let mut tx = h.pool.begin().await?;
+    let character_authority = assert_spell_item_authority_in_transaction(
+        &mut tx,
+        &permit,
+        &h.root,
+        &recovery,
+        &h.node,
+        &f::item_fence()?,
+        CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(12345).map_err(f::debug)?,
+        ),
+        [1; 32],
+    )
+    .await
+    .map_err(f::debug)?;
     let authority = assert_spell_item_scope_in_transaction(
         &mut tx, &permit, &h.root, &recovery, &h.node, scope, 1,
     )
@@ -145,6 +165,127 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .map_err(f::debug)?,
         Some(definition)
     );
+    let selection = FreshCorpseTarget {
+        ground: &target,
+        item,
+        race: "oteryn:creature.slug",
+        race_revision: "slug-r1",
+        maximum_age_ms: age,
+    };
+    let (mut near, actor) = runtime_at(
+        (
+            at.x.checked_add(1).ok_or("near x")?,
+            at.y.checked_add(1).ok_or("near y")?,
+            at.floor,
+        ),
+        1,
+    )?;
+    assert!(
+        read_for_actor(
+            &mut tx,
+            &character_authority,
+            &near,
+            actor,
+            f::fence(1)?,
+            selection
+        )
+        .await
+        .map_err(f::debug)?
+        .is_some()
+    );
+    for entry in [
+        (at.x.checked_add(2).ok_or("far x")?, at.y, at.floor),
+        (at.x, at.y, at.floor.checked_add(1).ok_or("other floor")?),
+    ] {
+        let (runtime, actor) = runtime_at(entry, 1)?;
+        if read_for_actor(
+            &mut tx,
+            &character_authority,
+            &runtime,
+            actor,
+            f::fence(1)?,
+            selection,
+        )
+        .await
+        .map_err(f::debug)?
+        .is_some()
+        {
+            return Err("nonadjacent or other-floor actor reached the corpse".into());
+        }
+    }
+    let (stale_runtime, stale_actor) = runtime_at((at.x, at.y, at.floor), 2)?;
+    assert!(
+        read_for_actor(
+            &mut tx,
+            &character_authority,
+            &stale_runtime,
+            stale_actor,
+            f::fence(1)?,
+            selection
+        )
+        .await
+        .map_err(f::debug)?
+        .is_none(),
+        "a runtime from another scope generation cannot supply the actor"
+    );
+    let other_session = GameSessionId::decode(&f::id(51)).map_err(f::debug)?;
+    let reserved = near
+        .reserve_fresh_session(other_session)
+        .map_err(f::debug)?;
+    let peer = near.commit_fresh_session(reserved).map_err(f::debug)?;
+    near.initialize_first_entry_position(peer)
+        .map_err(f::debug)?;
+    near.bind_attacker_lease(
+        peer,
+        other_session,
+        CharacterLease::new(CharacterId::decode(&f::id(90)).map_err(f::debug)?, 1)
+            .map_err(f::debug)?,
+    )
+    .map_err(f::debug)?;
+    assert!(
+        read_for_actor(
+            &mut tx,
+            &character_authority,
+            &near,
+            peer,
+            f::fence(1)?,
+            selection
+        )
+        .await
+        .map_err(f::debug)?
+        .is_none(),
+        "another player's actor cannot borrow this Character authority"
+    );
+    for mismatch in 0..5 {
+        let mut wrong = f::fence(1)?;
+        match mismatch {
+            0 => wrong.character_lease_generation = 2,
+            1 => wrong.game_session_id = GameSessionId::decode(&f::id(51)).map_err(f::debug)?,
+            2 => {
+                wrong.scope_ownership_generation =
+                    ScopeOwnershipGeneration::new(2).map_err(f::debug)?
+            }
+            3 => wrong.connection_generation = ConnectionGeneration::new(2).map_err(f::debug)?,
+            _ => {
+                wrong.character_id =
+                    crate::domain::CharacterId::from_bytes(f::id(90)).map_err(f::debug)?
+            }
+        }
+        assert!(
+            read_for_actor(
+                &mut tx,
+                &character_authority,
+                &near,
+                actor,
+                wrong,
+                selection
+            )
+            .await
+            .map_err(f::debug)?
+            .is_none(),
+            "actor fence mismatch {mismatch}"
+        );
+    }
     let mut competing = h.pool.begin().await?;
     let busy = sqlx::query("SELECT 1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT")
         .bind(item.as_slice()).fetch_one(&mut *competing).await;
@@ -226,4 +367,45 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     assert_eq!(h.root_revision().await?, "1");
     Ok(())
+}
+
+// Synthetic activation pin: this exercises runtime position/lease ownership,
+// while the corpse and its provenance above come from the real fenced Root.
+fn runtime_at(
+    entry: (i32, i32, i16),
+    generation: u64,
+) -> f::TestResult<(ChannelRuntimeV1, ExactActorRef)> {
+    let world = WorldId::decode(&f::id(f::WORLD)).map_err(f::debug)?;
+    let session = GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?;
+    let pin =
+        ChannelContentPin::from_activation(world, 1, [1; 32], [2; 32], [3; 32], [4; 32], entry);
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?,
+        NodeId::decode(&f::id(1)).map_err(f::debug)?,
+        1,
+        generation,
+        generation,
+        &format!("runtime-scope-assignment:{generation}"),
+        4,
+        pin,
+    )
+    .map_err(f::debug)?;
+    let reserved = runtime.reserve_fresh_session(session).map_err(f::debug)?;
+    let actor = runtime.commit_fresh_session(reserved).map_err(f::debug)?;
+    runtime
+        .initialize_first_entry_position(actor)
+        .map_err(f::debug)?;
+    runtime
+        .bind_attacker_lease(
+            actor,
+            session,
+            CharacterLease::new(
+                CharacterId::decode(&f::id(f::CHARACTER)).map_err(f::debug)?,
+                1,
+            )
+            .map_err(f::debug)?,
+        )
+        .map_err(f::debug)?;
+    Ok((runtime, actor))
 }

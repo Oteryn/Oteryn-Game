@@ -3,6 +3,9 @@
 use super::*;
 use std::num::NonZeroU32;
 
+mod actor;
+pub use actor::{FreshCorpseTarget, read_for_actor};
+
 /// Select the exact top Ground corpse, using its original race provenance and
 /// database time. `maximum_age_ms` is a server/source policy, never client input.
 /// This read grants no Item mutation or quest-progress authority.
