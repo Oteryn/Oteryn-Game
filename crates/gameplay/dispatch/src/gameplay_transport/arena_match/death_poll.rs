@@ -33,6 +33,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<Vec<_>>()
         };
         for (session, live) in pending {
+            if Instant::now() >= live.deadline {
+                let _ = Box::pin(self.settle_arena_timeout(session, &live)).await;
+                continue;
+            }
             // Keep the optional reset future out of every connection's stack.
             let _ = Box::pin(self.settle_arena_departure(session, &live)).await;
             if live.state.phase == 1 {

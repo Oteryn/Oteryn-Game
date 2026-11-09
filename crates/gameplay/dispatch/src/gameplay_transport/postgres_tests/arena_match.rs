@@ -74,7 +74,7 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_route(true, true, true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario_route(true, Some(NativeScenario::Departure)).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M51 native departure worker panicked")??;
     eprintln!(
@@ -85,10 +85,38 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
     Ok(())
 }
 
-fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
-    scenario_route(funded, native_portals, false)
+#[derive(Clone, Copy)]
+enum NativeScenario {
+    Portals,
+    Departure,
+    Timeout,
 }
-fn scenario_route(funded: bool, native_portals: bool, leave_early: bool) -> TestResult {
+
+#[test]
+fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_route(true, Some(NativeScenario::Timeout)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M51 native timeout worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES native timeout duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
+    scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
+}
+fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
+    let native_portals = route.is_some();
+    let leave_early = matches!(route, Some(NativeScenario::Departure));
+    let timeout_early = matches!(route, Some(NativeScenario::Timeout));
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "arena_match", false, false).await?;
@@ -253,6 +281,11 @@ fn scenario_route(funded: bool, native_portals: bool, leave_early: bool) -> Test
                 .await
                 .is_none()
         );
+        if timeout_early {
+            owner
+                .regression_arena_pit_time(5000)
+                .ok_or("fixture timer")?;
+        }
         let entry_id = admitted.continuity.next_command_id;
         let entered = command(&owner, &mut admitted, A::Enter).await?;
         if !funded {
@@ -290,6 +323,55 @@ fn scenario_route(funded: bool, native_portals: bool, leave_early: bool) -> Test
             .await
             .ok_or("entry replay")?;
         assert_eq!(wire::decode_match_result(&replay).map_err(debug)?, entered);
+        if timeout_early {
+            let target = {
+                let runtime = deps.runtime.lock().await;
+                runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| runtime.contains_live_creature(c.actor))
+                    .ok_or("live arena opponent")?
+                    .actor
+            };
+            let deadline:i64 = sqlx::query_scalar("SELECT (body->>'deadline_ms')::bigint FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            sqlx::query("SELECT pg_sleep(GREATEST(0,($1-floor(extract(epoch FROM clock_timestamp())*1000))/1000.0)+0.05)")
+                .bind(deadline).execute(&harness.pool).await?;
+            let mut stored = (1, 1);
+            for _ in 0..100 {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                owner.drain_monster_melee().await;
+                stored=sqlx::query_as("SELECT (body->>'rank')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                if stored == (0, 0) {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+            assert_eq!(stored, (0, 0), "silent timeout must persist without Status");
+            let leases: i64 = sqlx::query_scalar("SELECT count(*) FROM game_svargrond_pit_leases")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(leases, 0);
+            let runtime = deps.runtime.lock().await;
+            assert!(!runtime.contains_live_creature(target));
+            let at = runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            assert_eq!(
+                (at.x, at.y, at.floor),
+                (32251, 31098, 6),
+                "native timer kicks to the source return"
+            );
+            drop(runtime);
+            let native:i64=sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2")
+                .bind(i32::try_from(b"oteryn:svargrond-native-timeout:v1".len())?)
+                .bind(b"oteryn:svargrond-native-timeout:v1".as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(native, 1);
+            return Ok(());
+        }
         if leave_early {
             let target = {
                 let mut runtime = deps.runtime.lock().await;

@@ -2380,3 +2380,23 @@ fixture uses a short timer for the actual PostgreSQL boundary.
 M51 remains PARTIAL: silent timer producer and complete pit reset closure follow.
 Durability clippy --all-targets -D warnings PASS81.542s; cargo fmt --all --check
 PASS16.302s; engine-only pin identity unchanged.
+
+## M51: silent timeout persists and physically kicks on native cadence
+
+The active run's original monotonic deadline schedules a typed timeout pass;
+the current native control/Character lease and sequencer slot are rechecked,
+then the durable deciding clock authorizes reset. The ordinary creature loop
+persists idle, releases custody, closes its exact pillar and removes its opponent
+before relocating to the source kick position. On persistence failure the physical
+kick stays timely and retains its run/deadline for a later durable retry.
+Source: Crystal201189f svargrond_arena.lua:259-313. No schema/id allocation.
+The new real-PG production-caller story enters normally with fee and opponent,
+waits for actual database expiry, then requires ordinary creature cadence to kick,
+remove the opponent, persist idle, release custody and write one native timeout
+receipt without any Status command. Only cfg(test) can select a bounded shorter
+interval before an empty match owner starts; production and all existing stories
+retain donor600s. The new isolated story selects5s, without editing durable rows.
+GREEN three real PG stories: timeout57.486779623s, departure52.457049843s,
+ten-pit native combat/portals/reward60.129570758s (439.318s with cold build).
+Dispatch clippy --lib -D warnings PASS95.419s; fmt PASS15.862s; engine-only pin
+identity unchanged. M51 remains PARTIAL for full source pit-reset cleanup.

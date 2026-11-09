@@ -20,6 +20,8 @@ mod departure_poll;
 mod pillar;
 #[path = "arena_match/portal_step.rs"]
 mod portal_step;
+#[path = "arena_match/timeout_poll.rs"]
+mod timeout_poll;
 
 macro_rules! authority_methods {
     () => {
@@ -53,7 +55,26 @@ pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
     victory_poll: Mutex<Option<(u64, u64)>>,
+    #[cfg(test)]
+    fixture_pit_ms: std::sync::atomic::AtomicU64,
 }
+impl Matches {
+    fn pit_millis(&self) -> i64 {
+        #[cfg(test)]
+        {
+            let fixture = self
+                .fixture_pit_ms
+                .load(std::sync::atomic::Ordering::Relaxed);
+            if let Ok(millis) = i64::try_from(fixture)
+                && (1..=i64::from(donor::PIT_SECONDS) * 1000).contains(&millis)
+            {
+                return millis;
+            }
+        }
+        i64::from(donor::PIT_SECONDS) * 1000
+    }
+}
+
 #[derive(Clone)]
 struct LiveMatch {
     actor: ExactActorRef,
@@ -158,6 +179,12 @@ pub(in crate::gameplay_transport) fn tick(
             let _ =
                 runtime.relocate_arena_player(live.actor, *session, before, position(donor::KICK));
         }
+        if present && expired && !dead {
+            // Physical kick remains timely if persistence fails. Retain the
+            // run/deadline so the next native pass can finish its durable reset.
+            live.opponent = None;
+            return true;
+        }
         false
     });
     // A fresh login or reset cannot retain an unfenced placement in a pit.
@@ -183,6 +210,24 @@ pub(in crate::gameplay_transport) fn tick(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Exercise real database expiry quickly; production always uses donor600s.
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn regression_arena_pit_time(
+        &self,
+        millis: u64,
+    ) -> Option<()> {
+        if millis == 0
+            || millis > (u64::from(donor::PIT_SECONDS) * 1000)
+            || !self.states.arena_matches.live.lock().ok()?.is_empty()
+        {
+            return None;
+        }
+        self.states
+            .arena_matches
+            .fixture_pit_ms
+            .store(millis, std::sync::atomic::Ordering::Relaxed);
+        Some(())
+    }
     pub(in crate::gameplay_transport) async fn arena_match_wire(
         &self,
         admitted: AdmittedSession,
@@ -335,7 +380,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             rank,
                             pit: 1,
                             phase: 1,
-                            deadline_ms: read.now_ms + i64::from(donor::PIT_SECONDS) * 1000,
+                            deadline_ms: read.now_ms + self.states.arena_matches.pit_millis(),
                             session: *admitted.game_session_id.as_bytes(),
                             scope_generation: fence.scope_ownership_generation.get(),
                             run: durable::identity(command, b"run"),
@@ -370,7 +415,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ) {
                         after.pit += 1;
                         after.phase = 1;
-                        after.deadline_ms = read.now_ms + i64::from(donor::PIT_SECONDS) * 1000;
+                        after.deadline_ms = read.now_ms + self.states.arena_matches.pit_millis();
                         spawn = Some((after.rank, after.pit));
                     } else {
                         disposition = D::Busy;
