@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m44 = name == "uneasy-alliance-crystal";
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -41,7 +42,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
+    let native_crop = m44
+        || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -60,10 +62,10 @@ fn scenario_case(
     let start = if name == "unnatural-selection-dance-2" {
         let (x, y, floor) = oteryn_gameplay_quests::quest::unnatural_selection::TILES[7];
         Position { x, y, floor }
-    } else if qm48 {
+    } else if qm48 || m44 {
         Position {
             x: trigger.x,
-            y: trigger.y - 1,
+            y: if m44 { trigger.y + 1 } else { trigger.y - 1 },
             ..trigger
         }
     } else if m01b_explore {
@@ -343,7 +345,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if m44 {
+            super::super::m44_source_lifecycle::world(
+                generation.native_gameplay().ok_or("source policies")?,
+            )?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -578,6 +584,14 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if m44 {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::m44_source_lifecycle::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
+                    &callback,
+                )?,
+            ));
+        }
         if qm48 {
             owner.quest_catalogue =
                 Some(std::sync::Arc::new(super::super::qm48_mammoth::catalogue(
@@ -766,6 +780,8 @@ fn scenario_case(
                 source_id,
             )
             .await?;
+        } else if m44 {
+            super::super::m44_source_lifecycle::exercise(&owner, &mut admitted, &h).await?;
         } else if qm48 {
             super::super::qm48_mammoth::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "l6-stag-item-profile" {
