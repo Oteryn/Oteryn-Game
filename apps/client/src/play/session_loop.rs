@@ -100,6 +100,7 @@ pub async fn run_session<T: Stepper>(
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
                         449 => outbox.spellbook_details_result(&result),
+                        463 => outbox.bar_item_cooldowns_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

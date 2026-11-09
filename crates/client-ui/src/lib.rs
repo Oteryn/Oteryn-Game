@@ -335,5 +335,8 @@ pub mod wheel_presentation;
 
 #[path = "features/0450-server-modal/mod.rs"]
 pub mod server_modal;
+
+#[path = "features/0463-action-bar-cooldowns/mod.rs"]
+pub mod action_bar_cooldowns;
 #[path = "features/0462-support-intake/mod.rs"]
 pub mod support_intake;

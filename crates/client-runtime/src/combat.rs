@@ -16,6 +16,11 @@ pub enum CombatCommand {
     Modes(oteryn_session::FightModes),
     /// Cast the 1-based spell-book entry, aimed at the attack target when there is one.
     Cast(NonZeroU32),
+    /// Cast along facing, optionally turning first and waiting for the server's acceptance.
+    CastFacing {
+        spell: NonZeroU32,
+        direction: Option<oteryn_session::StepDirection>,
+    },
     /// Cast an ordinary spell at the tile selected by the cursor.
     CastAt {
         spell: NonZeroU32,
@@ -58,6 +63,28 @@ pub async fn run_combat<S: SessionStream>(
         CombatCommand::Stop => crate::attack::stop(session).await,
         CombatCommand::Modes(modes) => crate::attack::modes(session, modes).await,
         CombatCommand::Cast(spell) => run_cast(session, feedback, spell).await,
+        CombatCommand::CastFacing { spell, direction } => {
+            if let Some(direction) = direction {
+                if !session.is_selected(64) {
+                    return Ok(CombatReport::Cast(SpellCastDisposition::Rejected));
+                }
+                let payload = oteryn_session::target_move::encode_target_move_intent(
+                    oteryn_session::target_move::TargetMoveIntent::Turn(direction),
+                )
+                .map_err(|_| SessionError::SessionUnusable)?;
+                let reply = session.gated_command(64, 81, &payload).await?;
+                if !matches!(
+                    reply.status,
+                    oteryn_session::CommandStatus::Accepted
+                        | oteryn_session::CommandStatus::DuplicateReplay
+                ) || reply.payload != [8, 1]
+                {
+                    return Ok(CombatReport::Cast(SpellCastDisposition::Rejected));
+                }
+            }
+            let outcome = crate::spell::cast_selected(session, feedback, spell, false).await?;
+            Ok(CombatReport::Cast(outcome.disposition))
+        }
         CombatCommand::CastAt { spell, position } => {
             crate::cursor_spell::cast_at(session, feedback, spell, position).await
         }

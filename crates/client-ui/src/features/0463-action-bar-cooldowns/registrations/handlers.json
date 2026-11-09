@@ -1,0 +1,17 @@
+{
+  "mechanic": "0463-action-bar-cooldowns",
+  "kind": "handlers",
+  "id": "0463-action-bar-cooldowns-query",
+  "status": "supported",
+  "commands": [
+    6147
+  ],
+  "direction": "client_to_server",
+  "capability": 463,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Read-only item exhaustion uses the action-bar settings.",
+    "panels": "The existing multiaction button displays the next action; there is no extra panel.",
+    "keybindings": "The existing action-bar hotkey invokes this read."
+  }
+}

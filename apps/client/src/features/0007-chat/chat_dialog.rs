@@ -2,6 +2,8 @@
 use super::*;
 #[path = "console_font.rs"]
 mod console_font;
+#[path = "../local-spell-action-bar/cooldown_native.rs"]
+mod cooldown_bar;
 pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -12,7 +14,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             1500,
-            630,
+            686,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -150,6 +152,27 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut private = PrivateControls::new(hwnd);
         let mut font = console_font::ConsoleFont::default();
         let mut console = console_controls::Controls::new(hwnd);
+        // Reserve an independent strip above the console's existing controls.
+        let mut child = GetWindow(hwnd, GW_CHILD);
+        while !child.is_null() {
+            let mut rect: windows_sys::Win32::Foundation::RECT = std::mem::zeroed();
+            GetWindowRect(child, &mut rect);
+            let mut point = windows_sys::Win32::Foundation::POINT {
+                x: rect.left,
+                y: rect.top,
+            };
+            windows_sys::Win32::Graphics::Gdi::ScreenToClient(hwnd, &mut point);
+            MoveWindow(
+                child,
+                point.x,
+                point.y + 56,
+                rect.right - rect.left,
+                rect.bottom - rect.top,
+                1,
+            );
+            child = GetWindow(child, GW_HWNDNEXT);
+        }
+        let mut cooldown = cooldown_bar::CooldownBar::new(hwnd);
         let mut mirror = mirror::Mirror::new(hwnd);
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
@@ -164,6 +187,10 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             let Some(shared) = weak.upgrade() else { break };
             let mut mailbox = lock(&shared);
+            cooldown.update(
+                crate::play::feature_local_spell_action_bar::view::cooldown_bar_icons(&mailbox),
+                mailbox.local_preferences.action_bar.cooldown_bar_enabled,
+            );
             if mailbox.chat_public_shutdown || !mailbox.chat.open {
                 break;
             }

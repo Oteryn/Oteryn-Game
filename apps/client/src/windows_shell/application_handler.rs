@@ -157,6 +157,13 @@ impl ApplicationHandler for Application {
                 }
             }
         }
+        if matches!(event, WindowEvent::CursorLeft { .. })
+            && let Some(play) = &mut self.play
+        {
+            play.view.clear_bar_pointer(&play.link);
+        }
+        // Every window event goes through the adapter and router first; select or walk is
+        // triggered only by the routed gameplay action.
         if let Ok(events) = self.input.process_window_event(&event) {
             self.handle_input(event_loop, &events);
         }

@@ -39,7 +39,7 @@ pub(super) fn page_help(page: SettingsPage) -> &'static str {
             "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Use New / edit to assign object, text and read-only ability cooldown actions."
         }
         SettingsPage::BarHotkeys => {
-            "Configure all three action bar rows (12 slots each). Empty chords clear slots 5–36. The first four slots retain their legacy defaults until rebound."
+            "Configure all three action bars (50 slots each). Empty chords clear slots 5–150. The first four slots retain their legacy defaults until rebound."
         }
         SettingsPage::Graphics => {
             "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."

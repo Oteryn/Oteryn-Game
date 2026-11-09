@@ -13,6 +13,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     }
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
+    outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
