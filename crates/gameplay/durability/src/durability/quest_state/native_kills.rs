@@ -134,7 +134,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(death),
+            Some(death.into()),
             None,
         )
         .await
@@ -173,7 +173,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(death),
+            Some(death.into()),
             None,
         )
         .await

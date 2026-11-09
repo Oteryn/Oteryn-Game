@@ -333,7 +333,7 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
-        native: Option<super::native_kills::NativeQuestDeath>,
+        native: Option<super::native_observation::NativeQuestObservation>,
         benevola: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
@@ -392,7 +392,7 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
-        native: Option<super::native_kills::NativeQuestDeath>,
+        native: Option<super::native_observation::NativeQuestObservation>,
         benevola: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
@@ -400,20 +400,17 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
-        // A caller-supplied command is not evidence of a native key-door opening.
-        if request
-            .transition_key
-            .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        // Reserved native keys require their matching registered receiver source.
         let native_key = request
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
+            || request
+                .transition_key
+                .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
                 .is_some();
         if native_key != native.is_some()
