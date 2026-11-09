@@ -234,3 +234,97 @@ fn persistent_minimap_pan_zoom_and_floor_selection_share_the_click_projection()
     );
     Ok(())
 }
+
+#[test]
+fn committed_quest_markers_reach_minimap_and_snapshot_replacement_clears_them()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::quest_log::{QuestLog, QuestMapMark, encode_quest_log};
+    let mut play = minimap_view()?;
+    let (link, _commands, outbox) = play_channel();
+    let quest_snapshot = |revision,
+                    log: &QuestLog|
+     -> Result<oteryn_session::GatedSnapshot, Box<dyn std::error::Error>> {
+        Ok(oteryn_session::GatedSnapshot {
+            domain_id: 16,
+            snapshot_type: 1,
+            revision,
+            payload: encode_quest_log(log).map_err(|e| format!("{e:?}"))?,
+        })
+    };
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.tracking = false;
+        map.x = 31948;
+        map.y = 31924;
+    }
+    let crosses = |play: &PlayView| {
+        play.scene()
+            .sprites()
+            .instances()
+            .iter()
+            .filter(|q| q.size == [4.0, 2.0] || q.size == [2.0, 4.0])
+            .count()
+    };
+    let marks = vec![QuestMapMark {
+        x: 31948,
+        y: 31924,
+        floor: -7,
+        text: "Treasure".into(),
+    }];
+    outbox.quest_initialize(
+        oteryn_client_runtime::quest_log::QuestState::from_snapshot(
+            &[16],
+            Some(&quest_snapshot(1, &QuestLog::default())?),
+        )
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    outbox.push(vec![oteryn_session::SessionEvent::QuestLog(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: QuestLog {
+                map_marks: marks.clone(),
+                ..QuestLog::default()
+            },
+        },
+    )]);
+    play.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(crosses(&play), 2);
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        assert_eq!(map.quest_markers.len(), 1);
+        assert_eq!(
+            (
+                map.quest_markers[0].x,
+                map.quest_markers[0].y,
+                map.quest_markers[0].floor
+            ),
+            (31948, 31924, -7)
+        );
+        assert_eq!(map.quest_markers[0].label, "Treasure");
+        assert!(map.markers.is_empty());
+        assert!(map.remove_marker(31948, 31924, -7).is_err());
+        assert!(
+            map.edit_marker(31948, 31924, -7, "changed".into(), 1)
+                .is_err()
+        );
+    }
+    outbox.push(vec![oteryn_session::SessionEvent::GatedSnapshotReplaced(
+        oteryn_session::AppliedDelta {
+            server_sequence: 3,
+            base_revision: 2,
+            new_revision: 10,
+            value: quest_snapshot(10, &QuestLog::default())?,
+        },
+    )]);
+    play.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(
+        crate::play::feature_local_minimap::state::lock(&play.minimap)
+            .quest_markers
+            .is_empty()
+    );
+    assert_eq!(crosses(&play), 0);
+    Ok(())
+}

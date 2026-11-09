@@ -58,6 +58,7 @@ fn an_empty_domain_is_no_view_and_no_tracked_quest() {
     assert!(round_trip(&QuestLog::default()).is_empty());
     // An empty list is a view: it is present and distinct from no view.
     let empty_list = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(Vec::new())),
         tracked: Vec::new(),
     };
@@ -75,6 +76,7 @@ fn the_list_holds_1024_ascending_quests_and_refuses_more() {
             .collect::<Vec<_>>()
     };
     let full = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(entries(MAX_LISTED_QUESTS as u32))),
         tracked: Vec::new(),
     };
@@ -84,6 +86,7 @@ fn the_list_holds_1024_ascending_quests_and_refuses_more() {
     assert_eq!(MAX_QUEST_LIST_BYTES, 10_240);
     const { assert!(MAX_QUEST_LIST_BYTES <= MAX_QUEST_LINE_BYTES) };
     let over = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(entries(MAX_LISTED_QUESTS as u32 + 1))),
         tracked: Vec::new(),
     };
@@ -100,6 +103,7 @@ fn the_list_holds_1024_ascending_quests_and_refuses_more() {
     // Out of order or repeated quest indexes fail closed.
     for indexes in [[2, 1], [1, 1]] {
         let list = QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::List(
                 indexes
                     .iter()
@@ -126,11 +130,13 @@ fn a_line_holds_128_missions_within_its_byte_bound_and_refuses_more() {
         )
     };
     let full = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::Line(small(MAX_QUEST_LINE_MISSIONS as u32))),
         tracked: Vec::new(),
     };
     round_trip(&full);
     let over = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::Line(small(
             MAX_QUEST_LINE_MISSIONS as u32 + 1,
         ))),
@@ -151,6 +157,7 @@ fn a_line_holds_128_missions_within_its_byte_bound_and_refuses_more() {
     over.missions.last_mut().expect("mission").text.push('t');
     assert_eq!(encode_line(&over), Err(QuestLogWireError::LimitExceeded));
     let log = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::Line(over)),
         tracked: Vec::new(),
     };
@@ -174,6 +181,7 @@ fn names_and_texts_are_bounded_utf8_and_names_are_required() {
         )
     };
     let log = |line: QuestLine| QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::Line(line)),
         tracked: Vec::new(),
     };
@@ -215,6 +223,15 @@ fn names_and_texts_are_bounded_utf8_and_names_are_required() {
 #[test]
 fn the_domain_holds_a_view_and_10_tracked_lines_within_its_bound() {
     let full = QuestLog {
+        map_marks: vec![
+            QuestMapMark {
+                x: u16::MAX,
+                y: u16::MAX,
+                floor: -15,
+                text: "é".repeat(128)
+            };
+            MAX_QUEST_MAP_MARKS
+        ],
         view: Some(QuestLogView::Line(worst_line(u32::MAX))),
         tracked: (0..MAX_TRACKED_QUESTS as u32)
             .map(|n| worst_line(u32::MAX - 1 - n))
@@ -222,7 +239,7 @@ fn the_domain_holds_a_view_and_10_tracked_lines_within_its_bound() {
     };
     let bytes = round_trip(&full);
     assert_eq!(bytes.len(), MAX_QUEST_LOG_BYTES);
-    assert_eq!(MAX_QUEST_LOG_BYTES, 180_268);
+    assert_eq!(MAX_QUEST_LOG_BYTES, 249_900);
     // Within the FND-02 delta and snapshot chunk bounds.
     const { assert!(MAX_QUEST_LOG_BYTES <= crate::MAX_STATE_DELTA_PAYLOAD_BYTES) };
     const { assert!(MAX_QUEST_LOG_BYTES <= crate::MAX_SNAPSHOT_CHUNK_BYTES) };
@@ -235,6 +252,7 @@ fn the_domain_holds_a_view_and_10_tracked_lines_within_its_bound() {
         Err(QuestLogWireError::LimitExceeded)
     );
     let mut payload = encode_quest_log(&QuestLog {
+        map_marks: Vec::new(),
         view: None,
         tracked: eleven.tracked[..10].to_vec(),
     })
@@ -245,6 +263,7 @@ fn the_domain_holds_a_view_and_10_tracked_lines_within_its_bound() {
         Err(QuestLogWireError::LimitExceeded)
     );
     let repeated = QuestLog {
+        map_marks: Vec::new(),
         view: None,
         tracked: vec![line(3, Vec::new()), line(3, Vec::new())],
     };
@@ -471,6 +490,7 @@ fn fuzz_decode_quest_log() {
     crate::decoder_fuzz_support::codec(
         "decode_quest_log",
         |rng| QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::Line(line(
                 1,
                 vec![mission(
@@ -503,4 +523,52 @@ fn fuzz_decode_quest_log_query() {
         decode_quest_log_query,
         |v| encode_quest_log_query(v).expect("query"),
     );
+}
+
+#[test]
+fn personal_map_mark_round_trip_and_bounds() {
+    let marker = QuestMapMark {
+        x: 31948,
+        y: 31924,
+        floor: -7,
+        text: "Treasure".into(),
+    };
+    let log = QuestLog {
+        map_marks: vec![marker.clone()],
+        ..QuestLog::default()
+    };
+    assert_eq!(
+        decode_quest_log(&encode_quest_log(&log).expect("encode")).expect("decode"),
+        log
+    );
+    for invalid in [
+        QuestMapMark {
+            floor: 1,
+            ..marker.clone()
+        },
+        QuestMapMark {
+            text: "\0".into(),
+            ..marker.clone()
+        },
+        QuestMapMark {
+            text: "x".repeat(257),
+            ..marker.clone()
+        },
+    ] {
+        assert!(
+            encode_quest_log(&QuestLog {
+                map_marks: vec![invalid],
+                ..QuestLog::default()
+            })
+            .is_err()
+        );
+    }
+    assert!(
+        encode_quest_log(&QuestLog {
+            map_marks: vec![marker; 257],
+            ..QuestLog::default()
+        })
+        .is_err()
+    );
+    assert!(decode_quest_log(&[0x22, 0]).is_err());
 }
