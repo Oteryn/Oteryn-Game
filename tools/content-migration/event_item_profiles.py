@@ -28,9 +28,9 @@ WORLD_DOOR_FAMILIES = ((4912, 5007, 4911), (4913, 5006, 4914))
 WORLD_DOOR_SOURCE = 'data/libs/tables/doors.lua'
 # Crystal's Cake bridge explicitly creates this appearance-only Ground item.
 # Its own Item loader supplies physical facts before optional XML overrides.
-# This is evidence only: ANSWER6549960114 does not admit a canonical reference.
+# The owner approved its canonical identity on 2026-11-08.
 APPEARANCE_ONLY = {48227}
-CANONICAL_IDENTITY_UNAVAILABLE = {48227}
+CANONICAL_IDENTITY_UNAVAILABLE = set()
 
 
 def world_layers(root):
@@ -111,6 +111,8 @@ def item_action_ids(root):
     ids.update(rule['appearance'] for rule in quest_item_disguises.build(root))
     import last_creep_native
     ids.update(last_creep_native.native_item_ids(root))
+    # Crystal Cake extraction STEP uses this exact iron-floor identity.
+    ids.add(8886)
     for row in novelty['house_transforms']:
         ids.update((row['item_id'], row['target']))
     return ids
@@ -199,8 +201,7 @@ def capture(canary, crystal):
         item = xml.get(item_id) if item_id in primary_ids | appearance_only_ids else secondary[item_id]
         records.append(source.profile(item_id, item, objects[item_id],
                                       physical[item_id], bindings, None))
-    # Keep the exact observed source facts, without turning them into an Item policy,
-    # binding, key-section entry, map qualifier or wire reference.
+    # Retain exact appearance-only loader facts, including the approved bridge.
     for item_id in sorted(appearance_only_ids):
         if (item_id not in objects or not physical[item_id]['ground']
                 or physical[item_id]['ground_speed'] != 150 or physical[item_id]['movable']
@@ -313,6 +314,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
+def refresh_cake_machine_cohort(root):
+    """Keep the historical event cohort intact; 8886 is one new exact source key."""
+    path = root / 'crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs'
+    text = path.read_text()
+    if '("M57-CAKE-MACHINE", 1)' not in text:
+        anchor = '    ("PKG2-CONTENT-UNION", 284),'
+        if text.count(anchor) != 1:
+            raise ValueError('CAKE_MACHINE_COHORT_ANCHOR')
+        text = text.replace(anchor, anchor + '\n    // Crystal201189f iron-floor8886: real Cake extraction STEP owner.\n    ("M57-CAKE-MACHINE", 1),')
+        path.write_text(text)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--canary', type=Path, required=True)
@@ -326,3 +339,4 @@ if __name__ == '__main__':
             raise SystemExit('EVENT_ITEM_PROFILE_DRIFT')
     else:
         path.write_bytes(raw)
+        refresh_cake_machine_cohort(ROOT)

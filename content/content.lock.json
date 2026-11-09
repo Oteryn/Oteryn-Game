@@ -25,7 +25,7 @@
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34121,
+    "Item": 34122,
     "Loot": 1292,
     "Mount": 252,
     "NPC": 1282,
@@ -49,8 +49,8 @@
   "legacy_blobs": {
     "declarations": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "4c8aa501e96ffa0c84ac6a448f0fe9836433ea90",
-    "reference": "5ea6d7f635a63d18d48f368c70e252e39910bc76",
+    "imports": "f5d97f38fe7addf432a173189f7692f1e4fe9dbf",
+    "reference": "d659262fdead6ce624fc3dfa4d8f09aebfce73c3",
     "sources": "4f6b825b939e0b74d049f6be23306972299ecf28"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f678d6714c7fff39cb90d42704e0bce42f7a91e4204cf28dc91070a0447b8073"
+          "sha256": "81ddef8a1d673a2c7c819489d5244a61bea2f92901280f2f2f1ca4c9eb676d33"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6215,
+          "record_count": 6216,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "92a27c94026b588e66c1a9eb16012331e1e740b7ec379ce736dc2133ef0b151d"
+          "sha256": "4b69ae25a90a38d63fcf8cbdae6b3ac41e60a24752b7d1b6deafb2fbb84727ae"
         },
         {
           "creates_canonical_identities": false,

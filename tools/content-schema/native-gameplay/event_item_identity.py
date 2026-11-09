@@ -82,6 +82,23 @@ def source_evidence(canary, crystal):
     return evidence()
 
 
+def canonical_ordinal(root, captured):
+    """Translate a historical source ordinal after the approved canonical insertion.
+
+    Capture packets remain immutable. This changes no sorting rule or Item key;
+    the canonical reference producer alone determines the insertion position.
+    """
+    records = json.loads((root / 'content/world/definitions/reference.json').read_bytes())['records']
+    items = [row for row in records if row['identity']['family'] == 'Item']
+    matches = [(n,row) for n,row in enumerate(items) if row['identity']['key'] == 'oteryn:item.tibia.i48227']
+    if not matches:
+        return captured
+    packet = json.loads((root / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
+    if len(matches) != 1 or matches[0][1] != packet['definition'] or packet['decision'] != DECISION:
+        raise ValueError('CAKE_BRIDGE_CANONICAL_INSERTION_DRIFT')
+    return captured + int(matches[0][0] <= captured)
+
+
 def generate(canary, crystal):
     """Generate the canonical packet and exact binding; never invent XML policy."""
     import re
@@ -113,6 +130,22 @@ def generate(canary, crystal):
     if count != 1:
         raise ValueError('CAKE_BRIDGE_BINDING_PIN_ANCHOR')
     binder.write_text(text)
+    # Closed old captures keep their reviewed pin through this exact additive
+    # transition. The normal relocation reader still checks the full new digest.
+    ledger = root / 'tools/content-migration/source_relocations.py'
+    predecessor = dict(document)
+    predecessor['bindings'] = [r for r in document['bindings'] if r['external_id'] != '48227']
+    previous_raw = (json.dumps(predecessor, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
+    block = ('    # BEGIN OWNER_APPROVED_CAKE_BRIDGE_BINDING\n'
+             '    ("imports/crystalserver/bindings/items.json", "' + hashlib.sha256(previous_raw).hexdigest() + '"):\n'
+             '        ("imports/crystalserver/bindings/items.json", "' + hashlib.sha256(path.read_bytes()).hexdigest() + '"),\n'
+             '    # END OWNER_APPROVED_CAKE_BRIDGE_BINDING\n')
+    text = ledger.read_text()
+    if '# BEGIN OWNER_APPROVED_CAKE_BRIDGE_BINDING' in text:
+        text = re.sub(r'    # BEGIN OWNER_APPROVED_CAKE_BRIDGE_BINDING.*?    # END OWNER_APPROVED_CAKE_BRIDGE_BINDING\n', block, text, flags=re.S)
+    else:
+        text = text.replace('}\n# pinned path', block + '}\n# pinned path', 1)
+    ledger.write_text(text)
     return packet
 
 

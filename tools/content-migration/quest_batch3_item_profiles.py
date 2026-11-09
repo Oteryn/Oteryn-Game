@@ -312,7 +312,8 @@ def admit_recipes(root, generated, profile_path, manifest_path, order, canonical
     for descriptor in packet['canonical_inputs']:
         m42_cooking_canonical.verify(root, descriptor, selected_keys)
     descriptor = packet['binding_input']
-    if hashlib.sha256((root / descriptor['path']).read_bytes()).hexdigest() != descriptor['sha256']:
+    from build_spell_item_identities import historical_binding_bytes
+    if hashlib.sha256(historical_binding_bytes((root / descriptor['path']).read_bytes(), descriptor['sha256'])).hexdigest() != descriptor['sha256']:
         raise ValueError('NPC_RECIPE_BINDING_DRIFT')
     document = json.loads(generated[profile_path])
     present = {row['production_definition']['production_key']: row for row in document['records']}

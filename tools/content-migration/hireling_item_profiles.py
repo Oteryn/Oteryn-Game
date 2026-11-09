@@ -114,6 +114,10 @@ def merge_record(existing, source):
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools/content-schema/native-gameplay"))
+    from build_spell_item_identities import historical_binding_bytes
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay["records"]
     keys = [row["production_definition"]["production_key"] for row in records]
@@ -125,7 +129,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or catalogue["trade_rows"] != 1675 or catalogue["trader_items"] != 1409
             or catalogue["packages"] != 23 or catalogue["package_ingredients"] != 69
             or hashlib.sha256((root / CATALOGUE).read_bytes()).hexdigest() != catalogue["sha256"]
-            or hashlib.sha256((root / "imports/crystalserver/bindings/items.json").read_bytes()).hexdigest()
+            or hashlib.sha256(historical_binding_bytes((root / "imports/crystalserver/bindings/items.json").read_bytes(), overlay["binding_table_sha256"])).hexdigest()
                 != overlay["binding_table_sha256"]):
         raise ValueError("HIRELING_NATIVE_ITEM_PROFILE_SET_OR_PIN")
     for key, (_, _, line) in (SHARED_NATIVE_WEIGHTS | MERGED_MAIN_NATIVE_WEIGHTS).items():

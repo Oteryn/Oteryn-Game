@@ -18,15 +18,20 @@ impl DurabilityRoot {
             2 => [28484, 28485, 28486],
             _ => return Err(RewardClaimMintError::InvalidInput),
         };
-        let claim = if category == 1 {"item"} else {"cupcake"};
+        let claim = if category == 1 { "item" } else { "cupcake" };
         if request.claim.family != "RewardClaim"
-            || request.claim.production_key != format!("oteryn:reward-claim.cake-brutus-{claim}.{year}")
+            || request.claim.production_key
+                != format!("oteryn:reward-claim.cake-brutus-{claim}.{year}")
             || request.claim.revision_ref != "oteryn:cake-brutus.v1"
             || request.source_placement != "oteryn:npc.brutus_the_baker"
             || request.item.definition.family != "Item"
-            || !allowed.iter().any(|id| request.item.definition.production_key == format!("oteryn:item.tibia.i{id}"))
+            || !allowed.iter().any(|id| {
+                request.item.definition.production_key == format!("oteryn:item.tibia.i{id}")
+            })
             || !request.additional_items.is_empty()
-        { return Err(RewardClaimMintError::InvalidInput); }
+        {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
 
         if request.achievement.is_some()
             || request.quest_transition.is_some()

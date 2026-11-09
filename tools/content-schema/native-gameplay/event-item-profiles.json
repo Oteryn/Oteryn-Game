@@ -601,77 +601,7 @@
       "donor": "data/libs/tables/doors.lua:18"
     }
   ],
-  "canonical_identity_unavailable_evidence": [
-    {
-      "schema": "OTERYN_UNAVAILABLE_ITEM_SOURCE_EVIDENCE/v1",
-      "item_id": 48227,
-      "reason": "EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE",
-      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114",
-      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-      "sources": [
-        {
-          "source_key": "oteryn:source.crystalserver",
-          "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "src/items/item.cpp",
-          "sha256": "e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b"
-        },
-        {
-          "source_key": "oteryn:source.crystalserver",
-          "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "src/items/items.hpp",
-          "sha256": "06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca"
-        },
-        {
-          "source_key": "oteryn:source.crystalserver",
-          "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "src/items/items.cpp",
-          "sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d"
-        },
-        {
-          "source_key": "oteryn:source.crystalserver",
-          "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "src/protobuf/appearances.proto",
-          "sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f"
-        },
-        {
-          "source_key": "oteryn:source.crystalserver",
-          "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "data-global/scripts/lib/a_piece_of_cake_config.lua",
-          "sha256": "044d68d0ed8a6b73b860365f6c7e917de62e249c7e176aa575788a0de51f4da9"
-        },
-        {
-          "source_key": "oteryn:source.crystalserver",
-          "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-          "path": "data/items/items.xml",
-          "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
-        },
-        {
-          "source_key": "oteryn:source.canary",
-          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-          "path": "data/items/appearances.dat",
-          "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
-        },
-        {
-          "source_key": "oteryn:source.canary",
-          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-          "path": "data/items/items.xml",
-          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
-        }
-      ],
-      "method": "Pinned protobuf flags + exact Crystal Items loader + ItemType defaults + Item factory + explicit Cake bridge producer",
-      "producer": "data-global/scripts/lib/a_piece_of_cake_config.lua:249-292",
-      "items_xml_present": false,
-      "appearance_flags": {
-        "bank": true,
-        "bank_waypoints": 150,
-        "unmove": true,
-        "automap": true,
-        "automap_color": 121,
-        "fullbank": true
-      },
-      "status": "Unavailable until the canonical Item identity/map owner supplies an admitted definition; no source suffix"
-    }
-  ],
+  "canonical_identity_unavailable_evidence": [],
   "native_item_profile_ids": [
     123,
     306,
@@ -764,6 +694,7 @@
     7377,
     8778,
     8853,
+    8886,
     9019,
     9642,
     10227,
@@ -1516,7 +1447,8 @@
     20250,
     20251,
     21935,
-    31159
+    31159,
+    48227
   ],
   "world_map_physical": [
     {
@@ -12866,6 +12798,23 @@
       "dynamic_kind": null,
       "xml_attributes": [],
       "magic_field": false
+    },
+    {
+      "server_item_id": 48227,
+      "ground": true,
+      "ground_speed": 150,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [],
+      "magic_field": false
     }
   ],
   "secondary_item_ids": [],
@@ -12906,16 +12855,6 @@
         "data/scripts/actions/items/usable_spirit_of_purity_items.lua:1"
       ],
       "appearance_present": true
-    },
-    {
-      "item_id": 48227,
-      "production_key": "oteryn:item.tibia.i48227",
-      "reason": "EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE",
-      "donor": [
-        "data-global/scripts/lib/a_piece_of_cake_config.lua:249-292"
-      ],
-      "appearance_present": true,
-      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114"
     }
   ],
   "records": [
@@ -26735,6 +26674,148 @@
       "production_definition": {
         "family": "Item",
         "production_key": "oteryn:item.tibia.i8853",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/8886",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "iron floor"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "8886",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8886",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i8886",
         "revision_ref": "definition-r1"
       },
       "production_binding_qualification": null

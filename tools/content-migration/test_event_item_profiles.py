@@ -1,6 +1,7 @@
 """Event admission must preserve definitions admitted by established owners."""
 import copy
 import json
+import sys
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -118,7 +119,12 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertTrue(set(novelty['map_action_item_ids']) <= records)
         self.assertTrue({row[field] for row in novelty['house_transforms']
                          for field in ('item_id', 'target')} <= records)
-        expected_map = expected | set(novelty['map_item_ids']) | set(events['seasonal_map_item_ids']) | {
+        # Crystal extraction_spots.lua uses iron floor8886 at the ten
+        # source action-id tiles; M57 admits its physical STEP policy explicitly.
+        self.assertIn(8886, records)
+        sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
+        import last_creep_native
+        expected_map = expected | last_creep_native.map_item_ids(ROOT) | set(novelty['map_item_ids']) | set(events['seasonal_map_item_ids']) | {
             row[state] for row in source['world_door_families'] for state in ('locked', 'closed', 'open')}
         physical = source['world_map_physical']
         self.assertEqual([row['server_item_id'] for row in physical], sorted(expected_map - gaps.keys()))
@@ -153,7 +159,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertFalse(physical['movable'])
         self.assertFalse(any(row['item_id'] == 31159 for row in source['unavailable']))
 
-    def test_cake_bridge_source_facts_do_not_admit_missing_canonical_identity(self):
+    def test_cake_bridge_owner_admits_exact_identity_without_inventory_policy(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
         captured = source['appearance_only_items']
         self.assertEqual([row['item_id'] for row in captured], [48227])
@@ -161,36 +167,25 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertEqual(captured[0]['physical']['ground_speed'], 150)
         self.assertFalse(captured[0]['physical']['movable'])
         self.assertFalse(captured[0]['physical']['pickupable'])
-        self.assertFalse(any(row['server_item_id'] == 48227 for row in source['world_map_physical']))
+        physical, = [row for row in source['world_map_physical'] if row['server_item_id'] == 48227]
+        self.assertEqual(physical, captured[0]['physical'])
         self.assertFalse(any(row['production_definition']['production_key'] == 'oteryn:item.tibia.i48227'
                              for row in source['records']))
-        gap = next(row for row in source['unavailable'] if row['item_id'] == 48227)
-        self.assertEqual(gap, {
-            'item_id': 48227,
-            'production_key': 'oteryn:item.tibia.i48227',
-            'reason': 'EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
-            'donor': ['data-global/scripts/lib/a_piece_of_cake_config.lua:249-292'],
-            'appearance_present': True,
-            'decision': 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114',
-        })
-        evidence = source['canonical_identity_unavailable_evidence']
-        self.assertEqual(len(evidence), 1)
-        self.assertEqual(evidence[0]['item_id'], 48227)
-        self.assertEqual(evidence[0]['reason'], gap['reason'])
-        self.assertEqual(evidence[0]['decision'], gap['decision'])
-        self.assertEqual(evidence[0]['source_revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
-        self.assertEqual(len(evidence[0]['sources']), 8)
-        self.assertTrue(all(len(row['sha256']) == 64 for row in evidence[0]['sources']))
-        self.assertFalse({'bindings', 'target', 'policy', 'index'} & evidence[0].keys())
-        # ANSWER6549960114 preserves the canonical key section and sorted reference
-        # contract. Neither observed physical flags nor the producer allocates a key.
+        self.assertFalse(any(row['item_id'] == 48227 for row in source['unavailable']))
+        self.assertEqual(source['canonical_identity_unavailable_evidence'], [])
+        packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
+        self.assertEqual(packet['item_id'], 48227)
+        self.assertEqual(packet['decision'], 'OWNER DECISION 2026-11-08: Zatwierdzam 48227')
+        self.assertEqual(packet['source_revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
+        self.assertEqual(len(packet['sources']), 8)
+        self.assertTrue(all(len(row['sha256']) == 64 for row in packet['sources']))
         keys = json.loads((ROOT / 'tools/content-schema/native-gameplay/item-keys.json').read_bytes())
-        self.assertNotIn('oteryn:item.tibia.i48227', [row[0] for row in keys['records']])
+        self.assertIn('oteryn:item.tibia.i48227', [row[0] for row in keys['records']])
 
     def test_spiritual_horseshoe_source_rule_survives_without_invented_item_profile(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
         unavailable = source['unavailable']
-        self.assertEqual([row['item_id'] for row in unavailable], [44048, 48227])
+        self.assertEqual([row['item_id'] for row in unavailable], [44048])
         self.assertEqual(unavailable[0]['reason'], 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE')
         self.assertTrue(unavailable[0]['appearance_present'])
         self.assertFalse(any(row['production_definition']['production_key'] == 'oteryn:item.tibia.i44048'

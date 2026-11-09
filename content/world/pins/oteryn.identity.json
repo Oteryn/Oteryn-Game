@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "seasonal-cake-creature-20261107-r1",
-  "content_lock_digest": "84c6639fa3abb88761b4c50e99ae062b91ee31053d953ecec7fcc39b60fa9d56",
+  "content_revision": "cake-bridge-owner-approved-20261108-r1",
+  "content_lock_digest": "98ea9192d76744eae13a715f1fc1f3e17c673983e3d606def2dfa8977185fc2e",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:seasonal-cake-creature-20261107-r1/ca10a4300ad06293a68c340ed9eab1ba08b41568556cf8d47817d3a5948101a5"
+  "provenance_summary": "lock:cake-bridge-owner-approved-20261108-r1/0f643a888281b48cc633f292e6702241c6e5d7e26c87006a932a082e86f7773b"
 }

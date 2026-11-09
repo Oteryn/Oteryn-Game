@@ -11,7 +11,8 @@ import boss_conditional_item_reference as reference
 ROOT=base.ROOT
 IDS=frozenset({20121,23726,23727,23728,33004,37000,42851,42853,43294,43295,43589,43590,43625})
 NEW=(43589,43590,42851,42853,43625)
-FIRST=34112
+CAPTURE_FIRST=34112
+FIRST=reference.canonical_ordinal(ROOT,CAPTURE_FIRST)
 PATH='tools/content-schema/native-gameplay/boss-movement-item-profiles.json'
 PIN_PATH='tools/content-schema/native-gameplay/boss-movement-item-profiles-pin.json'
 PACKET='tools/content-schema/native-gameplay/candidate-bindings/boss-movement-items-candidate.json'
@@ -102,7 +103,7 @@ def publish_references(cache,root,check):
 def packet():
     return {'schema':'OTERYN_NATIVE_BOSS_MOVEMENT_BINDINGS/v1','source_revision':base.PIN,
         'sources':[{'path':path,'sha256':sha} for path,sha in {**base.SOURCE_HASHES,**SOURCES}.items()],
-        'declarations':[{'ordinal':FIRST+n,'definition':value} for n,value in enumerate(definitions())],
+        'declarations':[{'ordinal':CAPTURE_FIRST+n,'definition':value} for n,value in enumerate(definitions())],
         'bindings':[{'source_key':'oteryn:source.crystalserver','source_revision':base.PIN,
             'identity_namespace':'ots/item_server_id','external_id':str(i),'target':value['identity'],
             'disposition':'EXACT'} for i,value in zip(NEW,definitions())]}

@@ -5,7 +5,11 @@ import json
 from pathlib import Path
 
 KEY='oteryn:item.tibia.i43860'
-ORDINAL=34111
+CAPTURE_ORDINAL=34111
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"tools/content-schema/native-gameplay"))
+from event_item_identity import canonical_ordinal
+ORDINAL=canonical_ordinal(Path(__file__).resolve().parents[2],CAPTURE_ORDINAL)
 PATH='tools/content-schema/native-gameplay/bakragore-conditional-item-reference.json'
 PIN_PATH='tools/content-schema/native-gameplay/bakragore-conditional-item-reference-pin.json'
 OFFICIAL_SHA='2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
@@ -52,7 +56,7 @@ def evidence(cache,root):
             or membership['appearances_sha256']!=OFFICIAL_SHA
             or 43860 not in {row[0] for row in json.loads(raw)['entries']}):
         raise ValueError('CONDITIONAL_REFERENCE_OFFICIAL_MEMBERSHIP')
-    return {'schema':'OTERYN_BAKRAGORE_CONDITIONAL_ITEM_REFERENCE/v1','ordinal':ORDINAL,
+    return {'schema':'OTERYN_BAKRAGORE_CONDITIONAL_ITEM_REFERENCE/v1','ordinal':CAPTURE_ORDINAL,
             'definition':definition(),'source_revision':SOURCE,
             'callback':{'path':CALLBACK,'sha256':CALLBACK_SHA,'lines':[21,43]},
             'source_files':[{'path':path,'sha256':hashlib.sha256(blob).hexdigest()} for path,blob in blobs.items()],
@@ -67,7 +71,7 @@ def extend_records(records,root):
         raise ValueError('CONDITIONAL_REFERENCE_CAPTURE_PIN')
     packet=json.loads(raw)
     if (packet['schema']!='OTERYN_BAKRAGORE_CONDITIONAL_ITEM_REFERENCE/v1'
-            or packet['ordinal']!=ORDINAL or packet['definition']!=definition()
+            or packet['ordinal']!=CAPTURE_ORDINAL or packet['definition']!=definition()
             or packet['source_revision']!=SOURCE
             or packet['callback']!={'path':CALLBACK,'sha256':CALLBACK_SHA,'lines':[21,43]}):
         raise ValueError('CONDITIONAL_REFERENCE_CAPTURE_AUTHORITY')

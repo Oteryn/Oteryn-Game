@@ -121,6 +121,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The exact source-key union is 2372 + 861 + 284 = 3517; no main key is missing.
     // Every raw speed and the exact unknown-speed set remain checked below.
     ("PKG2-CONTENT-UNION", 284),
+    // Crystal201189f iron-floor8886: real Cake extraction STEP owner.
+    ("M57-CAKE-MACHINE", 1),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
     // I05 skill rings: the inactive and active power 3050/3087, sword 3091/3094, axe 3092/3095

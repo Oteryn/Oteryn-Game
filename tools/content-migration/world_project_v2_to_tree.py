@@ -787,9 +787,21 @@ def main() -> int:
         ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
         packet_path=condition_potion_profiles.PATH,
         keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+    for packet_name in ('monk-reward-profiles.json', 'quest-batch3-item-profiles.json'):
+        packet_path = 'tools/content-schema/native-gameplay/' + packet_name
+        packet = json.loads((ROOT / packet_path).read_bytes())
+        keys = {row['production_definition']['production_key'] for row in packet['records']}
+        refresh_canonical_input_pins(ROOT, '111e86d2bbe5204704c48c01f1241a6ba6f2900b', packet_path=packet_path, keys=keys)
+    import m42_cooking_canonical
+    witness = m42_cooking_canonical.capture(ROOT)
+    (ROOT / m42_cooking_canonical.WITNESS).write_text(json.dumps(witness, sort_keys=True, indent=2) + "\n")
+    from gathering_item_profiles import refresh_canonical_pin
+    refresh_canonical_pin(ROOT, "111e86d2bbe5204704c48c01f1241a6ba6f2900b")
     refresh_bestiary_inventory(ROOT)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
+    from build_full_spell_artifact import refresh_item_keys
+    refresh_item_keys()
     import prey_difficulty
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.

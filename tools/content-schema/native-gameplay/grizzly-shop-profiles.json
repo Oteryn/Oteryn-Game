@@ -59,15 +59,15 @@
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "92f0d0672e40945716dd26732c8857a8485353dbea8470dafce68dca6af87ffb"
+      "sha256": "51a8b9a371ca60adc8a89139edaff127a9d3065cf703fb6326fa47c4a488b57a"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "f3fca5c5d8d67861740bb947f120530949a9138eb254dc76efbf32d4a2fca309"
+      "sha256": "5c0df4ada78bab1e3e65ecc2cce11fdaa0fbdd214eec4a4d6de404906a03a9e3"
     },
     {
       "path": "content/items/definitions/items-33500-33999.json",
-      "sha256": "9fcdc84d1be95e28089ce649b4966ac3f460c28f1f35caa7f7df943be1c5ffcf"
+      "sha256": "0307feea887a12d0fec7019482d949436b78f7e02868cebe88c5aca10edd5345"
     }
   ],
   "records": [

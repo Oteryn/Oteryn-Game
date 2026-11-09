@@ -26,11 +26,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
     assert_eq!(
         catalogue.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
+        "cake-bridge-owner-approved-20261108-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "cc61338992bd0709123c10a640c12f89b9d9474d68962cc085bec263c10db7f8"
+        "0a203bdc7666a56c574092b6253d2c811b92db0aa1541523204aece59fa978f1"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

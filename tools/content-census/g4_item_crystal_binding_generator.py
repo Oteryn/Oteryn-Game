@@ -882,6 +882,24 @@ def epoch2_bindings(
     return bindings
 
 
+def approved_cake_binding() -> dict[str, Any]:
+    """Owner-approved explicit producer cohort, separate from historical XML epochs."""
+    sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
+    from event_item_identity import CRYSTAL, evidence
+    packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
+    if any(packet.get(key) != value for key, value in evidence().items()):
+        raise GeneratorError('CAKE_BRIDGE_SOURCE_CLOSURE')
+    identity = {'family':'Item','key':'oteryn:item.tibia.i48227','revision':'definition-r1'}
+    expected = {'source_key':'oteryn:source.crystalserver','source_revision':CRYSTAL,
+                'identity_namespace':'ots/item_server_id','external_id':'48227',
+                'target':identity,'disposition':'EXACT'}
+    if (packet.get('binding') != expected
+            or packet.get('definition') != {'kind':'Item','identity':identity,
+                'client_projection':'ClientSafe','materializable':False,'stack_class':'Unknown'}):
+        raise GeneratorError('CAKE_BRIDGE_IDENTITY')
+    return expected
+
+
 def generate() -> tuple[dict[str, Any], bytes]:
     text = read_text(RUST_SOURCE)
     pins = parse_epoch2_pins(text)
@@ -930,7 +948,8 @@ def generate() -> tuple[dict[str, Any], bytes]:
         raise GeneratorError(f"D149_UNBOUND_COUNT:{unbound}:{unbound_epoch2}")
     # Every epoch-1 target is exactly the definition key set less the epoch-2 targets and the
     # keys of current CipSoft ids no Crystal row names (ITEM-ADD-1, A12 section 4.1).
-    definition_keys = load_definition_keys()
+    cake = approved_cake_binding()
+    definition_keys = load_definition_keys() - {cake["target"]["key"]}
     epoch2_targets = {row["target"]["key"] for row in bound_epoch2}
     rule_only = rule_only_definition_keys(
         definition_keys - epoch2_targets,
@@ -948,6 +967,9 @@ def generate() -> tuple[dict[str, Any], bytes]:
         or len({row["target"]["key"] for row in bindings}) != EXPECTED_BOUND
     ):
         raise GeneratorError("BOUND_TARGET_UNIQUENESS")
+    if any(row['external_id']=='48227' or row['target']['key']==cake['target']['key'] for row in bindings):
+        raise GeneratorError('CAKE_BRIDGE_BINDING_COLLISION')
+    bindings = sorted(bindings + [cake], key=canonical_bytes)
     output = {"schema": SCHEMA, "family": "Item", "bindings": bindings}
     return output, canonical_bytes(output)
 

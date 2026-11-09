@@ -83,3 +83,26 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()
     generated[manifest_path] = canonical(manifest)
+
+
+def refresh_canonical_pin(root, baseline):
+    """Rebind the shared shard only after proving the selected definition unchanged."""
+    import subprocess
+    path = root / PATH
+    document = json.loads(path.read_bytes())
+    _, _, proof = mechanical_rod_policy(root)
+    prior = document['qualified_overrides'][0]
+    old = prior['inputs'][0]
+    current = proof['inputs'][0]
+    if old == current:
+        return
+    previous = subprocess.check_output(['git','-C',str(root),'show',baseline+':'+old['path']])
+    actual = (root / current['path']).read_bytes()
+    def selected(raw):
+        return [row for row in json.loads(raw)['records'] if row['definition']['identity']['key']==MECHANICAL_KEY]
+    unchanged = dict(prior)
+    unchanged['inputs'] = proof['inputs']
+    if hashlib.sha256(previous).hexdigest()!=old['sha256'] or selected(previous)!=selected(actual) or unchanged!=proof:
+        raise ValueError('GATHERING_CANONICAL_REPIN_CHANGED_SOURCE_POLICY')
+    document['qualified_overrides'] = [proof]
+    path.write_text(json.dumps(document,indent=2,ensure_ascii=False)+'\n')

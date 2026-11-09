@@ -9,6 +9,9 @@ IDS = {5953, 11982, 12023, 25783}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools/content-schema/native-gameplay"))
+    from build_spell_item_identities import historical_binding_bytes
     packet = json.loads((root / PACKET).read_bytes())
     records = packet["records"]
     keys = {f"oteryn:item.tibia.i{i}" for i in IDS}
@@ -22,7 +25,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         != "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
         or packet["binding_sha256"]
         != hashlib.sha256(
-            (root / "imports/crystalserver/bindings/items.json").read_bytes()
+            historical_binding_bytes((root / "imports/crystalserver/bindings/items.json").read_bytes(), packet["binding_sha256"])
         ).hexdigest()
     ):
         raise ValueError("QREADY1_QUEST_ITEM_SOURCE_DRIFT")

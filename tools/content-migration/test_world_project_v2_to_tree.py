@@ -133,7 +133,7 @@ reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_
 from validate_world_project_v2_to_tree import source_qualified_item_references
 expected_items = source_qualified_item_references(reference, ROOT)
 legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
-assert len(legacy_items) == 34111, "legacy package count remains unchanged"
+assert len(legacy_items) == 34112, "owner-approved Cake floor adds exactly one canonical Item"
 assert [row["identity"]["key"] for row in expected_items[len(legacy_items):]] == [
     f"oteryn:item.tibia.i{item}" for item in (43860, 43589, 43590, 42851, 42853, 43625, 40016, 40598, 40601, 40603)
 ], "only the exact source-qualified reference extensions are admitted"

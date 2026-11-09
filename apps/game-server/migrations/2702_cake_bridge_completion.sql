@@ -66,3 +66,32 @@ DO $$ DECLARE body TEXT; old TEXT; BEGIN
  IF strpos(body,old)=0 THEN RAISE EXCEPTION 'unexpected Cake annual claim predecessor'; END IF;
  EXECUTE replace(body,old,$replacement$ELSE 'oteryn:reward-claim.cake-brutus-cupcake' END || '.' || p_year::text;$replacement$);
 END $$;
+
+-- Cake USE has a map source, never a fabricated carried tool. Preserve2031's
+-- Item snapshot ownership; admit only the same Type2 bite + terrain CAS here.
+DO $migration$
+DECLARE body TEXT; anchor TEXT; replacement TEXT;
+BEGIN
+ body:=pg_get_functiondef('game_terrain_tool_capture_definition()'::regprocedure);
+ anchor:=$old$    SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref$old$;
+ IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+  RAISE EXCEPTION 'unexpected Cake map-source receipt predecessor';
+ END IF;
+ replacement:=$new$    IF NEW.tool_item_instance_id IS NULL AND NEW.transformed_item_id=0
+        AND EXISTS (
+            SELECT 1 FROM public.game_cake_bite_receipts b
+            JOIN public.game_terrain_tool_transforms t
+                ON t.world_id=b.world_id AND t.channel_id=NEW.channel_id
+                AND t.placement=b.placement AND t.reset_epoch=NEW.reset_epoch
+            WHERE b.game_session_id=NEW.game_session_id AND b.command_id=NEW.command_id
+                AND b.character_id=NEW.character_id AND b.world_id=NEW.world_id
+                AND b.placement=NEW.placement AND b.intent=NEW.intent
+                AND b.created_xact_id=pg_current_xact_id()
+                AND t.cake_event_year=b.event_year AND t.cake_source_item=b.source_item
+                AND t.state_item_id=0 AND t.object_revision=b.before_revision+1
+        ) THEN
+        RETURN NEW;
+    END IF;
+    SELECT i.definition_family, i.definition_production_key, i.definition_revision_ref$new$;
+ EXECUTE replace(body,anchor,replacement);
+END $migration$;

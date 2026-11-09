@@ -50,14 +50,15 @@ def build_sources(sources):
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
+    from build_spell_item_identities import historical_binding_bytes
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay['records']
     keys = [row['production_definition']['production_key'] for row in records]
     if (overlay['schema'] != 'OTERYN_NATIVE_M41_QUEST_ITEM_PROFILES/v1'
             or overlay['source_revision'] != REVISION
             or len(keys) != len(IDS) or set(keys) != {f'oteryn:item.tibia.i{i}' for i in IDS}
-            or overlay['binding_table_sha256'] != hashlib.sha256(
-                (root / 'imports/crystalserver/bindings/items.json').read_bytes()).hexdigest()):
+            or overlay['binding_table_sha256'] != hashlib.sha256(historical_binding_bytes(
+                (root / 'imports/crystalserver/bindings/items.json').read_bytes(), overlay['binding_table_sha256'])).hexdigest()):
         raise ValueError('M41_QUEST_ITEM_PROFILE_SET')
     document = json.loads(generated[profile_path])
     if {row['production_definition']['production_key'] for row in document['records']} & set(keys):
