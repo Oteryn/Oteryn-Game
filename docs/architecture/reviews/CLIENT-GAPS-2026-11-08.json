@@ -962,7 +962,8 @@
   "feature": "Browse/buy/sell/create/cancel/history",
   "status": "PARTIAL",
   "gap": "Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0063-market/input.rs:5 + market_side_filter_preserves_server_offer_identity (page side filter only; remaining gaps unchanged)"
  },
  {
   "id": "T125",
@@ -1000,7 +1001,8 @@
   "feature": "Katalog/search/buy/confirmation/result",
   "status": "PARTIAL",
   "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0154-store/input.rs:33 + store_category_navigation_sends_server_key_with_fresh_cursor (category navigation; graphical preview remains)"
  },
  {
   "id": "T131",
