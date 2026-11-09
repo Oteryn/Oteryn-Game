@@ -1,9 +1,9 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
     format!(
-        "Cyclopedia map\r\n{}\r\n{}\r\n{}\r\n{}",
+        "Cyclopedia map\r\nWorld atlas: Ctrl+Alt+Shift+F11\r\n{}\r\n{}\r\n{}\r\n{}",
         panel.summary,
-        super::atlas::text(panel),
+        super::region_atlas_view::text(panel),
         map_text(panel),
         if panel.pending {
             "Waiting for the server"

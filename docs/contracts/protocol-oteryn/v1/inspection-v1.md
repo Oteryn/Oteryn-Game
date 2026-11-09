@@ -19,6 +19,7 @@ Strict protobuf subset: exactly one of the following fields, no duplicate or unk
 | 3 | uint32 | Trade leaf index shifted left one, with counter-offer flag in bit zero |
 | 4 | uint32 | Nonzero active-generation item definition index (catalogue details) |
 | 5 | bytes | Permission action submessage: field 1 uint32 action, field 2 bytes extended LOOK player target |
+| 6 | bytes | Bounded public catalogue query (O077 extension below) |
 
 Maximum 128 bytes. A handle must still resolve in the session table and in current owner
 facts after the durable metadata read. Ground uses current native map visibility, not
@@ -105,9 +106,37 @@ Client UI, persistent client preferences, future trade-container support and com
 rules are deliberately not selected here. Independent byte-level golden cases accompany
 round-trip/malformed/limit tests; shared client/server codecs are not the sole wire oracle.
 
+## O077 public catalogue extension
+
+Request field 6 is a length-delimited catalogue query, still within the existing
+128-byte request budget. Its first byte chooses a strict bounded layout:
+
+- `1, after:u32le, category:u8, search:utf8[0..64]`: public Item templates in
+  ascending active-generation definition-reference order. Category zero means
+  all; positive categories index the current sorted taxonomy list (at most 64).
+  Name matching is case-insensitive and literal.
+- `2, reference:u32le, after:u16le`: base creature drop sources of one public
+  Item template. The reference is nonzero and the exclusive canonical race
+  cursor is at most 1024.
+
+Both use the existing inspection reply. Browse pages contain at most ten public
+unit-template summaries (name and category); field 4 fetches complete Item attributes. Their first item carries `Catalogue categories` (pipe-separated
+sorted taxonomy names) and, when more matches exist, `Catalogue next` (the last
+returned definition reference). Empty pages have no continuation. Drop pages
+contain the selected template, up to six qualified source creature names in
+`Drop sources`, and optional `Catalogue drop next`. These control attributes
+are consumed by the catalogue UI; `Category` and `Drop sources` remain visible.
+The existing item, attribute, text and total reply budgets are unchanged.
+
+The current session, actor lease and content pin are checked before projection.
+Only active, materializable Item templates and admitted native loot rows are
+published. This extension neither reads private player inventories nor grants
+custody, inspection permission, discovery or market authority. Market links use
+the existing read-only Market browse command with the same definition reference.
+
 ## Public catalogue paging (T078)
 
-Command 153 additionally accepts singular field 6, a catalogue query submessage:
+Command 153 additionally accepts singular field 8, a catalogue query submessage:
 field 1 uint32 `after` (zero starts the catalogue), field 2 UTF-8 name search
 (at most 48 bytes), field 3 UTF-8 category (at most 32 bytes). Empty filters are
 valid; NUL, unknown fields, missing fields and duplicate singular fields are refused.
@@ -151,3 +180,8 @@ Clients correlate the one returned item with the requested definition and retain
 confirmed item page independently of the creature cursor. Market sources use the
 existing read-only capability-63 Browse operation with the same definition ref; source
 navigation must never create, accept or cancel a market offer.
+
+The paged protobuf query uses field 8 to coexist with the field-6 compact query.
+For compatibility, legacy field-6 protobuf pages are still decoded: compact
+queries begin with opcode 1 or 2; protobuf pages begin with their required field-1
+tag (8). Multiple request alternatives remain rejected.

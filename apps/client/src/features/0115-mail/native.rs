@@ -129,6 +129,8 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
             );
             SetWindowLongPtrW(hwnd, GWLP_WNDPROC, procedure as *const () as isize);
             let mut edits = Vec::new();
+            let mut editor_buttons = Vec::new();
+            let mut multiline_fields = Vec::new();
             let mut y = 10;
             for (index, label) in form.labels.iter().enumerate() {
                 control(hwnd, "STATIC", label, 0, [12, y, 640, 20], 0);
@@ -168,9 +170,22 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                     0,
                 );
                 edits.push(edit);
+                if multiline {
+                    multiline_fields.push(index);
+                    editor_buttons.push(control(
+                        hwnd,
+                        "BUTTON",
+                        "Open text editor",
+                        1000 + index,
+                        [500, y - 22, 140, 20],
+                        WS_TABSTOP,
+                    ));
+                }
                 y += height + 8;
             }
-            let mut buttons = Vec::new();
+            let columns = if form.title == "Cyclopedia" { 5 } else { 4 };
+            let button_width = if columns == 5 { 128 } else { 160 };
+            let mut buttons = editor_buttons;
             for (index, label) in form.buttons.iter().enumerate() {
                 buttons.push(control(
                     hwnd,
@@ -178,15 +193,15 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                     label,
                     index + 100,
                     [
-                        12 + (index % 4) as i32 * 160,
-                        y + (index / 4) as i32 * 34,
-                        150,
+                        12 + (index % columns) as i32 * button_width,
+                        y + (index / columns) as i32 * 34,
+                        button_width - 10,
                         28,
                     ],
                     WS_TABSTOP,
                 ));
             }
-            y += form.buttons.len().div_ceil(4) as i32 * 34 + 8;
+            y += form.buttons.len().div_ceil(columns) as i32 * 34 + 8;
             let summary = control(
                 hwnd,
                 "EDIT",
@@ -220,11 +235,52 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 let Some(shared) = weak.upgrade() else {
                     break;
                 };
+                // Native dialogs pump their own messages without holding the mailbox lock.
+                let pending = (form.snapshot)(&lock(&shared)).1;
+                let mut submitted = Vec::new();
+                for action in std::mem::take(&mut actions.0) {
+                    if pending {
+                        continue;
+                    }
+                    if let Some(index) = action.checked_sub(1000) {
+                        if multiline_fields.contains(&index)
+                            && let Some(edit) = edits.get(index)
+                            && let Some(value) = dialogs::edit_text(
+                                hwnd,
+                                form.labels[index],
+                                &text(*edit),
+                                if form.title == "Staff authorized actions" {
+                                    8192
+                                } else {
+                                    7996
+                                },
+                            )
+                        {
+                            SetWindowTextW(*edit, wide(&value).as_ptr());
+                        }
+                        continue;
+                    }
+                    if submitted.contains(&action) {
+                        continue;
+                    }
+                    if form.title == "Writing and mail"
+                        && action == 101
+                        && !dialogs::confirm(
+                            hwnd,
+                            "mail-post:v1",
+                            "Post mail",
+                            "Post the selected written item to its addressed recipient?",
+                        )
+                    {
+                        continue;
+                    }
+                    submitted.push(action);
+                }
                 // Read HWNDs outside the mailbox lock; the session never waits for Win32.
                 let values: Vec<String> = edits.iter().map(|edit| text(*edit)).collect();
                 let (open, pending, fields, body) = {
                     let mut mailbox = lock(&shared);
-                    for action in actions.0.drain(..) {
+                    for action in submitted {
                         if let Some(index) = action.checked_sub(100) {
                             (form.submit)(&mut mailbox, &commands, index, values.clone());
                         }
@@ -260,3 +316,6 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
         (form.set_open)(&mut lock(&shared), false);
     }
 }
+
+#[path = "view/dialogs.rs"]
+pub(in crate::play) mod dialogs;

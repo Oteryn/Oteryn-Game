@@ -75,6 +75,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return GuildReply::Rejected;
         };
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&255) {
+            if CommandId::new(id).is_err() {
+                return GuildReply::Rejected;
+            }
+            return atlas::dispatch(self, admitted, payload).await;
+        }
         let Ok(intent) = wire::decode_request(kind, payload) else {
             return GuildReply::Rejected;
         };

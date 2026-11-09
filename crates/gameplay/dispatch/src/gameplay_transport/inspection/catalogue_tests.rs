@@ -1,9 +1,9 @@
 use super::*;
-use oteryn_protocol_oteryn::inspection::catalogue::Query;
+use oteryn_protocol_oteryn::inspection::catalogue::PageQuery;
 #[test]
 fn catalogue_pages_advance_over_sparse_records_and_filter_public_templates()
 -> Result<(), Box<dyn std::error::Error>> {
-    let query = Query::new(0, "silver", "sword").map_err(|_| "query")?;
+    let query = PageQuery::new(0, "silver", "sword").map_err(|_| "query")?;
     let mut scanned = 0;
     let page = catalogue::project_page(query, |reference| {
         scanned += 1;
@@ -27,7 +27,10 @@ fn catalogue_pages_advance_over_sparse_records_and_filter_public_templates()
             .any(|category| category == "Spellbook")
     }));
     assert_eq!(sparse.catalogue.and_then(|page| page.next), Some(256));
-    let end = catalogue::project_page(Query::new(u32::MAX, "", "").map_err(|_| "query")?, |_| None);
+    let end = catalogue::project_page(
+        PageQuery::new(u32::MAX, "", "").map_err(|_| "query")?,
+        |_| None,
+    );
     assert_eq!(end.catalogue.and_then(|page| page.next), None);
     Ok(())
 }

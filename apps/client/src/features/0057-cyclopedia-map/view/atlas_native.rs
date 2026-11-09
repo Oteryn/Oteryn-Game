@@ -212,7 +212,7 @@ unsafe fn paint(hwnd: HWND, panel: &oteryn_client_ui::cyclopedia_map::Panel) {
                 0x00ffff,
             );
         }
-        if let Some(atlas) = &panel.atlas {
+        if let Some(atlas) = &panel.region_atlas {
             let ids: std::collections::BTreeSet<_> = atlas
                 .runs
                 .iter()

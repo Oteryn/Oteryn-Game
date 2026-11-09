@@ -20,7 +20,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
             .map_err(|_| "Enter donation gold (1-10000000)")?
     } else if intent == Intent::AtlasNext {
         panel
-            .atlas
+            .region_atlas
             .as_ref()
             .and_then(|page| page.next)
             .ok_or("The complete atlas is loaded")?
@@ -40,6 +40,9 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    if super::input::atlas::apply(panel, command, result) {
+        return;
+    }
     if !panel.pending || panel.pending_kind != command.kind {
         return;
     }
@@ -52,20 +55,20 @@ pub(in crate::play) fn apply(
     if let Ok(intent) = wire::decode_request(command.kind, &command.payload)
         && intent.operation == 5
     {
-        let Ok(page) = wire::atlas::decode(&result.payload) else {
+        let Ok(page) = wire::region_atlas::decode(&result.payload) else {
             panel.feedback = "Invalid atlas reply".into();
             return;
         };
         if page.next.is_some_and(|next| next <= intent.amount)
             || intent.amount != 0
-                && panel.atlas.as_ref().and_then(|p| p.next) != Some(intent.amount)
+                && panel.region_atlas.as_ref().and_then(|p| p.next) != Some(intent.amount)
         {
             panel.feedback = "Stale atlas cursor".into();
             return;
         }
         let mut combined = page;
         if intent.amount != 0
-            && let Some(previous) = &panel.atlas
+            && let Some(previous) = &panel.region_atlas
         {
             combined.runs.splice(0..0, previous.runs.iter().copied());
             let mut areas: std::collections::BTreeMap<_, _> =
@@ -85,7 +88,7 @@ pub(in crate::play) fn apply(
             panel.floor = run.floor;
         }
         panel.atlas_after = intent.amount;
-        panel.atlas = Some(combined);
+        panel.region_atlas = Some(combined);
         panel.feedback = "Atlas updated".into();
         return;
     }

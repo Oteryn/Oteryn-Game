@@ -61,9 +61,31 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
             text,
             "\nHazard [{gauge}]\nSelected level {selected} of {unlocked} unlocked"
         );
+        if panel.fields[0].is_empty() {
+            text.push_str("Choose a boss from the browser before entering.\n");
+        } else {
+            let _ = writeln!(text, "Enter {} at hazard {selected}", panel.fields[0]);
+        }
         text.push_str("Use Lower/Raise hazard to choose an unlocked level, then Enter for the selected boss.\nEntry and cooldown eligibility are confirmed by the server.\n");
     } else {
         text.push_str("Query hazard to load unlocked levels before choosing an encounter.\n");
+    }
+    if let Some(slots) = &panel.slots {
+        for (index, boss) in slots.bosses.iter().enumerate() {
+            let state = if slots.unlocked & (1 << index) == 0 {
+                "Locked"
+            } else if boss.is_empty() {
+                "Empty"
+            } else {
+                boss
+            };
+            let _ = writeln!(text, "Slot {}: {state}", index + 1);
+        }
+        let _ = writeln!(
+            text,
+            "Confirmed bonus: {} | Points: {} | Removal fee: {} gold | Ready at: {}",
+            slots.bonus, slots.points, slots.remove_fee, slots.ready_at_ms
+        );
     }
     text.push_str(&super::slot_text(panel));
     let _ = writeln!(text, "{}", panel.summary);

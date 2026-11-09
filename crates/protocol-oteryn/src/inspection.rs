@@ -1,5 +1,4 @@
 //! INSPECT-1: bounded native inspection, independent of the reference opcodes.
-#[path = "inspection/catalogue.rs"]
 pub mod catalogue;
 
 use crate::charm_wire::{
@@ -35,7 +34,8 @@ pub enum Request {
         index: u8,
     },
     Catalogue(u32),
-    CataloguePage(catalogue::Query),
+    CatalogueQuery(catalogue::Query),
+    CataloguePage(catalogue::PageQuery),
     CatalogueSources {
         definition: u32,
         after: u32,
@@ -132,11 +132,14 @@ pub fn encode_request(request: Request) -> Result<Vec<u8>> {
         Request::Catalogue(reference) if reference != 0 => {
             push_varint_field(&mut out, 4, u64::from(reference))
         }
+        Request::CatalogueQuery(query) => {
+            push_message_field(&mut out, 6, &catalogue::encode(query)?)
+        }
         Request::CatalogueSources { definition, after } if definition != 0 => {
             push_message_field(&mut out, 7, &catalogue::encode_sources(definition, after));
         }
         Request::CataloguePage(query) => {
-            push_message_field(&mut out, 6, &catalogue::encode_query(query))
+            push_message_field(&mut out, 8, &catalogue::encode_query(query))
         }
         Request::Permission { action, target } => {
             if !(1..=6).contains(&action) || target.is_some() != (action <= 3) {
@@ -199,11 +202,19 @@ pub fn decode_request(input: &[u8]) -> Result<Request> {
                 }
                 Request::Catalogue(n)
             }
+            50 => {
+                let body = read_bytes(input, cursor)?;
+                if matches!(body.first(), Some(1 | 2)) {
+                    Request::CatalogueQuery(catalogue::decode(body)?)
+                } else {
+                    Request::CataloguePage(catalogue::decode_query(body)?)
+                }
+            }
             58 => {
                 let (definition, after) = catalogue::decode_sources(read_bytes(input, cursor)?)?;
                 Request::CatalogueSources { definition, after }
             }
-            50 => Request::CataloguePage(catalogue::decode_query(read_bytes(input, cursor)?)?),
+            66 => Request::CataloguePage(catalogue::decode_query(read_bytes(input, cursor)?)?),
             42 => {
                 let mut action = None;
                 let mut target = None;

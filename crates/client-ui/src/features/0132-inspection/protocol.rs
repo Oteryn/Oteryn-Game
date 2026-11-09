@@ -1,3 +1,5 @@
+#[path = "protocol/catalogue.rs"]
+mod catalogue_queries;
 use super::*;
 use oteryn_client_runtime::server_mechanic::{
     CommandStatus, ServerMechanicCommand, ServerMechanicResponse,
@@ -31,7 +33,7 @@ pub fn request_page(panel: &mut Panel, next: bool) -> Option<ServerMechanicComma
     } else {
         0
     };
-    let Ok(query) = catalogue::Query::new(after, &panel.search, &panel.category) else {
+    let Ok(query) = catalogue::PageQuery::new(after, &panel.search, &panel.category) else {
         panel.feedback = "Use a name of at most 48 bytes and category of at most 32 bytes".into();
         return None;
     };
@@ -98,7 +100,7 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
     if matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) && let Ok(reply) = decode_reply(&response.payload)
+    ) && let Ok(mut reply) = decode_reply(&response.payload)
     {
         if reply.catalogue.is_some()
             && !matches!(
@@ -126,6 +128,11 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
                 return;
             }
             panel.catalogue.clear();
+            panel.catalogue_query_categories.clear();
+            panel.catalogue_next = None;
+            panel.catalogue_drop_next = None;
+            panel.catalogue_market = None;
+            panel.catalogue_loaded = true;
             panel.clear_sources();
             panel.catalogue_query = Some(query);
             for item in &reply.items {
@@ -159,12 +166,12 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             panel.catalogue_page = None;
             panel.catalogue_query = None;
             panel.clear_sources();
-            for item in &reply.items {
-                if panel.catalogue.contains_key(&item.definition_ref) || panel.catalogue.len() < 512
-                {
-                    panel.catalogue.insert(item.definition_ref, item.clone());
-                }
-            }
+        }
+        if reply.status == 1
+            && let Err(message) = catalogue_queries::apply(panel, &mut reply)
+        {
+            panel.feedback = message.into();
+            return;
         }
         panel.feedback = match reply.status {
             1 => "Inspection received",

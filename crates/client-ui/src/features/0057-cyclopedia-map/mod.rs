@@ -1,3 +1,7 @@
+#[path = "state/atlas.rs"]
+pub mod atlas;
+#[path = "view/atlas.rs"]
+pub mod atlas_view;
 mod input;
 mod state;
 mod view;
@@ -10,6 +14,6 @@ pub use protocol::request;
 #[cfg(test)]
 mod tests;
 
-#[path = "view/atlas.rs"]
-mod atlas;
-pub use atlas::{AtlasRun, atlas_pois, atlas_runs};
+#[path = "view/region_atlas.rs"]
+mod region_atlas_view;
+pub use region_atlas_view::{AtlasRun, atlas_pois, atlas_runs};

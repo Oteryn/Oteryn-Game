@@ -27,7 +27,7 @@ impl Mailbox {
         self.depot_search.pending = Default::default();
         self.hotkey_equip.pending = Default::default();
         self.potion_durations.pending = Default::default();
-        self.item_forge.pending = Default::default();
+        self.item_forge.scope_changed();
         self.store.pending = Default::default();
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
@@ -60,7 +60,8 @@ impl Mailbox {
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
         self.discovery.inspection.invalidate_catalogue();
-        self.properties.cyclopedia_map.atlas = None;
+        self.discovery.inspection.invalidate_catalogue();
+        self.properties.cyclopedia_map.region_atlas = None;
         self.properties.cyclopedia_map.atlas_after = 0;
         self.properties.cyclopedia_map.map = None;
         self.properties.cyclopedia_map.summary.clear();
@@ -73,6 +74,7 @@ impl Mailbox {
         self.properties.raid_schedule.pending = Default::default();
         self.properties.container_sort.pending = Default::default();
         self.properties.cyclopedia_map.pending = Default::default();
+        self.properties.cyclopedia_map.invalidate_atlas();
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();

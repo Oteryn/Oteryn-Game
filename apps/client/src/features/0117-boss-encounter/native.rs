@@ -94,7 +94,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 if action >= 14 {
                     if action <= 15 {
-                        mailbox.boss_encounter.select_boss(action == 14);
+                        let category = mailbox.boss_encounter.browser_category;
+                        let search = mailbox.boss_encounter.browser_search.clone();
+                        super::super::input::browse(
+                            &mut mailbox.boss_encounter,
+                            &search,
+                            category,
+                            action == 14,
+                        );
                     }
                     if action == 16 {
                         mailbox.boss_encounter.browser_category =

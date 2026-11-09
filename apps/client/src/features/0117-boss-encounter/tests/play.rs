@@ -169,6 +169,12 @@ fn cooldown_shortcut_opens_only_the_tracker_and_queries_real_command() -> Result
     Ok(())
 }
 
+#[path = "hazard.rs"]
+mod hazard;
+
+#[path = "browser.rs"]
+mod browser;
+
 #[path = "catalogue.rs"]
 mod catalogue;
 

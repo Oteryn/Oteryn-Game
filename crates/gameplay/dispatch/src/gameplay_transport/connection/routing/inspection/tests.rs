@@ -71,8 +71,8 @@ fn catalogue_inspection_route_decodes_filters_and_encodes_continuation()
                         item_fence: None,
                     };
                     let authority = Authority(Cell::new(None));
-                    let query =
-                        wire::catalogue::Query::new(10, "silver", "sword").map_err(|_| "query")?;
+                    let query = wire::catalogue::PageQuery::new(10, "silver", "sword")
+                        .map_err(|_| "query")?;
                     let payload = wire::encode_request(Request::CataloguePage(query))
                         .map_err(|_| "request")?;
                     let Dispatch::Reply(CommandStatus::Accepted, bytes) = route(

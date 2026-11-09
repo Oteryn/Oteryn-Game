@@ -72,6 +72,7 @@ pub(super) async fn inspect(
         pinned_index(&runtime, owner.active_generation)?;
     }
     match request {
+        Request::CatalogueQuery(query) => catalogue::inspect(owner, admitted, query).await,
         Request::Item(handle) => {
             let _permit = owner.spell_lane_permit().await?;
             let views = views?;

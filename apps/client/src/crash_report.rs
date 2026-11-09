@@ -76,37 +76,56 @@ pub fn install_hook() {
         previous(info);
     }));
 }
+/// Review the retained report, discarding it only after a decision or a successful export.
+/// The native login caller supplies its synchronous consent dialog.
+pub fn review_pending_at(
+    pending: &Path,
+    destination: &Path,
+    consent: impl FnOnce(&str) -> bool,
+) -> io::Result<bool> {
+    use std::io::Read;
+    let file = std::fs::File::open(pending)?;
+    let mut preview = String::new();
+    file.take(4097).read_to_string(&mut preview)?;
+    if preview.len() > 4096 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Crash report is too large",
+        ));
+    }
+    let approved = consent(&preview);
+    if approved {
+        save(&preview, destination, true)?;
+    }
+    std::fs::remove_file(pending)?;
+    Ok(approved)
+}
 /// Review and optional local export run on the UI thread, after a previous crash.
 #[cfg(windows)]
 pub fn review_pending() {
-    use std::io::Read;
-    let Some(path) = pending_path() else {
-        return;
-    };
-    let Ok(file) = std::fs::File::open(&path) else {
-        return;
-    };
-    let mut preview = String::new();
-    if file.take(4097).read_to_string(&mut preview).is_err() || preview.len() > 4096 {
+    let Some(path) = pending_path() else { return };
+    if !path.exists() {
         return;
     }
-    if consent_dialog(&format!(
-        "{preview}\nSave a local report to share manually? Nothing is uploaded."
-    )) {
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos();
-        let destination = path.with_file_name(format!("crash-report-{stamp}.txt"));
-        if save(&preview, &destination, true).is_err() {
-            crate::win_mutex::show_error(
-                "Cannot save the crash report. The pending report was retained.",
-            );
-            return;
-        }
-        crate::win_mutex::show_error(&format!("Crash report saved to {}", destination.display()));
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let destination = path.with_file_name(format!("crash-report-{stamp}.txt"));
+    match review_pending_at(&path, &destination, |preview| {
+        consent_dialog(&format!(
+            "{preview}\nSave a local report to share manually? Nothing is uploaded."
+        ))
+    }) {
+        Ok(true) => crate::win_mutex::show_error(&format!(
+            "Crash report saved to {}",
+            destination.display()
+        )),
+        Ok(false) => {}
+        Err(_) => crate::win_mutex::show_error(
+            "Cannot review or save the crash report. The pending report was retained.",
+        ),
     }
-    let _ = std::fs::remove_file(path);
 }
 #[cfg(windows)]
 // This is the native consent dialog; pointers live for the synchronous call.

@@ -1,13 +1,21 @@
 //! Transient combat overlays use server positions, including the own actor and hidden attackers.
 //! Item effects retain their donor colours; fireworks expand into eight emissive sparks.
 //! Other magic effects retain the existing hit pulse until official sprites are resolved.
+#[path = "actor_hud.rs"]
+mod actor_hud;
 #[path = "resources.rs"]
 mod resources;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
-use oteryn_session::{PresentationColor, PresentationEventKind, PresentationValue};
+use oteryn_session::{PresentationColor, PresentationEventKind};
 use std::time::Instant;
+#[path = "view/tutorial.rs"]
+mod tutorial;
+#[path = "view/value_text.rs"]
+mod value_text;
+use tutorial::draw_tutorial;
+use value_text::number;
 
 impl PlayView {
     pub(in crate::play) fn receive_presentation(
@@ -40,73 +48,31 @@ impl PlayView {
         let atlas = atlas.atlas();
         let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
-        let creature_bars = self.preferences().creature_bars;
+        let own_ref = self.scene.own_identity().and_then(|identity| {
+            self.appearances
+                .iter()
+                .find(|entry| entry.entity.entity.identity == identity)
+                .map(|entry| entry.entity.entity)
+        });
+        let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref);
         let (view, batch) = self.scene.presentation_base()?;
-        resources::draw(batch, view, atlas, self.vitals.as_ref(), self.own, resource_options)?;
-        if creature_bars {
-            for entity in &self.entities {
-                let oteryn_session::EntityDetail::Actor { health_percent, .. } = entity.detail
-                else {
-                    continue;
-                };
-                let tile = TileCoord::new(entity.position.x, entity.position.y);
-                if entity.position.floor != self.floor || !view.contains(tile) {
-                    continue;
-                }
-                let [x, y] = view.tile_to_screen(tile);
-                let at = [x + 2.0, y + view.tile_px() as f32 - 5.0];
-                let width = (view.tile_px() as f32 - 4.0).max(1.0);
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [width, 3.0],
-                    PresentationColor::DarkRed,
-                )?;
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [width * f32::from(health_percent.min(100)) / 100.0, 3.0],
-                    PresentationColor::LightGreen,
-                )?;
-                if let Some(icon) = self
-                    .party_icons
-                    .iter()
-                    .find(|icon| icon.entity == entity.entity)
-                {
-                    for (offset, value, pattern) in [
-                        (0.0, icon.shield, [5_u8, 7, 2]),
-                        (8.0, icon.skull, [7_u8, 5, 2]),
-                    ] {
-                        if value == 0 {
-                            continue;
-                        }
-                        let color = match value {
-                            1 | 3 | 5 | 7 | 9 => PresentationColor::Blue,
-                            2 | 4 | 6 | 8 | 10 => PresentationColor::Yellow,
-                            _ => PresentationColor::Red,
-                        };
-                        for (row, bits) in pattern.into_iter().enumerate() {
-                            for col in 0..3 {
-                                if bits & (4 >> col) != 0 {
-                                    pixel(
-                                        batch,
-                                        view,
-                                        atlas,
-                                        [x + offset + col as f32 * 2.0, y + row as f32 * 2.0],
-                                        [2.0, 2.0],
-                                        color,
-                                    )?;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        resources::draw(
+            batch,
+            view,
+            atlas,
+            self.vitals.as_ref(),
+            self.own,
+            resource_options,
+        )?;
+        actor_hud::draw(
+            batch,
+            view,
+            atlas,
+            self.own,
+            &self.entities,
+            &self.party_icons,
+            actor_options,
+        )?;
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         if !effects {
             return Ok(());
@@ -207,48 +173,6 @@ impl PlayView {
     }
 }
 
-// Original compact 3 × 5 decimal glyphs, most significant row first.
-const DIGITS: [[u8; 5]; 10] = [
-    [7, 5, 5, 5, 7],
-    [2, 6, 2, 2, 7],
-    [7, 1, 7, 4, 7],
-    [7, 1, 7, 1, 7],
-    [5, 5, 7, 1, 1],
-    [7, 4, 7, 1, 7],
-    [7, 4, 7, 5, 7],
-    [7, 1, 1, 1, 1],
-    [7, 5, 7, 5, 7],
-    [7, 5, 7, 1, 7],
-];
-
-fn number(
-    batch: &mut SpriteBatch,
-    view: &TileView,
-    atlas: &AtlasImage,
-    [center, top]: [f32; 2],
-    value: PresentationValue,
-) -> Result<(), BatchError> {
-    let text = value.value.to_string();
-    let left = center - (text.len() as f32 * 8.0 - 2.0) / 2.0;
-    for (i, digit) in text.bytes().enumerate() {
-        for (row, bits) in DIGITS[usize::from(digit - b'0')].iter().enumerate() {
-            for column in 0..3 {
-                if bits & (4 >> column) != 0 {
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [left + (i * 8 + column * 2) as f32, top + row as f32 * 2.0],
-                        [2.0, 2.0],
-                        value.color,
-                    )?;
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
 fn rgb(color: PresentationColor) -> [u8; 3] {
     use PresentationColor::*;
     match color {
@@ -300,56 +224,4 @@ fn pixel(
         size,
         uv: [u, v, u, v],
     })
-}
-
-fn draw_tutorial(
-    batch: &mut SpriteBatch,
-    view: &TileView,
-    atlas: &AtlasImage,
-    overlay: &crate::play::tutorial_overlay::Overlay,
-    now: Instant,
-) -> Result<(), BatchError> {
-    if !overlay.enabled {
-        return Ok(());
-    }
-    for [x, y] in overlay.points(now) {
-        pixel(
-            batch,
-            view,
-            atlas,
-            [x as f32, y as f32],
-            [3.0, 3.0],
-            PresentationColor::Yellow,
-        )?;
-    }
-    if let Some([x, y]) = overlay.marker {
-        for (dx, dy) in [(-8, 0), (8, 0), (0, -8), (0, 8)] {
-            pixel(
-                batch,
-                view,
-                atlas,
-                [(x + dx) as f32, (y + dy) as f32],
-                [4.0, 4.0],
-                PresentationColor::LightGreen,
-            )?;
-        }
-    }
-    for (index, character) in overlay.hint().chars().enumerate() {
-        let glyph = oteryn_renderer::name_text::glyph_rgba(character);
-        for y in 0..7usize {
-            for x in 0..5usize {
-                if glyph[(((y * 32 + 16) / 8) * 32 + (x * 32 + 16) / 6) * 4 + 3] == 255 {
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [8.0 + index as f32 * 6.0 + x as f32, 8.0 + y as f32],
-                        [1.0, 1.0],
-                        PresentationColor::White,
-                    )?;
-                }
-            }
-        }
-    }
-    Ok(())
 }

@@ -3,10 +3,19 @@ use crate::play::{
     PlayLink,
     mailbox::{Mailbox, lock},
 };
-use oteryn_client_ui::boss_encounter::{Intent, request};
+use oteryn_client_ui::boss_encounter::{BossCategory, BossEncounterPanel, Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {
+        browse(
+            &mut lock(&self.mailbox).boss_encounter,
+            search,
+            category,
+            previous,
+        );
+    }
+
     pub fn boss_slot_select_boss(&self, previous: bool) {
         lock(&self.mailbox)
             .boss_encounter
@@ -71,4 +80,19 @@ pub(in crate::play) fn edit(
     {
         *slot = value;
     }
+}
+
+pub(in crate::play) fn browse(
+    panel: &mut BossEncounterPanel,
+    search: &str,
+    category: BossCategory,
+    previous: bool,
+) {
+    if !panel.selected || panel.pending || search.len() > 512 || search.contains('\0') {
+        return;
+    }
+    panel.boss_search = search.to_owned();
+    panel.browser_search = search.to_owned();
+    panel.browser_category = category;
+    panel.select_boss(previous);
 }

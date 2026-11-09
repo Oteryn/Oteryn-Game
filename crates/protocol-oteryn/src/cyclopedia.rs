@@ -195,4 +195,8 @@ mod tests {
     }
 }
 
+#[path = "cyclopedia_atlas.rs"]
 pub mod atlas;
+
+#[path = "cyclopedia/atlas.rs"]
+pub mod region_atlas;

@@ -46,7 +46,7 @@ fn item_browser_round_trip_uses_paged_public_catalogue_protocol()
     assert_eq!(
         wire::decode_request(&command.payload).map_err(|_| "request")?,
         wire::Request::CataloguePage(
-            catalogue::Query::new(0, "silver", "sword").map_err(|_| "query")?
+            catalogue::PageQuery::new(0, "silver", "sword").map_err(|_| "query")?
         )
     );
     let reply = wire::Reply {
@@ -87,7 +87,7 @@ fn item_browser_round_trip_uses_paged_public_catalogue_protocol()
     super::actions::browse_items(&mut mailbox, &link.commands, true);
     assert!(
         matches!(receiver.try_recv()?, PlayCommand::ServerMechanic(command)
-        if wire::decode_request(&command.payload).map_err(|_| "request")? == wire::Request::CataloguePage(catalogue::Query::new(10, "silver", "sword").map_err(|_| "query")?))
+        if wire::decode_request(&command.payload).map_err(|_| "request")? == wire::Request::CataloguePage(catalogue::PageQuery::new(10, "silver", "sword").map_err(|_| "query")?))
     );
     Ok(())
 }
@@ -293,7 +293,7 @@ fn catalogue_scope_change_invalidates_definition_and_source_cursors()
             attributes: vec![],
         },
     );
-    panel.catalogue_query = Some(catalogue::Query::new(0, "", "").map_err(|_| "query")?);
+    panel.catalogue_query = Some(catalogue::PageQuery::new(0, "", "").map_err(|_| "query")?);
     panel.catalogue_page = Some(catalogue::Page {
         next: Some(256),
         categories: vec![],

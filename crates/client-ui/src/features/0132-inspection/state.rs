@@ -1,8 +1,14 @@
 use super::*;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub catalogue_open: bool,
+    pub catalogue_loaded: bool,
+    pub catalogue_next: Option<u32>,
+    pub catalogue_drop_next: Option<u16>,
+    pub catalogue_query_categories: Vec<String>,
+    pub catalogue_market: Option<u32>,
     pub catalogue: std::collections::BTreeMap<u32, InspectedItem>,
-    pub catalogue_query: Option<catalogue::Query>,
+    pub catalogue_query: Option<catalogue::PageQuery>,
     pub catalogue_market_requested: Option<u32>,
     pub catalogue_sources: Vec<String>,
     pub catalogue_source_next: Option<u32>,
@@ -25,6 +31,13 @@ pub(super) fn item_categories(item: &InspectedItem) -> impl Iterator<Item = &str
 }
 impl Panel {
     pub fn categories(&self) -> Vec<&str> {
+        if !self.catalogue_query_categories.is_empty() {
+            return self
+                .catalogue_query_categories
+                .iter()
+                .map(String::as_str)
+                .collect();
+        }
         let mut categories = std::collections::BTreeMap::new();
         for category in self
             .catalogue_categories
@@ -91,22 +104,34 @@ impl Panel {
 
 impl Panel {
     pub fn invalidate_catalogue(&mut self) {
+        let had_catalogue = self.catalogue_loaded || !self.catalogue.is_empty();
         self.catalogue.clear();
+        self.catalogue_query_categories.clear();
+        self.catalogue_next = None;
+        self.catalogue_drop_next = None;
+        self.catalogue_market = None;
+        self.catalogue_loaded = false;
         self.catalogue_query = None;
         self.catalogue_page = None;
         self.catalogue_categories.clear();
         self.catalogue_definition.clear();
+        self.category.clear();
         self.clear_sources();
         if matches!(
             self.last_request,
             Some(
                 Request::Catalogue(_)
+                    | Request::CatalogueQuery(_)
                     | Request::CataloguePage(_)
                     | Request::CatalogueSources { .. }
             )
         ) {
             self.pending = false;
             self.last_request = None;
+            self.reply = None;
+        }
+        if had_catalogue {
+            self.feedback = "The catalogue scope changed; browse again".into();
         }
     }
 }

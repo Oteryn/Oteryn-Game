@@ -12,9 +12,11 @@ impl TextEditor {
             maximum_bytes,
         }
     }
+    pub fn accepts(text: &str, maximum_bytes: usize) -> bool {
+        text.len() <= maximum_bytes && !text.contains('\0')
+    }
     pub fn submit(&self) -> Option<&str> {
-        (self.text.len() <= self.maximum_bytes && !self.text.contains('\0'))
-            .then_some(self.text.as_str())
+        Self::accepts(&self.text, self.maximum_bytes).then_some(self.text.as_str())
     }
 }
 
