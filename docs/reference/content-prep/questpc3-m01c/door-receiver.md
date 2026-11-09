@@ -31,8 +31,11 @@ lines 70–75 bind key 3012 at the two Draconia positions; lines 106–112 bind
 lines 344, 350 and 368 resolve those storage symbols to the same numbers.
 The capture pins both source hashes. Table comments naming 4193 and 5009
 disagree with the executable entries; the overlay follows the entries.
-Production application and the Draconia binding remain pending. No World
-placement bytes change in the tooling/profile slices.
+The generator now applies all six startup key numbers to the production World
+and participates in from-scratch World conversion. Region hashes, action counts
+and source accounting regenerate together; reapplication is idempotent.
+The Draconia Quest binding remains pending its existing Ice Rapier reward-data
+hold. No whole-route or completion qualification is claimed.
 
 Locked Item profiles 5097 and 6248 use the existing native importer and pinned
 Canary XML/appearance inputs. [items.xml](https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml)

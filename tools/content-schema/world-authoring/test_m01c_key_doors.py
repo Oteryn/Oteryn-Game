@@ -8,6 +8,26 @@ import world_region_codec as codec
 
 
 class M01cKeyDoorsTests(unittest.TestCase):
+    def test_source_accounting_and_region_hashes_reproduce_without_double_counting(self):
+        index = json.loads((base.ROOT / base.INDEX).read_bytes())
+        capture = json.loads((base.ROOT / doors.CAPTURE).read_bytes())
+        names = {doors.region_name(row['position']) for row in capture['bindings']}
+        outputs = {base.INDEX.as_posix(): (base.ROOT / base.INDEX).read_bytes(),
+                   doors.SUMMARY: (base.ROOT / doors.SUMMARY).read_bytes()}
+        for region in index['regions']:
+            if region['path'].rsplit('/', 1)[-1] in names:
+                outputs[region['path']] = (base.ROOT / region['path']).read_bytes()
+        before = json.loads(outputs[doors.SUMMARY])
+        previous_count = index['source'].get('m01c_key_doors', {}).get('imported', 0)
+        self.assertEqual(len(doors.overlay_outputs(outputs)), 6)
+        after = json.loads(outputs[doors.SUMMARY])
+        self.assertEqual(after['item_attributes']['action'],
+                         before['item_attributes']['action'] + 6 - previous_count)
+        self.assertEqual(after['source']['m01c_key_doors']['imported'], 6)
+        once = dict(outputs)
+        self.assertEqual(len(doors.overlay_outputs(outputs)), 6)
+        self.assertEqual(outputs, once)
+
     def test_source_positions_bind_exactly_six_native_locked_doors(self):
         index = json.loads((base.ROOT / base.INDEX).read_bytes())
         capture = json.loads((base.ROOT / doors.CAPTURE).read_bytes())

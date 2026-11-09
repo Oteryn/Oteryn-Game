@@ -1189,6 +1189,9 @@ def build(
 
         access = json.loads((ROOT / quest_access_bindings.CAPTURE).read_bytes())
         quest_startup_bindings.overlay_outputs(out, supplied_by=access["bindings"])
+    import m01c_key_doors
+
+    m01c_key_doors.overlay_outputs(out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix()))
     return out
 
 

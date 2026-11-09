@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import m01c_key_door_equipment_pin
+import qengine_reward_equipment_pin
 import questpc4_treasure_reward_equipment_pin
 import json
 import os
@@ -95,6 +96,10 @@ def main():
     source = questpc4_treasure_reward_equipment_pin.refresh(
         source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/questpc4-treasure-reward-profiles.json").read_bytes()),
+    )
+    source = qengine_reward_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
     )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)
