@@ -10,3 +10,9 @@ For Black Knight, the accepted donor claims both bind key number 5010 to Item
 and `:9057`, commit `9e5c8994d2784bb29d1013d7379f4f26c3f2e98b`.
 The chosen recipe's minimum level 50 is enforced when fresh progress commits.
 Entry progress does not authorize the final chest, reward or completion.
+
+Grimvale's harvested blossoms are Item 22082, not planted nightshade 22063 or
+22064. Source: `imports/canary/items-xml/items.xml:43886`, commit
+`1b2e040732a7b0da269579380a4d3fa8a93d17aa`; the existing source importer also
+checks the pinned appearance flags. The chosen first step requires five;
+collection preserves their custody and requires registered premium admission.

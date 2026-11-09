@@ -265,6 +265,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     terrain_counter_fixture(h, &authority, native, tool).await?;
     production_fanfare_collection(h, &authority, native).await?;
     production_black_knight_collection(h, &authority, native).await?;
+    production_grimvale_collection(h, &authority, native, &weights).await?;
     Ok(())
 }
 
@@ -1051,4 +1052,110 @@ impl durability::quest_state::grizzly::GrizzlyPremiumGate for PremiumProbe {
         self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         Ok(self.allowed)
     }
+}
+
+async fn production_grimvale_collection(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    weights: &reward_fixture::Weights<'_>,
+) -> f::TestResult {
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(f::debug)?
+            .catalogue()
+            .clone(),
+    );
+    assert!(
+        catalogue
+            .transition("oteryn:quest-collection/m01c-grimvale-blossoms")
+            .is_some()
+    );
+    let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    let account: [u8; 16] = account.try_into().map_err(|_| "fixture account UUID")?;
+    let premium = PremiumProbe {
+        account,
+        allowed: true,
+        calls: std::sync::atomic::AtomicU32::new(0),
+    };
+    for (ordinal, quantity) in [(120_u32, 4_u32), (121, 1)] {
+        let _ = mint_to_bag(h, authority, native, weights, 22082, quantity, ordinal).await?;
+        let request = QuestTransitionRequest {
+            transition_key: "oteryn:quest-collection/m01c-grimvale-blossoms".into(),
+            cause: QuestCause::Command(reward_fixture::command(9300 + u64::from(ordinal))?),
+        };
+        if quantity == 1 {
+            let refused = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(9)?,
+                    request.clone(),
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(
+                matches!(
+                    refused,
+                    QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+                ),
+                "five flowers without premium must not advance"
+            );
+        }
+        let outcome = h
+            .root
+            .commit_character_quest_transition_with_admission(
+                authority,
+                &h.node,
+                f::fence(9)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+                &premium,
+            )
+            .await
+            .map_err(f::debug)?;
+        if quantity == 4 {
+            assert!(
+                matches!(
+                    outcome,
+                    QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+                ),
+                "four blossoms must not satisfy five"
+            );
+        } else {
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            let replay = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(9)?,
+                    request,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+        }
+    }
+    assert_eq!(premium.calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+    let quantity: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i22082'")
+        .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(f::WORLD).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(quantity, 5, "COLLECT preserves all five carried blossoms");
+    let progress: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-grimvale-route'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(progress, 1);
+    let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.grimvale_quest'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert!(incomplete);
+    eprintln!(
+        "M01C_GRIMVALE production_catalogue count4_refused count5_committed missing_premium_refused live_custody5 replay_safe completion_held"
+    );
+    Ok(())
 }
