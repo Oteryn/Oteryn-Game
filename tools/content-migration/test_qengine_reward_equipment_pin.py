@@ -1,7 +1,9 @@
 import copy
 import unittest
+import re
 
 from qengine_reward_equipment_pin import IDS, refresh
+import qengine_reward_item_profiles as producer
 
 
 class RewardIdentityPin(unittest.TestCase):
@@ -12,7 +14,13 @@ class RewardIdentityPin(unittest.TestCase):
 '''
 
     def packet(self):
-        return {'records': [{'production_definition': {'production_key': f'oteryn:item.tibia.i{i}'}}
+        return {'schema': 'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
+                'producer': 'tools/content-migration/qengine_reward_item_profiles.py',
+                'sources': [
+                    {'path': producer.XML, 'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446', 'sha256': producer.XML_SHA},
+                    {'path': producer.CLIENT, 'sha256': producer.CLIENT_SHA},
+                ],
+                'records': [{'production_definition': {'production_key': f'oteryn:item.tibia.i{i}'}}
                             for i in sorted(IDS)]}
 
     def test_every_declared_source_identity_is_pinned_without_removing_raw_checks(self):
@@ -36,6 +44,12 @@ class RewardIdentityPin(unittest.TestCase):
                 packet['records'].append(packet['records'][0])
             with self.assertRaises(ValueError, msg=mode):
                 refresh(self.SOURCE, packet)
+
+    def test_missing_producer_metadata_cannot_bypass_identity_proof(self):
+        packet = self.packet()
+        del packet['sources']
+        with self.assertRaisesRegex(ValueError, 'SOURCE_COHORT'):
+            refresh(self.SOURCE, packet)
 import copy
 import json
 import unittest
@@ -48,10 +62,19 @@ class SourceCohortTests(unittest.TestCase):
     def setUp(self):
         self.packet = json.loads((Path(__file__).resolve().parents[1] /
             "content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes())
-        self.source = 'assert_eq!(added_keys.len(), 60);\n("qengine-reward-item-profiles.json", 60)'
+        self.source = '    assert_eq!(added_keys.len(), 60);\n("qengine-reward-item-profiles.json", 60)'
 
     def test_regenerates_stale_cardinality_from_the_producer_cohort(self):
-        self.assertEqual('assert_eq!(added_keys.len(), 63);\n("qengine-reward-item-profiles.json", 63)', refresh(self.source, self.packet))
+        generated = refresh(self.source, self.packet)
+        self.assertIn(f'assert_eq!(added_keys.len(), {len(IDS)});', generated)
+        self.assertIn(f'("qengine-reward-item-profiles.json", {len(IDS)})', generated)
+        for record in self.packet['records']:
+            self.assertIn('"' + record['production_definition']['production_key'] + '"', generated)
+        self.assertEqual(
+            re.findall(r'"(oteryn:item\.tibia\.i[0-9]+)"', generated),
+            sorted(record['production_definition']['production_key'] for record in self.packet['records']),
+        )
+        self.assertEqual(refresh(generated, self.packet), generated)
 
     def test_refuses_a_missing_source_identity(self):
         self.packet["records"].pop()

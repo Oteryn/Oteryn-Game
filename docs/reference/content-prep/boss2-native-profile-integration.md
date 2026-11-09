@@ -87,3 +87,15 @@ also passed through the native client in 0.220708162 seconds, including native
 own appearance and the destination teleport effect. The peer observed the real
 STEP and delivered all eight captured return frames. Clippy with `-D warnings`
 passed for all client targets. Post-regeneration server PG reruns remain due.
+
+### Reproduced native inputs
+
+The existing simulator completed 15 cases over 777 creatures, then the native
+importer regenerated 48 files with `activation=false`. The missing producer
+module import in the equipment identity-pin tool is fixed. Its seven tests keep
+exact source metadata, exact declared identities, duplicate/foreign rejection,
+raw equipment checks and idempotence. Fixtures now include the required producer
+metadata and verify the full identity witness rather than only a stale count.
+The complete source cohort still declares 6251 profiles against a runtime union
+of 6219; its independent sum guard remains enabled. This batch preserves the
+generated inputs while that source ownership overlap is investigated.

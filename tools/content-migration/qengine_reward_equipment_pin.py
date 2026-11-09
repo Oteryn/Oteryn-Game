@@ -1,6 +1,7 @@
 """Generate the exact QENGINE reward identity witness from its source-owned IDs."""
 import re
 
+import qengine_reward_item_profiles as producer
 from qengine_reward_item_profiles import IDS
 
 

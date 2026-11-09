@@ -3886,15 +3886,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "cd8ca5917c338d4cd362449bf2267a77446e5a2e03cb38bed114ed7c72c3dd80",
-  "model_input_sha256": "0442defd84ebe0aae5e0aacac8edd87588ec731147e07399757498bab6098a98",
-  "model_input_sha256": "e76131cfdbed5da04d8f19d9b0e95eedc7b78ca93a62684bbec9ee6019860b34",
-  "model_input_sha256": "61c3f20d8c14f8841fc1cffdeefd023efe972f7a32e143515897b34991214d43",
-  "model_input_sha256": "34091bcb573de2639546f62f6b2ff3fa7bf7bcf205bc7e6a9b2ad012624e26d8",
-  "model_input_sha256": "dfbb3951f0cc1739cfc77a147fad2f3fbb8b0273370da6233df629bf28899a4d",
-  "model_input_sha256": "f963028b77e556dc1fdd8e85e0db5351d9b9196f5ceae0adaee070e28bc4491f",
-  "model_input_sha256": "facf4a81c38b8bd4123caf940aee4465185b740eed5859d474bd4596e6a999d2",
-  "model_input_sha256": "e3d1045cb1dcd52b7d2ba23ab99099ec5d1f08b2570c0145175342dc0e463285",
+  "model_input_sha256": "8776fdffe991d61be1e895109e54cc4ac9b6c756711314656949a62a2370f6fa",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,
