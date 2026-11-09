@@ -20,6 +20,12 @@ pub fn panel_text(panel: &Panel) -> String {
                 "not owned by you"
             }
         ));
+        if let Some((x, y, floor)) = row.entrance {
+            text.push_str(&format!(
+                "\r\n{} — {} m², {} beds; entrance {x},{y},{floor}",
+                row.name, row.size, row.beds
+            ));
+        }
         if let Some(ends) = row.ends {
             text.push_str(&format!(
                 "\r\nAuction ends (Unix ms): {ends}; your maximum bid: {}",

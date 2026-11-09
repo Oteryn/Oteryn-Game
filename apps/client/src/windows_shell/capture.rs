@@ -89,6 +89,7 @@ impl Application {
             self.fail(event_loop, ShellError::RendererRender);
             return;
         }
+        self.frame_timing.presented();
         if let Some(frame) = renderer.take_capture() {
             let result = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let frame = frame?;

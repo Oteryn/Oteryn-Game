@@ -22,7 +22,7 @@ pub(super) fn refresh(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayComm
             .send(PlayCommand::Feature(
                 oteryn_client_runtime::raw_feature::FeatureCommand {
                     capability: 7,
-                    kind: 736,
+                    kind: 6117,
                     payload,
                 },
             ))

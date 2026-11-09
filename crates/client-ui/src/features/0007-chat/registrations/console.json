@@ -4,7 +4,7 @@
   "id": "0007-chat-console",
   "status": "supported",
   "commands": [
-    736
+    6117
   ],
   "direction": "client_to_server",
   "capability": 7,

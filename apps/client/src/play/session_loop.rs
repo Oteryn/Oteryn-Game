@@ -1,6 +1,4 @@
 //! Session task phases: receive one shell command, service the session, and publish its result.
-mod initialize;
-
 use super::{
     Outbox, feature_0043_vip::protocol::send_vip, public_class, session_stepper::publish,
     step_direction,
@@ -21,11 +19,17 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
-    if !initialize::initialize(&session, &outbox) {
+    if !session_initialize::initialize(&session, &outbox) {
         return;
     }
+    let mut modal =
+        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     loop {
+        if let Err(error) = modal.poll(&mut session).await {
+            outbox.end(public_class(&error));
+            return;
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
@@ -41,7 +45,7 @@ pub async fn run_session<T: Stepper>(
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
-                        76 | 103 | 146 | 447 => outbox.properties_result(&command, &result),
+                        76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
                         170 => outbox.arena_result(&result),
@@ -58,6 +62,7 @@ pub async fn run_session<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
+                        449 => outbox.spellbook_details_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -353,3 +358,6 @@ pub async fn run_session<T: Stepper>(
         return;
     }
 }
+
+#[path = "session_initialize.rs"]
+mod session_initialize;

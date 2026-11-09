@@ -42,6 +42,8 @@ impl ReferencePreferences {
         candidate.keybindings.clone_from(bindings);
         candidate.validate_bindings()?;
         self.keybindings = candidate.keybindings;
+        // Profiles are explicit binding snapshots; automatic presets must not overwrite them.
+        self.chat_context_hotkeys = false;
         Ok(())
     }
 }

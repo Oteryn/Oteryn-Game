@@ -531,7 +531,7 @@ fn console_metadata_dispatch_checks_selection_and_preserves_unavailable_levels()
                     }
                     let payload = console::encode_names(&["Aela".into(), "Unknown".into()])
                         .ok_or("encode")?;
-                    let request = command(1, 736, &payload);
+                    let request = command(1, 6117, &payload);
                     let (mut client, mut server) = tokio::io::duplex(64 * 1024);
                     client
                         .write_all(&(request.len() as u32).to_be_bytes())

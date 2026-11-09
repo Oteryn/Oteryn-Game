@@ -22,7 +22,7 @@ fn console_controls_reach_received_lines_and_current_server_levels()
     let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("metadata command".into());
     };
-    assert_eq!((command.capability, command.kind), (7, 736));
+    assert_eq!((command.capability, command.kind), (7, 6117));
     assert_eq!(
         oteryn_client_runtime::chat::console::decode_names(&command.payload),
         Some(vec!["Bryn".into()])
@@ -50,7 +50,7 @@ fn console_controls_reach_received_lines_and_current_server_levels()
     };
     assert!(link.chat_input(&[open]));
     assert!(
-        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.kind == 736)
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.kind == 6117)
     );
     outbox.console_result(&GatedCommandResult {
         command_id: 2,

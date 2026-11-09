@@ -6,7 +6,8 @@ fn bindings_keep_cast_indices_and_project_spell_and_group_cooldowns() -> Result<
     let spell = NonZeroU32::new(71).ok_or("spell")?;
     assert!(bar.bind(0, Some(spell)));
     assert_eq!(bar.spell(slot), Some(spell));
-    assert!(!bar.bind(4, Some(spell)));
+    assert!(bar.bind(11, Some(spell)));
+    assert!(!bar.bind(12, Some(spell)));
     assert!(!bar.bind(0, NonZeroU32::new(1 << 28)));
     use oteryn_session::{ActorCooldownKind, ActorCooldowns};
     let state = ActorCooldowns {

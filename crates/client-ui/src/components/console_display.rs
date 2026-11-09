@@ -19,7 +19,7 @@ impl Default for ConsoleDisplay {
 }
 impl ConsoleDisplay {
     pub fn valid(self) -> bool {
-        [12, 14, 16, 18, 20, 24].contains(&self.font_px)
+        (10..=32).contains(&self.font_px)
     }
     pub fn timestamp(self, time: u64) -> String {
         if !self.time {

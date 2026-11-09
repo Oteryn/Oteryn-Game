@@ -1,7 +1,6 @@
-//! Local display controls; HFONT is owned until the transcript releases it.
+//! Local console options; the dialog owns the fixed-pixel transcript font.
 #![allow(unsafe_code)]
 use super::*;
-use windows_sys::Win32::Graphics::Gdi::{CreateFontW, DeleteObject, HFONT};
 const FONT: usize = 117;
 const TIME: usize = 118;
 const SECONDS: usize = 119;
@@ -19,8 +18,6 @@ pub(super) fn accepts(id: usize, note: usize) -> bool {
 pub(super) struct Controls {
     hwnd: HWND,
     options: HWND,
-    font: HFONT,
-    size: u16,
     queried: Option<std::time::Instant>,
 }
 impl Controls {
@@ -37,8 +34,6 @@ impl Controls {
             Self {
                 hwnd,
                 options: null_mut(),
-                font: null_mut(),
-                size: 0,
                 queried: None,
             }
         }
@@ -169,32 +164,6 @@ impl Controls {
                     0,
                 );
             }
-            if self.size != display.font_px {
-                let font = CreateFontW(
-                    -(i32::from(display.font_px)),
-                    0,
-                    0,
-                    0,
-                    400,
-                    0,
-                    0,
-                    0,
-                    1,
-                    0,
-                    0,
-                    0,
-                    0,
-                    wide("Consolas").as_ptr(),
-                );
-                if !font.is_null() {
-                    SendMessageW(transcript, WM_SETFONT, font as usize, 1);
-                    if !self.font.is_null() {
-                        DeleteObject(self.font);
-                    }
-                    self.font = font;
-                    self.size = display.font_px;
-                }
-            }
             if IsWindow(self.options) != 0 {
                 SetWindowTextW(
                     GetDlgItem(self.options, FONT as i32),
@@ -217,9 +186,6 @@ impl Drop for Controls {
         unsafe {
             if IsWindow(self.options) != 0 {
                 DestroyWindow(self.options);
-            }
-            if !self.font.is_null() {
-                DeleteObject(self.font);
             }
         }
     }

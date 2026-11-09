@@ -8,11 +8,17 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        let controls = self
+            .settings
+            .control_events(events, self.play.as_ref().map(|play| &play.link));
+        let events = controls.as_slice();
         if self.capture_input(events) {
             return;
         }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
-        let routed = self.settings.input(events);
+        let routed = self
+            .settings
+            .input(events, self.play.as_ref().map(|play| &play.link));
         let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
@@ -24,11 +30,15 @@ impl Application {
                     return;
                 }
             }
+            if play.view.notification_input(events) {
+                return;
+            }
             play.view.observe_creature_pointer(events);
             if play.link.use_with_cancel_input(events) {
                 return;
             }
         }
+
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             if let Some(window) = &self.window {
@@ -38,6 +48,7 @@ impl Application {
                     winit::window::CursorIcon::Default
                 });
             }
+
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;
@@ -65,6 +76,7 @@ impl Application {
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
+                || play.link.item_catalogue_input(events)
                 || play.link.discovery_input(events)
                 || play.link.exiva_input(events)
                 || play.link.analyser_input(events)
@@ -101,6 +113,7 @@ impl Application {
                 || play.link.training_input(events)
                 || play.link.guild_bank_input(events)
                 || play.link.timed_item_input(events)
+                || play.link.cyclopedia_atlas_input(events)
                 || play.link.cyclopedia_map_input(events)
                 || play.link.party_skull_input(events)
                 || play.link.character_info_input(events)

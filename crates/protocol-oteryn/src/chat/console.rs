@@ -1,5 +1,5 @@
 //! Bounded, read-only current sender-level lookup. CHAT_V1 lines remain unchanged.
-pub const COMMAND: u32 = 736;
+pub const COMMAND: u32 = 6117;
 pub const MAX_NAMES: usize = 32;
 pub fn encode_names(names: &[String]) -> Option<Vec<u8>> {
     if names.len() > MAX_NAMES {

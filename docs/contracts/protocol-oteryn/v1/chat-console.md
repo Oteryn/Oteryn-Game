@@ -1,6 +1,6 @@
 # Console sender metadata
 
-Command 736 belongs to existing capability 7, CHAT_V1. It is a read-only
+Command 6117 belongs to existing capability 7, CHAT_V1. It is a read-only
 lookup of current durable sender levels in the admitted World, not a claim
 about a character's historical level when a retained message was sent.
 The client labels these values as current. Existing chat codecs are unchanged.
