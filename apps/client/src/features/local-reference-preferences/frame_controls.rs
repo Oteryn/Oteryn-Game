@@ -3,6 +3,9 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 use windows_sys::Win32::UI::Controls::*;
 
+/// Trackbar position query (`WM_USER`); windows-sys does not export `TBM_GETPOS`.
+const TBM_GETPOS: u32 = 0x0400;
+
 pub(crate) struct FrameControls {
     labels: [HWND; 7],
     edits: [HWND; 4],
