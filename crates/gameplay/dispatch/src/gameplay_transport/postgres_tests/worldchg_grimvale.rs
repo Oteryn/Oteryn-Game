@@ -598,6 +598,15 @@ fn qn5_feroxa_new_owner_clears_previous_owner_corpse_custody() -> TestResult {
 }
 
 fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool, prove_handoff: bool) -> TestResult {
+    run_producer_proofs(ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree: false })
+}
+
+#[test]
+fn qn5_feroxa_oversized_tree_keeps_root_live_until_bounded_leaves_commit() -> TestResult {
+    run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: true, prove_spectators: false, prove_clear: true, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: true })
+}
+
+fn run_producer_proofs(proofs: ProducerProofs) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -610,7 +619,7 @@ fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, p
                 false,
             )
             .await?;
-            let result = producer_scenario(&h, ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff }).await;
+            let result = producer_scenario(&h, proofs).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -654,10 +663,11 @@ struct ProducerProofs {
     prove_stage: bool,
     prove_batches: bool,
     prove_handoff: bool,
+    large_tree: bool,
 }
 
 async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestResult {
-    let ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff } = proofs;
+    let ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree } = proofs;
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -886,10 +896,13 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
             }
             seed_feroxa_clear_item(harness, &owner, id(112), 33428, 31536).await?;
             seed_feroxa_clear_item(harness, &owner, id(114), 33457, 31531).await?;
-            for n in 0..if prove_batches { 30 } else { 1 } {
+            for n in 0..if large_tree { 32 } else if prove_batches { 30 } else { 1 } {
                 clear_corpses.push(mint_feroxa_clear_corpse(harness, &owner, 119 + n,
-                    if prove_batches { 16 } else { 1 }, !prove_batches && !prove_handoff).await?);
+                    if large_tree { 17 } else if prove_batches { 16 } else { 1 }, !prove_batches && !prove_handoff && !large_tree).await?);
             }
+        }
+        if large_tree {
+            import_feroxa_large_tree(harness, &clear_corpses).await?;
         }
         if prove_handoff {
             // Install a coherent committed control-plane successor as fixture setup.
@@ -995,6 +1008,28 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
                 assert!(!complete);
                 assert!(owner.bundle_map().ok_or("map")?.facts.phase_tile(at).map_err(debug)?.is_none());
             }
+            if large_tree && now == 1_800_000 {
+                let root = clear_corpses[0].1[16];
+                let mut complete = false;
+                for _ in 0..4 {
+                    if owner.apply_feroxa_map_clock(firing, now).await.is_ok() {
+                        complete = true;
+                        break;
+                    }
+                    let batches: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                        .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
+                    assert!(batches > 0, "oversized trees must commit bounded progress");
+                    let live: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(root.as_slice()).fetch_one(&harness.pool).await?;
+                    assert_eq!(live, 1, "an unfinished tree retains its actual Ground root");
+                    assert!(owner.bundle_map().ok_or("map")?.facts.phase_tile(at).map_err(debug)?.is_none());
+                }
+                assert!(complete, "bounded leaf batches must finish the tree");
+                let counts: Vec<i32> = sqlx::query_scalar("SELECT operation_count FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                    .bind(firing.as_slice()).fetch_all(&harness.pool).await?;
+                assert!(counts.iter().all(|count| (1..=500).contains(count)));
+                assert_eq!(counts.iter().sum::<i32>(), 577, "all32 corpses,32 backpacks,512 coins and the first drop retire");
+            }
             owner.apply_feroxa_map_clock(firing, now).await.map_err(|_| "native map timer")?;
             for (corpse, loot) in &clear_corpses {
                 for item in std::iter::once(corpse).chain(loot.iter()) {
@@ -1058,7 +1093,13 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
                 assert_eq!(second, (2, 0), "final map has its own clear, independent of middle-map replay");
                 let audits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_audit_outbox a USING(transaction_id,event_id) WHERE r.cause_kind=2 AND r.feroxa_firing_id=encode($1,'hex')::uuid AND r.character_id IS NULL AND r.cost IS NULL")
                     .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
-                if prove_batches {
+                if large_tree {
+                    assert!((3..=5).contains(&audits), "bounded partial trees have their own World-event audits");
+                    let lines: i64 = sqlx::query_scalar("SELECT sum(operation_count)::bigint FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
+                        .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
+                    assert_eq!(lines, 578, "every physical identity is retired exactly once across both phases");
+                    eprintln!("QN5_M52_LARGE_TREE_PG_EXECUTED elapsed={:?}", start.elapsed());
+                } else if prove_batches {
                     assert_eq!(audits, 3, "two middle-map batches plus one final-map batch");
                     let lines: i64 = sqlx::query_scalar("SELECT sum(operation_count)::bigint FROM game_spell_item_receipts WHERE cause_kind=2 AND feroxa_firing_id=encode($1,'hex')::uuid")
                         .bind(firing.as_slice()).fetch_one(&harness.pool).await?;
@@ -1496,8 +1537,8 @@ async fn mint_feroxa_clear_corpse(
     for ordinal in 1..=entries + if nested { 4 } else { 0 } {
     let mut candidate = h.root.freeze_corpse_loot_mint(owner.character, &h.node, CorpseLootMintRequest {
         cause: cause("fixture:purpose.feroxa-clear", ordinal),
-        item: definition(if nested && (ordinal==entries+1 || ordinal==entries+3) { "oteryn:item.tibia.i2854" } else { "oteryn:item.tibia.i3031" }),
-        quantity: if nested && (ordinal==entries+1 || ordinal==entries+3) { 1 } else { 17 },
+        item: definition(if (nested && (ordinal==entries+1 || ordinal==entries+3)) || (!nested && entries==17 && ordinal==17) { "oteryn:item.tibia.i2854" } else { "oteryn:item.tibia.i3031" }),
+        quantity: if (nested && (ordinal==entries+1 || ordinal==entries+3)) || (!nested && entries==17 && ordinal==17) { 1 } else { 17 },
         placement: CorpseContainerPlacement { corpse_item_instance_id: corpse, placement_ordinal: ordinal, fluid_subtype: None },
         content_revision: "content-1".into(), ruleset_revision: "ruleset-1".into(), sim_revision: "sim-1".into(),
     }).await.map_err(debug)?;
@@ -1532,4 +1573,31 @@ async fn mint_feroxa_clear_corpse(
         tx.commit().await?;
     }
     Ok((corpse, loot))
+}
+
+// Trusted imported tree custody; every identity was minted by the real corpse owners.
+async fn import_feroxa_large_tree(h: &Harness, corpses: &[([u8; 16], Vec<[u8; 16]>)]) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    for (index, (corpse, loot)) in corpses.iter().enumerate() {
+        let bag = loot.get(16).ok_or("large tree backpack")?;
+        for (ordinal, coin) in loot.iter().take(16).enumerate() {
+            sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(coin.as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3::bigint,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(coin.as_slice()).bind(bag.as_slice()).bind(i64::try_from(ordinal+1)?).execute(&mut *tx).await?;
+        }
+        sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(bag.as_slice()).execute(&mut *tx).await?;
+        if index == 0 {
+            sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) SELECT encode($1,'hex')::uuid,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,nextval('game_item_ground_stack_ordinal_seq') FROM game_item_ground_locations WHERE item_instance_id=encode($2,'hex')::uuid")
+                .bind(bag.as_slice()).bind(corpse.as_slice()).execute(&mut *tx).await?;
+        } else {
+            let parent = corpses.get((index-1)/2).and_then(|entry| entry.1.get(16)).ok_or("large tree parent")?;
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3::bigint,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(bag.as_slice()).bind(parent.as_slice()).bind(17+i64::try_from((index-1)%2)?).execute(&mut *tx).await?;
+        }
+    }
+    tx.commit().await?;
+    Ok(())
 }
