@@ -33,6 +33,7 @@ mod clock;
 mod counterparts;
 mod effects;
 mod ground_stack;
+mod guarded_routes;
 mod imported_explore;
 #[cfg(test)]
 mod selected_tool_tests;
@@ -339,6 +340,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
+    callbacks.extend(super::ice_seal_paint::callbacks()?);
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
@@ -362,7 +364,8 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
-    let mut selectors = BTreeSet::new();
+    let mut selectors: std::collections::BTreeMap<Vec<u8>, Vec<&Callback>> =
+        std::collections::BTreeMap::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
@@ -373,9 +376,14 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             super::children_puzzle::binding(&callback.key).map(|(_, solved)| solved),
         ))
         .map_err(|error| error.to_string())?;
-        if !selectors.insert(selector) {
+        let previous = selectors.entry(selector).or_default();
+        if previous
+            .iter()
+            .any(|other| !guarded_routes::disjoint(callback, other))
+        {
             return Err("duplicate callback selector across registries".into());
         }
+        previous.push(callback);
     }
     Ok(())
 }

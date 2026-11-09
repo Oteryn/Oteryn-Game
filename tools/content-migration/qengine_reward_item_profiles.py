@@ -19,7 +19,7 @@ IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 161
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
 # M13: source-pinned carried Guardcatcher and each Perfume Gatherer stage.
-IDS |= {17669, 17670, 17672, 17673, 17674, 17675}
+IDS |= {17669, 17670, 17672, 17673, 17674, 17675, 7253}
 # M13: native Slug corpse closure; Ground-only source durations remain authoritative.
 CORPSE_IDS = {12526, 12533, 12534, 12535}
 IDS |= CORPSE_IDS

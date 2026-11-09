@@ -77,5 +77,15 @@ class NativeFactJoin(unittest.TestCase):
                 q.reconcile(old, new)
 
 
+
+class SealPaintAdmission(unittest.TestCase):
+    def test_source_paint_is_portable_nonstackable_and_keeps_its_weight(self):
+        records = q.capture()['records']
+        paint = next((r for r in records if r['production_binding']['external_id'] == '7253'), None)
+        self.assertIsNotNone(paint)
+        self.assertEqual(paint['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+        self.assertEqual(paint['semantics']['physical']['value']['weight']['value'], 180)
+        self.assertEqual(paint['semantics']['temporal'], dict(state='NOT_APPLICABLE'))
+
 if __name__ == '__main__':
     unittest.main()

@@ -5,6 +5,7 @@ pub(crate) mod ground_stack;
 #[cfg(any(test, feature = "test-support"))]
 pub use ground_stack::matches as fixture_ground_stack_matches;
 mod selected_tool;
+mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
 pub mod shared_count;
 pub mod shared_switch;
@@ -199,13 +200,7 @@ pub(super) async fn consume(
         .item_on_target
         .as_ref()
         .is_some_and(|item| item.selected_instance);
-    if exact != context.selected_tool.is_some()
-        || (exact
-            && callback
-                .item_on_target
-                .as_ref()
-                .is_some_and(|item| item.reusable))
-    {
+    if exact != context.selected_tool.is_some() {
         return Ok(false);
     }
     if !context_is_current(tx, permit, fence, context).await? {
@@ -430,6 +425,10 @@ async fn consume_inputs(
         // action without inventing an item consumption or changing its identity.
         if !required.reusable {
             inputs.push(input);
+        } else if required.selected_instance
+            && !tool_reads::record(tx, fence, request, callback, context, &input).await?
+        {
+            return Ok(false);
         }
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.

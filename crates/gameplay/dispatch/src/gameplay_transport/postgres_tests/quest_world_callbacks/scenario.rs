@@ -296,7 +296,7 @@ fn scenario_case(
     }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" || name == "engitem-targuna-selected-tool" {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" || name == "engitem-targuna-selected-tool" || name == "engitem-native-seal-paint" {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -895,6 +895,8 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "engitem-native-seal-paint" {
+            super::super::engitem_seal_paint::exercise(&mut owner,&mut admitted,&h,&callback,trigger).await?;
         } else if name == "engitem-targuna-selected-tool" {
             super::super::srv7_reliable_ram::exercise_selected(&mut owner, &mut admitted, &h, &callback, trigger).await?;
         } else if name == "srv7-reliable-ram" {

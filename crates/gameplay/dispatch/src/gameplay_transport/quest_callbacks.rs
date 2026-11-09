@@ -203,6 +203,14 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     {
         return true;
     }
+    if callback.selector.native.is_some()
+        && callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|item| item.selected_instance)
+    {
+        return false;
+    }
     if oteryn_gameplay_quests::quest::shared_switches::native::bindings(&callback.key)
         .iter()
         .any(|binding| {
@@ -749,7 +757,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
-        let selected = self
+        let mut selected = self
             .callback_content()
             .iter()
             .filter(|c| {
@@ -759,6 +767,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if selected.len() > 1
+            && selected.iter().all(|callback| {
+                callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|item| item.selected_instance)
+            })
+        {
+            let (Some(fence), Some(catalogue)) =
+                (command.item_fence, self.quest_catalogue.as_deref())
+            else {
+                return Some(UseOutcome::rejected());
+            };
+            let Ok(snapshot) = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+            else {
+                return Some(UseOutcome::rejected());
+            };
+            selected.retain(|callback| {
+                callback.storage.iter().all(|state| {
+                    snapshot
+                        .tracks()
+                        .get(&state.track)
+                        .copied()
+                        .or_else(|| catalogue.track(&state.track).map(|track| track.initial))
+                        .is_some_and(|value| (state.minimum..=state.maximum).contains(&value))
+                })
+            });
+        }
         let [callback] = selected.as_slice() else {
             return None;
         };
