@@ -31,6 +31,11 @@ fn engnpc2_live_transport_slug_corpse_hotkey_and_replay() -> TestResult {
     run_case(false, true)
 }
 
+#[test]
+fn engnpc2_live_transport_slug_corpse_handle_and_replay() -> TestResult {
+    run_case(true, true)
+}
+
 fn run(handle: bool) -> TestResult {
     run_case(handle, false)
 }
@@ -49,7 +54,9 @@ fn run_case(handle: bool, corpse: bool) -> TestResult {
                     let started = std::time::Instant::now();
                     let h = fixture::Harness::create_with_admission_seed(
                         admin,
-                        if corpse {
+                        if corpse && handle {
+                            "engnpc2_corpse_handle"
+                        } else if corpse {
                             "engnpc2_corpse_caller"
                         } else if handle {
                             "engnpc2_live_handle"
@@ -66,7 +73,9 @@ fn run_case(handle: bool, corpse: bool) -> TestResult {
                     assert!(started.elapsed().as_secs_f64() > 0.01);
                     eprintln!(
                         "PG_EXECUTED {} duration={:?}",
-                        if corpse {
+                        if corpse && handle {
+                            "engnpc2_live_transport_slug_corpse_handle_and_replay"
+                        } else if corpse {
                             "engnpc2_live_transport_slug_corpse_hotkey_and_replay"
                         } else if handle {
                             "engnpc2_live_transport_rotworm_handle_and_replay"
@@ -400,7 +409,7 @@ async fn call(
     observation: (bool, bool, Option<[u8; 16]>),
 ) -> TestResult<Option<UseDisposition>> {
     let (source_present, visible, target) = observation;
-    let result = if handle {
+    let result = if handle && intent.use_with_map_item.is_none() {
         let source = source_present.then_some(composed_test_owner::ItemKey::Instance(id(92)));
         owner
             .use_event_item(actor, command, intent, source, visible)
@@ -411,7 +420,8 @@ async fn call(
                 actor,
                 command,
                 intent,
-                None,
+                (handle && source_present)
+                    .then_some(composed_test_owner::ItemKey::Instance(id(92))),
                 target.map(composed_test_owner::ItemKey::Instance),
             )
             .await
