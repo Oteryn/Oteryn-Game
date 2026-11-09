@@ -163,9 +163,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Magical Archive i przypisanie czaru",
-  "status": "PARTIAL",
-  "gap": "Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "T038",
@@ -389,9 +390,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: foreground/background FPS i FPS/latency indicator",
-  "status": "MISSING",
-  "gap": "Brak równoważnych kontrolek limitów i wskaźników w Settings.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings expose persisted foreground/background limits (1–360 FPS) and independent FPS/latency indicators. Window focus selects the live redraw limit; successful render presentations supply measured FPS and confirmed server cooldown observations supply latency, with explicit unavailable states.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:12 (native Frames settings entry); apps/client/src/features/local-reference-preferences/frames_native.rs:70 and :144 (controls, validation and saved preferences); apps/client/src/features/local-reference-preferences/frame_native.rs:29 (production focus-aware scheduling and indicators); apps/client/src/windows_shell/application_handler.rs:166 and apps/client/src/windows_shell/capture.rs:92 (live shell/render hooks); apps/client/src/features/local-reference-preferences/frames.rs:108 + frame_limits_follow_focus_and_report_measured_frames_and_server_latency (focus changes, measured FPS, real PlayLink server RTT, persistence and invalid-limit rejection)."
  },
  {
   "id": "T062",
@@ -488,9 +490,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Help: FAQ/manual/client help/reports",
-  "status": "PARTIAL",
-  "gap": "Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Native Settings Help provides local FAQ, playing-manual and client-troubleshooting topics plus navigation to the existing Reports form. Report opening is deferred to the game thread, requires an active session and never submits a report automatically.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:8 (production Help navigation); apps/client/src/features/local-reference-preferences/help_native.rs:28 and :94 (native topics and report action); apps/client/src/features/local-reference-preferences/help.rs:12 and :32 (help content and session-bound report opening); apps/client/src/features/local-reference-preferences/native.rs:203 (game-thread consumer); apps/client/src/features/local-reference-preferences/tests/options_lane.rs:3 + help_navigation_opens_existing_report_without_submitting (all topics, unavailable-session rejection, real PlayLink report opening and empty command queue)."
  },
  {
   "id": "T073",
@@ -507,9 +510,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: minimap import/export",
-  "status": "MISSING",
-  "gap": "Brak narzędzia wymiany trwałych map/markerów.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings provide minimap import/export and marker editing. Imports require confirmation, validate bounded files and preserve character/world/channel/content scope; exports refuse to overwrite existing files. Imported observations never replace authoritative world geometry.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:11 (production settings navigation); apps/client/src/features/local-reference-preferences/minimap_native.rs:80 (import/export controls) and :181 (native transfer actions and confirmation); apps/client/src/features/local-minimap/view.rs:115 (export_new) and :131 (validated import); apps/client/src/features/local-minimap/tests/play.rs:239 + minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world (round-trip, markers, persistence, scope isolation, invalid and oversized files)."
  },
  {
   "id": "T076",
@@ -1533,9 +1537,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Lista czarów i wyszukiwanie",
-  "status": "PARTIAL",
-  "gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Filtry nazwy/formuły, profesji, grupy, poziomu i premium; karta szczegółów z czasem pozostałego cooldownu opartym na snapshotach serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:323 + native filtered spell detail with live cooldown projection; apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; apps/client/src/features/0287-actor-spell-catalog/book_detail.rs:50 + spellbook_details_project_live_spell_and_group_cooldowns_without_claiming_cast_authority"
  },
  {
   "id": "O066",
@@ -1612,9 +1617,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Cyklopedia: Magical Archive",
-  "status": "PARTIAL",
-  "gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "O083",
