@@ -21,13 +21,13 @@ struct Instance {
     @location(0) position: vec2<f32>,
     @location(1) size: vec2<f32>,
     @location(2) uv: vec4<f32>,
-    @location(3) light: vec3<f32>,
+    @location(3) light: vec4<f32>,
 }
 
 struct VertexOutput {
     @builtin(position) clip: vec4<f32>,
     @location(0) uv: vec2<f32>,
-    @location(1) light: vec3<f32>,
+    @location(1) light: vec4<f32>,
 }
 
 @vertex
@@ -57,12 +57,12 @@ fn vs_main(@builtin(vertex_index) index: u32, instance: Instance) -> VertexOutpu
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let texel = textureSample(atlas, atlas_sampler, input.uv);
-    return vec4<f32>(texel.rgb * input.light, texel.a);
+    return vec4<f32>(texel.rgb * input.light.rgb, texel.a * input.light.a);
 }
 ";
 
 const INSTANCE_ATTRIBUTES: [wgpu::VertexAttribute; 4] =
-    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x3];
+    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x4];
 
 const UNIFORM_BYTES: u64 = 16;
 const INSTANCE_BUFFER_BYTES: u64 = (2 * MAX_BATCH_QUADS * LIT_INSTANCE_BYTES) as u64;
@@ -277,7 +277,7 @@ impl SceneGpu {
             *chunk = value.to_ne_bytes();
         }
         queue.write_buffer(&self.uniform, 0, &screen);
-        let tile_bytes = sprites.lighting.instance_bytes(tiles.instances());
+        let tile_bytes = sprites.lighting.opaque_instance_bytes(tiles.instances());
         let sprite_bytes = sprites.lighting.instance_bytes(sprites.instances());
         if !tile_bytes.is_empty() {
             queue.write_buffer(&self.instances, 0, &tile_bytes);

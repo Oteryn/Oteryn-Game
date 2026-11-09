@@ -188,3 +188,6 @@ mod tests {
         assert_eq!(shield(false, false, true, true, true, false), 0);
     }
 }
+
+#[path = "party_skull/status.rs"]
+mod status;

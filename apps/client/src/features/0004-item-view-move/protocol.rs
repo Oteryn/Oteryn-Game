@@ -66,6 +66,22 @@ macro_rules! dispatch {
     ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
         super::feature_0011_world_interaction::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
+            Ok(crate::combat_input::PlayCommand::MoveContainerContents(requests)) => {
+                let result = async {
+                    let mut last = None;
+                    for request in requests {
+                        last = $session.move_item(request).await?;
+                        let moved = last.is_some_and(|reply| reply.outcome == oteryn_session::ItemMoveOutcome::Moved);
+                        $publish(&mut $session, &$outbox, &mut $held);
+                        if !moved { break; }
+                    }
+                    Ok::<_, oteryn_session::SessionError>(last)
+                }.await;
+                match result {
+                    Ok(response) => { $outbox.item_move_result(response); continue; }
+                    Err(error) => error,
+                }
+            }
             Ok(crate::combat_input::PlayCommand::MoveItem(request)) => {
                 match $session.move_item(request).await {
                     Ok(response) => {

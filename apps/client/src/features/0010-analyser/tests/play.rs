@@ -2,6 +2,8 @@ use crate::play::play_channel;
 use oteryn_session::{AppliedDelta, SessionEvent, analyser_transport::AnalyserFact};
 #[path = "bosses.rs"]
 mod boss_tracker_tests;
+#[path = "outgoing.rs"]
+mod outgoing_view_tests;
 #[path = "party_import.rs"]
 mod party_summary_tests;
 #[test]
@@ -162,6 +164,7 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
         new_revision: 2,
         value: vec![
             AnalyserFact::Kill { race: None },
+            AnalyserFact::Experience { raw: 29, gained: 37 },
             AnalyserFact::KillLoot {
                 race: None,
                 corpse_items: vec![],
@@ -194,6 +197,10 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
         "Race unavailable: 1",
         "Loot Analyser",
         "Supply Analyser",
+        "Session gained XP per minute",
+        "Session raw XP per minute",
+        "peak 37",
+        "peak 29",
     ] {
         assert!(report.contains(expected), "missing {expected}: {report}");
     }
@@ -241,6 +248,9 @@ fn analyser_party_query_and_confirmed_table_use_production_mailbox()
     assert!(link.analyser_select("party"));
     let text = oteryn_client_ui::analyser::panel_text(&link.analyser_panel());
     assert!(text.contains("Scout pays Healer: 60 gold"));
+    assert!(text.contains("balance"));
+    assert!(text.contains("Scout | 0 | 0 | 0 | 0/100 | 0/0 | 100 | 0/0"));
+    assert!(text.contains("Healer | 0 | 0 | 0 | 0/0 | 0/20 | -20 | 0/0"));
     assert!(!link.analyser_panel().party_pending);
     link.party_request(oteryn_client_ui::party::Intent::Refresh);
     assert!(matches!(
@@ -303,7 +313,9 @@ fn analyser_loot_tracking_controls_filter_real_confirmed_drops() {
         tools + 8,
         vec![String::new(), "1".into(), String::new()],
     );
-    assert!(!oteryn_client_ui::analyser::panel_text(&mailbox.analyser).contains("#1"));
+    let filtered = oteryn_client_ui::analyser::panel_text(&mailbox.analyser);
+    assert!(!filtered.contains("#1"));
+    assert!(filtered.contains("No recent drops match the tracked item selection"));
 }
 
 #[path = "tasks.rs"]
@@ -338,3 +350,6 @@ fn auxiliary_analyser_launch_preserves_session_owner_and_existing_measurements()
     outbox.logged_out();
     assert!(!link.analyser_panel().open);
 }
+
+#[path = "activity.rs"]
+mod activity;
