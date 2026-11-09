@@ -239,6 +239,15 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return true;
     }
     let selector = &callback.selector;
+    // A native-only selector has no legacy alternative. Empty legacy terms
+    // must not turn an exact source mismatch into a wildcard over every tile.
+    if selector.position.is_none()
+        && selector.unique.is_none()
+        && selector.action.is_none()
+        && selector.appearance.is_none()
+    {
+        return false;
+    }
     selector.position.is_none_or(|p| tile(p) == pos)
         && (selector.position.is_none()
             || selector.unique.is_some()
