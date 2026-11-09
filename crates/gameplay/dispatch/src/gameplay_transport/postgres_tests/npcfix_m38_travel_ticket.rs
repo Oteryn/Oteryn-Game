@@ -48,7 +48,7 @@ fn npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres() -> 
                     }, price: 100, premium: false, min_level: None,
                 }, keyword: "travora".into(), postman: false, carpet: false, held: false,
                 yalahar_gate: false, yalahar_town_gate: None, quest_gate: None, quest_clear_gate: None,
-                ticket: Some(TravelTicketRequirement { track: track.into(), valid_for_seconds: 86400 }), world_change: None,
+                ticket: Some(TravelTicketRequirement { track: track.into(), valid_for_seconds: 86400 }), return_origin: None, world_change: None,
             };
             eprintln!("POSTGRES_STARTED NPCFIX_M38 elapsed travel ticket");
             for (index, active) in [false, false, false, true, true, false].into_iter().enumerate() {

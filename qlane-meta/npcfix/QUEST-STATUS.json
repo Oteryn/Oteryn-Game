@@ -489,7 +489,7 @@
     "whole_M38": "PARTIAL"
   },
   "m38_return_receipt_reader": {
-    "state": "PG_GREEN_CHECKS_RUNNING",
+    "state": "GREEN_PUSHED",
     "migration": "2140_npc_travel_completed_origin.sql",
     "sql_red_seconds": 0.288316,
     "sql_green_seconds": 0.147351,
@@ -500,8 +500,35 @@
       "fmt": "PASS",
       "pins": "PASS unchanged inputs",
       "duplicate_migrations": "PASS",
-      "workspace_all_targets": "RUNNING at owner push-now instruction",
-      "clippy": "QUEUED behind workspace; not claimed passed"
+      "workspace_all_targets": "PASS 15m42s after publication",
+      "clippy": "PASS durability/dispatch all-target/all-feature 16m09s after publication"
+    },
+    "head": "f01758270bea550745ee5662af323f8f16a6a2ff"
+  },
+  "m38_return_origin_gate": {
+    "state": "GREEN_READY_TO_PUSH",
+    "migration": "none",
+    "pg_test": "npcfix_m38_return_origin_is_rechecked_at_quote_and_commit_postgres",
+    "red": {
+      "seconds": 35.6,
+      "actual": "Ok(0)",
+      "expected": "Err(UnavailableRoute)",
+      "marker": "POSTGRES_STARTED NPCFIX_M38 return-origin quote/commit gate"
+    },
+    "green_seconds": 36.559200869,
+    "regression_pg_seconds": {
+      "permission_and_fine": 13.820097114,
+      "completed_origin_reader": 25.567601634,
+      "ticket": 38.229691628
+    },
+    "scope": "Optional correction/route policy. Shared quote/commit eligibility rechecks latest completed inbound receipt under character root lock. Receipt binding includes expected origin and whole group; None preserves existing v1 receipts. Native Petros ticket/return content remains unfinished.",
+    "model_unit": "PASS 1 test, 0 failed; correction optionality/exact policy/unknown fallback",
+    "publication_checks": {
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD",
+      "workspace_all_targets": "PENDING after immediate owner-directed publication",
+      "clippy": "PENDING content/durability/dispatch after immediate owner-directed publication",
+      "fmt": "PASS cargo fmt --all --check"
     }
   }
 }
