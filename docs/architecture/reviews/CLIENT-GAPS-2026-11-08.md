@@ -207,7 +207,7 @@ Zasady przeciw dublowaniu:
 | T155 | Tutorial | Hints/markers/mouse trail i server-save notice | DONE | Ctrl+Alt+Shift+N włącza renderowane wskazówki kontekstowe, marker kursora i ograniczony czasem/rozmiarem mouse trail; server-save notice jest dostępny (`d2241ea6c`). |
 | T156 | Tutorial | Player Guide / compendium / recommendations | DONE | Zakładki Player Guide i Recommendations są w oknie Ctrl+Shift+N, obok komunikatów samouczka i server-save (`0ef49c5a8`). |
 | O017 | Tutorial | Kompendium: poradnik, aktualizacje i pomoc | DONE | Kompendium ma kategorie Guide, Recommendations, Updates (feed pakietu), Features i Help z informacjami o raportach i zgodzie (`dc3a78120`). |
-| T119 | Wheel | Punkty, slots/perks i reset | PARTIAL | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. |
+| T119 | Wheel | Punkty, slots/perks i reset | DONE | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. Evidence: apps/client/src/features/0148-wheel-allocation/wheel_presentation.rs:32 + wheel_presentation_actual_session_graph_selection_exact_save_and_reset; wheel_presentation_postgres_real_budget_topology_draft_and_session_fences (59.42s), wheel_allocation_postgres_real_dispatch_refusal_reset_and_relogin_allocation (91.48s). |
 | T120 | Wheel | Presets i copy/import code/URL | DONE | Evidence: apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views |
 
 ## OWNER

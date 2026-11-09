@@ -16,3 +16,10 @@ pub(in crate::play) use native::open_window;
 
 #[path = "presets.rs"]
 pub(in crate::play) mod presets;
+
+#[cfg(windows)]
+#[path = "wheel_native.rs"]
+pub(in crate::play) mod wheel_native;
+#[cfg(any(windows, test))]
+#[path = "wheel_surface.rs"]
+pub(in crate::play) mod wheel_surface;

@@ -866,9 +866,10 @@
   "src": "TIBAUD-1",
   "area": "Wheel",
   "feature": "Punkty, slots/perks i reset",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/wheel_presentation.rs:32 + wheel_presentation_actual_session_graph_selection_exact_save_and_reset; wheel_presentation_postgres_real_budget_topology_draft_and_session_fences (59.42s), wheel_allocation_postgres_real_dispatch_refusal_reset_and_relogin_allocation (91.48s)"
  },
  {
   "id": "T120",

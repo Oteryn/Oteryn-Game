@@ -74,5 +74,23 @@
     "not_applicable": {
       "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
     }
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "handlers",
+    "id": "0148-wheel-allocation-wheel-presentation",
+    "status": "supported",
+    "commands": [
+      6119
+    ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::wheel_presentation_query",
+    "not_applicable": {
+      "state": "Existing0148 Wheel panel retains exact draft, correlated read and original161 mutations.",
+      "view": "Original graph geometry draws only server-provided topology and executed perk previews.",
+      "input": "Existing Wheel window opens the diagram; selection and point edits use shared native callbacks.",
+      "settings": "Topology, point budgets and bonuses remain server-owned."
+    }
   }
 ]

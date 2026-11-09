@@ -444,3 +444,6 @@ pub use error::SessionError;
 use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_protocol_oteryn::wheel_presentation;

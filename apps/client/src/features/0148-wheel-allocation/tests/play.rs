@@ -342,3 +342,6 @@ fn wheel_presets_window_handoff_preserves_the_session_owner() {
     drop(link);
     assert!(!window_open(&crate::play::mailbox::lock(&shared)));
 }
+
+#[path = "wheel_presentation.rs"]
+mod wheel_presentation;

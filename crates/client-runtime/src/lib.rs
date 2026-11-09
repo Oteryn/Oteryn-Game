@@ -333,3 +333,6 @@ pub mod cui3 {
         item_view, store,
     };
 }
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_session::wheel_presentation;

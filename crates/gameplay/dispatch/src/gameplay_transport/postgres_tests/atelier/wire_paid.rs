@@ -16,6 +16,8 @@ mod custody;
 mod outputs;
 #[path = "wire_paid/resources.rs"]
 mod resources;
+#[path = "wire_paid/wheel_presentation.rs"]
+mod wheel_presentation;
 
 #[derive(Clone, Copy, Debug)]
 enum Case {
@@ -630,6 +632,9 @@ fn scenario(case: Case) -> TestResult {
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
                 .await?;
+        if matches!(case, Case::Resources) {
+            deps.runtime.lock().await.bind_attacker_lease(deps.actor, deps.admitted.game_session_id, current.current_character_lease()).map_err(debug)?;
+        }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
@@ -652,6 +657,9 @@ fn scenario(case: Case) -> TestResult {
         assert_eq!(before.grade_quotes.len(), 6);
         if matches!(case, Case::Resources | Case::ResourcesUnselected) {
             if matches!(case, Case::Resources) {
+                assert!(admitted.continuity.selected_capabilities.contains(148));
+                assert!(admitted.continuity.selected_capabilities.contains(272));
+                wheel_presentation::check_read(&h, &owner, &mut admitted, &before).await?;
                 resources::check(&h, &mut owner, &mut admitted, &before).await?;
             } else {
                 resources::check_unselected(&h, &owner, &mut admitted).await?;

@@ -384,6 +384,7 @@ impl Outbox {
         mailbox.discovery.end();
         mailbox.properties.end();
         mailbox.item_forge.resource_dialog.reset();
+        mailbox.wheel.diagram.invalidate();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -432,6 +433,7 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.properties.end();
         mailbox.item_forge.resource_dialog.reset();
+        mailbox.wheel.diagram.invalidate();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();
@@ -554,6 +556,7 @@ impl Drop for PlayLink {
         }
         mailbox.properties.end();
         mailbox.item_forge.resource_dialog.reset();
+        mailbox.wheel.diagram.invalidate();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();
         mailbox.analyser = Default::default();

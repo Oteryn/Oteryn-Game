@@ -320,3 +320,5 @@ pub mod modal_dialogs;
 
 #[path = "components/notifications.rs"]
 pub mod notifications;
+#[path = "features/0148-wheel-allocation/protocol/wheel_presentation.rs"]
+pub mod wheel_presentation;
