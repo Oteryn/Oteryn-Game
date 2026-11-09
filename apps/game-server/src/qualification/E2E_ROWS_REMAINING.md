@@ -28,6 +28,7 @@ resume point; live PR and check state win over it.
 
 ## To finish
 
+0. Fix the Codex P1 findings below in one push.
 1. Check whether `main` has a fix for the
    durability-root loss (`durability root is not ready`, `control_lost
    path=liveness_missed`). If so, merge `main` (merge drivers, `cargo fmt`,
@@ -47,6 +48,41 @@ resume point; live PR and check state win over it.
 6. Merge #3023 when its own CI is green, then report "zmergowane #3023".
 7. Keep the hourly check of `main`: no lane is skipped any more (owner
    2026-11-09). Add each new mechanic as a row here.
+
+## Codex review (2026-11-09, head `f6e86f1c9`, review 1 of 2)
+
+All findings are P1 and are fixed first on resume, in one push. Checked so far:
+1, 2 and 4 confirmed in code; 5 matches `control_lost path=liveness_missed` in
+the node log. The rest are still to be checked against the code.
+
+1. `full_row_c06.rs:39` and others: the reporter writes `SEAM_EVIDENCE` and
+   `evidence()` adds it again, giving a double prefix. Some reporters omit
+   `seconds=` or emit CAPTURED/MISSING-CLIENT, which `report.py` does not accept.
+2. `world.rs:1420`: `full_e2ef6`, `full_e2ef5` and `full_e2ef4` run outside
+   `e2e_row_selected`, even with batch `0:0`. This explains the rows after W23
+   and the 60-minute timeouts.
+3. `client_row_i13.rs:41`: the bag is minted by raw SQL with no mint receipt
+   or audit provenance, so the item guards reject it.
+4. `client_row_i13.rs:42`: the SQL seeds `characters[0]`, but `connect_world`
+   admits character 1.
+5. `full_row_p03.rs:221` and both W01b journeys: a sleep of 61 s or more
+   without servicing liveness loses the session.
+6. `full_row_c03.rs:66`: a failed final logout selects the unknown step
+   "journey"; `fail()` ignores it and the row reports PASS.
+7. `full_row_c03.rs:406/470`: ordinary damage above the baseline passes the
+   critical, fatal and Perfect Shot checks.
+8. `full_row_c01.rs:185`: armor and blocking mitigation are never verified,
+   and fight/chase require no chase movement.
+9. `full_row_w05a.rs:112`: any disconnect after a countdown notice is taken
+   as proof of the reset.
+10. `full_row_i10.rs:39`: the starter sends zero-item requests outside a
+    house; expected NotInHouse refusals become MISSING-SERVER.
+11. `crates/session/src/tests/e2e_e02.rs:127` (also e2e_e03:127,
+    e2e_c19a:96, e2e_i11:63 and e2e_w15b:206): a failed admission after
+    `pending()` leaves the peer await hanging forever.
+
+A second review is allowed only after a substantial logic change, and covers
+only the new diff.
 
 ## Owner decisions (2026-11-09)
 
