@@ -152,7 +152,7 @@ impl super::Application {
         if self.play.is_none()
             && let Some(hud) = &mut self.hud
         {
-            hud.spells.update(None);
+            hud.spells.update(None, (12, 1));
             hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);
