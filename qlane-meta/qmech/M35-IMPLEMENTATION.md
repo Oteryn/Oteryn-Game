@@ -431,3 +431,23 @@ printed `M35_CRYSTAL_WAND_POSTGRES_CASE_COMPLETED`. Self-review found no
 significant issue; existing assertions are retained and exact-reward checks
 are extended. No generated content changed. The full M35 scope remains PARTIAL
 for the source-binding, partial-charge and remaining caller-proof gaps above.
+
+## Circle Room real-caller qualification
+
+Crystal 201189f8 `chest.lua:1525-1539` binds UID6122 at(32495,31992,14)
+and UID6123 at(32497,31992,14), both appearance2469. The independent rewards
+are war hammer3279 x1 and dwarven axe3323 x1. The mounted case drives literal
+wire USE through production dispatch, durable MINT and quest obligations.
+Both chest orders require incomplete state after the first claim and complete
+state only after the second. It checks exact reward identities and quantities,
+receipts, consumed obligations, replay and fresh-repeat refusal, with a quest
+state reload between claims. No production declaration or grant is changed.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL18.6 caller case in147.08 seconds, with
+`M35_CIRCLE_ROOM_POSTGRES_CASE_COMPLETED`. The full handwritten diff was
+reviewed against the pinned donor endpoints and quantities; no significant
+finding. No assertion was removed or loosened, and no generated file changed.
+M35 remains PARTIAL for the previously documented final-source binding,
+partial-charge and remaining real-caller proof requirements. Node boot was
+skipped as instructed.

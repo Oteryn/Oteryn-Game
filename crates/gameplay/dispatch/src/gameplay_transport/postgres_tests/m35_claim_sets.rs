@@ -70,6 +70,7 @@ enum Case {
     Draconia,
     GoblinTemple,
     CrystalWand,
+    CircleRoom,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -89,6 +90,25 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: Circle Room's two independent rewards.
+#[test]
+fn m35_circle_room_dispatch_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::CircleRoom).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Circle Room scenario panicked")??;
+    println!("M35_CIRCLE_ROOM_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1540-1554: independent Crystal Wand rewards.
@@ -256,6 +276,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::CircleRoom => (
+            (32495, 31992, -14),
+            2469,
+            "oteryn:quest.circle_room_quest",
+            &[(32495, 6122), (32497, 6123)],
+        ),
         Case::CrystalWand => (
             (32479, 31611, -15),
             2472,
@@ -391,6 +417,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::Draconia
                     | Case::GoblinTemple
                     | Case::CrystalWand
+                    | Case::CircleRoom
             ) {
                 2
             } else {
@@ -641,6 +668,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::Draconia
                                 | Case::GoblinTemple
                                 | Case::CrystalWand
+                                | Case::CircleRoom
                         ) && index == 1
                 );
             }
@@ -844,7 +872,10 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     }
                 }
             }
-            if matches!(case, Case::Koshei | Case::BlackKnight | Case::CrystalWand) {
+            if matches!(
+                case,
+                Case::Koshei | Case::BlackKnight | Case::CrystalWand | Case::CircleRoom
+            ) {
                 let rewards: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
                      JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
@@ -862,6 +893,15 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 "oteryn:item.tibia.i3381"
                             } else {
                                 "oteryn:item.tibia.i3419"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::CircleRoom) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3279"
+                            } else {
+                                "oteryn:item.tibia.i3323"
                             },
                             1,
                         )
