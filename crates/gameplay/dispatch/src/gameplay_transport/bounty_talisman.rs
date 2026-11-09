@@ -280,38 +280,6 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
     }
 }
 
-impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
-    pub(in crate::gameplay_transport) fn set_elite_bounty(
-        &mut self,
-        runtime: &ChannelRuntimeV1,
-        session: GameSessionId,
-        race: Option<&str>,
-    ) {
-        self.elite_bounties.retain(|(actor, id, _)| {
-            *id != session && runtime.player_control_facts(*actor, *id).is_ok()
-        });
-        if let Some(race) = race
-            && let Ok(Some((actor, _))) = runtime.positioned_player_for_session(session)
-            && runtime.player_control_facts(actor, session).is_ok()
-        {
-            self.elite_bounties.push((actor, session, race.to_owned()));
-        }
-    }
-    pub(in crate::gameplay_transport) fn elite_bounty(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        race: &str,
-    ) -> bool {
-        self.get(runtime, actor, session).is_some()
-            && self
-                .elite_bounties
-                .iter()
-                .any(|(present, id, key)| *present == actor && *id == session && key == race)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(
