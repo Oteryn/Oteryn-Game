@@ -1684,9 +1684,9 @@
   "src": "TIBAUD-2-UPDATES-2025-2026",
   "area": "Hunting tasks",
   "feature": "Elite checkbox i Platinum tasks w Bounty Board",
-  "status": "PARTIAL",
-  "gap": "Elite/Platinum implementation is wired through Task Board, combat and reward owners. Focused PostgreSQL execution now reaches real dispatch. Corrected the fixture to choose a vocation and reach level eight through the existing XP receipt owner; green rerun pending. Numeric content profile is PARITY_PENDING per owner decision 2026-11-09.",
+  "status": "DONE",
+  "gap": "Elite preference affects newly rolled Bounty offers; Platinum rewards and per-character rarity growth/reset persist through the existing Task Board owner. Real combat, XP and Premium-only dust owners are exercised. Numeric content profile remains PARITY_PENDING per owner decision 2026-11-09.",
   "lane": "cg_tasks",
-  "evidence": "apps/client/src/features/0072-task-board/tests/controls.rs:171 + elite_checkbox_uses_the_real_play_queue; crates/gameplay/quests/src/quest/task_board_full_tests.rs:1561 + elite_offers_freeze_rewards_and_rarity_survives_serialization_and_resets_per_race; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:203 + task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust (execution pending)"
+  "evidence": "apps/client/src/features/0072-task-board/tests/controls.rs:171 + elite_checkbox_uses_the_real_play_queue; crates/gameplay/quests/src/quest/task_board_full_tests.rs:1561 + elite_offers_freeze_rewards_and_rarity_survives_serialization_and_resets_per_race; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:203 + task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust; crates/gameplay/dispatch/src/gameplay_transport/bounty_talisman.rs:287 + elite_spell_batch_halves_actual_hp_and_replay. Focused dispatch: 2 passed in 132.49s with real local PostgreSQL; all 40 tr! strings present in all six locale catalogs."
  }
 ]
