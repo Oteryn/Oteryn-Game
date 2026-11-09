@@ -46,6 +46,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn m25_loot_native_decoder_retains_source_speed_and_complete_protection()
+    -> Result<(), ContentError> {
+        use crate::content::item_abilities::{ItemAbility, item_ability_profile};
+        use crate::content::{ReferenceItemField, ReferenceSignedPoints};
+        let records = qualified_records()?;
+        let mut boots_seen = false;
+        for row in records {
+            let view = item_ability_profile(&row.semantics)
+                .map_err(|_| invalid("M25 loot native ability decoder"))?;
+            let speed: i32 = view
+                .abilities
+                .iter()
+                .filter_map(|ability| match ability {
+                    ItemAbility::Speed(value) => Some(*value),
+                    _ => None,
+                })
+                .sum();
+            assert_eq!(Some(speed), row.attributes.speed_bonus);
+            if row.production_binding.external_id == "44648" {
+                boots_seen = true;
+                assert!(view.abilities.contains(&ItemAbility::Speed(15)));
+                assert!(matches!(&row.semantics.protection,
+                    ReferenceItemField::Known(group)
+                    if group.armor == ReferenceItemField::Known(ReferenceSignedPoints(2))));
+            }
+        }
+        assert!(boots_seen);
+        Ok(())
+    }
+
+    #[test]
     fn m25_loot_keeps_all_exact_existing_identities_and_rejects_changed_source()
     -> Result<(), ContentError> {
         for row in qualified_records()? {

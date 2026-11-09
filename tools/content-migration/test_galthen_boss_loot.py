@@ -9,6 +9,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class GalthenBossLootTests(unittest.TestCase):
+    def test_captured_boot_speed_and_resistances_reach_native_abilities(self):
+        rows = {row['production_binding']['external_id']: row for row in
+                json.loads((ROOT / producer.PATH).read_bytes())['records']}
+        modifiers = rows['44648']['semantics']['skill_modifiers']['value']['modifiers']['value']
+        self.assertIn({'kind': 'SIGNED_POINTS', 'value': 15},
+                      [row['parameter']['value'] for row in modifiers if row['kind'] == 'SPEED'])
+        resistances = rows['44649']['semantics']['protection']['value']['resistances']['value']
+        self.assertEqual(rows['44649']['semantics']['protection']['value']['armor'],
+                         {'state': 'KNOWN', 'value': 2})
+        self.assertEqual(rows['44648']['semantics']['protection']['value']['armor'],
+                         {'state': 'KNOWN', 'value': 2})
+        self.assertIn({'kind': 'ICE', 'percent': {'state': 'KNOWN',
+                      'value': {'denominator': 1, 'numerator': 6}}}, resistances)
+        monk = rows['50255']['semantics']['skill_modifiers']['value']['modifiers']['value']
+        self.assertEqual({entry['kind']: entry['parameter']['value']['value'] for entry in monk},
+                         {'MANTRA': 16, 'SKILL_FIST': 4})
+
+    def test_unmapped_or_malformed_ability_never_partially_publishes(self):
+        for attrs in ({'speed': 'invalid'}, {'speed': '15', 'suppressunknown': '1'},
+                      {'speed': '15', 'absorbpercentice': '999'},
+                      {'speed': '15', 'mantra': '32768'},
+                      {'speed': '15', 'armor': 'invalid'},
+                      {'speed': '15', 'armor': '2147483648'}):
+            with self.subTest(attrs=attrs):
+                row = {'semantics': {}}
+                with self.assertRaisesRegex(ValueError, 'M25_LOOT_EQUIPMENT_SOURCE'):
+                    producer.complete_source_abilities(row, attrs)
+                self.assertEqual(row, {'semantics': {}})
+
     def test_complete_source_records_survive_registration(self):
         packet = json.loads((ROOT / producer.PATH).read_bytes())
         native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())

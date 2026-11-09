@@ -87,3 +87,91 @@ also passed through the native client in 0.220708162 seconds, including native
 own appearance and the destination teleport effect. The peer observed the real
 STEP and delivered all eight captured return frames. Clippy with `-D warnings`
 passed for all client targets. Post-regeneration server PG reruns remain due.
+
+### Reproduced native inputs
+
+The existing simulator completed 15 cases over 777 creatures, then the native
+importer regenerated 48 files with `activation=false`. The missing producer
+module import in the equipment identity-pin tool is fixed. Its seven tests keep
+exact source metadata, exact declared identities, duplicate/foreign rejection,
+raw equipment checks and idempotence. Fixtures now include the required producer
+metadata and verify the full identity witness rather than only a stale count.
+The complete source cohort still declares 6251 profiles against a runtime union
+of 6219; its independent sum guard remains enabled. This batch preserves the
+generated inputs while that source ownership overlap is investigated.
+
+### Independently proved cohort overlaps
+
+The overlap composer now checks the exact identities of each source packet
+before subtracting a closed, explicit intersection. Elemental Spheres shares
+14 identities with floor assembly; Rafzane shares eight with the elevator;
+five endgame corpses already belong to SRX3; crafting shares two QENGINE items;
+ENGNPC-M05 and the two talisman declarations each share one QENGINE item.
+These 32 duplicate contributions explain the previous 6251/6219 mismatch.
+The runtime union is not an input to these deductions, and its independent
+sum check remains enabled. Both regeneration and `--check` pass at 6219.
+Four new tests cover exact deductions, idempotence, a missing corpse proof,
+duplicate/foreign source identities, and refusal to repair an arbitrary prior
+declaration.
+
+The focused Rust production-profile test compiled successfully (4m49s), then
+ran for 104.913 seconds and exposed a separate Galthen loot defect: item 44648
+has raw speed 15 but its native ability sum is zero. This batch does not alter
+that assertion. Quest-authoring checks still report the two reward-claim
+variant failures; content-tree validation reaches `LOCK_COUNTS`. Those checks
+are not reported as green.
+
+The Galthen capture now lowers skill modifiers and resistances with the existing
+equipment decoder, and Mantra with its existing whole-vector decoder. The
+Canary 47dfd51f source has speed 15 on `data/items/items.xml:76897` (stoic iks
+boots), ice resistance 6 at line 76918 (sandals), and Mantra 16 plus fist skill
+4 at line 84001 (robe). Source URL:
+https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml
+Both groups are validated before publishing either, including refusal of
+unknown modifier keys, malformed points, out-of-range resistance, or Mantra.
+The new captured-ability regression was red against the original packet;
+the raw speed assertion is retained unchanged.
+
+After regeneration all seven Galthen capture/registration tests pass (0.494s),
+as do capture `--check`, equipment-pin `--check`, formatting and the duplicate
+migration check. Dispatch Clippy with all features/targets and `-D warnings`
+passed in 8m07s. The post-fix Rust test compiled but its linker hit a full disk
+(`ld terminated with signal 7 [Bus error]`); stale lane-owned artifacts were
+removed and the same test is being rerun. This resource failure is not treated
+as a mechanic qualification pass.
+
+The rerun exposed an incomplete protection group (`Item updates base`): the
+new resistance lowering had omitted the required armor leaf. The source
+decoder now retains explicit armor, with UNKNOWN for absent leaves, and
+validates its signed bounds before publishing either group. The armor
+regression was red, then the seven capture/registration cases passed (0.562s).
+A new Rust test goes through the real `qualified_records()` and native ability
+decoder for all nineteen source profiles, checking the raw speed independently
+and the boots' speed 15 plus armor 2. It and the existing exact-identity/hash
+negative test both pass (2/2, 0.044s total). Full native-world/PG reruns remain
+separate from these completed source-decoder tests.
+
+The full production-profile test then passed the Galthen raw/typed speed checks
+and reached its older UNKNOWN-set assertion. Three leaves are now explicitly
+qualified: parchment 2833 and the existing arena custody promotions 5805/5806.
+The pin tool replays the existing source decoder for precisely those three IDs,
+checking the pinned XML/client metadata and exact zero-speed facts. It emits
+positive native assertions and an explicit exclusion from the unchanged older
+UNKNOWN list; it never derives the expected set from runtime output. Its three
+tests reject unknown/nonzero speed, duplicate IDs, changed source SHA and bad
+Rust anchors. Canary XML source lines are 5818, 15643 and 15649 respectively.
+
+The post-protection PG rerun again reached migration 2020 and failed before
+either mechanic body: healthy case 81.490s, unknown-commit case 90.021s, both
+with the same exact `actual BIGINT;` guard error recorded above. The native
+production-profile case took 114.550s and failed only on the three stale
+UNKNOWN entries; it is being rerun after source-backed pin regeneration.
+
+The post-fix native PG rerun reached real database migrations, but neither
+mechanic body ran: `srx3_cloak_` cases took 74.825 and 75.355 seconds and both
+failed with `while executing migration 2020: error returned from database:
+quest reward quantity variable requires exact guard anchor: actual BIGINT;
+at line 3909`. Migration 2020 belongs to another lane and is outside this
+lane's 2170–2179 range. A later migration cannot repair an earlier fresh-schema
+failure. No foreign or merged migration was edited; current PG qualification
+remains PARTIAL pending that prerequisite fix.
