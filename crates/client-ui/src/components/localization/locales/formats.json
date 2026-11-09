@@ -1,4 +1,12 @@
 [
+ "Level {} — {} ({} XP)",
+ "\nSummary: {} weapons, {} mastered\n",
+ "Advancement: {} — level {}\n",
+ "Mastery: {} — {}% ({} / {} XP)\nPerk tree\n",
+ "{} — {}% — {} XP",
+ "Modified slot {} — rank {}",
+ "{} — {}%",
+ "↑\n{}",
  "\n  Candidates: {}", "\nBalance: {} Oteryn Coins", "\nBalance: {} coins; available {}; transferable {}.{}",
  "\nBonus: {}", "\nBoss details: {key}", "\nBosstiary browser — {:?}\n",
  "\nBuild details: {}; OS: {}; architecture: {}", "\nChange sex of Hireling: {}", "\nCurrent dust: {dust} / {limit}",
