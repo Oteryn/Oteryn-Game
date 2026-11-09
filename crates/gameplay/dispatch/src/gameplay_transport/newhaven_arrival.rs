@@ -34,7 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .complete_tutorial_islet_admission(budget, actor, session)
                 .await;
         };
-        let Ok(Some(fence)) = self.current_quest_fence_within(budget, session).await else {
+        let Ok(Some(mut fence)) = self.current_quest_fence_within(budget, session).await else {
             return false;
         };
         let placed = {
@@ -52,7 +52,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             placed.record.rest = *rest;
             placed
         };
-        if self
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let Ok(revision) = slot.cursor(self.root, self.character).await else {
+            return false;
+        };
+        fence.expected_character_revision = revision;
+        let consumed = self
             .root
             .consume_npc_pending_arrival_placed(
                 self.character,
@@ -61,9 +66,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.occurrence,
                 placed,
             )
-            .await
-            .is_err()
-        {
+            .await;
+        slot.observe_home_town();
+        if consumed.is_err() {
             return false;
         }
         self.track_respawned(session, actor, &placed, fence);
@@ -259,14 +264,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let _ = map.facts.emit_movement_effect(tile, 11);
                 }
             }
+            if matches!(
+                held.route,
+                newhaven_travel::Departure::Tutorial(
+                    crate::content::newhaven_travel::NewhavenRoute::Anna
+                )
+            ) && let Some(map) = self.bundle_map()
+                && let Some(tile) =
+                    crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+                        x: destination.x,
+                        y: destination.y,
+                        z: i32::from(destination.floor),
+                    })
+            {
+                let _ = map.facts.emit_movement_effect(tile, 11);
+            }
             placed = Some(record);
             self.states.chat.close_out_of_range(&runtime, session);
         }
-        let current = self.current_quest_fence(session).await.ok()??;
+        let mut current = self.current_quest_fence(session).await.ok()??;
         if current.item_fence() != capture.session {
             return None;
         }
         let placed = placed?;
+        let mut slot = self.revision_sequencer.acquire(current.character_id).await;
+        current.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
         let consumed = self
             .root
             .consume_npc_pending_arrival_placed(
@@ -276,8 +298,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 frozen.arrival.occurrence,
                 placed,
             )
-            .await
-            .ok()?;
+            .await;
+        slot.observe_home_town();
+        let consumed = consumed.ok()?;
         if consumed == crate::durability::npc_travel::ArrivalConsume::Consumed {
             self.track_respawned(session, actor, &placed, current);
         }

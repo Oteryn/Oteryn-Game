@@ -241,7 +241,7 @@ pub async fn consume_in_transaction(
     if written != LastPositionWrite::Written {
         return Err(TravelStoreError::PositionNotWritten(written));
     }
-    super::newhaven_travel::complete_in_transaction(tx, fence.character_id, occurrence).await?;
+    super::newhaven_travel::complete_in_transaction(tx, node, fence, occurrence).await?;
     Ok(ArrivalConsume::Consumed)
 }
 
