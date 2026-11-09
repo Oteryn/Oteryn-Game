@@ -12,6 +12,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
+#[path = "../features/0233-touch-controls/tests/play.rs"]
+mod touch_controls;
+
 fn key(x: u32, y: u16, floor: i16, ordinal: u8) -> Vec<u8> {
     let floor_byte = u64::from(floor.unsigned_abs());
     let key = u64::from(x) << 32 | u64::from(y) << 16 | floor_byte << 8 | u64::from(ordinal);

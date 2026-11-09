@@ -7,7 +7,7 @@ Zasady przeciw dublowaniu:
 1. Każdy obszar ma dokładnie jedną linię. Wiersz `O` i wiersz `T` z tego samego obszaru należą do tej samej linii; linia realizuje je jedną implementacją i odhacza oba.
 2. Przed implementacją linia sprawdza gałąź `cgmech` (zawiera main i wszystkie scalone linie). Jeśli funkcja już tam jest, tylko uzupełnia braki.
 3. Funkcji z obszaru innej linii nie implementuje się; najwyżej podpina się istniejący kod.
-4. Wiersze `OWNER` (mobilny joystick i pasek skrótów) czekają na decyzję właściciela.
+4. Wiersze mobilne realizuje `cg_mobile` na ekranie dotykowym istniejącego klienta Windows, zgodnie z decyzją właściciela; bez portu Android/iOS.
 
 | Linia | TIBAUD-1 | OTCAUD1108 | Razem |
 |---|---:|---:|---:|
@@ -16,7 +16,7 @@ Zasady przeciw dublowaniu:
 | cg_cyclo | 33 | 9 | 42 |
 | cg_options | 43 | 12 | 55 |
 | cg_ui | 39 | 9 | 48 |
-| OWNER | 0 | 2 | 2 |
+| cg_mobile | 0 | 2 | 2 |
 | razem | 134 | 34 | 168 |
 
 ## cg_account
@@ -210,9 +210,9 @@ Zasady przeciw dublowaniu:
 | T119 | Wheel | Punkty, slots/perks i reset | DONE | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. Evidence: apps/client/src/features/0148-wheel-allocation/wheel_presentation.rs:32 + wheel_presentation_actual_session_graph_selection_exact_save_and_reset; wheel_presentation_postgres_real_budget_topology_draft_and_session_fences (59.42s), wheel_allocation_postgres_real_dispatch_refusal_reset_and_relogin_allocation (91.48s). |
 | T120 | Wheel | Presets i copy/import code/URL | DONE | evidence: apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views |
 
-## OWNER
+## cg_mobile
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| O035 | Mobile | Mobilny joystick ruchu | MISSING | Brakuje ekranowego joysticka dotykowego do sterowania ruchem. |
-| O056 | Mobile | Mobilny pasek skrótów | MISSING | Brakuje ekranowego paska mobilnych skrótów dotykowych wybierających tryb attack/look/follow/use. |
+| O035 | Mobile | Mobilny joystick ruchu | DONE | Joystick dotykowy w istniejącym kliencie Windows: osiem sektorów, martwa strefa, powtarzanie w kolejce paced-movement i zatrzymanie po puszczeniu/anulowaniu lub utracie fokusu. Sektory ukośne naprzemiennie wysyłają istniejące kroki kardynalne; protokół obsługuje cztery kierunki. Bez portu Android/iOS. evidence: apps/client/src/features/0233-touch-controls/input.rs:91 + touch_joystick_uses_paced_keyboard_steps_and_release_stops; apps/client/src/features/0233-touch-controls/native.rs:7 + touch_default_tap_dead_zone_and_contact_ownership |
+| O056 | Mobile | Mobilny pasek skrótów | DONE | Dotykowy pasek attack/look/follow/use z widocznym wyborem i powrotem do domyślnego walk-to/use po ponownym dotknięciu. Korzysta z istniejących ścieżek myszy/klawiatury, pokazuje się po pierwszym dotyku i nie przechwytuje myszy; napisy we wszystkich sześciu lokalizacjach. evidence: apps/client/src/features/0233-touch-controls/input.rs:110 + touch_hotbar_world_taps_equal_mouse_context_and_follow_keys; apps/client/src/features/0233-touch-controls/view.rs:6 + touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode |

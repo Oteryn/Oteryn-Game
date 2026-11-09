@@ -23,6 +23,7 @@ use std::num::NonZeroU32;
 #[derive(Debug, Clone)]
 pub struct PlayView {
     game_notifications: feature_local_game_notifications::state::State,
+    touch: feature_0233_touch_controls::state::State,
     ui_sounds: Vec<UiSound>,
     creature_drag: feature_0082_creature_push::state::CreatureDrag,
     world_context_feedback: Option<String>,
@@ -77,6 +78,8 @@ pub struct PlayView {
 mod construction;
 
 mod end;
+#[path = "features/0233-touch-controls/mod.rs"]
+mod feature_0233_touch_controls;
 mod hud_layout;
 mod input;
 mod mailbox;
@@ -89,6 +92,8 @@ mod session_stepper;
 mod status_window;
 mod stepper;
 mod tick;
+pub use feature_0233_touch_controls::promoted::is_touch_promoted;
+pub use feature_0233_touch_controls::state::Phase as TouchPhase;
 pub use resource_hud::ResourceHudOptions;
 mod window_controls;
 pub use window_controls::window_icon;
