@@ -50,3 +50,13 @@ message BestiaryCatalogueCardV1 {
   string category = 3; // an exact member of the page categories
   string detail = 4; // <=16000 UTF-8 bytes; empty on browse pages
 }
+
+// T081: command 84 also accepts ff 02 after:u8 (0..32) for paged charm
+// descriptions. Reply uses BestiaryCataloguePageV1: card.race is the 1-based
+// charm index in the same catalogue as progression; name is derived from its
+// canonical key, category Major/Minor, detail contains effect rules and all
+// stage values/costs. Appearance fields are absent. Cursor equals the last index.
+// This read uses the same admitted actor/generation fence as ff 01.
+// ff 03 followed by 1..5 strictly ascending nonzero race:u16le IDs (<=1024)
+// returns their active creature catalogue cards in the same page shape, no cursor.
+// The client batches confirmed discovered races to name the eligible race selector.

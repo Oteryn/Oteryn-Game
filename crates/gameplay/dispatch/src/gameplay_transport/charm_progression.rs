@@ -3,6 +3,8 @@
 //! port: the same gameplay fence, revision slot and receipts as CHARM-3, and the gold fee owner
 //! for a remove. The Bestiary races and their charm points are the canonical Bestiary source,
 //! the catalogue is the resident imported one, and both views are read after the command.
+#[path = "charm_progression/charm_details.rs"]
+mod charm_details;
 #[path = "charm_progression/catalogue.rs"]
 mod catalogue;
 use std::sync::LazyLock;

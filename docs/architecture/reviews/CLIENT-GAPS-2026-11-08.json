@@ -562,9 +562,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Charms: points/unlock/assign/remove/reset",
-  "status": "PARTIAL",
-  "gap": "Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "Selektory nazwanych charms i kwalifikujących się creatures, opisy i wartości etapów z katalogu serwera; punkty oraz unlock/assign/remove/reset przez rzeczywisty caller.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0067-bestiary-charm-progression/selector_window.rs:45 + apps/client/src/features/0067-bestiary-charm-progression/tests/selector.rs:9 t081_named_selector_uses_confirmed_descriptions_and_routes_all_operations; crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs:92 + t081_charm_descriptions_follow_canonical_progression_indices_and_effect_values"
  },
  {
   "id": "T082",

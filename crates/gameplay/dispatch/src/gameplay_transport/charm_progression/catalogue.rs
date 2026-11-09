@@ -11,8 +11,15 @@ pub(super) async fn dispatch(
     admitted: AdmittedSession,
     payload: &[u8],
 ) -> GuildReply {
-    let Ok(request) = wire::decode_request(payload) else {
-        return GuildReply::Rejected;
+    let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len()%2==0 {
+        let races:Vec<_>=payload[2..].chunks_exact(2).map(|b|u16::from_le_bytes([b[0],b[1]])).collect();
+        if races.iter().any(|r|!(1..=1024).contains(r)) || races.windows(2).any(|p|p[0]>=p[1]) { return GuildReply::Rejected; }
+        Some(races)
+    } else { None };
+    let charm_after = match payload { [255, 2, after] if *after <= 32 => Some(*after), _ => None };
+    let request = if charm_after.is_some() || named_races.is_some() { Request { after: 0, race: 0, category: 0 } } else {
+        let Ok(request) = wire::decode_request(payload) else { return GuildReply::Rejected; };
+        request
     };
     let Some(current) =
         super::super::character_gameplay_fence::current(owner, admitted.game_session_id, false)
@@ -37,6 +44,14 @@ pub(super) async fn dispatch(
     else {
         return GuildReply::Rejected;
     };
+    if let Some(ids) = named_races {
+        let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
+        let cards:Option<Vec<_>>=ids.into_iter().map(|id|card(native,races.get(usize::from(id-1))?,id)).collect();
+        return cards.and_then(|cards| { let categories=cards.iter().map(|c|c.category.clone()).collect::<BTreeSet<_>>().into_iter().collect(); wire::encode_page(&Page {next:None,cards,categories}).ok() }).map_or(GuildReply::Rejected,GuildReply::Payload);
+    }
+    if let Some(after) = charm_after {
+        return super::charm_details::page(&owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     project(native, request)
         .and_then(|page| wire::encode_page(&page).ok())
         .map_or(GuildReply::Rejected, GuildReply::Payload)

@@ -14,36 +14,6 @@ struct Actions(Vec<usize>);
 fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
-unsafe extern "system" fn procedure(h: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
-    unsafe {
-        if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
-            let a = GetWindowLongPtrW(h, GWLP_USERDATA) as *mut Actions;
-            if !a.is_null() && (*a).0.len() < 16 {
-                (*a).0.push(w & 0xffff);
-            }
-            return 0;
-        }
-        DefWindowProcW(h, msg, w, l)
-    }
-}
-unsafe fn control(h: HWND, class: &str, label: &str, id: usize, r: [i32; 4], style: u32) -> HWND {
-    unsafe {
-        CreateWindowExW(
-            0,
-            wide(class).as_ptr(),
-            wide(label).as_ptr(),
-            WS_CHILD | WS_VISIBLE | style,
-            r[0],
-            r[1],
-            r[2],
-            r[3],
-            h,
-            id as HMENU,
-            null_mut(),
-            null(),
-        )
-    }
-}
 pub(super) fn open(link: &PlayLink) {
     {
         let mut m = lock(&link.mailbox);
@@ -89,6 +59,23 @@ pub(super) fn open(link: &PlayLink) {
                         [10, 10, 320, 400],
                         CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
                     );
+                    let progress_filter = control(
+                        h,
+                        "COMBOBOX",
+                        "",
+                        96,
+                        [340, 10, 330, 160],
+                        CBS_DROPDOWNLIST as u32,
+                    );
+                    for label in ["All discoveries", "In progress", "Complete"] {
+                        SendMessageW(
+                            progress_filter,
+                            CB_ADDSTRING,
+                            0,
+                            wide(label).as_ptr() as isize,
+                        );
+                    }
+                    SendMessageW(progress_filter, CB_SETCURSEL, 0, 0);
                     let list = control(
                         h,
                         "LISTBOX",
@@ -118,6 +105,7 @@ pub(super) fn open(link: &PlayLink) {
                     let mut bitmap_handle: HBITMAP = null_mut();
                     let mut painted = None;
                     let mut page_seen = None;
+                    let mut displayed: Vec<u16> = Vec::new();
                     let mut category_seen = None;
                     let mut initialized = false;
                     loop {
@@ -140,10 +128,16 @@ pub(super) fn open(link: &PlayLink) {
                             }
                             let selected = SendMessageW(list, LB_GETCURSEL, 0, 0);
                             if let Ok(index) = usize::try_from(selected)
-                                && let Some(card) = p.catalogue.page.cards.get(index)
+                                && let Some(race_id) = displayed.get(index)
+                                && p.catalogue
+                                    .page
+                                    .cards
+                                    .iter()
+                                    .chain(&p.selector.races)
+                                    .any(|c| c.race == *race_id)
                                 && !p.pending
                             {
-                                let race = card.race.to_string();
+                                let race = race_id.to_string();
                                 if p.fields[1] != race {
                                     p.fields[1] = race;
                                     p.catalogue.detail.clear();
@@ -151,6 +145,13 @@ pub(super) fn open(link: &PlayLink) {
                                     p.catalogue.next_loot = None;
                                 }
                             }
+                            use oteryn_client_ui::charm_progression::RaceFilter;
+                            p.race_filter = match SendMessageW(progress_filter, CB_GETCURSEL, 0, 0)
+                            {
+                                1 => RaceFilter::InProgress,
+                                2 => RaceFilter::Complete,
+                                _ => RaceFilter::All,
+                            };
                             let selected_category = SendMessageW(category, CB_GETCURSEL, 0, 0);
                             let mut requested = actions.0.drain(..).find_map(|id| match id {
                                 1 => Some(0),
@@ -190,28 +191,31 @@ pub(super) fn open(link: &PlayLink) {
                             SendMessageW(category, CB_SETCURSEL, p.catalogue.category.into(), 0);
                             category_seen = Some(p.catalogue.page.categories.clone());
                         }
-                        if page_seen.as_ref() != Some(&p.catalogue.page) {
+                        let rows: Vec<_> = p
+                            .catalogue_rows()
+                            .iter()
+                            .map(|card| (card.race, p.catalogue_label(card)))
+                            .collect();
+                        if page_seen.as_ref() != Some(&rows) {
                             SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                            for card in &p.catalogue.page.cards {
-                                SendMessageW(
-                                    list,
-                                    LB_ADDSTRING,
-                                    0,
-                                    wide(&card.name).as_ptr() as isize,
-                                );
+                            for (_, label) in &rows {
+                                SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
                             }
-                            let index = p
-                                .catalogue
-                                .page
-                                .cards
+                            if let Some(index) = rows
                                 .iter()
-                                .position(|c| c.race.to_string() == p.fields[1]);
-                            if let Some(i) = index {
-                                SendMessageW(list, LB_SETCURSEL, i, 0);
+                                .position(|(id, _)| id.to_string() == p.fields[1])
+                            {
+                                SendMessageW(list, LB_SETCURSEL, index, 0);
                             }
-                            page_seen = Some(p.catalogue.page.clone());
+                            displayed = rows.iter().map(|(id, _)| *id).collect();
+                            page_seen = Some(rows);
                         }
-                        let card = p.catalogue.selected_card(&p.fields[1]);
+                        let card = p.catalogue.selected_card(&p.fields[1]).or_else(|| {
+                            p.selector
+                                .races
+                                .iter()
+                                .find(|c| c.race.to_string() == p.fields[1])
+                        });
                         let appearance = card.map(|c| (c.outfit_look_type, c.object_look_type));
                         if painted != Some(appearance) {
                             SendMessageW(image, STM_SETIMAGE, IMAGE_BITMAP as usize, 0);
@@ -250,7 +254,15 @@ pub(super) fn open(link: &PlayLink) {
                             SetWindowTextW(art_status, wide(note).as_ptr());
                             painted = Some(appearance);
                         }
-                        SetWindowTextW(detail, wide(&p.catalogue.detail).as_ptr());
+                        SetWindowTextW(
+                            detail,
+                            wide(&format!(
+                                "{}\r\n{}",
+                                oteryn_client_ui::charm_progression::bestiary_detail_text(&p),
+                                p.catalogue.detail
+                            ))
+                            .as_ptr(),
+                        );
                         SetWindowTextW(
                             status,
                             wide(&format!(
@@ -278,20 +290,7 @@ pub(super) fn open(link: &PlayLink) {
         lock(&shared).properties.charm_progression.catalogue.open = false;
     }
 }
-unsafe fn bitmap(rgba: &[u8]) -> HBITMAP {
-    unsafe {
-        let mut info: BITMAPINFO = std::mem::zeroed();
-        info.bmiHeader.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
-        info.bmiHeader.biWidth = 96;
-        info.bmiHeader.biHeight = -96;
-        info.bmiHeader.biPlanes = 1;
-        info.bmiHeader.biBitCount = 32;
-        info.bmiHeader.biCompression = BI_RGB;
-        let mut bits = null_mut();
-        let handle = CreateDIBSection(null_mut(), &info, DIB_RGB_COLORS, &mut bits, null_mut(), 0);
-        if !handle.is_null() {
-            std::ptr::copy_nonoverlapping(rgba.as_ptr(), bits as *mut u8, rgba.len());
-        }
-        handle
-    }
-}
+
+#[path = "catalogue_controls.rs"]
+mod controls;
+use controls::{bitmap, control, procedure};

@@ -8,6 +8,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub selector: super::Selector,
     pub catalogue: super::catalogue::Catalogue,
     pub race_filter: RaceFilter,
     pub selected: bool,

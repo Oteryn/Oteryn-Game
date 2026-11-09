@@ -1,3 +1,5 @@
+#[path = "input/selector.rs"]
+pub(in crate::play) mod selector;
 #[path = "input/catalogue.rs"]
 pub(in crate::play) mod catalogue;
 use crate::combat_input::PlayCommand;
