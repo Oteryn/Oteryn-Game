@@ -1,6 +1,6 @@
 # M30b Asura Palace: native entry and chamber evidence
 
-The shipped binding covers recipe s1 only. It observes entry at the canonical
+The native palace entry observes recipe s1 at the canonical
 Asura Palace Area point `(32953,32685,z7)`, whose base-map tile is exactly one
 ground placement, source appearance 923, ordinal 0. The existing chosen EXPLORE
 profile supplies native STEP admission, two one-shot counters and the live
@@ -37,7 +37,7 @@ appearance 5736, ordinal 1. The pitfall above is `(32959,32675,3)`, appearance
 21973, ordinal 1. The map alone does not identify whether either or both exits
 are the quest-owned door, nor a source admission of the existing static actors.
 
-## Exact remaining data gap
+## Donor source gaps and authored resolution
 
 The Flaming Orchid's BR encyclopedia Document
 (`content/documents/documents-01000-01499.json`,
@@ -46,12 +46,11 @@ Elementals unlock its boss room. The held Flaming Orchid spawn at
 `(32955,32679,2)` is inside the central enclosure. This resolves the s3 boss-door
 candidate to `(32959,32679,2)`, but does not locate or admit the elemental pair.
 
-No checked-in admitted binding associates recipe s2/s3/s4 with an entry trigger,
+The checked donor evidence does not associate recipe s2/s3/s4 with an entry trigger,
 two exact defender placements and the door(s) their deaths unlock. The finite
 canonical spawn shards contain neither Greater Fire Elemental nor Greater Energy
 Elemental placements. Their names occur in the chosen recipe and reference facts,
-not in a native chamber roster or executable source interaction. Thus the missing
-datum is the s2/s3/s4 **entry → admitted defender pair → unlocked door** association:
+not in a native chamber roster or executable source interaction. The source-data gap is the s2/s3/s4 **entry → admitted defender pair → unlocked door** association:
 s2's selection between its two exits, s3's elemental pair and entry, and s4's
 elemental pair, entry and target door. Both elemental pairs' coordinates are
 absent from the canonical spawn population. The palace location, floor-2 doors
@@ -158,3 +157,104 @@ s2 door and s3 entry beforehand, then checking s2 replay, entered=1, exactly two
 total receipts including s1, and no quest completion. This qualifies the durable
 server-writer route. It does not qualify physical encounter publication or
 ordinary-combat defender deaths; those still require the dispatch scenario.
+
+
+Personal encounter dispatch now preflights staging, room occupancy, teleport
+proofs and defender policies before the durable entry write. It applies the
+committed quest copy and refreshes native counter capture while retaining the
+Channel turn, so the source roster captures the admission's committed revision.
+The current pending callback can resume only with matching actor, session,
+movement snapshot, callback, object identity/revision and original command cause.
+A coherent copy already at the receipt revision is preserved on replay.
+
+The focused pending-fence regression and ten existing capture tests cover this
+slice. Both real framed Child of Destiny hit-credit PostgreSQL callers passed
+again after the shared snapshot refactor. Full physical Asura encounter/death/door
+qualification remains pending, along with the two elemental native policies.
+
+`engenc_elemental_profiles.py` in `tools/content-migration/` implements the
+owner-authored Greater Elemental policy transformation. Pending a retrievable
+Tibia revision, **authored per owner rule**: use the admitted Massive Fire and
+Massive Energy Elemental combat profiles as the respective bounded baselines,
+retaining their health, speed, attacks, armor and resistances. The variants use
+new Greater identities and display names, zero XP, no bestiary progression,
+no prey/forge eligibility and no inherited soul-core or encyclopedia reference.
+The original provider records remain byte-for-byte equivalent as JSON values.
+The factory is registered by the provider integration described below. No donor
+script is represented as implementing a Greater Elemental identity.
+
+Provider integration now adds the two variants after donor attack-closure binding
+and before native manifest and loot pins are generated. Their exact authored
+baselines are Fire: 1800 HP, armor 57, speed 119; Energy: 1100 HP, armor 35,
+speed 215. Both variants have no corpse reference and an explicit null-loot row;
+no canonical donor identity or external monster ID is invented. The retained
+Ability and Presentation references remain the admitted Massive Elemental ones.
+
+MediaWiki API requests for page titles `Greater Fire Elemental` and
+`Greater Energy Elemental`, using the same honest research User-Agent, returned
+HTTP 402 on 2026-11-09. No revid was received for either page. Their unresolved
+values therefore use the documented **authored per owner rule** fallback.
+The existing Prey generator was rerun with `--simulate` (15 cases, 777 eligible
+creatures): model results and slot values are unchanged, except their input
+hashes. Both authored variants remain outside Prey eligibility.
+
+
+Native activation qualification now passes with the corrected attack packet:
+its Creature declaration and Creature profile bind the authored identity, while
+its admitted Ability, Behavior and Presentation references remain unchanged.
+The activation regression was observed failing on the original copied Creature
+binding and passing after this correction. Explicit null-loot rows and no corpse
+references keep the variants outside loot/corpse rewards. Registration freshness,
+123 repository content tests, fmt and dispatch all-target clippy passed. World
+pin regeneration preserved digest
+`7b680a6007b27dff037ef35cfdb4bd97deec63b32e47c88cc597a603cd28a41c`.
+The remaining M30b qualification is the full three-chamber dispatch path through
+admission, ordinary-combat deaths and personal door opening.
+
+The three native chamber admissions now pass PostgreSQL qualification through
+literal framed USE and `serve_admitted`, with the production authored selectors,
+actual B3 crops and native creature policies. Each route proves teleportation,
+two defenders, one durable entry receipt and replay without another spawn.
+Tests: `engenc_postgres_native_destroyer_chamber_admission`,
+`engenc_postgres_native_fire_chamber_admission`, and
+`engenc_postgres_native_energy_chamber_admission`.
+
+The Destroyer crop exposed two obstructed previous home anchors (ball/chains
+5471 and clutter 2696). **Authored per owner rule**: use adjacent plain floor
+410 at (32959,32674,4) and (32958,32677,4). Stage USE at (32958,32675,3),
+beside the crack at (32959,32675,3), whose item 21973 has floor-change down.
+The native map objects are preserved. The generator now supports a separate
+staging tile without changing the native target selector.
+
+The dispatch qualification also exposed a production pending-command leak:
+successful encounter execution returned before clearing its pending callback,
+so the committed admission produced no wire result. The encounter branch now
+clears that record on committed execution, matching the ordinary callback path.
+The Destroyer literal USE test was observed failing before this correction and
+passing afterward. Ordinary defender deaths and participant-scoped door opening
+through all three real callers remain to be qualified.
+
+The native admission PostgreSQL cases additionally exercise early door USE with
+both defenders still alive. A bounded route search uses the retained native
+floor and avoids the admitted defender positions; literal STEP commands move
+the participant beside the exact native door before literal USE. The checks
+require refusal, no door receipt, an unchanged object revision and both live
+defenders. These are negative door qualifications; successful personal opening
+after ordinary combat deaths remains separate work.
+
+Combat/door qualification extends each native dispatch case after its early
+refusal. The admitted player negotiates combat capabilities, walks to a reachable
+cardinal neighbor of each exact admitted defender, sends framed ATTACK_TARGET,
+and drains ordinary auto-attacks and production kill settlement. Durable count
+one must still refuse the door; count two must commit exactly one door receipt
+and change the native object revision. A level-10000 player fixture keeps the
+combat loop bounded; native defender health, armor, resistances and policies
+are unchanged. No death or quest receipt is manufactured by fixture setup.
+
+All three expanded native dispatch PostgreSQL cases passed on 2026-11-09
+(3 passed, 0 failed, 115.71 s): Destroyer, Greater Fire Elemental and Greater
+Energy Elemental admission, ordinary combat credit and corresponding personal
+door opening. Both elemental and Destroyer cases require count one to refuse
+and count two to commit. Dispatch all-target clippy, workspace fmt and explicit
+formatting of the mounted test file also passed. This supersedes the earlier
+notes identifying ordinary deaths and successful opening as pending.

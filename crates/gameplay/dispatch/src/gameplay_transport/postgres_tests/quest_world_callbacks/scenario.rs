@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let engenc_asura = name.starts_with("engenc-asura-native-");
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
@@ -64,7 +65,8 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m49
+    let native_crop = engenc_asura
+        || m49
         || qm03
         || qm47
         || qm50
@@ -97,7 +99,10 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m07_too_hot {
+    let start = if engenc_asura {
+        super::super::engenc_asura_dispatch::start(name)?
+    } else if m07_too_hot {
+
         super::super::m07_too_hot_columns::start()
     } else if m07_repair {
         super::super::m07_machinery_repairs::start()
@@ -246,7 +251,10 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if m03_pits {
+    let mut callback = if engenc_asura {
+        super::super::engenc_asura_dispatch::callback(name)?
+    } else if m03_pits {
+
         callback("qm03/pits")?
     } else if nomads_window {
         callback(super::super::qengine_m02_use::NAME)?
@@ -508,7 +516,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_pits {
+        let world = if engenc_asura {
+            super::super::engenc_asura_dispatch::world(
+                generation.native_gameplay().ok_or("native Asura")?,
+                name,
+            )?
+        } else if m03_pits {
+
             super::super::qengine_m03_pits::world(
                 generation.native_gameplay().ok_or("Pits native policies")?,
             )?
@@ -773,7 +787,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+        let premium = if engenc_asura || m03_pits || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
             || matches!(
                 name,
                 "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
@@ -849,6 +863,11 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if engenc_asura {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::engenc_asura_dispatch::catalogue(name)?,
+            ));
+        }
         if m44_flower {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::m44_flower_lifecycle::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("flower catalogue")?, &callback, name.ends_with("/later"))?));
@@ -969,7 +988,11 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_pits {
+        if engenc_asura {
+            super::super::engenc_asura_dispatch::exercise(&mut owner, &mut admitted, &h, name)
+                .await?;
+        } else if m03_pits {
+
             super::super::qengine_m03_pits::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
         } else if nomads_window {

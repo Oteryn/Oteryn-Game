@@ -768,6 +768,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if durable && callback.effects.encounter.is_some() {
+            let preflight = self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+                true,
+                cause,
+                None,
+            );
+            if preflight != UseDisposition::Committed {
+                return preflight;
+            }
+        }
         let mut success_preface = None;
         if callback.effects.encounter.is_some() && callback.has_personal_state() && !durable {
             return UseDisposition::Rejected;
@@ -810,6 +829,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                cause,
             );
             if ready != UseDisposition::Committed {
                 return ready;
@@ -990,8 +1010,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
-                    self.states.loop_ground.invalidate();
                     self.apply_committed_quest_copy(session, fresh, committed);
+                    if callback.effects.encounter.is_some()
+                        && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
+                    {
+                        self.schedule_quest_refresh(session);
+                        return UseDisposition::Rejected;
+                    }
+                    self.states.loop_ground.invalidate();
                     self.schedule_quest_refresh(session);
                 }
                 Err(ref error) if matches!(error, crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
@@ -1034,9 +1060,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                false,
+                cause,
                 personal_reservation.as_mut(),
             );
-            if disposition == UseDisposition::Committed && callback.has_personal_state() {
+            if disposition == UseDisposition::Committed {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
