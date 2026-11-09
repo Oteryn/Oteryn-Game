@@ -43,6 +43,7 @@ pub async fn run_session<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
+                        7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),

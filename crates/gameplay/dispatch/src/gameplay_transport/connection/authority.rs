@@ -1086,6 +1086,15 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// CHAT-WIRE-1: one `CHAT_INTENT` (command 13) of the admitted actor.
+    /// Older authority implementations may refuse the optional read-only console query.
+    fn console_levels(
+        &self,
+        _admitted: AdmittedSession,
+        _names: Vec<String>,
+    ) -> impl Future<Output = Option<Vec<Option<u32>>>> {
+        std::future::ready(None)
+    }
+
     fn chat_intent(
         &self,
         _actor: ExactActorRef,

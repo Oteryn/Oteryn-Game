@@ -48,6 +48,9 @@ impl SettingsState {
             .condition_status
             .order
             .clone_from(&self.preferences.condition_order);
+        if mailbox.local_preferences.console_font_px != self.preferences.console_font_px {
+            mailbox.chat.console.display.font_px = self.preferences.console_font_px;
+        }
         if mailbox.local_preferences != self.preferences {
             mailbox.local_preferences.clone_from(&self.preferences);
         }
