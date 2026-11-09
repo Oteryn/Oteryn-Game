@@ -34,6 +34,8 @@ def generate(root: Path):
     if definition['identity']['key'] != QUEST:
         raise ValueError('Bank recipe source moved')
     recipe = definition['recipe']
+    if [stage['next'] for stage in recipe['stages']] != [['s2'], ['s3'], ['s4'], []]:
+        raise ValueError('Bank stage graph changed; requalify native stage ordering')
     if recipe['repeat']['kind'] != 'daily' or [(s['key'], s['kind'], s['count']) for s in recipe['stages']] != [('s1', 'talk', 1), ('s2', 'kill', 1), ('s3', 'collect', 1), ('s4', 'complete', 1)]:
         raise ValueError('Bank recipe changed; requalify explicit native bindings')
     if (recipe['requirements']['min_level'] != 0 or recipe['requirements']['premium']

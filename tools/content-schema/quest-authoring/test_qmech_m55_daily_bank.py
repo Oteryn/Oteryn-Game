@@ -13,6 +13,13 @@ class DailyBank(unittest.TestCase):
             with self.assertRaises(ValueError):
                 bank.generate(bank.ROOT)
 
+    def test_recipe_graph_change_requires_requalification(self):
+        source = json.loads((bank.ROOT / bank.INPUT).read_text())
+        source['records'][88]['definition']['recipe']['stages'][0]['next'] = ['s4']
+        with patch.object(bank.json, 'loads', return_value=source):
+            with self.assertRaises(ValueError):
+                bank.generate(bank.ROOT)
+
     def test_recipe_bound_daily_route(self):
         quest = bank.generate(bank.ROOT)['quests'][0]
         self.assertEqual([s['key'] for s in quest['stages']], ['s1', 's2', 's3', 's4'])
