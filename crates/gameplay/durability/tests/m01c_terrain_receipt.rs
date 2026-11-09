@@ -264,6 +264,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     production_dead_archer_entry(h, &authority, native, tool).await?;
     terrain_counter_fixture(h, &authority, native, tool).await?;
     production_fanfare_collection(h, &authority, native).await?;
+    production_black_knight_collection(h, &authority, native).await?;
     Ok(())
 }
 
@@ -771,5 +772,145 @@ async fn level_admission_fixture(
         }
     }
     eprintln!("M01C_LEVEL actor_level={level} above_refused threshold_committed replay_stable");
+    Ok(())
+}
+
+async fn production_black_knight_collection(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+) -> f::TestResult {
+    use durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(f::debug)?
+            .catalogue()
+            .clone(),
+    );
+    let transition_key = "oteryn:quest-collection/m01c-black-knight-key";
+    assert!(catalogue.transition(transition_key).is_some());
+    let admission = catalogue
+        .authored_bindings()
+        .and_then(|b| {
+            b.quests
+                .iter()
+                .find(|q| q.quest == "oteryn:quest.black_knight_quest")
+        })
+        .and_then(|q| q.admission.as_ref())
+        .ok_or("Black Knight actor admission")?;
+    assert_eq!(admission.minimum_level, 50);
+    for (ordinal, number) in [(90_u32, 5009_u16), (91, 5010)] {
+        let request = RewardClaimMintRequest {
+            command: reward_fixture::command(9800 + u64::from(ordinal))?,
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: format!("fixture:m01c-key-{number}"),
+                revision_ref: "definition-r1".into(),
+            },
+            source_placement: format!("fixture:m01c-key-box-{number}"),
+            item: generation_item_facts(native, &reward_fixture::definition(2969))
+                .map_err(f::debug)?,
+            quantity: 1,
+            contents: Vec::new(),
+            additional_items: Vec::new(),
+            root_text: None,
+            backpack: generation_item_facts(native, &reward_fixture::definition(2854))
+                .map_err(f::debug)?,
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+            achievement: None,
+            quest_transition: None,
+            key_number: Some(number),
+        };
+        let mut candidate = h
+            .root
+            .freeze_reward_claim_mint(authority, &h.node, f::item_fence()?, request)
+            .await
+            .map_err(f::debug)?;
+        let minted = h
+            .root
+            .commit_reward_claim_mint(authority, &h.node, f::item_fence()?, &mut candidate)
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(minted, RewardClaimMintOutcome::Committed(_)));
+        // Claim MINT is itself the native acquisition; no unrelated inventory move is needed.
+        let request = QuestTransitionRequest {
+            transition_key: transition_key.into(),
+            cause: QuestCause::Command(reward_fixture::command(9800 + u64::from(ordinal))?),
+        };
+        if number == 5010 {
+            let forged = QuestTransitionRequest {
+                transition_key: transition_key.into(),
+                cause: QuestCause::Command(reward_fixture::command(9997)?),
+            };
+            let refused = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(7)?,
+                    forged,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(
+                matches!(
+                    refused,
+                    QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+                ),
+                "custody without a native acquisition receipt is insufficient"
+            );
+        }
+        let outcome = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(7)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        if number == 5009 {
+            assert!(matches!(
+                outcome,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            ));
+        } else {
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            let replay = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(7)?,
+                    request,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+        }
+    }
+    let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-black-knight-route'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(value, 1);
+    let keys: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item JOIN game_item_keys k ON k.item_instance_id=i.item_instance_id WHERE k.key_number IN (5009,5010) AND i.lifecycle=1 AND i.quantity=1 AND i.definition_production_key='oteryn:item.tibia.i2969'")
+        .bind(f::id(f::CHARACTER).as_slice())
+        .bind(f::id(f::WORLD).as_slice())
+        .fetch_one(&h.pool).await?;
+    assert_eq!(keys, 2, "COLLECT must not consume either key");
+    let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.black_knight_quest'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert!(incomplete);
+    eprintln!(
+        "M01C_BLACK_KNIGHT production_collect native_reward_receipt wrong_key_refused forged_command_refused exact_key_committed custody_preserved replay_safe completion_held"
+    );
     Ok(())
 }
