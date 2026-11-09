@@ -65,6 +65,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Ok(mut lost) = self.states.lost.lock()
         {
             lost.insert(admitted.game_session_id, admitted);
+            drop(lost);
+            self.states.lost_changed.notify_waiters();
         }
         result
     }
@@ -123,6 +125,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ControlLossResult::Unknown;
         };
         lost.insert(admitted.game_session_id, admitted);
+        drop(lost);
+        self.states.lost_changed.notify_waiters();
         ControlLossResult::Recorded
     }
 

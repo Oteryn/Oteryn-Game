@@ -62,6 +62,8 @@ pub struct ChannelSessionStates {
     /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
     /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
     pub lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
+    /// Wakes a resume that observed the durable loss before `lost` publication finished.
+    pub(super) lost_changed: tokio::sync::Notify,
     pub(super) newhaven_travel: newhaven_travel::NewhavenTravel,
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,

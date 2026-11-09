@@ -15,6 +15,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_some_and(|entry| entry.continuity.connection_generation == generation)
         {
             lost.remove(&session);
+            drop(lost);
+            self.states.lost_changed.notify_waiters();
         }
     }
 

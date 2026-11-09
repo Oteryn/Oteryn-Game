@@ -17,7 +17,9 @@ use super::world_required_capabilities::{
     AuthenticatedSessionCapabilities, SessionCapabilityError,
 };
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
-use super::{AdmissionRetryBudget, ComposedFreshAdmission, canonical_uuid};
+use super::{
+    AdmissionRetryBudget, ComposedFreshAdmission, SAME_SESSION_GRACE_SECONDS, canonical_uuid,
+};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::recovery_evidence_composition::RecoveryEvidenceSubject;
@@ -142,6 +144,13 @@ fn resume_read_refusal(_error: crate::durability::DurabilityError) -> AdmissionR
     AdmissionRefusal::Unavailable
 }
 
+async fn wait_for_loss_publication(
+    published: impl std::future::Future<Output = ()>,
+    wait: std::time::Duration,
+) -> bool {
+    tokio::time::timeout(wait, published).await.is_ok()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// `wrote` is set before the first step that may write (the capability-mismatch release
     /// or PREPARE): until then a refusal wrote nothing and the resume may be repeated. After
@@ -161,20 +170,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.spell_lane_permit().await.ok_or(Unavailable)?;
         }
-        let lost = self
-            .states
-            .lost
-            .lock()
-            .map_err(|_| Unavailable)?
-            .get(&attempt.game_session_id)
-            .copied();
-        let mut lost = match lost {
-            Some(lost) => lost,
-            None => {
+        let mut lost = loop {
+            // Register before looking: publication between the lookup and the wait must wake us.
+            let mut published = std::pin::pin!(self.states.lost_changed.notified());
+            published.as_mut().enable();
+            let lost = self
+                .states
+                .lost
+                .lock()
+                .map_err(|_| Unavailable)?
+                .get(&attempt.game_session_id)
+                .copied();
+            if let Some(lost) = lost {
+                break lost;
+            }
+            {
                 // The durable loss commit is visible before the loss task finishes its
                 // runtime mark, cleanup and lost-entry publication. This is readiness,
-                // not a permanent rejection: let the existing bounded pre-write retry
-                // read the completed publication, then prove every resume fence below.
+                // not a permanent rejection. Wait for that local publication independently
+                // of the busy-holder admission budget: the session remains reconnectable for
+                // the full grace window, and the loss task does not use this notification.
                 let session = retry
                     .retry_unavailable(async || {
                         FreshAdmissionStore::from_root(self.root.clone())
@@ -183,13 +198,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(resume_read_refusal)
                     })
                     .await?;
-                return Err(
-                    if session.session_state() == GameSessionState::Reconnectable {
-                        Unavailable
-                    } else {
-                        Rejected
-                    },
-                );
+                if session.session_state() != GameSessionState::Reconnectable {
+                    return Err(Rejected);
+                }
+            }
+            if !wait_for_loss_publication(
+                published,
+                std::time::Duration::from_secs(
+                    u64::try_from(SAME_SESSION_GRACE_SECONDS).map_err(|_| Unavailable)?,
+                ),
+            )
+            .await
+            {
+                return Err(Unavailable);
             }
         };
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
@@ -889,6 +910,17 @@ async fn recovery_budget_of(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn reconnectable_resume_waits_for_loss_publication() {
+        let changed = tokio::sync::Notify::new();
+        // Construct the waiter before publication, as `resume_lost` does before reading
+        // the local map, so a publication in the lookup-to-await gap cannot be missed.
+        let mut published = std::pin::pin!(changed.notified());
+        published.as_mut().enable();
+        changed.notify_waiters();
+        assert!(wait_for_loss_publication(published, std::time::Duration::from_millis(50)).await);
+    }
 
     /// #162 5870253781 (r4122215795, reconnect fence P1): `resume_lost`'s FND-02
     /// reconciliation fence must carry both domain 1 (`WORLD_SPATIAL_VISIBILITY`) and domain 2

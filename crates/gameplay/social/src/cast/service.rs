@@ -155,13 +155,18 @@ async fn run(
     let mut last_announce = 0u64;
     let mut announced = std::collections::HashSet::new();
     let mut freshness = std::collections::HashMap::new();
+    let mut pending = None;
     'worker: loop {
-        let mut request =
+        let retrying = pending.is_some();
+        let mut request = if retrying {
+            pending.take()
+        } else {
             match tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await {
                 Ok(Some(request)) => Some(request),
                 Ok(None) => break,
                 Err(_) => None,
-            };
+            }
+        };
         let now = u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX);
         if !privacy.valid() {
             for target in owner.casts.keys().copied().collect::<Vec<_>>() {
@@ -224,10 +229,14 @@ async fn run(
             owner.target_gone(target);
             freshness.remove(&target);
         }
-        if request
-            .as_ref()
-            .is_some_and(|r| now.saturating_sub(r.submitted_ms) > 1000)
-        {
+        if request.as_ref().is_some_and(|r| {
+            now.saturating_sub(r.submitted_ms) > 1000
+                || (retrying
+                    && privacy
+                        .valid_until()
+                        .saturating_duration_since(std::time::Instant::now())
+                        <= std::time::Duration::from_millis(600))
+        }) {
             if let Some(expired) = request.take() {
                 let _ = expired.reply.send(Err(Error::Unavailable));
             }
@@ -270,19 +279,30 @@ async fn run(
                 }
                 operation => operation,
             };
-            let result = apply_durable(
+            let result = apply_durable_once(
                 &mut owner,
                 &root,
                 &node,
                 access.as_ref(),
                 &accounts,
                 operation,
-                now,
+                u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX),
                 privacy.version(),
             )
             .await;
-            let committed = persist_pending(&mut owner, &root, &node).await;
-            completed = Some((request.reply, committed.and(result)));
+            match result {
+                DurableOutcome::Busy(operation) => {
+                    pending = Some(Request {
+                        operation: *operation,
+                        ..request
+                    });
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+                DurableOutcome::Complete(result) => {
+                    let committed = persist_pending(&mut owner, &root, &node).await;
+                    completed = Some((request.reply, committed.and(result)));
+                }
+            }
         } else {
             let _ = persist_pending(&mut owner, &root, &node).await;
         }
@@ -503,90 +523,162 @@ pub async fn apply_durable(
     node: &NodeIncarnationProof,
     access: &impl preferences::PreferencesStore,
     accounts: &HashMap<GameSessionId, [u8; 16]>,
-    mut op: Operation,
+    op: Operation,
     now: u64,
     privacy_version: i64,
 ) -> Result<Reply, Error> {
-    match &mut op {
-        Operation::Start(_, settings, account) => {
-            *settings = preferences::authorize(access, *account, *settings)
-                .await?
-                .settings;
-        }
-        Operation::Update(facts, _, settings) => {
-            let account = accounts
-                .get(&facts.authority.current_game_session_id())
-                .ok_or(Error::Unavailable)?;
-            *settings = preferences::authorize(access, *account, *settings)
-                .await?
-                .settings;
-        }
-        Operation::Join(a) | Operation::Renew(_, a) => {
-            let target = owner
-                .casts
-                .iter()
-                .find(|(_, c)| c.state.cast_id == a.cast_id)
-                .map(|(t, _)| t)
-                .ok_or(Error::Unavailable)?;
-            let account = accounts.get(target).ok_or(Error::Unavailable)?;
-            if retry_busy_holder(root, || root.cast_account_banned(node, *account, a.account))
-                .await?
-            {
-                return Err(Error::Unavailable);
-            }
-        }
-        Operation::Ban(facts, revision, id) => {
-            let target = facts.authority.current_game_session_id();
-            let subject = owner.ban_subject(*facts, *revision, *id)?;
-            let account = *accounts.get(&target).ok_or(Error::Unavailable)?;
-            let state = owner.state(target).ok_or(Error::Unavailable)?;
-            let record = oteryn_gameplay_durability::durability::cast_audit::CastAuditRecord {
-                ordinal: 1,
-                kind: 12,
-                target_session: target.as_bytes().to_vec(),
-                cast_id: state.cast_id.to_vec(),
-                revision: state.revision,
-                epoch: state.epoch,
-                subject_account: Some(subject.to_vec()),
-                ..Default::default()
-            };
-            retry_busy_holder(root, || {
-                root.ban_cast_account(node, account, subject, record.clone())
-            })
-            .await?;
-            for held in accounts
-                .iter()
-                .filter_map(|(held, held_account)| (*held_account == account).then_some(*held))
-            {
-                owner.remove_banned(held, subject)?;
-            }
-            return Ok(Reply::Applied);
-        }
-        _ => {}
-    }
-    apply(owner, op, now, privacy_version)
-}
-
-// Retry only acquisition refusal: a storage/receipt failure must never replay
-// the operation. Join, renewal and moderation use the same window as cast audit.
-async fn retry_busy_holder<T, F: std::future::Future<Output = Result<T, DurabilityError>>>(
-    root: &DurabilityRoot,
-    mut operation: impl FnMut() -> F,
-) -> Result<T, Error> {
-    use tokio::time::Instant;
-    let deadline = Instant::now() + std::time::Duration::from_secs(1);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let mut op = op;
     loop {
-        match operation().await {
-            Ok(value) => return Ok(value),
-            Err(DurabilityError::RootUnavailable) if Instant::now() < deadline => {
-                let now = Instant::now();
+        match apply_durable_attempt(
+            owner,
+            root,
+            node,
+            access,
+            accounts,
+            op,
+            now,
+            privacy_version,
+        )
+        .await
+        {
+            DurableOutcome::Complete(result) => return result,
+            DurableOutcome::Busy(returned) if std::time::Instant::now() < deadline => {
+                op = *returned;
+                let started = tokio::time::Instant::now();
                 root.wait_holder_retry(
-                    now + std::time::Duration::from_millis(2),
-                    (now + std::time::Duration::from_millis(50)).min(deadline),
+                    started + std::time::Duration::from_millis(2),
+                    (started + std::time::Duration::from_millis(50))
+                        .min(tokio::time::Instant::from_std(deadline)),
                 )
                 .await;
             }
-            Err(_) => return Err(Error::Unavailable),
+            DurableOutcome::Busy(_) => return Err(Error::Unavailable),
         }
+    }
+}
+
+enum DurableOutcome {
+    Complete(Result<Reply, Error>),
+    Busy(Box<Operation>),
+}
+
+enum DurablePreflight {
+    Proceed,
+    Applied,
+    Busy,
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one off-tick authority boundary carries the durable owners"
+)]
+async fn apply_durable_once(
+    owner: &mut CastOwner,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    access: &impl preferences::PreferencesStore,
+    accounts: &HashMap<GameSessionId, [u8; 16]>,
+    op: Operation,
+    now: u64,
+    privacy_version: i64,
+) -> DurableOutcome {
+    apply_durable_attempt(
+        owner,
+        root,
+        node,
+        access,
+        accounts,
+        op,
+        now,
+        privacy_version,
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one off-tick authority boundary carries the durable owners"
+)]
+async fn apply_durable_attempt(
+    owner: &mut CastOwner,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    access: &impl preferences::PreferencesStore,
+    accounts: &HashMap<GameSessionId, [u8; 16]>,
+    mut op: Operation,
+    now: u64,
+    privacy_version: i64,
+) -> DurableOutcome {
+    let result: Result<DurablePreflight, Error> = async {
+        match &mut op {
+            Operation::Start(_, settings, account) => {
+                *settings = preferences::authorize(access, *account, *settings)
+                    .await?
+                    .settings;
+            }
+            Operation::Update(facts, _, settings) => {
+                let account = accounts
+                    .get(&facts.authority.current_game_session_id())
+                    .ok_or(Error::Unavailable)?;
+                *settings = preferences::authorize(access, *account, *settings)
+                    .await?
+                    .settings;
+            }
+            Operation::Join(a) | Operation::Renew(_, a) => {
+                let target = owner
+                    .casts
+                    .iter()
+                    .find(|(_, c)| c.state.cast_id == a.cast_id)
+                    .map(|(t, _)| t)
+                    .ok_or(Error::Unavailable)?;
+                let account = accounts.get(target).ok_or(Error::Unavailable)?;
+                match root.cast_account_banned(node, *account, a.account).await {
+                    Ok(true) => return Err(Error::Unavailable),
+                    Ok(false) => {}
+                    Err(DurabilityError::RootUnavailable) => return Ok(DurablePreflight::Busy),
+                    Err(_) => return Err(Error::Unavailable),
+                }
+            }
+            Operation::Ban(facts, revision, id) => {
+                let target = facts.authority.current_game_session_id();
+                let subject = owner.ban_subject(*facts, *revision, *id)?;
+                let account = *accounts.get(&target).ok_or(Error::Unavailable)?;
+                let state = owner.state(target).ok_or(Error::Unavailable)?;
+                let record = oteryn_gameplay_durability::durability::cast_audit::CastAuditRecord {
+                    ordinal: 1,
+                    kind: 12,
+                    target_session: target.as_bytes().to_vec(),
+                    cast_id: state.cast_id.to_vec(),
+                    revision: state.revision,
+                    epoch: state.epoch,
+                    subject_account: Some(subject.to_vec()),
+                    ..Default::default()
+                };
+                match root.ban_cast_account(node, account, subject, record).await {
+                    Ok(()) => {}
+                    Err(DurabilityError::RootUnavailable) => return Ok(DurablePreflight::Busy),
+                    Err(_) => return Err(Error::Unavailable),
+                }
+                for held in accounts
+                    .iter()
+                    .filter_map(|(held, held_account)| (*held_account == account).then_some(*held))
+                {
+                    owner.remove_banned(held, subject)?;
+                }
+                return Ok(DurablePreflight::Applied);
+            }
+            _ => {}
+        }
+        Ok(DurablePreflight::Proceed)
+    }
+    .await;
+    match result {
+        Ok(DurablePreflight::Proceed) => {
+            DurableOutcome::Complete(apply(owner, op, now, privacy_version))
+        }
+        Ok(DurablePreflight::Applied) => DurableOutcome::Complete(Ok(Reply::Applied)),
+        Ok(DurablePreflight::Busy) => DurableOutcome::Busy(Box::new(op)),
+        Err(error) => DurableOutcome::Complete(Err(error)),
     }
 }
