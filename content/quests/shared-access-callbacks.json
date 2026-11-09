@@ -2277,6 +2277,59 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/mad-mage-room/s1/entry",
+      "quest": "oteryn:quest.mad_mage_room_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32396,
+          "y": 32138,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 32396,
+            "y": 32138,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/mad_mage_room_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/mad_mage_room_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json#/candidates/30",
+        "https://tibia.fandom.com/index.php?curid=5361&oldid=1114111",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "minimum_level": 40
+    },
+    {
       "key": "oteryn:quest-callback/m01b/medusa-shield/s1/the_medusa_quest",
       "quest": "oteryn:quest.medusa_shield_quest",
       "trigger": "step_in",

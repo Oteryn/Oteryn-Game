@@ -34,9 +34,10 @@
       "Emperor's Cookies Quest",
       "Grimvale Mini World Change",
       "Inukaya Quest",
-      "Medusa Shield Quest"
+      "Medusa Shield Quest",
+      "Mad Mage Room Quest"
     ],
-    "wired_explore_stages": 27,
+    "wired_explore_stages": 28,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -62,9 +63,11 @@
       "Heart of Destruction Quest",
       "Grave Danger Quest",
       "Emperor's Cookies Quest",
-      "Grimvale Mini World Change"
+      "Grimvale Mini World Change",
+      "Inukaya Quest",
+      "Medusa Shield Quest"
     ],
-    "wired_native_visit_anchors": 41
+    "wired_native_visit_anchors": 42
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -160,9 +163,15 @@
     "two_crypt_activation": "ResolverREDunsupported0.181s ->GREEN0.422s;activationRED2missing0.345s ->GREEN50Python16.577s,latestdistance-guard51tests17.433s",
     "two_crypt_clippy": "GREEN quests+dispatch all-targets strict4m10s",
     "two_crypt_profile": "GREEN6Rustprofiletests0.04s",
-    "two_crypt_postgres": "PENDING2nativecases building;CurrentPremium preserved,Medusa level60;no collision/source placement changes"
+    "two_crypt_postgres": "GREEN2passed124.12s:Inukaya61.846991131s,Medusa62.273275522s;CurrentPremium refusal/replay,freshonce,revisit,Medusalevel60;compiled data5c201a759",
+    "prison_resolver": "REDunsupportedNPCapproach0.162s ->GREEN0.524s;chosen hall outside retained2184door,level40 preserved;noNPCplacementpromotion",
+    "prison_activation": "REDmissingentry0.420s ->GREEN53Python20.272s;latestinactiveBearDoor resolver54tests18.536s",
+    "prison_clippy": "GREEN quests+dispatch strict all-targets4m18s",
+    "prison_profile": "GREEN6Rustprofiletests0.04s",
+    "prison_postgres": "PENDING own native hall39/40/replay case building",
+    "bear_preparation": "INACTIVE:door4601 approach before retainedstone1791;REDunsupported0.182s ->GREEN0.451s;sourcekeyclaimmembershipverified"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "27wiredstage/routes,25PG-proven entry routes,41nativeanchors;19routes/29stages unwired. FinishInukaya/Medusa nativePG;next remaining ordinary entry. M01b PARTIAL."
+  "continuation": "28wiredstage/routes,27PG-proven entry routes,42anchors;18routes/28stages unwired. FinishPrison nativePG,then activateBearoutside-door approach. M01b PARTIAL."
 }

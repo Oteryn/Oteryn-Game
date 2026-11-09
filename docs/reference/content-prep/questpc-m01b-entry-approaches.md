@@ -135,3 +135,15 @@ approach32484,31109,z8 is6684,with eastern start6685. Medusa cache33049,32399,z1
 retains17544+17470+1983;its clear north-eastern approach33050,32398,z10 and
 eastern start are410. Both explicit distances are2 on the source floor.
 No source objects or collision rules change;no chest claim occurs on STEP.
+
+## Mad Mage prison hall
+
+Position evidence: tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json,
+`oteryn:npc.a_prisoner`,32394,32138,z13. Wiki reference:
+https://tibia.fandom.com/index.php?curid=5361&oldid=1114111
+
+This candidate is geometry evidence only (OTS hypothesis),not a runtime NPC
+placement promotion or a canonical Tibia-fidelity claim. The selected chosen
+entry32396,32138,z13 (408) and eastern start32397,32138 (432) lie outside
+the retained2184cell door at32395,32138. No apple,key or door action is
+required for the first hall visit. Canonical level40 is retained.

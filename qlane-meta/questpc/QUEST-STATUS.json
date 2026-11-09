@@ -1114,5 +1114,5 @@
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
-  "m01b_latest_batch": "Inukaya/Medusa first entries wired at explicit same-floor distance2;51Python17.433s,6Rustprofile0.04s,strictClippy4m10s GREEN. Own2nativePG building.27wired/25PG-proven routes;M01b PARTIAL."
+  "m01b_latest_batch": "Crypt2nativePG GREEN124.12s. MadMage outside-cell hall wired,level40;53authoring tests20.272s,6Rustprofile0.04s,strictClippy4m18s GREEN;ownPG building.28wired/27PG-proven;M01b PARTIAL."
 }

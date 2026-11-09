@@ -21,6 +21,34 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_bear_room_approach_precedes_the_stone_and_key_door(self):
+        bindings = (('oteryn:quest.bear_room_quest','s1',
+                     'door-approach:canary:door-gate/key/4601','chosen-source/bear_room_quest'),)
+        with mock.patch.object(explore,'BINDINGS',bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position':{'x':32145,'y':32102,'floor':-11},'ordinal':0,'appearance':355})
+            self.assertFalse(callback['passages'])
+            self.assertFalse(callback['offerings'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_mad_mage_prison_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest'] == 'oteryn:quest.mad_mage_room_quest']
+        self.assertEqual(len(callbacks),1,'the outside-cell approach is activated')
+        self.assertEqual(callbacks[0]['minimum_level'],40)
+
+    def test_mad_mage_prison_approach_stays_outside_the_locked_cell(self):
+        bindings = (('oteryn:quest.mad_mage_room_quest', 's1',
+                     'npc-approach:oteryn:npc.a_prisoner', 'chosen-source/mad_mage_room_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x':32396,'y':32138,'floor':-13}, 'ordinal':0,'appearance':408})
+            self.assertEqual(callback['minimum_level'],40)
+            self.assertNotIn('admission',callback)
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
     def test_crypt_distance_exception_does_not_widen_other_claims(self):
         import questpc_fragment_approaches as fragments
         key = 'canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir'

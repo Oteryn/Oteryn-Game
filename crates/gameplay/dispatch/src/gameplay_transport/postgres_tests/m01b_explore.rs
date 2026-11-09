@@ -51,6 +51,9 @@ mod moon_entry;
 #[path = "m01b_explore/crypt_entries.rs"]
 mod crypt_entries;
 
+#[path = "m01b_explore/prison_entry.rs"]
+mod prison_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -322,6 +325,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/mad-mage-room/s1/entry" {
+        return prison_entry::world(native);
+    }
     if matches!(
         name,
         "m01b/inukaya/s1/inukaya" | "m01b/medusa-shield/s1/the_medusa_quest"
@@ -521,6 +527,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/mad-mage-room/s1/entry" {
+        return prison_entry::exercise(owner, admitted, h).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/grimvale-mini-world-change/s1/entry" {
         return moon_entry::exercise(owner, admitted, h).await;
     }
