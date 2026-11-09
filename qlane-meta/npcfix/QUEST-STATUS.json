@@ -487,5 +487,21 @@
     "reader_and_native_binding": "NEXT; component does not yet activate a return route",
     "new_pg_proof": "none; no SQL changed",
     "whole_M38": "PARTIAL"
+  },
+  "m38_return_receipt_reader": {
+    "state": "PG_GREEN_CHECKS_RUNNING",
+    "migration": "2140_npc_travel_completed_origin.sql",
+    "sql_red_seconds": 0.288316,
+    "sql_green_seconds": 0.147351,
+    "pg_test": "npcfix_m38_travel_return_remembers_only_completed_inbound_ports_postgres",
+    "pg_green_seconds": 23.878212218,
+    "scope": "Fenced read of completed inbound receipt groups; pending/replay/clock repair/stale-session checks. Quote/commit gate and native Petros return wiring remain unfinished.",
+    "publication_checks": {
+      "fmt": "PASS",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS",
+      "workspace_all_targets": "RUNNING at owner push-now instruction",
+      "clippy": "QUEUED behind workspace; not claimed passed"
+    }
   }
 }
