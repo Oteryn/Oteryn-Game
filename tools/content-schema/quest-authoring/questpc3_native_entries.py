@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -232,9 +233,47 @@ def build_task_board(slug, root=ROOT):
         'sources':evidence}]}
 
 
+def build_draconia(root=ROOT):
+    quest = 'oteryn:quest.draconia_quest'
+    path, recipe = chosen(root, quest, ('s1', 'use', 1, ['Key 3012', 'Hellgate', 'Draconia']), 25)
+    sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
+    import world_region_codec as codec
+    capture_path = 'tools/content-schema/world-authoring/samples/m01c-key-doors.json'
+    capture = json.loads((root / capture_path).read_bytes())
+    doors = [row for row in capture['bindings'] if row['key_number'] == 3012]
+    if {tuple(row['position']) for row in doors} != {(32675, 31649, 10), (32676, 31671, 10)}:
+        raise ValueError('M01C_DRACONIA_SOURCE_DOORS')
+    index = json.loads((root / 'content/world/placements/index.json').read_bytes())
+    track = 'oteryn:quest-progress/m01c-draconia-route'
+    stages = []
+    for door in doors:
+        x, y, z = door['position']
+        region = f'content/world/placements/region-z{z:02d}-x{x // 256:03d}-y{y // 256:03d}.b3'
+        decoded = codec.decode_region((root / region).read_bytes())
+        matches = [(ordinal, attrs) for _, tiles in decoded[3]
+                   for tx, ty, _, house, _, items in tiles if (tx, ty) == (x, y) and not house
+                   for ordinal, (palette, _, attrs) in enumerate(item for item in items if not item[1])
+                   if index['palette'][palette]['source_item_id'] == 5097]
+        if len(matches) != 1 or (matches[0][1] or {}).get('action') != 3012:
+            raise ValueError('M01C_DRACONIA_NATIVE_DOOR_ACTION')
+        placement = (x << 32) | (y << 16) | (((-z) & 255) << 8) | matches[0][0]
+        stages.append({'key':f's1-key-{x}-{y}', 'completes':False,
+            'trigger':{'kind':'door_use', 'usage':{
+                'key':f'oteryn:quest-door-use/m01c-draconia-{x}-{y}',
+                'native_placement_key':placement, 'key_number':3012,
+                'storage':[{'track':track, 'minimum':0, 'maximum':0, 'set':1}],
+                'sources':[capture_path+':key3012', region+f':{x},{y},{z}']}}})
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'admission':{'minimum_level':25},
+        'tracks':[{'key':track, 'initial':0, 'minimum':0, 'maximum':len(recipe['stages'])}],
+        'stages':stages, 'sources':[path+':s1', capture_path]}]}
+
+
 def content(check=False):
     documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender()), (Path('content/quests/authored-bindings/qmech-m01c-illuminator.json'), build_illuminator())]
     documents.extend((Path(f'content/quests/authored-bindings/qmech-m01c-{slug}.json'), build_task_board(slug)) for slug in ('falconer', 'feral-trappers'))
+    documents.append((Path('content/quests/authored-bindings/qmech-m01c-draconia.json'), build_draconia()))
     for output, value in documents:
         path = ROOT / output
         if check:

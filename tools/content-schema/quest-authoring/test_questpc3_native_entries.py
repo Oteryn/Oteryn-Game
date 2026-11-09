@@ -4,6 +4,23 @@ import questpc3_native_entries as source
 
 
 class NativeEntries(unittest.TestCase):
+    def test_draconia_requires_its_two_real_numbered_doors_and_level_25(self):
+        quest = source.build_draconia()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.draconia_quest')
+        self.assertEqual(quest['admission'], {'minimum_level':25})
+        self.assertEqual(len(quest['stages']), 2)
+        expected = {(x << 32) | (y << 16) | (246 << 8) | 1
+                    for x, y in [(32675, 31649), (32676, 31671)]}
+        self.assertEqual({s['trigger']['usage']['native_placement_key']
+                          for s in quest['stages']}, expected)
+        for stage in quest['stages']:
+            self.assertFalse(stage['completes'])
+            self.assertEqual(stage['trigger']['kind'], 'door_use')
+            usage = stage['trigger']['usage']
+            self.assertEqual(usage['key_number'], 3012)
+            self.assertEqual(usage['storage'], [{'track':'oteryn:quest-progress/m01c-draconia-route',
+                                               'minimum':0, 'maximum':0, 'set':1}])
+
     def test_task_board_entries_preserve_requirements_and_never_complete(self):
         for slug, quest, level in [('falconer', 'oteryn:quest.falconer_outfits_quest', 100), ('feral-trappers', 'oteryn:quest.feral_trappers_quest', 0)]:
             bound = source.build_task_board(slug)['quests'][0]

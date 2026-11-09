@@ -34,8 +34,18 @@ disagree with the executable entries; the overlay follows the entries.
 The generator now applies all six startup key numbers to the production World
 and participates in from-scratch World conversion. Region hashes, action counts
 and source accounting regenerate together; reapplication is idempotent.
-The Draconia Quest binding remains pending its existing Ice Rapier reward-data
-hold. No whole-route or completion qualification is claimed.
+Draconia's entry now binds the two real key-3012 doors and requires level 25.
+Either opening advances the shared route track from zero to one; it cannot
+complete the Quest or grant a reward. PostgreSQL exercises level 24 refusal,
+level 25 acceptance, exact key custody, native-source admission and replay.
+No whole-route or completion qualification is claimed.
+
+The historical Ice Rapier SOURCE hold is retained. Nonreward progress may use
+the independently qualified native container projection only when source owner,
+claim revision, source digest, placement UID, root and every child/count match.
+Missing, partial or foreign evidence remains held, as does completion. The
+existing receipt tool proved every frozen SOURCE core unchanged after the
+compiler-pin refresh; canonical Item qualification is not changed globally.
 
 Locked Item profiles 5097 and 6248 use the existing native importer and pinned
 Canary XML/appearance inputs. [items.xml](https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml)
