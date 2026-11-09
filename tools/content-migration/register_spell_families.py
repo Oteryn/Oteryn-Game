@@ -499,6 +499,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Sugar Daddy corpse and existing loot table's native custody closure.
     import boss_reward_item_profiles
     boss_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # These new carried yields include their own pinned, cross-checked sockets;
+    # existing Imbuement owners have already composed their admitted records.
+    import galthen_boss_loot
+    galthen_boss_loot.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Primal's source pod and four corpse stages retain their exact Ground-only
     # custody; neither the visual pod nor a corpse is an inventory loot yield.
     import primal_item_profiles

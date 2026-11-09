@@ -170,3 +170,29 @@ waiting cell `[34049,31431,11]` and return cell `[34060,31432,11]`. The pinned
 `galthen-mitmah-vanguard/source-room.json` and DAT policy both prove that it is
 nonblocking, non-pickupable and immovable. It joins the same closed source
 packet, retaining its existing Crystal identity and Ground-only custody.
+
+## Complete carried loot closes native death settlement
+
+The real Galthen PG case reached native lethal combat but settlement refused
+`loot_item_inadmissible`: five Ahau yields and fourteen Mitmah yields still had
+reference-only admission. `galthen_boss_loot.py` qualifies those nineteen existing
+identities from the pinned Canary XML, DAT and loader defaults, freezes both
+unchanged canonical loot-table hashes, and checks the complete registered bodies.
+The source unit regression failed for all nineteen entries before registration.
+Canonical identities, quantities and probabilities remain with their existing owners.
+
+Ahau's canonical source is
+[`data-otservbr-global/monster/undeads/ahau.lua`](https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/monster/undeads/ahau.lua)
+(SHA-256 `9236c2dd65d960e81efc5ed8e9fe251967147856d3fe2e2322013d83ced0d3d8`).
+Mitmah's already listed Canary source supplies its loot. All nineteen records
+retain their pre-existing exact identity bindings; no new Item identity is granted.
+
+Eight yields have imbuement sockets. Slot counts agree between the two pinned
+donors. Allowed families follow the existing Imbuement owner's Canary value-source
+rule and the owner's no-OT-features decision. The capture records three differences:
+Crystal XML at 77456/77476 gives the boots/sandals tier10 speed, while
+[Canary XML at 76897/76918](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml#L76897)
+gives tier3 speed and paralysis protection; Crystal's robe at 85407 omits energy
+protection present in [Canary at 84001](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml#L84001).
+The Crystal spelling `paralysis removal` maps to the existing canonical
+`PARALYSIS_REMOVAL` family, like Canary's `paralysis deflection`.

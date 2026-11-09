@@ -12,6 +12,8 @@ mod boss_movement_bindings;
 mod boss_reward_bindings;
 #[path = "native_gameplay/galthen_furniture.rs"]
 mod galthen_furniture;
+#[path = "native_gameplay/galthen_loot.rs"]
+mod galthen_loot;
 #[path = "native_gameplay/m25_corpse_items.rs"]
 mod m25_corpse_items;
 
@@ -1271,6 +1273,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
+        source_reward_items.extend(galthen_loot::qualified_records()?);
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -2097,31 +2100,31 @@ mod tests {
     fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
     -> Result<(), ContentError> {
         let world = test_source(1)?.world_id;
-        let baseline = qualify_native_entry_room(world)
-            .map_err(|_| invalid("M25 native admission fixture"))?;
-        let mut supplied = input();
-        supplied.item_profiles = item_profile_updates::merge(
-            Some(pinned(include_bytes!(
-                "../../../../../content/items/definitions/spell-native-profiles.json"
-            ))),
-            Some(pinned(include_bytes!(
-                "../../../../../content/items/definitions/srx1-item-updates.json"
-            ))),
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
         )?;
-        let artifact = compile_native_gameplay(baseline.compiled(), &supplied)?;
-        let admitted = decode(&artifact.server_artifact)?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|_| invalid("M25 actual production activation"))?;
+        let active = controller
+            .active()
+            .ok_or_else(|| invalid("M25 active content"))?;
+        let admitted = active
+            .native_gameplay()
+            .ok_or_else(|| invalid("M25 native content"))?;
+        for boss in ["oteryn:creature.ahau", "oteryn:creature.mitmah_vanguard"] {
+            assert_eq!(
+                admitted.reward_table().row(boss).err(),
+                None,
+                "the complete production boss reward row must be admissible: {boss}"
+            );
+        }
         for corpse in [
             "oteryn:item.tibia.i42069",
             "oteryn:item.tibia.i44687",
             "oteryn:item.tibia.i31483",
             "oteryn:item.tibia.i21287",
         ] {
-            assert!(
-                admitted
-                    .state
-                    .item_policy(corpse, "definition-r1")
-                    .is_some()
-            );
+            assert!(admitted.item_policy(corpse, "definition-r1").is_some());
         }
         Ok(())
     }
