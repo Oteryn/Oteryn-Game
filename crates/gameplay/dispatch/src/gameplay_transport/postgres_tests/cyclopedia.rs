@@ -76,9 +76,23 @@ fn scenario(canonical: bool) -> TestResult {
         let generation = controller.active().ok_or("active generation")?;
         let world = support::world_with_subareas(&deps, generation, true)?;
         let cells = world
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(activation_pin.qualified_room().movement_cells())
             .map_err(debug)?;
         support::seed(&h, world.base().digest()).await?;
+        // Map-only seed digests are replaced by the actual runtime's artifacts for STEP.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "UPDATE game_world_reset_epochs SET server_digest=$1,client_digest=$2,frame_digest=$3",
+        )
+        .bind(generation.identity().server_artifact_digest().as_slice())
+        .bind(generation.identity().client_artifact_digest().as_slice())
+        .bind(activation_pin.frame_binding().digest().as_slice())
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
         if canonical {
             // Retained pre-conversion World state, including an already selected active day.
             let mut tx = h.pool.begin().await?;
@@ -188,6 +202,15 @@ fn scenario(canonical: bool) -> TestResult {
         assert_eq!(initial[0], 0);
         assert_eq!(count(&initial), 0);
         assert_eq!(percentage(&initial), 0);
+        let automatic: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT progress->'subareas'->'2'->'exploration' FROM game_character_cyclopedia",
+        )
+        .fetch_optional(&h.pool)
+        .await?;
+        assert!(
+            automatic.is_some_and(|value| value.is_object()),
+            "T186: query activates discovery without Start"
+        );
         if canonical {
             eprintln!("POSTGRES_STARTED WORLD-SRC W12 canonical_conversion");
             assert_eq!(
@@ -204,7 +227,7 @@ fn scenario(canonical: bool) -> TestResult {
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
-            sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,catalogue_digest,progress,occurrence) VALUES(encode($1,'hex')::uuid,$2,$3,'{\"discovered\":true,\"exploration\":null}',encode($4,'hex')::uuid)")
+            sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,catalogue_digest,progress,occurrence) VALUES(encode($1,'hex')::uuid,$2,$3,'{\"discovered\":true,\"exploration\":null}',encode($4,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET catalogue_digest=EXCLUDED.catalogue_digest,progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence")
                 .bind(admitted.item_fence.ok_or("fence")?.character_id.as_bytes().as_slice()).bind(world.base().digest().as_slice())
                 .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice()).bind(id(99).as_slice())
                 .execute(&mut *tx).await?;
@@ -386,10 +409,10 @@ fn scenario(canonical: bool) -> TestResult {
             return Ok(());
         }
 
-        // Insufficient Premium is a typed refusal and writes no discovery state.
+        // Discovery and POI reset require no Premium entitlement.
         owner.premium_coordinator = None;
         let (_, refused) = support::exchange(&owner, &mut admitted, 3, 73, &request(1, 0)).await?;
-        assert_eq!(refused[0], 2);
+        assert_eq!(refused[0], 0);
         owner.premium_coordinator = Some(&premium);
         let before_start = admitted;
         let (_, started) = support::exchange(&owner, &mut admitted, 4, 73, &request(1, 0)).await?;
@@ -685,6 +708,133 @@ fn scenario(canonical: bool) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!((improved, winner), (false, false));
+        let reset_id = admitted.continuity.next_command_id;
+        let (_, reset_pois) =
+            support::exchange(&owner, &mut admitted, reset_id, 73, &request(2, 0)).await?;
+        assert_eq!(
+            reset_pois[0], 0,
+            "T187: completed subarea POIs can be reset"
+        );
+        assert_eq!(reset_pois[9], 0, "the reset starts a fresh POI run");
+        assert_eq!(count(&reset_pois), 0);
+        assert_eq!(percentage(&reset_pois), 50);
+        let reset_progress: serde_json::Value =
+            sqlx::query_scalar("SELECT progress->'subareas'->'2' FROM game_character_cyclopedia")
+                .fetch_one(&h.pool)
+                .await?;
+        let reset_progress: crate::domain::cyclopedia::MapProgress =
+            serde_json::from_value(reset_progress)?;
+        assert!(
+            reset_progress.discovered,
+            "earned discovery survives a POI reset"
+        );
+        let points = reset_progress
+            .exploration
+            .ok_or("reset exploration")?
+            .points;
+        // Movement consumes the admitted equipment owner, unlike map-only requests.
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice())
+            .bind(activation_pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+        h.root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &admitted.item_fence.ok_or("equipment fence")?,
+                generation.identity().server_artifact_digest(),
+                fresh.operation(),
+            )
+            .await
+            .map_err(debug)?;
+        for (index, point) in points.iter().enumerate() {
+            let from_left = point.x > 0
+                && world
+                    .base()
+                    .tile((point.x - 1) as u16, point.y as u16, point.floor as i8)
+                    .is_some_and(|tile| tile.walkable());
+            let direction = if from_left {
+                oteryn_protocol_oteryn::world_spatial::StepDirection::East
+            } else {
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West
+            };
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let mut movement = runtime.borrow_movement_position();
+                let mut current = movement.read(deps.actor).map_err(debug)?;
+                let target = MovementLocalPosition {
+                    x: point.x + if from_left { -1 } else { 1 },
+                    y: point.y,
+                    floor: -point.floor,
+                };
+                while current.position() != target {
+                    let at = current.position();
+                    let next = if at.x != target.x {
+                        MovementLocalPosition {
+                            x: at.x + (target.x - at.x).signum(),
+                            ..at
+                        }
+                    } else {
+                        MovementLocalPosition {
+                            y: at.y + (target.y - at.y).signum(),
+                            ..at
+                        }
+                    };
+                    current = movement.commit_cardinal(current, next).map_err(debug)?;
+                }
+            }
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            // Each exchange closes its socket; the next admission restores movement state.
+            deps.initialize(&owner).await;
+            super::maintain_ready(&h.root).await?;
+            let step_id = admitted.continuity.next_command_id;
+            let (status, step) = support::exchange(
+                &owner,
+                &mut admitted,
+                step_id,
+                1,
+                &oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction),
+            )
+            .await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(
+                step,
+                oteryn_protocol_oteryn::world_spatial::encode_step_result(
+                    oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
+                )
+            );
+            let found: Option<i32> = sqlx::query_scalar(
+                "SELECT (progress->'subareas'->'2'->'exploration'->>'found')::integer FROM game_character_cyclopedia",
+            ).fetch_one(&h.pool).await?;
+            if index == 6 {
+                assert_eq!(
+                    found, None,
+                    "T186: real STEP completes exploration without Find"
+                );
+            } else {
+                assert_eq!(
+                    found.map(|bits| bits & (1 << index)),
+                    Some(1 << index),
+                    "T186: real STEP discovers a POI without Find"
+                );
+            }
+        }
+        assert_eq!(
+            owner
+                .states
+                .tutorial_sessions
+                .take(admitted.game_session_id),
+            Some(
+                oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                    "Subarea discovered! All seven points of interest found.".into(),
+                )
+            ),
+            "T187: the seventh real STEP queues the completion banner"
+        );
         atlas::verify(&owner, &mut admitted).await?;
         // A stale socket reserves its command before the Bank prelude refuses it, so its
         // unresolved original ends this GameSession's command stream (SESSION-INGRESS-1):

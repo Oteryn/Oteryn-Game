@@ -201,6 +201,48 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                         .await
                         .checked()?;
                     }
+                    let mut completed = reply.clone();
+                    completed[9] = 1;
+                    completed[10] = 7;
+                    completed[11] = 100;
+                    completed[29] = 0;
+                    completed.truncate(30);
+                    send(
+                        &link,
+                        &exchanges,
+                        Intent::Find,
+                        73,
+                        {
+                            let mut bytes = vec![3];
+                            bytes.extend_from_slice(&1u32.to_le_bytes());
+                            bytes.extend_from_slice(&0u32.to_le_bytes());
+                            bytes
+                        },
+                        CommandStatus::Accepted,
+                        completed,
+                    )
+                    .await
+                    .checked()?;
+                    assert!(
+                        link.cyclopedia_map_panel()
+                            .feedback
+                            .contains("Subarea discovered")
+                    );
+                    assert!(
+                        oteryn_client_ui::cyclopedia_map::panel_text(&link.cyclopedia_map_panel())
+                            .contains("100–195")
+                    );
+                    send(
+                        &link,
+                        &exchanges,
+                        Intent::Query,
+                        72,
+                        vec![],
+                        CommandStatus::Accepted,
+                        reply.clone(),
+                    )
+                    .await
+                    .checked()?;
                     let confirmed = link.cyclopedia_map_panel().summary;
                     for code in 1..=7 {
                         let mut refused = reply.clone();

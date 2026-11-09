@@ -252,6 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     None => snapshot,
                 };
+                self.cyclopedia_step(actor, session, snapshot).await;
                 let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
