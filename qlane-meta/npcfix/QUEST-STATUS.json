@@ -586,5 +586,16 @@
     "integration_handoff": "Coordinator must refresh protected deploy/synology-game/preprod-topology.toml to generated digest; lane did not edit it.",
     "tree_validation": "PASS 34111 items,1282 NPC records,399 services; canonical inputs unchanged",
     "workspace_all_targets": "PENDING after publication"
+  },
+  "targuna_receipt_schema_slice": {
+    "state": "GREEN_PG_COMPILE_PENDING",
+    "migration": "2141_targuna_free_travel_receipt.sql",
+    "test": "npcfix_m38_targuna_receipt.py",
+    "red_pg_seconds": 0.148875,
+    "green_pg_seconds": 0.086338,
+    "scope": "Exact free receipt destination only; original paid route shape preserved. Anna offer remains disabled; atomic citizenship/arrival and story wiring outstanding.",
+    "fmt": "PASS",
+    "pin_check": "PASS unchanged pins",
+    "workspace_all_targets": "RUNNING; publication requested without holding tested SQL"
   }
 }
