@@ -11464,5 +11464,30 @@
     },
     "pending": "RemainingM07 repair,pillow puzzle andTooHot bindings; fullM07 stillPARTIAL",
     "sql_changed": false
+  },
+  "m07_too_hot_columns": {
+    "status": "QUALIFIED_SLICE",
+    "scope": "Three captured36541 columns, retained36543, level80/premium, personal once-per-site credits bounded3; no commission/completion admission",
+    "red": "2 tests missing sidecar; duration0.251s exit1",
+    "green": {
+      "data_tests": "2/2 0.155s",
+      "model_tests": "12/12 4.039s",
+      "workspace_all_targets_seconds": 438.354,
+      "authoring_checks_seconds": 543.908,
+      "authoring_unit_modules": 121,
+      "authoring_unit_seconds": 801.353,
+      "content_tree_seconds": 220.345,
+      "postgresql_version": "18.6",
+      "postgres_level79_seconds": 80.909246103,
+      "postgres_level80_seconds": 84.909181151,
+      "wheel_level49_regression_seconds": 84.467387486,
+      "focused_native_tests": "5/5 PASS 250.781s; module registration and exact source-witness coverage included",
+      "clippy_seconds": 355.564,
+      "fmt_seconds": 22.551,
+      "pin_verification_seconds": 41.846,
+      "duplicate_migrations": "PASS"
+    },
+    "pending": "FullM07 remainsPARTIAL: Machinery repair groups,Dreamer remaining puzzle,TooHot cleaning/floor and journey admission",
+    "sql_changed": false
   }
 }
