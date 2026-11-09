@@ -31,3 +31,13 @@ and registered. A peer that sends more than 256 ids is refused as before at 128.
 ## Rollback
 
 Revert the commit while the registry holds at most 128 capabilities.
+
+## Amendment CAPCAP-4 (2026-11-09)
+
+Status: accepted (owner decision via the coordinator, 2026-11-09).
+
+Capabilities 449 (spellbook details) and 450 (server modal) bring the bundle-world offered set to
+114, above `SELECTED_CAPACITY` 112. `SELECTED_CAPACITY` becomes 128. It stays strictly below
+`MAX_CAPABILITY_COUNT` (256), the compile-time assertion stays, and the count-bound tests keep
+checking the bound. The selection is an in-memory array in the session; no wire encoding changes.
+Rollback: revert while every offered set holds at most 112 capabilities.

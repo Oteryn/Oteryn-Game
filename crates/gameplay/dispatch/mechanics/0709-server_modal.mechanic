@@ -3,6 +3,6 @@ commands=736,737
 transport=server_modal
 composed=server_modal
 authority=server_modal
-offer=703,server_modal::offered,server_modal_available
+offer=704,server_modal::offered,server_modal_available
 [route]
 routing::server_modal::route(authority, &session.admitted, command).await
