@@ -10,9 +10,6 @@ pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
 ) -> TestResult {
-    use crate::durability::spell_item_transaction::{
-        assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
-    };
     const KEY: &str = "oteryn:creature.ichgahal";
     let native = owner
         .active_generation
@@ -42,105 +39,6 @@ pub(super) async fn check(
         .map_err(debug)?
         .position();
     let now = owner.owner_now().get();
-    let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
-    let mut context = (owner, &mut *runtime, &mut *states, &permit);
-    let boss = pass
-        .run_with_context(&mut context, |holder, deadline, context| {
-            Box::pin(async move {
-                let (owner, runtime, states, permit) = context;
-                let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
-                let binding = runtime.binding();
-                let authority = assert_spell_item_scope_in_transaction(
-                    &mut tx,
-                    permit,
-                    owner.root,
-                    owner.character,
-                    owner.holder,
-                    binding.runtime_scope(),
-                    binding.scope_generation().get(),
-                )
-                .await
-                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                let objects = owner.door.lock().await;
-                let mut map = crate::movement::monster_map::CurrentMonsterMap::new(
-                    &mut tx, &authority, runtime, room, &objects, native,
-                );
-                let mut selected = None;
-                for (dx, dy) in [
-                    (0, -2),
-                    (1, -2),
-                    (-1, -2),
-                    (1, 0),
-                    (-1, 0),
-                    (0, -1),
-                    (0, 1),
-                    (1, -1),
-                    (-1, -1),
-                    (1, 1),
-                    (-1, 1),
-                ] {
-                    let at = MovementLocalPosition {
-                        x: position.x + dx,
-                        y: position.y + dy,
-                        floor: position.floor,
-                    };
-                    if map.read(runtime, at).await == Some(true)
-                        && runtime.native_summon_cell_free(at)
-                    {
-                        // The callback's entire source placement envelope must
-                        // be captured; an entry-edge cell is not that proof.
-                        let mut captured = true;
-                        for oy in -2..=2 {
-                            for ox in -2..=2 {
-                                captured &= map
-                                    .read(
-                                        runtime,
-                                        MovementLocalPosition {
-                                            x: at.x + ox,
-                                            y: at.y + oy,
-                                            floor: at.floor,
-                                        },
-                                    )
-                                    .await
-                                    .is_some();
-                            }
-                        }
-                        if captured {
-                            selected = Some(at);
-                            break;
-                        }
-                    }
-                }
-                let at = selected.ok_or(crate::durability::DurabilityError::InvalidStoredState)?;
-                // Test-only admission uses real source policies/health and the active
-                // pin, under the independently proved current PG map transaction.
-                let pin = runtime.content_pin().clone();
-                let boss = runtime
-                    .realize_native_qualification_spawn(pin, KEY, at)
-                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?
-                    .actor;
-                let record = native
-                    .creature_profiles()
-                    .records
-                    .iter()
-                    .find(|record| record.profile.target.key == KEY)
-                    .ok_or(crate::durability::DurabilityError::InvalidStoredState)?;
-                states
-                    .monster_melee
-                    .creature_ai
-                    .admit_native_creature(runtime, native, boss, &record.profile.target, now)
-                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                assert!(
-                    map.validate_transaction(runtime).await,
-                    "actual source map transaction remains current"
-                );
-                drop(map);
-                tx.rollback().await?;
-                Ok(boss)
-            })
-        })
-        .await
-        .map_err(debug)?;
     let digest = native
         .source_digest()
         .iter()
@@ -154,6 +52,32 @@ pub(super) async fn check(
         "simulation:v1",
     )
     .map_err(debug)?;
+    let now = super::m26_rotten_family_production::check(
+        owner,
+        &mut runtime,
+        &mut states,
+        &mut attack,
+        room,
+        native,
+        &permit,
+        &revisions,
+        player,
+        position,
+        now,
+    )
+    .await?;
+    let boss = admit_source_actor(
+        owner,
+        &mut runtime,
+        &mut states,
+        &permit,
+        room,
+        native,
+        position,
+        now,
+        KEY,
+    )
+    .await?;
     let mut first_wave = Vec::new();
     for tick in 0..=10 {
         let tick_now = now + tick * 1_000_000;
@@ -384,4 +308,140 @@ pub(super) async fn check(
         "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true bloodjaw_cleanup=true source_bloodjaw_target=true"
     );
     Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "real scoped map, actor and content owners stay explicit in the PG fixture"
+)]
+pub(super) async fn admit_source_actor(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    room: &crate::content::QualifiedNativeEntryRoom,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    position: MovementLocalPosition,
+    now: u64,
+    key: &'static str,
+) -> Result<crate::foundation::ExactActorRef, Box<dyn std::error::Error>> {
+    use crate::durability::spell_item_transaction::{
+        assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
+    };
+    let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
+    let mut context = (
+        owner, runtime, states, permit, room, native, position, now, key,
+    );
+    let boss = pass
+        .run_with_context(&mut context, |holder, deadline, context| {
+            Box::pin(async move {
+                let (owner, runtime, states, permit, room, native, position, now, key) = context;
+                let key = *key;
+                let now = *now;
+                let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
+                let binding = runtime.binding();
+                let authority = assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    permit,
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    binding.runtime_scope(),
+                    binding.scope_generation().get(),
+                )
+                .await
+                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                let objects = owner.door.lock().await;
+                let mut map = crate::movement::monster_map::CurrentMonsterMap::new(
+                    &mut tx, &authority, runtime, room, &objects, native,
+                );
+                let mut selected = None;
+                for (dx, dy) in [
+                    (0, -2),
+                    (1, -2),
+                    (-1, -2),
+                    (1, 0),
+                    (-1, 0),
+                    (0, -1),
+                    (0, 1),
+                    (1, -1),
+                    (-1, -1),
+                    (1, 1),
+                    (-1, 1),
+                ] {
+                    let at = MovementLocalPosition {
+                        x: position.x + dx,
+                        y: position.y + dy,
+                        floor: position.floor,
+                    };
+                    if map.read(runtime, at).await == Some(true)
+                        && runtime.native_summon_cell_free(at)
+                    {
+                        // The callback's entire source placement envelope must
+                        // be captured; an entry-edge cell is not that proof.
+                        let mut captured = true;
+                        for oy in -2..=2 {
+                            for ox in -2..=2 {
+                                captured &= map
+                                    .read(
+                                        runtime,
+                                        MovementLocalPosition {
+                                            x: at.x + ox,
+                                            y: at.y + oy,
+                                            floor: at.floor,
+                                        },
+                                    )
+                                    .await
+                                    .is_some();
+                            }
+                        }
+                        if captured {
+                            selected = Some(at);
+                            break;
+                        }
+                    }
+                }
+                let at = selected.ok_or(crate::durability::DurabilityError::InvalidStoredState)?;
+                // Test-only admission uses real source policies/health and the active
+                // pin, under the independently proved current PG map transaction.
+                let pin = runtime.content_pin().clone();
+                // Distinct qualification identities use the existing multi-source
+                // spawn owner; a single source cannot represent several live definitions.
+                let source_id = match key {
+                    "oteryn:creature.ichgahal" => u16::MAX,
+                    "oteryn:creature.chagorz" => u16::MAX - 1,
+                    "oteryn:creature.elder_bloodjaw" => u16::MAX - 2,
+                    "oteryn:creature.mushroom" => u16::MAX - 3,
+                    _ => return Err(crate::durability::DurabilityError::InvalidStoredState),
+                };
+                let boss = runtime
+                    .realize_native_qualification_spawn_for_source(source_id, pin, key, at)
+                    .map_err(|error| {
+                        eprintln!("M26_SOURCE_QUALIFICATION key={key} error={error:?}");
+                        crate::durability::DurabilityError::Unavailable
+                    })?
+                    .actor;
+                let record = native
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .find(|record| record.profile.target.key == key)
+                    .ok_or(crate::durability::DurabilityError::InvalidStoredState)?;
+                states
+                    .monster_melee
+                    .creature_ai
+                    .admit_native_creature(runtime, native, boss, &record.profile.target, now)
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                assert!(
+                    map.validate_transaction(runtime).await,
+                    "actual source map transaction remains current"
+                );
+                drop(map);
+                tx.rollback().await?;
+                Ok(boss)
+            })
+        })
+        .await
+        .map_err(debug)?;
+    Ok(boss)
 }

@@ -1,11 +1,14 @@
 //! M26 current native think -> source wave -> native spawn/cleanup/AI registration.
 use super::*;
 use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, CreatureAiTable, ThinkReport};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::{
+    ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeScopeRefV1,
+    ScopeOwnershipGeneration,
+};
 use crate::movement::monster_map::{CurrentMonsterMap, MonsterMap};
 use oteryn_gameplay_encounters::bosses::rotten_blood::{
     RoomPosition,
-    elder_bloodjaw_think::ELDER_BLOODJAW_KEY,
+    elder_bloodjaw_think::{ELDER_BLOODJAW_KEY, is_rotten_blood_boss},
     mushroom_think::MUSHROOM_KEY,
     native_bloodjaw::remove_orphan as remove_orphan_bloodjaw,
     native_mushroom::remove_orphan,
@@ -21,9 +24,48 @@ use std::collections::BTreeMap;
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct RoomWaveStates {
     owners: BTreeMap<[u8; 16], RoomWave>,
+    source_attempt: Option<SourceRoomBinding>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct SourceRoomBinding {
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    content: [u8; 32],
 }
 impl RoomWaveStates {
-    pub(super) fn has_attempts(&self) -> bool {
+    /// Observe the whole donor boss family, independently of the two wave planners.
+    /// Keep minion callbacks alive after departure, only for this exact runtime binding.
+    pub(super) fn observe_source_attempt(&mut self, runtime: &ChannelRuntimeV1) -> bool {
+        if runtime.owner_fence().is_err() {
+            return false;
+        }
+        let binding = runtime.binding();
+        let current = SourceRoomBinding {
+            scope: binding.runtime_scope(),
+            generation: binding.scope_generation(),
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        if self.source_attempt != Some(current) {
+            self.source_attempt = None;
+        }
+        if !matches!(current.scope, RuntimeScopeRefV1::Instance { .. }) {
+            return false;
+        }
+        if runtime.positioned_melee_census().is_ok_and(|rows| {
+            rows.iter().any(|(actor, _, _)| {
+                runtime
+                    .companion_snapshot(*actor)
+                    .is_ok_and(|row| is_rotten_blood_boss(&row.state.policy.definition_key))
+            })
+        }) {
+            self.source_attempt = Some(current);
+        }
+        self.source_attempt == Some(current)
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn has_attempts(&self) -> bool {
         !self.owners.is_empty()
     }
 }
@@ -31,6 +73,7 @@ impl std::fmt::Debug for RoomWaveStates {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RoomWaveStates")
             .field("attempts", &self.owners.len())
+            .field("source_attempt", &self.source_attempt.is_some())
             .finish()
     }
 }
