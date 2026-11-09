@@ -535,8 +535,17 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         );
         // This Character entered the fixture at level one; accepted progression at
         // level eight is now fixture input. All task mutations below use real dispatch.
-        progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
         if elite_case_enabled {
+            // T201 keeps the real XP receipt chain intact before mutating bounty state.
+            let policy = progression_case::policy(&owner, &harness).await?;
+            let total = policy
+                .thresholds
+                .iter()
+                .find(|row| row.level == 8)
+                .ok_or("level eight threshold")?
+                .minimum_experience
+                .get();
+            progression_case::award_total(&owner, &harness, &admitted, total, 8, 64_998).await?;
             elite_case::run_case(&owner, &harness, &mut admitted, actor, rat_actor).await?;
             drop(owner);
             drop(authority);
@@ -545,6 +554,7 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
             return Ok(());
         }
 
+        progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
         capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
         let start_id = admitted.continuity.next_command_id;
         let started = full_board(&owner, &mut admitted, 5, 0, "").await?;

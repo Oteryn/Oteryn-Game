@@ -52,8 +52,11 @@ pub(super) async fn run_case(
     rat: crate::foundation::ExactActorRef,
 ) -> TestResult {
     let session = admitted.game_session_id;
+    progression_case::fixture_vocation(owner, admitted, "monk").await?;
     elite(owner, admitted, true).await?;
     let initial = full_board(owner, admitted, 7, 0, "").await?;
+    assert_eq!(initial.refusal, 0);
+    assert_eq!(initial.bounty.offers.len(), 3);
     assert!(
         initial
             .bounty
@@ -61,7 +64,9 @@ pub(super) async fn run_case(
             .iter()
             .all(|task| task.elite && task.dust > 0)
     );
-    full_board(owner, admitted, 11, 0, "").await?;
+    let rerolled = full_board(owner, admitted, 11, 0, "").await?;
+    assert_eq!(rerolled.refusal, 0);
+    assert_eq!(rerolled.bounty.offers.len(), 3);
     let reloaded = fixture_board_data(harness).await?;
     for task in &initial.bounty.offers {
         assert_eq!(reloaded.bounty.rarity.get(&task.race), Some(&1));
