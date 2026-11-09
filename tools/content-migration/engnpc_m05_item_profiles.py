@@ -41,8 +41,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     shared.admit_records(root, generated, profile_path, manifest_path, order, canonical, records)
 
 
+def publish(target, packet, check=False):
+    raw = batch.grizzly.encode(packet)
+    if check:
+        if not target.is_file() or target.read_bytes() != raw:
+            raise ValueError('ENGNPC_M05_ITEM_PROFILE_DRIFT')
+    else:
+        target.write_bytes(raw)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path, required=True)
+    parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    (batch.ROOT / PATH).write_bytes(batch.grizzly.encode(capture(args.source_root)))
+    publish(batch.ROOT / PATH, capture(args.source_root), args.check)
