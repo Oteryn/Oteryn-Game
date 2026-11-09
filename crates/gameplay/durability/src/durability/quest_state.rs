@@ -411,6 +411,19 @@ impl QuestStateCopy {
         self.counter_quests.clear();
         self.save_events.clear();
         self.save_event_snapshot_valid = false;
+        if committed.transition_key
+            == oteryn_gameplay_quests::quest::shared_world_progress::save_event_restart_key(
+                &committed.quest_key,
+            )
+        {
+            // A first restart can arrive after admission. Remember only that a
+            // reload is required: a receipt alone supplies neither current-save
+            // authority nor the pinned profile's complete default values.
+            self.save_restart_defaults
+                .entry(committed.quest_key.clone())
+                .or_default();
+        }
+
         // A partial delta does not establish a coherent predecessor across a gap or
         // out-of-order replay. Reload before using such a copy as a frozen death fact.
         self.character_revision = self

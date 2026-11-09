@@ -99,6 +99,7 @@ fn scenario() -> TestResult {
         let mut admitted = d.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         let session = admitted.game_session_id;
+        owner.admit_quest_session(&admitted).await;
         for (ordinal, key) in [(1, reset.as_str()), (2, finish)] {
             let fence = owner
                 .current_quest_fence(session)
@@ -112,20 +113,30 @@ fn scenario() -> TestResult {
                     crate::foundation::CommandId::new(ordinal).map_err(debug)?,
                 )),
             };
-            assert!(matches!(
-                h.root
-                    .commit_character_quest_transition(
-                        &authority,
-                        &h.node,
-                        fence,
-                        request,
-                        catalogue.clone()
-                    )
-                    .await?,
-                QuestTransitionOutcome::Committed(_)
-            ));
+            let QuestTransitionOutcome::Committed(receipt) = h
+                .root
+                .commit_character_quest_transition(
+                    &authority,
+                    &h.node,
+                    fence,
+                    request,
+                    catalogue.clone(),
+                )
+                .await?
+            else {
+                return Err("restart/progress did not commit".into());
+            };
+            // Mirror the normal owner receipt delta without re-admission. The first
+            // restart must make a previously unscoped admitted copy refreshable.
+            let mut sessions = owner
+                .states
+                .quest_sessions
+                .lock()
+                .map_err(|_| "session lock")?;
+            let entry = sessions.get_mut(&session).ok_or("admitted session")?;
+            assert!(entry.copy.as_mut().ok_or("admitted copy")?.apply(&receipt));
+            entry.version = entry.version.checked_add(1).ok_or("version overflow")?;
         }
-        owner.admit_quest_session(&admitted).await;
         let QuestLogObservation::Changed(first) =
             owner.observe_quest_log(d.actor, session, None).await
         else {
