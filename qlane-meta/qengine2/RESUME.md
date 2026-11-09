@@ -32,6 +32,16 @@ ledger and branch instructions below are historical, not the current queue.
   hub binding is not authored here. Source evidence is in
   `docs/reference/content-prep/M03-time-machine-admission.md`.
 
+W15b restored parser slice (2026-11-09): reused the bounded top-level item
+reader from f4b876061, without its old migration or package. Plain claims
+preserve 1..20 ordered rewards and validate every item; key-bound claims remain
+single-item. The new preservation regression ran RED, then both focused parser
+tests passed GREEN (including zero-count and 0/1/20/21 cardinality). This is
+PARTIAL: bundle and reference chest dispatch still need to pass the complete
+vector into existing atomic RewardClaimMintRequest.additional_items. No new
+content inputs or migration. The broad content unit run was stopped in unrelated
+native-profile cases in favour of focused tests; do not report it fully green.
+
 Royal Costume preserved slice restored (2026-11-09): only the final crown
 exchange now completes the quest. The real-dispatch story starts with no
 seeded progress, checks intermediate non-completion and one terminal receipt,
