@@ -66,7 +66,9 @@ fn is_release_directory_name(value: &str) -> bool {
             && suffix.bytes().all(|digit| digit.is_ascii_digit())
             && suffix.parse::<u32>().is_ok()
     });
-    suffix_valid && oteryn_client::is_contract_release_id(release_id)
+    suffix_valid
+        && (oteryn_client::is_contract_release_id(release_id)
+            || oteryn_client::updater::release_directory(release_id))
 }
 
 /// The release directory name `current.txt` holds; one trailing line ending is accepted.
@@ -153,6 +155,15 @@ fn launch() -> Result<(), LaunchError> {
     let install_dir = launcher
         .parent()
         .ok_or(LaunchError::Os(io::Error::from(io::ErrorKind::NotFound)))?;
+    if let Some(result) = oteryn_client::updater::requested(install_dir, &arguments) {
+        let message = result.map_err(|_| {
+            LaunchError::Os(io::Error::other(
+                "Update refused; trusted update configuration or signed release unavailable",
+            ))
+        })?;
+        oteryn_client::win_mutex::show_error(&message);
+        return Ok(());
+    }
     if arguments
         .iter()
         .any(|argument| argument == "--check-install")
@@ -192,6 +203,21 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(not(windows))]
 fn main() {
+    if let Ok(directory) = std::env::current_dir()
+        && let Some(result) = oteryn_client::updater::requested(
+            &directory,
+            &std::env::args_os().skip(1).collect::<Vec<_>>(),
+        )
+    {
+        match result {
+            Ok(message) => println!("{message}"),
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+        }
+        return;
+    }
     if let Ok(directory) = std::env::current_dir()
         && let Err(error) = active_client(&directory)
     {
@@ -262,7 +288,6 @@ mod tests {
             format!(" {RELEASE}"),
             format!("{RELEASE}\n\n"),
             format!("{RELEASE}\\..\\x"),
-            "not-a-release".to_owned(),
         ] {
             assert!(std::fs::write(directory.join("current.txt"), &contents).is_ok());
             assert!(
@@ -330,7 +355,9 @@ mod tests {
         install_release(&directory, RELEASE);
         let repaired = format!("{RELEASE}~2");
         install_release(&directory, &repaired);
+        install_release(&directory, "rel-a");
         for (contents, release) in [
+            ("rel-a".to_owned(), "rel-a"),
             (RELEASE.to_owned(), RELEASE),
             (format!("{RELEASE}\r\n"), RELEASE),
             (format!("{repaired}\n"), repaired.as_str()),

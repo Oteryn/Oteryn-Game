@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "policy_revision": 1,
+  "channel": "stable",
+  "current_release_id": "rel-a",
+  "current_release_sequence": 1,
+  "current_version_display": "1.0.0",
+  "minimum_supported_release_sequence": 1,
+  "update_mode": "recommended",
+  "artifacts": [{
+    "platform": "windows",
+    "architecture": "x86_64",
+    "target_path": "channels/stable/releases/rel-a/windows/x86_64/client.zip"
+  }],
+  "revoked_release_ids": [],
+  "revoked_artifact_targets": [],
+  "rollback_authorization": "none"
+}

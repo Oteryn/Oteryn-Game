@@ -1,5 +1,11 @@
 # T005 — Platform updater compatibility evidence
 
+Resolved by owner 2026-11-09: Platform PR #1795 supplies the accepted
+`docs/contracts/OTERYN_V2_CLIENT_UPDATE_ORIGIN_CONTRACT.md`. The consumer is now
+`apps/client/src/updater.rs` and `crates/platform-client/src/updates.rs`; public
+Root provisioning, DNS/TLS/storage are operations. The inspection below is
+historical evidence of the previously missing input, not a current blocker.
+
 Checked 2026-11-09 against Oteryn/Oteryn-Platform main commit
 `bc6f88346e6aaf1347f0a5a798b33a5ede00bc04`.
 

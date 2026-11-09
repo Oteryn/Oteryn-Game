@@ -34,10 +34,10 @@
   "src": "TIBAUD-1",
   "area": "Login",
   "feature": "Launcher, wersja, kontrola/aktualizacja pakietów",
-  "status": "PARTIAL",
-  "gap": "Weryfikacja tożsamości/rozmiaru/SHA-256 pakietów i rzeczywista diagnostyka launchera są gotowe. Owner 2026-11-09 zaakceptował: BLOCKER T005: authenticated first-party public TUF Root metadata and the corresponding signed metadata/artifact origin contract. These external trust inputs cannot be invented from reference behavior or replaced with test keys.",
+  "status": "DONE",
+  "gap": "Launcher ma weryfikację TUF z rootem przypiętym podczas builda, sprawdzanie wersji, porównanie plików i naprawę w nowym slocie. Production root provisioning, DNS/TLS and storage remain operations enablement gates, not missing consumer code.",
   "lane": "cg_ui",
-  "evidence": "apps/client/tests/package_integrity.rs:90 + executable_verifies_packages_then_rejects_same_size_corruption; apps/client/tests/package_integrity.rs:201 + launcher_diagnosis_runs_the_active_release_verifier; docs/architecture/reviews/T005-UPDATER-PLATFORM-COMPATIBILITY-2026-11-09.md:39 + owner-accepted external TUF Root blocker (2026-11-09)."
+  "evidence": "crates/platform-client/src/updates.rs:65 + signed_origin_checks_versions_downloads_and_refuses_corruption; crates/platform-client/src/updates/transport.rs:136 + accepted_origin_routes_policy_and_package_to_distinct_exact_urls; apps/client/src/updater.rs:54 + repair_installs_fresh_slot_and_verification_detects_changed_bytes; apps/client/tests/update_fixtures.rs:3 + platform_update_fixture_manifest_preserves_every_signed_byte. Production root provisioning, DNS/TLS and storage are operations gates."
  },
  {
   "id": "T010",

@@ -26,6 +26,7 @@ pub mod reentry;
 pub mod scene;
 pub mod screenshots;
 pub mod spell;
+pub mod updater;
 #[cfg(windows)]
 pub mod win_mutex;
 pub mod window_layout;

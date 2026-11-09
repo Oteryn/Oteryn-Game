@@ -41,6 +41,8 @@ serde_json.workspace = true
 sha2.workspace = true
 semver = "=1.0.28"
 tokio = { workspace = true, features = ["macros"] }
+fs2 = "=0.4.3"
+zip = { version = "=6.0.0", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
 rodio = { version = "=0.21.1", default-features = false, features = ["playback", "vorbis", "wav"] }

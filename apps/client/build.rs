@@ -7,7 +7,12 @@ mod play_features;
 #[path = "build_support/preference_bindings.rs"]
 mod preference_bindings;
 
+#[path = "build_support/update_trust.rs"]
+mod update_trust;
+
 fn main() -> Result<(), String> {
+    update_trust::emit()?;
+    println!("cargo:rerun-if-changed=build_support/update_trust.rs");
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;
     let root = std::path::Path::new(&manifest);
     release_identity::emit(root)?;
