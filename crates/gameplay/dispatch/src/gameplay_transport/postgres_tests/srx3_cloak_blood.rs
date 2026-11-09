@@ -348,6 +348,25 @@ fn cloak_case(replay_after_commit: bool) -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("blood-step pacing clock")?;
+            if !replay_after_commit {
+                // Routing hints are volatile; the committed pool must remain
+                // effective when a recreated owner has not observed its MINT.
+                assert!(
+                    owner
+                        .required_capabilities
+                        .effective()
+                        .binary_search(&30)
+                        .is_err(),
+                    "persistent blood entry must not depend on optional field capability 30"
+                );
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .cloak_blood_cells
+                    .clear();
+            }
             if replay_after_commit {
                 sqlx::raw_sql("CREATE FUNCTION boss2_blood_step_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.creature_occurrence LIKE 'cloak-blood-step:%' THEN RAISE EXCEPTION 'boss2 retained blood STEP fault'; END IF; RETURN NEW; END $$; CREATE TRIGGER boss2_blood_step_fault BEFORE INSERT ON game_spell_item_receipts FOR EACH ROW EXECUTE FUNCTION boss2_blood_step_fault();")
                     .execute(&h.pool).await?;

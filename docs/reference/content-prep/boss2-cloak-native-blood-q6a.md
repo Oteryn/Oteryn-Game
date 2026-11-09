@@ -75,3 +75,23 @@ assertions remain in each case, with one retirement receipt after reconciliation
 
 W11 remains PARTIAL: Cloak healing, consumption by other creatures, unrelated
 pool origins, and a native-client play test of this new StepIn slice remain.
+
+### Native listener after volatile hint loss (integration 856a420d6)
+
+The movement fast path must not interpret an absent in-memory MINT hint as an
+absent durable pool. With the qualified native Soul War listener, ordinary STEP
+uses the existing scoped Ground reader even without optional field capability
+30. The healthy PG regression now explicitly excludes capability 30 and clears
+the volatile hints after its real attack/MINT, before entering the actual pool.
+The recovery regression retains its original delivery checks.
+
+Post-integration execution is **not qualified**: both focused cases stopped at
+`RevisionMismatch("native gameplay input digest")` before creating their PG
+fixture. `python3 tools/content-migration/register_spell_families.py --check`
+then failed with `ValueError: FLOOR_ASSEMBLY_PROFILE_CONFLICT`. Its first
+conflict is `oteryn:item.tibia.i8106`: Elemental Spheres admits only
+`materializable=false`, while the floor-assembly packet and
+`test_elemental_arrival_profiles.py` require `true`. The canonical Item
+definition is also nonmaterializable. This slice does not alter either
+provider, their tests, or any generated hash. Earlier PG durations above refer
+to the previously qualified head, not this integration.
