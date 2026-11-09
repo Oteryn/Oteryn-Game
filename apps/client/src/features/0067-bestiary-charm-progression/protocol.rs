@@ -50,6 +50,7 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    if super::input::selector::apply(panel, command, result) { return; }
     if super::input::charm_browser::apply(panel, command, result) {
         return;
     }

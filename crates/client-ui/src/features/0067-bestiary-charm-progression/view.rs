@@ -120,7 +120,7 @@ fn legacy_charms_text(panel: &Panel) -> String {
     out
 }
 
-fn bestiary_detail_text(panel: &Panel) -> String {
+pub fn bestiary_detail_text(panel: &Panel) -> String {
     use std::fmt::Write;
     let selected = panel.fields[1].parse::<u32>().ok();
     let Some(reply) = &panel.reply else {

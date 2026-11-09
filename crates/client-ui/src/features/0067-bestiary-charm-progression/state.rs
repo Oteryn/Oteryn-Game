@@ -8,11 +8,13 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub selector: super::Selector,
     pub charm_browser: super::charm_browser::CharmBrowser,
     pub catalogue: super::catalogue::Catalogue,
     pub race_filter: RaceFilter,
     pub selected: bool,
     pub open: bool,
+    pub classic_open: bool,
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 2],

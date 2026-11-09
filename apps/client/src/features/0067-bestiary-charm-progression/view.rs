@@ -1,3 +1,6 @@
+#[cfg(windows)]
+#[path = "catalogue_window.rs"]
+mod catalogue_window;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn charm_progression_panel(&self) -> oteryn_client_ui::charm_progression::Panel {
@@ -5,7 +8,16 @@ impl PlayLink {
     }
 }
 #[cfg(windows)]
+#[path = "selector_window.rs"]
+mod selector_window;
+#[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    catalogue_window::open(link);
+    selector_window::open(link);
+}
+
+#[cfg(windows)]
+pub(in crate::play) fn open_classic_window(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,
@@ -44,7 +56,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.charm_progression;
                 (
-                    panel.open,
+                    panel.classic_open,
                     panel.pending,
                     oteryn_client_ui::charm_progression::charm_browser::named_fields(panel),
                     format!(
@@ -54,7 +66,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     ),
                 )
             },
-            set_open: |mailbox, value| mailbox.properties.charm_progression.open = value,
+            set_open: |mailbox, value| mailbox.properties.charm_progression.classic_open = value,
             submit: |mailbox, commands, action, values| {
                 if matches!(action, 22 | 23) {
                     super::input::charm_browser::submit(mailbox, commands, action == 23);

@@ -82,6 +82,7 @@ pub(in crate::play) fn submit(
             };
             panel.fields[1] = cards[index].race.to_string();
             panel.catalogue.detail.clear();
+            panel.catalogue.detail_card = None;
             panel.catalogue.next_loot = None;
             return;
         }
@@ -160,6 +161,7 @@ pub(in crate::play) fn apply(
         }
         panel.catalogue.category = request.category;
         panel.catalogue.detail.clear();
+        panel.catalogue.detail_card = None;
         panel.catalogue.next_loot = None;
         if let Some(card) = page.cards.first() {
             panel.fields[1] = card.race.to_string();
@@ -175,6 +177,7 @@ pub(in crate::play) fn apply(
             return true;
         }
         panel.catalogue.detail = format!("{} [{}]\r\n{}", card.name, card.category, card.detail);
+        panel.catalogue.detail_card = Some(card.clone());
         panel.catalogue.next_loot = page.next;
     }
     panel.catalogue.names.extend(confirmed_names);

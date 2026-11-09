@@ -1,4 +1,3 @@
-//! Settings message pump and preference application on its owning thread.
 use super::*;
 #[path = "controls.rs"]
 mod controls;
@@ -387,6 +386,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 held = Some(state.preferences.clone());
             }
             controls::update_feedback(feedback, &state);
+            SetWindowTextW(
+                feedback,
+                wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
+            );
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }
