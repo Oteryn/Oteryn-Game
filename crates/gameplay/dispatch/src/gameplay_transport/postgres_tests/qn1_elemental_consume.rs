@@ -136,8 +136,12 @@ fn qn1_elemental_arrival_consumes_direct_loot_atomically() -> f::TestResult {
     run(true, 1)
 }
 #[test]
-fn qn1_elemental_arrival_rolls_back_loot_and_drop_for_unsupported_child() -> f::TestResult {
+fn qn1_elemental_arrival_rolls_back_loot_and_drop_for_parent_failure() -> f::TestResult {
     run(true, 2)
+}
+#[test]
+fn qn1_elemental_arrival_consumes_fluid_loot_and_archives_its_state() -> f::TestResult {
+    run(true, 3)
 }
 fn run(native: bool, loot: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
@@ -155,6 +159,7 @@ fn run(native: bool, loot: u8) -> f::TestResult {
                         match (native, loot) {
                             (_, 1) => "qn1_elemental_loot",
                             (_, 2) => "qn1_elemental_loot_rollback",
+                            (_, 3) => "qn1_elemental_fluid_loot",
                             (true, _) => "qn1_elemental_native",
                             (false, _) => "qn1_elemental_consume",
                         },
@@ -316,17 +321,17 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
                         ),
                         item: f::definition(
                             "Item",
-                            if loot == 2 && ordinal == 2 {
+                            if loot >= 2 && ordinal == 2 {
                                 "oteryn:item.tibia.i2874"
                             } else {
                                 "oteryn:item.tibia.i3031"
                             },
                         ),
-                        quantity: if loot == 2 && ordinal == 2 { 1 } else { 60 },
+                        quantity: if loot >= 2 && ordinal == 2 { 1 } else { 60 },
                         placement: CorpseContainerPlacement {
                             corpse_item_instance_id: item,
                             placement_ordinal: ordinal,
-                            fluid_subtype: (loot == 2 && ordinal == 2).then_some(1),
+                            fluid_subtype: (loot >= 2 && ordinal == 2).then_some(1),
                         },
                         content_revision: "content-1".into(),
                         ruleset_revision: "ruleset-1".into(),
@@ -346,6 +351,30 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
                 other => return Err(format!("loot MINT {other:?}").into()),
             }
         }
+    }
+    let fluid_before: Option<serde_json::Value> = if loot >= 2 {
+        sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?
+    } else {
+        None
+    };
+    if loot >= 2 {
+        assert!(
+            fluid_before.is_some(),
+            "fixture must mint a real fluid state"
+        );
+    }
+    if loot == 2 {
+        // A nontransactional sequence witnesses that the injected failure ran only
+        // after every child retired and the real parent admission guard accepted.
+        sqlx::raw_sql("CREATE SEQUENCE qn1_elemental_parent_fault_hits;
+            GRANT USAGE,SELECT ON SEQUENCE qn1_elemental_parent_fault_hits TO oteryn_game_runtime;
+            CREATE FUNCTION qn1_elemental_reject_parent() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN PERFORM nextval('qn1_elemental_parent_fault_hits');
+            RAISE EXCEPTION 'QN1_EXPECTED_PARENT_REFUSAL' USING ERRCODE='23514'; END $$;
+            CREATE TRIGGER qn1_elemental_parent_fault BEFORE INSERT ON game_elemental_arrival_receipts
+            FOR EACH ROW EXECUTE FUNCTION qn1_elemental_reject_parent();")
+            .execute(&h.pool).await?;
     }
     let recipe = &rules::RECIPES[0];
     let position = recipe.summon;
@@ -594,6 +623,18 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             (0, 0, 0, 0),
             "refusal must leave no partial retirement, summon or drop receipt"
         );
+        let fault: (i64, bool) =
+            sqlx::query_as("SELECT last_value,is_called FROM qn1_elemental_parent_fault_hits")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            fault,
+            (1, true),
+            "must fail at parent admission after retiring both children"
+        );
+        let restored: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?;
+        assert_eq!(restored, fluid_before);
         eprintln!("QN1_ELEMENTAL_LOOT_ROLLBACK_PG_EXECUTED");
         return Ok(());
     }
@@ -612,6 +653,38 @@ async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
             (0, 2, 0, 1),
             "arrival must retire and audit each loot entry"
         );
+    }
+    if loot == 3 {
+        let archived: Option<serde_json::Value> = sqlx::query_scalar("SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[1].as_slice()).fetch_optional(&h.pool).await?;
+        let captured: Option<serde_json::Value> = sqlx::query_scalar("SELECT fluid_before FROM game_elemental_loot_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[1].as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            archived, fluid_before,
+            "retirement archives the fluid component unchanged"
+        );
+        assert_eq!(
+            captured, fluid_before,
+            "receipt binds the exact archived fluid component"
+        );
+        use crate::durability::item_mint_audit::{
+            EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1,
+        };
+        use prost::Message;
+        let wire: Vec<u8> = sqlx::query_scalar("SELECT a.envelope FROM game_item_audit_outbox a JOIN game_elemental_loot_retire_receipts r ON r.transaction_id=a.transaction_id WHERE r.item_instance_id=encode($1,'hex')::uuid")
+            .bind(loot_ids[1].as_slice()).fetch_one(&h.pool).await?;
+        let envelope = EventEnvelopeV1::decode(wire.as_slice())?;
+        let transaction = OneItemTransactionV1::decode(envelope.payload.as_slice())?;
+        let Some(OneItemOperationV1::Craft(craft)) = transaction.operation else {
+            return Err("loot audit operation".into());
+        };
+        let proof: serde_json::Value = serde_json::from_slice(&craft.proof)?;
+        assert_eq!(
+            Some(proof["fluid_before"].clone()),
+            fluid_before,
+            "audit binds the real fluid before-state"
+        );
+        eprintln!("QN1_ELEMENTAL_FLUID_LOOT_PG_EXECUTED");
     }
     let recovered = h
         .root

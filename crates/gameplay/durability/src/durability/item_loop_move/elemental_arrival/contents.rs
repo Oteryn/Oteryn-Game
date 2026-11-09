@@ -10,7 +10,8 @@ pub(super) async fn retire_contents(
     occurred: i64,
 ) -> LoopResult<()> {
     let rows = sqlx::query(
-        "SELECT i.item_instance_id::text,to_jsonb(i) AS item_before,to_jsonb(e) AS entry_before \
+        "SELECT i.item_instance_id::text,to_jsonb(i) AS item_before,to_jsonb(e) AS entry_before, \
+         (SELECT to_jsonb(f) FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_before \
          FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) \
          WHERE e.parent_item_instance_id=encode($1,'hex')::uuid ORDER BY e.placement_ordinal,i.item_instance_id LIMIT $2 FOR UPDATE OF i,e",
     )
@@ -34,7 +35,8 @@ pub(super) async fn retire_contents(
             json!({
                 "quest":"oteryn:quest.elemental_spheres_quest", "arrival_transaction":arrival,
                 "corpse":parent, "item_before":row.try_get::<serde_json::Value,_>("item_before")?,
-                "entry_before":row.try_get::<serde_json::Value,_>("entry_before")?, "quantity_after":0,
+                "entry_before":row.try_get::<serde_json::Value,_>("entry_before")?,
+                "fluid_before":row.try_get::<Option<serde_json::Value>,_>("fluid_before")?, "quantity_after":0,
             }),
             &transaction,
             &event,
