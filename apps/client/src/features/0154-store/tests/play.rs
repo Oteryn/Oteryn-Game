@@ -2,7 +2,7 @@ use crate::play::play_channel;
 #[test]
 fn cosmetic_token_balance_uses_real_store_input_queue() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut incoming, outbox) = play_channel();
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     outbox.store_tokens_initialize(true);
     link.store_request(6187, vec![]);
     let command = incoming.try_recv()?;
