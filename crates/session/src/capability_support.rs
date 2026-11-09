@@ -141,6 +141,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+    oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -246,6 +247,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+    oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -389,4 +391,14 @@ fn battle_metadata_uses_existing_attack_capability() -> Result<(), &'static str>
             )
     ));
     Ok(())
+}
+
+#[cfg(test)]
+mod action_bar_cooldown_tests {
+    use super::*;
+    #[test]
+    fn action_bar_item_cooldown_query_is_supported_and_gated() {
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&463));
+        assert!(gated_routes().any(|(id, commands, _)| id == 463 && commands.contains(&6147)));
+    }
 }
