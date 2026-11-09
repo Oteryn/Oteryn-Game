@@ -62,3 +62,13 @@ client run collected all failures: 438 cases, 424 passed and 14 failed; the
 placement-index pin itself was refreshed with its validating repository tool.
 The Ahau exit gesture is still under investigation, so this is not a completed
 post-integration native play qualification.
+
+The crafting join now retains established native facts through the existing
+strict profile reconciler. Its only text normalization preserves the current
+owner's terminal period for otherwise identical descriptions: current pinned
+Canary `data/items/items.xml:42717–42724` defines items 21506/21507. The retained
+craft capture omits those periods and leaves marketability UNKNOWN. No physical,
+identity, binding or custody conflict is ignored. The real overlapping oil/dust
+admission was red, then green; five negative conflict vectors still refuse
+without publishing any output. Native registration next reaches
+`PREY_MODEL_STALE`, whose existing simulation tool is being run.

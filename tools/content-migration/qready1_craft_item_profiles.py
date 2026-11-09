@@ -2,9 +2,28 @@
 
 import hashlib
 import json
+import copy
+
+import qengine_reward_item_profiles as shared
 
 PACKET = "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json"
 IDS = {8997, 9108, 9109, 21506, 21507, 21573}
+
+
+def merge_existing(existing, observed):
+    candidate = copy.deepcopy(observed)
+    old = existing['semantics'].get('presentation', {}).get('value', {}).get('description')
+    new = candidate['semantics'].get('presentation', {}).get('value', {}).get('description')
+    # The retained XML snapshot omits the terminal period on the oil/dust
+    # descriptions. Keep the current owner's text; all substantive known facts
+    # still pass through the existing strict native-profile join.
+    if (isinstance(old, dict) and isinstance(new, dict)
+            and old.keys() == new.keys() == {'state', 'value'}
+            and old['state'] == new['state'] == 'KNOWN'
+            and isinstance(old['value'], str) and isinstance(new['value'], str)
+            and old['value'].removesuffix('.') == new['value'].removesuffix('.')):
+        candidate['semantics']['presentation']['value']['description'] = copy.deepcopy(old)
+    return shared.reconcile(existing, candidate)
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -31,8 +50,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     }
     for record in records:
         key = record["production_definition"]["production_key"]
-        if key in existing and existing[key] != record:
-            raise ValueError("QREADY1_CRAFT_ITEM_CONFLICT:" + key)
+        if key in existing:
+            try:
+                record = merge_existing(existing[key], record)
+            except ValueError as error:
+                raise ValueError("QREADY1_CRAFT_ITEM_CONFLICT:" + key) from error
         existing[key] = record
     document["records"] = sorted(existing.values(), key=order)
     generated[profile_path] = canonical(document)
