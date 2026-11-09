@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 /// Channel-local session state; keep fields sorted by name.
 #[derive(Default)]
 pub struct ChannelSessionStates {
+    pub(super) admission_queue: std::sync::Mutex<super::admission_queue::AdmissionWaitQueue>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
@@ -22,6 +23,8 @@ pub struct ChannelSessionStates {
     pub boss_activity_handoff: super::BossActivityHandoffSlot,
     /// Shared weak browse containers live only while a connection holds a view.
     pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
+    /// Optional local informational publication; never an admission authority.
+    pub(super) bulletin_source: Option<std::sync::Arc<super::bulletin::BulletinSource>>,
     /// Immutable Cake source geometry derived from the active bundle, never custody.
     pub(super) cake_sources: super::cake_event::SourceCache,
     pub casts: std::sync::OnceLock<super::cast::CastNode>,

@@ -69,6 +69,7 @@ pub async fn serve_gameplay(
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
             casts,
+            bulletin_source: config.bulletin_source,
             gameplay_idle_policy: owners.gameplay_idle_policy,
             ..Default::default()
         }),

@@ -14,6 +14,9 @@ pub struct AdmittedSession {
 }
 
 impl AdmittedSession {
+    pub(crate) fn bulletin(&self) -> Option<&str> {
+        self.session.bulletin()
+    }
     #[must_use]
     pub fn training_requested(&self) -> bool {
         self.training_requested

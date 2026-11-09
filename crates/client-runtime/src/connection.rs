@@ -1,6 +1,6 @@
 //! Native session refusal and reconciliation retries, independent of Platform and transport.
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
-use oteryn_session::{AdmissionPublicClass, admission_refusal_class};
+use oteryn_session::{AdmissionPublicClass, AdmissionQueue, admission_refusal_class};
 use std::future::Future;
 use std::time::{Duration, Instant};
 
@@ -18,6 +18,7 @@ pub struct AdmissionWait {
     pub code: u32,
     pub started: Instant,
     pub retry_in: Duration,
+    pub queue_position: Option<u32>,
 }
 
 /// Composition adapter for one grant and its transport. Reconciliation keeps the same login attempt.
@@ -31,6 +32,9 @@ pub trait AdmissionAttempt {
         cancellation: CancellationToken,
     ) -> impl Future<Output = Result<(), Self::Error>>;
     fn waiting(&mut self, _wait: AdmissionWait) {}
+    fn queue(&self) -> Option<AdmissionQueue> {
+        None
+    }
     fn usable_until(&self) -> Instant;
     fn rejected(class: AdmissionPublicClass) -> Self::Error;
 }
@@ -45,6 +49,7 @@ pub async fn enter<A: AdmissionAttempt>(
     let mut grant_retries = 0;
     let mut reconciliations = 0;
     let mut capacity_retried = false;
+    let mut queued_retries = 0;
     loop {
         let code = match attempt.admit().await {
             Ok(session) => return Ok(session),
@@ -55,14 +60,21 @@ pub async fn enter<A: AdmissionAttempt>(
             AdmissionPublicClass::TemporarilyUnavailable,
             |(_progression, class)| class,
         );
+        let queue = (code == CAPACITY_EXCEEDED)
+            .then(|| attempt.queue())
+            .flatten();
         let delay = match code {
+            CAPACITY_EXCEEDED if queue.is_some() && queued_retries < 16 => {
+                queued_retries += 1;
+                Duration::from_millis(u64::from(queue.map_or(0, |queue| queue.retry_after_ms)))
+            }
             GRANT_NOT_YET_VALID | GRANT_SECURITY_EVIDENCE_STALE
                 if grant_retries < MAX_GRANT_RETRIES =>
             {
                 grant_retries += 1;
                 retry_unit * (1 << (grant_retries - 1))
             }
-            CAPACITY_EXCEEDED if !capacity_retried => {
+            CAPACITY_EXCEEDED if queue.is_none() && !capacity_retried => {
                 capacity_retried = true;
                 retry_unit * 2
             }
@@ -81,6 +93,7 @@ pub async fn enter<A: AdmissionAttempt>(
             code,
             started: Instant::now(),
             retry_in: delay,
+            queue_position: queue.map(|queue| queue.position),
         });
         match cancellable(cancellation.clone(), tokio::time::sleep(delay)).await {
             Cancellable::Completed(()) => {}

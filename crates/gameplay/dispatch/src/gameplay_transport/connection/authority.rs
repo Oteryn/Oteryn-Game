@@ -25,6 +25,10 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Informational operator publication, read only after authoritative admission.
+    fn client_bulletin(&self) -> impl Future<Output = Option<String>> {
+        async { None }
+    }
     /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
     fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }

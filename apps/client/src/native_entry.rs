@@ -9,6 +9,9 @@ mod coin_shop_entry;
 mod config;
 pub(crate) use coin_shop_entry::open as open_coin_shop;
 #[cfg(test)]
+#[path = "native_entry/tests/live_bulletin.rs"]
+mod live_bulletin_tests;
+#[cfg(test)]
 #[path = "native_entry/tests/queue_progress.rs"]
 mod queue_progress_tests;
 #[cfg(test)]
@@ -108,6 +111,7 @@ pub(crate) async fn enter_observed(
         .map_err(login_rejected)?;
 
     let mut attempt = NativeAttempt {
+        queue: None,
         progress,
         client,
         ticket,
@@ -123,6 +127,7 @@ pub(crate) async fn enter_observed(
 }
 
 struct NativeAttempt<'a> {
+    queue: Option<oteryn_session::AdmissionQueue>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
     ticket: NativeTicket,
@@ -139,6 +144,10 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
 
+    fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
+        self.queue
+    }
+
     fn waiting(&mut self, wait: AdmissionWait) {
         if let Some(progress) = &self.progress {
             progress.send_replace(Some(wait));
@@ -150,7 +159,8 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             *self.character_id.as_bytes(),
             crate::play::PreferenceStore::path().as_deref(),
         );
-        let session = oteryn_session_tcp::connection::admit_optimized(
+        self.queue = None;
+        let session = oteryn_session_tcp::connection::admit_detailed_optimized(
             &self.grant.endpoint.host,
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
@@ -168,7 +178,13 @@ impl AdmissionAttempt for NativeAttempt<'_> {
                 .and_then(|path| crate::play::PreferenceStore::load(path).ok())
                 .is_some_and(|store| store.preferences().optimise_connection),
         )
-        .await?;
+        .await
+        .map_err(|refusal| {
+            refusal.map(|refusal| {
+                self.queue = refusal.queue;
+                refusal.code
+            })
+        })?;
         Ok(AdmittedSession {
             character_id: self.login.character_id.to_owned(),
             preference_character_id: self.character_id,

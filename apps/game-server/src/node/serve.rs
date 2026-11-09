@@ -3286,6 +3286,11 @@ async fn boot_and_serve(
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
+        bulletin_source: std::env::var_os("OTERYN_BULLETIN_FILE").map(|path| {
+            std::sync::Arc::new(crate::gameplay_transport::bulletin::BulletinSource::new(
+                path.into(),
+            ))
+        }),
         server_motd: config.server_motd.clone(),
         certificates: material.gameplay_chain.clone(),
         private_key: material.gameplay_key.clone_key(),

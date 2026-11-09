@@ -15,6 +15,12 @@ impl Application {
         if self.capture_input(events) {
             return;
         }
+        if oteryn_client::bulletin::open_key(events) {
+            if let Some(login) = &self.login {
+                login.show_bulletin();
+            }
+            return;
+        }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let (routed, custom_actions) = self
             .settings
