@@ -152,7 +152,7 @@ Zasady przeciw dublowaniu:
 | O005 | Options | Lokalizacja interfejsu | PARTIAL | Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN. |
 | O006 | Options | Opcje i ustawienia | PARTIAL | Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji. |
 | T031 | Skills | Umiejętności, progress, loyalty | PARTIAL | Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk. |
-| T032 | Skills | Spell list / spellbook | PARTIAL | Jest katalog po name/words; brak wszystkich filtrów vocation/level/premium/group i pełnej książki czarów. |
+| T032 | Skills | Spell list / spellbook | DONE | Pełna książka czarów z filtrem nazwy/formuły, profesji, poziomu, premium i grupy; dane pochodzą z serwera. Evidence: apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs:131 + spellbook_details_uses_real_book_vocations_premium_and_filters |
 | T033 | Skills | Magical Archive i przypisanie czaru | PARTIAL | Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania. |
 | O059 | Skills | Lista czarów i wyszukiwanie | PARTIAL | Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły. |
 | O080 | Skills | Cyklopedia: Magical Archive | PARTIAL | Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci. |
