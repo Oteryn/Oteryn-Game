@@ -139,6 +139,14 @@
       "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },
     {
+      "event": "step_rejected_holder_busy",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
       "event": "step_rejected_lane",
       "level": "info",
       "span": false,

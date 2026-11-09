@@ -68,6 +68,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
+        // Checkout may wait for background durability work. Never wait under
+        // the Channel runtime or spell-state guards; SQL work itself runs once.
+        let field_pass = if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some()
+            && !(self.bundle_map().is_some()
+                && self
+                    .required_capabilities
+                    .effective()
+                    .binary_search(&30)
+                    .is_err())
+        {
+            self.acquire_field_step_pass().await
+        } else {
+            Err(crate::gameplay_transport::connection::AdmissionRefusal::Rejected)
+        };
         // Lock order (§1.2): the lane before any Channel guard.
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -174,6 +191,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             self.step_with_field_ingress(
                 &mut permit,
+                field_pass,
                 &mut runtime,
                 &mut states,
                 actor,
@@ -361,6 +379,7 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
             "{branch}"
         );
     }
+    assert!(include_str!("field_step_ingress.rs").contains("event=step_rejected_holder_busy"));
     assert_eq!(body.matches("StepOutcome::rejected()").count(), 9);
     assert_eq!(body.matches("operator_event(").count(), 10);
     Ok(())

@@ -30,7 +30,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
         events = [f'step_rejected_{branch}' for branch in (
             'dawnport', 'source_map', 'dead', 'lane', 'pvp_locks',
-            'stale_position', 'pending_spell', 'drome', 'movement',
+            'stale_position', 'pending_spell', 'drome', 'movement', 'holder_busy',
         )]
         lines = [f'oteryn-game-server event={event} kind=Actor character=secret '
                  'position=secret database_url=secret' for event in events]

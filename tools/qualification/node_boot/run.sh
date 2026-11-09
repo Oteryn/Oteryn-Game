@@ -494,7 +494,7 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
           'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
           'step_rejected_stale_position', 'step_rejected_pending_spell',
-          'step_rejected_drome', 'step_rejected_movement'}
+          'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
