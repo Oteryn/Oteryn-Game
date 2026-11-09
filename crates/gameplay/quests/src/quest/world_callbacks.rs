@@ -35,6 +35,7 @@ mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
 mod counterparts;
+mod craft_epoch;
 mod effects;
 mod ground_stack;
 mod guarded_routes;
@@ -124,8 +125,16 @@ mod nomads_window;
 mod nomads_land;
 use native::valid_native_callback;
 
-/// One carried item applied to the selected world object.  This deliberately is not a
-/// recipe language: the receipt owner locks the source and consumes, changes or retains it.
+/// Exact carried material required alongside a World tool's primary input.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CraftIngredient {
+    pub item: String,
+    pub count: u16,
+}
+
+/// Bounded carried inputs applied to the selected World object. The receipt
+/// owner locks all materials before consuming any of them.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemOnTarget {
@@ -144,6 +153,8 @@ pub struct ItemOnTarget {
     /// Require the exact carried source selected by the fenced USE gesture.
     #[serde(default, skip_serializing_if = "is_false")]
     pub selected_instance: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ingredients: Vec<CraftIngredient>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -390,6 +401,12 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qready1-clocks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qready1-crafts.json"
+    ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
@@ -466,6 +483,16 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let selector = &callback.selector;
         let valid_pos = |p: Position| (-15..=0).contains(&p.floor);
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
+        let unique_materials: BTreeSet<_> = callback
+            .offerings
+            .iter()
+            .map(|o| (o.position, o.item.as_str()))
+            .collect();
+        let paid_workbench = callback
+            .effects
+            .item_reward_cycle
+            .as_deref()
+            .is_some_and(|track| callback.craft_reward_epoch(track));
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
@@ -579,7 +606,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .effects
                 .iter()
                 .any(|e| !valid_pos(e.position) || e.effect == 0)
-            || unique_offerings.len() != callback.offerings.len()
+            || unique_materials.len() != callback.offerings.len()
+            || (unique_offerings.len() != callback.offerings.len() && !paid_workbench)
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
             || callback.passages.len() > MAX_EFFECTS
@@ -640,6 +668,9 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     phase::authored_source(callback, source)
+                    (source == "oteryn:authored:bewitched/s4"
+                        && callback.quest == "oteryn:quest.authored.bewitched"
+                        && callback.key == "oteryn:quest-callback/qready1-bewitched-contribution")
                         || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                         || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                         || (callback.effects.outfit_reward.is_some()
@@ -652,6 +683,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())
                     .chain(item.alternatives.iter().map(String::as_str))
                     .collect();
+                let ingredients: BTreeSet<_> = item.ingredients.iter().map(|i| &i.item).collect();
                 item.target_replacement == Some(0)
                     || (item.target_remove
                         && (item.target_replacement.is_some()
@@ -662,6 +694,18 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || (item.selected_instance && !callback.requires_world_admission)
                     || item.count == 0
                     || item.count > 100
+                    || item.ingredients.len() > 15
+                    || ingredients.len() != item.ingredients.len()
+                    || (!item.ingredients.is_empty()
+                        && (item.reusable
+                            || item.replacement.is_some()
+                            || callback.key == super::rotten_blood::SACRIFICE))
+                    || item.ingredients.iter().any(|input| {
+                        input.count == 0
+                            || input.count > 100
+                            || !super::valid_quest_key(&input.item)
+                            || accepted.contains(input.item.as_str())
+                    })
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))
                     || !super::valid_quest_key(&item.item)
                     || item.alternatives.len() > 3
@@ -758,6 +802,7 @@ fn extend_callbacks(
                     ));
                 }
                 let initial = if mead && storage.track == super::barbarian_mead::DRAW {
+                let initial = if callback.craft_reward_epoch(&storage.track) {
                     0
                 } else {
                     imported_explore::initial(callback, storage)
@@ -883,6 +928,8 @@ mod timed_tests;
 
 #[cfg(test)]
 mod clock_tests;
+#[cfg(test)]
+mod craft_epoch_tests;
 
 #[cfg(test)]
 mod literal_text_tests;

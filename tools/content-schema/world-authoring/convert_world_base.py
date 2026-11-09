@@ -1184,6 +1184,9 @@ def build(
     qready2_chest_bindings.overlay_outputs(
         out, capture_bytes=blobs.get(qready2_chest_bindings.CAPTURE)
     )
+    import qready1_clock_landmarks
+
+    qready1_clock_landmarks.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
         import quest_startup_bindings
 
@@ -1244,12 +1247,16 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
+    from qready1_clock_landmarks import donor_delta
+
+    authored_clock_items = donor_delta(summary)
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
 
     return {
         "items": totals["items"]
+        - authored_clock_items
         - count(fill, "items_added")
         - count(replace, "items_added")
         - count(rework, "items_added")

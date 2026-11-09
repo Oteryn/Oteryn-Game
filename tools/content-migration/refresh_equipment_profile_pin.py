@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import argparse
-import questpc4_treasure_reward_equipment_pin
 import json
 import os
 import re
 import tempfile
 from pathlib import Path
+
+import qengine_reward_equipment_pin
+import qready1_clock_equipment_pin
+import qready1_cradle_equipment_pin
+import qready1_craft_equipment_pin
+import questpc4_treasure_reward_equipment_pin
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
@@ -125,6 +130,21 @@ def main():
     from qnpcfx_item_profiles import cohort_receipt, profile_identity_receipt
     packet = json.loads((ROOT / paths[3]).read_bytes())
     source = profile_identity_receipt(cohort_receipt(source, packet), packet)
+    source = qready1_clock_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-quest-item-profiles.json").read_bytes()),
+    )
+    source = qready1_craft_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-craft-item-profiles.json").read_bytes()),
+    )
+    source = qready1_cradle_equipment_pin.refresh(
+        source,
+        json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-cradle-item-profiles.json").read_bytes()),
+    )
+    source = qengine_reward_equipment_pin.refresh(
+        source, json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
+    )
     generated, count = regenerate(
         register(source), *(json.loads((ROOT / p).read_text()) for p in paths)
     )

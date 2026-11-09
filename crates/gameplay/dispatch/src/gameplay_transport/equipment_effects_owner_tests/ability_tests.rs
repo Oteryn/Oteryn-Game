@@ -320,6 +320,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // M19: four exact Items in qready1-quest-item-profiles.json.
+    ("QREADY1-CLOCKS", 4),
+    // M20: two exact Items in qready1-craft-item-profiles.json.
+    ("QREADY1-CRAFT", 6),
+    // M20: four Wiki/official Items in qready1-cradle-item-profiles.json.
+    ("QREADY1-CRADLE", 4),
     // BEGIN GENERATED QREADY PROFILE ADDITIONS
     // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
     // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json

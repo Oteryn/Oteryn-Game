@@ -347,6 +347,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
+        self.use_carried_quest_item_targeted(actor, command, intent, source, None)
+            .await
+    }
+
+    pub(super) async fn use_carried_quest_item_targeted(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
         };
@@ -388,6 +400,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
+        // Recipe receipts remain replayable after both inventory handles retire.
+        // Fresh map tools and unowned World targets belong to their existing owner.
+        if matches!(
+            intent.use_with_map_item.as_ref(),
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+        ) && !matches!(target, Some(ItemKey::Instance(_)))
+        {
+            return Ok(None);
+        }
         let Some(ItemKey::Instance(source)) = source else {
             return Ok(None);
         };
@@ -407,6 +428,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
+        let recipe_target = match target {
+            Some(ItemKey::Instance(id)) if id != source => Some(id),
+            Some(_) => return Ok(None),
+            None => None,
+        };
+        let target_item = recipe_target.and_then(|selected| {
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                .find(|item| item.item_instance_id == selected)
+        });
+        if recipe_target.is_some() && target_item.is_none() {
+            return Ok(None);
+        }
         if let Some(rules) =
             oteryn_gameplay_quests::quest::item_disguises::rules().filter(|rules| {
                 rules
@@ -627,14 +664,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
-            // M20 recipe admission remains closed until the exact second operand is supplied.
-            .filter(|c| c.carried_target.is_none())
+            .filter(|c| {
+                c.carried_target.as_deref()
+                    == target_item.map(|item| item.definition.production_key.as_str())
+            })
             .collect::<Vec<_>>();
         if bound.is_empty() {
             return Ok(None);
         }
-        if intent.use_with_map_item.is_some()
+        if (intent.use_with_map_item.is_some()
+            && !(recipe_target.is_some()
+                && matches!(
+                    intent.use_with_map_item.as_ref(),
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+                )))
             || intent.use_with_position.is_some()
+            || recipe_target.is_some_and(|id| {
+                !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(id))
+            })
             || !self
                 .states
                 .player_trades
@@ -732,7 +782,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let use_ = QuestCarriedUse {
             source,
-            recipe_target: None,
+            recipe_target,
             intent: encoded,
         };
         let result = self

@@ -210,6 +210,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
             minimum_level:None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
             item_on_target:tool.map(|tool|ItemOnTarget{ target_remove: false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             item_on_target:tool.map(|tool|ItemOnTarget{selected_instance:false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
+            item_on_target:tool.map(|tool|ItemOnTarget{ ingredients: Vec::new(),alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
             sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/orockle.lua:explicit-native-geometry-and-execution-adaptation; wiki56916@1184992; NOT_DONOR_POSITION".into()],
         }
@@ -230,6 +231,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
         hatchling.item_on_target = Some(ItemOnTarget {
             target_remove: false,
             selected_instance: false,
+            ingredients: Vec::new(),
             alternatives: Vec::new(),
             reusable: false,
             item: "oteryn:item.tibia.i14255".into(),
@@ -263,6 +265,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
         fluid.item_on_target = Some(ItemOnTarget {
             target_remove: false,
             selected_instance: false,
+            ingredients: Vec::new(),
             alternatives: Vec::new(),
             reusable: false,
             item: "oteryn:item.tibia.i14054".into(),
