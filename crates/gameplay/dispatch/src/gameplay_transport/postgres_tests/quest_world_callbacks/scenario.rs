@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m07_realm = name.starts_with("m07/realm-");
     let m07_lion = name.starts_with("m07/lion-");
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let qm48 = name == "qm48/mammoth";
@@ -43,7 +44,7 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = m07_lion || m07_dreamer || qm48
+    let native_crop = m07_realm || m07_lion || m07_dreamer || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -59,7 +60,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m07_lion {
+    let start = if m07_realm {
+        super::super::m07_realm_trials::start()
+    } else if m07_lion {
         super::super::m07_lion_offerings::start(name)
     } else if m07_dreamer {
         Position { x:32762,y:32289,floor:-14 }
@@ -310,7 +313,7 @@ fn scenario_case(
             )
             .await
         } else {
-            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
+            Harness::create_with_admission_seed(admin, "quest_world_callbacks", m07_realm, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
@@ -430,6 +433,8 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if m07_realm {
+            super::super::m07_realm_trials::world(generation.native_gameplay().ok_or("Realm policies")?)?
         } else if m07_lion {
             super::super::m07_lion_offerings::world(generation.native_gameplay().ok_or("native Lion policies")?,name)?
         } else if m07_dreamer {
@@ -548,7 +553,7 @@ fn scenario_case(
         };
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-        if mead || m07_lion {
+        if mead || m07_lion || m07_realm {
             h.root
                 .latch_premium_activation(
                     &activation.activation_id,
@@ -567,7 +572,7 @@ fn scenario_case(
             );
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
-        if mead || m07_lion {
+        if mead || m07_lion || m07_realm {
             owner.premium_coordinator = Some(&mead_premium);
         }
         owner.active_generation = Some(generation);
@@ -655,7 +660,7 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead || m07_lion {
+        if mead || m07_lion || m07_realm {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
@@ -663,6 +668,8 @@ fn scenario_case(
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if m07_realm {
+            Box::pin(super::super::m07_realm_trials::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_lion {
             Box::pin(super::super::m07_lion_offerings::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_dreamer {

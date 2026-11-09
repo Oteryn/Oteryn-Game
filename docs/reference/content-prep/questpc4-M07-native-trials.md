@@ -88,3 +88,36 @@ current blooming appearance21388, use the admitted native per-use reward
 mode, and reuse the existing timed source transform owner. Legacy item
 rewards retain the world-requirement restriction; only the explicit admitted
 native per-use mode can combine a fresh-value grant with this physical guard.
+
+### Realm guardian footprint and retained-key controls
+
+Current `content/world/spawns/spawns-*.json` declares Dragon/Dragon Lord guards
+around33082..33096,32582..32599 on floors6/5/4, and seven Fire Elementals
+around33076..33086,32584..32587 on floor3. A single-floor census would miss
+required species. `ClearArea.additional_floors` therefore opts into at most
+three unique extra floors of the same bounded footprint; omitted fields retain
+the old single-floor wire and behavior. This is a current-world census, not a
+client claim of kill credit.
+
+Selected Realm identity is `oteryn:quest.chayenne_realm` (recipe record28),
+with level40 and premium requirements. Pinned Crystal201189
+`chayenne_realm/actions_lever.lua:1-29` retains key14682, removes2129 at
+33075,32591,z3 for60 seconds and has a five-minute shared cooldown.
+`movements_enter_realm.lua:10-24` supplies the level40/key entry facts.
+Current B3z03-x129-y127 has an untagged2772 at33080,32582 ordinal3,
+fire2124 at33080,32583 ordinal1, and wall2129 at33075,32591 ordinal1.
+No recovered AID55021 is claimed.
+
+Chosen binding decision: the existing lever starts the personal trial with a
+retained key and live level40 guard. The adjacent fire is the finite programme's
+hidden control: one admitted use after clearance reveals and operates it
+atomically (2124->2773), opens the exact wall60s, and restores the original
+fire/control after300s. The explicit clear footprint is33074..33096 by
+32580..32601 on floors3,4,5,6. Only a started trial may clear it; the personal
+phase prevents repeated credit after shared reset. The PG case seeds an actual
+native Dragon on floor5 and checks that it blocks a floor3 control.
+
+Key14682 weighs100 and bricklayers kit7785 weighs1800 in the shared pinned
+Canary XML. Both are ordinary portable tools with no duration/charge mechanism.
+Their admission supports the assigned Realm and Machinery families; the kit
+profile alone is not a Machinery repair-route qualification.

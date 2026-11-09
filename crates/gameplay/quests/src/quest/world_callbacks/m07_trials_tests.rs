@@ -265,3 +265,71 @@ fn m07_lion_strength_owns_exact_input_and_reuses_original_tales_counter() -> Res
     assert_eq!(track.initial, -1);
     Ok(())
 }
+
+#[test]
+fn m07_clear_area_extra_floors_are_explicit_bounded_and_bound_to_admission() -> Result<(), String> {
+    let c = trial()?;
+    let mut v = serde_json::to_value(&c).map_err(|e| e.to_string())?;
+    v["effects"]["clear_area"] = serde_json::json!({
+        "minimum":{"x":33074,"y":32580,"floor":-3},
+        "maximum":{"x":33096,"y":32601,"floor":-3},
+        "additional_floors":[-6,-5,-4],
+        "creatures":["oteryn:creature.dragon","oteryn:creature.dragon_lord","oteryn:creature.fire_elemental"]
+    });
+    let document =
+        |v: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[v]}).to_string();
+    let parsed = parse(&document(&v))?;
+    let area = parsed[0]
+        .effects
+        .clear_area
+        .as_ref()
+        .ok_or("stacked guardian area")?;
+    for floor in [-6, -5, -4, -3] {
+        assert!(area.contains(Position {
+            x: 33080,
+            y: 32590,
+            floor
+        }));
+    }
+    assert!(!area.contains(Position {
+        x: 33080,
+        y: 32590,
+        floor: -2
+    }));
+    assert!(!area.contains(Position {
+        x: 33097,
+        y: 32590,
+        floor: -4
+    }));
+    let mut single = v.clone();
+    single["effects"]["clear_area"]
+        .as_object_mut()
+        .ok_or("area object")?
+        .remove("additional_floors");
+    let legacy = parse(&document(&single))?;
+    assert!(
+        !legacy[0]
+            .effects
+            .clear_area
+            .as_ref()
+            .ok_or("single-floor area")?
+            .contains(Position {
+                x: 33080,
+                y: 32590,
+                floor: -4
+            })
+    );
+    assert_ne!(gated_binding(&parsed[0])?, gated_binding(&legacy[0])?);
+    for floors in [
+        serde_json::json!([-3]),
+        serde_json::json!([-4, -4]),
+        serde_json::json!([-16]),
+        serde_json::json!([1]),
+        serde_json::json!([-7, -6, -5, -4]),
+    ] {
+        let mut bad = v.clone();
+        bad["effects"]["clear_area"]["additional_floors"] = floors;
+        assert!(parse(&document(&bad)).is_err(), "invalid extra-floor scope");
+    }
+    Ok(())
+}

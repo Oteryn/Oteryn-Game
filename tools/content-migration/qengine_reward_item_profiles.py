@@ -25,6 +25,8 @@ IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified inactive flower duration.
 IDS |= {21466, 21389}
+# M07 retained Realm key and source bricklayers kit for the assigned repair stages.
+IDS |= {14682, 7785}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

@@ -74,6 +74,7 @@ mod tests {
                 y: 110,
                 floor: -3,
             },
+            additional_floors: Vec::new(),
             creatures: vec!["oteryn:creature.damned_soul".into()],
         };
         assert!(clear(&runtime, &area, 8));
@@ -122,6 +123,29 @@ mod tests {
             clear(&runtime, &area, 8),
             "dead carrier entries do not count as live foes"
         );
+        let upper = runtime
+            .admit_encounter_actor(
+                "oteryn:creature.damned_soul",
+                100,
+                MovementLocalPosition {
+                    x: 105,
+                    y: 105,
+                    floor: 4,
+                },
+            )
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            clear(&runtime, &area, 8),
+            "legacy census stays single-floor"
+        );
+        let mut stacked = area.clone();
+        stacked.additional_floors = vec![-4];
+        assert!(
+            !clear(&runtime, &stacked, 8),
+            "a live guard on an opted-in floor blocks clearance"
+        );
+        assert!(runtime.kill_creature_for_test(upper));
+        assert!(clear(&runtime, &stacked, 8));
         runtime
             .remove_encounter_actor(outside)
             .map_err(|e| format!("{e:?}"))?;

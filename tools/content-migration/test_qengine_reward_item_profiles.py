@@ -49,6 +49,17 @@ class NativeFactJoin(unittest.TestCase):
                              ('decayto', '0'), ('stopduration', '1'), ('transformto', '1')]:
             self.assertFalse(q.lion_flower.admitted(21389, dict(attributes, **{field: value})), field)
 
+    def test_m07_realm_key_and_repair_kit_have_exact_portable_source_facts(self):
+        records = {r['production_definition']['production_key']: r for r in q.capture()['records']}
+        for item, weight in [(14682, 100), (7785, 1800)]:
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(key in records, f'assigned Realm/repair mechanic needs {key}')
+            record = records[key]
+            self.assertEqual(record['production_binding']['external_id'], str(item))
+            self.assertTrue(record['admission']['materializable'])
+            self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], weight)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)
