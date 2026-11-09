@@ -12,6 +12,9 @@ mod peer_tests;
 #[cfg(test)]
 mod recipe_tests;
 mod state_ops;
+mod temporal_payment;
+#[cfg(test)]
+mod temporal_payment_tests;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
 fn is_false(value: &bool) -> bool {
@@ -268,7 +271,8 @@ impl RewardCallback {
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        (!self.take.is_empty() && self.give.is_some())
+        temporal_payment::guarded(self)
+            || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
                     && target.sex.is_none()

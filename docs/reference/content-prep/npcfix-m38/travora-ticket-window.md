@@ -22,3 +22,14 @@ return routes and strand a visitor whose ticket expired on Travora.
 Before implementation, qengine2 and qmech were fetched and their current
 `content/npc_catalogue/travel.rs` models checked; neither exposed a ticket or
 elapsed-time gate. Neither branch was merged.
+
+## Timestamp purchase admission
+
+A pure paid ticket grant must not need a dummy item or cosmetic reward to pass
+callback validation. Its closed shape is: a monetary fee, exactly one valid
+`ElapsedAtLeast` condition with a positive cooldown, and `SetNow` on that same
+Quest-owned purchase track. It cannot complete the quest or grant items,
+cosmetics, achievements, map marks or extra participants. Existing fee and
+state-operation validation, current fences and transactional owners still apply.
+This admission change adds no SQL write path. It does not publish a ticket-sale
+callback or establish that sale/arrival integration is finished.

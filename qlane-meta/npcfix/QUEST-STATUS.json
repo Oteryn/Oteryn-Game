@@ -362,5 +362,28 @@
       "World pin-check PASS",
       "duplicate migrations PASS"
     ]
+  },
+  "temporal_purchase_admission_slice": {
+    "state": "GREEN_UNIT",
+    "mechanic": "Closed fee plus positive-cooldown SetNow callback admission",
+    "red": "Public callback parser rejected a1000-gold timestamp purchase without a dummy item reward",
+    "unit_tests": 33,
+    "test": "m38_travel_temporal_purchase_admits_exact_fee_and_cooldown_stamp",
+    "coverage": [
+      "positive exact fee and positive elapsed cooldown",
+      "free/zero-cost/unguarded/zero-cooldown refresh refusal",
+      "quest completion excluded",
+      "existing callback regressions"
+    ],
+    "checks": [
+      "33 callback unit tests PASS",
+      "workspace all-target check PASS5m35s",
+      "strict quests all-target/all-feature Clippy PASS14.45s",
+      "fmt PASS",
+      "duplicate migrations PASS",
+      "World pin-check PASS"
+    ],
+    "sql": "No SQL write path or schema changed; this slice adds no PG execution claim.",
+    "scope": "Admission capability only. Actual ticket-sale data/arrival and last-port return remain unfinished; no whole M38 completion claim."
   }
 }
