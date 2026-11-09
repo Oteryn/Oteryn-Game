@@ -6,6 +6,10 @@
 pub mod area_icons;
 pub mod bakragore_think;
 pub mod chagorz_think;
+pub mod elder_bloodjaw_think;
+pub mod ichgahal_think;
+pub mod murcion_think;
+pub mod summon_wave;
 
 const GLOOM_INITIAL_RANGE_TILES: u16 = 3;
 const GLOOM_JUMP_RANGE_TILES: u16 = 6;
