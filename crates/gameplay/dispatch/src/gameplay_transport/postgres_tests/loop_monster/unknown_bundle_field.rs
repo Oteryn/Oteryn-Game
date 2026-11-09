@@ -2,10 +2,11 @@
 use super::*;
 use crate::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_gameplay_foundation::foundation::condition::{ApplicationFacts, ConditionDefinition};
 use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
 
 #[test]
-fn unknown_bundle_creature_tile_does_not_abort_the_channel_pass() -> TestResult {
+fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestResult {
     run_case(async |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -275,6 +276,101 @@ fn unknown_bundle_creature_tile_does_not_abort_the_channel_pass() -> TestResult 
                 .logout_zones_for_cell(&runtime, crate::content::LogicalCell { x: 7, y: 0, z: 7 })
                 .is_none(),
             "another map cannot supply the creature's protection-zone facts"
+        );
+        drop(attack);
+        drop(states);
+        drop(runtime);
+        drop(permit);
+        // Exercise the player's real periodic dispatcher on the same pickupable
+        // bundle tile, rather than qualifying only fixture spell metadata.
+        let session = deps.admitted.game_session_id;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            for x in 4..=7 {
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                let mut position = before.position();
+                position.x = x;
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(before, position)
+                    .map_err(debug)?;
+            }
+            let mut states = owner.states.spell_states.lock().await;
+            assert!(
+                states
+                    .initialize(
+                        &runtime,
+                        deps.actor,
+                        session,
+                        crate::gameplay_transport::actor_spell::tests::FACTS,
+                        (0, 0),
+                        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                    )
+                    .is_some()
+            );
+            states
+                .get_mut(&runtime, deps.actor, session)
+                .ok_or("player state")?
+                .restore_saved_vitals(100, 10);
+            let definition = ConditionDefinition::new(
+                "test.bundle.regeneration",
+                1,
+                crate::domain::condition::ConditionValues::SpellRegeneration {
+                    duration_ms: 10_000,
+                    sub_id: 0,
+                    health_gain: 5,
+                    health_interval_ms: 1_000,
+                    mana_gain: 7,
+                    mana_interval_ms: 1_000,
+                },
+            )
+            .ok_or("regeneration")?;
+            let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([91; 32]);
+            let facts = ApplicationFacts {
+                now: 0,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([91; 16]),
+            };
+            let next = states
+                .get(&runtime, deps.actor, session)
+                .ok_or("player state")?
+                .stage_owned_test_conditions(&[definition], &facts)
+                .ok_or("regeneration application")?;
+            assert!(states.commit(&runtime, deps.actor, session, next));
+            assert_eq!(
+                crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                    &mut runtime,
+                    deps.room.movement_cells(),
+                    deps.actor,
+                ),
+                Some(false),
+                "immutable bundle zones survive unknown stack metadata"
+            );
+            assert_eq!(
+                crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                    &mut runtime,
+                    &wrong_cells,
+                    deps.actor,
+                ),
+                None,
+                "another map cannot supply the player's protection-zone facts"
+            );
+        }
+        let result = owner
+            .tick_spell_periodic_at(
+                deps.actor,
+                session,
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000),
+            )
+            .await;
+        assert!(
+            result.is_some_and(|(_, vitals)| vitals.health == 105 && vitals.mana == 17),
+            "the real periodic owner must regenerate a player on a pickupable bundle tile"
         );
         Ok(())
     })
