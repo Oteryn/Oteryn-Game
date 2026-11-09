@@ -15,10 +15,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Category (bug) or reason (violation)",
                 "Report type: 0 name, 1 statement, 2 bot",
                 "Reported character (violation)",
-                "Map bug position: x,y,floor",
+                "Map bug position / optional violation translation",
                 "Comment",
             ],
-            buttons: &["Bug", "Violation"],
+            buttons: &[
+                "Bug",
+                "Review violation",
+                "Send violation",
+                "Name",
+                "Statement",
+                "Bot",
+                "Previous reason",
+                "Next reason",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.player_report;
                 (
@@ -37,12 +46,25 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (index, value) in values.into_iter().enumerate() {
                     super::input::edit(panel, index, value);
                 }
-                let intent = match action {
-                    0 => oteryn_client_ui::player_report::Intent::Bug,
-                    1 => oteryn_client_ui::player_report::Intent::Violation,
-                    _ => return,
-                };
-                super::input::submit(mailbox, commands, intent);
+                match action {
+                    0 => super::input::submit(
+                        mailbox,
+                        commands,
+                        oteryn_client_ui::player_report::Intent::Bug,
+                    ),
+                    1 | 2 => violation::activate(mailbox, commands, action == 1),
+                    3..=5 => {
+                        let panel = &mut mailbox.properties.player_report;
+                        panel.fields[1] = (action - 3).to_string();
+                        panel.violation_reviewed = None;
+                        panel.feedback = tr!(
+                            "Choose the operator's reason code, describe the evidence, then review."
+                        )
+                        .into();
+                    }
+                    6 | 7 => mailbox.properties.player_report.cycle_reason(action == 7),
+                    _ => {}
+                }
             },
         },
     );
@@ -50,3 +72,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 
 #[path = "bug.rs"]
 pub(in crate::play) mod bug;
+
+#[path = "violation.rs"]
+pub(in crate::play) mod violation;

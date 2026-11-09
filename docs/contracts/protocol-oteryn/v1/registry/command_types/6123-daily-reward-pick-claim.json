@@ -1,0 +1,10 @@
+{
+  "id": 6123,
+  "name": "DAILY_REWARD_PICK_CLAIM",
+  "owner_decision": "Owner decision B 2026-11-09 T144",
+  "capability": 182,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/daily-reward-v2.md#item-picker-t144-owner-decision-b-2026-11-09",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/daily-reward-v2.md#item-picker-t144-owner-decision-b-2026-11-09",
+  "max_payload_bytes": 109,
+  "max_result_payload_bytes": 20
+}

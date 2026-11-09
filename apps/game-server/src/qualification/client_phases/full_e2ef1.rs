@@ -543,19 +543,7 @@ mod e2ef1 {
         checks: &mut Checks,
     ) -> TestResult {
         use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-        // Compile before traversing: reading content must not consume the two-second window.
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-            &root.join("content/spells.manifest.json"),
-        )?;
-        let catalog =
-            crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
-        let selections = crate::spell::executable_catalog::compile_source_selection(
-            &input.source_selection.bytes,
-            &input.source_selection.sha256,
-            &catalog,
-        )?;
-        let book = catalog.into_spell_book_with_selections(&selections)?;
+        let book = native_spell_book()?;
         let spell = book
             .spoken("exevo flam hur")
             .ok_or("aggressive spell content absent: flame wave")?

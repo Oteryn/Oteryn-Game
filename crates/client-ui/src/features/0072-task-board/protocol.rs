@@ -68,11 +68,11 @@ pub fn apply_full_result(panel: &mut TaskBoardPanel, result: &GatedCommandResult
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the Task Board action");
+        panel.feedback = Some(tr!("The server refused the Task Board action"));
         return;
     }
     match task_board::full::decode_reply(&result.payload) {
         Ok(reply) => super::apply_weekly(panel, reply),
-        Err(_) => panel.feedback = Some("The server returned an invalid Task Board reply"),
+        Err(_) => panel.feedback = Some(tr!("The server returned an invalid Task Board reply")),
     }
 }

@@ -2,18 +2,29 @@
 //!
 //! The view projects server-owned positions, overlays and live map tiles.
 
+#[path = "tutorial_overlay.rs"]
+mod tutorial_overlay;
+
 use crate::input::StepDir;
+#[cfg(test)]
 use crate::map::World;
 use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
 use input::Input;
-use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity};
+#[cfg(test)]
+use oteryn_renderer::BatchError;
+use oteryn_renderer::TileCoord;
+#[cfg(test)]
+use oteryn_session::WorldObjectOverlayEntry;
+use oteryn_session::{SessionEvent, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    game_notifications: feature_local_game_notifications::state::State,
+    touch: feature_0233_touch_controls::state::State,
+    ui_sounds: Vec<UiSound>,
     creature_drag: feature_0082_creature_push::state::CreatureDrag,
     world_context_feedback: Option<String>,
     death: feature_local_death_respawn::protocol::DeathState,
@@ -21,11 +32,17 @@ pub struct PlayView {
     served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
     world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
+    resource_hud: resource_hud::ViewState,
+    party_icon_epoch: std::time::Instant,
+    party_icons_refresh: Option<std::time::Instant>,
+    party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
     vitals: Option<oteryn_session::ActorVitals>,
     battle_instinct: Option<oteryn_client_ui::battle_instinct_status::BattleInstinctStatus>,
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
+    spell_words: std::collections::BTreeMap<u32, String>,
+    pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -58,77 +75,49 @@ pub struct PlayView {
     server_messages: VecDeque<oteryn_session::AppliedDelta<oteryn_session::ServerMessage>>,
 }
 
-impl PlayView {
-    pub fn new(
-        own: TileCoord,
-        floor: i16,
-        overlay: &[WorldObjectOverlayEntry],
-    ) -> Result<Self, BatchError> {
-        let local = LocalPlayState::new(World::builtin()?);
-        let anchor = TileCoord::new(0, 0);
-        let mut view = Self {
-            creature_drag: Default::default(),
-            world_context_feedback: None,
-            death: Default::default(),
-            target_walk_feedback: None,
-            world_clock: None,
-            served_channel: None,
-            world_weather: None,
-            vitals: None,
-            battle_instinct: None,
-            battle_instinct_refresh: None,
-            sounds: Vec::new(),
-            visuals: Vec::new(),
-            own,
-            facing: StepDir::South,
-            floor,
-            markers: BTreeMap::new(),
-            scene: Scene::centered_on(local.world(), None, own, StepDir::South, &[])?,
-            local,
-            live_map: false,
-            minimap: Default::default(),
-            anchor,
-            map_floor: None,
-            in_flight: false,
-            inputs: VecDeque::new(),
-            cursor_spell: None,
-            entities: Vec::new(),
-            appearances: Vec::new(),
-            ground_items: Vec::new(),
-            combat_line: None,
-            action_line: None,
-            logout_line: None,
-            server_messages: VecDeque::new(),
-        };
-        for entry in overlay {
-            view.set_marker(entry);
-        }
-        view.rebuild()?;
-        Ok(view)
-    }
-}
+mod construction;
 
 mod end;
+#[path = "features/0233-touch-controls/mod.rs"]
+mod feature_0233_touch_controls;
+mod hud_layout;
 mod input;
 mod mailbox;
 mod refusal_details;
+mod resource_hud;
+pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
 mod session_loop;
 mod session_stepper;
 #[cfg(windows)]
 mod status_window;
 mod stepper;
 mod tick;
+pub use feature_0233_touch_controls::promoted::is_touch_promoted;
+pub use feature_0233_touch_controls::state::Phase as TouchPhase;
+pub use resource_hud::ResourceHudOptions;
+mod window_controls;
+pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences, SettingsState,
-    preference_bindings,
+    ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences, CustomAction,
+    FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, GraphicsPreferences, HelpTopic,
+    HoverTooltip, MiscellaneousPreferences, MousePreset, MovementKeys, ObjectTarget,
+    PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
+    ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
+    SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help, help_text,
+    preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;
+pub use feature_0017_attack::view::GuildFilter;
+pub use feature_local_minimap::view::{MinimapBinding, MinimapMark, MinimapMemory};
+pub use feature_local_spell_action_bar::view::{
+    BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility,
+};
 
 pub use feature_0023_presentation::state::*;
 
@@ -142,3 +131,7 @@ pub use session_loop::Stepper;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "screenshots_live_tests.rs"]
+mod screenshots_live_tests;

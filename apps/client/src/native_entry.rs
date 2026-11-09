@@ -1,8 +1,19 @@
 //! Native login composition: Platform credentials, runtime retry and TCP transport adapters.
+#[cfg(test)]
+#[path = "features/local-account-services/tests/entry.rs"]
+mod account_services_tests;
 mod admitted;
 mod authorize;
 mod challenge;
+mod coin_shop_entry;
 mod config;
+pub(crate) use coin_shop_entry::open as open_coin_shop;
+#[cfg(test)]
+#[path = "native_entry/tests/live_bulletin.rs"]
+mod live_bulletin_tests;
+#[cfg(test)]
+#[path = "native_entry/tests/queue_progress.rs"]
+mod queue_progress_tests;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
@@ -11,7 +22,7 @@ mod tests;
 use crate::GameplayEntryError;
 pub use admitted::AdmittedSession;
 pub use config::{NativeLoginConfig, NativeLoginSettingError};
-use oteryn_client_runtime::connection::AdmissionAttempt;
+use oteryn_client_runtime::connection::{AdmissionAttempt, AdmissionWait};
 use oteryn_foundation::CancellationToken;
 use oteryn_identity::{IdentityFlow, LoopbackRedirect, PkceMaterial, StateNonce};
 use oteryn_platform_client::PlatformClientConfig;
@@ -20,7 +31,7 @@ use oteryn_platform_client::native_login::{
     AttemptRef, GatewayLogin, NativeLoginClient, NativeLoginError, NativeLoginGrant, NativeTicket,
     PublicClass, parse_uuid_v7, secure_random,
 };
-use oteryn_session::{Admission, AdmissionPublicClass, CLIENT_SUPPORTED_CAPABILITIES, CharacterId};
+use oteryn_session::{Admission, AdmissionPublicClass, CharacterId};
 use oteryn_session_tcp::connection::CONNECT_DEADLINE;
 use oteryn_session_tcp::load_root_certificate;
 use rustls::pki_types::CertificateDer;
@@ -57,6 +68,14 @@ pub(crate) async fn enter(
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
 ) -> Result<AdmittedSession, GameplayEntryError> {
+    enter_observed(config, cancellation, None).await
+}
+
+pub(crate) async fn enter_observed(
+    config: &NativeLoginConfig,
+    cancellation: CancellationToken,
+    progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
+) -> Result<AdmittedSession, GameplayEntryError> {
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
     let gateway = PlatformClientConfig::new(&config.gateway_url)
@@ -71,7 +90,7 @@ pub(crate) async fn enter(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let (ticket, selected_character, selected_channel, character_name) =
+    let (ticket, selected_character, selected_channel, character_name, training_requested) =
         authorize::authorize(&client, config, cancellation.clone()).await?;
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
@@ -92,6 +111,8 @@ pub(crate) async fn enter(
         .map_err(login_rejected)?;
 
     let mut attempt = NativeAttempt {
+        queue: None,
+        progress,
         client,
         ticket,
         login,
@@ -99,12 +120,15 @@ pub(crate) async fn enter(
         root,
         character_id,
         character_name,
+        training_requested,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
 }
 
 struct NativeAttempt<'a> {
+    queue: Option<oteryn_session::AdmissionQueue>,
+    progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
     ticket: NativeTicket,
     login: GatewayLogin<'a>,
@@ -112,6 +136,7 @@ struct NativeAttempt<'a> {
     root: CertificateDer<'static>,
     character_id: CharacterId,
     character_name: String,
+    training_requested: bool,
     config: &'a NativeLoginConfig,
 }
 
@@ -119,8 +144,23 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
 
+    fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
+        self.queue
+    }
+
+    fn waiting(&mut self, wait: AdmissionWait) {
+        if let Some(progress) = &self.progress {
+            progress.send_replace(Some(wait));
+        }
+    }
+
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
-        let session = oteryn_session_tcp::connection::admit(
+        let capabilities = crate::play::feature_0179_hotkey_equip::view::supported_capabilities(
+            *self.character_id.as_bytes(),
+            crate::play::PreferenceStore::path().as_deref(),
+        );
+        self.queue = None;
+        let session = oteryn_session_tcp::connection::admit_detailed_optimized(
             &self.grant.endpoint.host,
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
@@ -130,14 +170,26 @@ impl AdmissionAttempt for NativeAttempt<'_> {
                 character_id: self.character_id,
                 admission_material: self.grant.grant_bytes(),
                 client_build_id: &self.config.client_build,
-                supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+                supported_capabilities: &capabilities,
                 deadline: CONNECT_DEADLINE,
             },
             &self.root,
+            crate::play::PreferenceStore::path()
+                .and_then(|path| crate::play::PreferenceStore::load(path).ok())
+                .is_some_and(|store| store.preferences().optimise_connection),
         )
-        .await?;
+        .await
+        .map_err(|refusal| {
+            refusal.map(|refusal| {
+                self.queue = refusal.queue;
+                refusal.code
+            })
+        })?;
         Ok(AdmittedSession {
+            character_id: self.login.character_id.to_owned(),
+            preference_character_id: self.character_id,
             character_name: self.character_name.clone(),
+            training_requested: self.training_requested,
             session,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),
@@ -161,3 +213,19 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         rejected(admission_class(class))
     }
 }
+
+#[cfg(test)]
+#[path = "features/local-coin-shop/tests/entry.rs"]
+mod coin_shop_tests;
+
+#[cfg(test)]
+#[path = "features/local-premium/entry_tests.rs"]
+mod premium_tests;
+
+#[cfg(test)]
+#[path = "native_entry/training_tests.rs"]
+mod training_tests;
+
+#[cfg(test)]
+#[path = "native_entry/training_batch_tests.rs"]
+mod training_batch_tests;

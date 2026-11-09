@@ -11,7 +11,7 @@ use windows_sys::Win32::{
     Foundation::{HWND, POINT, RECT},
     System::Threading::GetCurrentProcessId,
     UI::{
-        Input::KeyboardAndMouse::{GetAsyncKeyState, VK_ESCAPE, VK_LBUTTON},
+        Input::KeyboardAndMouse::{GetAsyncKeyState, VK_ESCAPE, VK_LBUTTON, VK_RBUTTON},
         WindowsAndMessaging::*,
     },
 };
@@ -34,6 +34,7 @@ struct Surface {
 pub(in crate::play) struct DragNative {
     surfaces: Vec<Surface>,
     down: bool,
+    primary_button: u16,
     escape_down: bool,
     start: Option<(i32, i32)>,
     prompt_open: bool,
@@ -104,14 +105,31 @@ impl PlayLink {
         };
         let mut point = POINT { x: 0, y: 0 };
         // No capture is needed: screen polling spans all three native top-level windows.
-        let (down, escape, under) = unsafe {
+        let (down, escape, under, primary_button) = unsafe {
             if GetCursorPos(&mut point) == 0 {
                 return;
             }
+            let under = WindowFromPoint(point);
+            let primary_button = {
+                let mailbox = lock(&self.mailbox);
+                if mailbox.item_drag_native.down {
+                    mailbox.item_drag_native.primary_button
+                } else if view
+                    .preferences()
+                    .controls
+                    .drag_button(GetAncestor(under, GA_ROOT) == main)
+                    == oteryn_input_actions::MouseButton::SECONDARY
+                {
+                    VK_RBUTTON
+                } else {
+                    VK_LBUTTON
+                }
+            };
             (
-                GetAsyncKeyState(i32::from(VK_LBUTTON)) < 0,
+                GetAsyncKeyState(i32::from(primary_button)) < 0,
                 GetAsyncKeyState(i32::from(VK_ESCAPE)) < 0,
-                WindowFromPoint(point),
+                under,
+                primary_button,
             )
         };
         let tile = (unsafe { GetAncestor(under, GA_ROOT) } == main)
@@ -167,6 +185,7 @@ impl PlayLink {
             native.down = down;
             let start = native.start;
             if changed && down {
+                native.primary_button = primary_button;
                 native.start = Some((point.x, point.y));
             }
             if !down {

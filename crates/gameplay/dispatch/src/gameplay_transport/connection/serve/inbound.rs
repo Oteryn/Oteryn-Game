@@ -8,6 +8,7 @@ pub(super) struct Input {
     pub(super) frame: Vec<u8>,
     pub(super) arrived_while_buffered: bool,
     pub(super) buffered_original: bool,
+    pub(super) received_at: tokio::time::Instant,
 }
 
 pub(super) async fn receive<S, A>(
@@ -21,14 +22,14 @@ where
     A: FreshAdmissionAuthority,
 {
     let buffered_original = matches!(&next, Next::StepDue);
-    let (frame, arrived_while_buffered) = match next {
+    let (frame, arrived_while_buffered, received_at) = match next {
         // SPEED-1: the buffered step is due; its frame runs now, before any frame held
         // behind it.
         Next::StepDue => match session.buffered.take() {
-            Some(step) => (step.frame, false),
+            Some(step) => (step.frame, false, tokio::time::Instant::now()),
             None => return Ok(None),
         },
-        Next::Held(frame, behind_step) => (frame, behind_step),
+        Next::Held(frame, behind_step, received_at) => (frame, behind_step, received_at),
         Next::ServerMessage => {
             return match tokio::time::timeout(
                 session.policy.interval,
@@ -43,7 +44,7 @@ where
             {
                 Ok(Some(())) => Ok(None),
                 Ok(None) => Err(ServeEnd::Disconnected),
-                Err(_) => Err(ServeEnd::ControlLost),
+                Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
         Next::Serene => {
@@ -97,7 +98,9 @@ where
                     && envelope.message_type() == MessageType::LivenessAck
             );
             if !ack {
-                session.held.push_back((frame, true));
+                session
+                    .held
+                    .push_back((frame, true, tokio::time::Instant::now()));
                 return Ok(None);
             }
             match decode_wire_envelope(&frame)
@@ -108,7 +111,7 @@ where
                 Err(error) => return Err(close(stream, session.admitted, error).await),
             }
         }
-        Next::Frame(Ok(frame)) => (frame, false),
+        Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
         Next::Frame(Err(_)) => {
             return Err(ServeEnd::Disconnected);
         }
@@ -129,7 +132,7 @@ where
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
                 Err(LivenessEnd::ControlLost) => {
-                    return Err(ServeEnd::ControlLost);
+                    return Err(ServeEnd::ControlLost("liveness_missed"));
                 }
                 Err(LivenessEnd::ProbesExhausted) => {
                     return Err(ServeEnd::Disconnected);
@@ -145,7 +148,7 @@ where
                 Ok(Err(_)) => {
                     return Err(ServeEnd::Disconnected);
                 }
-                Err(_) => return Err(ServeEnd::ControlLost),
+                Err(_) => return Err(ServeEnd::ControlLost("probe_write_timeout")),
             }
             // Existing periodic display work shares the liveness cadence. No independent
             // achievement timer or timestamp cursor is needed for committed kill/event facts.
@@ -164,7 +167,7 @@ where
             return match tokio::time::timeout(interval, updates).await {
                 Ok(Ok(())) => Ok(None),
                 Ok(Err(end)) => Err(end),
-                Err(_) => Err(ServeEnd::ControlLost),
+                Err(_) => Err(ServeEnd::ControlLost("updates_timeout")),
             };
         }
     };
@@ -172,6 +175,7 @@ where
         frame,
         arrived_while_buffered,
         buffered_original,
+        received_at,
     }))
 }
 

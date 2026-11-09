@@ -351,7 +351,8 @@ async fn live<A: FreshAdmissionAuthority>(
     let buffered: Option<BufferedStep> = None;
     // Each held frame carries whether it arrived behind a buffered step (SPEED-1) rather than
     // behind a running logout (LOGOUT-RL-01).
-    let held: std::collections::VecDeque<(Vec<u8>, bool)> = std::collections::VecDeque::new();
+    let held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)> =
+        std::collections::VecDeque::new();
     // CHASE-1 (RANGED-0 §8): when the next chase step is checked, on the same pacing clock as a
     // client step; at most one is pending. Armed by a combat tick that holds a chasing target
     // and by a chase step that moved.
@@ -360,6 +361,7 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        input_after_refresh: false,
         activity_ack: None,
         cast_chat_revision: u64::from(cast_chat_active),
         spell_catalog,

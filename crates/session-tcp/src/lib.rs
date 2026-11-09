@@ -89,6 +89,14 @@ impl From<io::Error> for TcpAdapterError {
 /// other or absent negotiated ALPN before returning the stream (so before anything is sent). The
 /// TCP connect and the TLS handshake are each bounded by `request.deadline`.
 pub async fn connect(request: TcpConnect<'_>) -> Result<TcpTlsStream, TcpAdapterError> {
+    connect_with_nodelay(request, false).await
+}
+
+/// Optionally disable Nagle buffering for small interactive gameplay writes.
+pub async fn connect_with_nodelay(
+    request: TcpConnect<'_>,
+    nodelay: bool,
+) -> Result<TcpTlsStream, TcpAdapterError> {
     let connector = tls_connector(request.root_certificate)?;
     let tcp = bounded(
         request.deadline,
@@ -96,6 +104,7 @@ pub async fn connect(request: TcpConnect<'_>) -> Result<TcpTlsStream, TcpAdapter
         TcpStream::connect(request.address),
     )
     .await?;
+    tcp.set_nodelay(nodelay).map_err(TcpAdapterError::Io)?;
     let server_name = ServerName::try_from(request.server_name.to_owned())
         .map_err(|_error| TcpAdapterError::InvalidServerName)?;
     let stream = bounded(

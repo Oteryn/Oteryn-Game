@@ -36,7 +36,7 @@ impl Controls {
             control(
                 parent,
                 "STATIC",
-                "Private channels",
+                tr!("Private channels"),
                 210,
                 [700, 10, 370, 22],
                 0,
@@ -51,13 +51,13 @@ impl Controls {
             );
             let mut leave = null_mut();
             for (id, label, x, y) in [
-                (201, "Create/Open own", 700, 132),
-                (202, "Refresh", 890, 132),
-                (203, "Join", 700, 166),
-                (204, "Leave", 890, 166),
-                (205, "Invite player", 700, 234),
-                (206, "Exclude player", 890, 234),
-                (207, "Send", 890, 302),
+                (201, tr!("Create/Open own"), 700, 132),
+                (202, tr!("Refresh"), 890, 132),
+                (203, tr!("Join"), 700, 166),
+                (204, tr!("Leave"), 890, 166),
+                (205, tr!("Invite player"), 700, 234),
+                (206, tr!("Exclude player"), 890, 234),
+                (207, tr!("Send"), 890, 302),
             ] {
                 let button = control(parent, "BUTTON", label, id, [x, y, 180, 28], WS_TABSTOP);
                 if id == 204 {
@@ -140,7 +140,7 @@ impl Controls {
                 self.ids.clear();
                 if let Some(list) = &panel.list {
                     if let Some(id) = list.own_channel {
-                        self.add(id, &format!("Own channel ({id})"));
+                        self.add(id, &lfmt!("Own channel ({id})", id = id));
                     }
                     for invite in &list.invited {
                         self.add(

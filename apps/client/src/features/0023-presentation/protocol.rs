@@ -10,6 +10,7 @@ pub(in crate::play) fn presentation(
         if matches!(
             event.kind,
             PresentationEventKind::ValueText { .. } | PresentationEventKind::MagicEffect { .. }
+                | PresentationEventKind::Missile { .. } | PresentationEventKind::SpellWords { .. }
         ) {
             absorb_visuals(&mut pushed.visuals, [event.kind]);
         }

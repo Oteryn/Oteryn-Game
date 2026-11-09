@@ -1,19 +1,37 @@
 //! Native client process and component composition.
+#[macro_use]
+extern crate oteryn_client_ui;
+
+pub mod about;
+#[path = "features/local-account-services/mod.rs"]
+pub mod account_services;
+pub mod bulletin;
 pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]
 pub mod character_selection;
+#[path = "features/local-coin-shop/mod.rs"]
+pub mod coin_shop;
 pub mod combat_input;
+pub mod crash_report;
 pub mod cyclopedia;
+pub mod device_login;
 pub mod input;
 pub mod map;
+pub mod miniwindow;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
+pub mod package_integrity;
 pub mod play;
+#[path = "features/local-premium/mod.rs"]
+pub mod premium;
 pub mod reentry;
 pub mod scene;
+pub mod screenshots;
 pub mod spell;
+pub mod updater;
 #[cfg(windows)]
 pub mod win_mutex;
+pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 
@@ -109,8 +127,17 @@ impl ClientBootstrap {
         let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
         let view = admitted.play_view().map_err(|_error| unavailable())?;
         let (link, commands, events) = play::play_channel();
+        link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
         link.house_world(admitted.world_id());
+        if admitted.training_requested() {
+            let remaining = self
+                .native_login
+                .as_ref()
+                .map_or(0, |config| config.training_queue.remaining());
+            link.training_batch_label(admitted.character_name(), remaining);
+            link.training_open();
+        }
         self.runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;

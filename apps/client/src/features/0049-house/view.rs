@@ -1,3 +1,6 @@
+#[cfg(windows)]
+#[path = "view/map_window.rs"]
+mod map_window;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn house_panel(&self) -> super::state::Panel {
@@ -7,6 +10,7 @@ impl PlayLink {
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
+    lock(&link.mailbox).properties.house.ownership.context=std::sync::Arc::downgrade(&link.mailbox);
     open(
         link,
         Form {
@@ -15,12 +19,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "World UUID",
                 "Town key",
                 "House row (1 onwards)",
-                "Bid / notice Unix time",
-                "Member UUIDs (space separated)",
-                "Door: x y floor revision",
+                "Bid amount (gold)",
+                "Member UUIDs (space/newline separated)",
+                "Door: x y floor (uses current house ACL revision)",
                 "Type CONFIRM for changes",
             ],
-            buttons: super::input::controller::BUTTONS,
+            buttons: super::input::BUTTONS,
             snapshot: |mailbox| {
                 let p = &mailbox.properties.house;
                 (
@@ -38,7 +42,29 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (slot, value) in mailbox.properties.house.fields.iter_mut().zip(fields) {
                     *slot = value;
                 }
-                super::input::submit(mailbox, commands, selection);
+                if matches!(selection,8|9|14) {
+                    let weak=mailbox.properties.house.ownership.context.clone();
+                    ownership_window::open_from_mailbox(mailbox,weak,commands);
+                } else if selection == 10 {
+                    let panel = &mut mailbox.properties.house;
+                    if let Some(index) = panel.fields[2]
+                        .trim()
+                        .parse::<usize>()
+                        .ok()
+                        .and_then(|n| n.checked_sub(1))
+                    {
+                        panel.model.index = index;
+                    }
+                    let houses = oteryn_client_ui::house::map_houses(&panel.model);
+                    if houses.is_empty() {
+                        panel.model.feedback =
+                            "Query houses and select a row to view its floor".into();
+                    } else {
+                        map_window::open(mailbox, commands, houses);
+                    }
+                } else {
+                    super::input::submit(mailbox, commands, selection);
+                }
             },
         },
     );
@@ -47,9 +73,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 #[cfg(windows)]
 fn text(panel: &oteryn_client_ui::house::Panel) -> String {
     let mut text = oteryn_client_ui::house::panel_text(panel);
-    text.push_str("\r\nSelect a row for changes:");
+    text.push_str(tr!("\r\nSelect a row for changes:"));
     for (index, row) in panel.page.rows.iter().enumerate() {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "\r\n{}: {} (owned: {})",
             index + 1,
             row.house,
@@ -58,3 +84,7 @@ fn text(panel: &oteryn_client_ui::house::Panel) -> String {
     }
     text
 }
+
+#[cfg(windows)]
+#[path = "view/ownership_window.rs"]
+pub(super) mod ownership_window;

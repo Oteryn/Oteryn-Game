@@ -1,8 +1,11 @@
 //! Native VIP management controls; every HWND remains on its creating thread.
 #![allow(unsafe_code)]
+#[path = "native_controls.rs"]
+mod panel_controls;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::vip::{Intent, request};
+use panel_controls::PanelControls;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
@@ -53,7 +56,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     }
 }
 
-fn run(
+pub(super) fn run(
     weak: Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
     commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>,
 ) {
@@ -62,12 +65,12 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("VIP management — Ctrl+V").as_ptr(),
+            wide(tr!("VIP management — Ctrl+V")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             650,
-            500,
+            720,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -84,99 +87,20 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let list = LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP;
-        control(
-            hwnd,
-            "STATIC",
-            "VIP entries                 Groups                      Consent invitations",
-            200,
-            [10, 5, 620, 20],
-            0,
-        );
-        let entries = control(hwnd, "LISTBOX", "", 101, [10, 30, 205, 160], list);
-        let groups = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            102,
-            [225, 30, 180, 160],
-            list | LBS_EXTENDEDSEL as u32,
-        );
-        let consents = control(hwnd, "LISTBOX", "", 103, [415, 30, 210, 160], list);
-        control(
-            hwnd,
-            "STATIC",
-            "Character / group name or description",
-            201,
-            [10, 195, 300, 20],
-            0,
-        );
-        let text = control(
-            hwnd,
-            "EDIT",
-            "",
-            104,
-            [10, 220, 300, 25],
-            WS_BORDER | WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Icon (0–19); select groups above to assign",
-            202,
-            [320, 195, 300, 20],
-            0,
-        );
-        let icon = control(
-            hwnd,
-            "EDIT",
-            "0",
-            105,
-            [320, 220, 50, 25],
-            WS_BORDER | WS_TABSTOP,
-        );
-        let notify = control(
-            hwnd,
-            "BUTTON",
-            "Notify",
-            107,
-            [545, 220, 80, 25],
-            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
-        );
-        for (index, label) in [
-            "Add",
-            "Remove",
-            "Save edit",
-            "Add group",
-            "Rename group",
-            "Delete group",
-            "Accept",
-            "Reject",
-            "Revoke",
-            "Withdraw",
-            "Show status",
-            "Hide status",
-            "Refresh",
-            "Next page",
-        ]
-        .iter()
-        .enumerate()
-        {
-            control(
-                hwnd,
-                "BUTTON",
-                label,
-                110 + index,
-                [
-                    10 + (index % 5) as i32 * 123,
-                    260 + (index / 5) as i32 * 35,
-                    120,
-                    30,
-                ],
-                WS_TABSTOP,
-            );
-        }
-        let status = control(hwnd, "STATIC", "", 203, [10, 370, 615, 75], 0);
+        let Some(PanelControls {
+            entries,
+            groups,
+            consents,
+            text,
+            icon,
+            notify,
+            status,
+            friends,
+        }) = PanelControls::new(hwnd)
+        else {
+            return;
+        };
+        control(hwnd, "STATIC", "Account Friends and main character: Ctrl+Alt+F", 205, [10,635,615,20], 0);
         let mut held: Option<oteryn_client_ui::vip::VipPanel> = None;
         let mut message: MSG = std::mem::zeroed();
         loop {
@@ -197,6 +121,14 @@ fn run(
             let view = super::management_view(mailbox.vip.view.as_deref()).unwrap_or_default();
             for action in std::mem::take(&mut actions.0) {
                 let id = action & 0xffff;
+                if (124..=126).contains(&id) {
+                    mailbox.vip.friends_filter = match id {
+                        125 => oteryn_client_ui::vip::FriendsFilter::Confirmed,
+                        126 => oteryn_client_ui::vip::FriendsFilter::Invitations,
+                        _ => oteryn_client_ui::vip::FriendsFilter::All,
+                    };
+                    continue;
+                }
                 if id == 101 && action >> 16 == LBN_SELCHANGE as usize {
                     let index = SendMessageW(entries, LB_GETCURSEL, 0, 0);
                     if let Ok(index) = usize::try_from(index)
@@ -263,7 +195,7 @@ fn run(
                             }),
                             _ => {
                                 mailbox.vip.feedback =
-                                    Some("Select an entry and enter a numeric icon".into());
+                                    Some(tr!("Select an entry and enter a numeric icon").into());
                                 None
                             }
                         }
@@ -286,7 +218,7 @@ fn run(
                     && commands.send(PlayCommand::Vip(command)).is_err()
                 {
                     mailbox.vip.pending = false;
-                    mailbox.vip.feedback = Some("The session has ended".into());
+                    mailbox.vip.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(&mailbox.vip) {
@@ -302,6 +234,10 @@ fn run(
                         }
                     }
                 }
+                SetWindowTextW(
+                    friends,
+                    wide(&oteryn_client_ui::vip::friends_text(&mailbox.vip)).as_ptr(),
+                );
                 let visibility = mailbox
                     .vip
                     .view
@@ -309,9 +245,9 @@ fn run(
                     .and_then(|text| serde_json::from_str::<serde_json::Value>(text).ok())
                     .map(|value| {
                         if value["shown"] == false {
-                            "Status hidden. "
+                            tr!("Status hidden. ")
                         } else {
-                            "Status shown. "
+                            tr!("Status shown. ")
                         }
                     })
                     .unwrap_or("");
@@ -320,11 +256,11 @@ fn run(
                     .feedback
                     .as_deref()
                     .unwrap_or(if mailbox.vip.pending {
-                        "Loading…"
+                        tr!("Loading…")
                     } else if !mailbox.vip.selected {
-                        "VIP unavailable in this session"
+                        tr!("VIP unavailable in this session")
                     } else {
-                        "Select a named row to manage it. Refresh returns to the first page."
+                        tr!("Select a named row to manage it. Refresh returns to the first page.")
                     });
                 SetWindowTextW(status, wide(&format!("{visibility}{feedback}")).as_ptr());
                 for id in 110..124 {
@@ -342,6 +278,7 @@ fn run(
         close(&weak);
     }
 }
+
 unsafe fn control(
     parent: HWND,
     class: &str,

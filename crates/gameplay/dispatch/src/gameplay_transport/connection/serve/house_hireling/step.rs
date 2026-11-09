@@ -172,6 +172,7 @@ impl Queue {
                 frame,
                 arrived_while_buffered,
                 buffered_original,
+                received_at: tokio::time::Instant::now(),
             }));
         }
     }

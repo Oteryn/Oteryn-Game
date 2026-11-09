@@ -5,7 +5,12 @@
   "owner": "Character + World daily rewards; Account + World jokers",
   "command_types": [
     354,
-    355
+    355,
+    738,
+    6122,
+    6123,
+    6124,
+    6125
   ],
   "state_domains": [],
   "offered": false,

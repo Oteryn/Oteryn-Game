@@ -8,6 +8,20 @@ pub fn label_quad(
     cell: u16,
     position: [f32; 2],
 ) -> Result<(), BatchError> {
+    label_quad_scaled(batch, atlas, cell, position, 100)
+}
+
+/// UI scale changes label geometry without changing the atlas or world zoom.
+pub fn label_quad_scaled(
+    batch: &mut SpriteBatch,
+    atlas: &AtlasImage,
+    cell: u16,
+    position: [f32; 2],
+    percentage: u16,
+) -> Result<(), BatchError> {
+    if !(1..=200).contains(&percentage) {
+        return Err(BatchError::InvalidView);
+    }
     if batch.instances.len() >= MAX_BATCH_QUADS {
         return Err(BatchError::CapacityExceeded {
             max: MAX_BATCH_QUADS,
@@ -15,7 +29,7 @@ pub fn label_quad(
     }
     batch.instances.push(QuadInstance {
         position,
-        size: [8.0, 12.0],
+        size: [8.0, 12.0].map(|value| value * f32::from(percentage) / 100.0),
         uv: atlas.uv_rect(cell)?,
     });
     Ok(())

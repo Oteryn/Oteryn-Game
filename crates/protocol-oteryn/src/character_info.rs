@@ -10,6 +10,7 @@ pub const HISTORY_WINDOW_MS: i64 = 30 * 24 * 60 * 60 * 1_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharacterInfoOperation {
+    QueryPremium,
     QuerySelf(PageRequest),
     QueryVisible {
         character: [u8; 16],

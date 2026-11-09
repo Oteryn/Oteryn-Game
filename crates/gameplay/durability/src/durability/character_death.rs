@@ -160,6 +160,7 @@ pub struct ConsumedRespawn {
 
 mod adventurer;
 mod commit;
+pub mod forecast;
 pub mod items;
 pub mod promotion;
 mod protection;
@@ -883,9 +884,8 @@ fn decode_build_state(
 fn decode_death_build(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<Option<CommittedDeathBuildLoss>, DurabilityError> {
-    let vocation: Option<String> = row.try_get("vocation")?;
-    let before = decode_build_state(row, vocation.as_deref(), "_before")?;
-    let after = decode_build_state(row, vocation.as_deref(), "_after")?;
+    let before = DurableBuildState::stored_array(row, "vocation", "families_before")?;
+    let after = DurableBuildState::stored_array(row, "vocation", "families_after")?;
     let stored_binding: Vec<u8> = row.try_get("command_binding")?;
     // Bless wraps the complete original death/build/item binding. Decode that
     // original header after removing the already validated retained selection.
@@ -953,22 +953,13 @@ pub(super) async fn load_death_build(
 }
 
 fn bind_death_build<'q>(
-    mut query: sqlx::query::Query<'q, sqlx::Postgres, sqlx::postgres::PgArguments>,
+    query: sqlx::query::Query<'q, sqlx::Postgres, sqlx::postgres::PgArguments>,
     build: Option<&CommittedDeathBuildLoss>,
 ) -> sqlx::query::Query<'q, sqlx::Postgres, sqlx::postgres::PgArguments> {
-    query = query.bind(build.map(|build| build.before.vocation().to_owned()));
-    for state in [
-        build.map(|build| &build.before),
-        build.map(|build| &build.after),
-    ] {
-        let values = state.map(build_families);
-        for family in 0..8 {
-            query = query
-                .bind(values.map(|values| i32::from(values[family].0)))
-                .bind(values.map(|values| i64::try_from(values[family].1).unwrap_or(i64::MAX)));
-        }
-    }
     query
+        .bind(build.map(|build| build.before.vocation().to_owned()))
+        .bind(build.map(|build| build.before.family_values()))
+        .bind(build.map(|build| build.after.family_values()))
 }
 
 async fn update_death_build(
@@ -1016,7 +1007,7 @@ async fn load_receipt(
                 level_before, level_after, experience_before, experience_after, \
                 experience_lost, blessings_before, blessings_after, death_world_id::text, \
                 death_channel_id::text, death_instance_id::text, death_scope_kind, death_spatial_position, death_map_revision, \
-                amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after \
+                amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, ARRAY[magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before]::bigint[] AS families_before, ARRAY[magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after]::bigint[] AS families_after \
            FROM game_character_death_receipts \
           WHERE death_occurrence_id = encode($1,'hex')::uuid",
     )

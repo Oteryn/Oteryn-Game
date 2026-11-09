@@ -6,9 +6,13 @@
 //! and `Display`, never logged. This module decodes its own typed Gateway response, so it does not
 //! pass through the directory's forbidden-field filter; nothing else may.
 
+mod account_services;
+pub mod bazaar;
 mod challenge;
+pub mod coin_purchase;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
+pub mod premium;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
 use crate::{PlatformClientConfig, PlatformClientError};
@@ -21,7 +25,7 @@ use std::net::IpAddr;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-/// The only OAuth scope the native client requests (N4-P §2 step 1).
+/// The normal gameplay OAuth scope (N4-P §2 step 1); account services opt in separately.
 pub const NATIVE_LOGIN_SCOPE: &str = "game:ticket";
 /// The Gateway native branch version (N4-P §3.1).
 pub const GATEWAY_PROTOCOL_VERSION: u64 = 2;

@@ -12,11 +12,11 @@ pub enum Intent {
 
 pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<ChatIntent> {
     if !panel.selected {
-        panel.feedback = Some("Public channels are unavailable in this session".into());
+        panel.feedback = Some(tr!("Public channels are unavailable in this session").into());
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server".into());
+        panel.feedback = Some(tr!("Waiting for the server").into());
         return None;
     }
     let command = match intent {
@@ -28,7 +28,7 @@ pub fn request(panel: &mut ChatPanel, intent: Intent) -> Option<ChatIntent> {
         },
     };
     if matches!(&command, ChatIntent::Room { text, .. } if text.is_empty() || text.len() > 1_020) {
-        panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
+        panel.feedback = Some(tr!("Enter a message of at most 1,020 bytes").into());
         return None;
     }
     panel.pending = true;
@@ -40,18 +40,18 @@ pub fn apply_result(panel: &mut ChatPanel, outcome: &ChatOutcome) {
     panel.pending = false;
     panel.feedback = match outcome.disposition {
         ChatDisposition::Ok => None,
-        ChatDisposition::Muted | ChatDisposition::Exhausted => Some(format!(
+        ChatDisposition::Muted | ChatDisposition::Exhausted => Some(lfmt!(
             "Wait {} seconds before speaking",
             outcome.wait_seconds
         )),
-        ChatDisposition::LevelTooLow => Some("Your level is too low".into()),
-        ChatDisposition::NoVocation => Some("This room requires a vocation".into()),
-        ChatDisposition::RoomNotOpen => Some("Open the room before speaking".into()),
-        ChatDisposition::ChatUnavailable => Some("Chat is unavailable".into()),
-        ChatDisposition::NotOnline => Some("The named player is not online".into()),
-        ChatDisposition::Rejected => Some("The server rejected the chat command".into()),
-        ChatDisposition::NotAllowed => Some("You are not allowed in this room".into()),
-        ChatDisposition::NotInvited => Some("You are not invited to this channel".into()),
+        ChatDisposition::LevelTooLow => Some(tr!("Your level is too low").into()),
+        ChatDisposition::NoVocation => Some(tr!("This room requires a vocation").into()),
+        ChatDisposition::RoomNotOpen => Some(tr!("Open the room before speaking").into()),
+        ChatDisposition::ChatUnavailable => Some(tr!("Chat is unavailable").into()),
+        ChatDisposition::NotOnline => Some(tr!("The named player is not online").into()),
+        ChatDisposition::Rejected => Some(tr!("The server rejected the chat command").into()),
+        ChatDisposition::NotAllowed => Some(tr!("You are not allowed in this room").into()),
+        ChatDisposition::NotInvited => Some(tr!("You are not invited to this channel").into()),
     };
 }
 

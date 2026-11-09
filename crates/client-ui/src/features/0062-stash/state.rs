@@ -2,6 +2,11 @@ use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct StashPanel {
+    pub query: String,
+    pub server_filtered: bool,
+    pub category: String,
+    pub trader: String,
+    pub sort: Sort,
     pub selected: bool,
     pub open: bool,
     pub page: u32,
@@ -12,4 +17,11 @@ pub struct StashPanel {
     pub carried: Vec<oteryn_client_runtime::depot::ItemEntry>,
     pub pending: bool,
     pub feedback: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Sort {
+    #[default]
+    Name,
+    Stock,
 }

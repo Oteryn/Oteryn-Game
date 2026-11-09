@@ -11,7 +11,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         exit: matches!(intent, Intent::Exit),
     };
     let payload =
-        wire::encode_house_transfer_intent(&request).map_err(|_| "Enter a valid house key")?;
+        wire::encode_house_transfer_intent(&request).map_err(|_| tr!("Enter a valid house key"))?;
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_HOUSE_TRANSFER_V1,
         kind: wire::COMMAND_TYPE_HOUSE_TRANSFER,
@@ -28,14 +28,14 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
-        panel.feedback = "The server refused the request".into();
+        panel.feedback = tr!("The server refused the request").into();
         return;
     }
     let (Ok(reply), Ok(request)) = (
         wire::decode_house_transfer_ack(&result.payload),
         wire::decode_house_transfer_intent(&command.payload),
     ) else {
-        panel.feedback = "Invalid transfer reply".into();
+        panel.feedback = tr!("Invalid transfer reply").into();
         return;
     };
     if reply.house.as_deref()
@@ -45,16 +45,16 @@ pub(in crate::play) fn apply(
             Some(request.house.as_str())
         }
     {
-        panel.feedback = "Invalid transfer destination".into();
+        panel.feedback = tr!("Invalid transfer destination").into();
         return;
     }
-    panel.summary = format!(
+    panel.summary = lfmt!(
         "{} at {},{},{}; scope {}",
-        reply.house.as_deref().unwrap_or("Channel"),
+        reply.house.as_deref().unwrap_or(tr!("Channel")),
         reply.position[0],
         reply.position[1],
         reply.position[2],
         reply.scope_generation
     );
-    panel.feedback = "Transfer committed".into();
+    panel.feedback = tr!("Transfer committed").into();
 }

@@ -5,6 +5,7 @@ use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
 mod gems;
+pub use gems::{SupremeEffect, basic_milli, supreme_effect};
 
 /// Socket-facing resonance unlocked by full Wheel slices. Gems remain owned by Gem Atelier.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

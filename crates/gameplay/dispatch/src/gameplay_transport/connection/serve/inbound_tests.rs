@@ -43,7 +43,7 @@ fn observation() -> WorldSpatialObservation {
 #[derive(Default)]
 struct SlowOwner {
     slow_browse: Cell<bool>,
-    slow_visibility: Cell<bool>,
+    visibility_delay: Cell<std::time::Duration>,
     browse_reads: Cell<usize>,
     sound_reads: Cell<usize>,
 }
@@ -70,8 +70,9 @@ impl FreshAdmissionAuthority for SlowOwner {
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
-        if self.slow_visibility.get() {
-            tokio::time::sleep(VISIBILITY_REFRESH * 2).await;
+        let delay = self.visibility_delay.get();
+        if !delay.is_zero() {
+            tokio::time::sleep(delay).await;
         }
         Some(observation())
     }
@@ -270,7 +271,11 @@ async fn scenario(browse: bool) -> TestResult {
     .await?;
     authority.browse_reads.set(0);
     authority.slow_browse.set(browse);
-    authority.slow_visibility.set(!browse);
+    authority.visibility_delay.set(if browse {
+        std::time::Duration::ZERO
+    } else {
+        VISIBILITY_REFRESH * 2
+    });
     let started = tokio::time::Instant::now();
     assert!(
         receive(&mut server, &authority, &mut session, first)
@@ -295,7 +300,9 @@ async fn scenario(browse: bool) -> TestResult {
         ));
         assert!(tokio::time::Instant::now() - finished >= VISIBILITY_REFRESH);
     } else {
-        // Sessions without capability 230 retain their pre-existing scheduling semantics.
+        execute_ready_frame(&mut server, &authority, &mut session).await?;
+        assert_eq!(session.admitted.continuity.next_command_id, command_id + 1);
+        // A due refresh still runs after the bounded input turn.
         assert!(matches!(
             poll::next(&mut server, &authority, &mut session).await,
             Next::Visibility
@@ -325,6 +332,120 @@ fn browse_slow_visibility_refresh_dispatches_ready_client_before_next_refresh() 
 }
 
 #[test]
-fn legacy_slow_visibility_refresh_keeps_existing_cadence() -> TestResult {
+fn legacy_slow_visibility_refresh_dispatches_ready_client_before_next_refresh() -> TestResult {
     run(false)
+}
+
+#[test]
+fn slow_refresh_answers_probes_and_dispatches_client_input() -> TestResult {
+    slow_refresh_session(std::time::Duration::from_millis(650))
+}
+
+#[test]
+fn refresh_longer_than_probe_interval_keeps_answering_client_in_control() -> TestResult {
+    slow_refresh_session(IDLE_LIVENESS.interval + std::time::Duration::from_millis(650))
+}
+
+// Unlike pre-buffered, one-command PG connections, the peer stays connected
+// across six production liveness intervals while the refresh remains due.
+fn slow_refresh_session(delay: std::time::Duration) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> TestResult {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(async {
+                    let authority = SlowOwner::default();
+                    authority.visibility_delay.set(delay);
+                    let started = tokio::time::Instant::now();
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let served = async {
+                        let end = serve_admitted_actor(
+                            &mut server,
+                            admitted(false)?,
+                            &authority,
+                            IDLE_LIVENESS,
+                        )
+                        .await;
+                        drop(server);
+                        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(end)
+                    };
+                    let peer = async {
+                        let mut frames = FrameReader::default();
+                        let mut probes = 0;
+                        let mut result_seen = false;
+                        while probes < 6 || !result_seen {
+                            let bytes = frames.next(&mut client).await?;
+                            let envelope = decode_wire_envelope(&bytes)?;
+                            match envelope.message_type() {
+                                MessageType::LivenessProbe => {
+                                    let id = oteryn_protocol_oteryn::decode_liveness_probe(
+                                        envelope.payload(),
+                                    )?;
+                                    probes += 1;
+                                    let ack =
+                                        oteryn_protocol_oteryn::encode_liveness_ack(1, id, 0)?;
+                                    write_frame(&mut client, &ack).await?;
+                                    if probes == 1 {
+                                        let payload = encode_container_view_intent(
+                                            &ContainerViewIntent::Close { view_id: 15 },
+                                        )
+                                        .map_err(|e| format!("{e:?}"))?;
+                                        write_frame(
+                                            &mut client,
+                                            &command_frame(
+                                                1,
+                                                COMMAND_TYPE_CONTAINER_VIEW_INTENT,
+                                                &payload,
+                                            )?,
+                                        )
+                                        .await?;
+                                    }
+                                }
+                                MessageType::CommandResult => result_seen = true,
+                                _ => {}
+                            }
+                        }
+                        drop(client);
+                        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+                    };
+                    let (mut served, mut peer) = (std::pin::pin!(served), std::pin::pin!(peer));
+                    let (mut end, mut peer_done) = (None, None);
+                    std::future::poll_fn(|cx| {
+                        if end.is_none()
+                            && let std::task::Poll::Ready(value) = served.as_mut().poll(cx)
+                        {
+                            end = Some(value);
+                        }
+                        if peer_done.is_none()
+                            && let std::task::Poll::Ready(value) = peer.as_mut().poll(cx)
+                        {
+                            peer_done = Some(value);
+                        }
+                        if end.is_some() && peer_done.is_some() {
+                            std::task::Poll::Ready(())
+                        } else {
+                            std::task::Poll::Pending
+                        }
+                    })
+                    .await;
+                    let end = end.ok_or("server incomplete")??;
+                    assert!(
+                        matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                        "answering client lost control"
+                    );
+                    peer_done.ok_or("peer incomplete")??;
+                    eprintln!(
+                        "slow_refresh delay_ms={} session_ms={}",
+                        delay.as_millis(),
+                        started.elapsed().as_millis()
+                    );
+                    assert!(started.elapsed() >= IDLE_LIVENESS.interval * 6);
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "slow refresh test thread panicked")?
 }

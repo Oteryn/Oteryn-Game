@@ -9,6 +9,7 @@ pub(super) async fn replaced<S, A>(
     authority: &A,
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    queued_for: std::time::Duration,
 ) -> Result<bool, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -30,6 +31,7 @@ where
             session.actor,
             use_command(session, command.command_id),
             request,
+            queued_for,
         )
         .await
     else {
@@ -38,7 +40,7 @@ where
     if delay.is_zero() {
         return Ok(false);
     }
-    let due = tokio::time::Instant::now() + delay;
+    let due = tokio::time::Instant::now() + delay.saturating_sub(queued_for);
     // A recovered command may already have committed. Never replace durable truth.
     if !matches!(
         authority
@@ -59,7 +61,7 @@ where
         return Ok(false);
     }
     loop {
-        if let Some((frame, _)) = session.held.front() {
+        if let Some((frame, _, _)) = session.held.front() {
             let replaced = tokio::time::Instant::now() < due
                 && is_replacement(authority, session, command.command_id, frame).await;
             if !replaced {
@@ -87,11 +89,12 @@ where
             }
             continue;
         }
-        let replaced = tokio::time::Instant::now() < due
+        let received_at = tokio::time::Instant::now();
+        let replaced = received_at < due
             && is_replacement(authority, session, command.command_id, &frame).await;
         // One lookahead, using the existing bounded held-frame queue. Other commands,
         // invalid frames and jewelry retain their order and cannot replace this action.
-        session.held.push_back((frame, false));
+        session.held.push_back((frame, false, received_at));
         if !replaced {
             tokio::time::sleep_until(due).await;
         }
@@ -132,6 +135,7 @@ async fn is_replacement<A: FreshAdmissionAuthority>(
             session.actor,
             use_command(session, command.command_id),
             request,
+            std::time::Duration::ZERO,
         )
         .await
         .is_some()

@@ -6,11 +6,13 @@ use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
 include!("character_core.rs");
+include!("character_release.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
 include!("full_e2ef5_mount.rs");
 #[path = "map_journey.rs"]
 mod map_journey;
+include!("native_content.rs");
 #[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
@@ -27,7 +29,6 @@ pub(crate) fn load_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<BundleWorld> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -52,10 +53,10 @@ pub(crate) fn load_world(
             start: TOWN,
         },
     )?;
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
-    let room = crate::content::qualify_selected_native_gameplay_room(world, &input)?;
+    let input = native_input()?;
+    // Prewarm before the world pass admits its first client.
+    native_spell_book()?;
+    let room = crate::content::qualify_selected_native_gameplay_room(world, input)?;
     let issuance = crate::content::NativeEntryActivationIssuance {
         world_id: world,
         activation_sequence: 1,
@@ -69,7 +70,7 @@ pub(crate) fn load_world(
         &crate::content::NodeBootQuiescence::before_channel_runtime(),
         world,
         &issuance,
-        &input,
+        input,
     )?;
     let native = controller
         .active()
@@ -248,8 +249,14 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     full_e2ef7::run_packet(clients).await;
     include!("full_e2ef6_mount.rs");
     full_e2ef5::run(clients, &world).await;
+    for index in 0..clients.accounts.len() {
+        wait_character_released(clients, index).await?;
+    }
     include!("full_e2ef4_mount.rs");
     let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
+    if let Err(error) = &profile_result {
+        evidence(&format!("world_profile state=failed error={error}"));
+    }
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -258,8 +265,12 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
             );
         }
     }
-    if tile(client.world_spatial().actor_position)? != TOWN {
-        return Err("Platform-created character did not enter the configured town".into());
+    let entered_at = tile(client.world_spatial().actor_position)?;
+    if entered_at != TOWN {
+        return Err(format!(
+            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+        )
+        .into());
     }
     let snapshot = client
         .session_mut()
@@ -361,6 +372,10 @@ async fn profile_journey(
     bytes: &[u8],
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    // Catalogue classification takes several seconds in a debug build. Prepare it
+    // before admission so the peer can keep acknowledging probes during the journey.
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let model = map_journey::MapModel::load(world, bytes, &root)?;
     let client = connect_character(clients, 0x6e, 0).await?;
     let mut client = provisioning::provision(client, clients, 0).await?;
     let pz = if world
@@ -390,7 +405,7 @@ async fn profile_journey(
     })
     .ok_or("PZ comparison has no return route")?;
     walk(&mut client, world, &back).await?;
-    let map = map_journey::run(&mut client, world, bytes).await;
+    let map = map_journey::run(&mut client, world, &model).await;
     let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
         Ok(()) => client_combat_journey::combat_journey(&mut client).await,
         Err(error) => Err(error),
@@ -435,12 +450,32 @@ async fn connect_world(
     connect_character(clients, tag, 1).await
 }
 
+fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT_CONNECTION: AtomicU64 = AtomicU64::new(1);
+    let sequence = NEXT_CONNECTION
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+            value.checked_add(1)
+        })
+        .map_err(|_| "qualification connection counter exhausted")?;
+    let mut nonce = [tag; 32];
+    nonce[24..].copy_from_slice(&sequence.to_be_bytes());
+    let mut attempt = v7(tag, 0x05);
+    attempt[8..].copy_from_slice(&sequence.to_be_bytes());
+    // Preserve all 64 counter bits around the UUIDv7 version and RFC variant.
+    attempt[6] |= (sequence >> 62) as u8;
+    attempt[8] = (attempt[8] & 0x3f) | 0x80;
+    Ok((nonce, attempt))
+}
+
 pub(super) async fn connect_character(
     clients: &SeamClients<'_>,
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    wait_character_released(clients, index).await?;
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+    let (nonce, attempt) = fresh_grant_material(tag)?;
     let grant = Grant {
         signing: clients.signing,
         key_id: clients.key_id,
@@ -450,8 +485,8 @@ pub(super) async fn connect_character(
         channel_id: clients.channel,
         security_generation: generation,
         scope_generation: clients.scope_generation,
-        nonce: [tag; 32],
-        attempt: v7(tag, 0x05),
+        nonce,
+        attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
     Ok(
@@ -660,4 +695,21 @@ async fn shop_journey(
         return Ok(());
     };
     client_npc_shop::transact(client, target.entity, clients).await
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_nbfix_fresh_grants_for_reconnects_and_colliding_tags() -> TestResult {
+    let mut nonces = std::collections::BTreeSet::new();
+    let mut attempts = std::collections::BTreeSet::new();
+    for tag in [0xe0, 0xa1, 0xa0, 0xe0, 0xa1, 0xa0] {
+        let (nonce, attempt) = fresh_grant_material(tag)?;
+        assert!(nonces.insert(nonce), "reused grant nonce for tag {tag}");
+        assert!(attempts.insert(attempt), "reused attempt for tag {tag}");
+        assert_eq!(nonce[0], tag);
+        assert_eq!(attempt[7], tag);
+        assert_eq!(attempt[6] >> 4, 7);
+        assert_eq!(attempt[8] >> 6, 2);
+    }
+    Ok(())
 }

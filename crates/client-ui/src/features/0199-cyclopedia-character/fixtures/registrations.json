@@ -1,6 +1,22 @@
 [
   {
     "mechanic": "0199-cyclopedia-character",
+    "kind": "keybindings",
+    "id": "0199-blessings-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+F12",
+    "entry": "input.rs::blessings_key"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "panels",
+    "id": "0199-blessings-panel",
+    "status": "supported",
+    "entry": "view.rs::blessings_text"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
     "kind": "handlers",
     "id": "0199-cyclopedia-character-387",
     "status": "supported",

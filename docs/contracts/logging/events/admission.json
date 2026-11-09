@@ -1,0 +1,46 @@
+{
+  "module": "admission",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "account_characters_projection",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "account_closure",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "bazaar",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "character_commands",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "public_projections",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

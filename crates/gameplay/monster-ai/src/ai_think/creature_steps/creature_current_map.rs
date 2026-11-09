@@ -47,6 +47,34 @@ impl CreatureAiTable {
         self.forget_dead(runtime);
         // All awaited reads precede goal/timer publication. Dropping this future retains inputs,
         // route cursor and cadence. A fresh physical transaction always starts with a fresh cache.
+        // The whole current census is already held by this Channel owner. Batch its
+        // exact addresses before the per-actor reads: actors spread across a World
+        // must not issue one 256-cell query for each mostly empty spatial chunk.
+        let mut positions = Vec::new();
+        for entry in self.entries.values() {
+            let Ok(snapshot) = runtime.read_actor_position(entry.state.actor) else {
+                continue;
+            };
+            if snapshot.context() != runtime.pinned_movement_context() {
+                return None;
+            }
+            let at = snapshot.position();
+            positions.push(at);
+            for step in [
+                crate::movement::CardinalStep::North,
+                crate::movement::CardinalStep::East,
+                crate::movement::CardinalStep::South,
+                crate::movement::CardinalStep::West,
+            ] {
+                if let Some(next) = destination(at, step) {
+                    positions.push(next);
+                }
+            }
+            positions.extend(entry.state.spawn);
+        }
+        if map.prefetch_empty_tiles(runtime, &positions).await.is_err() {
+            return None;
+        }
         for entry in self.entries.values() {
             let Ok(snapshot) = runtime.read_actor_position(entry.state.actor) else {
                 continue;

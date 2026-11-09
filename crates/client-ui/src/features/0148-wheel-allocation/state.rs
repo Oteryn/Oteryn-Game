@@ -14,6 +14,8 @@ pub const SLOT_DOMAINS: [u8; 36] = [
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WheelPanel {
+    pub gems: super::gems::Presentation,
+    pub diagram: super::diagram::Presentation,
     pub presets_open: bool,
     pub preset_fields: [String; 2],
     pub preset_book: super::presets::PresetBook,
@@ -40,6 +42,8 @@ pub struct WheelPanel {
 impl Default for WheelPanel {
     fn default() -> Self {
         Self {
+            gems: Default::default(),
+            diagram: Default::default(),
             presets_open: false,
             preset_fields: Default::default(),
             preset_book: Default::default(),
@@ -148,7 +152,7 @@ impl WheelPanel {
                 .get(slot)
                 .is_none_or(|maximum| points > *maximum)
         {
-            self.feedback = Some("Enter points within the selected slot's limit");
+            self.feedback = Some(tr!("Enter points within the selected slot's limit"));
             return false;
         }
         self.points[slot] = points;
@@ -168,7 +172,7 @@ impl WheelPanel {
             return false;
         };
         *vessel = Some(id);
-        self.feedback = Some("Vessel change is pending; press Save Wheel");
+        self.feedback = Some(tr!("Vessel change is pending; press Save Wheel"));
         true
     }
 
@@ -180,7 +184,7 @@ impl WheelPanel {
             return false;
         };
         *vessel = None;
-        self.feedback = Some("Vessel change is pending; press Save Wheel");
+        self.feedback = Some(tr!("Vessel change is pending; press Save Wheel"));
         true
     }
 

@@ -115,7 +115,8 @@ pub fn decode_request(bytes: &[u8]) -> Result<MarketRequest, Error> {
     Ok(r)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MarketRow {
     pub offer: [u8; 16],
     pub definition: u32,

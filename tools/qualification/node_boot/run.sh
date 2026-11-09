@@ -22,7 +22,9 @@ readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
 readonly INTENT_NAMES=("Qualification One" "Qualification Two")
-readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 nb-content-1 nb-starter-1)
+# Runtime build writers bind to the shipped training formula's content revision,
+# just as the S3-B seam does; progression is initialized from this interpretation.
+readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
@@ -102,6 +104,8 @@ PG_ADMIN_PASSWORD="$(openssl rand -hex 24)"
 CONTROL_PASSWORD="$(openssl rand -hex 24)"
 RUNTIME_PASSWORD="$(openssl rand -hex 24)"
 NODE_PID=""
+RUNTIME_DIAGNOSTICS_PID=""
+ACTIVE_STAGE=setup
 
 result=NODE_BOOT_FAIL
 compose() {
@@ -110,8 +114,24 @@ compose() {
 }
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
 fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
+stop_runtime_diagnostics() {
+  [[ -z "$RUNTIME_DIAGNOSTICS_PID" ]] || {
+    kill -TERM "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
+    wait "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
+    RUNTIME_DIAGNOSTICS_PID=""
+  }
+}
+interrupted() {
+  result=NODE_BOOT_FAIL
+  evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
+  exit "$2"
+}
 cleanup() {
   local rc=$?
+  trap - EXIT INT TERM
+  set +e
+  # Flush the independent reader before either the server or its private log is removed.
+  stop_runtime_diagnostics
   [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
   sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
   compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
@@ -120,10 +140,13 @@ cleanup() {
   find "$WORK" -type f -delete 2>/dev/null || true
   find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
   evidence "cleanup=complete"
+  evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
   echo "NODE_BOOT_RESULT=$result"
   exit "$rc"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'interrupted INT 130' INT
+trap 'interrupted TERM 143' TERM
 
 make_ca() {
   openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
@@ -197,9 +220,17 @@ php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
 
+# The accelerated build is disposable: production binaries omit its file input.
+# Real-clock qualification deliberately builds the ordinary shipping binary.
+NODE_CLOCK_FEATURES=()
+export OTERYN_NODE_BOOT_REAL_CLOCK="${OTERYN_NODE_BOOT_REAL_CLOCK:-0}"
+case "$OTERYN_NODE_BOOT_REAL_CLOCK" in 0|1) ;; *) fail invalid_real_clock_mode ;; esac
+if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
+  NODE_CLOCK_FEATURES=(--features qualification-clock)
+fi
 # Shipped binaries and the SEAM client harness.
-cargo +1.99.1 build --locked -p oteryn-game-server --bins
-cargo +1.99.1 test --locked -p oteryn-game-server --lib --no-run
+cargo +1.99.1 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
+cargo +1.99.1 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
 TARGET="$GAME_SOURCE/target/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -405,6 +436,16 @@ PY_WORLD
   fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
+# Root/client writes an atomic offset; the service can only read it. Start at
+# zero on every disposable run, and keep it across the shutdown/restart probes.
+if (( ${#NODE_CLOCK_FEATURES[@]} )); then
+  sudo install -d -o "$(id -u)" -m 0755 "$BASE/qualification-clock"
+  export OTERYN_QUALIFICATION_CLOCK_FILE="$BASE/qualification-clock/offset-ms"
+  printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
+  chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
+  NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+fi
+
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 node_log="$WORK/node.log"
 start_node() {
@@ -426,6 +467,138 @@ VARS="$WORK/vars"
 declare -A STATUS=()
 ORDER=()
 remember() { printf '%s=%q\n' "$1" "$2" >> "$VARS"; }
+durability_report_lines() {
+  # Keep the report's legacy selectors while preserving the raw node log.
+  sed -E \
+    -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_window /DURABILITY_HOLDER_WINDOW /' \
+    -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_usage /DURABILITY_HOLDER_USAGE /' \
+    -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=pass_dropped /DURABILITY_PASS_DROPPED /'
+}
+start_runtime_diagnostics() {
+  # Read the regular file independently: neither a slow log consumer nor a stalled
+  # qualification pipeline can hold up the server's stderr. No raw error text is copied.
+  local offset=0
+  [[ ! -f "$node_log" ]] || offset=$(stat -c '%s' "$node_log")
+  python3 -u - "$node_log" "$1" "$NODE_BOOT_WORLD" "$offset" <<'PY_RUNTIME_DIAGNOSTICS' &
+import collections, os, re, signal, sys, time
+
+path, stage, world, initial_offset = sys.argv[1:]
+stopping = False
+def stop(_signal, _frame):
+    global stopping
+    stopping = True
+signal.signal(signal.SIGINT, stop)
+signal.signal(signal.SIGTERM, stop)
+events = {'serve_end', 'serve_command_end', 'command_guard_failed',
+          'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
+          'pass_dropped'}
+legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
+          'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
+labels = {
+    'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
+               'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
+    'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
+             'updates_timeout', 'activity_transfer', 'house_transfer'},
+    'guard': {'house_transfer_input', 'activity_transfer_input'},
+    'phase': {'activity_scope', 'initial', 'items', 'sessions', 'world',
+              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances'},
+    'deadline_exceeded': {'true', 'false'},
+    'ready': {'true', 'false'},
+}
+numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
+           'ms', 'connections', 'lifecycles', 'held_ms'}
+counts = collections.Counter()
+event_counts = collections.Counter()
+emitted = 0
+limited = set()
+started = time.monotonic()
+
+def report(line):
+    global emitted
+    fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+    event = fields.get('event') if line.startswith('oteryn-game-server ') else None
+    marker = line.split(' ', 1)[0]
+    if marker in legacy:
+        event = marker.lower()
+    signature = ('permission_denied' if 'permission denied' in line else
+                 'root_not_ready' if 'root is not ready' in line else None)
+    if event not in events and marker not in legacy:
+        if not signature:
+            return
+        event = 'runtime_failure'
+    safe = [('event', event)]
+    for key, allowed in labels.items():
+        if fields.get(key) in allowed:
+            safe.append((key, fields[key]))
+    for key in ('source', 'caller'):
+        value = fields.get(key, '')
+        if value in {'maintenance', 'none'} or re.fullmatch(
+                r'(?:crates|apps)/[A-Za-z0-9_./-]{1,220}\.rs:[0-9]{1,6}:[0-9]{1,6}', value):
+            safe.append((key, value))
+    if signature:
+        safe.append(('signature', signature))
+    identity = tuple(safe)
+    if counts[identity] >= 2:
+        return
+    # Reserve room for terminal failures even if many different slow callers recur.
+    limit = {'serve_end': 32, 'durability_pass_slow': 16}.get(event, 8)
+    if event_counts[event] >= limit or emitted >= 128:
+        if event not in limited:
+            print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
+                  f'event={event} records={event_counts[event]}')
+            limited.add(event)
+        return
+    counts[identity] += 1
+    event_counts[event] += 1
+    for key in sorted(numbers):
+        if re.fullmatch(r'[0-9]{1,20}', fields.get(key, '')):
+            safe.append((key, fields[key]))
+    print(f'NODE_BOOT_RUNTIME stage={stage} world_bundle={world} '
+          + ' '.join(f'{key}={value}' for key, value in safe)
+          + f' observed_ms={int((time.monotonic() - started) * 1000)}')
+    emitted += 1
+
+print(f'NODE_BOOT_RUNTIME_MONITOR state=watching stage={stage} world_bundle={world}')
+stream = None
+pending = b''
+oversized = False
+try:
+    while True:
+        final_pass = stopping
+        try:
+            if stream is None:
+                stream = open(path, 'rb')
+                stream.seek(int(initial_offset))
+            if os.fstat(stream.fileno()).st_size < stream.tell():
+                stream.seek(0)
+                pending, oversized = b'', False
+            # A final flush is also bounded; it never waits for PostgreSQL or Docker.
+            for _ in range(1024):
+                piece = stream.readline(4097)
+                if not piece:
+                    break
+                if not oversized:
+                    pending += piece
+                    oversized = len(pending) > 4096
+                if piece.endswith(b'\n'):
+                    if not oversized:
+                        report(pending.decode('utf-8', errors='replace').rstrip('\n'))
+                    pending, oversized = b'', False
+        except FileNotFoundError:
+            pass
+        if final_pass:
+            break
+        if not stopping:
+            time.sleep(0.25)
+finally:
+    pending_bytes = max(0, os.fstat(stream.fileno()).st_size - stream.tell()) if stream else 0
+    if stream:
+        stream.close()
+    print(f'NODE_BOOT_RUNTIME_MONITOR state=stopped stage={stage} world_bundle={world} '
+          f'records={emitted} pending_bytes={pending_bytes}')
+PY_RUNTIME_DIAGNOSTICS
+  RUNTIME_DIAGNOSTICS_PID=$!
+}
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -439,18 +612,79 @@ stage() { # name prerequisite... -- function
       return 0
     fi
   done
+  ACTIVE_STAGE=$name
   echo "::group::stage $name"
+  evidence "stage=$name state=start world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS"
+  case "$name" in seam_stages|spell_scenarios) start_runtime_diagnostics "$name" ;; esac
   set +e
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
+  stop_runtime_diagnostics
   set -e
+  evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
   else
     STATUS[$name]="FAIL(exit $rc)"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
-    echo "--- last node events"; tail -n 40 "$node_log" 2>/dev/null || true
+    echo "--- session close events"
+    grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
+    echo "--- last node events"; durability_report_lines < "$node_log" 2>/dev/null | grep -v 'DURABILITY_' | tail -n 40 || true
+    # Repeated background-pass retries hide the event that took the root down.
+    echo "--- node events without background retries"
+    durability_report_lines < "$node_log" 2>/dev/null | grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused|DURABILITY_' | tail -n 150 || true
+    echo "--- first root-not-ready"
+    grep -n -m 1 -B 40 'root is not ready' "$node_log" 2>/dev/null | tail -n 41 || true
+    # Which node events dominate, and what admission reported, beyond the tail above.
+    echo "--- node event counts"
+    grep -oE 'event=[a-z_]+' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 40 || true
+    # Which semantic passes kept the single holder long or retired it (NBDIAG-3).
+    echo "--- durability holder reports"
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_[A-Z_]+( caller=[^ ]+)?( reason=[a-z_]+)?' | sort | uniq -c | sort -rn | head -n 40 || true
+    echo "--- slowest durability passes"
+    grep -oE 'DURABILITY_PASS_SLOW caller=[^ ]+ held_ms=[0-9]+ deadline_exceeded=[a-z]+' "$node_log" 2>/dev/null | sort -t= -k3 -n -r | head -n 25 || true
+    echo "--- holder kept or dropped by a pass"
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_(HOLDER_STUCK|PASS_DROPPED) caller=[^ ]+( held_ms=[0-9]+)?' | head -n 25 || true
+    # How busy the single holder was and who kept it (NBDIAG-5).
+    echo "--- holder usage windows"
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_HOLDER_WINDOW .*' | head -n 60 || true
+    echo "--- holder usage by caller over the run"
+    durability_report_lines < "$node_log" 2>/dev/null | grep -oE 'DURABILITY_HOLDER_USAGE caller=[^ ]+ passes=[0-9]+ held_ms=[0-9]+ refused=[0-9]+' \
+        | awk '{split($2,c,"=");split($3,p,"=");split($4,h,"=");split($5,r,"=");P[c[2]]+=p[2];H[c[2]]+=h[2];R[c[2]]+=r[2]} END {for (k in H) print H[k], P[k], R[k], k}' \
+        | sort -rn | head -n 30 || true
+    echo "--- node message kinds"
+    sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
+    echo "--- node admission and session events"
+    durability_report_lines < "$node_log" 2>/dev/null | grep -iE 'admission|admit|refus|serve_|session_' | grep -vE 'quest_log_excluded|DURABILITY_' | tail -n 60 || true
+    # How each gameplay connection entered and ended, and whether the shared listener task
+    # was kept by one poll (NBDIAG-6).
+    echo "--- connection entry and admission outcomes"
+    grep -oE 'event=(connection_[a-z_]+|listener_[a-z_]+)( [a-z_]+=[a-z_]+)*' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 30 || true
+    echo "--- connection and listener events"
+    grep -E 'event=(connection_|listener_)' "$node_log" 2>/dev/null | sed -E 's/^.*(event=)/\1/' | head -n 80 || true
+    echo "--- postgres sessions"
+    echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND pid <> pg_backend_pid() ORDER BY backend_start" \
+      | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
+    # The holder is alive but always busy: show which statements and tables keep it so.
+    echo "--- postgres statements on the holder (200 samples)"
+    for _ in $(seq 1 200); do
+      echo "SELECT state || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 200) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND usename <> 'oteryn_node_boot_admin'" \
+        | psql_admin oteryn_node_boot 2>/dev/null || true
+      sleep 0.02
+    done | sort | uniq -c | sort -rn | head -n 25
+    echo "--- postgres table writes and scans over 10 s"
+    psql_admin oteryn_node_boot 2>&1 <<'SQL' | tail -n 30 || true
+CREATE TEMP TABLE node_boot_stat_before AS
+  SELECT relid, n_tup_ins + n_tup_upd + n_tup_del AS writes, coalesce(seq_scan, 0) + coalesce(idx_scan, 0) AS scans
+  FROM pg_stat_user_tables;
+SELECT pg_sleep(10);
+SELECT pg_stat_clear_snapshot();
+SELECT s.relname, (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes AS writes, (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans AS scans
+  FROM pg_stat_user_tables s JOIN node_boot_stat_before b USING (relid)
+  WHERE (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) - b.writes + (coalesce(s.seq_scan, 0) + coalesce(s.idx_scan, 0)) - b.scans > 0
+  ORDER BY 2 DESC, 3 DESC LIMIT 25;
+SQL
     echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
     echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
   fi
@@ -531,6 +765,20 @@ SQL
   ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    # World admission prepares Cyclopedia/boost state against the admitted epoch.
+    # A fresh database has none: initialize through the existing Control owner,
+    # with the actual bundle and issued content, before any Character admission.
+    local epoch_result
+    epoch_result="$({
+      echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+      printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+    evidence "world_epoch=0 source=control_initializer bundle=compiled content=issued replay=idempotent"
+  fi
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
   evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"
@@ -598,7 +846,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.99.1 test --locked -p oteryn-game-server --lib \
+    cargo +1.99.1 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" \
     "qualification::$qualification" -- --ignored --exact --nocapture
 }
 

@@ -54,7 +54,7 @@ fn spawn(shrine: bool, elapsed: bool) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(shrine, elapsed).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(shrine, elapsed, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "imbuement wire e2e panic")??;
     Ok(())
@@ -62,9 +62,15 @@ fn spawn(shrine: bool, elapsed: bool) -> TestResult {
 
 /// The test map holds the sword's bag at x 6, where the actor stands, and at x 7 either a
 /// loose gold coin or an imbuing shrine.
-fn scenario(shrine: bool, elapsed: bool) -> TestResult {
+pub(super) fn details_scenario() -> TestResult {
+    scenario(false, false, true)
+}
+
+fn scenario(shrine: bool, elapsed: bool, details: bool) -> TestResult {
     run(async move |admin| {
-        let name = if shrine {
+        let name = if details {
+            "imbuement_details"
+        } else if shrine {
             "imbuement_shrine"
         } else {
             "imbuement_wire"
@@ -212,12 +218,17 @@ fn scenario(shrine: bool, elapsed: bool) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-            owner.offered_capabilities(),
-            &[4, 6, 11, 12, 14, 15, 18, CAPABILITY_IMBUE_V1],
-        )
-        .ok_or("imbuement capability selectable")?;
-        if elapsed {
+        let mut capabilities = vec![4, 6, 11, 12, 14, 15, 18, CAPABILITY_IMBUE_V1];
+        if details {
+            capabilities
+                .push(oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1);
+        }
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &capabilities)
+                .ok_or("imbuement capability selectable")?;
+        if details {
+            super::imbuement_details::exercise(&harness, &owner, admitted).await?;
+        } else if elapsed {
             elapsed::exercise(&harness, &mut owner, sword_ref, admitted, deps.actor).await?;
         } else if shrine {
             at_the_shrine(&harness, &owner, sword_ref, etcher_ref, admitted).await?;

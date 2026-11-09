@@ -12,3 +12,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     let reply = authority.house_podium(*admitted, request).await?;
     Some(Dispatch::Reply(CommandStatus::Accepted, reply))
 }
+
+#[cfg(test)]
+#[path = "house_podium/tests.rs"]
+mod tests;

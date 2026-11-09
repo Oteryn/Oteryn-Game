@@ -5,13 +5,13 @@ use oteryn_client_runtime::server_mechanic::{
 };
 
 pub fn command(command_type: u32, payload: Vec<u8>) -> Option<ServerMechanicCommand> {
-    (183..=186)
-        .contains(&command_type)
-        .then_some(ServerMechanicCommand {
+    ((183..=186).contains(&command_type) || command_type == store::browse::COMMAND_TYPE).then_some(
+        ServerMechanicCommand {
             capability: 154,
             command_type,
             payload,
-        })
+        },
+    )
 }
 fn encoded(
     panel: &mut StorePanel,
@@ -19,7 +19,7 @@ fn encoded(
     payload: Result<Vec<u8>, StoreWireError>,
 ) -> Option<ServerMechanicCommand> {
     let payload = payload.ok().or_else(|| {
-        panel.feedback = Some("Enter valid store details".into());
+        panel.feedback = Some(tr!("Enter valid store details").into());
         None
     })?;
     request(panel, command(kind, payload)?)
@@ -64,7 +64,7 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
         return None;
     }
     if !panel.purchase_confirmed {
-        panel.feedback = Some("Confirm this purchase first".into());
+        panel.feedback = Some(tr!("Confirm this purchase first").into());
         return None;
     }
     if let Some(payload) = panel.confirmed_purchase.clone() {
@@ -77,7 +77,7 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
         .and_then(|page| page.offers.get(panel.selected_offer))
         .cloned()
         .or_else(|| {
-            panel.feedback = Some("Select an offer from the server catalogue".into());
+            panel.feedback = Some(tr!("Select an offer from the server catalogue").into());
             None
         })?;
     let revision = panel.catalogue.as_ref()?.catalog_revision.clone();
@@ -96,7 +96,7 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
         }),
         "store:hireling:25438" | "store:hireling:25437" => {
             let id = panel.hireling_id.or_else(|| {
-                panel.feedback = Some("Enter the Hireling identity".into());
+                panel.feedback = Some(tr!("Enter the Hireling identity").into());
                 None
             })?;
             Some(StoreHirelingCustomization {
@@ -147,12 +147,18 @@ pub fn request(
     Some(command)
 }
 pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
+    if panel.pending_action == store::browse::COMMAND_TYPE {
+        super::browser::apply_browse(panel, result);
+        return;
+    }
+
     panel.pending = false;
+    let coin_history = std::mem::take(&mut panel.coin_history.pending);
     if !matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some(format!("Server refused store action: {:?}", result.status));
+        panel.feedback = Some(lfmt!("Server refused store action: {:?}", result.status));
         return;
     }
     let decoded = match panel.pending_action {
@@ -161,6 +167,10 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
                 panel.selected_offer = 0;
                 panel.catalogue = Some(v);
             })
+        }
+        COMMAND_TYPE_STORE_HISTORY_PAGE if coin_history => {
+            store::decode_coin_history_page(&result.payload)
+                .map(|page| panel.coin_history.page = Some(page))
         }
         COMMAND_TYPE_STORE_HISTORY_PAGE => {
             store::decode_history_page(&result.payload).map(|v| panel.history = Some(v))
@@ -175,8 +185,19 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
     };
     panel.feedback = decoded
         .err()
-        .map(|_| "The server returned invalid store data".into());
+        .map(|_| tr!("The server returned invalid store data").into());
 }
+
+pub fn browse_request(
+    panel: &mut StorePanel,
+    category: &str,
+    search: &str,
+    sort: u8,
+    step: i8,
+) -> Option<ServerMechanicCommand> {
+    super::browser::browse(panel, category, search, sort, step)
+}
+
 #[cfg(test)]
 // Direct fixture construction keeps the wire assertions readable.
 #[allow(clippy::unwrap_used)]

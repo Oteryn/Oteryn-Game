@@ -10,8 +10,8 @@ pub struct Menu {
 impl Menu {
     pub fn with_targeting(mut self, enabled: bool) -> Self {
         if enabled && matches!(self.target, Target::Item(_)) {
-            self.entries.push(("Use with…", Action::UseWith));
-            self.entries.push(("Use rune…", Action::UseRune));
+            self.entries.push((tr!("Use with…"), Action::UseWith));
+            self.entries.push((tr!("Use rune…"), Action::UseRune));
         }
         self
     }
@@ -19,14 +19,14 @@ impl Menu {
     pub fn new(target: Target, look: bool, bed: bool) -> Self {
         let mut entries = Vec::new();
         if look {
-            entries.push(("Look", Action::Look));
+            entries.push((tr!("Look"), Action::Look));
         }
         if !matches!(target, Target::Creature(_)) {
-            entries.extend([("Use", Action::Use), ("Open", Action::Open)]);
+            entries.extend([(tr!("Use"), Action::Use), (tr!("Open"), Action::Open)]);
         }
         // Client item data has no bed semantics, and an opaque handle does not prove a base item.
         if bed && matches!(target, Target::Object(_)) {
-            entries.push(("Bed", Action::BedInteract));
+            entries.push((tr!("Bed"), Action::BedInteract));
         }
         Self {
             tile: None,
@@ -64,17 +64,17 @@ pub fn context_entries(
     }
     if npc {
         entries.extend([
-            ("Talk", ContextAction::Talk),
-            ("Trade", ContextAction::NpcTrade),
+            (tr!("Talk"), ContextAction::Talk),
+            (tr!("Trade"), ContextAction::NpcTrade),
         ]);
     }
     if trade {
-        entries.push(("Trade with this player", ContextAction::PlayerTrade));
+        entries.push((tr!("Trade with this player"), ContextAction::PlayerTrade));
     }
     if party {
         entries.extend([
-            ("Invite to party", ContextAction::Invite),
-            ("Party (Ctrl+Shift+G)", ContextAction::Party),
+            (tr!("Invite to party"), ContextAction::Invite),
+            (tr!("Party (Ctrl+Shift+G)"), ContextAction::Party),
         ]);
     }
     entries

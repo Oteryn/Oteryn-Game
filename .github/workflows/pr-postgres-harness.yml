@@ -727,7 +727,9 @@ jobs:
       && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
       && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # W20a's natural day and W20b's light decay run serially for almost two hours.
+    # Include build, the basic seam, World setup and the remaining journeys.
+    timeout-minutes: 240
     permissions:
       contents: read
     steps:
@@ -779,6 +781,7 @@ jobs:
         run: |
           set -euo pipefail
           bash -n tools/qualification/node_boot/run.sh
+          python3 tools/qualification/node_boot/test_diagnostics.py
           evidence="$RUNNER_TEMP/node-boot-evidence.txt"
           bash tools/qualification/node_boot/run.sh | tee "$evidence"
           grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
@@ -826,7 +829,12 @@ jobs:
           fi
           if [[ "$IS_REAL_RUN" == 'true' ]]; then
             echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT node_boot=$NODE_BOOT_RESULT"
-            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' && "$NODE_BOOT_RESULT" == 'success' ]]
+            # Node boot is informational until NODEBOOT-CONTROL-LOST is fixed (owner decision
+            # 2026-11-09): it still runs and reports, but does not gate the merge.
+            if [[ "$NODE_BOOT_RESULT" != 'success' ]]; then
+              echo "::warning title=node boot (informational)::node_boot=$NODE_BOOT_RESULT"
+            fi
+            [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
             exit
           fi
           # Other label events have skipped dependencies: mirror the latest

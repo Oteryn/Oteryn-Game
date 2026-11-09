@@ -32,7 +32,7 @@ fn catalogue_milli(value: &Value) -> Option<i64> {
     Some(rounded as i64)
 }
 
-pub(super) fn basic_milli(id: u16, grade: u8, vocation: &str, effect: &Value) -> Option<i64> {
+pub fn basic_milli(id: u16, grade: u8, vocation: &str, effect: &Value) -> Option<i64> {
     if grade > 3 {
         return None;
     }
@@ -62,13 +62,13 @@ pub(super) fn basic_milli(id: u16, grade: u8, vocation: &str, effect: &Value) ->
     }
 }
 
-pub(super) struct SupremeEffect<'a> {
+pub struct SupremeEffect<'a> {
     pub kind: &'a str,
     pub target: &'a str,
     pub value_milli: i64,
 }
 
-pub(super) fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffect<'_>> {
+pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffect<'_>> {
     let multiplier = *[10_i64, 11, 12, 15].get(usize::from(grade))?;
     let mut kind = effect["kind"].as_str()?;
     let display_target = effect["target"].as_str()?;

@@ -130,3 +130,105 @@ fn gap_store_confirmation_retry_keeps_transaction_and_quote()
     assert_ne!(first.payload, next.payload);
     Ok(())
 }
+
+#[test]
+fn store_native_preview_remains_visible_after_catalogue_feedback() {
+    use oteryn_client_runtime::cui3::store as wire;
+    use oteryn_client_ui::store::StorePanel;
+    let p = StorePanel {
+        selected: true,
+        feedback: Some("Catalogue received".into()),
+        catalogue: Some(wire::StoreCataloguePage {
+            catalog_revision: "r1".into(),
+            total_coins: 100,
+            transferable_coins: 0,
+            next_page_cursor: String::new(),
+            offers: vec![wire::StoreOffer {
+                offer_key: "mount".into(),
+                title: "Horse".into(),
+                price: 73,
+                currency: "coins".into(),
+            }],
+        }),
+        ..StorePanel::default()
+    };
+    assert!(native::panel_text(&p).contains("Preview: Horse — 73 coins"));
+}
+
+#[test]
+fn coin_gift_real_caller_requires_server_review_and_retries_exact_confirmation()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true);
+    let fields = ["Alice".into(), "25".into()];
+    assert!(!link.coin_gift_control(1, fields.clone()));
+    assert!(commands.try_recv().is_err());
+    assert!(link.coin_gift_control(0, fields.clone()));
+    let crate::combat_input::PlayCommand::ServerMechanic(review) = commands.try_recv()? else {
+        return Err("review".into());
+    };
+    assert_eq!(
+        (review.capability, review.command_type),
+        (154, oteryn_protocol_oteryn::coin_transfer::COMMAND)
+    );
+    let wire = oteryn_protocol_oteryn::coin_transfer::decode(&review.payload)
+        .map_err(|_| "review wire")?;
+    assert_eq!(wire.amount, 25);
+    outbox.coin_gift_result(&oteryn_session::GatedCommandResult{command_id:1,server_sequence:1,status:oteryn_session::CommandStatus::Accepted,payload:oteryn_protocol_oteryn::coin_transfer::encode_reply(r#"{"result":"ok","quote":"019a65f0-0000-7000-8000-000000000001","recipient":"Alice","amount":"25","transferable":"100","non_transferable":"50"}"#).map_err(|_|"quote")?});
+    assert!(!link.coin_gift_control(1, ["Bob".into(), "25".into()]));
+    assert!(commands.try_recv().is_err());
+    assert!(link.coin_gift_control(0, fields.clone()));
+    commands.try_recv()?;
+    outbox.coin_gift_result(&oteryn_session::GatedCommandResult{command_id:2,server_sequence:2,status:oteryn_session::CommandStatus::Accepted,payload:oteryn_protocol_oteryn::coin_transfer::encode_reply(r#"{"result":"ok","quote":"019a65f0-0000-7000-8000-000000000002","recipient":"Alice","amount":"25","transferable":"100","non_transferable":"50"}"#).map_err(|_|"quote")?});
+    assert!(link.coin_gift_control(1, fields.clone()));
+    let crate::combat_input::PlayCommand::ServerMechanic(first) = commands.try_recv()? else {
+        return Err("confirm".into());
+    };
+    outbox.coin_gift_result(&oteryn_session::GatedCommandResult {
+        command_id: 3,
+        server_sequence: 3,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: oteryn_protocol_oteryn::coin_transfer::encode_reply(r#"{"result":"unavailable"}"#)
+            .map_err(|_| "reply")?,
+    });
+    assert!(!link.coin_gift_control(1, fields.clone()));
+    assert!(link.coin_gift_control(3, fields));
+    let crate::combat_input::PlayCommand::ServerMechanic(retry) = commands.try_recv()? else {
+        return Err("retry".into());
+    };
+    assert_eq!(first, retry);
+    assert!(link.store_panel().gift.receipt.is_empty());
+    Ok(())
+}
+
+include!("ledger.rs");
+
+#[test]
+fn store_category_navigation_sends_server_key_with_fresh_cursor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let (link, mut rx, outbox) = play_channel();
+    outbox.store_initialize(true);
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.store.catalogue_category = "consumables.exercise-weapons".into();
+        mailbox.store.catalogue = Some(StoreCataloguePage {
+            catalog_revision: "previous-category".into(),
+            offers: Vec::new(),
+            next_page_cursor: "previous-page".into(),
+            total_coins: 0,
+            transferable_coins: 0,
+        });
+    }
+    assert!(link.store_category("houses.hirelings"));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = rx.try_recv()? else {
+        return Err("missing catalogue request".into());
+    };
+    let request = decode_catalogue_request(&command.payload).map_err(|_| "bad category request")?;
+    assert_eq!(request.category, "houses.hirelings");
+    assert!(request.page_cursor.is_empty());
+    assert!(!link.store_category("not-a-category"));
+    Ok(())
+}
+#[path = "browser.rs"]
+mod browser;

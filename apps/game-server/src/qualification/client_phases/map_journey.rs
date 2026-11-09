@@ -4,14 +4,12 @@ include!("map_model.rs");
 pub(super) async fn run(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
-    bytes: &[u8],
+    model: &MapModel<'_>,
 ) -> TestResult {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let model = MapModel::load(world, bytes, &root)?;
     let start = tile(client.world_spatial().actor_position)?;
     let mut totals: BTreeMap<&str, [usize; 3]> = BTreeMap::new();
     for sample in model.samples(start, 1) {
-        let result = check(client, &model, &sample, start).await;
+        let result = check(client, model, &sample, start).await;
         let (index, reason) = match result {
             Ok(None) => (0, "position_and_protocol_result_match_bundle".to_owned()),
             Ok(Some(reason)) => (2, reason.to_owned()),

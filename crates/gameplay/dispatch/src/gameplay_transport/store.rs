@@ -2,6 +2,8 @@
 //! purchase the Platform debits and the native Inbox mint delivers. Platform owns the balance,
 //! the debit and the order ledger; Game retains only the request binding and its answer
 //! (`store_purchase_requests`) and the delivery receipt of each operation.
+#[path = "store/coin_history.rs"]
+mod coin_history;
 use super::connection::AdmittedSession;
 use super::item_ref_admission::{generation_item_facts,generation_inbox_item_facts};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
@@ -20,6 +22,8 @@ use std::sync::{Arc, LazyLock};
 
 #[path = "store/catalogue.rs"]
 mod catalogue;
+#[path = "store/browse.rs"]
+mod browse;
 #[path = "store/prey_retry.rs"]
 mod prey_retry;
 #[path = "store/hireling.rs"]
@@ -143,6 +147,11 @@ pub(super) async fn execute(
     payload: &[u8],
 ) -> (CommandStatus, Vec<u8>) {
     let encoded = match command_type {
+        wire::browse::COMMAND_TYPE => {
+            let Ok(query)=wire::browse::Query::decode(payload) else {return REJECTED;};
+            let Some(page)=browse::execute(owner,admitted,&query).await else {return REJECTED;};
+            page.encode()
+        }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
                 return REJECTED;
@@ -167,6 +176,14 @@ pub(super) async fn execute(
                 return REJECTED;
             };
             wire::encode_purchase_result(&result)
+        }
+        wire::COMMAND_TYPE_STORE_HISTORY_PAGE => {
+            let Ok(request) = wire::decode_coin_history_request(payload) else { return REJECTED; };
+            let Some(account) = admitted.controller.map(|controller| controller.account_id) else { return REJECTED; };
+            let Some(platform) = owner.store.as_ref() else { return REJECTED; };
+            let mut client = platform.lock().await;
+            let Some(page) = coin_history::page(&mut client, &uuid_text(&account), &request).await else { return REJECTED; };
+            wire::encode_coin_history_page(&page)
         }
         wire::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE => {
             if !admitted

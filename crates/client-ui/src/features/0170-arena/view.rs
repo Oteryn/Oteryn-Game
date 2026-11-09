@@ -2,40 +2,48 @@ use super::ArenaPanel;
 use oteryn_client_runtime::arena::ArenaDisposition;
 
 pub fn panel_text(panel: &ArenaPanel) -> String {
-    let mut text = String::from("Svargrond Arena\r\n");
+    let mut text = String::from(tr!("Svargrond Arena\r\n"));
     for challenge in &panel.challenges {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "{:?}: {} gold, {} pits, {} seconds per pit\r\n",
-            challenge.rank, challenge.fee, challenge.rooms, challenge.room_seconds
+            challenge.rank,
+            challenge.fee,
+            challenge.rooms,
+            challenge.room_seconds
         ));
     }
     if let Some(reply) = panel.result {
         let s = reply.state;
         let disposition = match reply.disposition {
-            ArenaDisposition::Applied => "Applied",
-            ArenaDisposition::WrongState => "Action unavailable in the current state",
-            ArenaDisposition::InsufficientGold => "Insufficient gold",
-            ArenaDisposition::AlreadyClaimed => "Reward already claimed",
-            ArenaDisposition::InventoryFull => "Inventory full",
-            ArenaDisposition::TimedOut => "Time expired",
-            ArenaDisposition::Busy => "Arena busy; retry",
-            ArenaDisposition::InvalidReward => "Invalid reward",
-            ArenaDisposition::AllChallengesCompleted => "All challenges completed",
-            ArenaDisposition::ContentUnavailable => "Arena content unavailable",
+            ArenaDisposition::Applied => tr!("Applied"),
+            ArenaDisposition::WrongState => tr!("Action unavailable in the current state"),
+            ArenaDisposition::InsufficientGold => tr!("Insufficient gold"),
+            ArenaDisposition::AlreadyClaimed => tr!("Reward already claimed"),
+            ArenaDisposition::InventoryFull => tr!("Inventory full"),
+            ArenaDisposition::TimedOut => tr!("Time expired"),
+            ArenaDisposition::Busy => tr!("Arena busy; retry"),
+            ArenaDisposition::InvalidReward => tr!("Invalid reward"),
+            ArenaDisposition::AllChallengesCompleted => tr!("All challenges completed"),
+            ArenaDisposition::ContentUnavailable => tr!("Arena content unavailable"),
         };
         let phase = match s.phase {
-            1 => "Fighting",
-            2 => "Next pit ready",
-            3 => "Reward room",
-            _ => "Idle",
+            1 => tr!("Fighting"),
+            2 => tr!("Next pit ready"),
+            3 => tr!("Reward room"),
+            _ => tr!("Idle"),
         };
-        text.push_str(&format!("{disposition}\r\n{phase}: {}, pit {}. Completed: {}\r\nServer time remaining: {} seconds (Refresh for current time)\r\n",
-            rank_name(s.active_rank), s.pit, rank_name(s.completed_rank), s.remaining_seconds));
+        text.push_str(&lfmt!("{disposition}\r\n{phase}: {}, pit {}. Completed: {}\r\nServer time remaining: {} seconds (Refresh for current time)\r\n",
+            rank_name(s.active_rank), s.pit, rank_name(s.completed_rank), s.remaining_seconds,disposition=disposition,phase=phase));
         for (index, mask) in s.claimed_masks.iter().enumerate() {
             text.push_str(&format!("{} rewards:", rank_name(index as u8 + 1)));
-            for (bit, label) in ["Present", "Supplies", "Weapon", "Trophy"]
-                .iter()
-                .enumerate()
+            for (bit, label) in [
+                tr!("Present"),
+                tr!("Supplies"),
+                tr!("Weapon"),
+                tr!("Trophy"),
+            ]
+            .iter()
+            .enumerate()
             {
                 let state = if mask & (1 << bit) != 0 {
                     "claimed"
@@ -47,43 +55,47 @@ pub fn panel_text(panel: &ArenaPanel) -> String {
             text.push_str("\r\n");
         }
     }
-    text.push_str("Tibiadrome\r\n");
+    text.push_str(tr!("Tibiadrome\r\n"));
     if let Some(reply) = panel.drome {
         let disposition = match reply.disposition {
-            1 => "Applied",
-            2 => "Action unavailable in the current state",
-            3 => "Premium and level 50 required",
-            4 => "Re-entry cooldown active",
-            5 => "Arena busy; retry",
-            6 => "Arena content unavailable",
-            7 => "No earned potion or insufficient drome points",
-            8 => "Inventory full",
-            _ => "Unknown result",
+            1 => tr!("Applied"),
+            2 => tr!("Action unavailable in the current state"),
+            3 => tr!("Premium and level 50 required"),
+            4 => tr!("Re-entry cooldown active"),
+            5 => tr!("Arena busy; retry"),
+            6 => tr!("Arena content unavailable"),
+            7 => tr!("No earned potion or insufficient drome points"),
+            8 => tr!("Inventory full"),
+            _ => tr!("Unknown result"),
         };
-        let phase = if reply.phase == 0 { "Idle" } else { "Active" };
+        let phase = if reply.phase == 0 {
+            tr!("Idle")
+        } else {
+            tr!("Active")
+        };
         let rank = if reply.rank == 0 {
-            "Unranked".to_owned()
+            tr!("Unranked").to_owned()
         } else {
             reply.rank.to_string()
         };
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "{disposition}\r\n{phase}: wave {}. Rotation level: {}. Starting level: {}\r\nDrome points: {}. Rank: {rank}. Unclaimed potions: {}\r\nServer time remaining: {} seconds. Re-entry cooldown: {} seconds\r\n",
             reply.wave, reply.level, reply.start, reply.points, reply.potions,
             reply.remaining, reply.cooldown,
-        ));
+        disposition=disposition,phase=phase,rank=rank));
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |duration| duration.as_secs());
         let remaining = u64::from(reply.rotation_ends).saturating_sub(now);
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "Next rotation in approximately {}d {}h {}m (local clock estimate)\r\nRefresh Drome status for current server values\r\n",
             remaining / 86400, remaining / 3600 % 24, remaining / 60 % 60,
         ));
     } else {
-        text.push_str("Refresh Drome status to load progress\r\n");
+        text.push_str(tr!("Refresh Drome status to load progress\r\n"));
     }
     if panel.pending.is_some() {
-        text.push_str("Waiting for the server\r\n");
+        text.push_str(tr!("Waiting for the server\r\n"));
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);
@@ -93,9 +105,9 @@ pub fn panel_text(panel: &ArenaPanel) -> String {
 
 fn rank_name(rank: u8) -> &'static str {
     match rank {
-        1 => "Greenhorn",
-        2 => "Scrapper",
-        3 => "Warlord",
-        _ => "None",
+        1 => tr!("Greenhorn"),
+        2 => tr!("Scrapper"),
+        3 => tr!("Warlord"),
+        _ => tr!("None"),
     }
 }

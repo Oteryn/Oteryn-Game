@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0448-weapon-proficiency-state",
+    "kind": "handlers",
+    "id": "0448-weapon-proficiency-state-query",
+    "status": "supported",
+    "direction": "client_to_server",
+    "capability": 448,
+    "commands": [
+      732
+    ],
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Read-only committed shaping observation; no client rule settings.",
+      "state": "The existing 0195 proficiency panel holds the observation.",
+      "view": "The existing 0195 proficiency window renders this observation.",
+      "input": "The existing 0195 proficiency selectors request this observation."
+    }
+  }
+]

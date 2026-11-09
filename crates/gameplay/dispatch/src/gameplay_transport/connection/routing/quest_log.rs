@@ -32,6 +32,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 let observation = authority
                     .observe_quest_log(actor, admitted.game_session_id, None)
                     .await;
+                if query == oteryn_protocol_oteryn::quest_log::QuestLogQuery::ListOnly {
+                    return Some(match QuestLogState::list_only(observation) {
+                        Some(payload) => {
+                            Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload)
+                        }
+                        None => Dispatch::Unregistered,
+                    });
+                }
                 match state.query(&mut admitted.continuity.quest_log, &query, observation) {
                     Some(Ok(domain)) => Dispatch::QuestLog(domain),
                     Some(Err(_)) => return None,

@@ -1,4 +1,7 @@
 //! Live server quotes. Display positions are never trade identities.
+mod options;
+pub use options::ShopOptions;
+
 use super::{EntityRef, NpcIntentDisposition, NpcTradeSide, npc_service};
 use oteryn_client_runtime::npc_shop::{CharacterInventory, container_tree, resources};
 
@@ -13,6 +16,7 @@ pub struct Quote {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LiveShop {
+    pub options: ShopOptions,
     pub selected: bool,
     pub resources_selected: bool,
     pub balances: Option<resources::ResourceBalances>,
@@ -45,20 +49,45 @@ impl LiveShop {
             })
             .collect()
     }
+    /// Filter presentation only; command construction resolves the original quote.
+    pub fn filtered_quotes(&self, side: Option<NpcTradeSide>, query: &str) -> Vec<Quote> {
+        let query = query.trim().to_lowercase();
+        self.quotes()
+            .into_iter()
+            .filter(|quote| side.is_none_or(|side| quote.side == side))
+            .filter(|quote| self.quote_text(*quote).to_lowercase().contains(&query))
+            .filter(|quote| {
+                !self.options.only_owned
+                    || quote.side == NpcTradeSide::Buy
+                    || self.owned(quote.item) > 0
+            })
+            .collect()
+    }
     pub fn owned(&self, item: u32) -> u64 {
         self.inventory.as_ref().map_or(0, |inventory| {
             inventory
                 .entries
                 .iter()
-                .chain(inventory.main_backpack.iter())
-                .chain(inventory.equipment.iter().map(|entry| &entry.item))
+                .chain(
+                    inventory
+                        .main_backpack
+                        .iter()
+                        .filter(|_| !self.options.ignore_equipped),
+                )
+                .chain(
+                    inventory
+                        .equipment
+                        .iter()
+                        .filter(|_| !self.options.ignore_equipped)
+                        .map(|entry| &entry.item),
+                )
                 .filter(|entry| entry.item_definition_ref.get() == item)
                 .map(|entry| u64::from(entry.count.get()))
                 .sum()
         })
     }
     pub fn quote_text(&self, quote: Quote) -> String {
-        format!(
+        lfmt!(
             "{:?} item #{} × {} — {} gold / offer — carried {}",
             quote.side,
             quote.item,
@@ -70,7 +99,7 @@ impl LiveShop {
         )
     }
     pub fn total(&self, quote: Quote, amount: u32) -> String {
-        format!(
+        lfmt!(
             "{} items; {} gold",
             u64::from(quote.count) * u64::from(amount),
             u64::from(quote.price) * u64::from(amount)
@@ -111,7 +140,11 @@ impl LiveShop {
             return None;
         }
         if !self.valid_amount(quote, amount) {
-            self.feedback = "Amount must be 1–100 and within the server's gold limit".into();
+            self.feedback = tr!("Amount must be 1–100 and within the server's gold limit").into();
+            return None;
+        }
+        if !self.can_trade(quote, amount) {
+            self.feedback = "No free backpack slot in the current view; enable Ignore capacity to ask the server".into();
             return None;
         }
         let index = self.quotes().iter().position(|live| *live == quote)?;
@@ -125,44 +158,45 @@ impl LiveShop {
         };
         npc_service::encode_npc_trade_intent(&intent).ok()?;
         self.pending = true;
-        self.feedback = "Trade pending".into();
+        self.feedback = tr!("Trade pending").into();
         Some(intent)
     }
     pub fn result(&mut self, result: NpcIntentDisposition) {
         self.pending = false;
         self.feedback = if result == NpcIntentDisposition::Ok {
-            "Trade completed; inventory updated by server".into()
+            tr!("Trade completed; inventory updated by server").into()
         } else {
-            format!("Trade refused: {result:?}")
+            lfmt!("Trade refused: {result:?}", result = result)
         };
     }
     pub fn text(&self) -> String {
         let state = if !self.selected {
-            "NPC trade unavailable in this session"
+            tr!("NPC trade unavailable in this session")
         } else if self.window.open.is_none() {
-            "No open shop. Talk to an NPC and ask for trade."
+            tr!("No open shop. Talk to an NPC and ask for trade.")
         } else {
-            "Live NPC buy/sell quotes"
+            tr!("Live NPC buy/sell quotes")
         };
         let gold = if !self.resources_selected {
-            "Gold balance: unavailable (capability not selected)".into()
+            tr!("Gold balance: unavailable (capability not selected)").into()
         } else if let Some(balances) = self.balances {
-            format!(
+            lfmt!(
                 "Carried gold: {}; Bank gold: {}; Total: {}",
                 balances.carried_gold,
                 balances.bank_gold,
                 balances.carried_gold.saturating_add(balances.bank_gold)
             )
         } else {
-            "Gold balance: query pending or refused".into()
+            tr!("Gold balance: query pending or refused").into()
         };
         let slots = self.free_slots().map_or_else(
-            || "Free slots: unknown".into(),
-            |free| format!("Free main-backpack slots: {free}"),
+            || tr!("Free slots: unknown").into(),
+            |free| lfmt!("Free main-backpack slots: {free}", free = free),
         );
         format!(
             "{state}\n{}\n{gold}\n{slots}\n{}",
-            self.feedback, "Counts cover the visible carried inventory."
+            self.feedback,
+            "Purchases go into the main backpack. Sales use its direct entries; move equipped items there first."
         )
     }
 }

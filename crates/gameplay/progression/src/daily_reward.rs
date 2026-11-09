@@ -155,3 +155,6 @@ pub fn daily_reward_reset_day(
 #[cfg(test)]
 #[path = "daily_reward_tests.rs"]
 mod tests;
+
+#[path = "daily_reward/picker.rs"]
+pub mod picker;

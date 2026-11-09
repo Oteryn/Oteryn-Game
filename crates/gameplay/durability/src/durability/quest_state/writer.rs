@@ -20,8 +20,21 @@ impl DurabilityRoot {
         callback: oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner_resolved::<_, 0>(
-            authority, node, fence, request, catalogue, None, None, None, None,
-            &grizzly::NoGrizzlyPremium, None, None, Some(admission), None, None,
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
+            None,
+            Some(admission),
+            None,
+            None,
             vec![callback],
         )
         .await
@@ -341,9 +354,22 @@ impl DurabilityRoot {
         let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_quest_inner_resolved(
-            authority, node, fence, request, catalogue, context, grizzly_action,
-            grizzly_boss, grizzly_party, grizzly_gate, grizzly_policy, payment,
-            reward_admission, native, benevola, reward_callbacks,
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            context,
+            grizzly_action,
+            grizzly_boss,
+            grizzly_party,
+            grizzly_gate,
+            grizzly_policy,
+            payment,
+            reward_admission,
+            native,
+            benevola,
+            reward_callbacks,
         )
         .await
     }

@@ -1172,7 +1172,9 @@ jobs:
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
     if: needs.candidate.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # W20a's natural day and W20b's light decay run serially for almost two hours.
+    # Include build, the basic seam, World setup and the remaining journeys.
+    timeout-minutes: 240
     permissions:
       contents: read
     steps:
@@ -1224,6 +1226,7 @@ jobs:
         run: |
           set -euo pipefail
           bash -n tools/qualification/node_boot/run.sh
+          python3 tools/qualification/node_boot/test_diagnostics.py
           evidence="$RUNNER_TEMP/node-boot-evidence.txt"
           bash tools/qualification/node_boot/run.sh | tee "$evidence"
           grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"

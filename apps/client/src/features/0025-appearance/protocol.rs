@@ -9,36 +9,36 @@ pub(in crate::play) fn command(panel: &Panel, _: Intent) -> Result<FeatureComman
     let catalogue = panel
         .catalogue
         .as_ref()
-        .ok_or("Wait for the appearance catalogue")?;
+        .ok_or(tr!("Wait for the appearance catalogue"))?;
     let outfit = catalogue
         .outfits
         .iter()
         .find(|o| o.key == panel.fields[0].trim())
-        .ok_or("Choose an outfit from the catalogue")?;
+        .ok_or(tr!("Choose an outfit from the catalogue"))?;
     let addons: u8 = panel.fields[1]
         .trim()
         .parse()
-        .map_err(|_| "Enter an addon mask")?;
+        .map_err(|_| tr!("Enter an addon mask"))?;
     if addons & !outfit.permitted_addons != 0 {
-        return Err("This outfit does not permit those addons".into());
+        return Err(tr!("This outfit does not permit those addons").into());
     }
     let mount = panel.fields[2].trim();
     if !mount.is_empty() && !catalogue.mounts.iter().any(|key| key == mount) {
-        return Err("Choose a mount from the catalogue".into());
+        return Err(tr!("Choose a mount from the catalogue").into());
     }
     let colours = panel.fields[3]
         .split(',')
         .map(|s| s.trim().parse::<u16>())
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|_| "Enter four palette indices separated by commas")?;
+        .map_err(|_| tr!("Enter four palette indices separated by commas"))?;
     let colours: [u16; 4] = colours
         .try_into()
-        .map_err(|_| "Enter four palette indices")?;
+        .map_err(|_| tr!("Enter four palette indices"))?;
     if colours
         .iter()
         .any(|c| usize::from(*c) >= catalogue.palette.len())
     {
-        return Err("Choose colours from the catalogue palette".into());
+        return Err(tr!("Choose colours from the catalogue palette").into());
     }
     let change = wire::Change {
         context: catalogue.context,
@@ -57,7 +57,7 @@ pub(in crate::play) fn command(panel: &Panel, _: Intent) -> Result<FeatureComman
         kind: wire::COMMAND_TYPE_APPEARANCE_CHANGE,
         payload: change
             .encode()
-            .map_err(|_| "Enter a valid content revision")?,
+            .map_err(|_| tr!("Enter a valid content revision"))?,
     })
 }
 pub(in crate::play) fn apply(
@@ -70,14 +70,19 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     panel.feedback = if !accepted(result) {
-        "The server refused the appearance request".into()
+        tr!("The server refused the appearance request").into()
     } else {
         match wire::ChangeResult::decode(&result.payload) {
             Ok(wire::ChangeResult::Committed(revision)) => {
-                format!("Appearance committed at revision {revision}; catalogue updates follow")
+                lfmt!(
+                    "Appearance committed at revision {revision}; catalogue updates follow",
+                    revision = revision
+                )
             }
-            Ok(wire::ChangeResult::Rejected) => "The server refused the appearance request".into(),
-            Err(_) => "Invalid appearance reply".into(),
+            Ok(wire::ChangeResult::Rejected) => {
+                tr!("The server refused the appearance request").into()
+            }
+            Err(_) => tr!("Invalid appearance reply").into(),
         }
     };
 }
@@ -86,11 +91,12 @@ fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
         let mut unlocked = Vec::new();
         for outfit in &value.outfits {
             match before.outfits.iter().find(|old| old.key == outfit.key) {
-                None => unlocked.push(format!("Unlocked outfit: {}", outfit.key)),
+                None => unlocked.push(lfmt!("Unlocked outfit: {}", outfit.key)),
                 Some(old) if outfit.permitted_addons & !old.permitted_addons != 0 => {
-                    unlocked.push(format!(
+                    unlocked.push(lfmt!(
                         "Unlocked addon: {}; allowed mask: {}",
-                        outfit.key, outfit.permitted_addons
+                        outfit.key,
+                        outfit.permitted_addons
                     ));
                 }
                 _ => {}
@@ -98,7 +104,7 @@ fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
         }
         for mount in &value.mounts {
             if !before.mounts.contains(mount) {
-                unlocked.push(format!("Unlocked mount: {mount}"));
+                unlocked.push(lfmt!("Unlocked mount: {mount}", mount = mount));
             }
         }
         if !unlocked.is_empty() {
@@ -123,26 +129,33 @@ fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
     }
     panel.confirmed.clone_from(&value.selected);
     panel.summary = if let Some(selected) = &value.selected {
-        format!(
+        lfmt!(
             "Current outfit: {}\r\nAddons: {}\r\nMount: {}\r\nColours: {:?}\r\n",
             selected.selection.outfit_key,
             selected.selection.addons,
-            selected.selection.mount_key.as_deref().unwrap_or("None"),
+            selected
+                .selection
+                .mount_key
+                .as_deref()
+                .unwrap_or(tr!("None")),
             selected.selection.colours
         )
     } else {
-        "No outfit selected\r\n".into()
+        tr!("No outfit selected\r\n").into()
     };
     for outfit in &value.outfits {
-        panel.summary.push_str(&format!(
+        panel.summary.push_str(&lfmt!(
             "Outfit: {}; allowed addon mask: {}\r\n",
-            outfit.key, outfit.permitted_addons
+            outfit.key,
+            outfit.permitted_addons
         ));
     }
     for mount in &value.mounts {
-        panel.summary.push_str(&format!("Mount: {mount}\r\n"));
+        panel
+            .summary
+            .push_str(&lfmt!("Mount: {mount}\r\n", mount = mount));
     }
-    panel.summary.push_str(&format!(
+    panel.summary.push_str(&lfmt!(
         "Palette indices: 0..{}",
         value.palette.len().saturating_sub(1)
     ));
@@ -161,7 +174,7 @@ impl Outbox {
         {
             catalogue(panel, snapshot.catalogue);
         } else {
-            panel.feedback = "Invalid appearance catalogue".into();
+            panel.feedback = tr!("Invalid appearance catalogue").into();
         }
     }
     pub(in crate::play) fn appearance_events(&self, events: &[oteryn_session::SessionEvent]) {

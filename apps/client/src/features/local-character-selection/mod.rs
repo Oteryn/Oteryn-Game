@@ -2,6 +2,9 @@
 use oteryn_platform_client::native_login::{CharacterAvailability, OwnerCharacter};
 use oteryn_platform_contracts::DirectorySnapshot;
 
+mod training;
+pub use training::{TrainingQueue, TrainingSelection};
+
 #[cfg(windows)]
 mod native;
 
@@ -19,7 +22,15 @@ pub enum SelectionAction {
         character_id: String,
         channel_id: Option<String>,
     },
+    Train {
+        character_id: String,
+        channel_id: Option<String>,
+    },
+    TrainMany {
+        characters: Vec<TrainingSelection>,
+    },
     Create,
+    AccountServices,
     Refresh,
     Cancel,
 }
@@ -42,7 +53,7 @@ pub fn join(characters: Vec<OwnerCharacter>, directory: &DirectorySnapshot) -> V
                 available: character.availability == CharacterAvailability::Available
                     && world.is_some(),
                 world_name: world.map_or_else(
-                    || "World unavailable".into(),
+                    || tr!("World unavailable").into(),
                     |world| world.display_name.as_str().to_owned(),
                 ),
                 channels: world.map_or_else(Vec::new, |world| {

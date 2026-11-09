@@ -1202,17 +1202,34 @@ pub(super) fn qualified_protection_zone(
         return None;
     }
     let position = position.position();
-    let tile = cells
-        .spell_tiles()
-        .lookup(
-            scope,
-            crate::content::LogicalCell {
-                x: position.x,
-                y: position.y,
-                z: i32::from(position.floor),
-            },
-        )
-        .ok()?;
+    let cell = crate::content::LogicalCell {
+        x: position.x,
+        y: position.y,
+        z: i32::from(position.floor),
+    };
+    if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        cells.index()
+    {
+        use crate::map::boot::BundleCollisionIndexExt;
+        use sha2::{Digest, Sha256};
+        // Zone flags belong to the pinned map even when a pickupable stack
+        // makes its spell metadata unknown, as on the logout path.
+        let revision: [u8; 32] = Sha256::digest(scope.map_revision.as_str().as_bytes()).into();
+        if revision != runtime.content_pin().map_revision_digest() {
+            return None;
+        }
+        index.lookup(scope, cell).ok()?;
+        let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+        return Some(
+            index
+                .map()
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)?
+                .protection_zone(),
+        );
+    }
+    let tile = cells.spell_tiles().lookup(scope, cell).ok()?;
     Some(tile.flags().protection_zone)
 }
 

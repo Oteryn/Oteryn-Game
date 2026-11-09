@@ -4,6 +4,7 @@ use oteryn_client_runtime::container_tree::{
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ContainerPanel {
+    pub bulk: super::BulkMove,
     pub open: bool,
     pub house_capacity_v2: bool,
     pub views: Option<ContainerViews>,
@@ -111,7 +112,7 @@ impl ContainerPanel {
         })
     }
     fn request(&mut self, intent: ContainerViewIntent) -> Option<ContainerViewIntent> {
-        if self.ended || self.views.is_none() || self.pending {
+        if self.ended || self.views.is_none() || self.pending || self.bulk.pending {
             return None;
         }
         self.clear_focus();

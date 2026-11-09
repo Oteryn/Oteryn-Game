@@ -1,5 +1,5 @@
 name=house_podium
-commands=174,175,176
+commands=174,175,176,739
 transport=house_podium
 composed=house_podium
 authority=house_podium

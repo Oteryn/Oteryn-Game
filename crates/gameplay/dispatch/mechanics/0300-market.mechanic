@@ -1,5 +1,5 @@
 name=market
-commands=80
+commands=80,6126
 transport=market
 composed=market
 authority=market

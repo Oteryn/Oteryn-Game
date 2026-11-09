@@ -8,7 +8,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     command: ClientCommandView<'_>,
 ) -> Dispatch {
     match authority
-        .cyclopedia_character_command(*admitted, command.command_type, command.payload)
+        .cyclopedia_character_command(*admitted, command.command_id, command.command_type, command.payload)
         .await
     {
         Ok(bytes) => Dispatch::Reply(CommandStatus::Accepted, bytes),
