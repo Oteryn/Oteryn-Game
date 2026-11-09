@@ -276,5 +276,11 @@
  "Welcome back!": "Welcome back!",
  "Refresh reward": "Refresh reward",
  "Claim gift": "Claim gift",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.",
+ "Weekly results": "Weekly results",
+ "Choose next week's difficulty": "Choose next week's difficulty",
+ "Start next week": "Start next week",
+ "Weekly rewards received": "Weekly rewards received",
+ "Task points": "Task points",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}"
 }

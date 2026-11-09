@@ -18,7 +18,6 @@ const SELECT_BOUNTY: usize = 106;
 const CLAIM: usize = 107;
 const DIFFICULTY: usize = 108;
 const REROLL: usize = 109;
-const DAILY: usize = 110;
 const PREFERRED: usize = 111;
 const UNWANTED: usize = 112;
 const UNLOCK: usize = 113;
@@ -165,7 +164,6 @@ fn run(
             (CLAIM, tr!("Claim bounty")),
             (DIFFICULTY, tr!("Set bounty difficulty")),
             (REROLL, tr!("Reroll bounty")),
-            (DAILY, tr!("Daily reroll")),
             (PREFERRED, tr!("Set preferred")),
             (UNWANTED, tr!("Set unwanted")),
             (UNLOCK, tr!("Unlock list slot")),
@@ -242,7 +240,6 @@ fn run(
                     CLAIM => Some(FullIntent::ClaimBounty),
                     DIFFICULTY => level.map(FullIntent::BountyDifficulty),
                     REROLL => Some(FullIntent::Reroll),
-                    DAILY => Some(FullIntent::DailyReroll),
                     PREFERRED => slot
                         .zip(selected_race)
                         .map(|(v, key)| FullIntent::Preferred(v, key.to_owned())),

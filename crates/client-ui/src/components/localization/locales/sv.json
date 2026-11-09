@@ -276,5 +276,11 @@
  "Welcome back!": "Välkommen tillbaka!",
  "Refresh reward": "Uppdatera belöning",
  "Claim gift": "Hämta gåva",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "En välkomstgåva är tillgänglig. Öppna daglig belöning (Ctrl+D) och sedan återkomstbelöning för att hämta den.",
+ "Weekly results": "Veckoresultat",
+ "Choose next week's difficulty": "Välj nästa veckas svårighetsgrad",
+ "Start next week": "Starta nästa vecka",
+ "Weekly rewards received": "Veckobelöningar mottagna",
+ "Task points": "Uppdragspoäng",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Prisjakt: status {}, svårighet {}, omlottningar {}, gratis omlottning av erbjudanden vid {}"
 }

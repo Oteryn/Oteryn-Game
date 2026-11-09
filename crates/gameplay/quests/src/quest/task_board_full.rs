@@ -16,7 +16,6 @@ pub use catalogue::{DELIVERY_ITEMS, SHOP_OFFERS, TaskBoardShopKind, TaskBoardSho
 pub const SOULSEALS: &str = "oteryn:taskboard/weekly/soulseals";
 pub const BOARD_REVISION: &str = "oteryn:taskboard/weekly/board-revision";
 pub const FREE_REROLL_SECONDS: i64 = 20 * 60 * 60;
-pub const MAX_DAILY_REROLL_TOKENS: u64 = 10;
 pub const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 /// Crystal iobountytasks.hpp:143; PR #2764 ANSWER 6543406906 rejects wrapping.
 pub const MAX_BOUNTY_POINTS: u32 = u32::MAX;
@@ -214,7 +213,9 @@ pub enum TaskBoardAction {
         difficulty: u8,
     },
     RerollBounty,
-    ClaimDailyReroll,
+    /// Historical serialized action retained only to refuse old durable callers.
+    #[serde(rename = "ClaimDailyReroll")]
+    RetiredDailyReroll,
     SetPreferred {
         slot: u8,
         race: Option<String>,
@@ -554,19 +555,7 @@ fn apply_inner(
             }
             generate_bounty(&mut data.bounty, context.creatures, draw)?;
         }
-        TaskBoardAction::ClaimDailyReroll => {
-            if context.reroll_tokens >= MAX_DAILY_REROLL_TOKENS {
-                return Err(TaskBoardRefusal::LimitReached);
-            }
-            if data.bounty.next_free_reroll_unix > context.now_unix_seconds {
-                return Err(TaskBoardRefusal::Cooldown);
-            }
-            data.bounty.next_free_reroll_unix = context
-                .now_unix_seconds
-                .checked_add(FREE_REROLL_SECONDS)
-                .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
-            effects.reroll_tokens_granted = 1;
-        }
+        TaskBoardAction::RetiredDailyReroll => return Err(TaskBoardRefusal::RetiredAction),
         TaskBoardAction::SetPreferred { slot, race }
         | TaskBoardAction::SetUnwanted { slot, race } => {
             let preferred = matches!(action, TaskBoardAction::SetPreferred { .. });

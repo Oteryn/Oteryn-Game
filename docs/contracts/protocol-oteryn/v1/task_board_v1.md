@@ -37,7 +37,7 @@ unknown fields, and at most **192 bytes**.
 | 9 | Claim completed bounty | 0 | empty |
 | 10 | Change bounty difficulty | difficulty 0..3 | empty |
 | 11 | Reroll bounty offers | 0 | empty |
-| 12 | Claim daily reroll | 0 | empty |
+| 12 | Retired; rejected by the request codec | — | — |
 | 13 | Assign/clear preferred creature | slot 0..4 | canonical race or empty |
 | 14 | Assign/clear unwanted creature | slot 0..4 | canonical race or empty |
 | 15 | Unlock next preferred/unwanted list slot | 0 | empty |
@@ -66,8 +66,8 @@ booleans, unknown refusal codes, balances outside their owner ranges, kill/bount
 progress above its requirement and overlong/non-canonical race keys.
 
 The full response includes the week identity, all three balances, weekly
-progress and pending rewards, bounty offers/active progress, daily-reroll
-timestamp, preferred/unwanted lists, talisman levels/bonuses/next prices and
+progress and pending rewards, bounty offers/active progress, free-offer-reroll
+timestamp (the historical `daily_reroll_at` field), preferred/unwanted lists, talisman levels/bonuses/next prices and
 shop offer data. Item identifiers in delivery/shop rows identify donor catalogue
 entries; the server resolves them against the active canonical Item catalogue
 before any custody write.
@@ -93,7 +93,7 @@ Refused commands do not spend currency or consume items.
 | 3 | Level below the selected difficulty's minimum |
 | 4 | Insufficient points, tokens, or other rule resources |
 | 5 | Free-reroll cooldown has not elapsed |
-| 6 | Progression, list, or daily-claim limit reached |
+| 6 | Progression or list limit reached |
 | 7 | Permanent offer already owned |
 | 8 | Addon requires the base outfit |
 | 9 | Invalid server random draw |
@@ -114,8 +114,8 @@ existing balances and definition pins are preserved. A reward exceeding a bound
 records arithmetic-overflow refusal atomically and returns that refusal on replay.
 
 The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
-durable owner, through `i64::MAX`. Ten is only the daily-claim threshold; completed
-bounties may add tokens above ten. The maximum talisman level remains 355, following the accepted
+durable owner, through `i64::MAX`. The free daily token is granted only by Daily Reward; completed
+bounties retain their earned token reward. The maximum talisman level remains 355, following the accepted
 repository profile in `docs/reference/NEWS-HIST-TALISMAN-1.md:15–27` and the PR's
 coordinator decisions. No saved level is converted.
 
@@ -137,3 +137,31 @@ not a native Task Board view.
 `TASKBOARD1-RL-01` to `TASKBOARD1-RL-03` own the expanded request/reply/task bounds.
 The legacy subcodec keeps its smaller limits. Boundary tests live in
 `crates/protocol-oteryn/src/task_board_full_tests.rs`.
+
+## Weekly results
+
+T184 uses capability **474**, `TASK_BOARD_WEEKLY_RESULTS_V1`, requiring 72,
+and command **6172**. Its request is the canonical full query (action 4,
+selection 0, empty race); other actions on 6172 are rejected. It shares the
+existing fenced Task Board owner, receipt binding and full reply bounds.
+Only clients selecting 474 receive optional full-reply field 10,
+`TaskBoardWeeklyResultsV1`. Original capability-72 clients keep the original
+reply shape. The completed board's period and already credited task points and
+Soulseals remain readable until a successful action 5 starts the next board.
+A query never pays those rewards twice. Failed difficulty choices preserve the
+results. Starting uses the existing four difficulty and level checks and replaces
+the old tasks atomically.
+
+The client queries on admission through the play queue, separately from opening
+the Task Board. After Monday's server save, a settled board opens the dedicated
+Weekly Results window. The player selects Beginner, Adept, Expert or Master and
+starts the next cycle. Dismissing the window does not spend or claim anything;
+it can appear again on the next admission until the next board is started.
+The server's committed reset period is the only calendar authority.
+
+Reference: TibiaData v4 news 8567, fetched 2026-11-09
+(`https://api.tibiadata.com/v4/news/id/8567`, `OTHER_STRUCTURED_TIBIA_DATA`),
+reports a special Monday reward window displaying rewards and choosing the next
+difficulty. News 8998 (same fetch date and source class) retires the daily-token
+claim from the Bounty Board; Daily Reward supplies it instead. Bounty offer
+rerolls and earned completed-bounty tokens retain their existing rules.

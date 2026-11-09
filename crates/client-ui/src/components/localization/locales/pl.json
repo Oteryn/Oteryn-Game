@@ -276,5 +276,11 @@
  "Welcome back!": "Witaj ponownie!",
  "Refresh reward": "Odśwież nagrodę",
  "Claim gift": "Odbierz prezent",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Czeka prezent powitalny. Otwórz nagrodę dzienną (Ctrl+D), a następnie nagrodę za powrót, aby go odebrać."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Czeka prezent powitalny. Otwórz nagrodę dzienną (Ctrl+D), a następnie nagrodę za powrót, aby go odebrać.",
+ "Weekly results": "Wyniki tygodniowe",
+ "Choose next week's difficulty": "Wybierz trudność na następny tydzień",
+ "Start next week": "Rozpocznij następny tydzień",
+ "Weekly rewards received": "Otrzymane nagrody tygodniowe",
+ "Task points": "Punkty zadań",
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Zlecenie: stan {}, trudność {}, losowania {}, darmowe losowanie ofert o {}"
 }
