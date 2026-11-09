@@ -1,5 +1,5 @@
-//! Exact live-target intent admission through the real Root. The empty carried
-//! bag is fixture stock; this qualifies the reusable tool boundary, not perfume MINT.
+//! Exact live-target admission through the real Root: an empty-bag boundary
+//! fixture and the registered Rotworm perfume BURN/MINT exchange.
 use crate::bestiary_postgres_harness as f;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::durability::reward_claim_mint::{
@@ -26,7 +26,7 @@ fn engnpc2_live_creature_postgres_exact_intent_burn_and_replay() -> f::TestResul
         f::runtime().map_err(f::debug)?.block_on(async {
             let started = std::time::Instant::now();
             let h = f::Harness::create(admin, "engnpc2_creature_intent", true).await?;
-            let result = exercise(&h).await;
+            let result = exercise(&h, false).await;
             h.cleanup().await?;
             result?;
             assert!(started.elapsed().as_secs_f64() > 0.01);
@@ -36,8 +36,31 @@ fn engnpc2_live_creature_postgres_exact_intent_burn_and_replay() -> f::TestResul
     })?.join().map_err(|_| "live target PG thread failed")?.map_err(Into::into)
 }
 
-async fn exercise(h: &f::Harness) -> f::TestResult {
-    let key = "oteryn:item.tibia.i2854";
+#[test]
+fn engnpc2_rotworm_perfume_postgres_production_exchange() -> f::TestResult {
+    let Some(admin) = f::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        f::runtime().map_err(f::debug)?.block_on(async {
+            let started = std::time::Instant::now();
+            let h = f::Harness::create(admin, "engnpc2_rotworm_perfume", true).await?;
+            let result = exercise(&h, true).await;
+            h.cleanup().await?;
+            result?;
+            assert!(started.elapsed().as_secs_f64() > 0.01);
+            eprintln!("PG_EXECUTED engnpc2_rotworm_perfume_postgres_production_exchange duration={:?}", started.elapsed());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }).map_err(f::debug)
+    })?.join().map_err(|_| "perfume PG thread failed")?.map_err(Into::into)
+}
+
+async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
+    let key = if production {
+        "oteryn:item.tibia.i17673"
+    } else {
+        "oteryn:item.tibia.i2854"
+    };
     let callback: RewardCallback = serde_json::from_value(serde_json::json!({
         "key":"oteryn:quest-reward/engnpc2-live-intent", "quest":"oteryn:quest.live_intent_fixture",
         "npc":"oteryn:npc.fixture", "keywords":["sample"],"topic":0,"next_topic":0,
@@ -46,11 +69,20 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         "take":[{"item":key,"count":1}],"give":null,"outfit":null,"achievement":null,
         "reply":["Sample admitted."],"sources":["engine live-target fixture"]
     }))?;
+    let callback = if production {
+        reward_callbacks::load()
+            .map_err(f::debug)?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/goblin-merchant/rotworm-sample")
+            .ok_or("registered Rotworm callback")?
+    } else {
+        callback
+    };
     // This immutable unregistered fixture owns a private track. Keep the global
     // bound-operation registry closed; the tested live proof and input participant
     // still run unchanged inside the real fenced Root transaction.
     let mut transition = reward_callbacks::primary_transition(&callback).map_err(f::debug)?;
-    for effect in &mut transition.effects {
+    for effect in transition.effects.iter_mut().filter(|_| !production) {
         if let oteryn_gameplay_quests::quest::QuestEffectKind::SetWithBinding { value, .. } =
             effect.effect
         {
@@ -92,9 +124,16 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
+    let bag_key = "oteryn:item.tibia.i2854";
+    let bag_revision = index.revision(bag_key).ok_or("bag revision")?;
     for seed in [91, 92] {
+        let (stock_key, stock_revision) = if seed == 91 {
+            (bag_key, bag_revision)
+        } else {
+            (key, revision)
+        };
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
-            .bind(f::id(seed).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(key).bind(revision).bind(f::id(seed+10).as_slice()).execute(&mut *tx).await?;
+            .bind(f::id(seed).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(stock_key).bind(stock_revision).bind(f::id(seed+10).as_slice()).execute(&mut *tx).await?;
     }
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(91).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(f::id(111).as_slice()).execute(&mut *tx).await?;
@@ -257,6 +296,22 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(quantity, 0);
+    if production {
+        let output: (i64, i64) = sqlx::query_as("SELECT count(*), COALESCE(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i17674' AND lifecycle=1")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(
+            output,
+            (1, 1),
+            "production callback must mint exactly one Rotworm-sampled gatherer"
+        );
+        assert_eq!(h.count("game_reward_claim_mint_receipts").await?, 1);
+        let atomic: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions c JOIN game_character_quest_receipts q USING(character_id,cause_id,cause_ordinal,transition_key) JOIN game_reward_claim_mint_receipts m ON m.xmin=q.xmin WHERE c.created_xact_id=q.created_xact_id")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(
+            atomic, 1,
+            "perfume BURN, MINT and progress share one transaction"
+        );
+    }
     drop(proof);
     runtime
         .remove_mount_taming_subject(creature, "oteryn:creature.rotworm")
@@ -300,5 +355,12 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     assert_eq!(h.root_revision().await?, "2");
     assert_eq!(h.count("game_character_quest_receipts").await?, 1);
+    if production {
+        assert_eq!(
+            h.count("game_reward_claim_mint_receipts").await?,
+            1,
+            "replay must not remint perfume"
+        );
+    }
     Ok(())
 }

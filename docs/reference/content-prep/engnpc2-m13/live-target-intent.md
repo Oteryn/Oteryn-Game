@@ -25,3 +25,27 @@ non-materializable. Those profiles and the full perfume-stage wiring are separat
 unfinished work. Evidence: the two canonical Item records under
 `content/items/definitions/items-06500-06999.json` and
 `content/quests/npc-callbacks/m13-rotworm-sample.json`.
+
+
+Perfume custody follow-up
+------------------------
+The registered Rotworm callback exchanges canonical Items 17673 and 17674.
+Their physical admission uses the existing source importer, exact Crystal
+identity bindings and accepted-first semantic reconciliation. Pinned evidence:
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml
+(retained locally as `imports/canary/items-xml/items.xml`, SHA-256 checked by the
+importer), plus the retained client appearance bank
+`appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat`.
+Both qualify as portable, nonstackable Items weighing 350; no fluid subtype,
+charge, timer or custom use effect is inferred. The production callback remains
+the live-use authority. The focused PG case is
+`engnpc2_rotworm_perfume_postgres_production_exchange`; the earlier empty-bag
+fixture remains a separate intent-admission regression. This personal receipt
+does not complete the four-odour quest stage.
+
+Local PostgreSQL execution on 2026-11-09: production exchange
+`engnpc2_rotworm_perfume_postgres_production_exchange` passed in 43.266744682 s;
+`engnpc2_live_creature_postgres_exact_intent_burn_and_replay` passed in
+42.929173085 s. The production case retains registered bound state operations,
+checks exact one-item output, same-transaction BURN/MINT/progress, then removes
+the target and proves receipt replay does not remint.

@@ -22,6 +22,10 @@ IDS |= {21291}
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505}
+# ENGNPC2: the registered Goblin Merchant Rotworm exchange consumes the
+# gatherer before sampling and mints its next variant. Only physical custody
+# is qualified here; the live-target callback remains the use authority.
+IDS |= {17673, 17674}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
