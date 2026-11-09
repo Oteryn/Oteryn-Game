@@ -7,5 +7,5 @@
   "command_types": [11, 12, 740],
   "state_domains": [10],
   "offered": true,
-  "offer_gate": "O014 adds read-only visible-player filter query 740 (battle-metadata-v1.md); it does not change combat authority. ATTACK-1b: offered. The owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, and a production-path admission test selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported."
+  "offer_gate": "ATTACK-1b: offered. The owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, and a production-path admission test selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported. O014 adds read-only visible-player filter query 740 (battle-metadata-v1.md); it does not change combat authority."
 }
