@@ -177,6 +177,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     .await
                     .checked()?;
                     assert!(!link.cyclopedia_map_panel().summary.is_empty());
+                    atlas::round_trip(&link, &exchanges).await.checked()?;
 
                     for (action, operation) in [
                         (Intent::Start, 1),
@@ -328,3 +329,6 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
         self.map_err(|error| format!("{error:?}").into())
     }
 }
+
+#[path = "atlas.rs"]
+mod atlas;

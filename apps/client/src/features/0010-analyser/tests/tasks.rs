@@ -146,7 +146,10 @@ fn analyser_hunting_task_tracker_reads_real_weekly_query_and_retains_refused_pro
         status: oteryn_session::CommandStatus::Accepted,
         payload: encode_reply(&complete).map_err(|_| "complete")?,
     });
-    assert!(link.analyser_text().contains("tracker fox: 10/10 · complete · 0 remaining"));
+    assert!(
+        link.analyser_text()
+            .contains("tracker fox: 10/10 · complete · 0 remaining")
+    );
     outbox.logged_out();
     assert!(link.analyser_panel().task_progress.is_none());
     Ok(())

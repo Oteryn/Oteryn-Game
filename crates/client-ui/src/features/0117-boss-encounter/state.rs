@@ -1,6 +1,11 @@
 use oteryn_client_runtime::boss_encounter::Snapshot;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BossEncounterPanel {
+    pub boss_names: std::collections::BTreeMap<String, String>,
+    pub catalogue: Option<oteryn_client_runtime::boss_encounter::catalogue::Page>,
+    pub catalogue_query: Option<oteryn_client_runtime::boss_encounter::catalogue::Query>,
+    pub pending_catalogue: Option<oteryn_client_runtime::boss_encounter::catalogue::Query>,
+    pub gallery_open: bool,
     pub selected: bool,
     pub open: bool,
     pub cooldowns_open: bool,

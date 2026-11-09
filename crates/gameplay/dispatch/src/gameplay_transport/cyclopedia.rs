@@ -168,6 +168,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: position.at.y,
             floor: position.at.floor,
         };
+        if intent.operation == 5 {
+            return self
+                .bundle_map()
+                .and_then(|map| atlas::page(&map.overlay.base().subareas, intent.amount))
+                .map(GuildReply::Payload)
+                .unwrap_or(GuildReply::Rejected);
+        }
         // Membership is resolved from the server-owned position, never the legacy wire alias.
         let Some(area) = content::admit_at(self, at) else {
             return GuildReply::Rejected;

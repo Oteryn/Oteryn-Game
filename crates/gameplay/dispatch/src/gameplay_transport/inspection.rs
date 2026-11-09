@@ -16,6 +16,8 @@ use std::{collections::HashMap, sync::Mutex};
 mod catalogue;
 #[path = "inspection_imbuements.rs"]
 mod imbuement_text;
+#[path = "inspection/sources.rs"]
+mod sources;
 
 macro_rules! authority_methods {
     () => {
@@ -121,8 +123,13 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![item],
             })
+        }
+        Request::CataloguePage(query) => catalogue::query(owner, query).await,
+        Request::CatalogueSources { definition, after } => {
+            sources::query(owner, definition, after).await
         }
         Request::Catalogue(reference) => {
             let definition = {
@@ -135,6 +142,7 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![project(owner, 0, &definition, 1, None).await?],
             })
         }
@@ -160,6 +168,7 @@ pub(super) async fn inspect(
             Some(Reply {
                 status: 1,
                 requests: Vec::new(),
+                catalogue: None,
                 items: vec![project(owner, 0, &definition, count, Some(&metadata)).await?],
             })
         }
@@ -247,6 +256,7 @@ pub(super) async fn inspect(
                 status: 1,
                 items,
                 requests: Vec::new(),
+                catalogue: None,
             })
         }
     }
@@ -361,6 +371,9 @@ fn details(
             attributes.push((label.to_owned(), value));
         }
     };
+    if let Some(category) = catalogue::category(record) {
+        add("category", category);
+    }
     if let Known(value) = &presentation.description {
         add("Description", value.clone());
     }
@@ -1285,3 +1298,11 @@ async fn permission(
         _ => None,
     }
 }
+
+#[cfg(test)]
+#[path = "inspection/catalogue_tests.rs"]
+mod catalogue_tests;
+
+#[cfg(test)]
+#[path = "inspection/sources_tests.rs"]
+mod sources_tests;

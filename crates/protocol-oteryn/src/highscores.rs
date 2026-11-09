@@ -1,7 +1,7 @@
 //! HS-WIRE-1 payload codecs under HIGHSCORES0 §6 (capability 9, command type 14).
 //!
-//! The query contains category, base-vocation filter, page and snapshot token only. World and
-//! asking Character come from the admitted session, never from this payload. The result carries
+//! T143 permits an optional typed World selection for public reads; the asking Character
+//! remains the admitted session character. The opt-in detailed result carries
 //! one persisted page and an optional own row; hidden progress and source identities stay private.
 //! Rows preserve the durable vocation key, including promotions and `none` for account rankings.
 //!
@@ -15,6 +15,7 @@
 //! validates the same rules before returning any bytes. This code never computes ranks or treats
 //! protobuf bytes as command identity.
 
+pub use crate::WorldId;
 pub use crate::charm_wire::CyclopediaWireError as HighscoresWireError;
 use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, read_bytes, read_uint32,
@@ -32,11 +33,11 @@ pub const MAX_HIGHSCORE_NAME_BYTES: usize = 29;
 /// The current durable build vocation-key bound (`character_progression::valid_revision`).
 pub const MAX_HIGHSCORE_VOCATION_BYTES: usize = 128;
 /// Three uint32 fields (6, 2, 6 bytes) and one uint64 field (11 bytes).
-pub const MAX_HIGHSCORES_QUERY_BYTES: usize = 25;
+pub const MAX_HIGHSCORES_QUERY_BYTES: usize = 45;
 /// Rank (11), name (31), vocation (131), level (6) and primary value (11).
 pub const MAX_HIGHSCORE_ROW_BYTES: usize = 190;
 /// Scalar upper bounds (35), 50 page rows and one own row, each with a tag and two-byte length.
-pub const MAX_HIGHSCORES_RESULT_BYTES: usize = 35 + 51 * (3 + MAX_HIGHSCORE_ROW_BYTES);
+pub const MAX_HIGHSCORES_RESULT_BYTES: usize = 56 + 51 * (3 + MAX_HIGHSCORE_ROW_BYTES);
 
 const MAX_LIST_PAGE: u32 = MAX_HIGHSCORES_LIST_ROWS / MAX_HIGHSCORES_PAGE_ROWS as u32;
 const _: () = assert!(MAX_HIGHSCORES_QUERY_BYTES <= crate::MAX_COMMAND_PAYLOAD_BYTES);
@@ -46,6 +47,10 @@ const _: () = assert!(MAX_HIGHSCORES_RESULT_BYTES <= crate::MAX_COMMAND_RESULT_P
 /// query handler so it can return NOT_SUPPORTED; the codec does not infer available sources.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HighscoresQuery {
+    /// Absent selects the admitted World. Never a ChannelId or authority grant.
+    pub world: Option<crate::WorldId>,
+    /// Opt in to the World echo and stored own-page metadata (legacy replies stay unchanged).
+    pub details: bool,
     pub category: u32,
     /// 0 all, 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 monk (base vocation).
     pub vocation: u32,
@@ -68,6 +73,9 @@ pub struct HighscoreRow {
 /// Result tags 1..=7: uint32, uint64, int64, uint32, bool, repeated row, optional row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HighscoresResult {
+    pub world: Option<crate::WorldId>,
+    /// Page of the asking character in the selected stored list, independent of global rank.
+    pub own_page: Option<u32>,
     pub category: u32,
     pub snapshot_id: u64,
     /// Unix milliseconds from the persisted snapshot cut, not client time or authority.
@@ -133,6 +141,13 @@ fn check_result(result: &HighscoresResult) -> WireResult<()> {
     {
         return malformed();
     }
+    if result
+        .own_page
+        .is_some_and(|page| page == 0 || page > MAX_LIST_PAGE)
+        || (result.own_page.is_some() && result.own_row.is_none())
+    {
+        return malformed();
+    }
     result.rows.iter().try_for_each(check_row)?;
     if let Some(own_row) = &result.own_row {
         check_row(own_row)?;
@@ -147,6 +162,10 @@ pub fn encode_highscores_query(query: HighscoresQuery) -> WireResult<Vec<u8>> {
     push_nonzero_varint_field(&mut output, 2, u64::from(query.vocation));
     push_nonzero_varint_field(&mut output, 3, u64::from(query.page));
     push_nonzero_varint_field(&mut output, 4, query.snapshot_id);
+    if let Some(world) = query.world {
+        push_message_field(&mut output, 5, world.as_bytes());
+    }
+    push_nonzero_varint_field(&mut output, 6, u64::from(query.details));
     Ok(output)
 }
 
@@ -156,16 +175,31 @@ pub fn decode_highscores_query(payload: &[u8]) -> WireResult<HighscoresQuery> {
     }
     let mut cursor = 0;
     let (mut category, mut vocation, mut page, mut snapshot_id) = (None, None, None, None);
+    let (mut world, mut details) = (None, None);
     while cursor < payload.len() {
         match read_varint(payload, &mut cursor)? {
             0x08 => set_once(&mut category, read_uint32(payload, &mut cursor)?)?,
             0x10 => set_once(&mut vocation, read_uint32(payload, &mut cursor)?)?,
             0x18 => set_once(&mut page, read_uint32(payload, &mut cursor)?)?,
             0x20 => set_once(&mut snapshot_id, read_varint(payload, &mut cursor)?)?,
+            0x2a => set_once(
+                &mut world,
+                crate::WorldId::decode(read_bytes(payload, &mut cursor)?)
+                    .map_err(|_| HighscoresWireError::Malformed)?,
+            )?,
+            0x30 => {
+                let value = read_varint(payload, &mut cursor)?;
+                if value > 1 {
+                    return malformed();
+                }
+                set_once(&mut details, value == 1)?;
+            }
             _ => return malformed(),
         }
     }
     let query = HighscoresQuery {
+        world,
+        details: details.unwrap_or(false),
         category: category.unwrap_or(0),
         vocation: vocation.unwrap_or(0),
         page: page.unwrap_or(0),
@@ -198,6 +232,12 @@ pub fn encode_highscores_result(result: &HighscoresResult) -> WireResult<Vec<u8>
     }
     if let Some(own_row) = &result.own_row {
         encode_row(&mut output, 7, own_row);
+    }
+    if let Some(page) = result.own_page {
+        push_nonzero_varint_field(&mut output, 8, u64::from(page));
+    }
+    if let Some(world) = result.world {
+        push_message_field(&mut output, 9, world.as_bytes());
     }
     Ok(output)
 }
@@ -254,6 +294,7 @@ pub fn decode_highscores_result(payload: &[u8]) -> WireResult<HighscoresResult> 
         (None, None, None, None, None);
     let mut rows = Vec::new();
     let mut own_row = None;
+    let (mut own_page, mut world) = (None, None);
     while cursor < payload.len() {
         match read_varint(payload, &mut cursor)? {
             0x08 => set_once(&mut category, read_uint32(payload, &mut cursor)?)?,
@@ -275,10 +316,18 @@ pub fn decode_highscores_result(payload: &[u8]) -> WireResult<HighscoresResult> 
                 rows.push(decode_row(read_bytes(payload, &mut cursor)?)?);
             }
             0x3a => set_once(&mut own_row, decode_row(read_bytes(payload, &mut cursor)?)?)?,
+            0x40 => set_once(&mut own_page, read_uint32(payload, &mut cursor)?)?,
+            0x4a => set_once(
+                &mut world,
+                crate::WorldId::decode(read_bytes(payload, &mut cursor)?)
+                    .map_err(|_| HighscoresWireError::Malformed)?,
+            )?,
             _ => return malformed(),
         }
     }
     let result = HighscoresResult {
+        world,
+        own_page,
         category: category.unwrap_or(0),
         snapshot_id: snapshot_id.unwrap_or(0),
         computed_at: computed_at.unwrap_or(0),
@@ -307,3 +356,7 @@ mod count_bounds_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "highscores_world_tests.rs"]
+mod world_tests;

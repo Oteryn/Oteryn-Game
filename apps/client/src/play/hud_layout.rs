@@ -243,6 +243,8 @@ impl PlayView {
         if matches!(action, HudAction::Reset) {
             preferences.hud_bounds = super::ReferencePreferences::default().hud_bounds;
         }
-        self.set_preferences(preferences)
+        self.set_preferences(preferences)?;
+        self.local.hud_edit = super::feature_0017_attack::view::next_edit();
+        Ok(())
     }
 }

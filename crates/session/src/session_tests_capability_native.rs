@@ -381,6 +381,9 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
         .spawn(|| {
             block_on(async {
                 assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&9));
+                let world = highscores::WorldId::decode(&[
+                    90, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 90,
+                ])?;
                 for selected in [false, true] {
                     let (client, mut server) = tokio::io::duplex(64 * 1024);
                     let peer = tokio::spawn(async move {
@@ -394,7 +397,11 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
                             let query = highscores::decode_highscores_query(command.payload)
                                 .map_err(|e| format!("{e:?}"))?;
                             assert_eq!((query.category, query.page, query.snapshot_id), (1, 1, 0));
+                            assert_eq!(query.world, Some(world));
+                            assert!(query.details);
                             let reply = highscores::HighscoresResult {
+                                world: Some(world),
+                                own_page: None,
                                 category: 1,
                                 snapshot_id: 77,
                                 computed_at: 1234,
@@ -422,6 +429,8 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
                     let mut session = Session::admit(client, admission_with(&[9])?).await?;
                     let payload =
                         highscores::encode_highscores_query(highscores::HighscoresQuery {
+                            world: Some(world),
+                            details: true,
                             category: 1,
                             vocation: 0,
                             page: 1,
@@ -433,6 +442,7 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
                         let reply = highscores::decode_highscores_result(&result?.payload)
                             .map_err(|e| format!("{e:?}"))?;
                         assert_eq!((reply.snapshot_id, reply.computed_at), (77, 1234));
+                        assert_eq!(reply.world, Some(world));
                     } else {
                         assert!(matches!(
                             result,

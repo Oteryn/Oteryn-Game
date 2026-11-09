@@ -11,3 +11,10 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::{cooldown_window, open_window};
+
+#[cfg(windows)]
+#[path = "view/gallery.rs"]
+mod gallery;
+#[cfg(any(windows, test))]
+#[path = "view/portraits.rs"]
+mod portraits;

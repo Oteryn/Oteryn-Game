@@ -308,11 +308,24 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
 fn pushed_party_icons_reach_the_panel_and_entity_leaves_remove_them() {
     use oteryn_session::{AppliedDelta, EntityRef, WorldSpatialEntitiesDelta};
     let (link, _, outbox) = play_channel();
-    crate::play::mailbox::lock(&outbox.0).properties.party_skull.selected = true;
-    let entity = EntityRef { identity: [7; 16], generation: 3 };
-    let icon = oteryn_client_runtime::party_skull::PartyIcon { entity, shield: 3, skull: 2 };
+    crate::play::mailbox::lock(&outbox.0)
+        .properties
+        .party_skull
+        .selected = true;
+    let entity = EntityRef {
+        identity: [7; 16],
+        generation: 3,
+    };
+    let icon = oteryn_client_runtime::party_skull::PartyIcon {
+        entity,
+        shield: 3,
+        skull: 2,
+    };
     outbox.push(vec![SessionEvent::PartyIcons(AppliedDelta {
-        server_sequence: 2, base_revision: 1, new_revision: 2, value: vec![icon],
+        server_sequence: 2,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![icon],
     })]);
     let panel = link.party_skull_panel();
     assert_eq!(panel.icons, vec![icon]);
@@ -320,10 +333,19 @@ fn pushed_party_icons_reach_the_panel_and_entity_leaves_remove_them() {
     assert!(panel.summary.contains("Green"));
     assert!(!panel.open);
     outbox.push(vec![SessionEvent::WorldSpatialEntities(AppliedDelta {
-        server_sequence: 3, base_revision: 2, new_revision: 3,
+        server_sequence: 3,
+        base_revision: 2,
+        new_revision: 3,
         value: WorldSpatialEntitiesDelta {
-            content_generation: [1; 32], actor_position: oteryn_session::ActorPosition { x: 0, y: 0, floor: 0 },
-            enter: vec![], update: vec![], leave: vec![entity],
+            content_generation: [1; 32],
+            actor_position: oteryn_session::ActorPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            },
+            enter: vec![],
+            update: vec![],
+            leave: vec![entity],
         },
     })]);
     assert!(link.party_skull_panel().icons.is_empty());

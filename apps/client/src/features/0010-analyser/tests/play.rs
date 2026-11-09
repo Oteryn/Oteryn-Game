@@ -164,7 +164,10 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
         new_revision: 2,
         value: vec![
             AnalyserFact::Kill { race: None },
-            AnalyserFact::Experience { raw: 29, gained: 37 },
+            AnalyserFact::Experience {
+                raw: 29,
+                gained: 37,
+            },
             AnalyserFact::KillLoot {
                 race: None,
                 corpse_items: vec![],

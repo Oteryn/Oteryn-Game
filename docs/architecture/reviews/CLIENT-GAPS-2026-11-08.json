@@ -562,9 +562,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Items: kategorie/search/statystyki/źródła",
-  "status": "PARTIAL",
-  "gap": "Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/item_tests.rs:136 + item_acquisition_sources_round_trip_to_matching_creatures_and_market_offers; crates/gameplay/dispatch/src/gameplay_transport/inspection/sources.rs:16 + catalogue_loot_sources_require_current_item_revision_and_nonzero_probability; catalogue_inspection_route_decodes_filters_and_encodes_continuation; catalogue_scope_change_invalidates_definition_and_source_cursors"
  },
  {
   "id": "T079",
@@ -601,18 +602,20 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bosstiary: kategorie/points/progress",
-  "status": "PARTIAL",
-  "gap": "Jest postęp i boss key; brak galerii, filtrów kategorii i pełnej prezentacji etapów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/tests/catalogue.rs:4 + boss_gallery_real_caller_carries_filters_portraits_and_all_stages; crates/gameplay/dispatch/src/gameplay_transport/boss_encounter/catalogue.rs:4 + boss_catalogue_filters_canonical_categories_and_advances_over_unqualified_records; apps/client/src/features/0117-boss-encounter/view/portraits.rs:125 + boss_portrait_composes_actual_cell_offsets_layers_and_alpha_in_bgra; bosstiary_catalogue_keeps_the_existing_gated_boss_status_route"
  },
  {
   "id": "T083",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Boss Slots: equip/remove/bonus",
-  "status": "PARTIAL",
-  "gap": "Komendy są; brak pełnego selektora bossów i prezentacji bonusów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/tests/slots.rs:118 + boss_slots_real_caller_selects_named_eligible_bosses_and_confirms_equipment_bonuses; crates/gameplay/durability/src/durability/bosstiary/slots/details.rs:40 + detailed_slot_bonuses_use_actual_mastery_and_exclude_empty_and_daily_boosted_bosses; crates/protocol-oteryn/src/bosstiary_slots/details_tests.rs:3 + detailed_boss_slots_are_opt_in_and_preserve_legacy_receipts; detailed_boss_slots_keep_the_existing_gated_route"
  },
  {
   "id": "T084",
@@ -1123,10 +1126,10 @@
   "src": "TIBAUD-1",
   "area": "Highscores",
   "feature": "Kategorie/world/vocation, paging/show-me",
-  "status": "PARTIAL",
-  "gap": "Show Me exists; cross-world selection remains blocked: accepted HIGHSCORES0 reserves other-World filters for a separate decision or amendment; command 14 reads the admitted session World only.",
+  "status": "DONE",
+  "gap": "Cross-World public snapshot reads, category/vocation filters, pinned paging and Show Me by stored filter position are wired through capability 9 / command 14. T143 amends HIGHSCORES0; the native World selector accepts WorldId or blank for the current World.",
   "lane": "cg_cyclo",
-  "evidence": "crates/client-ui/src/features/0009-highscores/protocol.rs:21 (ShowMe); crates/gameplay/dispatch/src/gameplay_transport/connection/routing/highscores.rs:18 (admitted.world_id); docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md:39 (owning amendment prerequisite)."
+  "evidence": "apps/client/src/features/0009-highscores/tests/play.rs:97 + shell_input_queries_live_highscores_and_projects_reply; crates/client-ui/tests/highscores_world.rs:6 + show_me_uses_stored_filter_position_instead_of_global_rank; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/highscores_world.rs:42 + highscores_world_reads_keep_session_authority_and_show_me_uses_filter_position; docs/contracts/OTERYN_GAME_HIGHSCORES_T143_V1.md:1"
  },
  {
   "id": "T144",

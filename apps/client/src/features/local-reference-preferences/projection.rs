@@ -6,6 +6,7 @@ pub(crate) struct LocalPlayState {
     pub(in crate::play) minimap_binding:
         Option<crate::play::feature_local_minimap::view::MinimapBinding>,
     pub(in crate::play) minimap_edit: u64,
+    pub(in crate::play) hud_edit: u64,
     pub(in crate::play) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
     pub(in crate::play) preferences: ReferencePreferences,
@@ -18,6 +19,7 @@ impl LocalPlayState {
             character: None,
             minimap_binding: None,
             minimap_edit: 0,
+            hud_edit: 0,
             minimap_origin: None,
             world: Arc::new(world),
             preferences: ReferencePreferences::default(),

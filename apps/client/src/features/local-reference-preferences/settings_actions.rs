@@ -123,6 +123,7 @@ impl SettingsState {
         self.item_hotkeys_edit = self.battle_edit;
         self.bar_actions_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
+        self.hud_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
         Ok(())
@@ -165,6 +166,7 @@ impl SettingsState {
             item_hotkeys_edit: 0,
             bar_actions_edit: 0,
             minimap_edit: 0,
+            hud_edit: 0,
             spellbook_edit: 0,
             archive_edit: 0,
             battle_edit: 0,
@@ -300,6 +302,9 @@ impl SettingsState {
         if self.preferences.minimap != preferences.minimap {
             self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if self.preferences.hud_layout != preferences.hud_layout || self.preferences.hud_bounds != preferences.hud_bounds {
+            self.hud_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.skills_layout != preferences.skills_layout {
             self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
         }
@@ -322,11 +327,24 @@ impl SettingsState {
         };
     }
 
+    fn capture_hud_layout(&mut self, view: &PlayView) {
+        if view.local.hud_edit > self.hud_edit {
+            let edit = view.local.hud_edit;
+            let mut preferences = self.preferences.clone();
+            preferences.hud_layout = view.preferences().hud_layout.clone();
+            preferences.hud_bounds = view.preferences().hud_bounds;
+            self.apply(preferences);
+            self.hud_edit = edit;
+        }
+    }
+
     pub fn restore(
         &mut self,
         view: &mut PlayView,
         viewport: [u32; 2],
     ) -> Result<(), PreferenceError> {
+        self.capture_hud_layout(view);
+        view.local.hud_edit = self.hud_edit;
         if view.local.minimap_edit > self.minimap_edit {
             let edit = view.local.minimap_edit;
             let mut preferences = self.preferences.clone();
@@ -343,6 +361,8 @@ impl SettingsState {
     }
 
     pub fn capture(&mut self, view: &mut PlayView) -> Result<(), PreferenceError> {
+        self.capture_hud_layout(view);
+        view.local.hud_edit = self.hud_edit;
         if view.preferences().audio != self.preferences.audio {
             let mut preferences = self.preferences.clone();
             preferences.audio = view.preferences().audio;

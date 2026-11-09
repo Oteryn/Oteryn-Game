@@ -28,6 +28,7 @@ pub struct SettingsState {
     pub(crate) item_hotkeys_edit: u64,
     pub(crate) bar_actions_edit: u64,
     minimap_edit: u64,
+    hud_edit: u64,
     spellbook_edit: u64,
     archive_edit: u64,
     hud_toggle: Option<crate::play::HudPanel>,

@@ -47,16 +47,27 @@ fn t010_hud_sidebars_drag_dock_resize_hide_reorder_and_survive_restart()
             .rect(HudPanel::Resources, [960, 540], 100)
             .is_none()
     );
+    let expected = play.preferences().hud_layout.clone();
     settings.capture(&mut play)?;
+    assert_eq!(play.preferences().hud_layout, expected);
+    assert_eq!(settings.preferences.hud_layout, expected);
     let mut restarted = view()?;
     SettingsState::new(Some(path.clone())).restore(&mut restarted, [960, 540])?;
     assert_eq!(
         restarted.preferences().hud_layout,
         play.preferences().hud_layout
     );
+    assert_eq!(restarted.preferences().hud_layout, expected);
     let mut invalid = restarted.preferences().clone();
     invalid.hud_layout.order = [HudPanel::Resources; 4];
     assert!(restarted.set_preferences(invalid).is_err());
+    // A newer settings edit must win over a stale native view during capture.
+    let mut newer = settings.preferences.clone();
+    newer.hud_layout.apply(HudAction::Visible(HudPanel::Resources, true), [960, 540], 100);
+    settings.apply(newer);
+    settings.capture(&mut play)?;
+    assert!(settings.preferences.hud_layout.pane(HudPanel::Resources).visible);
+    assert!(play.preferences().hud_layout.pane(HudPanel::Resources).visible);
     std::fs::remove_file(path)?;
     Ok(())
 }
