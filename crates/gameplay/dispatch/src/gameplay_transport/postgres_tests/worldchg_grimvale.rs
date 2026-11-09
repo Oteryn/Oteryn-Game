@@ -556,27 +556,27 @@ fn producer_world(
 
 #[test]
 fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestResult {
-    run_producer(false, false, false, false, false, false)
+    run_producer(false, false, false, false, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_final_opens_portal_when_boss_spawn_is_blocked() -> TestResult {
-    run_producer(true, false, false, false, false, false)
+    run_producer(true, false, false, false, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_timed_native_maps_ignore_pending_delivery_and_reject_stale_reset() -> TestResult {
-    run_producer(false, true, false, false, false, false)
+    run_producer(false, true, false, false, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_spectators_return_to_saved_positions_once_on_both_source_timers() -> TestResult {
-    run_producer(false, true, true, false, false, false)
+    run_producer(false, true, true, false, false, false, false)
 }
 
 #[test]
 fn qn5_feroxa_map_phase_retires_actual_ground_once_with_world_event_audit() -> TestResult {
-    run_producer(false, true, false, true, false, false)
+    run_producer(false, true, false, true, false, false, false)
 }
 
 // Crystal201189f8 data-global/lib/quests/grimvale.lua:25-38 retains the same
@@ -584,15 +584,20 @@ fn qn5_feroxa_map_phase_retires_actual_ground_once_with_world_event_audit() -> T
 // The personal entry stage is the explicit chosen Oteryn recipe, not source completion.
 #[test]
 fn qn5_grimvale_authored_entry_commits_through_real_movement_once() -> TestResult {
-    run_producer(false, false, false, false, true, false)
+    run_producer(false, false, false, false, true, false, false)
 }
 
 #[test]
 fn qn5_feroxa_crowded_corpses_clear_in_bounded_recoverable_batches() -> TestResult {
-    run_producer(false, true, false, true, false, true)
+    run_producer(false, true, false, true, false, true, false)
 }
 
-fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool) -> TestResult {
+#[test]
+fn qn5_feroxa_new_owner_clears_previous_owner_corpse_custody() -> TestResult {
+    run_producer(false, true, false, true, false, false, true)
+}
+
+fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool, prove_handoff: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -605,7 +610,7 @@ fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, p
                 false,
             )
             .await?;
-            let result = producer_scenario(&h, block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches).await;
+            let result = producer_scenario(&h, block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -641,7 +646,7 @@ async fn producer_seed(
     Ok(())
 }
 
-async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool) -> TestResult {
+async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool, prove_handoff: bool) -> TestResult {
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -874,6 +879,65 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
                 clear_corpses.push(mint_feroxa_clear_corpse(harness, &owner, 119 + n,
                     if prove_batches { 16 } else { 1 }).await?);
             }
+        }
+        if prove_handoff {
+            // Install a coherent committed control-plane successor as fixture setup.
+            // The tested caller must independently prove it in its ordinary SQL pass.
+            use crate::durability::runtime_scope_assignment::{AssignmentCommand,AssignmentRequest,AssignmentOutcome,ControlActor,OperationKey,RuntimeScopeAssignmentWriter};
+            let scope = owner.runtime.lock().await.binding().runtime_scope();
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
+                .bind(owner.world_id.as_bytes().as_slice()).bind(owner.channel_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+            let predecessor = harness.root.read_runtime_scope_predecessor(scope).await.map_err(debug)?.ok_or("predecessor")?;
+            let writer = RuntimeScopeAssignmentWriter::open(harness.root.clone(),"sequencer-writer").await.map_err(debug)?;
+            let outcome = writer.submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([218;32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Replace { scope, predecessor, target: harness.node.fact() },
+            }).await.map_err(debug)?;
+            let AssignmentOutcome::Committed(receipt) = outcome else { return Err(debug(outcome)); };
+            assert_eq!(receipt.assignment.ownership_generation,2);
+            use crate::foundation::admission_authority_publication::{AdmissionAuthorityGuardKeyV1,AdmissionAuthorityGuardStateV1,AdmissionAuthorityPublicationV1,AdmissionPublicationPreconditionV1};
+            let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&harness.pool).await?;
+            let mut source = super::fresh_fixture::fresh::Source::new(now)?;
+            source.rows.retain(|r| matches!(r.key,AdmissionAuthorityGuardKeyV1::Runtime(_)));
+            let guards = crate::durability::admission_authority_guards::AdmissionGuardStore::from_root(harness.root.clone());
+            let prior = guards.load(&[AdmissionAuthorityGuardKeyV1::Runtime(scope)]).await.map_err(debug)?
+                .into_iter().next().flatten().ok_or("current runtime publication")?;
+            for row in &mut source.rows {
+                if let AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, .. } = &mut row.state {
+                    *ownership_generation = 2;
+                }
+                row.publication_revision = prior.publication_revision + 1;
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision: prior.publication_revision };
+                row.source.authority = prior.source.authority.clone();
+                row.source.source_revision = prior.source.source_revision + 1;
+                row.source.decision_identity = "qn5-successor-readiness".into();
+            }
+            let publication = AdmissionAuthorityPublicationV1::prepare(&source,now).map_err(debug)?;
+            harness.root.publish_runtime_readiness(&harness.node,&publication).await.map_err(debug)?;
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_world_raid_targets SET owner_generation=2").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_world_raid_channel_runs SET owner_generation=2").execute(&mut *tx).await?;
+            tx.commit().await?;
+            let pin = owner.runtime.lock().await.content_pin().clone();
+            *owner.runtime.lock().await = ChannelRuntimeV1::from_committed_assignment(
+                owner.world_id, owner.channel_id, NodeId::decode(&id(1)).map_err(debug)?,
+                1, 2, 2, "runtime-scope-assignment:2", 8, pin).map_err(debug)?;
+            owner.apply_feroxa_map_clock(firing, 1_799_999).await.map_err(|_| "successor authority before timer")?;
+            owner.apply_feroxa_map_clock(firing, 1_800_000).await.map_err(|_| "successor corpse clear")?;
+            for (corpse, loot) in &clear_corpses {
+                for item in std::iter::once(corpse).chain(loot.iter()) {
+                    let row: (i16,i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                        .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+                    assert_eq!(row,(2,0));
+                }
+            }
+            let generations: Vec<String> = sqlx::query_scalar("SELECT ownership_generation::text FROM game_spell_item_receipts WHERE cause_kind=2")
+                .fetch_all(&harness.pool).await?;
+            assert_eq!(generations,vec!["2"]);
+            eprintln!("QN5_M52_HANDOFF_CLEAR_PG_EXECUTED elapsed={:?}",start.elapsed());
+            return Ok(());
         }
         owner.reset_epoch = 2;
         assert!(owner.apply_feroxa_map_clock(firing, 1_800_000).await.is_err());
