@@ -56,6 +56,12 @@ IDS |= {36543, 36544, 36545}
 IDS |= {17670, 17672, 17673, 17674}
 # Siflind grants one plain paint vial; the World owner controls its use.
 IDS |= {7253}
+# M22: Star Herb and Antlers already have native owners; qualify only the missing Talisman.
+IDS |= {22008}
+# M01c Fanfare: copper key is numbered by the existing key MINT owner.
+IDS |= {2973}
+# M01c Grimvale: harvested blossoms, distinct from either planted nightshade.
+IDS |= {22082}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

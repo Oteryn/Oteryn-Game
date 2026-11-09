@@ -167,6 +167,112 @@ fn imported_talk_reuses_owned_bounded_state_operations() -> Result<(), String> {
 }
 
 #[test]
+fn native_partial_claim_hold_allows_only_admission_free_nonreward_progress() -> Result<(), String> {
+    let document = super::super::terrain_use_tests::document();
+    let mut bindings = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    let index = serde_json::json!({"schema":"OTERYN_FAMILY_INDEX/v1","family":"Quest","shards":["fixture-shard"],"record_count":1});
+    let recipe = serde_json::json!({"requirements":{"min_level":0,"premium":false,"prerequisites":[]},"stages":[{"key":"s1","kind":"use","count":1}]});
+    let identity = serde_json::json!({"key":bindings.quests[0].quest,"revision":"authored-r1"});
+    let mut shard = serde_json::json!({"schema":"OTERYN_QUEST_TREE_SHARD/v1","family":"Quest","records":[{"definition":{
+        "identity":identity,"missing_data":[{"code":"claim_native_lowering_missing"}],
+        "oteryn_recipe":{"profile":"chosen_source_completion_v1","chosen_data_complete":true,"payload":{"identity":identity,"recipe":recipe}}
+    }}]});
+    let repin = |bindings: &mut Bindings, shard: &Value| -> Result<(), String> {
+        bindings.quests[0].recipe_sha256 = Sha256::digest(
+            serde_json::to_vec(
+                &shard["records"][0]["definition"]["oteryn_recipe"]["payload"]["recipe"],
+            )
+            .map_err(|e| e.to_string())?,
+        )
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+        Ok(())
+    };
+    repin(&mut bindings, &shard)?;
+    evidence(&index, &shard)?.verify(&bindings)?;
+    let mut completion = bindings.clone();
+    completion.quests[0].stages[0].completes = true;
+    assert!(evidence(&index, &shard)?.verify(&completion).is_err());
+    for (field, value) in [
+        ("min_level", serde_json::json!(50)),
+        ("premium", serde_json::json!(true)),
+        ("prerequisites", serde_json::json!(["Other quest"])),
+    ] {
+        let mut denied = shard.clone();
+        denied["records"][0]["definition"]["oteryn_recipe"]["payload"]["recipe"]["requirements"]
+            [field] = value;
+        let mut bound = bindings.clone();
+        repin(&mut bound, &denied)?;
+        assert!(
+            evidence(&index, &denied)?.verify(&bound).is_err(),
+            "actor admission bypass: {field}"
+        );
+    }
+    shard["records"][0]["definition"]["missing_data"] = serde_json::json!([{"code":"claim_native_lowering_missing"},{"code":"claim_item_semantics_missing"}]);
+    assert!(evidence(&index, &shard)?.verify(&bindings).is_err());
+    Ok(())
+}
+
+#[test]
+fn typed_premium_admission_must_match_the_canonical_recipe() -> Result<(), String> {
+    let mut document = super::super::terrain_use_tests::document();
+    document["quests"][0]["admission"] = serde_json::json!({"minimum_level":0,"premium":true});
+    let mut bindings = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    let recipe = serde_json::json!({"requirements":{"min_level":0,"premium":true,"prerequisites":[]},"stages":[{"key":"s1","kind":"use","count":1}]});
+    bindings.quests[0].recipe_sha256 =
+        Sha256::digest(serde_json::to_vec(&recipe).map_err(|e| e.to_string())?)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+    let identity = serde_json::json!({"key":bindings.quests[0].quest,"revision":"authored-r1"});
+    let index = serde_json::json!({"schema":"OTERYN_FAMILY_INDEX/v1","family":"Quest","shards":["fixture-shard"],"record_count":1});
+    let shard = serde_json::json!({"schema":"OTERYN_QUEST_TREE_SHARD/v1","family":"Quest","records":[{"definition":{
+        "identity":identity,"missing_data":[{"code":"claim_native_lowering_missing"}],
+        "oteryn_recipe":{"profile":"chosen_source_completion_v1","chosen_data_complete":true,"payload":{"identity":identity,"recipe":recipe}}
+    }}]});
+    evidence(&index, &shard)?.verify(&bindings)?;
+    bindings.quests[0].admission = None;
+    assert!(
+        evidence(&index, &shard)?.verify(&bindings).is_err(),
+        "premium may not be implicit"
+    );
+    document["quests"][0]["admission"]["premium"] = false.into();
+    let mut wrong = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    wrong.quests[0].recipe_sha256 = bindings.quests[0].recipe_sha256.clone();
+    assert!(evidence(&index, &shard)?.verify(&wrong).is_err());
+    Ok(())
+}
+
+#[test]
+fn typed_prerequisite_admission_must_match_the_chosen_requirement_names() -> Result<(), String> {
+    let mut document = super::super::terrain_use_tests::document();
+    document["quests"][0]["admission"] = serde_json::json!({"minimum_level":0,"prerequisites":[{"requirement":"Other quest","quest":"oteryn:quest.m01c_dependency"}]});
+    let mut bindings = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    let recipe = serde_json::json!({"requirements":{"min_level":0,"premium":false,"prerequisites":["Other quest"]},"stages":[{"key":"s1","kind":"use","count":1}]});
+    bindings.quests[0].recipe_sha256 =
+        Sha256::digest(serde_json::to_vec(&recipe).map_err(|e| e.to_string())?)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+    let identity = serde_json::json!({"key":bindings.quests[0].quest,"revision":"authored-r1"});
+    let index = serde_json::json!({"schema":"OTERYN_FAMILY_INDEX/v1","family":"Quest","shards":["fixture-shard"],"record_count":1});
+    let shard = serde_json::json!({"schema":"OTERYN_QUEST_TREE_SHARD/v1","family":"Quest","records":[{"definition":{
+        "identity":identity,"missing_data":[{"code":"claim_native_lowering_missing"}],
+        "oteryn_recipe":{"profile":"chosen_source_completion_v1","chosen_data_complete":true,"payload":{"identity":identity,"recipe":recipe}}
+    }}]});
+    evidence(&index, &shard)?.verify(&bindings)?;
+    bindings.quests[0].admission = None;
+    assert!(evidence(&index, &shard)?.verify(&bindings).is_err());
+    document["quests"][0]["admission"]["prerequisites"][0]["requirement"] =
+        "Different quest".into();
+    let mut wrong = Bindings::parse(&serde_json::to_vec(&document).map_err(|e| e.to_string())?)?;
+    wrong.quests[0].recipe_sha256 = bindings.quests[0].recipe_sha256.clone();
+    assert!(evidence(&index, &shard)?.verify(&wrong).is_err());
+    Ok(())
+}
+
+#[test]
 fn qm55_save_scope_requires_daily_canonical_recipe_even_with_a_matching_digest()
 -> Result<(), String> {
     let (bindings, index, shard) = canonical_inputs()?;

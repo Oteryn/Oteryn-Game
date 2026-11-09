@@ -17,6 +17,7 @@ mod execute;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod personal_trial;
 mod personal_encounter;
 mod phase;
 mod rafzane_elevator;

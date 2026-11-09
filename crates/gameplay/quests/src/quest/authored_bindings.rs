@@ -2,14 +2,18 @@
 //!
 //! A binding set belongs to the same immutable catalogue as its tracks and transitions.
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
+pub mod actor_admission;
 pub mod collection;
+pub mod door_use;
 pub(crate) mod embedded;
 pub mod hits;
 mod imported_recipe;
 mod occurrence;
 pub use occurrence::Occurrence;
 pub mod kills;
+mod progress_storage;
 mod state_operations;
+pub mod terrain_use;
 pub use kills::KillCounter;
 
 use super::reward_callbacks::RewardCallback;
@@ -58,6 +62,12 @@ pub enum Trigger {
     Collect {
         collection: Box<collection::Collection>,
     },
+    TerrainUse {
+        usage: Box<terrain_use::TerrainUse>,
+    },
+    DoorUse {
+        usage: Box<door_use::DoorUse>,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -75,6 +85,7 @@ pub struct BoundQuest {
     pub recipe_sha256: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub occurrence: Option<Occurrence>,
+    pub admission: Option<actor_admission::ActorAdmission>,
     pub tracks: Vec<Track>,
     pub stages: Vec<Stage>,
     pub sources: Vec<String>,
@@ -157,6 +168,8 @@ impl Bindings {
                 if !transitions.insert(&occurrence.restart().key) {
                     return Err("authored save restart binding collision".into());
                 }
+            if let Some(admission) = &quest.admission {
+                admission.validate(&quest.quest)?;
             }
             let mut tracks = BTreeSet::new();
             for track in &quest.tracks {
@@ -214,6 +227,17 @@ impl Bindings {
                     objective.validate(quest)?;
                     if !transitions.insert(&objective.key) {
                         return Err("authored hit binding collision".into());
+                if let Trigger::DoorUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if !transitions.insert(&usage.key) {
+                        return Err("authored door USE binding collision".into());
+                    }
+                    continue;
+                }
+                if let Trigger::TerrainUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if !transitions.insert(&usage.key) {
+                        return Err("authored terrain USE binding collision".into());
                     }
                     continue;
                 }
@@ -238,6 +262,10 @@ impl Bindings {
                 }
                 let (key, owner, storage) = match &stage.trigger {
                     Trigger::Kill { .. } | Trigger::Collect { .. } | Trigger::Hit { .. } => {
+                    Trigger::Kill { .. }
+                    | Trigger::Collect { .. }
+                    | Trigger::TerrainUse { .. }
+                    | Trigger::DoorUse { .. } => {
                         continue;
                     }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
@@ -451,6 +479,8 @@ impl Stage {
             },
             Trigger::Hit { objective } => objective.transition(quest, self.completes),
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
+            Trigger::TerrainUse { usage } => usage.transition(quest, self.completes)?,
+            Trigger::DoorUse { usage } => usage.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
         Ok(transition)
@@ -467,6 +497,7 @@ fn digest(value: &str) -> bool {
 
 #[cfg(test)]
 mod asura_palace_tests;
+mod actor_admission_tests;
 
 #[cfg(test)]
 mod collection_tests;
@@ -497,3 +528,10 @@ mod hit_tests;
 
 #[cfg(test)]
 mod child_of_destiny_tests;
+mod terrain_use_tests;
+
+#[cfg(test)]
+mod door_use_tests;
+
+#[cfg(test)]
+mod collector_delivery_tests;

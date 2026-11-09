@@ -25,6 +25,7 @@ from lower_item_consumption_packet import items_xml_lines
 sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
 from reward_claim_authoring import item_ref
 from digging import append_rows, map_facts
+from tainted_souls import row as tainted_souls_row
 
 FAMILY = "item_conversion"
 DIRECTORY = "content/craft/"
@@ -196,6 +197,7 @@ def build():
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
     import tainted_souls
     recipes.append(tainted_souls.row(item, operand, fixed, MESSAGES))
+    recipes.append(tainted_souls_row(item, operand, fixed, MESSAGES))
     return sorted(recipes, key=lambda r: r["identity"]["key"])
 
 

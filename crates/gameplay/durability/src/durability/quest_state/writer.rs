@@ -167,6 +167,25 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Native authored actor admission uses the existing registered premium owner.
+    pub async fn commit_character_quest_transition_with_admission<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority, node, fence, request, catalogue, None, None, None, None, gate, None, None,
+            None, None, None,
+        )
+        .await
+    }
+
     /// A content-bound world callback uses the same fenced quest writer and receipt.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_character_world_callback(
@@ -453,6 +472,11 @@ impl DurabilityRoot {
         )
         .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if required_mint.is_some() && !matches!(request.cause, QuestCause::ClaimObligation(_)) {
+        // A caller-supplied command is not evidence of a native key-door opening.
+        if request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
@@ -500,6 +524,29 @@ impl DurabilityRoot {
                     )
                     .is_some_and(|transition| transition.key == request.transition_key)
             })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let terrain_usage = catalogue
+            .authored_bindings()
+            .and_then(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .flat_map(|quest| &quest.stages)
+                    .find_map(|stage| match &stage.trigger {
+                        oteryn_gameplay_quests::quest::authored_bindings::Trigger::TerrainUse {
+                            usage,
+                        } if usage.key == request.transition_key => Some(usage.as_ref()),
+                        _ => None,
+                    })
+            })
+            .cloned();
+        if (request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::authored_bindings::terrain_use::PREFIX)
+            && terrain_usage.is_none())
+            || (terrain_usage.is_some() && !matches!(request.cause, QuestCause::Command(_)))
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -823,6 +870,8 @@ impl DurabilityRoot {
                     if callback.as_ref().is_some_and(|c| c.requires_live_premium()) {
                     if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium)
                         || arena.is_some_and(|rule| rule.requires_premium) {
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium)
+                        || super::authored_admission::requires_premium(&catalogue, &transition.quest) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -880,6 +929,10 @@ impl DurabilityRoot {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
+                    if !super::authored_admission::permits_level(&catalogue, &transition.quest, state.try_get("level")?) {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if numeric_u64(&state, "character_revision")? != root.revision {
                         return Err(DurabilityError::InvalidStoredState);
                     }
@@ -888,6 +941,10 @@ impl DurabilityRoot {
                         || content_revision != catalogue.content_revision()
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+                    if !super::authored_admission::prerequisites_hold(&mut tx, id, &catalogue, &transition.quest).await? {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
                         && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)
@@ -1120,6 +1177,12 @@ impl DurabilityRoot {
                     let refusal = if refusal.is_none() {
                         if let Some(collection) = &collection {
                             (!super::collection::admit(&mut tx, fence, &request, collection).await?)
+                                .then_some(QuestRefusal::StageMismatch)
+                        } else { None }
+                    } else { refusal };
+                    let refusal = if refusal.is_none() {
+                        if let Some(usage) = &terrain_usage {
+                            (!super::terrain_use::admit(&mut tx, fence, &request, quest, usage).await?)
                                 .then_some(QuestRefusal::StageMismatch)
                         } else { None }
                     } else { refusal };

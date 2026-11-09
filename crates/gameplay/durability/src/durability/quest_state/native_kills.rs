@@ -256,4 +256,43 @@ impl DurabilityRoot {
         )
         .await
     }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "native death evidence and actor admission are independent authorities"
+    )]
+    pub async fn commit_character_native_quest_kill_with_admission<
+        G: super::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        cause: QuestCause,
+        death: NativeQuestDeath,
+        catalogue: Arc<QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        let request = QuestTransitionRequest {
+            transition_key: death.transition.clone(),
+            cause,
+        };
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            Some(death),
+            None,
+        )
+        .await
+    }
 }

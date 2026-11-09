@@ -70,10 +70,16 @@ fn collection_refuses_ambiguous_overlapping_or_zero_inputs() -> Result<(), Strin
 
 #[test]
 fn collection_preserves_existing_quest_hashes_and_metadata() -> Result<(), String> {
-    let base = crate::quest::loader::load_embedded_quest_state("collection-fixture")
-        .map_err(|e| format!("{e:?}"))?
-        .catalogue()
-        .clone();
+    let base = crate::quest::loader::load_embedded_quest_state_with_bindings(
+        "collection-fixture",
+        &Bindings {
+            schema: 1,
+            quests: Vec::new(),
+        },
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .catalogue()
+    .clone();
     let bindings = fixture()?;
     let before = base
         .definition_hash(crate::quest::rotten_blood::QUEST)
@@ -93,5 +99,64 @@ fn collection_preserves_existing_quest_hashes_and_metadata() -> Result<(), Strin
         attached.definition_hash(crate::quest::rotten_blood::QUEST),
         Some(before)
     );
+    Ok(())
+}
+
+#[test]
+fn collection_raise_preserves_progress_and_inventory_checks_cannot_count_replays()
+-> Result<(), String> {
+    let mut bindings = fixture()?;
+    bindings.quests[0].tracks[0].maximum = 3;
+    let Trigger::Collect { collection } = &mut bindings.quests[0].stages[0].trigger else {
+        return Err("collection".into());
+    };
+    collection.storage[0].maximum = 3;
+    collection.storage[0].at_least = true;
+    let key = collection.key.clone();
+    let track = collection.storage[0].track.clone();
+    let catalogue = bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("revision")?)?;
+    let changes = catalogue
+        .evaluate(
+            catalogue.transition(&key).ok_or("transition")?,
+            &std::collections::BTreeMap::from([(track, 3)]),
+            0,
+        )
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(changes[0].after, 3);
+    let Trigger::Collect { collection } = &mut bindings.quests[0].stages[0].trigger else {
+        return Err("collection".into());
+    };
+    collection.storage[0].at_least = false;
+    collection.storage[0].increment = true;
+    assert!(
+        bindings.validate().is_err(),
+        "a repeated inventory predicate is not a new acquisition"
+    );
+    Ok(())
+}
+
+#[test]
+fn production_fanfare_collect_is_numbered_and_does_not_complete() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("fanfare-fixture")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue
+        .transition("oteryn:quest-collection/m01c-fanfare-key")
+        .ok_or("missing production Fanfare collection")?;
+    assert_eq!(transition.quest, "oteryn:quest.fanfare_quest");
+    assert!(!transition.completes);
+    let bindings = catalogue.authored_bindings().ok_or("bindings")?;
+    let collection = bindings
+        .quests
+        .iter()
+        .find(|quest| quest.quest == transition.quest)
+        .and_then(|quest| quest.stages.first())
+        .and_then(|stage| match &stage.trigger {
+            Trigger::Collect { collection } => Some(collection),
+            _ => None,
+        })
+        .ok_or("collection")?;
+    assert_eq!(collection.items[0].item, "oteryn:item.tibia.i2973");
+    assert_eq!(collection.items[0].key_number, Some(3520));
     Ok(())
 }

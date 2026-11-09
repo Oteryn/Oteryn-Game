@@ -39,7 +39,7 @@
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
-    "item_conversion": 129
+    "item_conversion": 130
   },
   "item_authoring_counts": {
     "authoring": 700,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5784,
+          "record_count": 5782,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "d4c80533d9dfd67b5e977e9dabc0cf8368a7a5e4ba4cadb2a8db2864cef13e4b"
+          "sha256": "7738511bb73e203dd114328c4d14ff44ad642ea7ad460b5b39b1eedf47bf6a3b"
         },
         {
           "creates_canonical_identities": false,

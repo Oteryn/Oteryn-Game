@@ -528,6 +528,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if operations > 1
         || (operations > 0
             && ((!personal_encounter && (!lever || callback.has_personal_state()))
+            && (((!lever || callback.has_personal_state())
+                && !super::personal_trial::admitted(callback))
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {

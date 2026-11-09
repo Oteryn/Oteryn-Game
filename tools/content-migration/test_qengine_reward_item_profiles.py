@@ -151,6 +151,19 @@ class NativeFactJoin(unittest.TestCase):
             self.assertTrue(record['admission']['materializable'])
             self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
             self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 850)
+    def test_fanfare_copper_key_has_native_portable_nonstackable_facts(self):
+        records = q.capture()['records']
+        record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i2973'), None)
+        self.assertIsNotNone(record, 'Fanfare key 3520 needs its exact physical Item owner')
+        self.assertEqual(record['production_binding']['external_id'], '2973')
+        self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+
+    def test_grimvale_blossoms_have_native_bounded_stack_facts(self):
+        record = next((r for r in q.capture()['records'] if r['production_definition']['production_key'] == 'oteryn:item.tibia.i22082'), None)
+        self.assertIsNotNone(record, 'Grimvale needs the source-defined harvested blossoms')
+        self.assertEqual(record['admission'], dict(materializable=True, stack_class='StackCapable', legal_destinations=['CharacterInventory','Ground']))
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
+        self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
 
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()

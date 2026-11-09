@@ -206,6 +206,9 @@
               "allOf": [
                 {
                   "if": {
+                    "required": [
+                      "capture_target_stack"
+                    ],
                     "properties": {
                       "capture_target_stack": {
                         "const": true
@@ -214,6 +217,7 @@
                     "required": [
                       "capture_target_stack"
                     ]
+                    }
                   },
                   "then": {
                     "properties": {
@@ -233,6 +237,17 @@
                     "not": {
                       "required": [
                         "sub_type"
+                      "anyOf": [
+                        {
+                          "required": [
+                            "sub_type"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "output_sub_type"
+                          ]
+                        }
                       ]
                     }
                   }

@@ -629,6 +629,7 @@ pub(super) fn report_refused_experience(
     }
 }
 
+mod authored_admission;
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
@@ -638,6 +639,7 @@ pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod native_kills;
+mod native_prerequisites;
 pub mod native_hits;
 pub mod native_hit_capture;
 pub(crate) mod native_events;
@@ -647,6 +649,8 @@ pub mod rotten_blood_access;
 pub mod soul_war;
 pub mod source_deaths;
 mod storage;
+mod terrain_use;
+pub use terrain_use::TerrainUseObservation;
 mod world_change_journal_rewards;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

@@ -1,11 +1,12 @@
-//! Native inventory moves drive read-only imported COLLECT predicates.
+//! Native inventory moves and reward MINTs drive read-only imported COLLECT predicates.
 use super::{ComposedFreshAdmission, connection::UseCommand};
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
-use crate::foundation::{CommandId, CommandRef, ExactActorRef};
+use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
-use std::sync::Arc;
 
-pub(super) async fn after_move(
+pub(super) use after_inventory_change as after_move;
+pub(super) use after_inventory_change as after_reward;
+
+pub(super) async fn after_inventory_change(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: UseCommand,
@@ -52,57 +53,5 @@ pub(super) async fn after_move(
             })
             .collect()
     };
-    if keys.is_empty() {
-        return;
-    }
-    if owner
-        .runtime
-        .lock()
-        .await
-        .player_control_facts(actor, command.game_session_id)
-        .is_err()
-    {
-        return;
-    }
-    let Ok(ordinal) = CommandId::new(command.command_id) else {
-        return;
-    };
-    for key in keys {
-        let Ok(Some(fence)) = owner.current_quest_fence(command.game_session_id).await else {
-            return;
-        };
-        if command.item_fence != Some(fence.item_fence()) {
-            return;
-        }
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key: key,
-                    cause: QuestCause::Command(CommandRef::new(command.game_session_id, ordinal)),
-                },
-                Arc::clone(catalogue),
-            )
-            .await;
-        drop(slot);
-        match outcome {
-            Ok(
-                QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_),
-            ) => {
-                owner
-                    .refresh_quest_session(command.game_session_id, false)
-                    .await
-            }
-            Ok(_) => {}
-            Err(error) => {
-                super::operator_event(&format!("quest_collection_refused reason={error:?}"));
-                owner.schedule_quest_refresh(command.game_session_id);
-                return;
-            }
-        }
-    }
+    super::quest_stage_events::commit_keys(owner, actor, command, keys).await;
 }

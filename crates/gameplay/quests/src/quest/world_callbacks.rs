@@ -43,6 +43,7 @@ mod guarded_routes;
 #[cfg(test)]
 mod ice_islands_tests;
 mod imported_explore;
+pub mod personal_trial;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;

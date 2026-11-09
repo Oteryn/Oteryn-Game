@@ -166,6 +166,8 @@ mod quest_hits;
 mod quest_kills;
 mod quest_log_source;
 mod quest_peer_use;
+mod quest_stage_events;
+mod quest_terrain_uses;
 mod quest_timer_cycle;
 mod quest_tool_use;
 mod raid_live;
