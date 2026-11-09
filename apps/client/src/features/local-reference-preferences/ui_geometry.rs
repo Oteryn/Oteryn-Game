@@ -32,3 +32,8 @@ impl super::ReferencePreferences {
             .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
     }
 }
+
+impl super::PlayView {
+
+
+}

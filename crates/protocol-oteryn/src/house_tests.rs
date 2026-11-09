@@ -172,6 +172,39 @@ fn guildhall_leadership_codec_is_bounded_and_strict() {
 }
 
 #[test]
+fn house_acl_read_round_trips_the_exact_list_and_bounded_snapshot()
+-> std::result::Result<(), String> {
+    let read = HouseAclRead {
+        house: "oteryn:content.house.test".into(),
+        selector: HouseAclSelector::Door {
+            x: 6,
+            y: 0,
+            floor: -7,
+        },
+    };
+    let encoded = encode_house_acl_read_query(id(1), "oteryn:content.area.city.thais", &read)
+        .map_err(|e| format!("{e:?}"))?;
+    let decoded = decode_house_query(&encoded).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(decoded.acl, Some(read));
+    let snapshot = HouseAclSnapshot {
+        revision: 7,
+        members: vec![id(2), id(3)],
+    };
+    let encoded = encode_house_acl_snapshot(&snapshot).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        decode_house_acl_snapshot(&encoded).map_err(|e| format!("{e:?}"))?,
+        snapshot
+    );
+    let mut duplicate = snapshot.clone();
+    duplicate.members.push(id(2));
+    assert!(encode_house_acl_snapshot(&duplicate).is_err());
+    let mut oversized = snapshot;
+    oversized.members = (0..=200).map(|i| id(i as u8)).collect();
+    assert!(encode_house_acl_snapshot(&oversized).is_err());
+    Ok(())
+}
+
+#[test]
 fn house_metadata_is_explicitly_requested_and_bounded()
 -> std::result::Result<(), crate::charm_wire::CyclopediaWireError> {
     let mut query = Vec::new();

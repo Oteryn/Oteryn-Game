@@ -9,7 +9,7 @@ pub(crate) struct LocalPlayState {
     pub(in crate::play) minimap_origin: Option<oteryn_session::ActorPosition>,
     world: Arc<World>,
     pub(in crate::play) preferences: ReferencePreferences,
-    viewport: [u32; 2],
+    pub(super) viewport: [u32; 2],
 }
 
 impl LocalPlayState {
@@ -47,12 +47,8 @@ impl PlayView {
     pub(in crate::play) fn apply_preference_scale(
         &mut self,
     ) -> Result<(), oteryn_renderer::BatchError> {
-        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
-        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
-            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
-            .max(1);
         self.scene.set_label_scale(self.preferences().interface_scale);
-        self.scene.set_tile_px(pixels.min(fit))
+        self.scene.set_tile_px(self.preferences().graphics.tile_pixels(self.preferences().ui_scale,self.local.viewport))
     }
 
     pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {

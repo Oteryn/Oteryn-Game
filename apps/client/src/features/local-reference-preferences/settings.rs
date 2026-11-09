@@ -36,12 +36,16 @@ pub use custom_actions::{CustomAction, ObjectTarget};
 mod profiles;
 #[path = "status_order.rs"]
 mod status_order;
-#[path = "shortcuts.rs"]
-mod shortcuts;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
 mod sync;
+#[path = "shortcuts.rs"]
+mod shortcuts;
+#[path = "graphics.rs"]
+mod graphics;
+pub use graphics::GraphicsPreferences;
+pub use shortcuts::ShortcutEdit;
 #[path = "tooltips.rs"]
 mod tooltips;
 #[path = "ui_geometry.rs"]
@@ -84,6 +88,8 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub graphics: GraphicsPreferences,
     #[serde(default = "enabled")]
     pub tooltips_enabled: bool,
     #[serde(default = "default_tooltip_delay")]
@@ -201,6 +207,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            graphics: GraphicsPreferences::default(),
             tooltips_enabled: true,
             tooltip_delay_ms: 500,
             hud_health: true,

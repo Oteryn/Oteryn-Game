@@ -30,6 +30,9 @@ pub(in crate::play) fn submit(
     if p.pending || !p.selected {
         return None;
     }
+    if matches!(id, 180..=185) || (p.augments.open && matches!(id, 112 | 113)) {
+        return augment_input::submit(p, id, values[2]);
+    }
     if matches!(id, 114..=116) {
         use oteryn_client_runtime::cyclopedia_character::KillStatus;
         p.kill_filter = match id {
@@ -39,18 +42,11 @@ pub(in crate::play) fn submit(
         };
         return None;
     }
-    if matches!(id, 145..=148) {
-        use oteryn_client_ui::cyclopedia_character::BadgeFilter;
-        p.badge_filter = match id {
-            146 => BadgeFilter::Earned,
-            147 => BadgeFilter::Locked,
-            148 => BadgeFilter::Hidden,
-            _ => BadgeFilter::All,
-        };
+    if target::badge_filter(p, id) {
         return None;
     }
-    if id == 111 {
-        return request(p, Intent::Badges);
+    if let Some(result) = target::submit_profile(p, id, values) {
+        return result;
     }
     let tab = if matches!(id, 112 | 113) {
         Some(p.tab)
@@ -83,27 +79,17 @@ pub(in crate::play) fn submit(
         match id {
             112 => Intent::Previous,
             113 => Intent::Next,
+            104 => Intent::Achievements,
             _ => Intent::Tab,
         },
     )
 }
 
-fn parse_target(text: &str) -> Option<[u8; 16]> {
-    if text.len() != 32
-        && (text.len() != 36 || ![8, 13, 18, 23].iter().all(|i| text.as_bytes()[*i] == b'-'))
-    {
-        return None;
-    }
-    let compact: String = text.chars().filter(|c| *c != '-').collect();
-    if compact.len() != 32 || !compact.is_ascii() {
-        return None;
-    }
-    let mut target = [0; 16];
-    for (i, byte) in target.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&compact[i * 2..i * 2 + 2], 16).ok()?;
-    }
-    Some(target)
-}
+#[path = "view/augment_input.rs"]
+mod augment_input;
+#[path = "view/target.rs"]
+mod target;
+use target::parse_target;
 
 #[cfg(windows)]
 pub(in crate::play) use window::open_window;
@@ -118,3 +104,28 @@ mod controls;
 #[cfg(windows)]
 #[path = "view/misc_layout.rs"]
 mod misc_layout;
+
+#[cfg(windows)]
+#[path = "view/gallery_window.rs"]
+mod gallery_window;
+
+#[cfg(windows)]
+#[path = "view/browsers.rs"]
+mod browsers;
+#[cfg(windows)]
+#[path = "view/items_window.rs"]
+mod items_window;
+
+#[cfg(windows)]
+#[path = "view/protection_window.rs"]
+mod protection_window;
+#[cfg(windows)]
+#[path = "view/profile_table.rs"]
+mod profile_table;
+
+#[cfg(windows)]
+#[path = "view/character_paint.rs"]
+mod character_paint;
+#[cfg(windows)]
+#[path = "view/offence_table.rs"]
+mod offence_table;

@@ -41,7 +41,7 @@ pub(super) fn page_help(page: SettingsPage) -> &'static str {
             "Configure all three action bar rows (12 slots each). Empty chords clear slots 5–36. The first four slots retain their legacy defaults until rebound."
         }
         SettingsPage::Graphics => {
-            "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+            "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."
         }
         SettingsPage::Sound => "Master volume % (0–100). Changes apply to playback immediately.",
         _ => "",
