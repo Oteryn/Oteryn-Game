@@ -755,6 +755,15 @@ fn scenario() -> TestResult {
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         for (index, (captain, destination, fare, tile)) in S10T_PASSAGES.iter().enumerate() {
+            if *captain == "junkar_mines" {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u7_24/the_postman_missions/rank','oteryn:quest.the_postman_missions_quest',3,4) ON CONFLICT(character_id,track_key) DO UPDATE SET value=3")
+                    .bind(id(41).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+            }
             sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
             let captain_key = format!("oteryn:npc.{captain}");
             let npc = {
@@ -895,9 +904,9 @@ fn scenario() -> TestResult {
                 sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
                     .fetch_one(&h.pool)
                     .await?;
-            assert!(
-                line(&talk(&owner, &dependencies, npc, command_id + 2, destination).await?)
-                    .contains(&format!("{fare} gold"))
+            assert_eq!(
+                line(&talk(&owner, &dependencies, npc, command_id + 2, destination).await?),
+                format!("Do you seek a passage to {} for {fare} gold?", route.keyword)
             );
             let fence = owner
                 .current_quest_fence(session)
@@ -1112,7 +1121,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
             min_y: 0,
             max_x: 65535,
             max_y: 65535,
-            floors: vec![-7, -6, -5],
+            floors: vec![-15, -14, -13, -7, -6, -5],
         },
         palette: vec![
             PaletteEntry {
@@ -1250,6 +1259,7 @@ const S10T_CAPTAINS: &[&str] = &[
     "captain_waverider",
     "charles",
     "jack_fate",
+    "junkar_mines",
     "karith",
     "maris_mistrock",
     "petros",
@@ -1280,6 +1290,10 @@ const S10T_PASSAGES: &[Passage] = &[
     ("petros", "issavi", 130, (33902, 31462, 6)),
     ("tarak_inner", "monument tower", 50, (32939, 31182, 7)),
     ("tarak_sunken", "passage", 0, (32916, 31199, 7)),
+    // The fixture grants Grand Postman rank for these final ship cases, reducing each fare by ten.
+    ("junkar_mines", "kazordoon", 0, (32660, 31957, 15)),
+    ("junkar_mines", "robsons_isle", 60, (32527, 32036, 14)),
+    ("junkar_mines", "thais", 80, (32370, 32180, 13)),
 ];
 
 async fn gold(h: &Harness) -> TestResult<i64> {
