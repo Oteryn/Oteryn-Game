@@ -16,6 +16,17 @@ class NativeEntries(unittest.TestCase):
             self.assertEqual(stage['trigger']['usage']['placement_key'], key)
             self.assertEqual(stage['trigger']['usage']['storage'][0]['set'], 1)
 
+    def test_fanfare_collection_requires_the_exact_numbered_copper_key(self):
+        quest = source.build_fanfare()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.fanfare_quest')
+        self.assertEqual(len(quest['stages']), 1)
+        stage = quest['stages'][0]
+        self.assertFalse(stage['completes'])
+        collection = stage['trigger']['collection']
+        self.assertEqual(collection['items'], [{'item':'oteryn:item.tibia.i2973','count':1,'key_number':3520}])
+        self.assertEqual(collection['storage'][0]['set'], 1)
+        self.assertEqual(quest['tracks'][0]['maximum'], 4)
+
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()
         changed = copy.deepcopy(recipe)

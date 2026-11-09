@@ -133,3 +133,29 @@ fn collection_raise_preserves_progress_and_inventory_checks_cannot_count_replays
     );
     Ok(())
 }
+
+#[test]
+fn production_fanfare_collect_is_numbered_and_does_not_complete() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("fanfare-fixture")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue
+        .transition("oteryn:quest-collection/m01c-fanfare-key")
+        .ok_or("missing production Fanfare collection")?;
+    assert_eq!(transition.quest, "oteryn:quest.fanfare_quest");
+    assert!(!transition.completes);
+    let bindings = catalogue.authored_bindings().ok_or("bindings")?;
+    let collection = bindings
+        .quests
+        .iter()
+        .find(|quest| quest.quest == transition.quest)
+        .and_then(|quest| quest.stages.first())
+        .and_then(|stage| match &stage.trigger {
+            Trigger::Collect { collection } => Some(collection),
+            _ => None,
+        })
+        .ok_or("collection")?;
+    assert_eq!(collection.items[0].item, "oteryn:item.tibia.i2973");
+    assert_eq!(collection.items[0].key_number, Some(3520));
+    Ok(())
+}

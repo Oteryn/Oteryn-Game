@@ -13,12 +13,12 @@ WIKI = 'https://www.tibiawiki.com.br/index.php?curid=53187&oldid=433964'
 BODY_SHA = 'baa2bccd9eb87e55245e538350a84a44db3c2696bb567ff5117d3d8dd25a5b06'
 
 
-def chosen(root=ROOT):
+def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave'])):
     matches = []
     for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
         for record in json.loads(path.read_bytes())['records']:
             definition = record['definition']
-            if definition['identity']['key'] == QUEST:
+            if definition['identity']['key'] == quest:
                 matches.append((path.relative_to(root).as_posix(), definition))
     if len(matches) != 1:
         raise ValueError('M01C_DEAD_ARCHER_IDENTITY')
@@ -31,7 +31,7 @@ def chosen(root=ROOT):
     first = recipe['stages'][0]
     if (req['min_level'], req['premium'], req['prerequisites']) != (0, False, []):
         raise ValueError('M01C_DEAD_ARCHER_ACTOR_ADMISSION')
-    if (first['key'], first['kind'], first['count'], first['targets']) != ('s1', 'use', 1, ['Shovel', 'Thais troll cave']):
+    if (first['key'], first['kind'], first['count'], first['targets']) != expected:
         raise ValueError('M01C_DEAD_ARCHER_FIRST_STEP')
     return path, recipe
 
@@ -67,16 +67,48 @@ def build(root=ROOT):
         'sources':[path+':s1', WIKI, 'docs/reference/content-prep/questpc3-m01c/dead-archer-sources.md']}]}
 
 
+def build_fanfare(root=ROOT):
+    quest = 'oteryn:quest.fanfare_quest'
+    path, recipe = chosen(root, quest, ('s1', 'collect', 1, ['Key 3520', 'Carlin boat-side box']))
+    source_path = root / 'tools/content-schema/quest-authoring/samples/chests/claims.json'
+    claims = json.loads(source_path.read_bytes())
+    # The accepted donor claim binds both the physical copper key and its number.
+    def rewards(value):
+        if isinstance(value, dict):
+            if value.get('key_binding') == 'canary:door-key/3520':
+                yield value
+            for child in value.values():
+                yield from rewards(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from rewards(child)
+    matches = list(rewards(claims))
+    if len(matches) != 1 or [(r['item']['key'], r['count']) for r in matches[0]['items']] != [('canary:item/2973', 1)]:
+        raise ValueError('M01C_FANFARE_KEY_SOURCE')
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    track = 'oteryn:quest-progress/m01c-fanfare-route'
+    evidence = 'tools/content-schema/quest-authoring/samples/chests/claims.json:key_binding=canary:door-key/3520'
+    return {'schema':1, 'quests':[{'quest':quest, 'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'tracks':[{'key':track,'initial':0,'minimum':0,'maximum':4}],
+        'stages':[{'key':'s1-key-3520','completes':False,'trigger':{'kind':'collect','collection':{
+            'key':'oteryn:quest-collection/m01c-fanfare-key',
+            'items':[{'item':'oteryn:item.tibia.i2973','count':1,'key_number':3520}],
+            'storage':[{'track':track,'minimum':0,'maximum':0,'set':1}],
+            'sources':[evidence]}}}], 'sources':[path+':s1', evidence]}]}
+
+
 def content(check=False):
-    value = build()
-    path = ROOT / OUTPUT
-    if check:
-        if not path.is_file() or json.loads(path.read_bytes()) != value:
-            raise ValueError('M01C_NATIVE_ENTRY_BINDING_DRIFT')
-    else:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
-    print('PASS M01c Dead Archer entry: four exact shovel results; completion/reward remain held')
+    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare())]
+    for output, value in documents:
+        path = ROOT / output
+        if check:
+            if not path.is_file() or json.loads(path.read_bytes()) != value:
+                raise ValueError('M01C_NATIVE_ENTRY_BINDING_DRIFT')
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))+'\n')
+    print('PASS M01c Dead Archer and Fanfare entries; completion/rewards remain held')
+
 
 
 if __name__ == '__main__':

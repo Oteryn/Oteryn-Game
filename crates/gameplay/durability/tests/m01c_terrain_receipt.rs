@@ -263,6 +263,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     production_dead_archer_entry(h, &authority, native, tool).await?;
     terrain_counter_fixture(h, &authority, native, tool).await?;
+    production_fanfare_collection(h, &authority, native, &weights).await?;
     Ok(())
 }
 
@@ -549,5 +550,113 @@ async fn terrain_counter_fixture(
         assert_eq!(value, i64::try_from(n + 1)?);
     }
     eprintln!("M01C_USE_COUNTER two_native_actions_two_increments replay_did_not_increment");
+    Ok(())
+}
+
+async fn production_fanfare_collection(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    weights: &reward_fixture::Weights<'_>,
+) -> f::TestResult {
+    use durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(f::debug)?
+            .catalogue()
+            .clone(),
+    );
+    let transition_key = "oteryn:quest-collection/m01c-fanfare-key";
+    assert!(catalogue.transition(transition_key).is_some());
+    for (ordinal, number) in [(80_u32, 3519_u16), (81, 3520)] {
+        let request = RewardClaimMintRequest {
+            command: reward_fixture::command(9800 + u64::from(ordinal))?,
+            claim: TypedDefinitionRef {
+                family: "RewardClaim".into(),
+                production_key: format!("fixture:m01c-key-{number}"),
+                revision_ref: "definition-r1".into(),
+            },
+            source_placement: format!("fixture:m01c-key-box-{number}"),
+            item: generation_item_facts(native, &reward_fixture::definition(2973))
+                .map_err(f::debug)?,
+            quantity: 1,
+            contents: Vec::new(),
+            additional_items: Vec::new(),
+            root_text: None,
+            backpack: generation_item_facts(native, &reward_fixture::definition(2854))
+                .map_err(f::debug)?,
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+            achievement: None,
+            quest_transition: None,
+            key_number: Some(number),
+        };
+        let mut candidate = h
+            .root
+            .freeze_reward_claim_mint(authority, &h.node, f::item_fence()?, request)
+            .await
+            .map_err(f::debug)?;
+        let minted = h
+            .root
+            .commit_reward_claim_mint(authority, &h.node, f::item_fence()?, &mut candidate)
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(minted, RewardClaimMintOutcome::Committed(_)));
+        // COLLECT is a custody snapshot after a real native move, not a key consumption.
+        let _ = mint_to_bag(h, authority, native, weights, 3031, 1, ordinal).await?;
+        let request = QuestTransitionRequest {
+            transition_key: transition_key.into(),
+            cause: QuestCause::Command(reward_fixture::command(9300 + u64::from(ordinal))?),
+        };
+        let outcome = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(5)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        if number == 3519 {
+            assert!(matches!(
+                outcome,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            ));
+        } else {
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            let replay = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(5)?,
+                    request,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+        }
+    }
+    let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-fanfare-route'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(value, 1);
+    let keys: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_item_keys WHERE key_number IN (3519,3520)")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(keys, 2, "COLLECT must not consume either key");
+    let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.fanfare_quest'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert!(incomplete);
+    eprintln!(
+        "M01C_FANFARE production_collect wrong_key_refused exact_key_committed custody_preserved replay_safe completion_held"
+    );
     Ok(())
 }
