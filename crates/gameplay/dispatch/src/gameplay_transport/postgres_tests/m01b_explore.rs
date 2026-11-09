@@ -81,6 +81,9 @@ mod fury_entry;
 #[path = "m01b_explore/cobra_entry.rs"]
 mod cobra_entry;
 
+#[path = "m01b_explore/hero_fire_entry.rs"]
+mod hero_fire_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -363,6 +366,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/hero-of-rathleton/s3/entry" {
+        return hero_fire_entry::world(native);
+    }
     if name == "m01b/grave-danger/s4/entry" {
         return cobra_entry::world(native);
     }
@@ -592,6 +598,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/hero-of-rathleton/s3/entry" {
+        return hero_fire_entry::exercise(owner, admitted, h).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/grave-danger/s4/entry" {
         return cobra_entry::exercise(owner, admitted, h).await;
     }

@@ -5,6 +5,7 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.hero_of_rathleton_quest', 's3', 'source-approach:hero-into-the-fire', 'chosen-source/hero_of_rathleton_quest'),
     ('oteryn:quest.grave_danger_quest', 's4', 'area-approach:oteryn:area.hunting_place.cobra_bastion', 'chosen-source/grave_danger_quest'),
     ('oteryn:quest.fury_gates_mini_world_change', 's1', 'fury-approach:thais', 'chosen-source/fury_gates_mini_world_change'),
     ('oteryn:quest.authored.fire_from_the_earth_mini_world_change', 's1', 'spawn-approach:oteryn:spawn.x32072_y32603_z2#0', 'authored/fire_from_the_earth_mini_world_change'),

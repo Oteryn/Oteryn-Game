@@ -13,7 +13,7 @@ REFERENCE = 'source-approach:hero-into-the-fire'
 
 
 class HeroFireApproachTests(unittest.TestCase):
-    def test_inactive_fire_route_preserves_evidence_and_first_survey_guards(self):
+    def test_fire_route_preserves_evidence_and_first_survey_guards(self):
         binding = ((QUEST,'s3',REFERENCE,'chosen-source/hero_of_rathleton_quest'),)
         with mock.patch.object(explore,'BINDINGS',binding):
             callback, = explore.callbacks(ROOT)
@@ -30,7 +30,7 @@ class HeroFireApproachTests(unittest.TestCase):
         self.assertIn('https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/'
                       'data-otservbr-global/scripts/quests/hero_of_rathleton/movements_lava.lua',
                       callback['sources'])
-        self.assertFalse(any(c['quest']==QUEST and '/s3/' in c['key']
+        self.assertTrue(any(c['quest']==QUEST and '/s3/' in c['key']
                              for c in explore.callbacks(ROOT)))
 
     def test_other_quest_cannot_borrow_the_fire_room(self):

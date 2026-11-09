@@ -44,7 +44,7 @@
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change"
     ],
-    "wired_explore_stages": 37,
+    "wired_explore_stages": 38,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -82,7 +82,7 @@
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change"
     ],
-    "wired_native_visit_anchors": 51,
+    "wired_native_visit_anchors": 52,
     "pg_proven_explore_stages": 37
   },
   "validation": {
@@ -243,7 +243,9 @@
     "cobra_live_activation": "ActivationRED missing s4 -> GREEN1authoringtest1.196s;8Rustprofiletests8.11s includefullcatalogue/readguardbounds/bindinghash;strictquests+dispatchalltargetsClippy7m53s;1212authoringtests/117modules,checks/tree/nativeproviderregenPASS. NativePG2casesbuilding,notqualified. Currentworkspacecheckpending;prior5m33s checkpredatesactivation.",
     "cobra_native_postgres": "GREEN2cases209.38s: m01b_cobra_visit96.714073058s; m01b_grave_danger_visits112.663183545s. Runtime/data5823d16a4. All12gravevisitsnativeSTEP;bossconditionsfixtureonly;partialboss/minlevel/Premium/refusedreplay/freshonce/revisit/wholecompletion0. Noexplorationcounts/rootrevisionseeded.",
     "hero_fire_inactive_resolver": "RED unsupportedsource0.65s -> GREEN2tests1.657s;verifiedCanary04b83b51 movements_lava.lua arrival33552,32049,z15,cleareast33553,32049ground20537;stage1/2guards1/1,CurrentPremium,canonicalmin0. INACTIVE,noactivecallbackdatachange. Full118moduleauthoringrunnerpending.",
-    "hero_fire_publication": "Cadenceexception:inactiveHero2focusedtests1.657s andcurrentauthoringchecksPASS;full118moduleunitrunnerstillrunning onpush. ActiveCobra contentalready117modules/1212authoringtestsGREEN andownPG2cases209.38s. Currentworkspace/fmt/pins/tree PASS;HerochangesnoactiveJSON."
+    "hero_fire_publication": "Cadenceexception:inactiveHero2focusedtests1.657s andcurrentauthoringchecksPASS;full118moduleunitrunnerstillrunning onpush. ActiveCobra contentalready117modules/1212authoringtestsGREEN andownPG2cases209.38s. Currentworkspace/fmt/pins/tree PASS;HerochangesnoactiveJSON.",
+    "hero_active_premerge": "WIP Hero3:activationRED->GREEN2tests1.202s;381questunits86.70s;strictquests+dispatchClippy7m12s;fullauthoringcompletedbeforeownermerge. NativePGbuildinterrupted for explicit856a420d6 qmechmerge;noHero3PGqualificationclaimed. 35routes/37stagesPG-proven.",
+    "merge_correction": "Ownercorrection:qmechmergeABORTEDbeforecommit;nohardreset,noforeignmergepreserved. HeroWIPsourcekept;nativePGbuildinterruptedandwillrestartonunmergedbranch. 381questunits86.70s,strictClippy7m12s,118modules/1214authoringtestsPASS beforemerge;source/datarestoredexactly."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
