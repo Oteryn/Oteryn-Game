@@ -138,13 +138,13 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
     oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
-    imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
-    oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
-    oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
     party::CAPABILITY_PARTY_LIST_V1,
+    oteryn_protocol_oteryn::action_bar_cooldowns::CAPABILITY_ACTION_BAR_COOLDOWNS_V1,
+    imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
+    oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
