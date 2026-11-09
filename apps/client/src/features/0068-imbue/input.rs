@@ -1,3 +1,5 @@
+#[path = "input/tracker.rs"]
+pub(in crate::play) mod tracker;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,

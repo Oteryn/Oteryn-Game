@@ -3,6 +3,8 @@
 //! port: the same gameplay fence, revision slot and receipts as CHARM-3, and the gold fee owner
 //! for a remove. The Bestiary races and their charm points are the canonical Bestiary source,
 //! the catalogue is the resident imported one, and both views are read after the command.
+#[path = "charm_progression/catalogue.rs"]
+mod catalogue;
 use std::sync::LazyLock;
 
 use super::charm::CharmProgressionPort;
@@ -149,6 +151,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return GuildReply::Rejected;
         };
+        if payload.first() == Some(&255) {
+            if CommandId::new(id).is_err() { return GuildReply::Rejected; }
+            return catalogue::dispatch(self, admitted, payload).await;
+        }
         let Ok(action) = wire::decode_charm_progression_request(payload) else {
             return GuildReply::Rejected;
         };

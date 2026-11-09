@@ -5,21 +5,29 @@ use oteryn_client_runtime::spell::ActorVitals;
 
 pub(super) struct Options {
     bars: bool,
+    health: bool,
+    mana: bool,
     harmony: bool,
     serene: bool,
     health_circle: bool,
     distance: u16,
     size: u16,
+    opacity: u8,
+    ui_scale: u16,
 }
 impl From<&ReferencePreferences> for Options {
     fn from(preferences: &ReferencePreferences) -> Self {
         Self {
             bars: preferences.hud_bars,
+            health: preferences.hud_health,
+            mana: preferences.hud_mana,
             harmony: preferences.show_harmony,
             serene: preferences.show_serene,
             health_circle: preferences.health_circle,
             distance: preferences.arc_distance,
             size: preferences.arc_size,
+            opacity: preferences.arc_opacity,
+            ui_scale: preferences.interface_scale,
         }
     }
 }
@@ -33,35 +41,50 @@ pub(super) fn draw(
 ) -> Result<(), BatchError> {
     let Options {
         bars,
+        health,
+        mana,
         harmony,
         serene,
         health_circle,
         distance,
         size,
+        opacity,
+        ui_scale,
     } = options;
+    let ui_scale = f32::from(ui_scale) / 100.0;
+    let mut hud_pixel = |position: [f32; 2], size: [f32; 2], color| {
+        pixel(
+            batch,
+            view,
+            atlas,
+            position.map(|value| value * ui_scale),
+            size.map(|value| value * ui_scale),
+            color,
+        )
+    };
     if bars && let Some(vitals) = vitals {
-        for (row, value, max, color) in [
+        for (visible, row, value, max, color) in [
             (
+                health,
                 0.0,
                 vitals.health,
                 vitals.max_health,
                 PresentationColor::Red,
             ),
-            (1.0, vitals.mana, vitals.max_mana, PresentationColor::Blue),
+            (
+                mana,
+                1.0,
+                vitals.mana,
+                vitals.max_mana,
+                PresentationColor::Blue,
+            ),
         ] {
+            if !visible {
+                continue;
+            }
             let at = [8.0, 56.0 + row * 14.0];
-            pixel(
-                batch,
-                view,
-                atlas,
-                at,
-                [120.0, 10.0],
-                PresentationColor::LightGrey,
-            )?;
-            pixel(
-                batch,
-                view,
-                atlas,
+            hud_pixel(at, [120.0, 10.0], PresentationColor::LightGrey)?;
+            hud_pixel(
                 at,
                 [
                     oteryn_client_ui::spell_action_bar::fill_px(value, max),
@@ -74,10 +97,7 @@ pub(super) fn draw(
     if let Some(vitals) = vitals {
         if harmony {
             for segment in 0..5_u32 {
-                pixel(
-                    batch,
-                    view,
-                    atlas,
+                hud_pixel(
                     [8.0 + segment as f32 * 24.0, 86.0],
                     [20.0, 8.0],
                     if segment < vitals.harmony.min(5) {
@@ -89,10 +109,7 @@ pub(super) fn draw(
             }
         }
         if serene {
-            pixel(
-                batch,
-                view,
-                atlas,
+            hud_pixel(
                 [8.0, 100.0],
                 [120.0, 8.0],
                 if vitals.serene {
@@ -104,10 +121,11 @@ pub(super) fn draw(
         }
     }
     if health_circle && let Some(vitals) = vitals {
+        let start = batch.len();
         let [x, y] = view.tile_to_screen(own);
         let half = view.tile_px() as f32 / 2.0;
-        let radius = half + f32::from(distance);
-        let size = f32::from(size);
+        let radius = half + f32::from(distance) * ui_scale;
+        let size = f32::from(size) * ui_scale;
         for (side, value, max, color) in [
             (
                 1.0,
@@ -141,6 +159,8 @@ pub(super) fn draw(
                 )?;
             }
         }
+        let end = batch.len();
+        batch.lighting.set_opacity(start..end, opacity)?;
     }
     Ok(())
 }

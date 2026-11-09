@@ -1,0 +1,10 @@
+{
+  "id": 737,
+  "name": "SERVER_MODAL_ANSWER",
+  "owner_decision": "CGMECH T159 O040",
+  "capability": 450,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/server-modal-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/server-modal-v1.md#reply",
+  "max_payload_bytes": 7,
+  "max_result_payload_bytes": 65536
+}

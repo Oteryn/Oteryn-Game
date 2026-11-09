@@ -73,7 +73,10 @@ impl Stepper for Peer {
 }
 async fn ready(link: &PlayLink) -> Result<(), Error> {
     tokio::time::timeout(Duration::from_secs(3), async {
-        while !link.appearance_panel().selected || link.appearance_panel().catalogue.is_none() || link.appearance_panel().pending {
+        while !link.appearance_panel().selected
+            || link.appearance_panel().catalogue.is_none()
+            || link.appearance_panel().pending
+        {
             tokio::task::yield_now().await;
         }
     })
