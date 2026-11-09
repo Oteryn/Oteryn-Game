@@ -146,7 +146,6 @@ pub(in crate::play) fn open_shared(
                             hwnd,
                             id as _,
                             null_mut(),
-                            null_mut(),
                             null(),
                         );
                     }

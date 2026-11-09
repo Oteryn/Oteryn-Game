@@ -178,3 +178,22 @@ fn server_warning_wire_reaches_interactive_notice_and_changed_text_gets_new_key(
     assert_ne!(notices[1].key, key);
     Ok(())
 }
+
+#[test]
+fn t057_banner_filter_retains_server_notice() -> Result<(), String> {
+    let (link, _, outbox)=play_channel();
+    outbox.push(vec![message_event(1,ServerMessage::StatusText("Welcome".into()))]);
+    let mut view=view().map_err(|error|error.to_string())?;
+    let Some(PlayEvent::Pushed(delta))=link.poll() else {return Err("missing message".into());};
+    view.apply_pushed(&delta).map_err(|error|error.to_string())?;
+    let mut preferences=view.preferences().clone();
+    preferences.game_window.banner=false;
+    view.set_preferences(preferences).map_err(|error|error.to_string())?;
+    assert!(view.server_message_status().is_none());
+    assert_eq!(view.server_messages().count(),1);
+    let mut preferences=view.preferences().clone();
+    preferences.game_window.banner=true;
+    view.set_preferences(preferences).map_err(|error|error.to_string())?;
+    assert_eq!(view.server_message_status().as_deref(),Some("Welcome"));
+    Ok(())
+}
