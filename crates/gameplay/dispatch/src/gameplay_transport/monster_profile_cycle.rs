@@ -445,12 +445,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
-                drop(reader);
+                let mut map = reader.map;
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 source_heals::execute(runtime, &mut states.native_self_heals, &mut states.native_self_heal_content, native, &proposals);
                 owner
-                    .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now, native_health_names)
+                    .tick_creature_fields(&mut map, runtime, states, room, native, now, native_health_names)
                     .await?;
+                if !map.validate_transaction(runtime).await {
+                    return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                drop(map);
                 let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
                     matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
                         if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()

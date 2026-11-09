@@ -52,9 +52,11 @@ class QuestTreeTests(unittest.TestCase):
                 for path in index['shards'] for r in tool.read(root, path)['records']}
         source = {d['identity']['key']: d for d in tool.claim_catalogue(root)}
         expected = {
+            'oteryn:reward-claim.kv.fireaxe1': ['item'],
             'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
             'oteryn:reward-claim.kv.present_box': ['item'],
             'oteryn:reward-claim.kv.triangletower': ['item'],
+            'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': ['item'],
         }
         self.assertEqual({k for k, d in source.items() if '_source_hold_categories' in d}, set(expected))
         for key, categories in expected.items():

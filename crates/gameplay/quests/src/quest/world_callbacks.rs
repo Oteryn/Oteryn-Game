@@ -691,7 +691,11 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 !r.valid()
                     || (r.ground.is_none()
                         && r.appearance == 0
-                        && !(r.ground_stack.is_some() && ((callback.has_personal_state() && callback.requires_world_admission && callback.trigger != Trigger::Use) || nomads_window::exact(callback))))
+                        && !(r.ground_stack.is_some()
+                            && ((callback.has_personal_state()
+                                && callback.requires_world_admission
+                                && callback.trigger != Trigger::Use)
+                                || nomads_window::exact(callback))))
                     || r.ground_stack.as_ref().is_some_and(|stack| {
                         callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })

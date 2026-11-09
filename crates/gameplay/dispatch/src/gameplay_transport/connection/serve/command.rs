@@ -23,6 +23,7 @@ where
         frame,
         arrived_while_buffered,
         buffered_original,
+        received_at,
     } = input;
     // Also fence direct/previously buffered dispatch; this is before integrity,
     // command reservation, replay acknowledgement or any owner invocation.
@@ -128,15 +129,32 @@ where
         .await;
     }
     // Read/coalesce only before the input permit and before any equipment writer starts.
-    let replaced = super::hotkey_equip::replaced(stream, authority, session, command).await?;
+    let replaced = super::hotkey_equip::replaced(
+        stream,
+        authority,
+        session,
+        command,
+        tokio::time::Instant::now().saturating_duration_since(received_at),
+    )
+    .await?;
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    if input_permit.is_some()
-        && (!authority.house_transfer_input(session.admitted).await
-            || !authority.activity_transfer_input(session.admitted).await)
-    {
-        return Err(ServeEnd::Disconnected);
+    if input_permit.is_some() {
+        let failed_guard = if !authority.house_transfer_input(session.admitted).await {
+            Some("house_transfer_input")
+        } else if !authority.activity_transfer_input(session.admitted).await {
+            Some("activity_transfer_input")
+        } else {
+            None
+        };
+        if let Some(guard) = failed_guard {
+            operator_event(&format!(
+                "event=command_guard_failed guard={guard} command_type={} command_id={}",
+                command.command_type, command.command_id,
+            ));
+            return Err(ServeEnd::Disconnected);
+        }
     }
 
     // Count a newly received action once, never its retained replay or delayed step.

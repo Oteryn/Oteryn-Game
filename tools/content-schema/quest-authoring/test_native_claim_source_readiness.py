@@ -32,6 +32,8 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
             'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',
             'oteryn:reward-claim.kv.weddingring1',
+            'oteryn:reward-claim.kv.fireaxe1',
+            'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine',
         })
 
 

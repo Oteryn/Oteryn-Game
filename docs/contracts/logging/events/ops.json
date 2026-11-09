@@ -1,0 +1,14 @@
+{
+  "module": "ops",
+  "owner": "apps/game-server",
+  "events": [
+    {
+      "event": "failed",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

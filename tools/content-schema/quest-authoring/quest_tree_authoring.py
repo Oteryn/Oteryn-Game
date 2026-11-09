@@ -70,9 +70,11 @@ def claim_catalogue(root):
         # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
         # contents intact; only the SOURCE compiler consumes this private view.
         historical = {
+            'oteryn:reward-claim.kv.fireaxe1': ['item'],
             'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
             'oteryn:reward-claim.kv.present_box': ['item'],
             'oteryn:reward-claim.kv.triangletower': ['item'],
+            'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': ['item'],
         }.get(claim['identity']['key'])
         if historical is not None:
             claim['_source_hold_categories'] = historical

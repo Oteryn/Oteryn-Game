@@ -88,43 +88,51 @@ pub(super) async fn apply(
     }).collect::<Result<Vec<_>, _>>()?;
     // Admit every immutable proof before updating any stack. Existing BEFORE
     // and deferred row triggers still verify exact custody, quantities and receipt.
-    let mut insert = QueryBuilder::<Postgres>::new(
-        "INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) ",
-    );
-    insert.push_values(
-        inputs.iter().zip(&ids).zip(&proofs),
-        |mut row, ((input, id), proof)| {
-            row.push_bind(transaction)
-                .push_bind(*id)
-                .push_bind(character)
-                .push_bind(cause)
-                .push_bind(&ordinal)
-                .push_unseparated("::numeric")
-                .push_bind(&request.transition_key)
-                .push_bind(&input.before)
-                .push("NULL")
-                .push_bind(i32::from(input.count))
-                .push_bind(proof)
-                .push_bind(Sha256::digest(proof).to_vec())
-                .push_bind(&input.location)
-                .push_bind(&input.kind);
-        },
-    );
-    if insert.build().execute(&mut **tx).await?.rows_affected() != inputs.len() as u64 {
-        return Err(DurabilityError::InvalidStoredState);
+    // Twelve binds per receipt: two rows keep each statement below WP3's 32.
+    for ((input_chunk, id_chunk), proof_chunk) in
+        inputs.chunks(2).zip(ids.chunks(2)).zip(proofs.chunks(2))
+    {
+        let mut insert = QueryBuilder::<Postgres>::new(
+            "INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) ",
+        );
+        insert.push_values(
+            input_chunk.iter().zip(id_chunk).zip(proof_chunk),
+            |mut row, ((input, id), proof)| {
+                row.push_bind(transaction)
+                    .push_bind(*id)
+                    .push_bind(character)
+                    .push_bind(cause)
+                    .push_bind(&ordinal)
+                    .push_unseparated("::numeric")
+                    .push_bind(&request.transition_key)
+                    .push_bind(&input.before)
+                    .push("NULL")
+                    .push_bind(i32::from(input.count))
+                    .push_bind(proof)
+                    .push_bind(Sha256::digest(proof).to_vec())
+                    .push_bind(&input.location)
+                    .push_bind(&input.kind);
+            },
+        );
+        if insert.build().execute(&mut **tx).await?.rows_affected() != input_chunk.len() as u64 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
     }
-    let mut update = QueryBuilder::<Postgres>::new(
-        "UPDATE game_item_instances i SET quantity=i.quantity-v.used,lifecycle=CASE WHEN i.quantity=v.used THEN 2 ELSE 1 END,last_transaction_id=",
-    );
-    update.push_bind(transaction).push(" FROM (");
-    update.push_values(inputs.iter().zip(&ids), |mut row, (input, id)| {
-        row.push_bind(*id)
-            .push_bind(i64::from(input.count))
-            .push_bind(input.quantity);
-    });
-    update.push(") AS v(item,used,before_quantity) WHERE i.item_instance_id=v.item AND i.lifecycle=1 AND i.quantity=v.before_quantity");
-    if update.build().execute(&mut **tx).await?.rows_affected() != inputs.len() as u64 {
-        return Err(DurabilityError::InvalidStoredState);
+    // One transaction bind plus three per stack: ten rows use 31 parameters.
+    for (input_chunk, id_chunk) in inputs.chunks(10).zip(ids.chunks(10)) {
+        let mut update = QueryBuilder::<Postgres>::new(
+            "UPDATE game_item_instances i SET quantity=i.quantity-v.used,lifecycle=CASE WHEN i.quantity=v.used THEN 2 ELSE 1 END,last_transaction_id=",
+        );
+        update.push_bind(transaction).push(" FROM (");
+        update.push_values(input_chunk.iter().zip(id_chunk), |mut row, (input, id)| {
+            row.push_bind(*id)
+                .push_bind(i64::from(input.count))
+                .push_bind(input.quantity);
+        });
+        update.push(") AS v(item,used,before_quantity) WHERE i.item_instance_id=v.item AND i.lifecycle=1 AND i.quantity=v.before_quantity");
+        if update.build().execute(&mut **tx).await?.rows_affected() != input_chunk.len() as u64 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
     }
     for kind in ["container", "nested", "backpack", "equipment"] {
         let removed: Vec<_> = inputs

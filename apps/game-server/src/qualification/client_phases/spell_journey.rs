@@ -4,32 +4,17 @@ use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatSpeechMode, DevClientSession};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 
-fn spell_book() -> TestResult<crate::spell::SpellBook> {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
-    let catalog =
-        crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
-    let selections = crate::spell::executable_catalog::compile_source_selection(
-        &input.source_selection.bytes,
-        &input.source_selection.sha256,
-        &catalog,
-    )?;
-    Ok(catalog.into_spell_book_with_selections(&selections)?)
-}
-
 pub(super) async fn spell_journey(
     client: &mut DevClientSession,
     pz_result: TestResult,
 ) -> TestResult {
     let mut checks = Checks::default();
     checks.record("C04", "pz-aggression", pz_result);
-    let book = spell_book();
+    let book = client_world::native_spell_book();
     match book {
         Ok(book) => {
             if book.spoken("exura").is_some() {
-                let result = words_and_cooldown(client, &book).await;
+                let result = words_and_cooldown(client, book).await;
                 match result {
                     Ok((mana, cooldown, group_cooldown)) => {
                         checks.record(
@@ -156,7 +141,7 @@ pub(super) async fn protection_zone_probe(
     client: &mut DevClientSession,
     inside: bool,
 ) -> TestResult {
-    let book = spell_book()?;
+    let book = client_world::native_spell_book()?;
     let words = "exevo vis lux";
     let spell = book
         .spoken(words)
@@ -165,7 +150,7 @@ pub(super) async fn protection_zone_probe(
     if !spell.aggressive {
         return Err("PZ probe must use an aggressive spell".into());
     }
-    let index = spell_index(&book, words)?;
+    let index = spell_index(book, words)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     loop {
         let before = client
@@ -208,7 +193,7 @@ mod tests {
 
     #[test]
     fn spell_journey_resolves_words_from_pinned_catalog() -> TestResult {
-        let book = spell_book()?;
+        let book = client_world::native_spell_book()?;
         for words in [
             "exura",
             "exura gran",
@@ -217,7 +202,7 @@ mod tests {
             "exori vis",
             "exevo vis lux",
         ] {
-            let index = spell_index(&book, words)?;
+            let index = spell_index(book, words)?;
             assert_eq!(
                 book.indexed(index).map(|spell| &spell.key),
                 book.spoken(words).map(|spoken| &spoken.spell.key)

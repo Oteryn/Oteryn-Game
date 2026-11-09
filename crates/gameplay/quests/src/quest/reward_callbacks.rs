@@ -1576,12 +1576,18 @@ mod tests {
             let crown = callback.key == "oteryn:quest-reward/l4-royal-costume-crown";
             assert_eq!(callback.completes, crown);
             assert_eq!(
-                serde_json::to_value(callback).map_err(|e| e.to_string())?
-                    .get("completes").is_some(), crown
+                serde_json::to_value(callback)
+                    .map_err(|e| e.to_string())?
+                    .get("completes")
+                    .is_some(),
+                crown
             );
             if crown {
                 assert_eq!(callback.quest, "oteryn:quest.royal_costume_outfits_quest");
-                assert_eq!((callback.storage[0].minimum, callback.storage[0].set), (2, 3));
+                assert_eq!(
+                    (callback.storage[0].minimum, callback.storage[0].set),
+                    (2, 3)
+                );
             }
         }
         let callbacks = load()?;

@@ -148,27 +148,6 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
     tile_item_row(clients, world).await;
 }
 
-fn input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    Ok(
-        crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-            &root.join("content/spells.manifest.json"),
-        )?,
-    )
-}
-fn book(
-    input: &crate::content::native_gameplay::NativeGameplayInput,
-) -> TestResult<crate::spell::SpellBook> {
-    let catalog =
-        crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
-    let selections = crate::spell::executable_catalog::compile_source_selection(
-        &input.source_selection.bytes,
-        &input.source_selection.sha256,
-        &catalog,
-    )?;
-    Ok(catalog.into_spell_book_with_selections(&selections)?)
-}
-
 fn own_binding(client: &mut DevClientSession) -> TestResult<Binding> {
     let own = *client
         .world_entities()
@@ -307,8 +286,8 @@ async fn illusion(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult {
-    let input = input()?;
-    let book = book(&input)?;
+    let input = native_input()?;
+    let book = native_spell_book()?;
     // Verify the complete player speech, including its parameter, resolves as a cast.
     let words = "utevo res ina \"rat\"";
     let spell = book
@@ -410,7 +389,7 @@ async fn illusion(
         .ok_or("C17c negative-path vitals absent")?;
     let sequence = refuse_illusion(
         client,
-        &book,
+        book,
         "E2EF5 nonexistent creature",
         "A creature with this name does not exist.",
         active_reference,
@@ -431,7 +410,7 @@ async fn illusion(
         .ok_or("C17c no exact nonillusionable creature in pinned content")?;
     let sequence = refuse_illusion(
         client,
-        &book,
+        book,
         denied_name,
         "Sorry, not possible.",
         active_reference,
@@ -747,8 +726,7 @@ async fn haste(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let input = input()?;
-    let book = book(&input)?;
+    let book = native_spell_book()?;
     let haste = book.spoken("utani hur").ok_or("C17a haste absent")?.spell;
     let strong = book
         .spoken("utani gran hur")
@@ -791,7 +769,7 @@ async fn haste(
         );
     }
     let started = tokio::time::Instant::now();
-    let sequence = cast_support(client, &book, "utani hur").await?;
+    let sequence = cast_support(client, book, "utani hur").await?;
     row.pass("haste-cast", sequence);
     let before_retry = client.actor_vitals().copied();
     // Indexed retry distinguishes spell cooldown from speech flood control.
@@ -831,7 +809,7 @@ async fn haste(
     expire_speed(client, &cells, baseline, started, haste_duration).await?;
     row.pass("haste-expiry", client.last_server_sequence());
     let recast_started = tokio::time::Instant::now();
-    let sequence = cast_support(client, &book, "utani hur").await?;
+    let sequence = cast_support(client, book, "utani hur").await?;
     row.pass("haste-recast", sequence);
     if !same_cadence(cadence(client, &cells).await?, hasted) {
         return Err("C17a recast did not reapply haste".into());
@@ -850,7 +828,7 @@ async fn haste(
         client.take_events();
     }
     let started = tokio::time::Instant::now();
-    let sequence = cast_support(client, &book, "utani gran hur").await?;
+    let sequence = cast_support(client, book, "utani gran hur").await?;
     row.pass("strong-cast", sequence);
     let stronger = cadence(client, &cells).await?;
     if !faster(stronger, hasted)
@@ -906,7 +884,7 @@ mod tests {
     }
     #[test]
     fn pinned_haste_profiles_have_distinct_observable_speed_cadences() -> TestResult {
-        let book = book(&input()?)?;
+        let book = native_spell_book()?;
         for level in [23, 100] {
             let baseline = expected_cadence(None, level, 150)?;
             let haste = expected_cadence(
@@ -941,7 +919,7 @@ mod tests {
     }
     #[test]
     fn illusion_speech_resolves_both_real_and_negative_parameters() -> TestResult {
-        let book = book(&input()?)?;
+        let book = native_spell_book()?;
         for (words, parameter) in [
             ("utevo res ina \"rat\"", "rat"),
             (
@@ -1458,7 +1436,7 @@ async fn paralyze(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let book = book(&input()?)?;
+    let book = native_spell_book()?;
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
@@ -1608,7 +1586,7 @@ async fn barriers(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let book = book(&input()?)?;
+    let book = native_spell_book()?;
     let index = provisioning::item_index()?;
     let mut expected = Vec::new();
     for (id, acquire, refusal, cast, map, block, expiry) in [
@@ -1727,7 +1705,7 @@ mod rune_tests {
     use super::*;
     #[test]
     fn paralyze_speed_trial_matches_the_selected_condition_lifetime_and_formula() -> TestResult {
-        let book = book(&input()?)?;
+        let book = native_spell_book()?;
         let spell = book.rune(3165).ok_or("selected Paralyze rune absent")?;
         assert_eq!(spell.mana, crate::spell::ManaCost::Fixed(1400));
         // Paralyze is compiled through the ordinary condition owner, unlike
@@ -1764,7 +1742,7 @@ mod rune_tests {
     }
     #[test]
     fn barrier_lifetimes_and_item_pairs_come_from_selected_rune_profiles() -> TestResult {
-        let book = book(&input()?)?;
+        let book = native_spell_book()?;
         for (id, minimum, maximum, items) in [
             (3180, 16_000, 24_000, [2128, 10181]),
             (3156, 30_000, 60_000, [2130, 10182]),
@@ -2336,7 +2314,7 @@ async fn directional_aim(
     world: &BundleWorld,
 ) -> TestResult {
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-    let book = book(&input()?)?;
+    let book = native_spell_book()?;
     let words = "exevo infir flam hur";
     let spell = book
         .spoken(words)
@@ -2344,7 +2322,7 @@ async fn directional_aim(
         .spell;
     row.pass(
         "player-spell-access",
-        combat_access(client, world, &book, words).await?,
+        combat_access(client, world, book, words).await?,
     );
     // No equipped weapon: a held attack target must not introduce automatic
     // ranged/melee damage into the spell-only observation interval.
@@ -2367,7 +2345,7 @@ async fn directional_aim(
     let health = hp(&creature(client, target)?)?;
     client.take_events();
     let before_cast = client.last_server_sequence();
-    let _cast = player_spell(client, &book, words, SpellTarget::None, false).await?;
+    let _cast = player_spell(client, book, words, SpellTarget::None, false).await?;
     row.pass(
         "facing-away-misses",
         aim_observation(client, target, position, health, false, before_cast).await?,
@@ -2380,7 +2358,7 @@ async fn directional_aim(
     let health = hp(&creature(client, target)?)?;
     client.take_events();
     let before_cast = client.last_server_sequence();
-    let _cast = player_spell(client, &book, words, SpellTarget::AttackTarget, true).await?;
+    let _cast = player_spell(client, book, words, SpellTarget::AttackTarget, true).await?;
     let hit = aim_observation(client, target, position, health, true, before_cast).await;
     let stop = select_monster(client, None).await;
     row.pass("selected-target-hit", hit?);
@@ -2396,7 +2374,7 @@ async fn directional_aim(
     let health = hp(&creature(client, target)?)?;
     client.take_events();
     let before_cast = client.last_server_sequence();
-    let _cast = player_spell(client, &book, words, SpellTarget::None, false).await?;
+    let _cast = player_spell(client, book, words, SpellTarget::None, false).await?;
     row.pass(
         "facing-forward-hit",
         aim_observation(client, target, position, health, true, before_cast).await?,
@@ -2408,7 +2386,7 @@ async fn directional_aim(
         .ok_or("aim refusal vitals absent")?;
     let refusal = client
         .cast_spell(
-            player_spell_index(&book, words)?,
+            player_spell_index(book, words)?,
             SpellTarget::AttackTarget,
             true,
         )
@@ -2463,7 +2441,7 @@ async fn combat_rejoin(
     row.pass("fresh-admission-costs", client.last_server_sequence());
     // In particular, any first vocation obtained from Oressa must survive.
     // Recast directly; reacquiring it here would hide a persistence defect.
-    let book = book(&input()?)?;
+    let book = native_spell_book()?;
     let words = if row.id == "C17d" {
         "exeta res"
     } else {
@@ -2484,7 +2462,7 @@ async fn combat_rejoin(
     spell_ready(client, spell).await?;
     let cast = player_spell(
         client,
-        &book,
+        book,
         words,
         oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
         false,
@@ -2531,7 +2509,7 @@ async fn challenge(
     world: &BundleWorld,
 ) -> TestResult {
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-    let book = book(&input()?)?;
+    let book = native_spell_book()?;
     let words = "exeta res";
     let spell = book
         .spoken(words)
@@ -2539,7 +2517,7 @@ async fn challenge(
         .spell;
     row.pass(
         "player-challenge-access",
-        combat_access(client, world, &book, words).await?,
+        combat_access(client, world, book, words).await?,
     );
     let duration = challenge_duration(spell)?;
     let mut peer = connect_character(clients, 0xc5, 1).await?;
@@ -2591,7 +2569,7 @@ async fn challenge(
         let started = tokio::time::Instant::now();
         let cast = with_observer_liveness(
             &mut peer,
-            player_spell(client, &book, words, SpellTarget::None, false),
+            player_spell(client, book, words, SpellTarget::None, false),
         )
         .await?;
         row.pass("challenge-cast-and-cost", cast.result_server_sequence);
@@ -2600,7 +2578,7 @@ async fn challenge(
             .copied()
             .ok_or("Challenge cooldown vitals absent")?;
         let retry = client
-            .cast_spell(player_spell_index(&book, words)?, SpellTarget::None, false)
+            .cast_spell(player_spell_index(book, words)?, SpellTarget::None, false)
             .await?;
         if retry.status != CommandStatus::Accepted
             || retry.disposition != SpellCastDisposition::CoolingDown
@@ -2805,11 +2783,11 @@ mod continuation_two_tests {
 
     #[test]
     fn combat_spells_resolve_real_selected_player_recipes() -> TestResult {
-        let book = book(&input()?)?;
+        let book = native_spell_book()?;
         for words in ["exevo infir flam hur", "exeta res"] {
             let spell = book.spoken(words).ok_or("combat spell absent")?.spell;
             assert_eq!(
-                book.indexed(player_spell_index(&book, words)?)
+                book.indexed(player_spell_index(book, words)?)
                     .map(|s| &s.key),
                 Some(&spell.key)
             );
@@ -3358,10 +3336,10 @@ async fn summons(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let input = input()?;
-    let book = book(&input)?;
-    let mana = companion_mana(&input, "Rat")?;
-    let (rat, sequence) = summon_rat(client, world, &book, mana, true).await?;
+    let input = native_input()?;
+    let book = native_spell_book()?;
+    let mana = companion_mana(input, "Rat")?;
+    let (rat, sequence) = summon_rat(client, world, book, mana, true).await?;
     row.pass("summon-payment-spawn", sequence);
     row.pass(
         "summon-follow-attack",
@@ -3376,7 +3354,7 @@ async fn summons(
         "invalid-name-no-cost",
         companion_speech_refusal(client, "utevo res \"E2EF5 nonexistent creature\"").await?,
     );
-    let (second, _) = summon_rat(client, world, &book, mana, false).await?;
+    let (second, _) = summon_rat(client, world, book, mana, false).await?;
     spell_ready(client, spell).await?;
     if client.actor_vitals().is_none_or(|v| v.mana < mana) {
         return Err(format!("summon-cap comparison prerequisite: needs {mana} spare mana so insufficient mana cannot explain the refusal; observed={:?}", client.actor_vitals()).into());
@@ -3395,7 +3373,7 @@ async fn summons(
     client.take_events();
     let cast = player_spell(
         client,
-        &book,
+        book,
         words,
         oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
         false,
@@ -3414,7 +3392,7 @@ async fn summons(
     );
     row.pass(
         "familiar-cooldown-no-cost",
-        familiar_cooldown(client, &book).await?,
+        familiar_cooldown(client, book).await?,
     );
     row.pass(
         "familiar-follow-attack",
@@ -3426,10 +3404,10 @@ async fn summons(
     row.pass("familiar-logout-return", sequence);
     row.pass(
         "familiar-retained-cooldown",
-        familiar_cooldown(client, &book).await?,
+        familiar_cooldown(client, book).await?,
     );
     // Ordinary summons and the familiar must both end on the same real death.
-    let (rat, _) = summon_rat(client, world, &book, mana, false).await?;
+    let (rat, _) = summon_rat(client, world, book, mana, false).await?;
     row.pass(
         "owner-death-removal",
         companion_owner_death(client, clients, world, &[returned, rat], 0xd5).await?,
@@ -3660,7 +3638,7 @@ async fn companion_after_death(
         }
     }
     if familiar {
-        familiar_cooldown(client, &book(&input()?)?).await?;
+        familiar_cooldown(client, native_spell_book()?).await?;
     }
     Ok(sequence)
 }
@@ -3832,11 +3810,11 @@ async fn acquired_companions(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let input = input()?;
-    let book = book(&input)?;
+    let input = native_input()?;
+    let book = native_spell_book()?;
     let convince = book.rune(3177).ok_or("Convince Creature rune absent")?;
     let animate = book.rune(3203).ok_or("Animate Dead rune absent")?;
-    let mana = companion_mana(&input, "Rat")?;
+    let mana = companion_mana(input, "Rat")?;
     let (convince_ref, sequence) = acquire_rune(client, world, 3177).await?;
     row.pass("buy-convince", sequence);
     let (animate_ref, sequence) = acquire_rune(client, world, 3203).await?;
@@ -3969,9 +3947,9 @@ mod continuation_three_tests {
     }
     #[test]
     fn companion_cost_is_the_current_game_creature_cost() -> TestResult {
-        assert_eq!(companion_mana(&input()?, "Rat")?, 200);
-        assert_eq!(companion_mana(&input()?, "Skeleton")?, 300);
-        assert!(companion_mana(&input()?, "E2EF5 nonexistent creature").is_err());
+        assert_eq!(companion_mana(native_input()?, "Rat")?, 200);
+        assert_eq!(companion_mana(native_input()?, "Skeleton")?, 300);
+        assert!(companion_mana(native_input()?, "E2EF5 nonexistent creature").is_err());
         Ok(())
     }
 }
@@ -4224,8 +4202,7 @@ async fn tile_items(
     world: &BundleWorld,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_map::MapDefinition;
-    let input = input()?;
-    let book = book(&input)?;
+    let book = native_spell_book()?;
     let chameleon = book.rune(3178).ok_or("C16d Chameleon rune absent")?;
     let disintegrate = book.rune(3197).ok_or("C16d Disintegrate rune absent")?;
     let duration = tile_item_duration(chameleon)?;
@@ -4444,8 +4421,7 @@ mod tile_item_tests {
     }
     #[test]
     fn item_illusion_uses_the_pinned_two_hundred_second_lifetime() -> TestResult {
-        let input = input()?;
-        let book = book(&input)?;
+        let book = native_spell_book()?;
         assert_eq!(
             tile_item_duration(book.rune(3178).ok_or("Chameleon absent")?)?,
             Duration::from_secs(200)

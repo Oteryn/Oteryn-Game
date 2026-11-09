@@ -193,6 +193,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 frame,
                 arrived_while_buffered,
                 buffered_original,
+                ..
             } = match event {
                 house_hireling::step::Event::Services => {
                     services.tick(stream, authority, &mut admitted).await?;

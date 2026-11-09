@@ -5,7 +5,7 @@ use super::*;
 pub(super) enum Next {
     Frame(std::io::Result<Vec<u8>>),
     /// A frame read while a step waited in the buffer, or while a logout ran.
-    Held(Vec<u8>, bool),
+    Held(Vec<u8>, bool, tokio::time::Instant),
     StepDue,
     Probe,
     ServerMessage,
@@ -32,8 +32,8 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
     } else {
         None
     };
-    if let Some((frame, behind_step)) = held_frame {
-        Next::Held(frame, behind_step)
+    if let Some((frame, behind_step, received_at)) = held_frame {
+        Next::Held(frame, behind_step, received_at)
     } else {
         let due = session.buffered.as_ref().map(|step| step.due);
         let reading = session.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;

@@ -1,0 +1,118 @@
+{
+  "module": "gameplay_transport",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "attack_target_condition_gated",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "command_guard_failed",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "command_integrity",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "connection_admit_failed",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "connection_admitted",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "connection_entry_failed",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "connection_entry_slow",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "connection_served",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "join_prepare_failed",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "listener_connection_poll_slow",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "listener_poll_slow",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "serve_command_end",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "serve_end",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "spell_cast_condition_gated",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

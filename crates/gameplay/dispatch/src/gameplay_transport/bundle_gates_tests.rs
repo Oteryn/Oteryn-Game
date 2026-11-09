@@ -1038,6 +1038,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
         2,
     ),
+    // SRVGAP2: the Primal chain PG proof binds its activated source combat room only.
+    (
+        "gameplay_transport/postgres_tests/srvgap2_primal_chain.rs",
+        2,
+    ),
     (
         "gameplay_transport/postgres_tests/srvgap2_primal_chain.rs",
         2,

@@ -114,7 +114,7 @@ pub(super) async fn load_build(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
 ) -> Result<DurableBuildState, DurabilityError> {
-    sqlx::query("SELECT * FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+    sqlx::query("SELECT vocation, magic_level, mana_spent, fist_level, fist_tries, club_level, club_tries, sword_level, sword_tries, axe_level, axe_tries, distance_level, distance_tries, shielding_level, shielding_tries, fishing_level, fishing_tries FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
         .map(|row| DurableBuildState::stored(&row,"vocation", "")).transpose().map(|state| state.unwrap_or_default())
 }

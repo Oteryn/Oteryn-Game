@@ -1,9 +1,6 @@
 //! Field entry and residual ticks use the actual native creature store/HP owner.
 use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
-use crate::durability::spell_item_transaction::{
-    SpellItemScopeAuthority, read_creature_scope_tile_in_transaction,
-};
-use crate::durability::{DurabilityError, spell_items_abi::SpellGroundTarget};
+use crate::durability::DurabilityError;
 use crate::foundation::ChannelRuntimeV1;
 use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
 use oteryn_gameplay_foundation::foundation::condition::{
@@ -15,8 +12,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn tick_creature_fields(
         &self,
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        authority: &SpellItemScopeAuthority,
+        map: &mut crate::movement::monster_map::CurrentMonsterMap<'_, '_>,
         runtime: &mut ChannelRuntimeV1,
         states: &ChannelSpellStates,
         room: &crate::content::QualifiedNativeEntryRoom,
@@ -33,9 +29,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.companion_snapshot(visible.actor) else {
                 continue;
             };
-            let address = SpellGroundTarget::for_native_tile_read(room, runtime, visible.position)
-                .map_err(|_| DurabilityError::Unavailable)?;
-            let read = read_creature_scope_tile_in_transaction(tx, authority, &address)
+            let read = map
+                .read_items(runtime, visible.position)
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
             let tile = room
@@ -155,6 +150,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             plans.push((visible.actor, entry, facts));
         }
         if let Some(active) = self.active_generation {
+            let (tx, authority) = map.scope_transaction();
             super::soul_war_callbacks::player_source::publish_condition_sources(
                 tx,
                 self.root,
@@ -167,6 +163,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             )
             .await?;
+        }
+        if !map.validate_transaction(runtime).await {
+            return Err(DurabilityError::Unavailable);
         }
         for (actor, entry, facts) in plans {
             runtime
