@@ -8,10 +8,13 @@ use windows_sys::Win32::{
         WindowsAndMessaging::*,
     },
 };
+#[path = "tooltips_native.rs"]
+mod tips;
 const ROW_SLOTS: usize = 12;
 const ROWS: usize = 3;
 const TOOLS: usize = 5;
 pub(super) struct SpellRow {
+    tips: tips::Tips,
     buttons: Vec<HWND>,
     tools: Vec<HWND>,
     pressed: Vec<bool>,
@@ -43,6 +46,7 @@ unsafe fn button(parent: HWND) -> HWND {
 impl SpellRow {
     pub(super) fn new(parent: HWND) -> Option<Self> {
         let mut row = Self {
+            tips: tips::Tips::new(parent, ROWS * ROW_SLOTS),
             buttons: Vec::new(),
             tools: Vec::new(),
             pressed: vec![false; ROWS * (ROW_SLOTS + TOOLS)],
@@ -70,8 +74,9 @@ impl SpellRow {
         &mut self,
         labels: Option<&[String]>,
         layout: &BarLayout,
-        grid: (usize, usize),
+        tooltips: &[String],
     ) -> Vec<BarGesture> {
+        self.tips.update(self.parent, &self.buttons, tooltips);
         let mut gestures = Vec::new();
         let mut visible = [false; ROWS * ROW_SLOTS];
         unsafe {
@@ -84,17 +89,9 @@ impl SpellRow {
                 } else {
                     ((rect.bottom - 180) / 54).clamp(1, 12)
                 } as usize;
-                let compact = horizontal && grid.1 > 1;
-                let count = if compact { ROW_SLOTS } else { count };
-                let columns = if compact {
-                    grid.0.clamp(1, ROW_SLOTS)
-                } else {
-                    count
-                };
-                let height_rows = count.div_ceil(columns);
                 let offset = usize::from(row.offset).min(ROW_SLOTS - count);
                 let width = if horizontal {
-                    (rect.right - 180).max(62) / columns as i32
+                    (rect.right - 180).max(62) / count as i32
                 } else {
                     78
                 };
@@ -108,14 +105,7 @@ impl SpellRow {
                     ShowWindow(handle, if label.is_some() { SW_SHOWNA } else { SW_HIDE });
                     let display = local.saturating_sub(offset) as i32;
                     let (x, y) = match row.dock {
-                        BarDock::Bottom => (
-                            8 + (display % columns as i32) * width,
-                            (rect.bottom
-                                - 88
-                                - bar as i32 * height_rows as i32 * 56
-                                - (height_rows as i32 - 1 - display / columns as i32) * 56)
-                                .max(0),
-                        ),
+                        BarDock::Bottom => (8 + display * width, (rect.bottom - 88 - bar as i32 * 56).max(0)),
                         BarDock::Left => (8 + bar as i32 * 80, 94 + display * 54),
                         BarDock::Right => (
                             (rect.right - 260 - bar as i32 * 80).max(0),

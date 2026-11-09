@@ -13,6 +13,13 @@ impl SettingsState {
             return;
         }
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        if mailbox.local_preferences.action_bar.three_rows != self.preferences.action_bar.three_rows {
+            for (index, row) in mailbox.bar_actions.layout.rows.iter_mut().enumerate() {
+                row.enabled = index == 0 || self.preferences.action_bar.three_rows;
+            }
+            mailbox.bar_actions.dirty = true;
+            mailbox.bar_actions.edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         mailbox
             .skill_progress
             .order

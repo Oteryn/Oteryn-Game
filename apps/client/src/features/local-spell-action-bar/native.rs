@@ -132,7 +132,7 @@ impl super::Application {
                 for gesture in hud.spells.update(
                     Some(&labels),
                     &play.link.bar_layout(),
-                    play.link.action_bar_grid(),
+                    &play.link.spell_slot_tooltips(),
                 ) {
                     play.link.bar_gesture(gesture);
                 }
@@ -155,7 +155,7 @@ impl super::Application {
             && let Some(hud) = &mut self.hud
         {
             hud.spells
-                .update(None, &oteryn_client::play::BarLayout::default(), (12, 1));
+                .update(None, &oteryn_client::play::BarLayout::default(), &[]);
             hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);

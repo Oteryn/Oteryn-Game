@@ -53,6 +53,26 @@ pub(super) fn default_panels() -> Vec<String> {
         .collect()
 }
 
+pub(super) const PANEL_IDS: &[&str] = &[
+    "battle",
+    "chat",
+    "guild",
+    "hireling",
+    "imbuement",
+    "inventory",
+    "market",
+    "minimap",
+    "npc-shop",
+    "party",
+    "prey",
+    "quest-log",
+    "stash",
+    "task-board",
+    "trade",
+    "vip",
+    "wheel",
+];
+
 pub(super) fn default_boss_opacity() -> u8 {
     100
 }

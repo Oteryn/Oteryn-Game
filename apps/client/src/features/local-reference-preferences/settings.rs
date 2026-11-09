@@ -79,25 +79,6 @@ pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
-const PANEL_IDS: &[&str] = &[
-    "battle",
-    "chat",
-    "guild",
-    "hireling",
-    "imbuement",
-    "inventory",
-    "market",
-    "minimap",
-    "npc-shop",
-    "party",
-    "prey",
-    "quest-log",
-    "stash",
-    "task-board",
-    "trade",
-    "vip",
-    "wheel",
-];
 #[path = "defaults.rs"]
 mod defaults;
 use defaults::*;

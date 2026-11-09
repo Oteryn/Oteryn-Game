@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ActionBarPreferences {
+    pub tooltips: bool,
+    pub amounts: bool,
     pub visible: bool,
     pub origin: [u16; 2],
     pub columns: u8,
@@ -16,6 +18,7 @@ pub struct ActionBarPreferences {
 impl Default for ActionBarPreferences {
     fn default() -> Self {
         Self {
+            tooltips: true, amounts: true,
             visible: true, origin: [8, 120], columns: 4, size: [64, 30], gap: 6,
             auto_insert: false,
             three_rows: false,

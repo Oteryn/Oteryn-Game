@@ -157,6 +157,15 @@ impl crate::play::PlayLink {
             cast_index,
         )
     }
+    pub fn spell_slot_tooltips(&self) -> Vec<String> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(&mailbox.spell_bar, &mailbox.spell_catalog.catalog);
+        for (slot, action) in &mailbox.bar_actions.saved.0 {
+            if let Some(label)=labels.get_mut(*slot) { *label=assignments::label(&mailbox,action); }
+        }
+        if !mailbox.local_preferences.action_bar.tooltips { labels.iter_mut().for_each(String::clear); }
+        labels
+    }
     pub fn action_bar_grid(&self) -> (usize, usize) {
         crate::play::mailbox::lock(&self.mailbox)
             .local_preferences
@@ -201,6 +210,7 @@ impl crate::play::PlayLink {
             &mailbox.spell_catalog.catalog,
         );
         for (slot, label) in labels.iter_mut().enumerate() {
+            if !mailbox.local_preferences.action_bar.amounts { continue; }
             let Some(spell) = u32::try_from(slot + 1)
                 .ok()
                 .and_then(std::num::NonZeroU32::new)
@@ -226,6 +236,9 @@ impl crate::play::PlayLink {
         for (slot, action) in &mailbox.bar_actions.saved.0 {
             if let Some(label) = labels.get_mut(*slot) {
                 *label = format!("{}: {}", slot + 1, assignments::label(&mailbox, action));
+                if !mailbox.local_preferences.action_bar.amounts {
+                    *label = label.lines().filter(|line| !line.starts_with("Visible:")).collect::<Vec<_>>().join("\n");
+                }
             }
         }
         for (slot, key) in &mailbox.bar_actions.keys.0 {
