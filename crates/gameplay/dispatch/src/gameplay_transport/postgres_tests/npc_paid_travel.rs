@@ -125,7 +125,7 @@ fn scenario() -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            17,
+            4 + S10T_CAPTAINS.len(),
             channel_pin,
         )
         .map_err(debug)?;
@@ -1251,6 +1251,7 @@ const S10T_CAPTAINS: &[&str] = &[
     "charles",
     "jack_fate",
     "karith",
+    "maris_mistrock",
     "petros",
     "tarak_inner",
     "tarak_sunken",
@@ -1272,6 +1273,9 @@ const S10T_PASSAGES: &[Passage] = &[
     ("captain_waverider", "passage", 200, (32131, 32913, 7)),
     ("captain_jack_rat", "safe", 0, (33839, 31222, 5)),
     ("captain_seahorse", "venore", 40, (32954, 32022, 6)),
+    // Retained Global-selected fares and destinations; Maris remains Premium-gated.
+    ("maris_mistrock", "fenrock", 50, (32563, 31313, 7)),
+    ("maris_mistrock", "yalahar", 100, (32649, 31292, 6)),
     ("petros", "ankrahmun", 100, (33092, 32883, 6)),
     ("petros", "issavi", 130, (33902, 31462, 6)),
     ("tarak_inner", "monument tower", 50, (32939, 31182, 7)),
