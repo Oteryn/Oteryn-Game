@@ -202,3 +202,84 @@ fn party_list_wire_bounds_range_and_portrait_identity() -> Result<()> {
     assert!(encode_party_result(&result).is_err());
     Ok(())
 }
+
+fn large_party_list_result() -> PartyResult {
+    let mut result = PartyResult::refused(PartyDisposition::Ok);
+    for handle in 1..=50 {
+        let mut list = Vec::new();
+        for index in 0..3 {
+            list.push(PartyListEntity {
+                entity: EntityRef {
+                    identity: [handle as u8; 16],
+                    generation: index + 1,
+                },
+                name: "n".repeat(64),
+                vocation: 1,
+                summon: index != 0,
+                distance: 1,
+                health_percent: Some(100),
+                mana_percent: None,
+                skull: None,
+                portrait: None,
+                portrait_colours: [[0; 3]; 4],
+            });
+        }
+        result.members.push(PartyEntry {
+            handle,
+            name: "n".repeat(64),
+            leader: handle == 1,
+            expires_at: 0,
+            party_spell_remaining_ms: None,
+            list,
+        });
+    }
+    result
+}
+
+#[test]
+fn party_result_legacy_peer_enforces_8192_bytes() -> Result<()> {
+    let mut result = large_party_list_result();
+    for member in &mut result.members {
+        member.list.truncate(1);
+    }
+    for member in &mut result.members[..19] {
+        member.name.truncate(1);
+    }
+    result.members[19].name.truncate(18);
+    assert_eq!(encode_party_result(&result)?.len(), 8192);
+    // The byte budget accepts 8192, then the capability guard refuses list fields.
+    assert_eq!(
+        encode_party_result_for_peer(&result, false),
+        Err(PartyWireError::Malformed)
+    );
+    result.members[19].name.push('n');
+    assert_eq!(encode_party_result(&result)?.len(), 8193);
+    assert_eq!(
+        encode_party_result_for_peer(&result, false),
+        Err(PartyWireError::LimitExceeded)
+    );
+    for member in &mut result.members {
+        member.list.clear();
+    }
+    let bytes = encode_party_result_for_peer(&result, false)?;
+    assert!(bytes.len() <= 8192);
+    assert_eq!(decode_party_result(&bytes)?, result);
+    Ok(())
+}
+
+#[test]
+fn party_result_party_list_peer_supports_65536_bytes() -> Result<()> {
+    let result = large_party_list_result();
+    let bytes = encode_party_result_for_peer(&result, true)?;
+    assert!(bytes.len() > 8192 && bytes.len() <= 65536);
+    assert_eq!(decode_party_result(&bytes)?, result);
+    assert_eq!(
+        decode_party_result(&vec![0; 65536]),
+        Err(PartyWireError::Malformed)
+    );
+    assert_eq!(
+        decode_party_result(&vec![0; 65537]),
+        Err(PartyWireError::LimitExceeded)
+    );
+    Ok(())
+}

@@ -14,6 +14,7 @@ pub const COMMAND_TYPE_PARTY_INTENT: u32 = 45;
 pub const COMMAND_TYPE_PARTY_QUERY: u32 = 46;
 pub const MAX_PARTY_INTENT_BYTES: usize = 48;
 pub const MAX_PARTY_RESULT_BYTES: usize = 65536;
+pub const MAX_LEGACY_PARTY_RESULT_BYTES: usize = 8192;
 pub const MAX_PARTY_MEMBERS: usize = 50;
 pub const MAX_PARTY_INVITATIONS: usize = 20;
 pub const MAX_PARTY_NAME_BYTES: usize = 64;
@@ -188,6 +189,26 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
         }
     }
     bounded(&out, MAX_PARTY_RESULT_BYTES)?;
+    Ok(out)
+}
+/// Enforce the result budget negotiated by the receiving peer.
+/// Callers without PARTY_LIST_V1 must never emit its optional fields.
+pub fn encode_party_result_for_peer(
+    result: &PartyResult,
+    party_list_selected: bool,
+) -> Result<Vec<u8>> {
+    let out = encode_party_result(result)?;
+    bounded(
+        &out,
+        if party_list_selected {
+            MAX_PARTY_RESULT_BYTES
+        } else {
+            MAX_LEGACY_PARTY_RESULT_BYTES
+        },
+    )?;
+    if !party_list_selected && result.members.iter().any(|member| !member.list.is_empty()) {
+        return bad();
+    }
     Ok(out)
 }
 /// Strict result decoder, shared by wire consumers and the dispatch qualification.

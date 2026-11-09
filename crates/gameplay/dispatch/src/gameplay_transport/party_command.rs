@@ -381,7 +381,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return bytes(PartyDisposition::Rejected);
                     }
                 }
-                encode_party_result(&projected)
+                encode_party_result_for_peer(&projected, list_selected)
                     .ok()
                     .or_else(|| bytes(PartyDisposition::Unavailable))
             }
