@@ -13,7 +13,7 @@ WIKI = 'https://www.tibiawiki.com.br/index.php?curid=53187&oldid=433964'
 BODY_SHA = 'baa2bccd9eb87e55245e538350a84a44db3c2696bb567ff5117d3d8dd25a5b06'
 
 
-def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave']), minimum_level=0, premium=False):
+def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais troll cave']), minimum_level=0, premium=False, prerequisites=()):
     matches = []
     for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
         for record in json.loads(path.read_bytes())['records']:
@@ -29,7 +29,7 @@ def chosen(root=ROOT, quest=QUEST, expected=('s1', 'use', 1, ['Shovel', 'Thais t
     recipe = selected['payload']['recipe']
     req = recipe['requirements']
     first = recipe['stages'][0]
-    if (req['min_level'], req['premium'], req['prerequisites']) != (minimum_level, premium, []):
+    if (req['min_level'], req['premium'], req['prerequisites']) != (minimum_level, premium, list(prerequisites)):
         raise ValueError('M01C_DEAD_ARCHER_ACTOR_ADMISSION')
     if (first['key'], first['kind'], first['count'], first['targets']) != expected:
         raise ValueError('M01C_DEAD_ARCHER_FIRST_STEP')
@@ -151,6 +151,36 @@ def build_grimvale(root=ROOT):
             'creature':creature,'track':kills,'gate':track,'gate_value':1,'minimum':0,'maximum':10,'advance_gate_to':2}}})
     native['sources'].extend([path+':s2', 'content/creatures/definitions/creatures-01500-01863.json:Werewolf/Werebear/Wereboar'])
     return document
+
+
+
+def build_decaying_defender(root=ROOT):
+    quest = 'oteryn:quest.decaying_defender_outfits_quest'
+    requirement = 'Rotten Blood journey'
+    path, recipe = chosen(root, quest, ('s1','kill',1,['Bakragore']),
+                          minimum_level=250, premium=True, prerequisites=[requirement])
+    matches = []
+    for source in sorted((root/'content/creatures/definitions').glob('creatures-*.json')):
+        for record in json.loads(source.read_bytes())['records']:
+            if record.get('authoring',{}).get('profile',{}).get('details',{}).get('display_name') == 'Bakragore':
+                matches.append((source.relative_to(root).as_posix(), record['definition']['identity']['key']))
+    if matches != [('content/creatures/definitions/creatures-00000-00499.json','oteryn:creature.bakragore')]:
+        raise ValueError('M01C_DECAYING_DEFENDER_NATIVE_BOSS')
+    raw = json.dumps(recipe, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    route = 'oteryn:quest-progress/m01c-decaying-defender-route'
+    kills = 'oteryn:quest-progress/m01c-decaying-defender-kills'
+    return {'schema':1,'quests':[{'quest':quest,'recipe_sha256':hashlib.sha256(raw).hexdigest(),
+        'admission':{'minimum_level':250,'premium':True,
+            'prerequisites':[{'requirement':requirement,'quest':'oteryn:quest/rotten-blood'}]},
+        'tracks':[{'key':route,'initial':0,'minimum':0,'maximum':len(recipe['stages'])},
+                  {'key':kills,'initial':0,'minimum':0,'maximum':1}],
+        'stages':[{'key':'s1-bakragore','completes':False,'trigger':{'kind':'kill','counter':{
+            'key':'oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore',
+            'creature':matches[0][1],'track':kills,'gate':route,'gate_value':0,
+            'minimum':0,'maximum':1,'advance_gate_to':1}}}],
+        'sources':[path+':s1',matches[0][0]+':Bakragore',
+            'crates/gameplay/quests/src/quest/rotten_blood.rs:QUEST',
+            'crates/gameplay/durability/src/durability/quest_state/native_prerequisites.rs:completed']}]}
 
 
 def content(check=False):

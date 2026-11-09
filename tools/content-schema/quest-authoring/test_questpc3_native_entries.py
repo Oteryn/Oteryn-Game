@@ -51,6 +51,19 @@ class NativeEntries(unittest.TestCase):
         for counter in counters:
             self.assertEqual((counter['gate_value'],counter['minimum'],counter['maximum'],counter['advance_gate_to']), (1,0,10,2))
 
+    def test_decaying_defender_starts_only_with_its_exact_native_boss_and_parent(self):
+        quest = source.build_decaying_defender()['quests'][0]
+        self.assertEqual(quest['quest'], 'oteryn:quest.decaying_defender_outfits_quest')
+        self.assertEqual(quest['admission'], {
+            'minimum_level':250, 'premium':True,
+            'prerequisites':[{'requirement':'Rotten Blood journey','quest':'oteryn:quest/rotten-blood'}],
+        })
+        stage = quest['stages'][0]
+        self.assertFalse(stage['completes'])
+        counter = stage['trigger']['counter']
+        self.assertEqual(counter['creature'], 'oteryn:creature.bakragore')
+        self.assertEqual((counter['gate_value'],counter['minimum'],counter['maximum'],counter['advance_gate_to']), (0,0,1,1))
+
     def test_actor_admission_changes_fail_closed(self):
         path, recipe = source.chosen()
         changed = copy.deepcopy(recipe)
