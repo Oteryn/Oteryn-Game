@@ -15,6 +15,19 @@ pub use ground_stack::matches as fixture_ground_stack_matches;
 mod selected_tool;
 mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
+
+/// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
+/// authority and all production Ground locks are checked by the same participant.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn test_ground_stack_matches_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+    target: &super::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, super::DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
+}
+
 pub mod shared_count;
 pub mod shared_switch;
 use super::{

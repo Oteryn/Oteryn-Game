@@ -54,7 +54,9 @@ pub use effects::{
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal,
     PortalPair,
 };
-pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
+pub use ground_stack::{
+    GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]

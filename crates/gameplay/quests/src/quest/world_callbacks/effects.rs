@@ -430,6 +430,34 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.encounter.is_some()
                 || !callback.passages.is_empty()
         })
+        || effects.mount_reward.as_ref().is_some_and(|r| {
+            !callback.requires_world_admission
+                || callback.trigger != Trigger::Use
+                || callback.storage.is_empty()
+                || callback
+                    .storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                || r.achievement.as_ref().is_some_and(|key| {
+                    key.len() > 160
+                        || !key.strip_prefix("oteryn:achievement/").is_some_and(|tail| {
+                            !tail.is_empty()
+                                && tail.bytes().all(|b| {
+                                    b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                })
+                        })
+                })
+                || r.mount.len() > 160
+                || !r
+                    .mount
+                    .strip_prefix("oteryn:content.mount.")
+                    .is_some_and(|tail| {
+                        !tail.is_empty()
+                            && tail
+                                .bytes()
+                                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                    })
+        })
         || effects.transform == Some(0)
         || (effects.facing.is_some() && callback.teleport.is_none())
         || effects

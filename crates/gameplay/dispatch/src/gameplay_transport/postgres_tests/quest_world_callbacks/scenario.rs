@@ -319,6 +319,9 @@ fn scenario_case(
             name.ends_with("-refuse"),
         );
     }
+    if name.ends_with("-srv7-m02") {
+        callback = super::super::srv7_m02_ground_stack::fixture(callback)?;
+    }
     if name == "qengine-rewards-questpc4-puzzle-presence" {
         callback = super::super::l6_world_puzzles::presence_fixture(callback, trigger);
     }

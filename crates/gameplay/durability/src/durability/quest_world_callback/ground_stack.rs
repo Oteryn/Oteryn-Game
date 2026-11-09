@@ -1,6 +1,8 @@
 //! M02: physical Ground predicates participate in the existing fenced quest TX.
 //! Nomads Land chosen recipe s4 (Wiki spoiler revision 1002600) needs actual
 //! crates/amphorae. Static ItemPresence projections cannot establish this fact.
+#[cfg(any(test, feature = "test-support"))]
+use crate::durability::spell_item_transaction::SpellItemScopeAuthority;
 use super::*;
 use crate::durability::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
@@ -137,12 +139,16 @@ pub(crate) async fn matches(
 //! Nomads Land chosen recipe s4 (Wiki spoiler revision 1002600) needs actual
 //! crates/amphorae. Static ItemPresence projections cannot establish this fact.
 use crate::durability::spell_item_transaction::{
-    SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
-    check_scope_transaction,
+    SpellItemError, assert_spell_item_scope_with_recovery, check_scope_transaction,
 };
+#[cfg(any(test, feature = "test-support"))]
 use crate::durability::spell_items_abi::SpellGroundTarget;
+#[cfg(any(test, feature = "test-support"))]
+use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as NativeGroundStackFact;
+use oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement;
+#[cfg(any(test, feature = "test-support"))]
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    GroundStackEntry, GroundStackFact, WorldRequirement, ground_stack_matches,
+    GroundStackEntry, Position, ground_stack_matches_at,
 };
 
 fn owner_error(error: SpellItemError) -> DurabilityError {
@@ -153,6 +159,7 @@ fn owner_error(error: SpellItemError) -> DurabilityError {
     }
 }
 
+#[cfg(any(test, feature = "test-support"))]
 #[derive(sqlx::FromRow)]
 struct GroundRoot {
     item_instance_id: sqlx::types::Uuid,
@@ -180,6 +187,12 @@ pub(super) async fn require(
     if !requirements.iter().any(|r| r.ground_stack.is_some()) {
         return Ok(true);
     }
+    // Lock the readset's Item identities before the existing Ground owner.
+    // The scope authority below also takes key 33, so issuing it first would
+    // reverse the move owner's Item -> Ground order and permit a deadlock.
+    if !matches_requirements(tx, permit, fence, context, requirements).await? {
+        return Ok(false);
+    }
     let authority = assert_spell_item_scope_with_recovery(
         tx,
         permit,
@@ -190,32 +203,16 @@ pub(super) async fn require(
     )
     .await
     .map_err(owner_error)?;
-    for requirement in requirements {
-        let Some(stack) = &requirement.ground_stack else {
-            continue;
-        };
-        let p = requirement.position;
-        let target = SpellGroundTarget {
-            spatial_position: [
-                i32::from(p.x).to_be_bytes().as_slice(),
-                i32::from(p.y).to_be_bytes().as_slice(),
-                i16::from(p.floor).to_be_bytes().as_slice(),
-            ]
-            .concat(),
-            map_revision: context.map_revision.clone(),
-            content_revision: context.content_revision.clone(),
-            placement_context: context.placement_context.clone(),
-        };
-        if !matches(tx, &authority, &target, stack).await? {
-            return Ok(false);
-        }
-    }
+    check_scope_transaction(tx, &authority)
+        .await
+        .map_err(owner_error)?;
     Ok(true)
 }
 
 /// The authority is issued for this same physical transaction. Keep both the
 /// scope's established Ground-owner advisory lock and exact Item/custody row
 /// locks through the quest COMMIT: a concurrent drop cannot create a phantom.
+#[cfg(any(test, feature = "test-support"))]
 pub async fn matches(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -248,7 +245,14 @@ pub async fn matches(
         return Ok(false);
     }
     rows.sort_by_key(|r| r.stack_ordinal);
-    Ok(ground_stack_matches(
+    // The SQL predicate proves the exact serialized target address; the shared
+    // stack comparator below only compares entries within that proven cell.
+    Ok(ground_stack_matches_at(
+        Position {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
         expected,
         rows.iter().map(|row| {
             if row.definition_family != "Item"
@@ -259,10 +263,12 @@ pub async fn matches(
             {
                 return None;
             }
-            Some(GroundStackFact {
+            Some(NativeGroundStackFact {
                 instance: *row.item_instance_id.as_bytes(),
-                item: &row.definition_production_key,
-                count: u32::try_from(row.quantity).ok()?,
+                item: row.definition_production_key.clone(),
+                revision: row.definition_revision_ref.clone(),
+                quantity: u32::try_from(row.quantity).ok()?,
+                ordinal: u64::try_from(row.stack_ordinal).ok()?,
             })
         }),
     ))
@@ -352,7 +358,7 @@ pub(crate) async fn matches_requirements(
         // not a pre-wait snapshot. Item share locks retain quantities until the
         // enclosing Quest receipt commits. No Ground row or Item is mutated.
         let rows = sqlx::query(
-            "SELECT i.item_instance_id::text AS item,i.definition_production_key,i.quantity,g.stack_ordinal \
+            "SELECT i.item_instance_id::text AS item,i.definition_production_key,i.definition_revision_ref,i.quantity,g.stack_ordinal \
              FROM game_item_ground_locations g JOIN game_item_instances i \
              USING(item_instance_id,world_id) \
              WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
@@ -390,6 +396,7 @@ pub(crate) async fn matches_requirements(
                 return Ok(false);
             };
             if row.try_get::<&str, _>("definition_production_key")? != expected.item
+                || row.try_get::<&str, _>("definition_revision_ref")? != "definition-r1"
                 || row.try_get::<i64, _>("quantity")? != i64::from(expected.count)
             {
                 return Ok(false);

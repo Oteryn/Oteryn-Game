@@ -160,6 +160,7 @@ impl ItemLoopContent for NativeItemWeights<'_> {
 pub struct LoopGroundOverlay {
     overlay: ChannelOverlay,
     facts: HashMap<[u8; 16], EntryFacts>,
+    ordinals: HashMap<[u8; 16], u64>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
 }
@@ -198,7 +199,9 @@ impl LoopGroundOverlay {
         let field_content = sha256_revision(field_pin.0);
         let mut overlay = ChannelOverlay::for_scope(base, scope);
         let mut facts = HashMap::new();
+        let mut ordinals = HashMap::new();
         for entry in items {
+            let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
             if entry.field_collision.is_some() || entry.native_corpse {
                 if item.ground.map_revision != field_revision
@@ -243,11 +246,13 @@ impl LoopGroundOverlay {
             let id = item.item_instance_id;
             if overlay.add_ground(item).is_ok() {
                 facts.insert(id, entry_facts);
+                ordinals.insert(id, ordinal);
             }
         }
         Self {
             overlay,
             facts,
+            ordinals,
             field_pin,
             taken_sources: Default::default(),
         }
@@ -255,6 +260,11 @@ impl LoopGroundOverlay {
 
     pub fn overlay(&self) -> &ChannelOverlay {
         &self.overlay
+    }
+
+    /// The durable append ordinal retained by this exact custody projection.
+    pub(super) fn ground_ordinal(&self, item: &[u8; 16]) -> Option<u64> {
+        self.ordinals.get(item).copied()
     }
 
     /// Where a loop Ground item lies.
