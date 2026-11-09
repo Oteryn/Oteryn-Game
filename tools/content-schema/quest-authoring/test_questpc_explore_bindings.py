@@ -21,6 +21,28 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_ghoul_room_outside_door_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT) if c['quest']=='oteryn:quest.ghoul_room_quest']
+        self.assertEqual(len(callbacks),1,'outside final-key-door approach is activated')
+        self.assertFalse(callbacks[0]['passages'])
+
+    def test_ghoul_room_approach_is_outside_its_final_key_door(self):
+        bindings = (('oteryn:quest.ghoul_room_quest','s1',
+                     'door-approach:canary:door-gate/key/3600','chosen-source/ghoul_room_quest'),)
+        with mock.patch.object(explore,'BINDINGS',bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position':{'x':32507,'y':32175,'floor':-14},'ordinal':0,'appearance':409})
+            self.assertFalse(callback['passages'])
+            self.assertFalse(callback['offerings'])
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_bear_room_basement_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT) if c['quest']=='oteryn:quest.bear_room_quest']
+        self.assertEqual(len(callbacks),1,'outside-door basement approach is activated')
+        self.assertFalse(callbacks[0]['passages'])
+        self.assertFalse(callbacks[0].get('effects'))
+
     def test_bear_room_approach_precedes_the_stone_and_key_door(self):
         bindings = (('oteryn:quest.bear_room_quest','s1',
                      'door-approach:canary:door-gate/key/4601','chosen-source/bear_room_quest'),)

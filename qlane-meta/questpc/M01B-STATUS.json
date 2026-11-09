@@ -35,9 +35,11 @@
       "Grimvale Mini World Change",
       "Inukaya Quest",
       "Medusa Shield Quest",
-      "Mad Mage Room Quest"
+      "Mad Mage Room Quest",
+      "Bear Room Quest",
+      "Ghoul Room Quest"
     ],
-    "wired_explore_stages": 28,
+    "wired_explore_stages": 30,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -65,9 +67,10 @@
       "Emperor's Cookies Quest",
       "Grimvale Mini World Change",
       "Inukaya Quest",
-      "Medusa Shield Quest"
+      "Medusa Shield Quest",
+      "Mad Mage Room Quest"
     ],
-    "wired_native_visit_anchors": 42
+    "wired_native_visit_anchors": 44
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -168,10 +171,14 @@
     "prison_activation": "REDmissingentry0.420s ->GREEN53Python20.272s;latestinactiveBearDoor resolver54tests18.536s",
     "prison_clippy": "GREEN quests+dispatch strict all-targets4m18s",
     "prison_profile": "GREEN6Rustprofiletests0.04s",
-    "prison_postgres": "PENDING own native hall39/40/replay case building",
-    "bear_preparation": "INACTIVE:door4601 approach before retainedstone1791;REDunsupported0.182s ->GREEN0.451s;sourcekeyclaimmembershipverified"
+    "prison_postgres": "GREEN60.245623787s:durable39refuses,40freshonce,oldreplay no credit,relocation no credit,revisit no farming,wholecompletion0;compiled data4d4915f38",
+    "bear_preparation": "INACTIVE:door4601 approach before retainedstone1791;REDunsupported0.182s ->GREEN0.451s;sourcekeyclaimmembershipverified",
+    "two_door_activation": "BearREDmissing0.350s,GhoulREDmissing0.369s ->GREEN57Python19.358s;both outside locked source doors,keys not granted",
+    "two_door_clippy": "GREEN quests+dispatch all-targets strict4m05s",
+    "two_door_postgres": "PENDING Bearnativecase building;Ghoul case will run from the same compiled test binary",
+    "two_door_profile": "GREEN6Rustprofiletests0.06s"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "28wiredstage/routes,27PG-proven entry routes,42anchors;18routes/28stages unwired. FinishPrison nativePG,then activateBearoutside-door approach. M01b PARTIAL."
+  "continuation": "30wiredstage/routes,28PG-proven entry routes,44nativeanchors;16routes/26stages unwired. FinishBear/Ghoul nativePG,then remainingHero/Lion ordinary routes and laterstages. M01b PARTIAL."
 }

@@ -80,3 +80,5 @@ A qualified World owner must have a nonempty exact string key. Null or empty key
 Inukaya and Medusa use explicit source-claim distance2 exceptions on the original floor;all ordinary claim approaches retain distance1. Inukaya selected32484,31109,z8 ground6684 (start32485,31109 ground6685);Medusa33050,32398,z10 ground410 (start33051,32398 ground410). Both requireCurrentPremium;Medusa retainslevel60. Entry never invokes the chest reward.
 
 MadMage uses retained APrisoner position evidence only to select an outside-cell hall point32396,32138,z13;sourceDoor2184at32395,32138 stays untouched. The NPC promotion candidate is OTS hypothesis evidence,not a new runtime placement or Tibia-fidelity claim. Chosen map approach and native tile are explicit;level40 remains required.
+
+Bear first basement visit remains south of stone1791and key4601door1631,not inside the reward room. Ghoul first lower-passage visit remains east of key3600door5106,not inside its final reward room. Door provenance is tied to a key claim declared by the same canonical quest. STEP never grants keys,opens passages or changes the retained obstacles.

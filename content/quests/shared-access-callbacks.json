@@ -259,6 +259,58 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/bear-room/s1/entry",
+      "quest": "oteryn:quest.bear_room_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32145,
+          "y": 32102,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 355,
+        "native": {
+          "position": {
+            "x": 32145,
+            "y": 32102,
+            "floor": -11
+          },
+          "ordinal": 0,
+          "appearance": 355
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/bear_room_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/bear_room_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/doors/gates.json#/gates/31",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/behemoth/s1/entry",
       "quest": "oteryn:quest.behemoth_quest",
       "trigger": "step_in",
@@ -958,6 +1010,58 @@
         "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/280",
         "https://tibia.fandom.com/index.php?curid=20335&oldid=1114489",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/ghoul-room/s1/entry",
+      "quest": "oteryn:quest.ghoul_room_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32507,
+          "y": 32175,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409,
+        "native": {
+          "position": {
+            "x": 32507,
+            "y": 32175,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/ghoul_room_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/ghoul_room_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/doors/gates.json#/gates/17",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
       ]
     },
     {

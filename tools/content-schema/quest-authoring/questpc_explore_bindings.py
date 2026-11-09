@@ -5,6 +5,8 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.ghoul_room_quest', 's1', 'door-approach:canary:door-gate/key/3600', 'chosen-source/ghoul_room_quest'),
+    ('oteryn:quest.bear_room_quest', 's1', 'door-approach:canary:door-gate/key/4601', 'chosen-source/bear_room_quest'),
     ('oteryn:quest.mad_mage_room_quest', 's1', 'npc-approach:oteryn:npc.a_prisoner', 'chosen-source/mad_mage_room_quest'),
     ('oteryn:quest.inukaya_quest', 's1', 'claim:canary:reward-claim/quest/u8_0/shardsof_ancient_winters/inukaya', 'chosen-source/inukaya_quest'),
     ('oteryn:quest.medusa_shield_quest', 's1', 'claim:canary:reward-claim/quest/u7_3/the_medusa_quest', 'chosen-source/medusa_shield_quest'),

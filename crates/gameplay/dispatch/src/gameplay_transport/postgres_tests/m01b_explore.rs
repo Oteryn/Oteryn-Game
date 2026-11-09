@@ -54,6 +54,12 @@ mod crypt_entries;
 #[path = "m01b_explore/prison_entry.rs"]
 mod prison_entry;
 
+#[path = "m01b_explore/bear_entry.rs"]
+mod bear_entry;
+
+#[path = "m01b_explore/ghoul_entry.rs"]
+mod ghoul_entry;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -293,6 +299,12 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 }
 
 pub(super) fn start(name: &str, trigger: Position) -> Position {
+    if name == "m01b/bear-room/s1/entry" {
+        return Position {
+            y: trigger.y + 1,
+            ..trigger
+        };
+    }
     if matches!(
         name,
         "m01b/fire-axe/s1/entry"
@@ -324,6 +336,12 @@ pub(super) fn world(
     }
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
+    }
+    if name == "m01b/ghoul-room/s1/entry" {
+        return ghoul_entry::world(native);
+    }
+    if name == "m01b/bear-room/s1/entry" {
+        return bear_entry::world(native);
     }
     if name == "m01b/mad-mage-room/s1/entry" {
         return prison_entry::world(native);
@@ -547,6 +565,14 @@ pub(super) async fn exercise(
     }
     let additional = [
         (
+            "m01b/ghoul-room/s1/entry",
+            "oteryn:quest-progress/chosen-source/ghoul_room_quest/s1",
+        ),
+        (
+            "m01b/bear-room/s1/entry",
+            "oteryn:quest-progress/chosen-source/bear_room_quest/s1",
+        ),
+        (
             "m01b/emperor-s-cookies/s1/id3800",
             "oteryn:quest-progress/chosen-source/emperor_s_cookies_quest/s1",
         ),
@@ -631,7 +657,14 @@ pub(super) async fn exercise(
         StepDirection::West,
         StepDirection::East,
     ];
-    let moves: &[StepDirection] = if dragon_tower {
+    let bear_moves = [
+        StepDirection::North,
+        StepDirection::South,
+        StepDirection::North,
+    ];
+    let moves: &[StepDirection] = if callback.key.ends_with("m01b/bear-room/s1/entry") {
+        &bear_moves
+    } else if dragon_tower {
         &dragon_moves
     } else if additional_counter.is_some() || elvenbane || alawar || geomancer {
         &geomancer_moves

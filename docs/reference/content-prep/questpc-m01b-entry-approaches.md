@@ -147,3 +147,15 @@ placement promotion or a canonical Tibia-fidelity claim. The selected chosen
 entry32396,32138,z13 (408) and eastern start32397,32138 (432) lie outside
 the retained2184cell door at32395,32138. No apple,key or door action is
 required for the first hall visit. Canonical level40 is retained.
+
+## Bear and Ghoul outer door approaches
+
+Source: tools/content-schema/quest-authoring/samples/doors/gates.json,
+`canary:door-gate/key/4601` and `canary:door-gate/key/3600`,linked through
+each canonical quest's own key claim. https://github.com/opentibiabr/canary/tree/04b83b51
+
+Bear gate32145,32100,z11 retains351+1631;stone1791remains immediately
+south. Observe from32145,32102,z11 ground355,starting south on354. This
+precedes the mud-floor/key/stone-switch steps. Ghoul gate32506,32175,z14
+retains409+5106;observe from its eastern outside tile32507,32175ground409,
+starting east32508,32175ground409. Neither hook crosses or unlocks its door.
