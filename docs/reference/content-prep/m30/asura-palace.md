@@ -103,3 +103,34 @@ for Diamond Blossom, Lily of Night and Blazing Rose at different underground
 coordinates. It does not define the two Greater Elemental pairs required here.
 Thus Crystal confirms exact existing access-door positions but does not supply
 the missing s2 exit selection, s3 elemental entry/pair, or s4 entry/pair/door.
+
+## Owner-authored chamber identities (2026-11-09)
+
+The standing owner rule now explicitly authorizes filling missing content with
+Tibia-faithful authored choices. The MediaWiki API request for page
+`Asura Palace Quest`, with an honest Oteryn research User-Agent, returned HTTP
+402; no current revid was received. The repository's pinned spoiler receipt is
+page 75336, revid 1138350 (the absent local body described above). Neither this
+receipt nor the failed request is presented as newly retrieved page content.
+
+`samples/engenc/asura-chambers.json` under `tools/content-schema/quest-authoring`
+is the machine-readable authoring input for the remaining three chambers.
+All otherwise unresolved associations are **authored per owner rule**:
+
+- s2 retains the two canonical Destroyer positions and selects the southern exit
+  `(32963,32677,4)`. The northern exit is not a quest-controlled passage.
+- s3 uses the eastern/central floor-2 chamber, with two new Greater Fire Elemental
+  placements at `(32958,32677,2)` and `(32958,32680,2)`; its existing east door is
+  `(32959,32679,2)`.
+- s4 uses the western floor-2 chamber, with two new Greater Energy Elemental
+  placements at `(32944,32677,2)` and `(32945,32680,2)`; its existing east door is
+  `(32947,32679,2)`. This adapts the recipe's unlocated “lower chamber” to an
+  existing enclosure rather than inventing another floor or using the teleport
+  alcove as a two-defender room.
+
+The input also fixes each entry tile, landing and room bounds. Its unit check
+verifies distinct defender positions, enclosure bounds, existing native tiles,
+and the exact door appearance at ordinal 1. It does not claim these authoring
+inputs are runtime bindings or PostgreSQL-qualified routes yet. Remaining work
+is encounter callback generation, missing elemental native policy admission,
+participant-scoped death/door wiring and real-caller PostgreSQL qualification.
