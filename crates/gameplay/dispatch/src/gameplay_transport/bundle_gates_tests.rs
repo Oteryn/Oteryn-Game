@@ -144,6 +144,10 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/monster_ai_cycle.rs", 1),
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/m26_rotten_wave_production.rs",
+                1,
+            ),
             ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 1),
             // Primal cadence uses the actual activated Source combat seam.
             (

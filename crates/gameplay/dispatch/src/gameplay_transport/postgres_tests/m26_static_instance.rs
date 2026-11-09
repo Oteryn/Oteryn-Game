@@ -560,6 +560,8 @@ async fn scenario(admin: String) -> TestResult {
         "native Light mana cost"
     );
     assert!(started.elapsed().as_secs_f64() > 0.01);
+    super::m26_rotten_room_taints::check(&destination, admitted, origin_session).await?;
+    super::m26_rotten_wave_production::check(&destination, admitted).await?;
     eprintln!(
         "M26_STATIC_INSTANCE POSTGRES_CASE_COMPLETED duration={:?} success=true",
         started.elapsed()

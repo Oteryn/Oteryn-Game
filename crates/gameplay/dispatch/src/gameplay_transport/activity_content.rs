@@ -4,6 +4,7 @@ use super::{ComposedFreshAdmission, SeamRooms};
 use crate::durability::activity_handoff::boss_room::BossRoomDefinition;
 use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityRefusal};
 use crate::foundation::{ChannelRuntimeV1, RuntimeScopeRefV1};
+mod capacity;
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     pub(super) async fn ensure_activity_template_runtime(
@@ -158,7 +159,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     assignment.ownership_generation,
                     assignment.source_revision,
                     &assignment.decision_identity,
-                    template.maximum_players() + 1,
+                    capacity::for_template(template)?,
                     pin,
                 )
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;
