@@ -30,6 +30,7 @@ pub enum Trigger {
 #[cfg(test)]
 mod admission_tests;
 mod clock;
+mod completed_quests;
 mod counterparts;
 mod effects;
 mod ground_stack;
@@ -213,6 +214,9 @@ pub struct Callback {
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_change: Option<String>,
+    /// Own-character completion, checked under the same native writer fence.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -354,7 +358,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
-        if operation_tracks.len() != callback.state_ops.len()
+        if !completed_quests::valid(callback)
+            || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
             || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS
             || callback.state_ops.iter().any(|op| !op.valid())

@@ -624,12 +624,16 @@ class ExploreBindingsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'counter owner'):
                 explore.callbacks(ROOT)
 
-    def test_unimplemented_required_guard_is_not_silently_dropped(self):
+    def test_completed_ice_islands_guard_is_not_silently_dropped(self):
         guarded = (('oteryn:quest.lion_trophy_quest', 's1',
                     'oteryn:area.hunting_place.formorgar_mines', 'chosen-source/lion_trophy_quest'),)
         with mock.patch.object(explore, 'BINDINGS', guarded):
-            with self.assertRaisesRegex(ValueError, 'additional authoritative guards'):
-                explore.callbacks(ROOT)
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['required_completed_quests'],
+                             ['oteryn:quest.the_ice_islands_quest'])
+            self.assertEqual(callback['admission'], {'premium':True})
+            self.assertEqual(callback['storage'][1]['track'],
+                             'oteryn:quest-progress/chosen-source/lion_trophy_quest/s1')
 
     def test_declared_area_point_really_has_the_retained_native_ground(self):
         sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))

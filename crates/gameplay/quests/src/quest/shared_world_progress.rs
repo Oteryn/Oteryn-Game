@@ -202,7 +202,7 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
         let hive=index<6;
         let key=if hive {format!("{HIVE_OBJECTIVE_PREFIX}{index}")}else{binding.key.to_owned()};
         let tool=tools.get(index).copied().filter(|tool|*tool!=0);
-        Callback { admission: None,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+        Callback { required_completed_quests: Vec::new(), admission: None,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
             key,quest:if hive {HIVE_QUEST}else{DEEPLING_QUEST}.into(),trigger:Trigger::Use,
             selector:Selector{native: None,position:Some(Position{x:binding.position.0,y:binding.position.1,floor:binding.position.2}),unique:None,action:None,appearance:Some(binding.appearance)},
             lever:None,reversible:false,passages:vec![],teleport:None,

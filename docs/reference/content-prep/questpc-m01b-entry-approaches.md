@@ -167,3 +167,7 @@ Source geometry: samples/promotion-candidates-v1.json, Strange Pipe at33533,3195
 ## Elvenbane dragon-floor second visit
 
 Canonical chosen recipe s2 requires reaching the dragon floor after s1 basement entry. Sources: https://tibia.fandom.com/index.php?curid=8007&oldid=265159 and retained content/world/spawns/spawns-02000-03999.json, oteryn:spawn.x32590_y31645_z5 point0 (Dragon). Chosen approach32591,31645,z5 and eastern start32592,31645 both retain436ground. The first-stage track is checked read-only at exactly1; this approach grants no kill, treasure or whole-quest completion.
+
+## Completion prerequisites for imported exploration
+
+Lion Trophy canonically requires The Ice Islands Quest (content/quests/definitions/quests-00200-00299.json and the Lion recipe). Exact display names resolve to one canonical quest key; unknown, ambiguous, duplicate and self dependencies are refused. The server checks completed_character_revision for the fenced character in game_character_quest_states and locks matching rows FOR SHARE until its callback transaction ends. Character completion is independent of Current Premium. This guard does not create prerequisite progress or claim that the prerequisite route is playable. Native Lion activation is a separate tested slice.

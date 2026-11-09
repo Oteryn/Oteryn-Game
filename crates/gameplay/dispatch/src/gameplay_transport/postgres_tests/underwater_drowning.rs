@@ -416,7 +416,7 @@ fn scenario_in_world(
             let position = |x| Position { x, y: 0, floor: -7 };
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
-            let fixture = Callback {
+            let fixture = Callback { required_completed_quests: Vec::new(),
 world_change: None,
                 admission: None,
                 actor_kind: Default::default(),

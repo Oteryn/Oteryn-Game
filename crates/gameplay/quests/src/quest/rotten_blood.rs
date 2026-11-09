@@ -33,7 +33,7 @@ pub const CLEANSE_COOLDOWN_SECONDS: u64 = 68 * 60 * 60;
 /// by the existing quest callback consumption owner under the Character lock.
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
-    Callback { admission: None,
+    Callback { required_completed_quests: Vec::new(), admission: None,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,

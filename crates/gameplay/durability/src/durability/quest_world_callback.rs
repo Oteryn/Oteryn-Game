@@ -1,5 +1,6 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
+mod completed_quests;
 pub(super) mod completion;
 pub(crate) mod ground_stack;
 pub mod shared_count;
@@ -177,6 +178,9 @@ pub(super) async fn consume(
         return Ok(false);
     };
     if !context_is_current(tx, permit, fence, context).await? {
+        return Ok(false);
+    }
+    if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }
     if let Some(change) = &callback.world_change

@@ -365,7 +365,7 @@ fn scenario() -> TestResult {
         use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Selector, Trigger};
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
-        let world = super::quest_world_callbacks::world(&Callback {
+        let world = super::quest_world_callbacks::world(&Callback { required_completed_quests: Vec::new(),
 world_change: None,
             admission: None,
             actor_kind: Default::default(), opening_only: false, requires_world_admission: false,

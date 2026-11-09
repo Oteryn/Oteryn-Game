@@ -193,9 +193,16 @@
     "elvenbane_later_profile": "GREEN6Rustprofiletests0.04s",
     "elvenbane_later_authoring_checks": "GREEN run_checks.py --part checks and content-tree validation",
     "elvenbane_later_authoring_units": "GREEN full quest-authoring runner112modules1196tests;0failing modules;8preexisting skips",
-    "elvenbane_later_regeneration": "GREEN regenerate_content.py --native-only;provider/pin outputs unchanged"
+    "elvenbane_later_regeneration": "GREEN regenerate_content.py --native-only;provider/pin outputs unchanged",
+    "completed_quest_guard_rust": "RED unknown callback field0.14s ->GREEN2Rust tests0.14s;unsafe/self/foreign/unbounded/unguarded input refused,native binding includes prerequisite",
+    "completed_quest_guard_postgres": "GREEN PostgreSQL18.6,8.803522496s:absent/incomplete/foreign character/missing second prerequisite refuse;own completion passes;FOR SHARE blocks concurrent mutation,readonly/root revision unchanged. Fixture corrected to schema minimum start revision2 after RED10.810016317s and8.804295643s",
+    "completed_quest_guard_authoring": "GREEN61route tests23.053s+4prerequisite resolver tests0.206s;active JSON unchanged",
+    "completed_quest_guard_units": "GREEN377quest library tests44.13s,0ignored",
+    "completed_quest_guard_full_authoring": "GREEN113modules1200tests,0failing modules;8preexisting skips;checks/content-tree PASS",
+    "completed_quest_guard_clippy": "GREEN quests+durability+dispatch all-targets strict5m22s",
+    "completed_quest_guard_pins": "GREEN qengine_access --check,equipment profile pins5795,duplicate migrations andfmt;activecallbackJSONunchanged"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "31wiredroutes/32PG-proven EXPLOREstages,46nativeanchors;15routes/24stages unwired. NextLionTrophy prerequisite guard prepared,not connected. M01b PARTIAL."
+  "continuation": "31wiredroutes/32PG-proven EXPLOREstages,46anchors;15routes/24stages unwired. Completion-prerequisite engine tested;Lion native activation remains next. M01b PARTIAL."
 }

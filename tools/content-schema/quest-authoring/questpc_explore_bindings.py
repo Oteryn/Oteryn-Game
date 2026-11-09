@@ -62,6 +62,7 @@ BINDINGS = (
 ANCHORS = {
     'oteryn:area.hunting_place.edron_goblin_cave': (33108, 31850, -7, 355),
     'oteryn:area.hunting_place.lion_s_rock': (33138, 32358, -7, 4399),
+    'oteryn:area.hunting_place.formorgar_mines': (32146, 31120, -9, 6685),
     'oteryn:area.hunting_place.elvenbane': (32590, 31645, -7, 436),
     'oteryn:area.hunting_place.asura_palace': (32953, 32685, -7, 923),
     'oteryn:area.hunting_place.edron_dragon_lair': (33098, 31701, -7, 4409),
@@ -101,6 +102,7 @@ def stage_storage(quest, stage, recipe, track_tail, visit='entry'):
 
 
 def callbacks(root):
+    import questpc_completed_quests
     import questpc_world_requirements
     world_owners = questpc_world_requirements.catalogue(root)
     areas = json.loads((Path(root) / AREA).read_text())['records']
@@ -129,8 +131,8 @@ def callbacks(root):
             raise ValueError('Explore binding needs an explicit complete visit anchor set: ' + quest)
         tail = quest.removeprefix('oteryn:quest.')
         requirements = recipe['requirements']
-        if requirements['prerequisites']:
-            raise ValueError('Explore route requires additional authoritative guards: ' + quest)
+        completed_quests = questpc_completed_quests.resolve(quest, requirements['prerequisites'],
+            [d for group in by_quest.values() for d in group])
         if area.startswith('door-approach:'):
             import questpc_door_approaches
             at, appearance, sources = questpc_door_approaches.resolve(root, quest, area, definition=definition)
@@ -190,4 +192,6 @@ def callbacks(root):
             result[-1]['admission'] = {'premium': True}
         if requirements['min_level']:
             result[-1]['minimum_level'] = requirements['min_level']
+        if completed_quests:
+            result[-1]['required_completed_quests'] = completed_quests
     return result
