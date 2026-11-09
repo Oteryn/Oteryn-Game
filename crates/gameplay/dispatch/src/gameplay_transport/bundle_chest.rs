@@ -104,7 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Some(
             tokio::time::timeout(std::time::Duration::from_secs(10), async {
-                let Some(_permit) = self.spell_lane_permit().await else {
+                let Some(permit) = self.spell_lane_permit().await else {
                     return outcome(UseDisposition::Rejected);
                 };
                 {
@@ -241,6 +241,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await
                 }
                 .await;
+                drop(permit);
                 // The mint owns the atomic obligation insert. The quest owner applies
                 // it in its revision slot; admission/cadence resumes an unacknowledged
                 // commit without minting the reward or advancing the track twice.
@@ -249,14 +250,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await;
                 }
                 match result {
-                    Ok((_, notice)) => UseOutcome {
-                        earned: super::earned_notice(
-                            self.achievements,
-                            notice,
-                            &mut super::operator_event,
-                        ),
-                        ..outcome(UseDisposition::Committed)
-                    },
+                    Ok((_, notice)) => {
+                        super::quest_collections::after_reward(self, actor, command).await;
+                        UseOutcome {
+                            earned: super::earned_notice(
+                                self.achievements,
+                                notice,
+                                &mut super::operator_event,
+                            ),
+                            ..outcome(UseDisposition::Committed)
+                        }
+                    }
                     Err(error) => mint_refusal(error),
                 }
             })

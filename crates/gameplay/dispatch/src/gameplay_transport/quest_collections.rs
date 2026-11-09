@@ -1,9 +1,12 @@
-//! Native inventory moves drive read-only imported COLLECT predicates.
+//! Native inventory moves and reward MINTs drive read-only imported COLLECT predicates.
 use super::{ComposedFreshAdmission, connection::UseCommand};
 use crate::foundation::ExactActorRef;
 use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
 
-pub(super) async fn after_move(
+pub(super) use after_inventory_change as after_move;
+pub(super) use after_inventory_change as after_reward;
+
+pub(super) async fn after_inventory_change(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: UseCommand,

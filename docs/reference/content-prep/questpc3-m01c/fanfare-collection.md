@@ -8,6 +8,6 @@ The generator verifies that exact pair before emitting the native collection
 predicate. Item 2973 without key number 3520 does not satisfy it.
 
 This implements only the chosen recipe's initial collection step. It checks
-current carried custody after a committed native item move and consumes
+current carried custody after a committed native item move or reward-claim MINT and consumes
 nothing. It does not prove which historical box supplied the key. The crypt
 route, door interaction, final reward and completion remain unqualified.
