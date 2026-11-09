@@ -715,6 +715,7 @@ fn scenario() -> TestResult {
 admission: None, world_change: None,
 admission: None,
 world_change: None,
+                admission: None,
             actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },

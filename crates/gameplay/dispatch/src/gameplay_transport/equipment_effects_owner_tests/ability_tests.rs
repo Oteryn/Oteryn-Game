@@ -135,6 +135,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
     ("M09-GATHER", 28),
+    // M22 adds only antler talisman 22008; herb/antlers retain their existing owners.
+    ("M22-TAINTED-TALISMAN", 1),
     // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
     // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
     // their content-only profiles. None of them is equipment.

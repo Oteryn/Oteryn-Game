@@ -663,6 +663,10 @@ fn next(
         D::East => at.x += 1,
         D::South => at.y += 1,
         D::West => at.x -= 1,
+        D::NorthEast => { at.x += 1; at.y -= 1; }
+        D::SouthEast => { at.x += 1; at.y += 1; }
+        D::SouthWest => { at.x -= 1; at.y += 1; }
+        D::NorthWest => { at.x -= 1; at.y -= 1; }
         D::NorthEast => {
             at.x += 1;
             at.y -= 1;

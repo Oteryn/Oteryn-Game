@@ -39,7 +39,7 @@
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
-    "item_conversion": 129
+    "item_conversion": 130
   },
   "item_authoring_counts": {
     "authoring": 700,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5789,
+          "record_count": 5780,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "da90f308f10de25bc15f3f00746246320d619711c1d1d0ed8686381298612dc2"
+          "sha256": "1215b52a5bcf267b99e022732effb95debbd17b313284c82439f884984c2c7d8"
         },
         {
           "creates_canonical_identities": false,
@@ -283,7 +283,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_spell_appearances.rs#SpellAppearancesDocument"
           },
-          "sha256": "ef27ffdfd709a0b4bc7885a8d570f8df1ab9ed6889584d7d85e8614691262962"
+          "sha256": "f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"
         },
         {
           "creates_canonical_identities": false,

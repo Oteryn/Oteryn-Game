@@ -381,6 +381,44 @@ mod target_stack_tests {
     use oteryn_gameplay_content::content::ProjectV2ConversionOperand;
 
     #[test]
+    fn m22_quantity_blind_carried_api_refuses_captured_talisman()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::native_gameplay::test_support;
+        let world = {
+            let seed = test_support::activated_with_item_keys(None);
+            seed.active().ok_or("seed")?.identity().world_id()
+        };
+        let (controller, _) = test_support::activated_with_loot_tables(world, None);
+        let state = controller
+            .active()
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        let definition = |id| TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: format!("oteryn:item.tibia.i{id}"),
+            revision_ref: "definition-r1".into(),
+        };
+        let herb = definition(3736);
+        let antlers = definition(10297);
+        for quantity in [1, 7, 100] {
+            let resolved =
+                carried_cooking_conversion_with_quantity(state, &herb, &antlers, None, quantity)
+                    .ok_or("quantity-aware talisman")?;
+            assert_eq!(resolved.target_debit, quantity);
+            assert_eq!(resolved.conversion.outputs.len(), 1);
+            assert_eq!(
+                resolved.conversion.outputs[0].0.production_key,
+                "oteryn:item.tibia.i22008"
+            );
+            assert_eq!(resolved.conversion.outputs[0].1, 1);
+        }
+        assert!(carried_cooking_conversion(state, &herb, &antlers).is_none());
+        assert!(carried_cooking_conversion_with_sub_type(state, &herb, &antlers, None).is_none());
+        assert!(carried_cooking_conversion(state, &definition(6276), &definition(6574)).is_some());
+        Ok(())
+    }
+
+    #[test]
     fn m22_captured_target_debit_uses_exact_bounded_stack() -> Result<(), Box<dyn std::error::Error>>
     {
         let mut operand: ProjectV2ConversionOperand = serde_json::from_value(serde_json::json!({

@@ -6,6 +6,8 @@ pub mod ground_stack;
 #[cfg(not(feature = "test-support"))]
 pub(crate) mod ground_stack;
 #[cfg(any(test, feature = "test-support"))]
+pub use ground_stack::matches as fixture_ground_stack_matches;
+#[cfg(any(test, feature = "test-support"))]
 #[doc(hidden)]
 pub use ground_stack::matches as fixture_ground_stack_matches;
 pub mod shared_count;
