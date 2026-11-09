@@ -418,7 +418,7 @@
   "status": "DONE",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/native.rs:23, apps/client/src/features/0023-presentation/mixer.rs:1, apps/client/src/features/local-reference-preferences/mixer_controls.rs:1; confirmed_sound_cues_use_pinned_mixer_routes (apps/client/tests/audio_mixer.rs:28), mixer_channels_are_independent_and_master_mute_wins, requested_audio_device_is_exact_and_never_silently_falls_back, missing_device_choice_survives_preference_reload, ambient_channel_gain_is_independent_and_honours_master_mute. Master/mute, exact device selection, ambient, music/items/events/UI gains wired to native playback and active voices; pinned cue routes documented in apps/client/SETTINGS.md. Checked origin/main and own branch first."
+  "evidence": "Existing implementation reverified after cgmech sync on 692b8b9da: apps/client/src/features/0023-presentation/native.rs:25 (device), native.rs:69 (active/new voice gains), native.rs:211 (UI); apps/client/src/features/local-reference-preferences/mixer_controls.rs:50 (settings caller). Tests: confirmed_sound_cues_use_pinned_mixer_routes (apps/client/tests/audio_mixer.rs:28), mixer_channels_are_independent_and_master_mute_wins (:4), requested_audio_device_is_exact_and_never_silently_falls_back (apps/client/tests/audio_device.rs:3), missing_device_choice_survives_preference_reload (:11), ambient_channel_gain_is_independent_and_honours_master_mute (apps/client/tests/ambient_sound_mix.rs:3). Main checked; full implementation is already on this lane."
  },
  {
   "id": "T065",
