@@ -93,8 +93,8 @@ pub(super) async fn exercise(
     );
     assert_eq!(progress(h, "stage").await?, 1);
     let position = TilePos {
-        x: 32776,
-        y: 32253,
+        x: 32777,
+        y: 32254,
         floor: -8,
     };
     let target = object_target(owner, position, 1)?;

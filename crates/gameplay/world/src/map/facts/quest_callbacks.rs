@@ -2,6 +2,34 @@
 use super::*;
 use sha2::{Digest, Sha256};
 
+// A committed callback can replace or remove one exact native door. Keep every
+// other door on the tile authoritative; an overlay never opens its neighbours.
+impl crate::map::floor::CellBlocker for BundleFacts {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        let (Ok(x), Ok(y), Ok(z)) = (
+            u16::try_from(cell.x),
+            u16::try_from(cell.y),
+            u8::try_from(cell.z),
+        ) else {
+            return false;
+        };
+        if z > 15 {
+            return false;
+        }
+        let pos = TilePos {
+            x,
+            y,
+            floor: -(z as i8),
+        };
+        let Ok(states) = self.callbacks.lock() else {
+            return true;
+        };
+        self.doors.blocks_unless(pos, |key| {
+            states.hidden.contains(&key) || states.passable.get(&key) == Some(&true)
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
@@ -840,6 +868,16 @@ impl BundleFacts {
             })
     }
 
+    /// Source UID/AID bindings keep their explicit owner when a position callback overlaps.
+    pub fn quest_callback_source_bound(&self, key: u64) -> bool {
+        self.placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .is_ok_and(|at| {
+                let attrs = &self.placements[at].1.attrs;
+                attrs.unique.is_some() || attrs.action.is_some()
+            })
+    }
+
     /// Match an exact authored counterpart only while the retained base object is bare.
     /// Sparse placements and plain palette entries share the same original appearance proof.
     pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {
@@ -1388,6 +1426,66 @@ mod primal_pod_removal_tests {
         let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
         assert_eq!(state.movement_items.get(&position).map(Vec::len), Some(1));
         assert_eq!(state.movement_sequence, 3);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod door_projection_tests {
+    use super::*;
+    use crate::content::LogicalCell;
+    use crate::map::floor::CellBlocker;
+    use std::num::NonZeroU32;
+
+    #[test]
+    fn callback_opening_excludes_only_the_exact_projected_door() -> Result<(), String> {
+        let pos = TilePos {
+            x: 6,
+            y: 7,
+            floor: -8,
+        };
+        let first = placement_key(pos, 0).ok_or("first door")?;
+        let second = placement_key(pos, 1).ok_or("second door")?;
+        let open = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 1643,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        };
+        let mut facts = BundleFacts::default();
+        for key in [first, second] {
+            facts
+                .doors
+                .push(key, true, false, open, false, None, None, None);
+        }
+        facts.doors.finish();
+        let cell = LogicalCell { x: 6, y: 7, z: 8 };
+        assert!(CellBlocker::blocks(&facts, cell));
+        {
+            let mut callbacks = facts.callbacks.lock().map_err(|_| "callbacks")?;
+            Arc::make_mut(&mut callbacks).hidden.insert(first);
+        }
+        assert!(
+            CellBlocker::blocks(&facts, cell),
+            "a different closed door still blocks"
+        );
+        {
+            let mut callbacks = facts.callbacks.lock().map_err(|_| "callbacks")?;
+            Arc::make_mut(&mut callbacks).passable.insert(second, true);
+        }
+        assert!(!CellBlocker::blocks(&facts, cell));
+        {
+            let mut callbacks = facts.callbacks.lock().map_err(|_| "callbacks")?;
+            Arc::make_mut(&mut callbacks).passable.insert(second, false);
+        }
+        assert!(
+            CellBlocker::blocks(&facts, cell),
+            "a later closing projection blocks again"
+        );
         Ok(())
     }
 }

@@ -13,8 +13,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             sessions
                 .get(&session)
                 .and_then(|entry| entry.copy.as_ref())
-                .and_then(|copy| {
-                    oteryn_gameplay_quests::quest::world_callbacks::active_disguise(copy.tracks())
+                .and_then(|copy| copy.read_tracks(self.quest_catalogue.as_deref()?))
+                .and_then(|tracks| {
+                    oteryn_gameplay_quests::quest::world_callbacks::active_disguise(&tracks)
                         .ok()
                         .flatten()
                         .map(|rule| rule.creature.clone())

@@ -464,7 +464,9 @@ pub(crate) async fn give_world(
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    let claim_key = if callback.has_repeating_clock() {
+    let claim_key = if callback.has_repeating_clock()
+        || callback.storage.iter().any(|storage| storage.add.is_some())
+    {
         let digest = Sha256::new()
             .chain_update(b"oteryn:quest-exchange:v1\0")
             .chain_update(fence.character_id.as_bytes())

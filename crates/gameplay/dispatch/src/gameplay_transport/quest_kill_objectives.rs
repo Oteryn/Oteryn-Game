@@ -121,12 +121,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let snapshot = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
             let revision = copy.character_revision()?.get();
+            let tracks = copy.read_tracks(self.quest_catalogue.as_deref()?)?;
             let phases = rules::OBJECTIVES
                 .iter()
                 .map(|rule| {
                     (
                         rule.phase_track.to_owned(),
-                        copy.tracks().get(rule.phase_track).copied().unwrap_or(0),
+                        tracks.get(rule.phase_track).copied().unwrap_or(0),
                     )
                 })
                 .collect();

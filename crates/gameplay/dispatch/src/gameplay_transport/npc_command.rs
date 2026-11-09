@@ -743,6 +743,14 @@ pub(super) async fn npc_bank_talk(
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     }
+    if oteryn_gameplay_npc::greeting::words(&intent.text)
+        .iter()
+        .any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))
+        && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+    {
+        state.quest_dialogue.restart_topic();
+    }
     // A live route quote owns its confirmation before any quest adapter runs.
     // The paid owner repeats this exact scope/expiry check before departure.
     if admission

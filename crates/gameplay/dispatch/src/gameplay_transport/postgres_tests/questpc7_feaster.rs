@@ -199,8 +199,29 @@ async fn word(
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
     text: &str,
 ) -> TestResult {
-    let mut seq = a.continuity.next_command_id;
-    super::questpc7_outfit_items::talk(owner, a, npc, &mut seq, text).await?;
+    use oteryn_protocol_oteryn::npc_service::{
+        NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
+    };
+    // NPC grants and world USE share the durable MINT CommandRef namespace.
+    // Keep both on the real connection sequence instead of issuing direct NPC
+    // commands that a later USE can accidentally reuse.
+    for words in ["hi", text] {
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let payload = encode_npc_talk_intent(&NpcTalkIntent {
+            npc_actor: npc,
+            text: words.into(),
+        })
+        .map_err(debug)?;
+        let command = a.continuity.next_command_id;
+        let reply = super::quest_world_callbacks::wire(owner, a, command, 7, payload).await?;
+        let disposition = decode_npc_intent_result(&reply).map_err(debug)?;
+        if words == "hi" {
+            assert_eq!(disposition, NpcIntentDisposition::Ok);
+        }
+    }
     Ok(())
 }
 pub(super) async fn begin(
@@ -341,6 +362,26 @@ pub(super) async fn exercise(
     at(owner, a, potion.teleport.ok_or("Brain Grounds")?).await?;
     assert_eq!(value(owner, a, TRACK).await?, 4);
     let sample = callback(&rows, "sample")?;
+    // MINT preserves one fresh instance per occurrence. Carry the twenty probes
+    // in an ordinary nested backpack so the scalpel and other expedition items
+    // do not exhaust the twenty-entry main backpack during sampling.
+    supply(
+        owner,
+        a,
+        "oteryn:item.tibia.i2854",
+        sample.selector.position.ok_or("sample position")?,
+        32002,
+        true,
+    )
+    .await?;
+    let probe_bag: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT i.item_instance_id FROM game_item_container_entries e \
+         JOIN game_item_instances i USING(item_instance_id) \
+         WHERE i.definition_production_key='oteryn:item.tibia.i2854' AND i.lifecycle=1 \
+         ORDER BY i.item_instance_id LIMIT 1",
+    )
+    .fetch_one(&h.pool)
+    .await?;
     for i in 0..20 {
         if i == 19 {
             let premium = owner.premium_coordinator;
@@ -352,7 +393,48 @@ pub(super) async fn exercise(
             assert_eq!(receipts(h).await?, before);
             owner.premium_coordinator = premium;
         }
+        let replay = if i == 0 {
+            Some((
+                a.continuity.next_command_id,
+                super::questpc7_hoist_story::target(
+                    owner,
+                    sample.selector.position.ok_or("sample position")?,
+                    sample.selector.appearance.ok_or("sample appearance")?,
+                )?,
+            ))
+        } else {
+            None
+        };
         assert_eq!(click(owner, a, sample).await?, UseDisposition::Committed);
+        if let Some((command, payload)) = replay {
+            let before = receipts(h).await?;
+            let reply = super::quest_world_callbacks::wire(owner, a, command, 2, payload).await?;
+            assert_eq!(
+                oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+                UseDisposition::Committed
+            );
+            assert_eq!(
+                receipts(h).await?,
+                before,
+                "sampling replay adds no occurrence"
+            );
+        }
+        let probe: sqlx::types::Uuid = sqlx::query_scalar(
+            "SELECT i.item_instance_id FROM game_item_container_entries e \
+             JOIN game_item_instances i USING(item_instance_id) \
+             WHERE i.definition_production_key='oteryn:item.tibia.i32197' AND i.lifecycle=1 \
+             ORDER BY i.item_instance_id LIMIT 1",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        super::qengine_rewards::into_bag(
+            owner,
+            a,
+            *probe.as_bytes(),
+            *probe_bag.as_bytes(),
+            400_000 + u64::try_from(i)?,
+        )
+        .await?;
         assert_eq!(value(owner, a, &track("samples")).await?, i + 1);
         assert_eq!(carried(h, 32197).await?, i + 1);
     }

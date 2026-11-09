@@ -143,7 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Exhausted;
                 }
                 let now = self.owner_now();
-                let closed = crate::map::floor::BundleDoors(map.facts.doors());
+                let closed = crate::map::floor::BundleDoors(&map.facts);
                 let blocked = crate::gameplay_transport::pvp_live::pz_blocked(
                     &states,
                     actor,

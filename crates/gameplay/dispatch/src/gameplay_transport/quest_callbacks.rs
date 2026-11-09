@@ -269,6 +269,12 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return true;
     }
     let selector = &callback.selector;
+    if selector.unique.is_none()
+        && selector.action.is_none()
+        && map.facts.quest_callback_source_bound(key)
+    {
+        return false;
+    }
     if selector.ordinal.is_some()
         && selector.unique.is_none()
         && selector.action.is_none()
@@ -1362,7 +1368,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !callback.return_on_failure {
             return;
         }
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime,

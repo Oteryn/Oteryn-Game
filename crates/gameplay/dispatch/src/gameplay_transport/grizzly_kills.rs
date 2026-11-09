@@ -391,7 +391,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|entry| entry.copy.as_ref())
                 .and_then(|copy| {
                     let revision = copy.character_revision()?.get();
-                    let active_tasks = quest::started_tasks(copy.tracks());
+                    let catalogue = self.quest_catalogue.as_deref()?;
+                    let tracks = copy.read_tracks(catalogue)?;
+                    let active_tasks = quest::started_tasks(&tracks);
                     if active_tasks.len() > quest::ACTIVE_TASK_LIMIT {
                         return None;
                     }
@@ -409,17 +411,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lease_generation: lease.generation(),
                         observed_revision: revision,
                         active_tasks,
-                        active_goals: native_goals::active(copy.tracks()),
-                        native_counters: self
-                            .quest_catalogue
-                            .as_deref()
-                            .map(|catalogue| capture_native(catalogue, copy.tracks()))
-                            .unwrap_or_default(),
+                        active_goals: native_goals::active(&tracks),
+                        native_counters: capture_native(catalogue, &tracks),
                         objective_keys: oteryn_gameplay_quests::quest::death_objectives::load()
                             .ok()
                             .into_iter()
                             .flatten()
-                            .filter(|objective| objective.active(copy.tracks()))
+                            .filter(|objective| objective.active(&tracks))
                             .map(|objective| objective.key.clone())
                             .collect(),
                     })

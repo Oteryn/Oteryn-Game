@@ -460,7 +460,7 @@ impl CellBlocker for HouseBlocker<'_> {
         };
         let door = self.bundle.map_or_else(
             || self.doors.contains(&cell),
-            |bundle| crate::map::floor::BundleDoors(bundle.facts.doors()).blocks(cell),
+            |bundle| crate::map::floor::BundleDoors(&bundle.facts).blocks(cell),
         );
         outside || door || self.items.get(&cell).is_some_and(|item| item.0)
     }

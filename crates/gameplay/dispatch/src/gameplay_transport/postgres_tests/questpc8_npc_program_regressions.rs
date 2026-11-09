@@ -570,37 +570,58 @@ pub(super) async fn exercise_scoped(
         .read_character_quest_state(authority, fence.character_id)
         .await
         .map_err(debug)?;
-    // Xelvar's source sets a track and grants four crystal items. The storage
-    // owner must refuse the complete branch until its item owner is composed.
-    let refused = owner
-        .npc_talk(
-            admitted.runtime_actor.ok_or("actor")?,
-            UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: 2611,
-                item_fence: Some(fence.item_fence()),
-            },
-            NpcTalkIntent {
-                npc_actor: xelvar,
-                text: "adventures".into(),
-            },
-        )
+    // The composed plain-item owner now admits Xelvar's complete source branch.
+    // Both the four crystals and its single track must commit exactly once.
+    let intent = || NpcTalkIntent {
+        npc_actor: xelvar,
+        text: "adventures".into(),
+    };
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 2611,
+        item_fence: Some(fence.item_fence()),
+    };
+    let outcome = owner
+        .npc_talk(admitted.runtime_actor.ok_or("actor")?, command, intent())
         .await;
-    assert_eq!(refused.disposition, NpcIntentDisposition::Rejected);
-    assert!(!refused.unknown);
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(!outcome.unknown);
+    let after = owner
+        .root
+        .read_character_quest_state(authority, fence.character_id)
+        .await
+        .map_err(debug)?;
+    let mut expected = before.tracks().clone();
+    expected.insert(
+        "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line".into(),
+        1,
+    );
+    assert_eq!(after.tracks(), &expected);
+    let replay = owner
+        .npc_talk(admitted.runtime_actor.ok_or("actor")?, command, intent())
+        .await;
+    assert_eq!(replay.disposition, NpcIntentDisposition::Ok);
+    assert!(!replay.unknown);
     assert_eq!(
         owner
             .root
             .read_character_quest_state(authority, fence.character_id)
             .await
             .map_err(debug)?,
-        before
+        after
     );
-    let receipts: Vec<(String, i32)> = sqlx::query_as("SELECT quest_key,cardinality(track_keys) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-npc/%' ORDER BY quest_key LIMIT 4")
+    let crystals: i64 = sqlx::query_scalar("SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i16167'")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(owner.world_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        crystals, 4,
+        "the complete grant is replayed without minting twice"
+    );
+    let receipts: Vec<(String, i32)> = sqlx::query_as("SELECT quest_key,cardinality(track_keys) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-npc/%' ORDER BY quest_key LIMIT 5")
         .fetch_all(&h.pool).await?;
     assert_eq!(
         receipts,
         vec![
+            ("oteryn:quest.bigfoot_s_burden_quest".into(), 1),
             ("oteryn:quest.hero_of_rathleton_quest".into(), 1),
             ("oteryn:quest.hot_cuisine_quest".into(), 3),
             ("oteryn:quest.in_service_of_yalahar_quest".into(), 1),

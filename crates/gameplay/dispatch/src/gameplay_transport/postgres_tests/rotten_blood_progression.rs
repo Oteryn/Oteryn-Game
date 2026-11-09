@@ -657,6 +657,7 @@ async fn kill_key(
     use crate::content::creature_reward::NoSettlementReason;
 
     let primal = creature_key == "oteryn:creature.the_primal_menace";
+    let empty_bakragore = creature_key == "oteryn:creature.bakragore";
     if primal {
         // PR #2851 admits Primal corpse stages 39527-39530 from Crystal.
         let row = rewards.row(creature_key).map_err(debug)?;
@@ -674,8 +675,28 @@ async fn kill_key(
                 .refresh_source_party_presence(deps.actor, deps.admitted.game_session_id)
                 .await
         );
+    } else if empty_bakragore {
+        assert_eq!(
+            rewards.row(creature_key).err(),
+            Some(NoSettlementReason::LootItemInadmissible)
+        );
+        let corpse = rewards
+            .reward_boss_corpse(creature_key)
+            .ok_or("admitted empty Bakragore corpse")?;
+        assert_eq!(
+            corpse.corpse_item,
+            crate::combat::LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.tibia.i44012",
+                "definition-r1"
+            )
+        );
+        assert!(
+            corpse.loot_table.entries.is_empty(),
+            "physical admission grants no private loot"
+        );
     } else {
-        // The five Rotten Blood corpses still lack admitted container facts.
+        // The other four Rotten Blood corpses still lack admitted container facts.
         assert!(
             matches!(
                 rewards.row(creature_key),
@@ -839,6 +860,14 @@ async fn kill_key(
                     entry.bosstiary_only.is_none(),
                     "Primal must use the full reward path"
                 );
+            } else if empty_bakragore {
+                let row = entry.row.as_ref().ok_or("queued empty Bakragore corpse")?;
+                assert_eq!(row.corpse_item.production_key, "oteryn:item.tibia.i44012");
+                assert!(row.loot_table.entries.is_empty());
+                assert!(
+                    entry.bosstiary_only.is_none(),
+                    "the admitted body uses physical settlement"
+                );
             } else {
                 assert!(
                     entry.row.is_none(),
@@ -880,9 +909,13 @@ async fn kill_key(
             ),
             "native drain must commit exactly one Rotten, XP and party receipt without granting Hazard"
         );
-        eprintln!(
-            "ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible"
-        );
+        if empty_bakragore {
+            let (corpses, children): (i64, i64) = sqlx::query_as("SELECT count(*), (SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id WHERE parent.definition_production_key='oteryn:item.tibia.i44012') FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i44012'").fetch_one(&h.pool).await?;
+            assert_eq!(corpses, 1, "the admitted Bakragore body materializes once");
+            assert_eq!(children, 0, "no unavailable private loot enters the physical corpse");
+        } else {
+            eprintln!("ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible");
+        }
     }
     let before_replay = progression_receipts(h).await?;
     settle_captured_endgame_death(owner, &h.pool, session, &source)

@@ -50,12 +50,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 sessions
                     .get(&session)
                     .and_then(|entry| entry.copy.as_ref())
-                    .map(|copy| {
+                    .and_then(|copy| copy.read_tracks(self.quest_catalogue.as_deref()?))
+                    .map(|tracks| {
                         objectives
                             .iter()
                             .filter(|objective| {
                                 objective.guardian.is_some()
-                                    && objective.active(copy.tracks())
+                                    && objective.active(&tracks)
                                     && objective.matches(
                                         &objective.creature,
                                         position.x,

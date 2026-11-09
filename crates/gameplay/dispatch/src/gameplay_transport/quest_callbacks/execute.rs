@@ -232,11 +232,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     UseDisposition::Exhausted
                 };
             }
-            // Source asymmetric levers refuse to toggle if a remote passage is
-            // already in the requested state. Check before any map/quest write.
-            if passage_definition.require_state && map.facts.base_hidden(*passage) != close {
-                return UseDisposition::NothingToUse;
-            }
             // Crystal giant_smithhammer/lever.lua:7-12 changes BOTH objects
             // only for open+rock-present or closed+rock-absent. A mismatched
             // pair is a handled no-op, including the lever's revision.
@@ -244,6 +239,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && map.facts.base_hidden(*passage) != close
             {
                 return UseDisposition::Committed;
+            }
+            // Source asymmetric levers refuse to toggle if a remote passage is
+            // already in the requested state. Check before any map/quest write.
+            if passage_definition.require_state && map.facts.base_hidden(*passage) != close {
+                return UseDisposition::NothingToUse;
             }
             if let Some(appearance) = passage_definition.replacement {
                 let Some(facts) = map.facts.quest_callback_replacement(
@@ -264,7 +264,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return UseDisposition::Rejected;
         };
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {

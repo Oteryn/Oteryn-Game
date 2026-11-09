@@ -125,7 +125,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         let expected = runtime.read_actor_position(actor).ok()?;
-        let blocking = crate::map::floor::BundleDoors(map.facts.doors());
+        let blocking = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
         let proof = crate::map::floor::prepare_bundle_ladder(
             &runtime,

@@ -477,8 +477,8 @@ fn scenario_case(
         )?
     } else if name == "authored-smith-cache" {
         super::super::quest_callbacks::source_world_rectangle(
-            (32776, 32253, -8),
-            &[(32776, 0)],
+            (32777, 32254, -8),
+            &[(32777, 0)],
             2472,
             2,
         )?

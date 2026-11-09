@@ -855,7 +855,7 @@ impl BundleCollisionData {
                 .map
                 .facts
                 .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
-                && !self.map.facts.doors().blocks(pos)
+                && !super::floor::CellBlocker::blocks(&self.map.facts, cell)
             {
                 CollisionClass::Walkable
             } else {

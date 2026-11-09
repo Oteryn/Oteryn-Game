@@ -244,11 +244,11 @@ impl CellBlocker for BTreeSet<LogicalCell> {
 
 /// The closed bundle doors, read live through the indexed door lookup. The native floor is the
 /// legacy `z` negated.
-pub struct BundleDoors<'a>(pub &'a super::door::DoorBook);
+pub struct BundleDoors<'a>(pub &'a dyn CellBlocker);
 
 impl CellBlocker for BundleDoors<'_> {
     fn blocks(&self, cell: LogicalCell) -> bool {
-        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks(tile))
+        self.0.blocks(cell)
     }
 }
 
@@ -742,7 +742,7 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
 
 impl CellBlocker for crate::map::door::DoorBook {
     fn blocks(&self, cell: LogicalCell) -> bool {
-        BundleDoors(self).blocks(cell)
+        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.blocks(tile))
     }
 }
 

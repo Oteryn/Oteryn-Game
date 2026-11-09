@@ -214,7 +214,14 @@ pub(super) async fn step(
     .await?;
     assert_eq!(
         decode_step_result(&result).map_err(debug)?,
-        StepDisposition::Moved
+        StepDisposition::Moved,
+        "command={command} direction={direction:?} position={:?}",
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+            .map_err(debug)?
     );
     Ok(())
 }

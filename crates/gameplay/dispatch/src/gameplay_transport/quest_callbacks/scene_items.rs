@@ -73,7 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return false;
             }
-            let closed = crate::map::floor::BundleDoors(map.facts.doors());
+            let closed = crate::map::floor::BundleDoors(&map.facts);
             if let Err(error) = crate::map::floor::prepare_source_scene(
                 &runtime,
                 &self.movement_cells,

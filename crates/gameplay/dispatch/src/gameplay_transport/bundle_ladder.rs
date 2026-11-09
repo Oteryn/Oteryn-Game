@@ -145,7 +145,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Some(result(UseDisposition::NotPossible));
         };
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut landing = None;
         for &(dx, dy) in LANDINGS {
             let destination = MovementLocalPosition {

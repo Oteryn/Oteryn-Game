@@ -59,6 +59,14 @@ impl NpcConversations {
 }
 
 impl State {
+    pub(super) fn restart_topic(&mut self) {
+        // An unresolved writer retains its confirmation until reconciliation.
+        if self.pending.is_none() {
+            self.context = None;
+            self.topic = Topic::default();
+        }
+    }
+
     fn topic(&self, context: &Context) -> Topic {
         if self.context.as_ref() == Some(context) {
             self.topic.clone()

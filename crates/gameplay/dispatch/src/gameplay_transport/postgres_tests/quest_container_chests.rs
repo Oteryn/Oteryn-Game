@@ -783,7 +783,8 @@ fn scenario_case(
                             (CommandStatus::Accepted, UseDisposition::Committed),
                             (CommandStatus::DuplicateReplay, UseDisposition::Committed),
                             (CommandStatus::Accepted, UseDisposition::NothingToUse),
-                        ]
+                        ],
+                        "{claim} at {chest:?}"
                     );
                 }
                 let bag = harness
