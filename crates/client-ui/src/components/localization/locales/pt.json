@@ -276,5 +276,7 @@
  "Welcome back!": "Bem-vindo de volta!",
  "Refresh reward": "Atualizar recompensa",
  "Claim gift": "Resgatar presente",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Um presente de boas-vindas está disponível. Abra a recompensa diária (Ctrl+D) e depois a recompensa de retorno para resgatá-lo.",
+ "Weapon proficiency XP: {}% chance to gain double XP\n": "XP de proficiência em armas: {}% de chance de ganhar XP em dobro\n",
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Cada recompensa elegível de XP de proficiência em armas pode ser duplicada. A chance segue a última sequência atualizada: 1% por dia até 7%; 8% aos 14, 9% aos 21, 10% aos 28 (máximo). Atualize após resgatar para ver o novo bônus.\n"
 }

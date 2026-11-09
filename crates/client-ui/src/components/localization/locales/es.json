@@ -276,5 +276,7 @@
  "Welcome back!": "¡Bienvenido de nuevo!",
  "Refresh reward": "Actualizar recompensa",
  "Claim gift": "Reclamar regalo",
- "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Hay un regalo de bienvenida disponible. Abre Recompensa diaria (Ctrl+D) y luego Recompensa de regreso para reclamarlo."
+ "A welcome-back gift is available. Open Daily Reward (Ctrl+D), then Welcome-back reward, to claim it.": "Hay un regalo de bienvenida disponible. Abre Recompensa diaria (Ctrl+D) y luego Recompensa de regreso para reclamarlo.",
+ "Weapon proficiency XP: {}% chance to gain double XP\n": "XP de dominio de armas: {}% de probabilidad de obtener el doble de XP\n",
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Cada recompensa válida de XP de dominio de armas puede duplicarse. La probabilidad depende de la última racha actualizada: 1% por día hasta el 7%; 8% a los 14, 9% a los 21, 10% a los 28 (máximo). Actualiza después de reclamar para ver el nuevo bono.\n"
 }
