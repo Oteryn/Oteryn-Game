@@ -1,6 +1,8 @@
 //! LOOP-MAP-1 basic map wire. Fixed, little-endian scalar layout, no unbounded fields.
 //! Query: empty. Intent: operation:u8 (1 start, 2 shuffle, 3 find, 4 donate),
 //! area:u32, amount:u32 (zero except donate). Results are documented in the contract.
+pub mod atlas;
+
 pub const COMMAND_TYPE_CYCLOPEDIA_QUERY: u32 = 72;
 pub const COMMAND_TYPE_CYCLOPEDIA_INTENT: u32 = 73;
 pub const CAPABILITY_CYCLOPEDIA_MAP_V1: u32 = 57;
@@ -30,6 +32,13 @@ pub struct MapIntent {
 pub struct MapWireError;
 
 pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError> {
+    if kind == COMMAND_TYPE_CYCLOPEDIA_QUERY && bytes.first() == Some(&128) {
+        atlas::Query::decode(bytes)?;
+        return Ok(MapIntent {
+            operation: 128,
+            amount: 0,
+        });
+    }
     if kind == COMMAND_TYPE_CYCLOPEDIA_QUERY && bytes.is_empty() {
         return Ok(MapIntent {
             operation: 0,
@@ -194,3 +203,7 @@ mod tests {
         assert!(encode_result(&r).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "cyclopedia_atlas_tests.rs"]
+mod atlas_tests;

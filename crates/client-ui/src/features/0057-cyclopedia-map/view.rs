@@ -1,5 +1,8 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
+    if panel.atlas.is_some() {
+        return format!("Cyclopedia atlas\r\n{}", super::atlas_detail(panel));
+    }
     format!(
         "Cyclopedia map\r\n{}\r\n{}\r\n{}",
         panel.summary,

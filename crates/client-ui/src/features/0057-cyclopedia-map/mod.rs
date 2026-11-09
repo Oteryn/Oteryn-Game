@@ -1,3 +1,6 @@
+#[path = "view/atlas.rs"]
+mod atlas;
+pub use atlas::{atlas_action, atlas_color, atlas_detail};
 mod input;
 mod state;
 mod view;

@@ -60,7 +60,7 @@ Zasady przeciw dublowaniu:
 | O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
 | T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | T078 | Cyclopedia | Items: kategorie/search/statystyki/źródła | PARTIAL | Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów. |
-| T079 | Cyclopedia | Map: areas/subareas/passages/PoI/NPC | PARTIAL | Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC. |
+| T079 | Cyclopedia | Map: areas/subareas/passages/PoI/NPC | DONE | Evidence: apps/client/src/features/0057-cyclopedia-map/view/atlas_native.rs:47 + atlas_real_playlink_projects_regions_markers_and_navigation + cyclopedia_postgres_real_dispatch (T079 framed atlas, NPCs, uncovered membership, POI visibility and fences) |
 | T080 | Cyclopedia | Bestiary: katalog/filter/combat/loot | PARTIAL | Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot. |
 | T081 | Cyclopedia | Charms: points/unlock/assign/remove/reset | PARTIAL | Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów. |
 | T082 | Cyclopedia | Bosstiary: kategorie/points/progress | PARTIAL | Jest postęp i boss key; brak galerii, filtrów kategorii i pełnej prezentacji etapów. |

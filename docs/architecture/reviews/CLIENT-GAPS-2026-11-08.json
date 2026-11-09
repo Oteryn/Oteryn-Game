@@ -520,9 +520,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Map: areas/subareas/passages/PoI/NPC",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/atlas_native.rs:47 + atlas_real_playlink_projects_regions_markers_and_navigation + cyclopedia_postgres_real_dispatch (T079 framed atlas, NPCs, uncovered membership, POI visibility and fences)"
  },
  {
   "id": "T080",
