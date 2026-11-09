@@ -73,6 +73,7 @@ enum Case {
     CircleRoom,
     DemonaRing,
     DoubleHero,
+    Katana,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -92,6 +93,25 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:1850-1864: independent Katana corpse rewards.
+#[test]
+fn m35_katana_dispatch_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Katana).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Katana scenario panicked")??;
+    println!("M35_KATANA_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua: Demona Ring's two independent rewards.
@@ -316,6 +336,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::Katana => (
+            (32175, 32145, -11),
+            4240,
+            "oteryn:quest.katana_quest",
+            &[(32175, 6162), (32174, 6163)],
+        ),
         Case::DemonaRing => (
             (32504, 31596, -14),
             2472,
@@ -436,6 +462,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     (32599, 31923, -6, 5005, 2472),
                 ],
             )?
+        } else if matches!(case, Case::Katana) {
+            source_world_objects(
+                chest,
+                &[(32175, 32145, 6162, 4240), (32174, 32149, 6163, 4240)],
+            )?
         } else if matches!(case, Case::Koshei) {
             source_world_objects(
                 chest,
@@ -472,6 +503,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::CircleRoom
                     | Case::DemonaRing
                     | Case::DoubleHero
+                    | Case::Katana
             ) {
                 2
             } else {
@@ -590,7 +622,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 if position_index == 0 { 31905 } else { 31923 }
             } else if matches!(case, Case::FireAxeAll) {
                 if position_index == 0 { 31656 } else { 31650 }
-            } else if matches!(case, Case::Koshei) {
+            } else if matches!(case, Case::Koshei | Case::Katana) {
                 chest.1 + 4 * u16::try_from(position_index)?
             } else {
                 chest.1
@@ -725,6 +757,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::CircleRoom
                                 | Case::DemonaRing
                                 | Case::DoubleHero
+                                | Case::Katana
                         ) && index == 1
                 );
             }
@@ -936,6 +969,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     | Case::CircleRoom
                     | Case::DemonaRing
                     | Case::DoubleHero
+                    | Case::Katana
             ) {
                 let rewards: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
@@ -954,6 +988,15 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 "oteryn:item.tibia.i3381"
                             } else {
                                 "oteryn:item.tibia.i3419"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::Katana) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3367"
+                            } else {
+                                "oteryn:item.tibia.i3300"
                             },
                             1,
                         )

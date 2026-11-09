@@ -474,3 +474,23 @@ handwritten delta and donor source records; no significant finding. No
 assertion was removed or loosened and no generated file changed. Node boot
 was skipped as instructed. The documented final-binding, partial-charge and
 remaining caller-proof requirements still leave the complete M35 row PARTIAL.
+
+## Katana corpse-pair real-caller qualification
+
+Crystal 201189f8 `chest.lua:1850-1864` binds UID6162 at(32175,32145,11)
+and UID6163 at(32174,32149,11), both appearance4240. The independent
+rewards are item3367 x1 and item3300 x1. The mounted test preserves both
+literal positions through the existing source-world helper and drives actual
+wire USE through production RewardClaim MINT and quest obligations in both
+orders. It checks exact durable rewards, incomplete state after the first
+claim, complete state after the second, receipt and consumed-obligation
+counts, replay and fresh-repeat refusal, and state reload between claims.
+No production declaration, reward data or generated pin is changed.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL case in138.05 seconds, printing
+`M35_KATANA_POSTGRES_CASE_COMPLETED`. Self-review covered all handwritten
+changes against donor endpoints and quantities; no significant finding. No
+existing assertion was removed or loosened. Local node boot was skipped as
+instructed. The complete M35 row remains PARTIAL for the final-source binding,
+partial-charge and remaining caller-proof requirements documented above.
