@@ -356,7 +356,7 @@ fn engenc_hit_objective_rejects_unproven_use_postgres() -> fixture::TestResult {
         .map_err(Into::into)
 }
 
-async fn exercise_unproven_hit(h: &fixture::Harness) -> fixture::TestResult {
+fn hit_catalogue() -> fixture::TestResult<Arc<QuestStateCatalogue>> {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../quests/src/quest/authored_bindings/fixtures/kill.json"
     ))?;
@@ -371,7 +371,11 @@ async fn exercise_unproven_hit(h: &fixture::Harness) -> fixture::TestResult {
     }});
     let bindings = Bindings::parse(&serde_json::to_vec(&value)?)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("base")?;
-    let catalogue = Arc::new(bindings.attach(&base)?);
+    Ok(Arc::new(bindings.attach(&base)?))
+}
+
+async fn exercise_unproven_hit(h: &fixture::Harness) -> fixture::TestResult {
+    let catalogue = hit_catalogue()?;
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h
         .root
@@ -409,5 +413,232 @@ async fn exercise_unproven_hit(h: &fixture::Harness) -> fixture::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(tracks, 0);
+    Ok(())
+}
+
+#[test]
+fn engenc_native_hit_is_atomic_fenced_and_replay_safe_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create(admin, "engenc_native_hit", true).await?;
+                    let result = exercise_native_hit(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_NATIVE_HIT_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC native hit PG worker panicked")?
+        .map_err(Into::into)
+}
+
+fn native_hit_witness(
+    lease_generation: u64,
+) -> fixture::TestResult<foundation::runtime_actor_carrier::CommittedNativeHit> {
+    let fence = fixture::fence(1)?;
+    let foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Err("fixture channel".into());
+    };
+    let mut runtime = foundation::ChannelRuntimeV1::from_committed_assignment(
+        world_id,
+        channel_id,
+        foundation::NodeId::decode(&fixture::id(3)).map_err(fixture::debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        foundation::ChannelContentPin::test(world_id),
+    )
+    .map_err(fixture::debug)?;
+    let reservation = runtime
+        .reserve_fresh_session(fence.game_session_id)
+        .map_err(fixture::debug)?;
+    let player = runtime
+        .commit_fresh_session(reservation)
+        .map_err(fixture::debug)?;
+    runtime
+        .bind_attacker_lease(
+            player,
+            fence.game_session_id,
+            foundation::CharacterLease::new(
+                foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(fixture::debug)?,
+                lease_generation,
+            )
+            .map_err(fixture::debug)?,
+        )
+        .map_err(fixture::debug)?;
+    let target = runtime
+        .admit_monster_lab_creature(
+            foundation::MovementLocalPosition {
+                x: 2,
+                y: 1,
+                floor: 7,
+            },
+            "engenc:training",
+            100,
+        )
+        .map_err(fixture::debug)?;
+    let command = foundation::CommandRef::new(
+        fence.game_session_id,
+        foundation::CommandId::new(1).map_err(fixture::debug)?,
+    );
+    let mut owner = runtime.borrow_exact_actor_commit();
+    let result = owner
+        .commit_damage_for_bound_attacker(
+            target,
+            player,
+            command,
+            0,
+            foundation::OwnerDamageCommand {
+                target: b"engenc:training",
+                occurrence: &[],
+                binding: b"engenc:training-hit",
+                damage: 5,
+            },
+        )
+        .map_err(fixture::debug)?;
+    assert!(result.applied);
+    owner
+        .committed_hit_for_bound_attacker(target, player, command, 0)
+        .map_err(fixture::debug)?
+        .ok_or_else(|| "native hit witness absent".into())
+}
+
+async fn exercise_native_hit(h: &fixture::Harness) -> fixture::TestResult {
+    use durability::quest_state::native_hits::NativeQuestHit;
+    let catalogue = hit_catalogue()?;
+    let hash = catalogue.definition_hash(QUEST).ok_or("hash")?;
+    let hit = |witness, item: &str| {
+        NativeQuestHit::from_committed(
+            "oteryn:quest-transition/native-hits/training".into(),
+            "oteryn:creature.rat".into(),
+            item.into(),
+            None,
+            1,
+            hash,
+            witness,
+        )
+    };
+    let witness = native_hit_witness(1)?;
+    let valid = hit(witness, "oteryn:item.spear");
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let fence = fixture::fence(1)?;
+    assert!(
+        h.root
+            .commit_character_native_quest_hit(
+                &authority,
+                &h.node,
+                fence,
+                hit(witness, "oteryn:item.sword"),
+                Arc::clone(&catalogue)
+            )
+            .await
+            .is_err()
+    );
+    let refused = h
+        .root
+        .commit_character_native_quest_hit(
+            &authority,
+            &h.node,
+            fence,
+            hit(native_hit_witness(2)?, "oteryn:item.spear"),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(refused, QuestTransitionOutcome::Refused(_)));
+    let future = NativeQuestHit::from_committed(
+        "oteryn:quest-transition/native-hits/training".into(),
+        "oteryn:creature.rat".into(),
+        "oteryn:item.spear".into(),
+        None,
+        2,
+        hash,
+        witness,
+    );
+    let refused = h
+        .root
+        .commit_character_native_quest_hit(
+            &authority,
+            &h.node,
+            fence,
+            future,
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(refused, QuestTransitionOutcome::Refused(_)));
+    assert_eq!(h.root_revision().await?, "1");
+    let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(before, 0);
+    let committed = h
+        .root
+        .commit_character_native_quest_hit(
+            &authority,
+            &h.node,
+            fence,
+            valid.clone(),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    assert_eq!(h.root_revision().await?, "2");
+    let replay = h
+        .root
+        .commit_character_native_quest_hit(
+            &authority,
+            &h.node,
+            fence,
+            valid,
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(
+        replay,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    assert_eq!(h.root_revision().await?, "2");
+    let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE cause_kind='native_hit' AND cause_ordinal=0").fetch_one(&h.pool).await?;
+    assert_eq!(receipts, 1);
+    let count: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(COUNT)
+            .fetch_one(&h.pool)
+            .await?;
+    let phase: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(PHASE)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!((count, phase), (1, 5));
     Ok(())
 }
