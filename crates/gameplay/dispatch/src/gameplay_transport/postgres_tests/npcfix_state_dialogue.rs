@@ -18,6 +18,11 @@ const ICE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
 const KNOWLEDGE: &str = "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/";
 
 #[test]
+fn npcfix_state_postgres_maris_beregar_clue_once() -> TestResult {
+    threaded("maris_mistrock")
+}
+
+#[test]
 fn npcfix_state_postgres_tereban_accepts_eleven_tracks_once() -> TestResult {
     threaded("tereban")
 }
@@ -43,6 +48,7 @@ fn threaded(npc: &'static str) -> TestResult {
 }
 
 fn scenario(npc: &str) -> TestResult {
+    let started = std::time::Instant::now();
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "npcfix_state_dialogue", true, false)
             .await?;
@@ -52,7 +58,7 @@ fn scenario(npc: &str) -> TestResult {
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let world = crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?;
-            let activated = (npc == "tereban").then(||
+            let activated = matches!(npc, "tereban" | "maris_mistrock").then(||
                 crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None));
             let deps = if let Some((_, pin)) = activated.as_ref() {
                 let channel_pin = crate::foundation::ChannelContentPin::from_activation(
@@ -90,7 +96,38 @@ fn scenario(npc: &str) -> TestResult {
                 assert_eq!(greeting, ["Uhhhh..."]);
                 assert!(owner.states.chat.engaged(admitted.game_session_id).is_none());
             }
-            if npc == "tereban" {
+            if npc == "maris_mistrock" {
+                let target = "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/way_to_beregar";
+                assert_eq!(progress(&owner, &admitted, &authority, target).await?, 0);
+                talk(&mut owner, &admitted, actor, 101, "mission").await?;
+                assert_eq!(progress(&owner, &admitted, &authority, target).await?, 0);
+                let clue = talk(&mut owner, &admitted, actor, 102, "mistrock").await?;
+                assert_eq!(clue, [
+                    "Do you smell this? It's the smell of fire... the fire of a forge. Many people searched this rock here for a hidden path, but they haven't found anything. ...",
+                    "I'd search on Fenrock if I were you. Even though there's snow on the surface, it's still warm underground. There are often caves under fresh lava streams."
+                ]);
+                assert_eq!(progress(&owner, &admitted, &authority, target).await?, 1);
+                let fence = owner.current_quest_fence(admitted.game_session_id).await
+                    .map_err(|()| "fence")?.ok_or("fence")?;
+                let replay = h.root.reconcile_npc_program(&authority, fence.character_id,
+                    crate::durability::quest_state::npc_program::NpcProgramRequest {
+                        command: CommandRef::new(admitted.game_session_id, CommandId::new(102).map_err(debug)?),
+                        npc: key.clone(), trigger: oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger::Say,
+                        message: "mistrock".into(), topic: 0,
+                        transition_key: "oteryn:quest-npc/the_hidden_city_of_beregar_quest/maris_mistrock/hidden-path".into(),
+                    }).await.map_err(debug)?.ok_or("canonical Maris clue replay")?;
+                assert_eq!(replay.reply, clue);
+                let QuestTransitionOutcome::AlreadyCommitted(receipt) = replay.transition else {
+                    return Err("canonical Maris replay receipt".into());
+                };
+                assert_eq!(receipt.changes.len(), 1);
+                assert_eq!(talk(&mut owner, &admitted, actor, 103, "mistrock").await?, clue);
+                assert_eq!(progress(&owner, &admitted, &authority, target).await?, 1);
+                let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.the_hidden_city_of_beregar_quest'")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(receipts, 1, "replay and repeat dialogue never duplicate the clue write");
+                eprintln!("POSTGRES_CASE_COMPLETED NPCFIX maris_beregar_clue_once success=true duration_seconds={}", started.elapsed().as_secs_f64());
+            } else if npc == "tereban" {
                 talk(&mut owner, &admitted, actor, 101, "yes").await?;
                 assert_eq!(progress(&owner,&admitted,&authority,&format!("{FATHER}status")).await?,0);
                 talk(&mut owner, &admitted, actor, 102, "mission").await?;
