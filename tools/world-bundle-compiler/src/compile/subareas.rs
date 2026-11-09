@@ -616,6 +616,16 @@ mod tests {
                 floor: -7
             })
         );
+        let targuna = source.table.town(34).ok_or_else(|| fail("Targuna"))?;
+        assert_eq!(targuna.name, "Targuna");
+        assert_eq!(
+            targuna.temple,
+            Some(subarea::Temple {
+                x: 31934,
+                y: 31925,
+                floor: -7
+            })
+        );
         let town = source.table.town(8).ok_or_else(|| fail("Thais"))?;
         assert_eq!(town.name, "Thais");
         assert_eq!(
