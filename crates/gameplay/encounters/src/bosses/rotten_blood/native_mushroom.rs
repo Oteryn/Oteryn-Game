@@ -44,7 +44,10 @@ pub(super) fn remove_orphan_with_presence(
         y: mushroom.position.y,
         floor: mushroom.position.floor,
     };
-    for (candidate, position, _) in runtime.positioned_melee_census()? {
+    for (candidate, position, session) in runtime.positioned_melee_census()? {
+        if session.is_some() {
+            continue;
+        }
         let position = position.position();
         if !own.in_range(
             RoomPosition {
@@ -56,9 +59,10 @@ pub(super) fn remove_orphan_with_presence(
         ) {
             continue;
         }
-        if runtime.companion_snapshot(candidate).is_ok_and(|snapshot| {
-            snapshot.health > 0 && is_boss(&snapshot.state.policy.definition_key)
-        }) {
+        // A missing native policy withholds the absence proof. Players were
+        // excluded above; every remaining census row is a living creature.
+        let snapshot = runtime.companion_snapshot(candidate)?;
+        if snapshot.health > 0 && is_boss(&snapshot.state.policy.definition_key) {
             return Ok(false);
         }
     }
