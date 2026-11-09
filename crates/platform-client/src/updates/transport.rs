@@ -30,7 +30,7 @@ impl Transport for OriginTransport {
         &self,
         mut url: Url,
     ) -> Result<
-        Pin<Box<dyn futures::Stream<Item = Result<bytes::Bytes, TransportError>> + Send>>,
+        Pin<Box<dyn futures::Stream<Item = Result<bytes::Bytes, TransportError>> + Send + Sync>>,
         TransportError,
     > {
         let (routed, metadata, policy) = route(url)?;
