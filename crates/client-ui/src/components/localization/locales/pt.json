@@ -322,5 +322,9 @@
  "Start next week": "Iniciar a próxima semana",
  "Weekly rewards received": "Recompensas semanais recebidas",
  "Task points": "Pontos de tarefas",
- "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Recompensa: estado {}, dificuldade {}, trocas {}, troca gratuita de ofertas às {}"
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Recompensa: estado {}, dificuldade {}, trocas {}, troca gratuita de ofertas às {}",
+ "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Chefe: {boss_key}\nRevisão: {content_revision}\nDificuldade selecionada: {selected_difficulty}\nRecorde pessoal: {personal_highest}\nDificuldade desbloqueada: {unlocked_max} / {maximum_difficulty}",
+ "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nRecorde pessoal: {personal_highest}\nDificuldade desbloqueada: {unlocked_max} / {maximum_difficulty}\n",
+ "Enter a difficulty from 0 to 28": "Insira uma dificuldade de 0 a 28",
+ "Phosphorus Record": "Recorde de Phosphorus"
 }

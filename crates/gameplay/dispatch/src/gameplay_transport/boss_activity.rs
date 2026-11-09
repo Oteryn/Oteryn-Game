@@ -21,6 +21,28 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
     ) -> BossActivityResult {
+        self.boss_activity_action(admitted, id, kind, payload, false)
+            .await
+    }
+
+    pub(super) async fn boss_activity_start(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        payload: &[u8],
+    ) -> BossActivityResult {
+        self.boss_activity_action(admitted, id, wire::COMMAND_TYPE_BOSS_LEVER, payload, true)
+            .await
+    }
+
+    async fn boss_activity_action(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+        difficulty_start: bool,
+    ) -> BossActivityResult {
         let malformed = || Some((CommandStatus::Rejected, Vec::new()));
         if id == 0
             || !admitted
@@ -127,6 +149,34 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !difficulty_start
+            && (oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&definition.boss_key)
+                .is_some()
+                || oteryn_protocol_oteryn::boss_difficulty::boss_maximum(
+                    &definition.boss_creature_key,
+                )
+                .is_some())
+        {
+            use oteryn_protocol_oteryn::boss_difficulty as difficulty;
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(difficulty::CAPABILITY_BOSS_DIFFICULTY_V1)
+            {
+                return refusal(ActivityRefusal::AuthorityRejected);
+            }
+            let request = difficulty::encode_request(&difficulty::Request::OpenWithProgress {
+                boss_key: intent.boss_key,
+            })
+            .ok()?;
+            let reply = self
+                .root
+                .boss_difficulty_command(self.character, self.holder, fence, id, &request)
+                .await
+                .ok()??;
+            return Some((CommandStatus::Accepted, reply));
+        }
         if kind != wire::COMMAND_TYPE_BOSS_LEVER {
             let Some(scope_owner) = self
                 .activity_runtimes

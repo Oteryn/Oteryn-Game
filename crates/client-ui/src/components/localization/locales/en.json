@@ -322,5 +322,9 @@
  "Start next week": "Start next week",
  "Weekly rewards received": "Weekly rewards received",
  "Task points": "Task points",
- "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}"
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
+ "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}": "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}",
+ "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n": "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
+ "Enter a difficulty from 0 to 28": "Enter a difficulty from 0 to 28",
+ "Phosphorus Record": "Phosphorus Record"
 }
