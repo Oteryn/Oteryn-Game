@@ -61,7 +61,7 @@ pub(super) fn prepare(
     inventory: Option<&super::reward_facts::RewardFacts>,
 ) -> Option<Step> {
     let catalogue = admission.quest_catalogue.as_deref()?;
-    let callbacks = reward_callbacks::load_for(catalogue).ok()?;
+    let callbacks = reward_callbacks::offered_for(catalogue).ok()?;
     #[cfg(test)]
     let callbacks = admission
         .states

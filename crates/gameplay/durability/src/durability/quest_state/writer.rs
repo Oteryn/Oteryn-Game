@@ -967,6 +967,9 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    if matches!(oteryn_gameplay_quests::quest::authored_bindings::personal_event_profile(&transition.quest), Some(oteryn_gameplay_quests::quest::authored_bindings::PersonalEventProfile::Unavailable { .. })) {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::NotSupported)));
+                    }
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
                         Some(oteryn_gameplay_quests::quest::arena_completion::rule().map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
@@ -1791,6 +1794,10 @@ impl DurabilityRoot {
                     };
                     if written.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
+                    }
+                    if completes && !super::counter_alias::apply(&mut tx, fence, &request, transition, &catalogue, &committed).await? {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if let Some(world) = &callback
                         && !super::super::quest_world_callback::completion::apply(

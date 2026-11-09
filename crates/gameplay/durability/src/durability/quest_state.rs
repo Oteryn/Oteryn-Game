@@ -63,6 +63,7 @@ use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1};
 
+mod counter_alias;
 mod map_marks;
 pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
 pub mod npc_program;
@@ -322,10 +323,11 @@ pub struct QuestStateCopy {
 }
 
 impl QuestStateCopy {
-    /// Whether this copy contains an explicitly save-scoped pinned profile.
+    /// Whether this copy contains a save-scoped profile or source-cycle quest.
     #[must_use]
     pub fn has_save_event_scope(&self) -> bool {
         !self.save_restart_defaults.is_empty()
+            || self.states.keys().any(|quest| oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest).is_some())
     }
 
     /// A journal observer must reload scoped facts after a World save or an
@@ -349,7 +351,8 @@ impl QuestStateCopy {
     /// the copy to observe a new cycle or newly committed mission progress.
     #[must_use]
     pub fn counter_quest_progress(&self, quest: &str) -> Option<&CounterQuestProgress> {
-        self.counter_quests.get(quest)
+        let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest).unwrap_or(quest);
+        self.counter_quests.get(helper)
     }
 
     /// Revision read with these tracks under the Character root lock. Kill owners

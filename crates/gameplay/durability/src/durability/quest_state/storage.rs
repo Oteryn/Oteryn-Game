@@ -603,6 +603,11 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 });
             }
         }
+        for helper in [oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST, oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST] {
+            if oteryn_gameplay_quests::quest::shared_world_progress::counter_progress_track(helper, track) {
+                return self.save_event_snapshot_valid.then(|| self.counter_quests.get(helper).and_then(|progress| progress.tracks.get(track)).copied().unwrap_or(0));
+            }
+        }
         self.tracks().get(track).copied()
     }
 
@@ -611,6 +616,13 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         quest: &str,
     ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
         let state = self.states().get(quest)?;
+        let helper = oteryn_gameplay_quests::quest::authored_bindings::counter_helper_quest(quest);
+        if let Some(helper) = helper {
+            return self.save_event_snapshot_valid.then(|| oteryn_gameplay_quests::quest::log::QuestLogState {
+                pinned_content_revision: &state.pinned_content_revision,
+                completed: self.counter_quests.get(helper).is_some_and(|progress| progress.completed),
+            });
+        }
         let scoped = self.save_restart_defaults.contains_key(quest);
         if scoped && !self.save_event_snapshot_valid {
             return None;
