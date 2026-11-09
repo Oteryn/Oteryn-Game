@@ -68,12 +68,26 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         }
-        let Ok(mut renderer) = WindowsRenderer::new(
+        let (graphics, _) = self.settings.graphics_settings();
+        let Ok(mut renderer) = WindowsRenderer::with_graphics(
             Arc::clone(&window),
             self.generation,
             size.width,
             size.height,
-        ) else {
+            graphics.engine,
+            graphics.antialiasing,
+        )
+        .or_else(|_| {
+            let renderer = WindowsRenderer::new(
+                Arc::clone(&window),
+                self.generation,
+                size.width,
+                size.height,
+            )?;
+            let (engine, antialiasing) = renderer.graphics();
+            self.settings.reject_graphics(engine, antialiasing);
+            Ok::<_, oteryn_renderer::RendererError>(renderer)
+        }) else {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };

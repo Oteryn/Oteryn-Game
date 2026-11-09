@@ -59,9 +59,9 @@ where
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         {
             let attachments = [Some(wgpu::RenderPassColorAttachment {
-                view: &view,
+                view: self.multisample_view.as_ref().unwrap_or(&view),
                 depth_slice: None,
-                resolve_target: None,
+                resolve_target: self.multisample_view.as_ref().map(|_| &view),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.035,
@@ -126,7 +126,7 @@ where
         drop(mapped);
         buffer.unmap();
         if bgra {
-            for pixel in rgba.chunks_exact_mut(4) {
+            for pixel in rgba.as_chunks_mut::<4>().0 {
                 pixel.swap(0, 2);
             }
         }

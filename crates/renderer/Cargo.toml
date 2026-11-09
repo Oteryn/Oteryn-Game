@@ -16,10 +16,11 @@ source-disposition = "MIGRATE_AS_IS_AND_SPLIT_GENERIC_RESOURCE_LIFECYCLE"
 [dependencies]
 oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
+serde = { workspace = true, features = ["derive"] }
 
 [target.'cfg(windows)'.dependencies]
 pollster.workspace = true
-wgpu.workspace = true
+wgpu = { workspace = true, features = ["vulkan"] }
 
 [lints]
 workspace = true
