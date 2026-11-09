@@ -171,12 +171,23 @@ pub struct EncounterMonster {
     pub creature: String,
 }
 
+/// A bounded later spawn attempt, timed from the committed source USE.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EncounterWave {
+    pub after_ms: u32,
+    pub monsters: Vec<EncounterMonster>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Encounter {
     pub minimum_level: u32,
     pub players: Vec<EncounterPlayer>,
     pub monsters: Vec<EncounterMonster>,
+    /// Later timed waves; the initial wave remains in `monsters`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub waves: Vec<EncounterWave>,
     pub room_min: Position,
     pub room_max: Position,
     /// A value-free source switch schedules native monsters without moving a party.
@@ -195,6 +206,34 @@ pub struct EncounterTiming {
     /// Keep overlapping timed sources out until this occurrence has been cleaned up.
     #[serde(default, skip_serializing_if = "super::is_false")]
     pub exclusive_room: bool,
+}
+
+fn valid_waves(encounter: &Encounter) -> bool {
+    if encounter.waves.is_empty() {
+        return true;
+    }
+    let Some(timing) = encounter.timing else {
+        return false;
+    };
+    if !timing.cleanup_spawned_only || !timing.exclusive_room || encounter.waves.len() > 7 {
+        return false;
+    }
+    let mut previous = timing.spawn_after_ms;
+    encounter.waves.iter().all(|wave| {
+        let unique: BTreeSet<_> = wave.monsters.iter().map(|m| m.position).collect();
+        let valid = wave.after_ms > previous
+            && wave.after_ms < timing.reset_after_ms
+            && (1..=8).contains(&wave.monsters.len())
+            && unique.len() == wave.monsters.len()
+            && wave.monsters.iter().all(|m| {
+                m.position.floor == encounter.room_min.floor
+                    && (encounter.room_min.x..=encounter.room_max.x).contains(&m.position.x)
+                    && (encounter.room_min.y..=encounter.room_max.y).contains(&m.position.y)
+                    && super::super::valid_quest_key(&m.creature)
+            });
+        previous = wave.after_ms;
+        valid
+    })
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {
@@ -303,6 +342,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         if encounter.minimum_level == 0
+            || !valid_waves(encounter)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()

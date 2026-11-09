@@ -16,16 +16,22 @@ pub(super) struct TimedEncounter {
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     spawn_at: u64,
     reset_at: u64,
-    attempted_spawn: bool,
+    started_at: u64,
+    next_wave: usize,
     spawned: Vec<ExactActorRef>,
 }
 impl TimedEncounter {
     pub(super) fn next_due_us(&self) -> u64 {
-        if self.attempted_spawn {
-            self.reset_at
-        } else {
-            self.spawn_at
+        if self.next_wave == 0 {
+            return self.spawn_at;
         }
+        self.callback
+            .effects
+            .encounter
+            .as_ref()
+            .and_then(|encounter| encounter.waves.get(self.next_wave - 1))
+            .and_then(|wave| self.started_at.checked_add(u64::from(wave.after_ms) * 1000))
+            .unwrap_or(self.reset_at)
     }
 
     fn spawned_cleanup(&self) -> bool {
@@ -91,6 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || encounter
                 .monsters
                 .iter()
+                .chain(encounter.waves.iter().flat_map(|wave| wave.monsters.iter()))
                 .any(|monster| runtime.companion_policy(&monster.creature).is_err())
         {
             return UseDisposition::Rejected;
@@ -103,6 +110,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return UseDisposition::Exhausted;
         };
+        let Some(spawn_count) = encounter
+            .waves
+            .iter()
+            .try_fold(encounter.monsters.len(), |count, wave| {
+                count.checked_add(wave.monsters.len())
+            })
+        else {
+            return UseDisposition::Exhausted;
+        };
+        if spawn_count > 64 {
+            return UseDisposition::Rejected;
+        }
+        // Reserve every phase's exact actor references before committing the source CAS.
+        let mut spawned = Vec::new();
+        if spawned.try_reserve_exact(spawn_count).is_err() {
+            return UseDisposition::Exhausted;
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return UseDisposition::Rejected;
         };
@@ -149,8 +173,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope: runtime.encounter_owner_scope(),
             spawn_at,
             reset_at,
-            attempted_spawn: false,
-            spawned: Vec::new(),
+            started_at: now,
+            next_wave: 0,
+            spawned,
         });
         states.owner_wake.notify_one();
         UseDisposition::Committed
@@ -256,9 +281,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source Game.createMonster attempts once at its due instant. An occupied/full
             // room does not invent a successful spawn or retry after the source deadline.
+            let wave = if memo.next_wave == 0 {
+                &encounter.monsters
+            } else if let Some(wave) = encounter.waves.get(memo.next_wave - 1) {
+                &wave.monsters
+            } else {
+                index += 1;
+                continue;
+            };
             let mut monsters = Vec::new();
             let mut admissible = true;
-            for monster in &encounter.monsters {
+            for monster in wave {
                 let at = local(monster.position);
                 if self.movement_cells.index().lookup(
                     self.movement_cells.scope(),
@@ -289,9 +322,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monsters.push((monster.creature.as_str(), policy.maximum_health, at));
             }
             if admissible && let Ok(spawned) = runtime.commit_quest_creature_spawn(&monsters) {
-                memo.spawned = spawned;
+                memo.spawned.extend(spawned);
             }
-            memo.attempted_spawn = true;
+            // Attempt at most one wave per source per owner turn; overdue waves stay due.
+            memo.next_wave = memo.next_wave.saturating_add(1);
             index += 1;
         }
         // Death/despawn and source cleanup release only their source-owned ladder.

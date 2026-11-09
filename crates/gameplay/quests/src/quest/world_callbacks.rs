@@ -31,7 +31,8 @@ mod counterparts;
 mod effects;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
-    EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
+    EncounterTiming, EncounterWave, Facing, ItemCycle, ItemPresence, MagicEffect, Portal,
+    PortalPair,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

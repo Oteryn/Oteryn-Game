@@ -10,6 +10,81 @@ fn source() -> Result<serde_json::Value, String> {
 fn author(callback: serde_json::Value) -> Result<Vec<Callback>, String> {
     parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())
 }
+fn wave_source() -> Result<serde_json::Value, String> {
+    let mut value = source()?;
+    value["effects"]["encounter"]["timing"]["cleanup_spawned_only"] = true.into();
+    value["effects"]["encounter"]["timing"]["exclusive_room"] = true.into();
+    value["effects"]["encounter"]["waves"] = serde_json::json!([
+        {"after_ms":4000,"monsters":[{"position":{"x":32479,"y":31900,"floor":-5},"creature":"oteryn:creature.rat"}]},
+        {"after_ms":6000,"monsters":[{"position":{"x":32479,"y":31900,"floor":-5},"creature":"oteryn:creature.ghoul"}]}
+    ]);
+    Ok(value)
+}
+#[test]
+fn timed_waves_admit_bounded_source_owned_sequences() -> Result<(), String> {
+    let value = wave_source()?;
+    let admitted = author(value.clone())?;
+    assert_eq!(
+        serde_json::to_value(&admitted[0]).map_err(|e| e.to_string())?,
+        value
+    );
+    Ok(())
+}
+#[test]
+fn timed_waves_refuse_unowned_unordered_and_unbounded_plans() -> Result<(), String> {
+    let value = wave_source()?;
+    for field in ["cleanup_spawned_only", "exclusive_room"] {
+        let mut bad = value.clone();
+        bad["effects"]["encounter"]["timing"][field] = false.into();
+        assert!(author(bad).is_err(), "waves require {field}");
+    }
+    for deadline in [0, 2000, 6000, 100000] {
+        let mut bad = value.clone();
+        bad["effects"]["encounter"]["waves"][0]["after_ms"] = deadline.into();
+        assert!(author(bad).is_err(), "invalid wave deadline {deadline}");
+    }
+    for count in [0, 9] {
+        let mut bad = value.clone();
+        let monster = bad["effects"]["encounter"]["waves"][0]["monsters"][0].clone();
+        bad["effects"]["encounter"]["waves"][0]["monsters"] = (0..count)
+            .map(|index| {
+                let mut next = monster.clone();
+                next["position"]["x"] = (32476 + index % 6).into();
+                next["position"]["y"] = (31900 + index / 6).into();
+                next
+            })
+            .collect::<Vec<_>>()
+            .into();
+        assert!(author(bad).is_err(), "invalid wave population {count}");
+    }
+    let mut bad = value.clone();
+    bad["effects"]["encounter"]["waves"][0]["monsters"][0]["position"]["x"] = 1.into();
+    assert!(author(bad).is_err(), "spawns stay in the bounded room");
+    let mut maximum = value.clone();
+    let wave = value["effects"]["encounter"]["waves"][0].clone();
+    maximum["effects"]["encounter"]["waves"] = (0..7)
+        .map(|index| {
+            let mut next = wave.clone();
+            next["after_ms"] = (4000 + index * 2000).into();
+            next
+        })
+        .collect::<Vec<_>>()
+        .into();
+    author(maximum.clone())?;
+    maximum["effects"]["encounter"]["waves"]
+        .as_array_mut()
+        .ok_or("waves")?
+        .push({
+            let mut excess = wave;
+            excess["after_ms"] = 18000.into();
+            excess
+        });
+    assert!(
+        author(maximum).is_err(),
+        "at most eight waves including the initial wave"
+    );
+    Ok(())
+}
 #[test]
 fn exclusive_room_is_explicit_and_preserves_legacy_receipts() -> Result<(), String> {
     let legacy = source()?;
