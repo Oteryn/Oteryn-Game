@@ -24,7 +24,7 @@ use sha2::{Digest, Sha256};
 
 mod entry;
 mod stack;
-pub(crate) use entry::burn_entry_core;
+pub(crate) use entry::{burn_entry_core,EntryDebit};
 
 /// Crystal 201189f soulpit.lua:155-174 and soulpit_fight.lua:37-77.
 /// Resolve the pinned species before reserving entry; the debit rechecks custody

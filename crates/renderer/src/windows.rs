@@ -4,11 +4,16 @@ use crate::{
     SurfaceState, TileBatch,
 };
 use oteryn_foundation::ProcessGeneration;
+#[path = "offscreen_capture.rs"]
+mod offscreen_capture;
 
 pub struct WindowsRenderer<T>
 where
     T: Clone + Into<wgpu::SurfaceTarget<'static>>,
 {
+    presentation: crate::PresentationMode,
+    capture_requested: bool,
+    captured: Option<Result<crate::CapturedFrame, RendererError>>,
     target: T,
     instance: wgpu::Instance,
     surface: wgpu::Surface<'static>,
@@ -39,7 +44,9 @@ where
         height: u32,
     ) -> Result<Self, RendererError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::DX12,
+            backends: match crate::GRAPHICS_ENGINE {
+                crate::GraphicsEngine::Direct3D12 => wgpu::Backends::DX12,
+            },
             ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
         let surface = instance
@@ -63,6 +70,9 @@ where
             Ok::<_, RendererError>((adapter, device, queue))
         })?;
         let mut renderer = Self {
+            presentation: crate::PresentationMode::Synchronized,
+            capture_requested: false,
+            captured: None,
             target,
             instance,
             surface,
@@ -81,6 +91,24 @@ where
     #[must_use]
     pub const fn state(&self) -> &SurfaceState {
         &self.state
+    }
+
+    pub fn set_presentation(
+        &mut self,
+        generation: ProcessGeneration,
+        mode: crate::PresentationMode,
+    ) -> Result<(), RendererError> {
+        if self.presentation == mode {
+            return Ok(());
+        }
+        let old = self.presentation;
+        self.presentation = mode;
+        let size = self.state.size();
+        if let Err(error) = self.resize(generation, size.width(), size.height()) {
+            self.presentation = old;
+            return Err(error);
+        }
+        Ok(())
     }
 
     pub fn resize(
@@ -120,6 +148,18 @@ where
     pub fn set_atlas(&mut self, atlas: AtlasImage) {
         self.atlas = Some(atlas);
         self.scene = None;
+    }
+
+    /// Capture only the next successfully drawn client frame.
+    pub fn request_capture(&mut self) {
+        self.capture_requested = true;
+    }
+    pub fn cancel_capture(&mut self) {
+        self.capture_requested = false;
+        self.captured = None;
+    }
+    pub fn take_capture(&mut self) -> Option<Result<crate::CapturedFrame, RendererError>> {
+        self.captured.take()
     }
 
     /// Clears the surface.
@@ -220,8 +260,20 @@ where
                 scene.draw(&mut render_pass, batches.tiles, batches.sprites);
             }
         }
+        let readback = if std::mem::take(&mut self.capture_requested) {
+            Some(crate::capture::Readback::encode(
+                &self.device,
+                &mut encoder,
+                &frame.texture,
+            ))
+        } else {
+            None
+        };
         let _submission = self.queue.submit([encoder.finish()]);
         self.queue.present(frame);
+        if let Some(readback) = readback {
+            self.captured = Some(readback.and_then(|value| value.finish(&self.device)));
+        }
 
         let decision = self.state.apply(SurfaceEvent::Presented {
             generation,
@@ -301,10 +353,22 @@ where
                 event: crate::SurfaceEventKind::Configured,
             });
         }
-        let configuration = self
+        let mut configuration = self
             .surface
             .get_default_config(&self.adapter, size.width(), size.height())
             .ok_or(RendererError::SurfaceUnsupported)?;
+        configuration.present_mode = match self.presentation {
+            crate::PresentationMode::Synchronized => wgpu::PresentMode::AutoVsync,
+            crate::PresentationMode::Unlocked => wgpu::PresentMode::AutoNoVsync,
+        };
+        if self
+            .surface
+            .get_capabilities(&self.adapter)
+            .usages
+            .contains(wgpu::TextureUsages::COPY_SRC)
+        {
+            configuration.usage |= wgpu::TextureUsages::COPY_SRC;
+        }
         self.surface.configure(&self.device, &configuration);
         self.configuration = Some(configuration);
         let decision = self.state.apply(SurfaceEvent::Configured { generation })?;

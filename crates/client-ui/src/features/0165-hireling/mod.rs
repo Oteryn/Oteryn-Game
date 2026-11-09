@@ -32,15 +32,15 @@ pub struct HirelingPanel {
 
 pub fn request(panel: &mut HirelingPanel, intent: Intent) -> Option<HirelingCommand> {
     let result = if !panel.selected {
-        Err("Hirelings are unavailable in this session")
+        Err(tr!("Hirelings are unavailable in this session"))
     } else if panel.pending.is_some() {
-        Err("Waiting for the server")
+        Err(tr!("Waiting for the server"))
     } else {
         match intent {
             Intent::Refresh => Ok(HirelingCommand(hireling::Request::Query)),
             Intent::Dismiss => Ok(HirelingCommand(hireling::Request::Dismiss)),
             Intent::Summon => panel.target.map_or(
-                Err("Select an adjacent summon location"),
+                Err(tr!("Select an adjacent summon location")),
                 |(x, y, floor)| Ok(HirelingCommand(hireling::Request::Summon { x, y, floor })),
             ),
         }
@@ -66,15 +66,15 @@ pub fn apply_result(panel: &mut HirelingPanel, response: &HirelingResponse) -> b
         (CommandStatus::Accepted, Some(active))
         | (CommandStatus::DuplicateReplay, Some(active)) => {
             panel.active = Some(active);
-            panel.feedback = Some("The server confirmed the hireling status");
+            panel.feedback = Some(tr!("The server confirmed the hireling status"));
             true
         }
         (CommandStatus::Rejected, _) => {
-            panel.feedback = Some("The server refused the hireling request");
+            panel.feedback = Some(tr!("The server refused the hireling request"));
             false
         }
         _ => {
-            panel.feedback = Some("The server returned an invalid hireling response");
+            panel.feedback = Some(tr!("The server returned an invalid hireling response"));
             false
         }
     }
@@ -82,13 +82,13 @@ pub fn apply_result(panel: &mut HirelingPanel, response: &HirelingResponse) -> b
 
 pub fn panel_text(panel: &HirelingPanel) -> String {
     let status = match panel.active {
-        Some(true) => "Banker hireling: summoned",
-        Some(false) => "Banker hireling: dismissed",
-        None => "Banker hireling: status unknown",
+        Some(true) => tr!("Banker hireling: summoned"),
+        Some(false) => tr!("Banker hireling: dismissed"),
+        None => tr!("Banker hireling: status unknown"),
     };
     let mut text = status.to_owned();
     if panel.pending.is_some() {
-        text.push_str("\r\nWaiting for the server…");
+        text.push_str(tr!("\r\nWaiting for the server…"));
     }
     if let Some(feedback) = panel.feedback {
         text.push_str("\r\n");

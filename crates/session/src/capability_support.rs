@@ -137,11 +137,18 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+    oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
+    oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
+    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
+    oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    7,
+    oteryn_protocol_oteryn::house::CAPABILITY_HOUSE_V1,
+    daily_reward::CAPABILITY_DAILY_REWARD_V2,
     oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
     oteryn_protocol_oteryn::staff::CAPABILITY_STAFF_V1,
     // CLIENT-E2E-1 adapters use gated_command for their typed exchanges too.
@@ -152,6 +159,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
     CAPABILITY_CONTAINER_TREE_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,
+    CAPABILITY_ATTACK_V1,
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
@@ -231,9 +239,13 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+    oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
+    oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
+    spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
+    oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -364,4 +376,17 @@ mod house_furniture_tests {
             );
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn battle_metadata_uses_existing_attack_capability() -> Result<(), &'static str> {
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_ATTACK_V1));
+    assert!(gated_routes().any(
+        |(capability, commands, _)| capability == CAPABILITY_ATTACK_V1
+            && commands.contains(
+                &oteryn_protocol_oteryn::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY
+            )
+    ));
+    Ok(())
 }

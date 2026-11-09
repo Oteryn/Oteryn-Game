@@ -2,12 +2,15 @@
 use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
 use oteryn_client_ui::hotkey_equip::{self, HotkeyEquipPanel};
 
-pub(in crate::play) fn submit(panel: &mut HotkeyEquipPanel, input: &str) -> Option<ServerMechanicCommand> {
+pub(in crate::play) fn submit(
+    panel: &mut HotkeyEquipPanel,
+    input: &str,
+) -> Option<ServerMechanicCommand> {
     if panel.pending || !panel.selected {
         return None;
     }
     let Ok(definition) = input.trim().parse::<u32>() else {
-        panel.feedback = Some("Enter a positive item definition number".into());
+        panel.feedback = Some(tr!("Enter a positive item definition number").into());
         return None;
     };
     panel.item_definition = definition;
@@ -16,17 +19,17 @@ pub(in crate::play) fn submit(panel: &mut HotkeyEquipPanel, input: &str) -> Opti
 
 pub(in crate::play) fn panel_text(panel: &HotkeyEquipPanel) -> String {
     if !panel.selected {
-        return "Hotkey equip unavailable in this session".into();
+        return tr!("Hotkey equip unavailable in this session").into();
     }
     if panel.pending {
-        return "Pending equip…".into();
+        return tr!("Pending equip…").into();
     }
     if let Some(feedback) = &panel.feedback {
         return feedback.clone();
     }
     panel.outcome.as_ref().map_or_else(
-        || "Enter an item definition to equip".into(),
-        |outcome| format!("Equip result: {outcome:?}"),
+        || tr!("Enter an item definition to equip").into(),
+        |outcome| lfmt!("Equip result: {outcome:?}", outcome = outcome),
     )
 }
 
@@ -51,6 +54,7 @@ mod windows {
     const REMOVE: usize = 104;
     const USE: usize = 105;
     const SUBMIT: usize = 202;
+    const SMART: usize = 203;
     #[derive(Default)]
     struct Actions(Vec<usize>);
     unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -99,7 +103,7 @@ mod windows {
             let hwnd = CreateWindowExW(
                 0,
                 wide("STATIC").as_ptr(),
-                wide("Item hotkeys — Ctrl+Shift+E").as_ptr(),
+                wide(tr!("Item hotkeys — Ctrl+Shift+E")).as_ptr(),
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -140,7 +144,7 @@ mod windows {
             let labels = control(
                 hwnd,
                 "STATIC",
-                "Choose a key                         Choose a carried or equipped item",
+                tr!("Choose a key                         Choose a carried or equipped item"),
                 106,
                 [10, 10, 580, 25],
                 0,
@@ -148,7 +152,7 @@ mod windows {
             let assign_button = control(
                 hwnd,
                 "BUTTON",
-                "Assign item",
+                tr!("Assign item"),
                 ASSIGN,
                 [10, 280, 170, 30],
                 WS_TABSTOP,
@@ -156,7 +160,7 @@ mod windows {
             let remove = control(
                 hwnd,
                 "BUTTON",
-                "Clear key",
+                tr!("Clear key"),
                 REMOVE,
                 [190, 280, 170, 30],
                 WS_TABSTOP,
@@ -164,10 +168,18 @@ mod windows {
             let use_button = control(
                 hwnd,
                 "BUTTON",
-                "Use key",
+                tr!("Use key"),
                 USE,
                 [370, 280, 170, 30],
                 WS_TABSTOP,
+            );
+            let smart = control(
+                hwnd,
+                "BUTTON",
+                "Smart equip (applies at next login)",
+                SMART,
+                [10, 320, 550, 28],
+                BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
             );
             let status = control(
                 hwnd,
@@ -188,13 +200,14 @@ mod windows {
             let submit = control(
                 hwnd,
                 "BUTTON",
-                "Equip definition",
+                tr!("Equip definition"),
                 SUBMIT,
                 [300, 360, 240, 30],
                 WS_TABSTOP,
             );
             if [
                 input,
+                smart,
                 submit,
                 keys,
                 items,
@@ -232,6 +245,10 @@ mod windows {
                         continue;
                     }
                     match action {
+                        SMART => {
+                            panel.smart = SendMessageW(smart, BM_GETCHECK, 0, 0) == 1;
+                            super::super::edited(panel);
+                        }
                         SUBMIT => {
                             let mut text = [0_u16; 32];
                             let len = GetWindowTextW(input, text.as_mut_ptr(), 32);
@@ -243,7 +260,7 @@ mod windows {
                                 .is_err()
                             {
                                 panel.pending = false;
-                                panel.feedback = Some("The session has ended".into());
+                                panel.feedback = Some(tr!("The session has ended").into());
                             }
                         }
                         ASSIGN => {
@@ -251,12 +268,15 @@ mod windows {
                                 usize::try_from(SendMessageW(items, LB_GETCURSEL, 0, 0))
                                 && let Some(&definition) =
                                     desired.as_ref().and_then(|shown| shown.items.get(row))
+                                && assign(panel, slot, definition)
                             {
-                                assign(panel, slot, definition);
+                                super::super::edited(panel);
                             }
                         }
                         REMOVE => {
-                            assign(panel, slot, 0);
+                            if assign(panel, slot, 0) {
+                                super::super::edited(panel);
+                            }
                         }
                         USE => {
                             if let Some(definition) = panel.bindings[slot] {
@@ -269,7 +289,7 @@ mod windows {
                                         .is_err()
                                 {
                                     panel.pending = false;
-                                    panel.feedback = Some("The session has ended".into());
+                                    panel.feedback = Some(tr!("The session has ended").into());
                                 }
                             }
                         }
@@ -287,8 +307,8 @@ mod windows {
                             "F{}: {}",
                             slot + 1,
                             definition.map_or_else(
-                                || "Unassigned".into(),
-                                |value| format!("Item {value}")
+                                || tr!("Unassigned").into(),
+                                |value| lfmt!("Item {value}", value = value)
                             )
                         );
                         SendMessageW(keys, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
@@ -299,7 +319,8 @@ mod windows {
                             items,
                             LB_ADDSTRING,
                             0,
-                            wide(&format!("Item {definition}")).as_ptr() as isize,
+                            wide(&lfmt!("Item {definition}", definition = definition)).as_ptr()
+                                as isize,
                         );
                     }
                     SendMessageW(keys, LB_SETCURSEL, usize::try_from(key_row).unwrap_or(0), 0);
@@ -309,7 +330,11 @@ mod windows {
                         usize::try_from(item_row).unwrap_or(0),
                         0,
                     );
-                    SetWindowTextW(status, wide(&panel_text(panel)).as_ptr());
+                    SendMessageW(smart, BM_SETCHECK, usize::from(panel.smart), 0);
+                    SetWindowTextW(status, wide(&format!(
+                        "{}\r\nSession source selection: {}.\r\nSmart equip searches carried containers and prefers a started copy. Mode changes apply on your next login.",
+                        panel_text(panel), if panel.smart_active { "smart" } else { "direct inventory" }
+                    )).as_ptr());
                     desired = Some(panel.clone());
                 }
                 drop(mailbox);

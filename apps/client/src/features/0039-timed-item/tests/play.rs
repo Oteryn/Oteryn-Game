@@ -293,6 +293,7 @@ fn pc06_timed_item_scenario() -> Result<(), Error> {
                     assert!(!link.timed_item_panel().pending);
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };

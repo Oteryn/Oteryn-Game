@@ -5,6 +5,9 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn client_bulletin(&self) -> Option<String> {
+        self.states.bulletin_source.as_ref()?.load().await
+    }
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
@@ -184,6 +187,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    async fn observe_pvp_status(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::party_skull::PvpStatus> {
+        self.observe_own_pvp(admitted).await
+    }
+
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
@@ -232,6 +242,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
         self.chat_open(session).await
+    }
+
+    async fn console_levels(
+        &self,
+        admitted: AdmittedSession,
+        names: Vec<String>,
+    ) -> Option<Vec<Option<u32>>> {
+        if !admitted.continuity.selected_capabilities.contains(7)
+            || !self.states.chat.knows(admitted.game_session_id)
+        {
+            return None;
+        }
+        let names = names
+            .iter()
+            .map(|name| crate::domain::character_name::CharacterName::parse(name))
+            .collect::<Result<Vec<_>, _>>()
+            .ok()?;
+        self.root
+            .read_console_levels(self.character, *self.world_id.as_bytes(), names)
+            .await
+            .ok()
     }
 
     async fn chat_intent(
@@ -435,6 +466,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn server_messages_left(&self, admitted: AdmittedSession) {
+        self.states.server_modals.leave((
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        ));
         self.states.server_messages.leave(
             admitted.game_session_id,
             admitted.continuity.connection_generation,
@@ -583,7 +618,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item: Option<item_view::ItemKey>,
         row_open: bool,
     ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
-        stash::execute(self, actor, command, intent, item, row_open).await
+        stash::execute(self, actor, command, intent, None, item, row_open).await
+    }
+
+    async fn stash_filtered(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        filter: Option<oteryn_protocol_oteryn::stash::StashFilter>,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, filter, item, row_open).await
     }
 
     async fn depot(

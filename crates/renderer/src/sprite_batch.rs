@@ -10,9 +10,12 @@ impl SpriteBatch {
         Self {
             instances: Vec::new(),
             lighting: crate::lighting::SceneLighting {
+                opacity: Vec::new(),
                 ambient: [255; 3],
                 sources: Vec::new(),
                 palette: None,
+                emissive_from: None,
+                dimmed: Vec::new(),
             },
         }
     }

@@ -176,3 +176,41 @@ fn depot_market_open_preserves_panels_and_ctrl_m_can_reopen() -> Result<(), Erro
     assert!(!m.market_shutdown && !m.depot_shutdown && !m.prey_shutdown && !m.quest_shutdown);
     Ok(())
 }
+
+#[path = "details.rs"]
+mod details;
+
+#[test]
+fn market_side_filter_preserves_server_offer_identity() -> Result<(), Error> {
+    let (link, mut incoming, _) = play_channel();
+    {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.market.selected = true;
+        m.market.rows = [1, 2]
+            .into_iter()
+            .map(|side| market::MarketRow {
+                offer: {
+                    let mut id = offer_id();
+                    id[0] = side;
+                    id
+                },
+                definition: 42,
+                side,
+                amount: 5,
+                price: 100,
+                state: 1,
+                anonymous: false,
+            })
+            .collect();
+    }
+    assert!(link.market_filter_side(2));
+    link.market_select_offer(0);
+    link.market_request(Intent::AcceptOffer);
+    let crate::combat_input::PlayCommand::Market(command) = incoming.try_recv()? else {
+        return Err("missing market command".into());
+    };
+    assert_eq!(command.0.action, 8);
+    assert_eq!(command.0.offer[0], 2);
+    assert!(!link.market_filter_side(3));
+    Ok(())
+}

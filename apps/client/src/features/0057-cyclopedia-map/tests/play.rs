@@ -27,6 +27,12 @@ impl Stepper for Peer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
+        self.exchanges
+            .release
+            .acquire()
+            .await
+            .map_err(|_| SessionError::SessionUnusable)?
+            .forget();
         let (kind, payload, status, reply) = self
             .exchanges
             .entries
@@ -37,12 +43,6 @@ impl Stepper for Peer {
         assert_eq!(command.capability, 57);
         assert_eq!(command.kind, kind);
         assert_eq!(command.payload, payload);
-        self.exchanges
-            .release
-            .acquire()
-            .await
-            .map_err(|_| SessionError::SessionUnusable)?
-            .forget();
         Ok(GatedCommandResult {
             command_id: 1,
             server_sequence: 1,
@@ -177,6 +177,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     .await
                     .checked()?;
                     assert!(!link.cyclopedia_map_panel().summary.is_empty());
+                    atlas::round_trip(&link, &exchanges).await.checked()?;
 
                     for (action, operation) in [
                         (Intent::Start, 1),
@@ -267,6 +268,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     // An unexpected transport end while a request is in flight resets every session field.
                     link.cyclopedia_map_request(intent);
                     assert!(link.cyclopedia_map_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.cyclopedia_map_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);
@@ -277,6 +279,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     assert!(!link.cyclopedia_map_panel().pending);
                     let (commands, receiver) = tokio::sync::mpsc::unbounded_channel();
                     let reconnected = PlayLink {
+                        owns_session: true,
                         commands,
                         mailbox: Arc::clone(&link.mailbox),
                     };
@@ -327,3 +330,6 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
         self.map_err(|error| format!("{error:?}").into())
     }
 }
+
+#[path = "atlas.rs"]
+mod atlas;

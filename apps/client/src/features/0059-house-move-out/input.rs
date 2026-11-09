@@ -14,11 +14,11 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.house_move_out;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
     if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+        panel.feedback = tr!("Waiting for the server").into();
         return;
     }
     match super::protocol::command(panel, intent) {
@@ -26,7 +26,7 @@ pub(in crate::play) fn submit(
             if oteryn_client_ui::house_move_out::request(panel, command.kind)
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
-                panel.failed("The session has ended");
+                panel.failed(tr!("The session has ended"));
             }
         }
         Err(message) => panel.feedback = message,
@@ -44,6 +44,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn house_move_out_open(&self) {
+        if self.house_panel().ownership.model.available() {self.house_ownership_open();return;}
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]

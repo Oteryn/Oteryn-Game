@@ -20,7 +20,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPAR
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 4);
             return 0;
         }
-        if message == WM_COMMAND && (1..=4).contains(&(w & 0xffff)) {
+        if message == WM_COMMAND && (1..=6).contains(&(w & 0xffff)) {
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
             return 0;
         }
@@ -62,7 +62,7 @@ pub(super) fn select(
         let hwnd = CreateWindowExW(
             WS_EX_CONTROLPARENT,
             wide("STATIC").as_ptr(),
-            wide("Oteryn — Select character").as_ptr(),
+            wide(tr!("Oteryn — Select character")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -81,9 +81,11 @@ pub(super) fn select(
             hwnd,
             "STATIC",
             if rows.is_empty() {
-                "No characters on this account. Create a character in your browser, then refresh."
+                tr!(
+                    "No characters on this account. Create a character in your browser, then refresh."
+                )
             } else {
-                "Choose a character (name — world — availability) and optional channel."
+                "Choose a character and channel. Ctrl/Shift selects several for offline training; Play uses the focused character."
             },
             0,
             [15, 15, 650, 40],
@@ -95,9 +97,9 @@ pub(super) fn select(
             "",
             10,
             [15, 60, 650, 180],
-            WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32,
+            WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32 | LBS_EXTENDEDSEL as u32,
         );
-        let channel_label = control(hwnd, "STATIC", "Channel", 0, [15, 250, 80, 25], 0);
+        let channel_label = control(hwnd, "STATIC", tr!("Channel"), 0, [15, 250, 80, 25], 0);
         let channels = control(
             hwnd,
             "COMBOBOX",
@@ -109,7 +111,7 @@ pub(super) fn select(
         let play = control(
             hwnd,
             "BUTTON",
-            "Play",
+            tr!("Play"),
             1,
             [15, 295, 100, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
@@ -117,7 +119,7 @@ pub(super) fn select(
         let create = control(
             hwnd,
             "BUTTON",
-            "Create character",
+            tr!("Create character"),
             2,
             [130, 295, 160, 32],
             WS_TABSTOP,
@@ -125,13 +127,37 @@ pub(super) fn select(
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             3,
             [305, 295, 100, 32],
             WS_TABSTOP,
         );
-        let cancel = control(hwnd, "BUTTON", "Cancel", 4, [420, 295, 100, 32], WS_TABSTOP);
+        let cancel = control(
+            hwnd,
+            "BUTTON",
+            tr!("Cancel"),
+            4,
+            [420, 295, 100, 32],
+            WS_TABSTOP,
+        );
+        let services = control(
+            hwnd,
+            "BUTTON",
+            tr!("Bazaar / account services"),
+            5,
+            [15, 345, 280, 32],
+            WS_TABSTOP,
+        );
+        let train = control(
+            hwnd,
+            "BUTTON",
+            "Train selected characters",
+            6,
+            [310, 345, 280, 32],
+            WS_TABSTOP,
+        );
         if [
+            train,
             label,
             list,
             channel_label,
@@ -140,6 +166,7 @@ pub(super) fn select(
             create,
             refresh,
             cancel,
+            services,
         ]
         .iter()
         .any(|handle| handle.is_null())
@@ -164,7 +191,7 @@ pub(super) fn select(
             .iter()
             .position(|row| row.character.character_id == preselect)
         {
-            SendMessageW(list, LB_SETCURSEL, index, 0);
+            SendMessageW(list, LB_SETSEL, 1, index as LPARAM);
         }
         let mut previous = -2;
         let mut message: MSG = std::mem::zeroed();
@@ -178,7 +205,7 @@ pub(super) fn select(
                     DispatchMessageW(&message);
                 }
             }
-            let index = SendMessageW(list, LB_GETCURSEL, 0, 0);
+            let index = SendMessageW(list, LB_GETCARETINDEX, 0, 0);
             let row = usize::try_from(index)
                 .ok()
                 .and_then(|index| rows.get(index));
@@ -188,7 +215,7 @@ pub(super) fn select(
                     channels,
                     CB_ADDSTRING,
                     0,
-                    wide("Automatic").as_ptr() as LPARAM,
+                    wide(tr!("Automatic")).as_ptr() as LPARAM,
                 );
                 if let Some(row) = row {
                     for (_, name) in &row.channels {
@@ -202,9 +229,29 @@ pub(super) fn select(
                 play,
                 i32::from(row.is_some_and(|row| row.available)),
             );
+            windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                train,
+                i32::from(rows.iter().enumerate().any(|(index, row)| {
+                    row.available && SendMessageW(list, LB_GETSEL, index, 0) > 0
+                })),
+            );
             let command = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             match command {
+                6 => {
+                    let characters: Vec<_> = rows
+                        .iter()
+                        .enumerate()
+                        .filter(|(index, _)| SendMessageW(list, LB_GETSEL, *index, 0) > 0)
+                        .map(|(_, row)| super::TrainingSelection {
+                            character_id: row.character.character_id.clone(),
+                            channel_id: None,
+                        })
+                        .collect();
+                    if !characters.is_empty() {
+                        break SelectionAction::TrainMany { characters };
+                    }
+                }
                 1 => {
                     if let Some(row) = row.filter(|row| row.available) {
                         let selected = SendMessageW(channels, CB_GETCURSEL, 0, 0);
@@ -213,8 +260,9 @@ pub(super) fn select(
                             .and_then(|index| index.checked_sub(1))
                             .and_then(|index| row.channels.get(index))
                             .map(|channel| channel.0.clone());
+                        let character_id = row.character.character_id.clone();
                         break SelectionAction::Play {
-                            character_id: row.character.character_id.clone(),
+                            character_id,
                             channel_id,
                         };
                     }
@@ -222,6 +270,7 @@ pub(super) fn select(
                 2 => break SelectionAction::Create,
                 3 => break SelectionAction::Refresh,
                 4 => break SelectionAction::Cancel,
+                5 => break SelectionAction::AccountServices,
                 _ => {}
             }
             std::thread::sleep(std::time::Duration::from_millis(30));

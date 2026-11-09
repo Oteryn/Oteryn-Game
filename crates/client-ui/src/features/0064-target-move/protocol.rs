@@ -8,12 +8,12 @@ pub fn apply(state: &mut WalkState, response: WalkResponse) {
             response.status,
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
         ) {
-            "Walk request refused"
+            tr!("Walk request refused")
         } else {
             match response.disposition {
-                Some(WalkDisposition::Accepted) => "Walk request accepted",
-                Some(WalkDisposition::NoPath) => "No path to that tile",
-                _ => "Walk request refused",
+                Some(WalkDisposition::Accepted) => tr!("Walk request accepted"),
+                Some(WalkDisposition::NoPath) => tr!("No path to that tile"),
+                _ => tr!("Walk request refused"),
             }
         },
     );

@@ -12,7 +12,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         Form {
             title: "Party shields and skulls",
             labels: &[],
-            buttons: &["Query"],
+            buttons: &["Party icons", "Unjustified points"],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.party_skull;
                 (
@@ -33,6 +33,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 let intent = match action {
                     0 => oteryn_client_ui::party_skull::Intent::Query,
+                    1 => oteryn_client_ui::party_skull::Intent::PvpStatus,
                     _ => return,
                 };
                 super::input::submit(mailbox, commands, intent);
@@ -40,3 +41,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[path = "pvp_status.rs"]
+pub(in crate::play) mod pvp_status;

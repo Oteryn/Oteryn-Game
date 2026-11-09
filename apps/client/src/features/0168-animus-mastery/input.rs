@@ -11,7 +11,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Animus(payload)).is_err()
         {
             mailbox.animus.pending = None;
-            mailbox.animus.error = Some("Session ended");
+            mailbox.animus.error = Some(tr!("Session ended"));
         }
     }
 

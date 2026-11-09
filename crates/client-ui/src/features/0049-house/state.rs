@@ -9,6 +9,8 @@ pub struct Panel {
     pub open: bool,
     pub pending: Option<FeatureCommand>,
     pub pending_acl: bool,
+    pub pending_acl_read: bool,
+    pub acl_snapshot: Option<house::HouseAclSnapshot>,
     pub pending_index: usize,
     pub world: [u8; 16],
     pub town: String,
@@ -22,14 +24,24 @@ impl Panel {
             return;
         }
         self.pending = None;
+        let acl_read = std::mem::take(&mut self.pending_acl_read);
         if !matches!(
             reply.status,
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
         ) {
-            self.feedback = "The server refused the request".into();
+            self.feedback = tr!("The server refused the request").into();
             return;
         }
-        let result = if command.kind == 57 {
+        let result = if acl_read {
+            house::decode_house_acl_snapshot(&reply.payload)
+                .map_err(|_| "Invalid house ACL reply")
+                .map(|snapshot| {
+                    if let Some(row) = self.page.rows.get_mut(self.pending_index) {
+                        row.acl_revision = snapshot.revision;
+                    }
+                    self.acl_snapshot = Some(snapshot);
+                })
+        } else if command.kind == 57 {
             house::page(&reply.payload).map(|page| {
                 self.page = page;
                 self.index = 0;
@@ -37,7 +49,12 @@ impl Panel {
         } else {
             house::result(&reply.payload).and_then(|(d, revision)| {
                 if d != 1 && d != 11 {
-                    return Err("The server refused the action");
+                    return Err(match d {
+                        3 => tr!("The server refused the action: catalogue changed; refresh before retrying"),
+                        8 => tr!("The server refused the action: insufficient funds"),
+                        9 => tr!("The server refused the action: balance limit reached"),
+                        _ => tr!("The server refused the action"),
+                    });
                 }
                 if let Some(row) = self.page.rows.get_mut(self.pending_index)
                     && self.pending_acl
@@ -48,7 +65,13 @@ impl Panel {
                 Ok(())
             })
         };
-        self.feedback = result.map_or_else(str::to_owned, |()| "House updated".into());
+        self.feedback = result.map_or_else(str::to_owned, |()| {
+            if acl_read {
+                "Access list loaded; edit members and confirm the matching action".into()
+            } else {
+                tr!("House updated").into()
+            }
+        });
     }
     pub fn admitted(&mut self, world: [u8; 16], capabilities: &[u32]) {
         self.ended();

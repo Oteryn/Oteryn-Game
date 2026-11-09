@@ -46,3 +46,28 @@ fn notice_shortcut_requires_exact_modifiers_and_fresh_press()
     )]));
     Ok(())
 }
+
+#[test]
+fn general_event_banners_obey_configuration_dismissal_and_expiry() {
+    let mut panel = NoticePanel::default();
+    assert!(
+        panel
+            .events
+            .show("raid:1", "A raid approaches", false, 1000, 5000)
+    );
+    assert!(panel_text(&panel).contains("A raid approaches"));
+    panel.events.banners_enabled = false;
+    assert!(!panel_text(&panel).contains("A raid approaches"));
+    panel.events.banners_enabled = true;
+    panel.events.expire(6000);
+    assert!(!panel_text(&panel).contains("A raid approaches"));
+    assert!(
+        panel
+            .events
+            .show("event:2", "Event started", true, 6000, 5000)
+    );
+    assert!(panel_text(&panel).contains("Popup: Event started"));
+    assert!(panel.events.dismiss("event:2"));
+    assert!(!panel_text(&panel).contains("Event started"));
+    assert!(!panel.events.show("event:3", "bad\0text", false, 0, 5000));
+}

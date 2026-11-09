@@ -14,11 +14,11 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.appearance;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
     if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+        panel.feedback = tr!("Waiting for the server").into();
         return;
     }
     match super::protocol::command(panel, intent) {
@@ -26,13 +26,19 @@ pub(in crate::play) fn submit(
             if oteryn_client_ui::appearance::request(panel, command.kind)
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
-                panel.failed("The session has ended");
+                panel.failed(tr!("The session has ended"));
             }
         }
         Err(message) => panel.feedback = message,
     }
 }
 impl PlayLink {
+    pub fn appearance_colour(&self, part: usize) -> bool {
+        lock(&self.mailbox).properties.appearance.cycle_colour(part)
+    }
+    pub fn appearance_addon(&self, bit: u8) -> bool {
+        lock(&self.mailbox).properties.appearance.toggle_addon(bit)
+    }
     pub fn appearance_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).properties.appearance, field, value);
     }

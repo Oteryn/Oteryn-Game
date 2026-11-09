@@ -37,13 +37,14 @@ client integration contracts.
   do not authorize issuance or activation. Its coin reservation, eligibility
   and receipt integration needs a separate owning contract.
 
-The payment provider implementation is **OWNED ELSEWHERE (Platform)**; the Game
-checkout client remains **BLOCKED** on the usable checkout contract. Bazaar and
-world-transfer client completion remain **BLOCKED** on the integrations above.
-Missing live keys do not block sandbox development; sandbox integration work
-belongs to Platform and is not supplied by an invented Game payment endpoint.
-The owner's task already authorizes Oteryn implementation. These are concrete
-cross-repository integration gaps, not a request to approve that implementation again.
+The payment provider implementation remains Platform-owned. The owner's revised
+scope explicitly ships native client contracts, types, UI and test-only mocks
+before Platform issuance. These integration gaps are deployment prerequisites,
+not client blockers. The [Character Bazaar/world-transfer v1 contract](../contracts/OTERYN_CHARACTER_BAZAAR_V1.md)
+and [coin purchase v1 contract](../contracts/OTERYN_COIN_PURCHASE_V1.md) define
+the shipped native flows and their test-only mock authorities.
+Missing live keys never block sandbox development. The task already authorizes
+Oteryn implementation without another approval request.
 
 ## Payments before going live
 
@@ -74,9 +75,10 @@ The client needs authenticated Platform APIs for package quotes, idempotent orde
 creation, order status, coin balance and receipts. It opens only validated HTTPS
 sandbox checkout URLs in the system browser; browser return is not payment proof.
 Refresh status/balance from Platform after return or explicit refresh. Platform
-must qualify the ledger/webhook PostgreSQL cases before this can be called DONE.
-No such public order API is defined by the current Game contract, so this Game
-lane cannot supply a working checkout or payment provider without Platform work.
+must qualify the ledger/webhook PostgreSQL cases before live activation.
+The native coin-purchase contract defines these endpoints for the client and
+its test-only mock provider. Platform must implement issuance before deployment;
+this does not prevent shipping and testing the native client flow now.
 
 ## Bazaar and world transfer
 
@@ -90,8 +92,9 @@ is evidence of a completed ownership transfer.
 World transfer needs an accepted coin quote/reservation contract and cooldown
 policy as well as Game eligibility (offline and lease/session fenced, no guild,
 house or active market obligations). Price and cooldown values were not supplied
-by this task. No invented default may debit users. Client dialogs require these
-real services, quotes, eligibility explanations and committed receipts.
+by this task. No invented default may debit users. The shipped client dialogs bind their
+confirmation to server quotes, eligibility explanations and committed receipts;
+test-only mock authority exercises the same typed HTTP contract.
 
 The owner must also resolve the Bazaar contract's explicit activation questions:
 snapshot/obligation policy, escrow account capacity, key custody and finite proof
@@ -99,3 +102,15 @@ retention. These blockers concern Oteryn's Platform and policies, not CipSoft.
 
 For the independently implementable Game login challenge client and the exact
 remaining Platform work, see [the challenge contract](../contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md).
+
+## Native Premium overview (T165)
+
+The [Premium overview v1](../contracts/OTERYN_PREMIUM_PANEL_V1.md) uses the existing
+Game character-information command (113, capability97), operation5, to observe
+the current session's account through its existing Premium fence/coordinator.
+The native in-game panel requires no additional Platform customer endpoint.
+Actual subscription end remains separate from the shorter authority lease;
+current indicators fail closed and all gameplay decisions remain unchanged.
+The optional pre-login Platform projection remains unqualified and has no default
+native entry; it is not required by the supported in-game flow. No payment or
+Premium-grant control is added.

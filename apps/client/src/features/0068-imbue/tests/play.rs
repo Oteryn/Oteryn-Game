@@ -13,9 +13,64 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 struct Peer {
     requests: Arc<Mutex<Vec<imbuement::ImbuementRequest>>>,
+    details: bool,
 }
 
 impl Stepper for Peer {
+    fn feature_selected(&self, capability: u32) -> bool {
+        self.details && matches!(capability, 37 | 447)
+    }
+    fn depot_items(&self) -> oteryn_client_runtime::depot::Items {
+        let mut items = oteryn_client_runtime::depot::Items::default();
+        {
+            items
+                .inventory
+                .entries
+                .push(oteryn_client_runtime::depot::ItemEntry {
+                    handle: NonZeroU64::MIN.saturating_add(41),
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU32::MIN,
+                    sub_type: 0,
+                });
+        }
+        items
+    }
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        use oteryn_client_runtime::imbuement_details as wire;
+        if !self.details
+            || command.capability != wire::CAPABILITY_IMBUEMENT_DETAILS_V1
+            || command.kind != wire::COMMAND_TYPE_IMBUEMENT_DETAILS
+        {
+            return Err(SessionError::SessionUnusable);
+        }
+        let item =
+            wire::decode_query(&command.payload).map_err(|_| SessionError::SessionUnusable)?;
+        let reply = wire::Reply {
+            item,
+            quotes: vec![wire::Quote {
+                family: 3,
+                tier: 2,
+                gold: 400,
+                requires_premium: true,
+                recipe_available: true,
+                success_percent: 100,
+                materials: vec![wire::Material {
+                    definition_key: "oteryn:item.tibia.i11466".into(),
+                    quantity: 25,
+                }],
+            }],
+        };
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 9,
+            server_sequence: 9,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_reply(&reply).map_err(|_| SessionError::SessionUnusable)?,
+        })
+    }
+
     fn imbue_selected(&self) -> bool {
         true
     }
@@ -115,6 +170,7 @@ fn imbuement_panel_queries_and_sends_every_wire_action() -> Result<(), Error> {
                 let requests = Arc::new(Mutex::new(Vec::new()));
                 let peer = Peer {
                     requests: Arc::clone(&requests),
+                    details: false,
                 };
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
@@ -123,9 +179,11 @@ fn imbuement_panel_queries_and_sends_every_wire_action() -> Result<(), Error> {
                 link.open_imbue();
                 ready(&link, &requests, 1).await?;
                 assert!(panel_text(&link.imbue_panel()).contains("400 gold (premium)"));
+                assert!(link.imbue_slot(1));
                 link.imbue_request(Intent::Apply);
                 ready(&link, &requests, 2).await?;
                 assert!(panel_text(&link.imbue_panel()).contains("materials are missing"));
+                assert!(link.imbue_slot(0));
                 link.imbue_request(Intent::Clear);
                 ready(&link, &requests, 3).await?;
                 let actions = requests
@@ -139,7 +197,7 @@ fn imbuement_panel_queries_and_sends_every_wire_action() -> Result<(), Error> {
                     vec![
                         imbuement::ImbuementAction::Query,
                         imbuement::ImbuementAction::Apply {
-                            slot: 0,
+                            slot: 1,
                             imbuement: 0
                         },
                         imbuement::ImbuementAction::Clear { slot: 0 }
@@ -153,3 +211,13 @@ fn imbuement_panel_queries_and_sends_every_wire_action() -> Result<(), Error> {
         .join()
         .map_err(|_| "Imbuement UI test thread panicked")?
 }
+
+include!(
+    "play_imbuement_selected_slot_drives_live_command_and_item_change_discards_old_quote_1.rs"
+);
+
+#[path = "scope_materials.rs"]
+mod scope_materials;
+
+#[path = "equipment_tracker.rs"]
+mod equipment_tracker;

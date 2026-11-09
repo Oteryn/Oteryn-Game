@@ -4,10 +4,12 @@ pub fn panel_text(p: &CyclopediaCharacterPanel) -> String {
     let state = p
         .result
         .as_deref()
-        .unwrap_or("No server character view yet");
-    let heading = format!(
+        .unwrap_or(tr!("No server character view yet"));
+    let heading = lfmt!(
         "Cyclopedia character — {:?}, offset {}, limit {}",
-        p.tab, p.offset, p.limit
+        p.tab,
+        p.offset,
+        p.limit
     );
     match p.feedback {
         Some(f) => format!("{heading}\r\n{state}\r\n{f}"),
@@ -34,31 +36,36 @@ pub fn overview_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String
     }) else {
         return Vec::new();
     };
+    general_cards(stats)
+}
+fn general_cards(
+    stats: oteryn_client_runtime::cyclopedia_character::GeneralStats,
+) -> Vec<(&'static str, String)> {
     let mut cards = vec![
-        ("Level", stats.level.to_string()),
-        ("Experience", stats.experience.to_string()),
-        ("Magic level", stats.magic_level.to_string()),
+        (tr!("Level"), stats.level.to_string()),
+        (tr!("Experience"), stats.experience.to_string()),
+        (tr!("Magic level"), stats.magic_level.to_string()),
         (
-            "Health (last saved)",
+            tr!("Health (last saved)"),
             stats
                 .last_vitals
-                .map_or_else(|| "Unavailable".into(), |(v, _)| v.to_string()),
+                .map_or_else(|| tr!("Unavailable").into(), |(v, _)| v.to_string()),
         ),
         (
-            "Mana (last saved)",
+            tr!("Mana (last saved)"),
             stats
                 .last_vitals
-                .map_or_else(|| "Unavailable".into(), |(_, v)| v.to_string()),
+                .map_or_else(|| tr!("Unavailable").into(), |(_, v)| v.to_string()),
         ),
     ];
     for (label, level) in [
-        "Fist",
-        "Club",
-        "Sword",
-        "Axe",
-        "Distance",
-        "Shielding",
-        "Fishing",
+        tr!("Fist"),
+        tr!("Club"),
+        tr!("Sword"),
+        tr!("Axe"),
+        tr!("Distance"),
+        tr!("Shielding"),
+        tr!("Fishing"),
     ]
     .into_iter()
     .zip(stats.skills)
@@ -66,7 +73,7 @@ pub fn overview_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String
         cards.push((label, level.to_string()));
     }
     cards.push((
-        "Stamina",
+        tr!("Stamina"),
         format!(
             "{}:{:02}",
             stats.stamina_minutes / 60,
@@ -74,7 +81,7 @@ pub fn overview_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String
         ),
     ));
     cards.push((
-        "Offline training",
+        tr!("Offline training"),
         format!(
             "{}:{:02}",
             stats.offline_training_minutes / 60,
@@ -115,7 +122,7 @@ fn stat_value(
 ) -> String {
     use oteryn_client_runtime::cyclopedia_character::combat::CombatStatUnit;
     let Some(v) = value else {
-        return "Unavailable".into();
+        return tr!("Unavailable").into();
     };
     match key.unit() {
         CombatStatUnit::PartsPerMillion => format!(
@@ -138,19 +145,28 @@ pub fn combat_rows(p: &CyclopediaCharacterPanel) -> Vec<CombatRow> {
         .map(|&key| {
             let name = format!("{key:?}");
             let source = if name.contains("Equipment") {
-                "Equipment"
+                tr!("Equipment")
             } else if name.contains("Imbuement") {
-                "Imbuement"
+                tr!("Imbuement")
             } else if name.contains("Wheel") {
-                "Wheel"
+                tr!("Wheel")
             } else if name.contains("Concoction") {
-                "Consumable"
+                tr!("Consumable")
+            } else if name.contains("FightMode") {
+                "Combat stance"
+            } else if name == "FlatDamageHealing" {
+                tr!("Level")
+            } else if name.starts_with("PerfectShot") || name == "Cleave" || name == "AttackElement"
+            {
+                tr!("Equipment")
+            } else if name.starts_with("Converted") {
+                "Conversion"
             } else if name.contains("Skill") {
-                "Skill"
+                tr!("Skill")
             } else if name.contains("Base") {
-                "Base"
+                tr!("Base")
             } else {
-                "Combined"
+                tr!("Combined")
             };
             CombatRow {
                 key,
@@ -166,33 +182,44 @@ pub fn combat_detail(
     key: oteryn_client_runtime::cyclopedia_character::combat::CombatStat,
 ) -> String {
     let Some(stats) = p.combat.as_ref().filter(|s| s.tab() == p.tab) else {
-        return "No confirmed statistics".into();
+        return tr!("No confirmed statistics").into();
     };
     let name = format!("{key:?}");
-    let family = [
-        "Equipment",
-        "Imbuement",
-        "Wheel",
-        "Concoction",
-        "Base",
-        "Amplification",
-        "Skill",
+    let contribution_family = [
+        tr!("Equipment"),
+        tr!("Imbuement"),
+        tr!("Wheel"),
+        tr!("Concoction"),
+        tr!("Base"),
+        tr!("Amplification"),
+        tr!("Skill"),
     ]
     .iter()
     .find_map(|suffix| name.strip_suffix(suffix))
     .unwrap_or(&name);
+    let family = if name.starts_with("Attack") {
+        "Attack"
+    } else if name.starts_with("PerfectShot") {
+        "PerfectShot"
+    } else if name.starts_with("Accuracy") {
+        "Accuracy"
+    } else if name.starts_with("Converted") {
+        "Converted"
+    } else {
+        contribution_family
+    };
     let mut out = format!(
-        "Observed at: {} (server Unix ms)\r\n",
-        stats.observed_at_unix_ms
+        "Observed at: {} (server Unix ms)\r\nCharacter revision: {} | Equipment revision: {}\r\n",
+        stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
     );
     if name.starts_with("Absorb") {
-        out.push_str(
-            "Positive resistance reduces incoming damage; negative resistance increases it.\r\n",
-        );
+        out.push_str(tr!(
+            "Positive resistance reduces incoming damage; negative resistance increases it.\r\n"
+        ));
     }
     for row in combat_rows(p)
         .into_iter()
-        .filter(|r| format!("{:?}", r.key).starts_with(family))
+        .filter(|r| format!("{:?}", r.key).starts_with(family) || (family=="Attack" && r.key==oteryn_client_runtime::cyclopedia_character::combat::CombatStat::FlatDamageHealing))
     {
         out.push_str(&format!(
             "{}: {} — {}\r\n",
@@ -210,16 +237,100 @@ pub fn store_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String)> 
     };
     vec![
         (
-            "Permanent prey slots",
+            tr!("Permanent prey slots"),
             store.permanent_prey_slots.to_string(),
         ),
-        ("Prey wildcards", store.prey_wildcards.to_string()),
-        ("Hirelings", store.hirelings.to_string()),
-        ("Blessings", store.blessings.len().to_string()),
+        (tr!("Prey wildcards"), store.prey_wildcards.to_string()),
+        (tr!("Hirelings"), store.hirelings.to_string()),
+        (tr!("Blessings"), store.blessings.len().to_string()),
     ]
 }
 pub fn store_blessings(p: &CyclopediaCharacterPanel) -> String {
     p.store
         .as_ref()
         .map_or_else(String::new, |s| s.blessings.join("\r\n"))
+}
+
+pub fn misc_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String)> {
+    let Some(stats) = p
+        .misc_general
+        .filter(|_| p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc)
+    else {
+        return Vec::new();
+    };
+    general_cards(stats)
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, card)| (i == 2 || i >= 5).then_some(card))
+        .collect()
+}
+pub fn misc_bars(p: &CyclopediaCharacterPanel) -> Option<[(u16, u16); 2]> {
+    let stats = p
+        .misc_general
+        .filter(|_| p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc)?;
+    Some([
+        (stats.stamina_minutes.min(2520), 2520),
+        (stats.offline_training_minutes.min(720), 720),
+    ])
+}
+
+/// Full catalogue only after the server has confirmed the account's earned badges.
+pub fn badge_rows(p: &CyclopediaCharacterPanel) -> Vec<super::BadgeRow> {
+    let Some(earned) = &p.badges else {
+        return Vec::new();
+    };
+    use super::BadgeFilter;
+    oteryn_client_runtime::cyclopedia_character::Badge::ALL
+        .into_iter()
+        .map(|badge| super::BadgeRow {
+            id: badge.id(),
+            name: badge.name(),
+            earned: earned.contains(&badge.id()),
+            hidden: p.hidden_badges.contains(&badge.id()),
+        })
+        .filter(|row| match p.badge_filter {
+            BadgeFilter::All => true,
+            BadgeFilter::Earned => row.earned,
+            BadgeFilter::Locked => !row.earned,
+            BadgeFilter::Hidden => row.hidden,
+            BadgeFilter::Public => {
+                p.badge_visibility_known && row.earned && !p.server_hidden_badges.contains(&row.id)
+            }
+            BadgeFilter::HiddenPublic => {
+                p.badge_visibility_known && p.server_hidden_badges.contains(&row.id)
+            }
+        })
+        .collect()
+}
+pub fn badge_text(p: &CyclopediaCharacterPanel) -> String {
+    let mut text = String::from(tr!("Badges — local display preferences\r\n"));
+    if p.badge_visibility_known {
+        text.push_str("Server-confirmed public visibility\r\n");
+    } else {
+        text.push_str("Public visibility unavailable\r\n");
+    }
+    for row in badge_rows(p) {
+        text.push_str(&format!(
+            "#{} {} — {}{}{}\r\n",
+            row.id,
+            row.name,
+            if row.earned { "earned" } else { "locked" },
+            if row.hidden {
+                tr!("; hidden locally")
+            } else {
+                ""
+            },
+            if p.badge_visibility_known && p.server_hidden_badges.contains(&row.id) {
+                "; hidden publicly"
+            } else {
+                ""
+            }
+        ));
+    }
+    text
+}
+
+/// Dedicated blessings window body, independent of the selected Cyclopedia target.
+pub fn blessings_text(p: &CyclopediaCharacterPanel) -> String {
+    p.blessings.text()
 }

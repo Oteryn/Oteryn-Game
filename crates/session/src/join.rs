@@ -108,6 +108,7 @@ impl<S: SessionStream> Session<S> {
             world_object_overlay_revision: overlay_revision,
         };
         Ok(Self {
+            bulletin: None,
             stream,
             deadline,
             last_received: tokio::time::Instant::now(),

@@ -160,6 +160,7 @@ pub struct ConsumedRespawn {
 
 mod adventurer;
 mod commit;
+pub mod forecast;
 pub mod items;
 pub mod promotion;
 mod protection;

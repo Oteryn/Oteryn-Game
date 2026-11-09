@@ -17,7 +17,7 @@ impl LoyaltySkillsPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Skills could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Skills could not be refreshed. Try Refresh."));
         false
     }
 }

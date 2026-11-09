@@ -42,8 +42,8 @@ pub fn select_next_boss(panel: &mut BossEncounterPanel, chain: EndgameChain) -> 
         .position(|key| *key == panel.fields[0])
         .map_or(0, |index| (index + 1) % bosses.len());
     panel.fields[0] = bosses[next].into();
-    panel.feedback = Some(
-        "Boss selected. Enter requests access; the server checks quest progress and returns you after the encounter.",
-    );
+    panel.feedback = Some(tr!(
+        "Boss selected. Enter requests access; the server checks quest progress and returns you after the encounter."
+    ));
     true
 }

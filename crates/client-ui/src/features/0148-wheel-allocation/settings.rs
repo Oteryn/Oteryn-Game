@@ -9,27 +9,27 @@ const MAX_CODE: usize = 256;
 pub struct PresetBook(pub BTreeMap<String, String>);
 fn decode(code: &str) -> Result<[u16; 36], &'static str> {
     if code.len() > MAX_CODE {
-        return Err("Build code is too long");
+        return Err(tr!("Build code is too long"));
     }
     let body = code
         .trim()
         .strip_prefix("OW1:")
         .or_else(|| code.trim().strip_prefix("oteryn://wheel/v1/"))
-        .ok_or("Use an Oteryn Wheel code or URL");
+        .ok_or(tr!("Use an Oteryn Wheel code or URL"));
     let mut points = [0; 36];
     let mut values = body?.split(',');
     for (slot, point) in points.iter_mut().enumerate() {
         *point = values
             .next()
-            .ok_or("Build needs 36 slots")?
+            .ok_or(tr!("Build needs 36 slots"))?
             .parse()
-            .map_err(|_| "Invalid slot points")?;
+            .map_err(|_| tr!("Invalid slot points"))?;
         if *point > SLOT_CAPACITIES[slot] {
-            return Err("Slot points exceed capacity");
+            return Err(tr!("Slot points exceed capacity"));
         }
     }
     if values.next().is_some() {
-        return Err("Build needs exactly 36 slots");
+        return Err(tr!("Build needs exactly 36 slots"));
     }
     Ok(points)
 }
@@ -46,12 +46,13 @@ impl WheelPanel {
     }
     pub fn import_build(&mut self, code: &str) -> Result<(), &'static str> {
         if !self.ready() {
-            return Err("Refresh first and settle any pending request");
+            return Err(tr!("Refresh first and settle any pending request"));
         }
         let points = decode(code)?;
         self.points = points;
-        self.feedback =
-            Some("Build loaded as a proposal; Save Wheel applies it through the server");
+        self.feedback = Some(tr!(
+            "Build loaded as a proposal; Save Wheel applies it through the server"
+        ));
         Ok(())
     }
 }
@@ -59,10 +60,10 @@ impl PresetBook {
     pub fn insert(&mut self, name: &str, code: &str) -> Result<(), &'static str> {
         let name = name.trim();
         if name.is_empty() || name.len() > 64 || name.chars().any(char::is_control) {
-            return Err("Use a preset name of 1 to 64 bytes");
+            return Err(tr!("Use a preset name of 1 to 64 bytes"));
         }
         if self.0.len() >= MAX_PRESETS && !self.0.contains_key(name) {
-            return Err("At most 32 presets");
+            return Err(tr!("At most 32 presets"));
         }
         decode(code)?;
         self.0.insert(name.into(), code.into());
@@ -73,30 +74,32 @@ impl PresetBook {
             return Ok(Self::default());
         }
         if std::fs::metadata(path)
-            .map_err(|_| "Cannot inspect presets")?
+            .map_err(|_| tr!("Cannot inspect presets"))?
             .len()
             > MAX_FILE
         {
-            return Err("Preset file is too large");
+            return Err(tr!("Preset file is too large"));
         }
         let mut bytes = Vec::new();
         std::fs::File::open(path)
-            .map_err(|_| "Cannot read presets")?
+            .map_err(|_| tr!("Cannot read presets"))?
             .take(MAX_FILE + 1)
             .read_to_end(&mut bytes)
-            .map_err(|_| "Cannot read presets")?;
+            .map_err(|_| tr!("Cannot read presets"))?;
         if bytes.len() as u64 > MAX_FILE {
-            return Err("Preset file is too large");
+            return Err(tr!("Preset file is too large"));
         }
         let value: serde_json::Value =
-            serde_json::from_slice(&bytes).map_err(|_| "Invalid preset file")?;
+            serde_json::from_slice(&bytes).map_err(|_| tr!("Invalid preset file"))?;
         if value["version"] != 1 {
-            return Err("Unsupported preset version");
+            return Err(tr!("Unsupported preset version"));
         }
-        let entries = value["presets"].as_object().ok_or("Invalid preset list")?;
+        let entries = value["presets"]
+            .as_object()
+            .ok_or(tr!("Invalid preset list"))?;
         let mut book = Self::default();
         for (name, code) in entries {
-            book.insert(name, code.as_str().ok_or("Invalid preset code")?)?;
+            book.insert(name, code.as_str().ok_or(tr!("Invalid preset code"))?)?;
         }
         Ok(book)
     }
@@ -106,12 +109,12 @@ impl PresetBook {
             validated.insert(name, code)?;
         }
         let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version":1,"presets":self.0}))
-            .map_err(|_| "Cannot encode presets")?;
+            .map_err(|_| tr!("Cannot encode presets"))?;
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|_| "Cannot create preset directory")?;
+            std::fs::create_dir_all(parent).map_err(|_| tr!("Cannot create preset directory"))?;
         }
         let temporary = path.with_extension("json.tmp");
-        std::fs::write(&temporary, bytes).map_err(|_| "Cannot write presets")?;
-        std::fs::rename(temporary, path).map_err(|_| "Cannot save presets")
+        std::fs::write(&temporary, bytes).map_err(|_| tr!("Cannot write presets"))?;
+        std::fs::rename(temporary, path).map_err(|_| tr!("Cannot save presets"))
     }
 }

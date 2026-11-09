@@ -7,6 +7,9 @@ use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
+#[path = "native/tree.rs"]
+mod tree;
+
 const REFRESH: usize = 102;
 const START: usize = 103;
 const DELIVER: usize = 104;
@@ -72,12 +75,12 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Task Board — Ctrl+Shift+T").as_ptr(),
+            wide(tr!("Task Board — Ctrl+Shift+T")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             820,
-            700,
+            760,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -99,10 +102,16 @@ fn run(
             "EDIT",
             "",
             101,
-            [10, 10, 780, 380],
+            [10, 10, 470, 380],
             WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
-        control(hwnd, "STATIC", "Difficulty", 0, [10, 400, 100, 24], 0);
+        let upgrades = tree::create(hwnd);
+        if upgrades.is_null() {
+            DestroyWindow(hwnd);
+            close(&weak);
+            return;
+        }
+        control(hwnd, "STATIC", tr!("Difficulty"), 0, [10, 400, 100, 24], 0);
         let difficulty = control(
             hwnd,
             "COMBOBOX",
@@ -111,14 +120,14 @@ fn run(
             [110, 400, 140, 160],
             CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
         );
-        for label in ["Beginner", "Adept", "Expert", "Master"] {
+        for label in [tr!("Beginner"), tr!("Adept"), tr!("Expert"), tr!("Master")] {
             SendMessageW(difficulty, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
         SendMessageW(difficulty, CB_SETCURSEL, 0, 0);
         control(
             hwnd,
             "STATIC",
-            "Row / list slot / path (1-based)",
+            "Task row / list slot (1-based)",
             0,
             [270, 400, 260, 24],
             0,
@@ -134,7 +143,7 @@ fn run(
         control(
             hwnd,
             "STATIC",
-            "Preferred / unwanted creature",
+            tr!("Preferred / unwanted creature"),
             0,
             [10, 435, 330, 24],
             0,
@@ -148,21 +157,21 @@ fn run(
             CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
         );
         for (index, (id, label)) in [
-            (REFRESH, "Refresh"),
-            (START, "Start weekly"),
-            (DELIVER, "Deliver row"),
-            (OPEN_BOUNTY, "Open bounty"),
-            (SELECT_BOUNTY, "Select bounty row"),
-            (CLAIM, "Claim bounty"),
-            (DIFFICULTY, "Set bounty difficulty"),
-            (REROLL, "Reroll bounty"),
-            (DAILY, "Daily reroll"),
-            (PREFERRED, "Set preferred"),
-            (UNWANTED, "Set unwanted"),
-            (UNLOCK, "Unlock list slot"),
-            (BUY, "Buy shop row"),
-            (BUY_TALISMAN, "Buy Bounty Talisman"),
-            (UPGRADE_TALISMAN, "Upgrade talisman path"),
+            (REFRESH, tr!("Refresh")),
+            (START, tr!("Start weekly")),
+            (DELIVER, tr!("Deliver row")),
+            (OPEN_BOUNTY, tr!("Open bounty")),
+            (SELECT_BOUNTY, tr!("Select bounty row")),
+            (CLAIM, tr!("Claim bounty")),
+            (DIFFICULTY, tr!("Set bounty difficulty")),
+            (REROLL, tr!("Reroll bounty")),
+            (DAILY, tr!("Daily reroll")),
+            (PREFERRED, tr!("Set preferred")),
+            (UNWANTED, tr!("Set unwanted")),
+            (UNLOCK, tr!("Unlock list slot")),
+            (BUY, tr!("Buy shop row")),
+            (BUY_TALISMAN, "Buy talisman (5000 gold)"),
+            (UPGRADE_TALISMAN, "Upgrade selected path"),
         ]
         .into_iter()
         .enumerate()
@@ -181,6 +190,16 @@ fn run(
                 WS_TABSTOP,
             );
         }
+        control(hwnd, "STATIC", tr!("Shop offer"), 0, [10, 635, 120, 24], 0);
+        let shop = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            204,
+            [140, 635, 650, 240],
+            CBS_DROPDOWNLIST as u32 | WS_TABSTOP,
+        );
+        let mut shop_ids: Vec<u16> = Vec::new();
         let mut choices: Vec<String> = Vec::new();
         let mut held = None;
         loop {
@@ -231,27 +250,35 @@ fn run(
                         .zip(selected_race)
                         .map(|(v, key)| FullIntent::Unwanted(v, key.to_owned())),
                     UNLOCK => Some(FullIntent::UnlockList),
-                    BUY => selected.map(FullIntent::BuyShop),
+                    BUY => usize::try_from(SendMessageW(shop, CB_GETCURSEL, 0, 0))
+                        .ok()
+                        .and_then(|row| shop_ids.get(row).copied())
+                        .map(FullIntent::BuyShop),
                     _ => None,
                 };
-                let command = if let Some(intent) = intent {
-                    full_request(&mut mailbox.task_board, intent)
-                } else {
+                if matches!(id, BUY_TALISMAN | UPGRADE_TALISMAN) {
                     use oteryn_client_ui::task_board::talisman;
-                    let intent = match id {
-                        BUY_TALISMAN => Some(talisman::Intent::Buy),
-                        UPGRADE_TALISMAN => slot.map(talisman::Intent::Upgrade),
-                        _ => None,
+                    let chosen = if id == BUY_TALISMAN {
+                        Some(talisman::Intent::Buy)
+                    } else {
+                        tree::selected_path(upgrades).map(talisman::Intent::Upgrade)
                     };
-                    intent.and_then(|intent| talisman::request(&mut mailbox.task_board, intent))
-                };
+                    if let Some(chosen) = chosen {
+                        super::super::input::enqueue_talisman(&mut mailbox, &commands, chosen);
+                    } else {
+                        mailbox.task_board.feedback = Some("Select a talisman path in the tree");
+                    }
+                    continue;
+                }
+                let command =
+                    intent.and_then(|intent| full_request(&mut mailbox.task_board, intent));
                 if let Some(command) = command
                     && commands
                         .send(crate::combat_input::PlayCommand::Feature(command))
                         .is_err()
                 {
                     mailbox.task_board.pending = false;
-                    mailbox.task_board.feedback = Some("The session has ended");
+                    mailbox.task_board.feedback = Some(tr!("The session has ended"));
                 }
             }
             let next_choices = oteryn_client_ui::task_board::creature_choices(&mailbox.task_board);
@@ -264,7 +291,7 @@ fn run(
                 SendMessageW(race, CB_RESETCONTENT, 0, 0);
                 for key in &choices {
                     let name = if key.is_empty() {
-                        "Clear selection".into()
+                        tr!("Clear selection").into()
                     } else {
                         oteryn_client_ui::task_board::creature_name(key)
                     };
@@ -278,6 +305,8 @@ fn run(
             }
             let rendered = panel_text(&mailbox.task_board).replace('\n', "\r\n");
             if held.as_ref() != Some(&rendered) {
+                tree::refresh_shop(shop, &mailbox.task_board, &mut shop_ids);
+                tree::refresh(upgrades, &mailbox.task_board);
                 SetWindowTextW(text, wide(&rendered).as_ptr());
                 held = Some(rendered);
             }

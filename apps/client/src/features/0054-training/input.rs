@@ -14,11 +14,11 @@ pub(in crate::play) fn submit(
 ) {
     let panel = &mut mailbox.properties.training;
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
     if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+        panel.feedback = tr!("Waiting for the server").into();
         return;
     }
     match super::protocol::command(panel, intent) {
@@ -26,13 +26,23 @@ pub(in crate::play) fn submit(
             if oteryn_client_ui::training::request(panel, command.kind)
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
-                panel.failed("The session has ended");
+                panel.failed(tr!("The session has ended"));
             }
         }
         Err(message) => panel.feedback = message,
     }
 }
 impl PlayLink {
+    /// Keep the confirmed receipt readable after session shutdown, without owning a PlayLink.
+    pub fn training_completion(&self) -> impl Fn() -> bool + Send + 'static {
+        let shared = self.mailbox.clone();
+        move || lock(&shared).properties.training.offline_confirmed
+    }
+    pub fn training_batch_label(&self, name: &str, remaining: usize) {
+        lock(&self.mailbox).properties.training.batch_summary = format!(
+            "Character: {name}; {remaining} remaining. Confirm offline training for each character; cancel the next login to stop the batch."
+        );
+    }
     pub fn training_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).properties.training, field, value);
     }

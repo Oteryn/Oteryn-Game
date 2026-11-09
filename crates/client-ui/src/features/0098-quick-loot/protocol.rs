@@ -76,12 +76,12 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     let payload = match encode_quick_loot_request(&wire) {
         Ok(payload) => payload,
         Err(_) => {
-            panel.feedback = "Choose valid loot details".into();
+            panel.feedback = tr!("Choose valid loot details").into();
             return None;
         }
     };
     panel.pending = Some(action);
-    panel.feedback = "Waiting for the server".into();
+    panel.feedback = tr!("Waiting for the server").into();
     Some(ServerMechanicCommand {
         capability: 98,
         command_type: 114,
@@ -125,13 +125,20 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
                         panel.skipped.clear();
                     }
                 }
+                Action::Destination { category, .. } => {
+                    panel.destinations.retain(|previous| {
+                        !matches!(previous,
+                        Action::Destination { category: previous, .. } if previous == category)
+                    });
+                    panel.destinations.push(action.clone());
+                }
                 _ => {}
             }
             panel.confirmed.push(action);
         }
         panel.result = Some(result);
-        panel.feedback = "Confirmed by the server".into();
+        panel.feedback = tr!("Confirmed by the server").into();
         return;
     }
-    panel.feedback = "Loot request refused or invalid reply; try again".into();
+    panel.feedback = tr!("Loot request refused or invalid reply; try again").into();
 }

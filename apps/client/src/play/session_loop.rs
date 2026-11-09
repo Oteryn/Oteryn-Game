@@ -19,125 +19,65 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
-    outbox.discovery_initialize(&session);
-    outbox.properties_initialize(&session);
-    outbox.analyser_initialize(session.feature_selected(10));
-    if let Err(error) = outbox
-        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))
-    {
-        outbox.end(public_class(&error));
+    outbox.performance_reset();
+    if !session_initialize::initialize(&session, &outbox) {
         return;
     }
-    outbox.spell_bar_initialize(session.feature_snapshot(20));
-    outbox.appearance_initialize(&session);
-    outbox.equipment_initialize(session.equipment_selected());
-    outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
-    outbox.targeting_initialize(session.feature_selected(15));
-    // Publish sources only after their equipment, movement and targeting routes are ready.
-    outbox.inventory_initialize(session.inventory(), session.item_count_selected());
-    outbox.container_initialize_with_house_capacity(
-        session.container_views(),
-        session.feature_selected(446),
-    );
-    outbox.target_walk_initialize(session.feature_selected(64));
-    outbox.vitals(session.actor_vitals());
-    outbox.channel_list_initialize(session.feature_snapshot(48));
-    outbox.world_light_initialize(session.feature_snapshot(18));
-    outbox.world_weather_initialize(session.feature_snapshot(22));
-    outbox.map_initialize(session.feature_snapshot(17));
-    outbox.animus_initialize(session.animus_selected());
-    outbox.wheel_initialize(session.wheel_selected());
-    outbox.exiva_initialize(session.exiva_selected());
-    outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
-    outbox.mechanics_status_initialize(session.feature_selected(384));
-    outbox.condition_status_initialize(session.feature_selected(276));
-    outbox.rest_status_initialize(session.feature_selected(277));
-    outbox.battle_instinct_status_initialize(session.feature_selected(278));
-    outbox.skill_progress_initialize(session.feature_selected(279));
-    outbox.skill_display_initialize(session.feature_selected(370));
-    outbox.party_effects_initialize(session.feature_selected(280));
-    outbox.potion_durations_initialize(session.feature_selected(381));
-    outbox.death_protection_initialize(session.feature_selected(382));
-    outbox.quest_initialize(session.quest_state());
-    outbox.task_board_initialize(session.task_board_selected());
-    outbox.stash_initialize(session.stash_selected());
-    outbox.dialogue_initialize(&session);
-    outbox.npc_shop_initialize(&session);
-    outbox.prey_initialize(session.prey_selected());
-    outbox.daily_reward_initialize(session.daily_reward_selected());
-    outbox.boss_rewards_initialize(session.boss_rewards_selected());
-    outbox.imbue_initialize(session.imbue_selected());
-    outbox.player_trade_initialize(
-        session.player_trade_selected(),
-        session.player_trade_state(),
-    );
-    outbox.vip_initialize(session.vip_selected());
-    outbox.guild_initialize(session.guild_selected());
-    outbox.party_initialize(
-        session.party_selected(),
-        session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1),
-    );
-    outbox.hireling_initialize(session.hireling_selected());
-    outbox.hireling_management_initialize(session.feature_selected(250));
-    outbox.market_initialize(session.market_selected());
-    outbox.chat_with_movement_initialize(&session);
-    outbox.chat_private_publish(&session);
-    outbox.player_typing_initialize(session.player_typing_selected());
-    outbox.arena_initialize(session.feature_selected(170));
-    outbox.boss_encounter_initialize(session.feature_selected(117));
-    outbox.boss_difficulty_initialize(session.feature_selected(225));
-    outbox.cast_control_initialize(session.server_mechanic_selected(290));
-    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
-    outbox.cast_chat_initialize(
-        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
-    );
-    outbox.browse_field_initialize(session.server_mechanic_selected(230));
-    if let Some(payload) = session.feature_snapshot(14) {
-        outbox.browse_field_views(&payload);
+    if let Some(command) = outbox.returner_initial_request() {
+        match session.feature(&command).await {
+            Ok(result) => outbox.daily_reward_returner_result(command.kind, &result),
+            Err(_) => outbox.returner_unavailable(),
+        }
     }
-    if let Some(inventory) = session.inventory() {
-        outbox.browse_field_inventory(inventory);
-    }
-    outbox.guild_chat_publish(&session);
-    outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
-    outbox.chat_party_room_initialize(session.feature_selected(240));
-    outbox.cyclopedia_character_initialize(session.feature_selected(199));
-    outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
-    outbox.world_event_initialize(session.feature_selected(53));
-    outbox.daily_boost_initialize(session.feature_selected(151));
-    outbox.highscores_initialize(session.server_mechanic_selected(9));
-    outbox.depot_search_initialize(session.server_mechanic_selected(153));
-    outbox.target_move_initialize(session.feature_selected(64));
-    outbox.creature_push_initialize(session.feature_selected(82));
-    outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
-    outbox.hotkey_equip_items(session.hotkey_equip_items());
-    outbox.item_forge_initialize(session.server_mechanic_selected(152));
-    outbox.store_initialize(session.server_mechanic_selected(154));
-    outbox.vip_presence_initialize(session.feature_selected(258));
-    outbox.weapon_proficiency_initialize(session.feature_selected(195));
-    outbox.depot_initialize(session.feature_selected(37));
-    outbox.achievements_initialize();
-    outbox.player_trade_items(session.player_trade_items());
+    let mut modal =
+        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
     let mut held = Vec::new();
     loop {
+        if let Err(error) = modal.poll(&mut session).await {
+            outbox.end(public_class(&error));
+            return;
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
-            Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
+            Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {
                 Ok(result) => {
+                    outbox.hud_stamina_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
+            Ok(PlayCommand::Feature(command)) => {
+                let started = std::time::Instant::now();
+                match session.feature(&command).await {
+                Ok(result) => {
+                    outbox.performance_command_result(started.elapsed());
                     match command.capability {
+                        7 => outbox.console_result(&result),
+                        10 => outbox.analyser_result(&command, &result),
+                        63 => outbox.market_details_result(&command, &result),
+                        72 if command.kind==oteryn_client_runtime::task_board::task_board::soulpit::COMMAND_TYPE => outbox.soulseal_result(&command,&result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
                         54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
+                        97 if command.kind == 113 && command.payload == [5] => outbox.premium_game_result(&command,&result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
-                        76 | 103 | 146 => outbox.properties_result(&command, &result),
+                        76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
+                        182 => match command.kind {
+                            738=>outbox.daily_reward_details_result(&result),
+                            oteryn_session::daily_reward::returner::QUERY | oteryn_session::daily_reward::returner::CLAIM =>outbox.daily_reward_returner_result(command.kind,&result),
+                            _=>outbox.daily_reward_picker_result(command.kind,&result),
+                        },
                         170 => outbox.arena_result(&result),
-                        195 => outbox.weapon_proficiency_result(&result),
+                        195 | 448 => outbox.weapon_proficiency_result(&result),
+                        148 if command.kind == 6121 => outbox.gem_presentation_result(&command, &result),
+                        148 => outbox.wheel_presentation_result(&command, &result),
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
@@ -150,13 +90,14 @@ pub async fn run_session<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
+                        449 => outbox.spellbook_details_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
                 Err(error) => error,
-            },
+            }},
             Ok(PlayCommand::BrowseFieldMove(intent)) => {
                 match session.move_item(oteryn_client_runtime::inventory::MoveRequest {source:intent.source,destination:intent.destination,count:None}).await {
                     Ok(response) => {
@@ -175,13 +116,16 @@ pub async fn run_session<T: Stepper>(
                             290 => outbox.cast_control_result(&response),
                             291 => outbox.cast_chat_result(&response),
                             292 => outbox.cast_consent_result(&response),
+                            63 if request.command_type==oteryn_client_runtime::coin_market::COMMAND => outbox.coin_market_result(&response),
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
+                            17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
                             14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
+                            154 if request.command_type==oteryn_client_runtime::coin_transfer::COMMAND => outbox.coin_gift_result(&response),
                             154 => outbox.store_result(&response),
                             179 => outbox.hotkey_equip_result(&response),
                             230 => outbox.browse_field_result(&response),
@@ -252,8 +196,10 @@ pub async fn run_session<T: Stepper>(
                 }
             }
             Ok(PlayCommand::Step(direction)) => {
+                let started = std::time::Instant::now();
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {
+                        outbox.performance_command_result(started.elapsed());
                         outbox.action_feedback(session.refusal_detail().map(|detail| detail.reference_message()));
                         outbox.stepped(outcome);
                         publish(&mut session, &outbox, &mut held);
@@ -445,3 +391,6 @@ pub async fn run_session<T: Stepper>(
         return;
     }
 }
+
+#[path = "session_initialize.rs"]
+mod session_initialize;

@@ -1,6 +1,8 @@
 //! LOOP-MAP-1 basic map wire. Fixed, little-endian scalar layout, no unbounded fields.
 //! Query: empty. Intent: operation:u8 (1 start, 2 shuffle, 3 find, 4 donate),
 //! area:u32, amount:u32 (zero except donate). Results are documented in the contract.
+pub mod atlas;
+
 pub const COMMAND_TYPE_CYCLOPEDIA_QUERY: u32 = 72;
 pub const COMMAND_TYPE_CYCLOPEDIA_INTENT: u32 = 73;
 pub const CAPABILITY_CYCLOPEDIA_MAP_V1: u32 = 57;
@@ -30,6 +32,13 @@ pub struct MapIntent {
 pub struct MapWireError;
 
 pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError> {
+    if kind == COMMAND_TYPE_CYCLOPEDIA_QUERY && bytes.first() == Some(&128) {
+        atlas::Query::decode(bytes)?;
+        return Ok(MapIntent {
+            operation: 128,
+            amount: 0,
+        });
+    }
     if kind == COMMAND_TYPE_CYCLOPEDIA_QUERY && bytes.is_empty() {
         return Ok(MapIntent {
             operation: 0,
@@ -42,8 +51,8 @@ pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError
     let area = u32::from_le_bytes(bytes[1..5].try_into().map_err(|_| MapWireError)?);
     let amount = u32::from_le_bytes(bytes[5..9].try_into().map_err(|_| MapWireError)?);
     if area != 1
-        || !(1..=4).contains(&bytes[0])
-        || (bytes[0] != 4 && amount != 0)
+        || !(1..=5).contains(&bytes[0])
+        || (!matches!(bytes[0], 4 | 5) && amount != 0)
         || (bytes[0] == 4 && !(1..=10_000_000).contains(&amount))
     {
         return Err(MapWireError);
@@ -194,3 +203,13 @@ mod tests {
         assert!(encode_result(&r).is_err());
     }
 }
+
+#[path = "cyclopedia_atlas.rs"]
+pub mod geometry;
+
+#[cfg(test)]
+#[path = "cyclopedia_atlas_tests.rs"]
+mod atlas_tests;
+
+#[path = "cyclopedia/region_atlas.rs"]
+pub mod region_atlas;

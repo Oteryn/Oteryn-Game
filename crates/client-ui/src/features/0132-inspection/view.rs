@@ -1,23 +1,119 @@
 use super::*;
 pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
-        return "Inspection is unavailable in this session".into();
+        return tr!("Inspection is unavailable in this session").into();
     }
-    let mut text = format!("Inspection\r\n{}", panel.feedback);
+    let mut text = lfmt!("Inspection\r\n{}", panel.feedback);
     if let Some(reply) = &panel.reply {
         for item in &reply.items {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\r\nSlot {}: {} ×{} (tier {})",
-                item.slot, item.name, item.count, item.tier
+                item.slot,
+                item.name,
+                item.count,
+                item.tier
             ));
             for (key, value) in &item.attributes {
                 text.push_str(&format!("\r\n  {key}: {value}"));
             }
         }
-        text.push_str(&format!(
-            "\r\nPermission requests: {}",
-            reply.requests.len()
-        ));
+        text.push_str(&lfmt!("\r\nPermission requests: {}", reply.requests.len()));
+    }
+    if panel.catalogue_next.is_some() {
+        text.push_str("Next catalogue page available\r\n");
+    }
+    if panel.catalogue_drop_next.is_some() {
+        text.push_str("More drop sources available\r\n");
+    }
+    text
+}
+
+/// Only public catalogue replies enter this browser; inspected players remain private.
+pub fn catalogue_text(panel: &Panel) -> String {
+    use std::fmt::Write;
+    let mut text = String::from(
+        "Items — confirmed catalogue templates\r\nBrowse and search: Ctrl+Alt+Shift+I\r\n",
+    );
+    if !panel.selected {
+        return tr!("Item catalogue unavailable in this session").into();
+    }
+    let _ = lwrite!(
+        text,
+        "Categories: All, {}\r\n{}\r\n",
+        panel.categories().join(", "),
+        panel.feedback
+    );
+    let search = panel.search.to_lowercase();
+    let mut matched = 0;
+    for item in panel.catalogue.values().filter(|item| {
+        item.name.to_lowercase().contains(&search)
+            && (panel.category.is_empty()
+                || super::state::item_categories(item)
+                    .any(|category| category.eq_ignore_ascii_case(&panel.category)))
+    }) {
+        matched += 1;
+        if panel.catalogue_definition == item.definition_ref.to_string() {
+            text.push_str("> ");
+        }
+        let _ = lwrite!(
+            text,
+            "{}: {} (tier {})\r\n",
+            item.definition_ref,
+            item.name,
+            item.tier
+        );
+        if panel.catalogue_definition == item.definition_ref.to_string() {
+            text.push_str("Selected item details:\r\n");
+            for (key, value) in &item.attributes {
+                let _ = write!(text, "  {key}: {value}\r\n");
+            }
+        }
+    }
+    if panel.catalogue_source_definition != 0
+        && panel.catalogue_definition.parse::<u32>().ok() == Some(panel.catalogue_source_definition)
+    {
+        text.push_str("Creature loot sources for the selected item:\r\n");
+        for name in &panel.catalogue_sources {
+            let _ = write!(text, "  Dropped by: {name}\r\n");
+        }
+        if panel.catalogue_sources.is_empty() {
+            text.push_str("No matching creatures on this page.\r\n");
+        }
+        text.push_str(if panel.catalogue_source_next.is_some() {
+            "Next loot sources continues the creature scan.\r\n"
+        } else {
+            "End of known creature loot sources.\r\n"
+        });
+    }
+    if let Some(page) = &panel.catalogue_page {
+        text.push_str(if page.next.is_some() {
+            "Next catalogue page available (continues the filtered scan).\r\n"
+        } else {
+            "End of catalogue.\r\n"
+        });
+    }
+    if matched == 0 && !panel.catalogue.is_empty() {
+        text.push_str(tr!("No items match the selected name and category.\r\n"));
+    }
+    if panel.catalogue.is_empty() && panel.catalogue_loaded {
+        text.push_str("No items match the selected name and category.\r\n");
+    }
+    if panel.catalogue.is_empty() && !panel.catalogue_loaded {
+        text.push_str("Browse the catalogue to load public item statistics and sources.\r\n");
+    }
+    if panel.catalogue_next.is_some() {
+        text.push_str("Next catalogue page available\r\n");
+    }
+    if panel.catalogue_drop_next.is_some() {
+        text.push_str("More drop sources available\r\n");
+    }
+    if panel.catalogue.is_empty() && panel.catalogue_loaded {
+        text.push_str(tr!("No items match the selected name and category.\r\n"));
+    }
+    if panel.catalogue.is_empty() && !panel.catalogue_loaded {
+        text.push_str(
+            "Browse the server catalogue to load item names, categories and sources.\r\n",
+        );
     }
     text
 }

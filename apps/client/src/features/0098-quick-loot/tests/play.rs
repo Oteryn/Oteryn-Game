@@ -183,3 +183,45 @@ fn cp02_shortcuts_are_exclusive_and_session_end_clears_all_panels()
     assert_eq!(link.discovery_panel().loot.feedback, "Session ended");
     Ok(())
 }
+
+#[test]
+fn managed_container_reset_uses_the_selected_category_and_existing_wire() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::quick_loot::{Action, QuickLootCategory, QuickLootRecipient};
+    let (link, mut commands, _) = crate::play::play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.discovery.loot.selected = true;
+        mailbox.discovery.loot.destinations.push(Action::Destination {
+            category: Some(QuickLootCategory::Gold), recipient: QuickLootRecipient::Container,
+            id: Some([1; 16]), fallback: false,
+        });
+    }
+    assert!(!link.quick_loot_control(8, &[], 0));
+    assert!(link.quick_loot_control(7, &[], 0));
+    assert!(link.quick_loot_control(8, &[], 0));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("wrong command path".into());
+    };
+    let request = oteryn_client_ui::quick_loot::decode_quick_loot_request(&command.payload)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(request.category, Some(QuickLootCategory::Gold));
+    assert_eq!(request.recipient, Some(QuickLootRecipient::MainContainer));
+    assert_eq!(request.recipient_id, None);
+    assert!(request.fallback_to_main);
+    assert!(!link.quick_loot_control(8, &[], 0));
+    Ok(())
+}
+
+#[test]
+fn t056_loot_notice_filter_preserves_received_result() {
+    let (link, _, _) = crate::play::play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.discovery.loot.selected = true;
+        mailbox.discovery.loot.result = Some(oteryn_client_ui::quick_loot::QuickLootResult { items: vec![] });
+        mailbox.local_preferences.game_window.loot_messages = false;
+    }
+    assert!(!oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted"));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.game_window.loot_messages = true;
+    assert!(oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted 0 of 0"));
+}

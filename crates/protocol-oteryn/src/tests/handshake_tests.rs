@@ -218,7 +218,7 @@ fn bootstrap_metadata_limits_cover_build_id_and_capabilities() -> Result<(), Fou
     );
 
     let mut packed = Vec::new();
-    for capability in 1..=128usize {
+    for capability in 1..=crate::MAX_CAPABILITY_COUNT {
         packed.extend(test_varint(capability));
     }
     let mut payload = test_client_bootstrap_payload(1, 1, 1, &id, &[]);
@@ -227,7 +227,7 @@ fn bootstrap_metadata_limits_cover_build_id_and_capabilities() -> Result<(), Fou
     payload.extend_from_slice(&packed);
     assert!(decode_wire_envelope(&test_envelope(1, &payload)).is_ok());
 
-    packed.extend(test_varint(129));
+    packed.extend(test_varint(crate::MAX_CAPABILITY_COUNT + 1));
     let mut payload = vec![0x22];
     payload.extend(test_varint(packed.len()));
     payload.extend_from_slice(&packed);

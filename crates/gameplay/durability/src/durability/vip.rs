@@ -14,6 +14,8 @@ use oteryn_protocol_oteryn::vip::{Operation, Request};
 use serde_json::{Value, json};
 use sqlx::{Acquire, Postgres, Row, Transaction};
 
+mod account;
+
 type Result<T> = std::result::Result<T, DurabilityError>;
 
 pub enum VipPrepared {
@@ -90,7 +92,14 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    if operation != Operation::Query
+                    if !operation.is_query()
+                        && let Some(result) =
+                            account::replay_account(&mut tx, &fence, command, &request).await?
+                    {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(VipPrepared::Replayed(result));
+                    }
+                    if !operation.is_query()
                         && let Some(result) = replay(&mut tx, &fence, command, &request).await?
                     {
                         commit_semantic_transaction(tx, deadline).await?;
@@ -122,7 +131,7 @@ impl VipWrite {
     /// The denial-only allowance selector changes no request/hash binding and
     /// preserves recovery, replay, session, node, lease and scope checks.
     pub async fn refuse_unavailable(self) -> Result<Value> {
-        if self.operation == Operation::Query {
+        if self.operation.is_query() {
             return Err(DurabilityError::Unavailable);
         }
         self.root
@@ -186,13 +195,23 @@ impl VipWrite {
         unavailable: bool,
     ) -> Result<Value> {
         assert_recovery_fence(tx, &self.recovery).await?;
-        if self.operation != Operation::Query
+        if !self.operation.is_query() {
+            let mut key = self.fence.game_session_id.as_bytes().to_vec();
+            key.extend(self.command.to_be_bytes());
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:vip-command:'||encode($1,'hex'),0))").bind(key).execute(&mut **tx).await?;
+            if let Some(result) =
+                account::replay_account(tx, &self.fence, self.command, &self.request).await?
+            {
+                return Ok(result);
+            }
+        }
+        if !self.operation.is_query()
             && let Some(result) = replay(tx, &self.fence, self.command, &self.request).await?
         {
             return Ok(result);
         }
         lock_admission_relations(tx).await?;
-        if self.operation != Operation::Query
+        if !self.operation.is_query()
             && let Some(result) = replay(tx, &self.fence, self.command, &self.request).await?
         {
             return Ok(result);
@@ -202,6 +221,9 @@ impl VipWrite {
             .is_err()
         {
             return Ok(rejected());
+        }
+        if self.operation.is_account() {
+            return account::execute(tx, self, unavailable).await;
         }
         let record = &self.recovery;
         let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
@@ -231,6 +253,7 @@ impl VipWrite {
             Operation::Withdraw => "withdraw",
             Operation::Status => "status",
             Operation::Query => "query",
+            _ => return Ok(rejected()),
         };
         // Migration 0716 admits zero only as a denial selector for a write. It
         // cannot grow a list, grant Premium or bypass any original SQL fence.

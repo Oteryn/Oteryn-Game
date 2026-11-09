@@ -16,6 +16,7 @@ mod activity_recovery_admission;
 pub mod activity_runtime;
 mod activity_terminal_release;
 pub mod actor_spell;
+mod admission_queue;
 mod analyser;
 pub mod atelier;
 mod attack;
@@ -25,6 +26,7 @@ mod bed_regen;
 mod bed_sleep;
 mod bed_sleep_production;
 mod boss_activity;
+pub mod bulletin;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
@@ -144,6 +146,7 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod premium_overview;
 mod primal_menace;
 mod primal_pods;
 mod private_channel_world;
@@ -219,6 +222,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
+pub use coin_market::reconcile_coin_market;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
@@ -424,6 +428,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
+    pub bulletin_source: Option<std::sync::Arc<bulletin::BulletinSource>>,
     pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
     pub private_key: rustls::pki_types::PrivateKeyDer<'static>,

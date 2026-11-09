@@ -8,18 +8,59 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        let controls = self
+            .settings
+            .control_events(events, self.play.as_ref().map(|play| &play.link));
+        let events = controls.as_slice();
+        if self.capture_input(events) {
+            return;
+        }
+        if oteryn_client::bulletin::open_key(events) {
+            if let Some(login) = &self.login {
+                login.show_bulletin();
+            }
+            return;
+        }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
+        let (routed, custom_actions) = self
+            .settings
+            .input(events, self.play.as_ref().map(|play| &play.link));
+        let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
+            match play.view.tutorial_input(events) {
+                Ok(true) => return,
+                Ok(false) => {}
+                Err(_) => {
+                    self.fail(event_loop, ShellError::RendererRender);
+                    return;
+                }
+            }
+            if play.view.notification_input(events) {
+                return;
+            }
             play.view.observe_creature_pointer(events);
             if play.link.use_with_cancel_input(events) {
                 return;
             }
         }
-        let routed = self.settings.input(events);
-        let events = routed.as_slice();
+
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
+            for action in custom_actions {
+                play.link.custom_hotkey_action(&play.view, &action);
+            }
+            if let Some(window) = &self.window {
+                window.set_cursor(if play.view.preferences().cursor_crosshair {
+                    winit::window::CursorIcon::Crosshair
+                } else {
+                    winit::window::CursorIcon::Default
+                });
+            }
+
+            if play.link.custom_hotkeys_input(events) {
+                return;
+            }
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;
@@ -47,6 +88,7 @@ impl Application {
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
+                || play.link.item_catalogue_input(events)
                 || play.link.discovery_input(events)
                 || play.link.exiva_input(events)
                 || play.link.analyser_input(events)
@@ -83,8 +125,10 @@ impl Application {
                 || play.link.training_input(events)
                 || play.link.guild_bank_input(events)
                 || play.link.timed_item_input(events)
+                || play.link.cyclopedia_atlas_input(events)
                 || play.link.cyclopedia_map_input(events)
                 || play.link.party_skull_input(events)
+                || play.link.premium_overview_input(events)
                 || play.link.character_info_input(events)
                 || play.link.raid_schedule_input(events)
                 || play.link.container_sort_input(events)
@@ -118,7 +162,7 @@ impl Application {
             for spell in self.hotkeys.route(events) {
                 play.view.cast(spell);
             }
-            if logout_key(events) {
+            if logout_key(events) && self.settings.confirm_logout() {
                 play.view.logout();
             }
             let suppress_primary = match play.view.world_pointer_input(&play.link, events) {
@@ -138,6 +182,9 @@ impl Application {
                 }
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
                     if click.secondary {
+                        if play.view.gameplay_secondary_click(&play.link) {
+                            continue;
+                        }
                         play.view.properties_context_menu(&play.link, tile);
                         self.actions.context_closed();
                     } else {

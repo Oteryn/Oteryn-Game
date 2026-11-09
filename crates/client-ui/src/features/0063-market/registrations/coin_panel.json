@@ -1,0 +1,7 @@
+{
+  "mechanic": "0063-market",
+  "kind": "panels",
+  "id": "0063-coin-market-panel",
+  "status": "supported",
+  "entry": "view.rs::coin_panel_text"
+}

@@ -36,6 +36,18 @@ pub struct CatalogState {
     next_page: u32,
 }
 impl CatalogState {
+    pub fn set_options(&mut self, search: &str, filter: AchievementFilter, sort: AchievementSort) {
+        if search.len() > 512 || search.contains('\0') {
+            return;
+        }
+        if self.search != search || self.filter != filter || self.sort != sort {
+            self.page = 0;
+            self.search = search.to_owned();
+            self.filter = filter;
+            self.sort = sort;
+        }
+    }
+
     pub(super) fn begin(&mut self) {
         self.collecting = true;
         self.building.clear();
@@ -56,13 +68,15 @@ impl CatalogState {
             || self.building.len().saturating_add(page.rows.len()) > page.fact_count as usize
         {
             self.collecting = false;
-            return Err("The account list changed or exceeded its limit. Refresh to load it again");
+            return Err(tr!(
+                "The account list changed or exceeded its limit. Refresh to load it again"
+            ));
         }
         self.totals = Some(totals);
         for row in &page.rows {
             if !self.keys.insert(row.key.clone()) {
                 self.collecting = false;
-                return Err("The account list changed. Refresh to load it again");
+                return Err(tr!("The account list changed. Refresh to load it again"));
             }
             self.building.push(row.clone());
         }
@@ -71,7 +85,7 @@ impl CatalogState {
         if !page.has_more {
             if self.building.len() != page.fact_count as usize {
                 self.collecting = false;
-                return Err("The server returned an incomplete account list");
+                return Err(tr!("The server returned an incomplete account list"));
             }
             self.rows = std::mem::take(&mut self.building);
             self.keys.clear();
@@ -84,7 +98,7 @@ impl CatalogState {
     }
 }
 pub fn catalog_rows(catalog: &CatalogState) -> Vec<&AccountAchievementRow> {
-    let search = catalog.search.to_lowercase();
+    let search = catalog.search.trim().to_lowercase();
     let mut rows: Vec<_> = catalog
         .rows
         .iter()
@@ -96,6 +110,7 @@ pub fn catalog_rows(catalog: &CatalogState) -> Vec<&AccountAchievementRow> {
         .filter(|r| {
             r.name.to_lowercase().contains(&search)
                 || r.description.to_lowercase().contains(&search)
+                || r.key.to_lowercase().contains(&search)
         })
         .collect();
     rows.sort_by(|a, b| {

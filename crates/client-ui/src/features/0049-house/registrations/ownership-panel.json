@@ -1,0 +1,7 @@
+{
+  "mechanic": "0049-house",
+  "kind": "panels",
+  "id": "0049-house-ownership-panel",
+  "status": "supported",
+  "entry": "view.rs::ownership_text"
+}

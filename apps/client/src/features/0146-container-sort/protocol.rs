@@ -11,9 +11,10 @@ pub(in crate::play) fn command(panel: &Panel, _: Intent) -> Result<FeatureComman
         *byte = field
             .trim()
             .parse()
-            .map_err(|_| "Enter numeric sort options")?;
+            .map_err(|_| tr!("Enter numeric sort options"))?;
     }
-    let request = wire::Request::decode(&bytes).ok_or("Choose view 0-15, key 1-4 and flags 0-1")?;
+    let request =
+        wire::Request::decode(&bytes).ok_or(tr!("Choose view 0-15, key 1-4 and flags 0-1"))?;
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_CONTAINER_SORT_V1,
         kind: wire::COMMAND_TYPE_CONTAINER_SORT,
@@ -31,16 +32,16 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     panel.feedback = if !accepted(result) {
-        "The server refused the container sort"
+        tr!("The server refused the container sort")
     } else {
         match result.payload.as_slice() {
             [1] => {
                 panel.summary =
-                    "Container sorted; the inventory reflects server item updates".into();
-                "Sort accepted"
+                    tr!("Container sorted; the inventory reflects server item updates").into();
+                tr!("Sort accepted")
             }
-            [2] => "The server refused the container sort",
-            _ => "Invalid container sort reply",
+            [2] => tr!("The server refused the container sort"),
+            _ => tr!("Invalid container sort reply"),
         }
     }
     .into();

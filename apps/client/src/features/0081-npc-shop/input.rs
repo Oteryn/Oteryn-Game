@@ -8,7 +8,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::NpcShop(command)).is_err()
         {
             mailbox.npc_shop.pending = false;
-            mailbox.npc_shop.feedback = Some("Session ended");
+            mailbox.npc_shop.feedback = Some(tr!("Session ended"));
         }
     }
 }
@@ -32,7 +32,7 @@ pub(in crate::play) fn trade_request(
         && commands.send(PlayCommand::NpcTrade(intent)).is_err()
     {
         mailbox.npc_shop.live.pending = false;
-        mailbox.npc_shop.live.feedback = "Session ended".into();
+        mailbox.npc_shop.live.feedback = tr!("Session ended").into();
     }
 }
 
@@ -63,12 +63,33 @@ pub(in crate::play) fn offer_request(
         && commands.send(PlayCommand::NpcShop(command)).is_err()
     {
         mailbox.npc_shop.pending = false;
-        mailbox.npc_shop.feedback = Some("Session ended");
+        mailbox.npc_shop.feedback = Some(tr!("Session ended"));
     }
 }
 
 impl PlayLink {
     pub fn npc_sell_all_request(&self, quote: oteryn_client_ui::npc_shop::Quote) {
         offer_request(&self.mailbox, &self.commands, quote, true);
+    }
+}
+
+impl PlayLink {
+    pub fn npc_shop_options(&self, options: oteryn_client_ui::npc_shop::ShopOptions) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.npc_shop.pending || mailbox.npc_shop.live.pending {
+            return false;
+        }
+        mailbox.npc_shop.live.options = options;
+        true
+    }
+    pub fn npc_shop_open_backpack(&self) -> bool {
+        let handle = lock(&self.mailbox)
+            .npc_shop
+            .live
+            .inventory
+            .as_ref()
+            .and_then(|inventory| inventory.main_backpack)
+            .map(|item| item.handle);
+        handle.is_some_and(|handle| self.container_open(handle))
     }
 }

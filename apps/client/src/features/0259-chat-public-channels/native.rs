@@ -78,7 +78,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Public Channels").as_ptr(),
+            wide(tr!("Public Channels")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -126,16 +126,16 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             WS_BORDER | WS_TABSTOP,
         );
         for (x, label, id) in [
-            (250, "Open", OPEN),
-            (360, "Close", CLOSE),
-            (470, "Send", SEND),
+            (250, tr!("Open"), OPEN),
+            (360, tr!("Close"), CLOSE),
+            (470, tr!("Send"), SEND),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 48, 100, 28], WS_TABSTOP);
         }
         for (y, label, id) in [
-            (210, "Levitate Up", LEVITATE_UP),
-            (250, "Levitate Down", LEVITATE_DOWN),
-            (290, "Magic Rope", MAGIC_ROPE),
+            (210, tr!("Levitate Up"), LEVITATE_UP),
+            (250, tr!("Levitate Down"), LEVITATE_DOWN),
+            (290, tr!("Magic Rope"), MAGIC_ROPE),
         ] {
             control(hwnd, "BUTTON", label, id, [10, y, 230, 28], WS_TABSTOP);
         }

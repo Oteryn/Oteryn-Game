@@ -21,8 +21,15 @@ impl PlayView {
             };
             let intent = if *code == KeyCode::ESCAPE && *modifiers == Modifiers::NONE {
                 TargetMoveIntent::Stop
-            } else if *modifiers == Modifiers::NONE.with(Modifier::Control) {
-                if code.get() == 9 {
+            } else if (code.get() == 9 && *modifiers == Modifiers::one(Modifier::Control))
+                || *modifiers
+                    == Modifiers::one(match self.preferences().rotation_modifier.as_str() {
+                        "ALT" => Modifier::Alt,
+                        "SHIFT" => Modifier::Shift,
+                        _ => Modifier::Control,
+                    })
+            {
+                if code.get() == 9 && *modifiers == Modifiers::one(Modifier::Control) {
                     let Some(target) = self.scene.target().and_then(|target| target.entity) else {
                         return true;
                     };
@@ -104,7 +111,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.target_walk.pending = false;
-            mailbox.target_walk.feedback = Some("Session ended");
+            mailbox.target_walk.feedback = Some(tr!("Session ended"));
         }
         true
     }

@@ -3,7 +3,7 @@ use super::super::{
     connection::{UseCommand, UseOutcome},
     item_view::ItemKey,
 };
-use super::{SoulpitCoreSelection, SoulpitEntryIntent, outcome};
+use super::{SoulpitCoreSelection, SoulpitEntryIntent, SoulpitSelection, outcome};
 use crate::foundation::ExactActorRef;
 use crate::map::view::{self, MapEntryKey};
 use oteryn_gameplay_domain::domain::soulpit::{
@@ -222,10 +222,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        request.selected = Some(SoulpitCoreSelection {
+        request.selected = Some(SoulpitSelection::Core(SoulpitCoreSelection {
             item_instance_id: source,
             definition: item.item.definition.clone(),
-        });
+        }));
         // The shared owner acquires its own complete admission lane and revalidates all
         // participants. Never retain this Channel lane while handing authority to it.
         drop(permit);

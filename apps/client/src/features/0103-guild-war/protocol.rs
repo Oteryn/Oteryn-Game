@@ -13,15 +13,16 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
             frag_limit: panel.fields[1]
                 .trim()
                 .parse()
-                .map_err(|_| "Enter a valid frag limit")?,
+                .map_err(|_| tr!("Enter a valid frag limit"))?,
             duration_days: panel.fields[2]
                 .trim()
                 .parse()
-                .map_err(|_| "Enter a valid duration in days")?,
+                .map_err(|_| tr!("Enter a valid duration in days"))?,
         },
         Intent::Accept => wire::GuildWarIntent::Accept { war: id },
     };
-    let payload = wire::encode_guild_war_intent(&request).map_err(|_| "Enter a valid UUIDv7")?;
+    let payload =
+        wire::encode_guild_war_intent(&request).map_err(|_| tr!("Enter a valid UUIDv7"))?;
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_GUILD_WAR_V1,
         kind: wire::COMMAND_TYPE_GUILD_WAR_INTENT,
@@ -39,7 +40,7 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     if !accepted(result) {
-        panel.feedback = "The server refused the guild war request".into();
+        panel.feedback = tr!("The server refused the guild war request").into();
         return;
     }
     match wire::decode_guild_war_result(&result.payload) {
@@ -49,10 +50,10 @@ pub(in crate::play) fn apply(
                 .iter()
                 .map(|byte| format!("{byte:02x}"))
                 .collect::<String>();
-            panel.summary = format!("War UUID: {id}");
-            panel.feedback = "Guild war request accepted".into();
+            panel.summary = lfmt!("War UUID: {id}", id = id);
+            panel.feedback = tr!("Guild war request accepted").into();
         }
-        Ok(_) => panel.feedback = "The server refused the guild war request".into(),
-        Err(_) => panel.feedback = "Invalid guild war reply".into(),
+        Ok(_) => panel.feedback = tr!("The server refused the guild war request").into(),
+        Err(_) => panel.feedback = tr!("Invalid guild war reply").into(),
     }
 }

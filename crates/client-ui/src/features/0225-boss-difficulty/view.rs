@@ -8,12 +8,15 @@ pub fn panel_text(p: &BossDifficultyPanel) -> String {
             content_revision,
             selected_difficulty,
             ..
-        }) => format!(
-            "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}"
+        }) => lfmt!(
+            "Boss: {boss_key}\nRevision: {content_revision}\nSelected difficulty: {selected_difficulty}",
+            boss_key = boss_key,
+            content_revision = content_revision,
+            selected_difficulty = selected_difficulty
         ),
-        Some(Reply::Closed { .. }) => "Difficulty window closed by server".into(),
-        Some(Reply::Refused { reason, .. }) => format!("Server refusal: {reason:?}"),
-        None => "Enter a boss id and open its server window".into(),
+        Some(Reply::Closed { .. }) => tr!("Difficulty window closed by server").into(),
+        Some(Reply::Refused { reason, .. }) => lfmt!("Server refusal: {reason:?}", reason = reason),
+        None => tr!("Enter a boss id and open its server window").into(),
     };
     match p.feedback {
         Some(f) => format!("{state}\n{f}"),

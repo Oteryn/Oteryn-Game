@@ -405,11 +405,50 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
     require_json: bool,
     body_statuses: &[u16],
     oversized_ok: bool,
-    mut store_retry: Option<&mut Option<Duration>>,
+    store_retry: Option<&mut Option<Duration>>,
     require_retry_after: bool,
     retry_after_max: Duration,
 ) -> Result<(u16, Vec<u8>), SourceError> {
-    if body_max == 0 || body_max > if store_retry.is_some() { 12288 } else { 8192 } {
+    read_response_impl(
+        stream,
+        require_ok,
+        body_max,
+        require_json,
+        body_statuses,
+        oversized_ok,
+        store_retry,
+        require_retry_after,
+        retry_after_max,
+        false,
+    )
+    .await
+}
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Coin framing has an independently bounded history page and strict error JSON"
+)]
+async fn read_response_impl<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+    body_max: usize,
+    require_json: bool,
+    body_statuses: &[u16],
+    oversized_ok: bool,
+    mut store_retry: Option<&mut Option<Duration>>,
+    require_retry_after: bool,
+    retry_after_max: Duration,
+    coins: bool,
+) -> Result<(u16, Vec<u8>), SourceError> {
+    if body_max == 0
+        || body_max
+            > if coins {
+                65536
+            } else if store_retry.is_some() {
+                12288
+            } else {
+                8192
+            }
+    {
         return Err(SourceError::InvalidInput);
     }
     let mut head = Vec::with_capacity(1024);
@@ -530,6 +569,9 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
             return Err(SourceError::InvalidInput);
         }
     }
+    if coins && code == 401 {
+        return Err(SourceError::Unauthorized);
+    }
     if let Some(target) = store_retry.as_mut() {
         if !no_store
             || (require_retry_after
@@ -541,7 +583,7 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
         **target = retry_after;
     }
     if require_json
-        && (store_retry.is_none() || code == 200)
+        && (store_retry.is_none() || code == 200 || coins)
         && content_type.as_deref().is_none_or(|value| {
             let mut parts = value.split(';');
             !parts
@@ -924,3 +966,7 @@ mod bazaar_tests {
         })
     }
 }
+
+#[path = "http1_mtls/coins.rs"]
+mod coins;
+pub(crate) use coins::exchange_coins;

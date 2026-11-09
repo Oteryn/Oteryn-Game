@@ -9,7 +9,32 @@ impl Outbox {
     }
 
     pub(in crate::play) fn party_result(&self, response: &PartyResponse) {
-        oteryn_client_ui::party_member_effects::apply_result(&mut lock(&self.0).party, response);
+        let mut mailbox = lock(&self.0);
+        let members = |panel: &oteryn_client_ui::party::PartyPanel| {
+            panel.state.as_ref().map(|state| {
+                state
+                    .members
+                    .iter()
+                    .map(|member| member.handle)
+                    .collect::<std::collections::BTreeSet<_>>()
+            })
+        };
+        let before = members(&mailbox.party);
+        oteryn_client_ui::party_member_effects::apply_result(&mut mailbox.party, response);
+        let after = members(&mailbox.party);
+        let shown: std::collections::BTreeSet<_> = mailbox
+            .analyser
+            .party
+            .iter()
+            .map(|member| member.handle)
+            .collect();
+        if (mailbox.analyser.party_pending && before != after)
+            || (!shown.is_empty() && after.as_ref().is_some_and(|members| members != &shown))
+        {
+            mailbox.analyser.party.clear();
+            mailbox.analyser.party_revision = mailbox.analyser.party_revision.saturating_add(1);
+            mailbox.analyser.party_feedback = Some(tr!("Party changed; refresh party accounting"));
+        }
     }
 }
 

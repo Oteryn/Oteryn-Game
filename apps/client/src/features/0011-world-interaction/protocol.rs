@@ -28,7 +28,7 @@ impl Outbox {
             Err(error) => {
                 mailbox
                     .world_context
-                    .set_feedback("Session unavailable".into(), std::time::Instant::now());
+                    .set_feedback(tr!("Session unavailable").into(), std::time::Instant::now());
                 Err(error)
             }
         }

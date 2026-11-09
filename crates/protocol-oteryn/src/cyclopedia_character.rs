@@ -2,8 +2,26 @@
 //! `sendCyclopediaCharacter*`, `:4341-5265`). The server owns every fact; the request only
 //! names the tab. Payload schemas: `docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md`.
 
+#[path = "cyclopedia_character/badge_visibility.rs"]
+pub mod badge_visibility;
+
+#[path = "cyclopedia_character/achievements.rs"]
+pub mod achievements;
+
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
+pub mod offence;
+#[path = "cyclopedia_character/profile.rs"]
+pub mod profile;
+
+#[path = "cyclopedia_character/gallery.rs"]
+pub mod gallery;
+
+#[path = "cyclopedia_character/items.rs"]
+pub mod items;
+
+#[path = "cyclopedia_character/protection.rs"]
+pub mod protection;
 
 pub const CAPABILITY_CYCLOPEDIA_CHARACTER_V1: u32 = 199;
 pub const COMMAND_TYPE_CYCLOPEDIA_BADGES: u32 = 387;

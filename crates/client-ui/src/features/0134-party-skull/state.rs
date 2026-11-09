@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Query,
+    PvpStatus,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
@@ -11,16 +12,20 @@ pub struct Panel {
     pub fields: [String; 0],
     pub feedback: String,
     pub summary: String,
+    pub unjustified: Option<UnjustifiedSnapshot>,
+    pub skull_timer: Option<SkullTimer>,
+    pub status_received_at: Option<std::time::Instant>,
+    pub black_limits_milli: Option<[u64; 3]>,
     pub icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
 }
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;
@@ -31,5 +36,85 @@ impl Panel {
     pub fn failed(&mut self, message: &str) {
         self.pending = false;
         self.feedback = message.into();
+    }
+}
+
+/// Remaining duration is supplied by the server; a skull icon alone has no implied expiry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SkullTimer {
+    pub skull: u8,
+    pub remaining_ms: Option<u64>,
+}
+impl SkullTimer {
+    pub fn remaining_seconds(self, elapsed_ms: u64) -> Option<u64> {
+        self.remaining_ms
+            .map(|remaining| remaining.saturating_sub(elapsed_ms).div_ceil(1000))
+    }
+    pub fn text(self) -> String {
+        self.text_at(0)
+    }
+    pub fn text_at(self, elapsed_ms: u64) -> String {
+        let name = match self.skull {
+            0 => tr!("No"),
+            1 => tr!("Yellow"),
+            2 => tr!("Green"),
+            3 => tr!("White"),
+            4 => tr!("Red"),
+            5 => tr!("Black"),
+            6 => tr!("Orange"),
+            _ => tr!("Unknown"),
+        };
+        match self.remaining_seconds(elapsed_ms) {
+            Some(seconds) => lfmt!(
+                "{name} skull: {seconds}s at observation",
+                name = name,
+                seconds = seconds
+            ),
+            None => lfmt!("{name} skull: expiry unavailable", name = name),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FragWindow {
+    pub points_milli: u64,
+    pub limit_milli: u64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnjustifiedSnapshot {
+    /// Daily, weekly and monthly values from the same server observation.
+    pub windows: [FragWindow; 3],
+    /// Unknown is distinct from an observed empty list.
+    pub open_situations: Option<Vec<String>>,
+}
+impl UnjustifiedSnapshot {
+    pub fn text(&self) -> String {
+        let mut text = String::from(tr!("Unjustified Points\r\n"));
+        for (label, window) in [tr!("Daily"), tr!("Weekly"), tr!("Monthly")]
+            .into_iter()
+            .zip(self.windows)
+        {
+            text.push_str(&format!(
+                "{label}: {}.{:03} / {}.{:03}\r\n",
+                window.points_milli / 1000,
+                window.points_milli % 1000,
+                window.limit_milli / 1000,
+                window.limit_milli % 1000
+            ));
+        }
+        match &self.open_situations {
+            None => text.push_str(tr!("Open PvP situations unavailable")),
+            Some(situations) if situations.is_empty() => {
+                text.push_str(tr!("No open PvP situations"))
+            }
+            Some(situations) => {
+                text.push_str(tr!("Open PvP situations:\r\n"));
+                for situation in situations {
+                    text.push_str(situation);
+                    text.push_str("\r\n");
+                }
+            }
+        }
+        text
     }
 }

@@ -69,7 +69,7 @@ pub(in crate::play) fn send_move(
             .is_err()
     {
         mailbox.item_movement.pending = false;
-        mailbox.item_movement.feedback = Some("Session ended");
+        mailbox.item_movement.feedback = Some(tr!("Session ended"));
     }
 }
 

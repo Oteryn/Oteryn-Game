@@ -11,6 +11,7 @@ impl PlayView {
     /// its public class, a committed logout to character selection; a view error is a render
     /// failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
+        self.poll_ui_sounds(link);
         #[cfg(windows)]
         link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
@@ -30,12 +31,32 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        link.cyclopedia_atlas_pump();
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;
         self.world_context_feedback = link.world_context_feedback();
         self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
+        self.sync_resource_hud(link);
+        let party = link.party_skull_panel();
+        let icon_now = std::time::Instant::now();
+        if (self.preferences().creature_bars
+            || self.preferences().hud_marks_own
+            || self.preferences().hud_marks_other)
+            && party.selected
+            && !party.pending
+            && self.party_icons_refresh.is_none_or(|last| {
+                icon_now.duration_since(last) >= std::time::Duration::from_secs(1)
+            })
+        {
+            link.party_skull_request(oteryn_client_ui::party_skull::Intent::Query);
+            self.party_icons_refresh = Some(icon_now);
+        }
+        self.party_icons = party.icons;
+        self.sync_spell_words(link);
+        self.project_presentation(std::time::Instant::now())
+            .map_err(|_| UNAVAILABLE)?;
         let battle = link.battle_instinct_status_panel();
         self.battle_instinct = if battle.selected && battle.error.is_none() {
             battle.snapshot
@@ -65,13 +86,17 @@ impl PlayView {
                     feature_0011_world_interaction::input::send_attack(link, target)
                 }
                 Input::TargetWalk(position) => {
+                    self.cancel_chase_for_walk(link);
                     if !link.request_target_walk(position) {
                         break;
                     }
                 }
                 Input::Logout => link.request_logout(),
                 Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
-                    Some(direction) => link.request(direction),
+                    Some(direction) => {
+                        self.cancel_chase_for_walk(link);
+                        link.request(direction);
+                    }
                     None => break,
                 },
             }
@@ -82,6 +107,7 @@ impl PlayView {
         if self.inputs.is_empty()
             && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
         {
+            self.cancel_chase_for_walk(link);
             link.request(direction);
         }
         Ok(())

@@ -146,6 +146,8 @@ fn validate_page(page: &wire::HighscoresResult, query: wire::HighscoresQuery) ->
 
 fn request(category: u32, vocation: u32, page: u32, snapshot_id: u64) -> wire::HighscoresQuery {
     wire::HighscoresQuery {
+        world: None,
+        details: false,
         category,
         vocation,
         page,
@@ -378,6 +380,8 @@ mod tests {
     fn pages_must_echo_the_pinned_cut_and_respect_the_terminal_bound() {
         let query = request(1, 0, 21, 7);
         let mut page = wire::HighscoresResult {
+            world: None,
+            own_page: None,
             category: 1,
             snapshot_id: 7,
             computed_at: 1,
@@ -404,6 +408,8 @@ mod tests {
             value: 100,
         };
         let mut page = wire::HighscoresResult {
+            world: None,
+            own_page: None,
             category: 1,
             snapshot_id: 7,
             computed_at: 1,
