@@ -2470,3 +2470,18 @@ bundle identity verification matches the committed pin. M51 remains PARTIAL:
 physical top-Item reset is not yet composed with its durable Item owner.
 Dispatch clippy --all-targets -D warnings PASS233.799s; direct rustfmt covers the
 mounted PostgreSQL source files as well as workspace cargo fmt verification.
+
+### M51 original top-Thing Item reset selection
+Crystal201189f data-global/lib/quests/svargrond_arena.lua:22,217-232 first
+inspects exactly getThing(255), before removing the top Monster. Added the typed
+original top-Thing read proposal: select only a movable Item inside the exact
+inclusive source box, preserving 21464/1841/2181/2182/2183. Creature, empty,
+immovable and preserved tops cannot select any lower Item. A proposal retains the
+exact caller-supplied identity and grants no custody/removal authority.
+Focused regression RED12.665s, then all seven srvenc_arena_deaths cases
+GREEN2.984s including compilation. Engine-only bundle identity matches; no SQL,
+new numeric allocation or content-input changes. This is a tested rules slice,
+not a completed reset: original native stack capture and physical one-item
+retirement with current pit custody remain to be composed.
+Quests clippy --all-targets -D warnings PASS5.991s; workspace fmt check
+PASS17.438s. No PostgreSQL writer was added or changed by this rules slice.

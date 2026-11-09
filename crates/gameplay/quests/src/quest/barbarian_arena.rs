@@ -86,7 +86,38 @@ pub struct PitLayout {
     pub summon: [i32; 3],
 }
 
+/// Original native stack-top observation, captured before removing Monsters.
+/// Crystal201189f lib/quests/svargrond_arena.lua:217-232 checks only this Thing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ResetTopThing<T> {
+    Empty,
+    Creature,
+    Item {
+        identity: T,
+        appearance: u16,
+        movable: bool,
+    },
+}
+
 impl PitLayout {
+    /// Read proposal only: the physical Item owner must revalidate this exact
+    /// original top Thing and retain its reservation, receipt and audit.
+    pub fn item_to_reset<T: Copy>(self, at: [i32; 3], top: ResetTopThing<T>) -> Option<T> {
+        if !self.contains_reset(at) {
+            return None;
+        }
+        // Source lib:22,217-225: never search beneath a Creature, an immovable
+        // Item or one of the five preserved timer/pillar/basin appearances.
+        match top {
+            ResetTopThing::Item {
+                identity,
+                appearance,
+                movable: true,
+            } if ![21464, 1841, 2181, 2182, 2183].contains(&appearance) => Some(identity),
+            _ => None,
+        }
+    }
+
     /// Crystal svargrond_arena.lua:213-216: inclusive source reset rectangle,
     /// deliberately distinct from spectator range and the last pit's center.
     pub fn reset_cells(self) -> impl Iterator<Item = [i32; 3]> {

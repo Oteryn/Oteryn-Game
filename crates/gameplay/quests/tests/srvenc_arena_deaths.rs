@@ -114,3 +114,50 @@ fn m51_reset_creature_census_refuses_ambiguous_cells_and_actor_aliases() -> Resu
     assert_eq!(layout.monsters_to_reset::<u64>([]), Some(Vec::new()));
     Ok(())
 }
+
+#[test]
+fn m51_reset_items_selects_only_the_original_top_thing_and_preserves_source_exclusions()
+-> Result<(), String> {
+    use arena::ResetTopThing;
+    let pit = Pit::new(1).ok_or("pit")?.layout();
+    let at = pit.reset_from;
+    let selected = |thing| pit.item_to_reset(at, thing);
+    assert_eq!(
+        selected(ResetTopThing::Item {
+            identity: 1,
+            appearance: 3031,
+            movable: true
+        }),
+        Some(1)
+    );
+    assert_eq!(
+        selected(ResetTopThing::Item {
+            identity: 2,
+            appearance: 3031,
+            movable: false
+        }),
+        None
+    );
+    assert_eq!(selected(ResetTopThing::<u64>::Creature), None);
+    assert_eq!(selected(ResetTopThing::<u64>::Empty), None);
+    for appearance in [21464, 1841, 2181, 2182, 2183] {
+        assert_eq!(
+            selected(ResetTopThing::Item {
+                identity: 3,
+                appearance,
+                movable: true
+            }),
+            None
+        );
+    }
+    let item = ResetTopThing::Item {
+        identity: 4,
+        appearance: 3031,
+        movable: true,
+    };
+    assert_eq!(pit.item_to_reset(pit.reset_to, item), Some(4));
+    assert_eq!(pit.item_to_reset([at[0] - 1, at[1], at[2]], item), None);
+    assert_eq!(pit.item_to_reset([at[0], at[1], at[2] - 1], item), None);
+    assert_eq!(pit.item_to_reset(pit.pillar, item), None);
+    Ok(())
+}
