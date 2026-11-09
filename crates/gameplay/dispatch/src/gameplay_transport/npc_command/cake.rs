@@ -77,7 +77,7 @@ pub(super) struct Step {
 }
 
 // Crystal data/npclib/npc.lua:13-19 has a left boundary and no right boundary.
-fn keyword(text: &str, needle: &str) -> bool {
+pub(super) fn keyword(text: &str, needle: &str) -> bool {
     let lower = text.to_ascii_lowercase();
     lower.contains(needle)
         && !lower
@@ -255,7 +255,7 @@ pub(super) async fn apply(
             return rejected();
         };
         let state = sessions.entry(command.game_session_id).or_default();
-        if state.cake.is_some() || state.seasonal.is_some() {
+        if state.cake.is_some() || state.seasonal.is_some() || state.cake_brutus.is_some() {
             return unknown();
         }
         state.cake = Some(Pending {

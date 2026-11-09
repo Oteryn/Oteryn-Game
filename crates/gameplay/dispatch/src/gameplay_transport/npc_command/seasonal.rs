@@ -316,7 +316,7 @@ pub(super) async fn apply(
             return rejected();
         };
         let state = sessions.entry(command.game_session_id).or_default();
-        if state.seasonal.is_some() || state.cake.is_some() {
+        if state.seasonal.is_some() || state.cake.is_some() || state.cake_brutus.is_some() {
             return unknown();
         }
         state.seasonal = Some(Pending {

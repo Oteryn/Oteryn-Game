@@ -117,6 +117,7 @@ use sqlx::Row;
 mod additional;
 mod arena;
 pub mod boss_reward;
+mod cake;
 mod contents;
 mod fluid;
 mod grizzly;

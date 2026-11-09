@@ -111,7 +111,7 @@ pub(super) fn cake_bundle(
         Terrain, TerrainKind,
     };
     let index = native.item_index().ok_or("native Item definition index")?;
-    let mut keys = vec!["terrain:grass".to_owned()];
+    let mut keys = vec!["oteryn:terrain.tibia.i4519".to_owned()];
     for (_, id) in tops {
         let key = format!("oteryn:item.tibia.i{id}");
         if !keys.contains(&key) {
@@ -236,45 +236,53 @@ pub(super) fn cake_bundle(
         .chain([start.floor])
         .map(|floor| i8::try_from(-floor))
         .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
-    let mut sectors = std::collections::BTreeMap::new();
-    for floor in &floors {
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                let mut items = vec![Item {
-                    palette: 0,
-                    depth: 0,
-                    attrs: Attrs::default(),
-                }];
-                for (pos, id) in tops.iter().filter(|(pos, _)| {
-                    pos.x == i32::from(x)
-                        && pos.y == i32::from(y)
-                        && pos.floor == -i16::from(*floor)
-                }) {
-                    let key = format!("oteryn:item.tibia.i{id}");
-                    let _ = pos;
-                    items.push(Item {
-                        palette: u32::try_from(
-                            keys.iter()
-                                .position(|known| known == &key)
-                                .ok_or("fixture palette")?,
-                        )?,
-                        depth: 0,
-                        attrs: Attrs::default(),
-                    });
-                }
-                sectors
-                    .entry((*floor, y / 32, x / 32))
-                    .or_insert_with(Vec::new)
-                    .push(Tile {
-                        x,
-                        y,
-                        flags: 0,
-                        house: 0,
-                        zones: vec![],
-                        items,
-                    });
+    let mut positions = std::collections::BTreeSet::new();
+    for point in tops.iter().map(|(point, _)| *point).chain([start]) {
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                positions.insert((
+                    i8::try_from(-point.floor)?,
+                    u16::try_from(point.y + dy)?,
+                    u16::try_from(point.x + dx)?,
+                ));
             }
         }
+    }
+    let mut sectors = std::collections::BTreeMap::new();
+    for (floor, y, x) in positions {
+        let mut items = vec![Item {
+            palette: 0,
+            depth: 0,
+            attrs: Attrs::default(),
+        }];
+        for (_, id) in tops.iter().filter(|(pos, _)| {
+            pos.x == i32::from(x) && pos.y == i32::from(y) && pos.floor == -i16::from(floor)
+        }) {
+            let key = format!("oteryn:item.tibia.i{id}");
+            if grounds.contains_key(&key) && items.len() == 1 && items[0].palette == 0 {
+                items.clear();
+            }
+            items.push(Item {
+                palette: u32::try_from(
+                    keys.iter()
+                        .position(|known| known == &key)
+                        .ok_or("fixture palette")?,
+                )?,
+                depth: 0,
+                attrs: Attrs::default(),
+            });
+        }
+        sectors
+            .entry((floor, y / 32, x / 32))
+            .or_insert_with(Vec::new)
+            .push(Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items,
+            });
     }
     let sectors = sectors
         .into_iter()

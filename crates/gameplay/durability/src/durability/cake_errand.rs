@@ -52,3 +52,46 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct CakeBrutusStatus {
+    pub year: i32,
+    pub cities: u8,
+    pub started: bool,
+    pub item_claimed: bool,
+    pub cupcake_claimed: bool,
+}
+impl DurabilityRoot {
+    pub async fn cake_brutus_status(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        content: [u8; 32],
+        start: bool,
+    ) -> Result<Option<CakeBrutusStatus>, DurabilityError> {
+        permit.check_scope(fence.runtime_scope)?;
+        let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_type2_transaction(holder, deadline).await?;
+            assert_current_equipment_in_transaction(&mut tx, &recovery, &node, &fence, None, content).await
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let row = sqlx::query("SELECT * FROM game_cake_brutus_status(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3)")
+                .bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(start)
+                .fetch_optional(&mut **tx).await?;
+            let status = row.map(|row| Ok::<_,DurabilityError>(CakeBrutusStatus {
+                year: row.try_get("event_year")?,
+                cities: u8::try_from(row.try_get::<i16,_>("cities")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                started: row.try_get("was_started")?, item_claimed: row.try_get("item_claimed")?,
+                cupcake_claimed: row.try_get("cupcake_claimed")?,
+            })).transpose()?;
+            tx.commit(deadline).await?;
+            Ok(status)
+        })).await
+    }
+}

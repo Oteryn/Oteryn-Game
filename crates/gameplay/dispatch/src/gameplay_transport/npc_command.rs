@@ -38,6 +38,7 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
+mod cake_brutus;
 mod catalogue;
 mod classic_quests;
 mod coin_exchange;
@@ -94,6 +95,7 @@ struct SessionNpc {
     monk: Option<monk::Pending>,
     seasonal: Option<seasonal::Pending>,
     cake: Option<cake::Pending>,
+    cake_brutus: Option<cake_brutus::Pending>,
     quest_dialogue: quest_dialogue::State,
     catalogue: Option<catalogue::Pending>,
     delayed_end: Option<catalogue::DelayedEnd>,
@@ -835,6 +837,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = cake_brutus::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake_brutus::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

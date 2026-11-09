@@ -326,6 +326,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     if let Some(outcome) = super::seasonal::resume(admission, actor, command).await {
         return Some(outcome);
     }
+    if let Some(outcome) = super::cake_brutus::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::cake::resume(admission, actor, command).await {
         return Some(outcome);
     }

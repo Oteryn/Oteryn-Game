@@ -6,7 +6,7 @@ use sqlx::{Postgres, Transaction};
 
 #[path = "cake_errand.rs"]
 mod errand;
-pub use errand::CakeErrandStep;
+pub use errand::{CakeBrutusStatus, CakeErrandStep};
 
 /// Crystal globalevents_cake_eating_window.lua:29-80. The normal current world
 /// cadence settles at most the single current annual eating window. The phase
@@ -89,7 +89,7 @@ pub struct CakeBite {
     pub floor: u8,
 }
 
-async fn latest_year(
+pub(super) async fn latest_year(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
 ) -> Result<Option<i32>, DurabilityError> {

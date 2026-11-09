@@ -303,7 +303,7 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|cake-brutus:f81918f6205263762f0604092deb5aff1f78f69c500566cdd33efdd7e1529ae1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -359,6 +359,13 @@ impl NpcTalkBook {
                     "Good hunting!".into(),
                     Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
                     Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.brutus_the_baker" {
+                // Crystal201189f brutus_the_baker.lua:148-149. Dispatch owns
+                // annual completion, choices and normal audited Item MINT.
+                (
+                    "Hello |PLAYERNAME|! Say {help} if you want to help me clean up after the big cake event.".into(),
+                    "Thanks for stopping by!".into(), None, Vec::new(),
                 )
             } else if reference.key == "oteryn:npc.lynda" {
                 // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
@@ -575,7 +582,10 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
-                        || reference.key == "oteryn:npc.lynda"
+                        || matches!(
+                            reference.key.as_str(),
+                            "oteryn:npc.lynda" | "oteryn:npc.brutus_the_baker"
+                        )
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
                         || dark_messages.is_some()
                         || isle_messages.is_some()
