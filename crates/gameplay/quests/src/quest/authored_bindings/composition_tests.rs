@@ -65,3 +65,68 @@ fn collection_composition_does_not_migrate_an_old_npc_route_into_a_new_binding()
     );
     Ok(())
 }
+
+fn overlapping_source(
+    bindings: &Bindings,
+    base: &QuestStateCatalogue,
+) -> Result<(QuestStateCatalogue, QuestTrack), String> {
+    let quest = bindings.quests.first().ok_or("quest")?;
+    let track = quest.tracks.first().ok_or("track")?;
+    let shared = QuestTrack {
+        key: track.key.clone(),
+        quest: quest.quest.clone(),
+        initial: track.initial,
+        min: track.minimum,
+        max: track.maximum,
+    };
+    let mut tracks: Vec<_> = base.tracks.values().cloned().collect();
+    tracks.push(shared.clone());
+    let source = QuestStateCatalogue::new("composition-fixture", tracks, Vec::new())
+        .map_err(|error| format!("{error:?}"))?;
+    Ok((source, shared))
+}
+
+#[test]
+fn collection_composition_reuses_an_identical_source_track() -> Result<(), String> {
+    let (bindings, base) = fixture()?;
+    let (source, shared) = overlapping_source(&bindings, &base)?;
+    let attached = bindings.attach(&source)?;
+    assert_eq!(attached.tracks.get(&shared.key), Some(&shared));
+    assert_eq!(source.tracks.get(&shared.key), Some(&shared));
+    assert_ne!(
+        attached.definition_hash(&shared.quest),
+        source.definition_hash(&shared.quest)
+    );
+    assert!(attached.authored_bindings.is_some());
+    Ok(())
+}
+
+#[test]
+fn collection_composition_refuses_conflicting_source_track_terms() -> Result<(), String> {
+    let (bindings, base) = fixture()?;
+    let (source, shared) = overlapping_source(&bindings, &base)?;
+    for case in 0..4 {
+        let mut tracks: Vec<_> = source.tracks.values().cloned().collect();
+        let track = tracks
+            .iter_mut()
+            .find(|track| track.key == shared.key)
+            .ok_or("shared track")?;
+        match case {
+            0 => track.quest = "oteryn:quest.foreign".into(),
+            1 => track.initial = track.initial.checked_add(1).ok_or("initial overflow")?,
+            2 => track.min = track.min.checked_sub(1).ok_or("minimum overflow")?,
+            _ => track.max = track.max.checked_add(1).ok_or("maximum overflow")?,
+        }
+        let conflicting = QuestStateCatalogue::new("composition-fixture", tracks, Vec::new())
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(
+            bindings
+                .attach(&conflicting)
+                .err()
+                .is_some_and(|error| error.starts_with("conflicting authored track ")),
+            "accepted conflicting source terms {case}"
+        );
+        assert_eq!(source.tracks.get(&shared.key), Some(&shared));
+    }
+    Ok(())
+}

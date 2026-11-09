@@ -358,13 +358,22 @@ impl Bindings {
         let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
         for quest in &self.quests {
             for t in &quest.tracks {
-                tracks.push(QuestTrack {
+                let declared = QuestTrack {
                     key: t.key.clone(),
                     quest: quest.quest.clone(),
                     initial: t.initial,
                     min: t.minimum,
                     max: t.maximum,
-                });
+                };
+                if let Some(existing) = base.tracks.get(&t.key) {
+                    // Native world/NPC owners can already declare this same track.
+                    // Reuse only the exact contract; never widen bounds or reset it.
+                    if existing != &declared {
+                        return Err(format!("conflicting authored track {}", t.key));
+                    }
+                } else {
+                    tracks.push(declared);
+                }
             }
             if let Some(occurrence) = &quest.occurrence {
                 transitions.push(occurrence.transition()?);
