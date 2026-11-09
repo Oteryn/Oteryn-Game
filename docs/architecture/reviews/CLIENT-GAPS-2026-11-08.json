@@ -505,9 +505,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: minimap import/export",
-  "status": "MISSING",
-  "gap": "Brak narzędzia wymiany trwałych map/markerów.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings provide minimap import/export and marker editing. Imports require confirmation, validate bounded files and preserve character/world/channel/content scope; exports refuse to overwrite existing files. Imported observations never replace authoritative world geometry.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:12 (production settings navigation); apps/client/src/features/local-reference-preferences/minimap_native.rs:80 (import/export controls) and :181 (native transfer actions and confirmation); apps/client/src/features/local-minimap/view.rs:115 (export_new) and :131 (validated import); apps/client/src/features/local-minimap/tests/play.rs:239 + minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world (round-trip, markers, persistence, scope isolation, invalid and oversized files)."
  },
  {
   "id": "T076",
