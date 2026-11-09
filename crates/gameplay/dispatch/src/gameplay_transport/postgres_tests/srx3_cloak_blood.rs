@@ -10,12 +10,21 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
 fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() -> TestResult {
+    cloak_case(false)
+}
+
+#[test]
+fn srx3_cloak_blood_step_unknown_commit_delivers_hp_once_postgres() -> TestResult {
+    cloak_case(true)
+}
+
+fn cloak_case(replay_after_commit: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-cloak-blood", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run("srx3-cloak-blood", move || {
+        run(async move |admin| {
             reset();
             let scene = super::srx3_activity_source_fixture::SourceScene::new(
                 crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsGreed,
@@ -339,6 +348,10 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("blood-step pacing clock")?;
+            if replay_after_commit {
+                sqlx::raw_sql("CREATE FUNCTION boss2_blood_step_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.creature_occurrence LIKE 'cloak-blood-step:%' THEN RAISE EXCEPTION 'boss2 retained blood STEP fault'; END IF; RETURN NEW; END $$; CREATE TRIGGER boss2_blood_step_fault BEFORE INSERT ON game_spell_item_receipts FOR EACH ROW EXECUTE FUNCTION boss2_blood_step_fault();")
+                    .execute(&h.pool).await?;
+            }
             let (step, _) = owner
                 .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
                 .await;
@@ -347,6 +360,82 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
                 StepDisposition::Moved,
                 "real native STEP enters blood"
             );
+            if replay_after_commit {
+                let pending = {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    assert_eq!(
+                        states
+                            .get(&runtime, player, admitted.game_session_id)
+                            .ok_or("retained blood HP owner")?
+                            .vitals()
+                            .health,
+                        health_before,
+                        "failed Item COMMIT publishes no HP effect"
+                    );
+                    assert_eq!(states.cloak_blood_steps.len(), 1);
+                    std::sync::Arc::clone(&states.cloak_blood_steps[0])
+                };
+                sqlx::raw_sql("DROP TRIGGER boss2_blood_step_fault ON game_spell_item_receipts; DROP FUNCTION boss2_blood_step_fault();").execute(&h.pool).await?;
+                // Commit the genuine pending writer without its volatile install,
+                // reproducing the boundary left by a lost ACK or cancellation.
+                let permit = owner
+                    .spell_lane
+                    .acquire()
+                    .await
+                    .map_err(|_| "unexpected unrelated unresolved lane")?;
+                let receipt = owner
+                    .root
+                    .commit_cloak_blood_step(
+                        &permit,
+                        owner.character,
+                        owner.holder,
+                        pending.source_for_test(),
+                    )
+                    .await
+                    .map_err(debug)?
+                    .ok_or("actual committed blood retirement")?;
+                assert_eq!(receipt.percentages(), [20]);
+                drop(permit);
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    assert_eq!(
+                        states
+                            .get(&runtime, player, admitted.game_session_id)
+                            .ok_or("not-yet-installed blood HP owner")?
+                            .vitals()
+                            .health,
+                        health_before
+                    );
+                    assert_eq!(states.cloak_blood_steps.len(), 1);
+                }
+                let permit = owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("blood receipt reconciliation")?;
+                drop(permit);
+                let retirements:i64=sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE creature_occurrence LIKE 'cloak-blood-step:%'")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(
+                    retirements, 1,
+                    "reconciliation reuses the original physical retirement"
+                );
+                assert!(
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .cloak_blood_steps
+                        .is_empty()
+                );
+                let permit = owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("already acknowledged blood delivery")?;
+                drop(permit);
+            }
             {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;

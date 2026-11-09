@@ -16,6 +16,12 @@ pub(in crate::gameplay_transport) struct PendingBloodStep {
     cell: (i32, i32, i16),
     applied: AtomicUsize,
 }
+#[cfg(test)]
+impl PendingBloodStep {
+    pub(in crate::gameplay_transport) fn source_for_test(&self) -> &CloakBloodPlayerStep {
+        &self.source
+    }
+}
 
 #[allow(
     clippy::too_many_arguments,

@@ -64,5 +64,14 @@ instead of 24052), then passed in 80.015 seconds (execution marker
 Both role grants and a real SQL rejection of a MINT presented as consumption were
 also exercised. No new protocol messages or capability numbers were allocated.
 
+The focused rerun preserves that healthy case and adds
+`srx3_cloak_blood_step_unknown_commit_delivers_hp_once_postgres`: a real failed
+retirement keeps the actual committed movement contact queued; the production
+writer then commits without HP installation, and ordinary lane recovery reuses
+that receipt and installs damage exactly once. The healthy and recovery cases
+passed in 88.061 and 86.716 seconds respectively (execution markers
+87.998849662 and 86.630097938 seconds). Both original HP and physical-consumption
+assertions remain in each case, with one retirement receipt after reconciliation.
+
 W11 remains PARTIAL: Cloak healing, consumption by other creatures, unrelated
 pool origins, and a native-client play test of this new StepIn slice remain.
