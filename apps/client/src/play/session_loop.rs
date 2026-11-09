@@ -47,7 +47,7 @@ pub async fn run_session<T: Stepper>(
                         76 | 103 | 146 | 152 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
-                        182 => outbox.daily_reward_details_result(&result),
+                        182 => if command.kind==738 {outbox.daily_reward_details_result(&result)} else {outbox.daily_reward_picker_result(command.kind,&result)},
                         170 => outbox.arena_result(&result),
                         195 | 448 => outbox.weapon_proficiency_result(&result),
                         197 => outbox.cyclopedia_tracker_result(&result),

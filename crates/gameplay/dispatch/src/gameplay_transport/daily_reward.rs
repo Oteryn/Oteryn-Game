@@ -28,9 +28,22 @@ pub(super) async fn dispatch(
     command_type: u32,
     payload: &[u8],
 ) -> Option<Vec<u8>> {
+    if matches!(command_type, wire::picker::QUERY | wire::picker::CLAIM) {
+        if command_type == wire::picker::QUERY && !payload.is_empty() {
+            return None;
+        }
+        if command_type == wire::picker::CLAIM && wire::picker::Claim::decode(payload).is_err() {
+            return refusal(3);
+        }
+        return authority
+            .daily_reward_picker(actor, command, command_type, payload)
+            .await;
+    }
     if command_type == wire::details::COMMAND_TYPE {
-        if !payload.is_empty() {return None;}
-        return authority.daily_reward_details(actor,command).await;
+        if !payload.is_empty() {
+            return None;
+        }
+        return authority.daily_reward_details(actor, command).await;
     }
     let claim = if command_type == wire::COMMAND_TYPE_DAILY_REWARD_CLAIM {
         match wire::DailyRewardClaim::decode(payload) {
@@ -72,8 +85,10 @@ pub(super) fn result(
     use crate::foundation::CommandStatus;
     match payload {
         Some(bytes) => (
-            if command_type == wire::COMMAND_TYPE_DAILY_REWARD_CLAIM
-                && !matches!(bytes.get(1), Some(1 | 2))
+            if matches!(
+                command_type,
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::picker::CLAIM
+            ) && !matches!(bytes.get(1), Some(1 | 2))
             {
                 CommandStatus::Rejected
             } else {
@@ -86,7 +101,9 @@ pub(super) fn result(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn daily_content(&self) -> Option<(&NativeGameplayState, &'static DailyRewardContent)> {
+    pub(super) fn daily_content(
+        &self,
+    ) -> Option<(&NativeGameplayState, &'static DailyRewardContent)> {
         let native = self.active_generation?.native_gameplay()?;
         Some((native, DailyRewardContent::load(native)?))
     }
@@ -168,7 +185,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: content.entry_shrine.y,
             z: i32::from(content.entry_shrine.floor),
         };
-        if self.movement_cells()
+        if self
+            .movement_cells()
             .index()
             .lookup(self.movement_cells().scope(), shrine_cell)
             != Ok(crate::content::CollisionClass::Walkable)
@@ -225,6 +243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         claim: Option<wire::DailyRewardClaim>,
+        selection: Option<wire::picker::Claim>,
     ) -> Option<Vec<u8>> {
         let (_, content) = self.daily_content()?;
         let fence = command.item_fence?;
@@ -275,9 +294,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(5);
         }
         // One immutable server plan per content revision. No client choices enter it.
-        let digest = Sha256::new()
+        let mut digest = Sha256::new()
             .chain_update(b"oteryn:daily-reward:v2\0")
             .chain_update(content.revision.as_bytes());
+        if let Some(selection) = &selection {
+            digest.update(selection.encode().ok()?);
+        }
         let binding = digest.finalize().into();
         if let Some(receipt) = view.settled.or(view.receipt) {
             return refusal(if receipt.request_binding == binding {
@@ -295,7 +317,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return refusal(7);
             }
         }
-        let plan = plan(content, view.lane_day)?;
+        let mut plan = plan(content, view.lane_day)?;
+        plan.selection = selection;
         let transaction_id = crate::operator_files::uuid_v7().ok()?;
         let request = DailyRewardClaimRequest {
             command: command_ref,
@@ -341,6 +364,7 @@ fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan
     content.reward(day, false)?;
     Some(DailyRewardDeliveryPlan {
         content_revision: content.revision.clone(),
+        selection: None,
     })
 }
 
@@ -348,7 +372,22 @@ fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan
 mod details;
 macro_rules! authority_methods {
     () => {
-        fn daily_reward_details(&self,_actor:crate::foundation::ExactActorRef,_command:$crate::gameplay_transport::connection::UseCommand) -> impl std::future::Future<Output=Option<Vec<u8>>> {async {None}}
+        fn daily_reward_picker(
+            &self,
+            _actor: crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _kind: u32,
+            _payload: &[u8],
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
+        fn daily_reward_details(
+            &self,
+            _actor: crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
         fn daily_reward_available(&self) -> bool {
             false
         }
@@ -365,7 +404,22 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
-        async fn daily_reward_details(&self,actor:ExactActorRef,command:connection::UseCommand)->Option<Vec<u8>> {self.daily_details(actor,command).await}
+        async fn daily_reward_picker(
+            &self,
+            actor: ExactActorRef,
+            command: connection::UseCommand,
+            kind: u32,
+            payload: &[u8],
+        ) -> Option<Vec<u8>> {
+            self.daily_picker(actor, command, kind, payload).await
+        }
+        async fn daily_reward_details(
+            &self,
+            actor: ExactActorRef,
+            command: connection::UseCommand,
+        ) -> Option<Vec<u8>> {
+            self.daily_details(actor, command).await
+        }
         fn daily_reward_available(&self) -> bool {
             self.daily_content().is_some()
         }
@@ -375,8 +429,11 @@ macro_rules! composed_methods {
             command: connection::UseCommand,
             claim: Option<oteryn_protocol_oteryn::daily_reward::DailyRewardClaim>,
         ) -> Option<Vec<u8>> {
-            self.daily_command(actor, command, claim).await
+            self.daily_command(actor, command, claim, None).await
         }
     };
 }
 pub(super) use composed_methods;
+
+#[path = "daily_reward/picker.rs"]
+mod picker;

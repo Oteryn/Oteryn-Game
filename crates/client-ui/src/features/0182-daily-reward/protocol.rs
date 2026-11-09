@@ -75,3 +75,10 @@ pub fn request_details(
 ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
     super::details::request_details(panel)
 }
+
+pub fn request_picker(
+    panel: &mut DailyRewardPanel,
+    selection: Option<&str>,
+) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    super::picker::request_picker(panel, selection)
+}

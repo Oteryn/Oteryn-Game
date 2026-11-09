@@ -11,3 +11,18 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+impl PlayLink {
+    pub fn open_daily_reward_picker(&self) {
+        self.daily_reward_picker_request(None);
+        #[cfg(windows)]
+        picker_native::open_picker(self);
+        #[cfg(not(windows))]
+        {
+            lock(&self.mailbox).daily_reward.picker_open = true;
+        }
+    }
+}
+#[cfg(windows)]
+#[path = "picker_native.rs"]
+mod picker_native;

@@ -150,3 +150,6 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
 }
 #[path = "details.rs"]
 mod details;
+
+#[path = "picker.rs"]
+mod picker;

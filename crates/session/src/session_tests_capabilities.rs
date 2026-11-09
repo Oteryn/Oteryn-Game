@@ -108,7 +108,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
     // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
         (3, &[7, 8], &[7, 8]),
-        (182, &[354, 355, 738], &[]),
+        (182, &[354, 355, 738, 6117, 6118], &[]),
         (17, &[11, 12, 740], &[10]),
         (51, &[60, 61], &[]),
         // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.

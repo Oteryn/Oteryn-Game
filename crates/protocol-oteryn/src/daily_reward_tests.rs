@@ -27,6 +27,8 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
                 COMMAND_TYPE_DAILY_REWARD_CLAIM,
                 COMMAND_TYPE_DAILY_REWARD_QUERY,
                 details::COMMAND_TYPE,
+                picker::QUERY,
+                picker::CLAIM,
             ][..],
             &[][..],
             MAX_DAILY_REWARD_CLAIM_BYTES,

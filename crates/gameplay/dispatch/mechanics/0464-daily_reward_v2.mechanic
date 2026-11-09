@@ -1,5 +1,5 @@
 name=daily_reward_v2
-commands=354,355,738
+commands=354,355,738,6117,6118
 transport=daily_reward
 composed=daily_reward
 authority=daily_reward

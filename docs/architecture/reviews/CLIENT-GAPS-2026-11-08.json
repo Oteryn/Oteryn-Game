@@ -1113,10 +1113,10 @@
   "src": "TIBAUD-1",
   "area": "Rewards",
   "feature": "Daily wall/streak/jokers/claim/pick items",
-  "status": "PARTIAL",
-  "gap": "Brak pick-items: DAILY_REWARD_V2 celowo usuwa wybór nagród; potrzebna decyzja właściciela o katalogu i regułach wyboru.",
+  "status": "DONE",
+  "gap": "",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0182-daily-reward/protocol.rs:4 + daily_reward_catalogue_and_account_history_cross_real_session_caller; 30-day Free/Premium catalogue and durable account/World history wired through command 738 on existing capability 182; production PostgreSQL caller daily_reward_real_dispatch_delivers_replays_reloads_and_orders_thirty_days; remaining item-choice picker conflicts with DAILY_REWARD_V2 one-click contract and awaits owner choice rules"
+  "evidence": "crates/gameplay/durability/src/durability/daily_reward_delivery.rs:111 + daily_picker_real_dispatch_validates_rolls_back_delivers_and_replays; apps/client/src/features/0182-daily-reward/input.rs:65 + item_picker_real_caller_validates_catalogue_and_sends_exact_selection"
  },
  {
   "id": "T145",
