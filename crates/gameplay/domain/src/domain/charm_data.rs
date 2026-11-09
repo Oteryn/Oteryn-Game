@@ -421,3 +421,39 @@ pub struct OwnerDamageResult {
     pub health_before: i64,
     pub health_after: i64,
 }
+
+impl OwnerDamageResult {
+    /// Actual HP removed by a newly applied owner commit. Attempted damage, fully
+    /// absorbed hits, healing and retained replay receipts cannot produce hit credit.
+    pub fn committed_health_loss(self) -> Option<std::num::NonZeroU64> {
+        if !self.applied || self.health_after >= self.health_before {
+            return None;
+        }
+        std::num::NonZeroU64::new(self.health_before.abs_diff(self.health_after))
+    }
+}
+
+#[cfg(test)]
+mod committed_hit_tests {
+    use super::OwnerDamageResult;
+
+    #[test]
+    fn committed_hit_excludes_replay_absorption_and_healing() {
+        let loss = |applied, health_before, health_after| {
+            OwnerDamageResult {
+                applied,
+                health_before,
+                health_after,
+            }
+            .committed_health_loss()
+            .map(std::num::NonZeroU64::get)
+        };
+        assert_eq!(loss(true, 40, 35), Some(5));
+        assert_eq!(loss(true, 5, 0), Some(5));
+        assert_eq!(loss(false, 40, 35), None);
+        assert_eq!(loss(true, 40, 40), None);
+        assert_eq!(loss(true, 35, 40), None);
+        assert_eq!(loss(true, 0, 0), None);
+        assert_eq!(loss(true, i64::MAX, i64::MIN), Some(u64::MAX));
+    }
+}

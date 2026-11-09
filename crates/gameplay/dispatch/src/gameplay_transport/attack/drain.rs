@@ -866,8 +866,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &offence,
                     &result,
                 );
-                if result.applied
-                    && result.health_after < result.health_before
+                if result.committed_health_loss().is_some()
                     && snapshot.state.master.is_none()
                     && !snapshot.state.policy.is_familiar
                 {
@@ -886,13 +885,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &result,
                     &mut activity_cells,
                 );
-                if result.applied && result.health_after < result.health_before {
+                if result.committed_health_loss().is_some() {
                     kills.boss_damage_dealt(&runtime, target, entry.actor, entry.session);
                 }
                 // Source-qualified leaf damage uses the existing independent replay stream.
                 // It neither consumes another player command nor re-enters Charm evaluation.
                 let mut lethal_result = result;
-                if result.applied && result.health_before > result.health_after {
+                if result.committed_health_loss().is_some() {
                     for outcome in &outcomes {
                         if let Some(CharmEffectOutcome::PreventCreatureFlee { duration_ms }) =
                             charm_combat::effect(outcome)

@@ -2896,7 +2896,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             if let Some(at) = attempt.prepared.batch().now_us && batch.applied {
                 for effect in &batch.effects {
-                    if effect.health.is_some_and(|h| h.applied && h.health_after < h.health_before)
+                    if effect.health.is_some_and(|h| h.committed_health_loss().is_some())
                         && let Ok(snapshot) = runtime.companion_snapshot_including_dead(effect.target)
                         && snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar {
                         states.prey_activity(&runtime, actor, session, super::super::prey::PreyActivity {
