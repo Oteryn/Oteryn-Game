@@ -64,6 +64,7 @@ impl ReferencePreferences {
         self.keybindings = candidate.keybindings;
         // Profiles are explicit binding snapshots; automatic presets must not overwrite them.
         self.chat_context_hotkeys = false;
+        self.manual_hotkey_profile = true;
         Ok(())
     }
 }

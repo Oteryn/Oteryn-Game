@@ -1,6 +1,6 @@
 //! Local key overrides translate into the existing production feature inputs.
 use super::{PreferenceError, ReferencePreferences};
-use oteryn_input_actions::{KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+use oteryn_input_actions::{KeyCode, Modifiers, NormalizedInputEvent};
 
 include!(concat!(env!("OUT_DIR"), "/preference_bindings.rs"));
 
@@ -19,61 +19,13 @@ pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> 
     Ok(bindings)
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Chord(KeyCode, Modifiers);
-
-fn parse(value: &str) -> Result<Chord, PreferenceError> {
-    let upper = value.trim().to_ascii_uppercase();
-    let mut modifiers = Modifiers::NONE;
-    let mut code = None;
-    for part in upper.split('+') {
-        let modifier = match part {
-            "CTRL" => Some(Modifier::Control),
-            "SHIFT" => Some(Modifier::Shift),
-            "ALT" => Some(Modifier::Alt),
-            "SUPER" => Some(Modifier::Super),
-            _ => None,
-        };
-        if let Some(modifier) = modifier {
-            if modifiers.contains(modifier) {
-                return Err(PreferenceError);
-            }
-            modifiers = modifiers.with(modifier);
-            continue;
-        }
-        if code.is_some() {
-            return Err(PreferenceError);
-        }
-        let number = match part {
-            "ARROWUP" => 82,
-            "ARROWDOWN" => 81,
-            "ARROWLEFT" => 80,
-            "ARROWRIGHT" => 79,
-            "ESCAPE" => 41,
-            "ENTER" => 40,
-            "KEYPADENTER" | "NUMPADENTER" => 88,
-            "SPACE" => 44,
-            "TAB" => 43,
-            "0" => 39,
-            key if key.len() == 1 && key.as_bytes()[0].is_ascii_uppercase() => {
-                u16::from(key.as_bytes()[0] - b'A') + 4
-            }
-            key if key.len() == 1 && matches!(key.as_bytes()[0], b'1'..=b'9') => {
-                u16::from(key.as_bytes()[0] - b'1') + 30
-            }
-            key if key.starts_with('F') => {
-                let n = key[1..].parse::<u16>().map_err(|_| PreferenceError)?;
-                if !(1..=12).contains(&n) {
-                    return Err(PreferenceError);
-                }
-                57 + n
-            }
-            _ => return Err(PreferenceError),
-        };
-        code = Some(KeyCode::new(number).map_err(|_| PreferenceError)?);
-    }
-    Ok(Chord(code.ok_or(PreferenceError)?, modifiers))
-}
+#[path = "chords.rs"]
+mod chords;
+use chords::{Chord, parse};
+#[path = "binding_validation.rs"]
+mod binding_validation;
+pub(super) use binding_validation::validate_custom;
+use binding_validation::{validate_effective, validate_map};
 
 impl ReferencePreferences {
     pub fn set_action_bar_hotkeys(&mut self, chords: &[&str; 4]) -> Result<(), PreferenceError> {
@@ -130,48 +82,47 @@ impl ReferencePreferences {
         Ok(())
     }
 
+    pub fn binding_secondary<'a>(&'a self, binding: &PreferenceBinding) -> Option<&'a str> {
+        self.secondary_keybindings
+            .get(binding.id)
+            .map(String::as_str)
+    }
+
+    pub fn rebind_secondary(&mut self, id: &str, chord: &str) -> Result<(), PreferenceError> {
+        let mut candidate = self.clone();
+        if chord.trim().is_empty() {
+            candidate.secondary_keybindings.remove(id);
+        } else {
+            parse(chord)?;
+            candidate
+                .secondary_keybindings
+                .insert(id.to_owned(), chord.trim().to_ascii_uppercase());
+        }
+        candidate.validate_bindings()?;
+        *self = candidate;
+        Ok(())
+    }
+
     pub(super) fn validate_bindings(&self) -> Result<(), PreferenceError> {
-        if self.keybindings.keys().any(|id| {
-            !REGISTERED_BINDINGS
-                .iter()
-                .any(|(known, default)| known == id && !default.starts_with("MOUSE"))
-        }) {
+        if !self.hotkey_contexts.valid_shape() {
             return Err(PreferenceError);
         }
-        for chord in self.keybindings.values() {
-            let chord = parse(chord)?;
-            if RESERVED_CHORDS
-                .iter()
-                .any(|reserved| parse(reserved).is_ok_and(|r| r == chord))
-            {
-                return Err(PreferenceError);
+        validate_effective(&self.keybindings, &self.secondary_keybindings)?;
+        self.validate_custom_chords(&self.keybindings, &self.secondary_keybindings)?;
+        for (name, preset) in &self.hotkey_contexts.presets {
+            for (chat_on, bindings) in [(true, &preset.chat_on), (false, &preset.chat_off)] {
+                validate_map(&bindings.primary)?;
+                validate_map(&bindings.secondary)?;
+                let (primary, secondary) = if name == &self.hotkey_contexts.selected
+                    && chat_on == self.hotkey_contexts.chat_on
+                {
+                    (&self.keybindings, &self.secondary_keybindings)
+                } else {
+                    (&bindings.primary, &bindings.secondary)
+                };
+                validate_effective(primary, secondary)?;
+                self.validate_custom_chords(primary, secondary)?;
             }
-        }
-        if self.custom_hotkeys.len() > 64 {
-            return Err(PreferenceError);
-        }
-        let mut used = Vec::new();
-        for (chord, action) in &self.custom_hotkeys {
-            let chord = parse(chord)?;
-            if !action.valid()
-                || used.contains(&chord)
-                || RESERVED_CHORDS
-                    .iter()
-                    .any(|key| parse(key).is_ok_and(|r| r == chord))
-            {
-                return Err(PreferenceError);
-            }
-            used.push(chord);
-        }
-        for &(id, default) in REGISTERED_BINDINGS {
-            if default.starts_with("MOUSE") {
-                continue;
-            }
-            let chord = parse(self.keybindings.get(id).map_or(default, String::as_str))?;
-            if used.contains(&chord) {
-                return Err(PreferenceError);
-            }
-            used.push(chord);
         }
         Ok(())
     }
@@ -182,6 +133,15 @@ impl ReferencePreferences {
         &self,
         events: &[NormalizedInputEvent],
     ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
+        self.route_input_chat(events, self.hotkey_contexts.chat_on)
+    }
+
+    pub fn route_input_chat(
+        &self,
+        events: &[NormalizedInputEvent],
+        chat_on: bool,
+    ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
+        let (primary, secondary) = self.binding_maps(chat_on)?;
         let mut routed = Vec::new();
         for event in events {
             let NormalizedInputEvent::Key {
@@ -202,8 +162,10 @@ impl ReferencePreferences {
                     continue;
                 }
                 let original = parse(default)?;
-                let effective = parse(self.keybindings.get(id).map_or(default, String::as_str))?;
-                if effective == chord {
+                let effective = parse(primary.get(id).map_or(default, String::as_str))?;
+                if effective == chord
+                    || secondary.get(id).map(|s| parse(s)).transpose()? == Some(chord)
+                {
                     target = Some(original);
                     break;
                 }
@@ -245,6 +207,15 @@ impl PreferenceInput {
         preferences: &ReferencePreferences,
         events: &[NormalizedInputEvent],
     ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
+        self.route_chat(preferences, events, preferences.hotkey_contexts.chat_on)
+    }
+
+    pub fn route_chat(
+        &mut self,
+        preferences: &ReferencePreferences,
+        events: &[NormalizedInputEvent],
+        chat_on: bool,
+    ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
         use oteryn_input_actions::ButtonState;
         self.actions.clear();
         let mut output = Vec::new();
@@ -273,7 +244,7 @@ impl PreferenceInput {
                     let translated = match self.held.get(code) {
                         Some(translation) => *translation,
                         None => preferences
-                            .route_input(std::slice::from_ref(event))?
+                            .route_input_chat(std::slice::from_ref(event), chat_on)?
                             .first()
                             .and_then(|e| match e {
                                 NormalizedInputEvent::Key {

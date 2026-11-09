@@ -8,10 +8,25 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 
+#[path = "arcs.rs"]
+mod arcs;
+pub use arcs::{ArcLayout, ArcPreferences};
+#[path = "basic.rs"]
+mod basic;
+pub use basic::{BASIC_GROUPS, BasicOptions};
 #[path = "bar_hotkeys.rs"]
 mod bar_hotkeys;
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "control_input.rs"]
+mod controls;
+#[path = "frames.rs"]
+mod frames;
+pub use frames::{FramePacer, FramePreferences};
+#[path = "help.rs"]
+mod help;
+#[path = "profile_contexts.rs"]
+mod profile_contexts;
 #[path = "custom_actions.rs"]
 mod custom_actions;
 #[path = "custom_dispatch.rs"]
@@ -21,6 +36,8 @@ pub use custom_actions::{CustomAction, ObjectTarget};
 mod profiles;
 #[path = "status_order.rs"]
 mod status_order;
+#[path = "shortcuts.rs"]
+mod shortcuts;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -32,6 +49,10 @@ mod ui_geometry;
 pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
 pub use tooltips::{HoverTooltip, TooltipTarget};
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
+pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
+pub use help::{HelpTopic, help_text};
+pub use profile_contexts::HotkeyProfiles;
+pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
 
@@ -55,52 +76,9 @@ const PANEL_IDS: &[&str] = &[
     "wheel",
 ];
 
-fn enabled() -> bool {
-    true
-}
-
-fn default_tooltip_delay() -> u16 { 500 }
-
-fn default_arc_opacity() -> u8 { 100 }
-
-fn default_console_font() -> u16 { 14 }
-
-fn default_arc_distance() -> u16 {
-    8
-}
-fn default_arc_size() -> u16 {
-    3
-}
-
-fn default_hud_names() -> [bool; 3] {
-    [true; 3]
-}
-
-fn default_shortcuts() -> Vec<String> {
-    WINDOW_ACTIONS
-        .iter()
-        .map(|(id, _)| (*id).to_owned())
-        .collect()
-}
-
-fn default_hud_bounds() -> [u16; 4] {
-    [8, 8, 900, 40]
-}
-
-fn default_scale() -> u16 {
-    100
-}
-
-fn default_rotation_modifier() -> String {
-    "CTRL".into()
-}
-
-fn default_panels() -> Vec<String> {
-    ["battle", "chat", "inventory", "minimap"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect()
-}
+#[path = "defaults.rs"]
+mod defaults;
+use defaults::*;
 
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -126,6 +104,8 @@ pub struct ReferencePreferences {
     pub arc_opacity: u8,
     #[serde(default)]
     pub chat_context_hotkeys: bool,
+    #[serde(default)]
+    pub manual_hotkey_profile: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
@@ -169,16 +149,38 @@ pub struct ReferencePreferences {
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
-    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
-    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
     pub shortcuts_collapsed: bool,
     #[serde(default = "default_shortcuts")]
     pub shortcut_order: Vec<String>,
     #[serde(default)]
+    pub arcs: ArcPreferences,
+    #[serde(default)]
+    pub frames: FramePreferences,
+    #[serde(default)]
+    pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
+    #[serde(default)]
+    pub spellbook_filter: crate::play::feature_0287_actor_spell_catalog::view::SpellbookFilter,
+    #[serde(default)]
+    pub minimap: crate::play::feature_local_minimap::view::MinimapMemory,
+    #[serde(default = "shortcuts::default_shortcuts")]
+    pub shortcuts: Vec<String>,
+    #[serde(default)]
+    pub controls: ControlPreferences,
+    #[serde(default)]
+    pub skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout,
+    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
+    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
+    #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub secondary_keybindings: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub hotkey_contexts: HotkeyProfiles,
+    #[serde(default)]
+    pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
     #[serde(default)]
     pub custom_hotkeys: std::collections::BTreeMap<String, CustomAction>,
     #[serde(default)]
@@ -209,6 +211,7 @@ impl Default for ReferencePreferences {
             hud_npc_names: None,
             arc_opacity: 100,
             chat_context_hotkeys: false,
+            manual_hotkey_profile: false,
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,
@@ -232,9 +235,20 @@ impl Default for ReferencePreferences {
             health_circle: false,
             shortcuts_collapsed: false,
             shortcut_order: default_shortcuts(),
+            spellbook_filter: Default::default(),
+            archive_bindings: Default::default(),
+            frames: Default::default(),
+            arcs: Default::default(),
+            minimap: Default::default(),
+            shortcuts: shortcuts::default_shortcuts(),
+            controls: ControlPreferences::default(),
+            skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
+            secondary_keybindings: std::collections::BTreeMap::new(),
+            hotkey_contexts: HotkeyProfiles::default(),
+            item_hotkeys: Default::default(),
             custom_hotkeys: std::collections::BTreeMap::new(),
             custom_hotkey_profiles: std::collections::BTreeMap::new(),
             hotkey_profiles: std::collections::BTreeMap::new(),
@@ -272,6 +286,14 @@ impl ReferencePreferences {
             || self.arc_distance > 80
             || !(1..=8).contains(&self.arc_size)
             || !(80..=200).contains(&self.interface_scale)
+            || !self.spellbook_filter.valid()
+            || !self.archive_bindings.valid()
+            || !self.frames.valid()
+            || !self.arcs.valid()
+            || !self.minimap.valid()
+            || !shortcuts::valid(&self.shortcuts)
+            || !self.controls.valid()
+            || !self.skills_layout.valid()
             || !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
             || self.keyboard_delay_ms > 1000
             || self.hud_bounds[2] < 120
@@ -290,15 +312,9 @@ impl ReferencePreferences {
         Ok(())
     }
 
-    #[must_use]
-    pub fn panel_visible(&self, id: &str) -> bool {
-        self.visible_panels.iter().any(|visible| visible == id)
-    }
 
-    pub fn scaled_hud_bounds(&self) -> [u16; 4] {
-        self.hud_bounds
-            .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
-    }
+
+
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -312,70 +328,6 @@ impl Display for PreferenceError {
 
 impl std::error::Error for PreferenceError {}
 
-#[derive(Debug, Clone)]
-pub(crate) struct LocalPlayState {
-    world: Arc<World>,
-    preferences: ReferencePreferences,
-    viewport: [u32; 2],
-}
-
-impl LocalPlayState {
-    pub(crate) fn new(world: World) -> Self {
-        Self {
-            world: Arc::new(world),
-            preferences: ReferencePreferences::default(),
-            viewport: [960, 540],
-        }
-    }
-
-    pub(crate) fn world(&self) -> Arc<World> {
-        Arc::clone(&self.world)
-    }
-
-    pub(crate) fn set_world(&mut self, world: Arc<World>) {
-        self.world = world;
-    }
-}
-
-impl PlayView {
-    pub(in crate::play) fn apply_preference_scale(
-        &mut self,
-    ) -> Result<(), oteryn_renderer::BatchError> {
-        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
-        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
-            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
-            .max(1);
-        self.scene.set_label_scale(self.preferences().interface_scale);
-        self.scene.set_tile_px(pixels.min(fit))
-    }
-
-    pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {
-        if viewport.contains(&0) || self.local.viewport == viewport {
-            return Ok(());
-        }
-        let mut candidate = self.clone();
-        candidate.local.viewport = viewport;
-        candidate
-            .apply_preference_scale()
-            .map_err(|_| PreferenceError)?;
-        *self = candidate;
-        Ok(())
-    }
-
-    #[must_use]
-    pub const fn preferences(&self) -> &ReferencePreferences {
-        &self.local.preferences
-    }
-
-    pub fn set_preferences(
-        &mut self,
-        preferences: ReferencePreferences,
-    ) -> Result<(), PreferenceError> {
-        preferences.validate()?;
-        let mut candidate = self.clone();
-        candidate.local.preferences = preferences;
-        candidate.rebuild().map_err(|_| PreferenceError)?;
-        *self = candidate;
-        Ok(())
-    }
-}
+#[path = "projection.rs"]
+mod projection;
+pub(crate) use projection::LocalPlayState;

@@ -20,3 +20,15 @@ pub fn fit_ui_scale(requested: u16, size: [i32; 2], available: [i32; 2]) -> u16 
         .min(i64::from(available[1]) * 100 / i64::from(size[1]));
     requested.clamp(1, 200).min(fit.clamp(1, 200) as u16)
 }
+
+impl super::ReferencePreferences {
+    #[must_use]
+    pub fn panel_visible(&self, id: &str) -> bool {
+        self.visible_panels.iter().any(|visible| visible == id)
+    }
+
+    pub fn scaled_hud_bounds(&self) -> [u16; 4] {
+        self.hud_bounds
+            .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
+    }
+}

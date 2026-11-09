@@ -67,3 +67,9 @@ impl ReferencePreferences {
         Ok(())
     }
 }
+
+impl ReferencePreferences {
+    pub(super) fn validate_custom_chords(&self, primary: &std::collections::BTreeMap<String, String>, secondary: &std::collections::BTreeMap<String, String>) -> Result<(), PreferenceError> {
+        super::bindings::validate_custom(self, primary, secondary)
+    }
+}

@@ -111,10 +111,10 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) custom_chat_paste: Option<String>,
     pub(super) tracked_custom_ability: Option<u32>,
     pub(super) custom_hotkey_feedback: Option<String>,
-    pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
@@ -124,6 +124,7 @@ pub(super) struct Mailbox {
     pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) cast_chat: oteryn_client_ui::cast_chat::Panel,
     pub(super) cast_control: oteryn_client_ui::cast_control::Panel,
+    pub(super) spellbook_details: super::feature_0287_actor_spell_catalog::view::SpellbookState,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
     pub(super) served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
@@ -185,6 +186,7 @@ pub(super) struct Mailbox {
     pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
     pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
+    pub(super) skills_layout: super::feature_0274_loyalty_skills::view::SkillsLayoutState,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,

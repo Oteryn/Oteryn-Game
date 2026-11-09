@@ -120,6 +120,7 @@ impl Outbox {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
@@ -167,6 +168,7 @@ impl Outbox {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();
@@ -286,6 +288,7 @@ impl Drop for PlayLink {
         mailbox.analyser = Default::default();
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
+        mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
         mailbox.boss_encounter_end();

@@ -119,3 +119,29 @@ fn gap_house_members_and_largest_door_request_stay_bounded() -> Result<(), &'sta
     assert!(house::query(w, "oteryn:content.area.city.thais", Some(&"a".repeat(513))).is_err());
     Ok(())
 }
+
+#[test]
+fn house_metadata_refuses_partial_invalid_floor_and_duplicate_fields() -> Result<(), &'static str> {
+    let base = [10, 1, b'a', 16, 1, 24, 10, 32, 7, 40, 1, 56, 20, 80, 9];
+    let details = [98, 1, b'A', 104, 1, 112, 0, 120, 1, 128, 1, 2, 136, 1, 13];
+    let page = |extra: &[u8]| {
+        let row = [base.as_slice(), extra].concat();
+        let mut body = vec![8, 1, 26, row.len() as u8];
+        body.extend(row);
+        body
+    };
+    assert_eq!(
+        house::page(&page(&details))?.rows[0].entrance,
+        Some((1, 2, -7))
+    );
+    for end in 1..details.len() {
+        assert!(house::page(&page(&details[..end])).is_err());
+    }
+    for floor in [2, 30, 31] {
+        let mut bad = details;
+        bad[13] = floor;
+        assert!(house::page(&page(&bad)).is_err());
+    }
+    assert!(house::page(&page(&[details.as_slice(), &[112, 0]].concat())).is_err());
+    Ok(())
+}

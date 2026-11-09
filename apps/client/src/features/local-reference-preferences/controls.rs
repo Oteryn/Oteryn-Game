@@ -1,4 +1,3 @@
-//! Construction and validation of the settings dialog controls.
 use super::*;
 #[path = "interface_controls.rs"]
 mod interface_controls;
@@ -306,6 +305,7 @@ impl Controls {
             .collect::<Vec<_>>();
             let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
             if [
+                manual,
                 manual,
                 custom_editor,
                 profile_name,

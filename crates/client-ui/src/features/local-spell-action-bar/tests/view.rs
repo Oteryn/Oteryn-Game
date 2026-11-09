@@ -57,3 +57,31 @@ fn hud_clamps_overfull_and_handles_largest_vitals() {
         "HP [██████████] 4294967295/1   MP [██████████] 4294967295/4294967295   Soul: 0   Harmony: 0/5   Serene: inactive"
     );
 }
+
+#[test]
+fn docked_row_counts_down_server_cooldown_without_changing_authority() -> Result<(), &'static str> {
+    let mut panel = super::super::ActionBarPanel::default();
+    panel.bar.bind(11, std::num::NonZeroU32::new(71));
+    panel.bar.cooldowns = Some(oteryn_client_runtime::spell::ActorCooldowns {
+        server_now_ms: 100,
+        rtt_ms: None,
+        entries: vec![oteryn_client_runtime::spell::ActorCooldown {
+            kind: oteryn_client_runtime::spell::ActorCooldownKind::Spell,
+            id: 71,
+            expires_at_ms: 600,
+        }],
+    });
+    let catalog = oteryn_client_runtime::spell_catalog::CatalogState::default();
+    assert!(slot_labels_after(&panel, &catalog, 250)[11].contains("250 ms"));
+    assert!(slot_labels_after(&panel, &catalog, 500)[11].contains("Ready"));
+    assert_eq!(
+        panel
+            .bar
+            .cooldowns
+            .as_ref()
+            .ok_or("cooldowns")?
+            .server_now_ms,
+        100
+    );
+    Ok(())
+}

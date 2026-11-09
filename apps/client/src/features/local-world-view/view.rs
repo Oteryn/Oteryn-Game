@@ -50,6 +50,7 @@ impl PlayView {
         next.local.set_world(Arc::new(world));
         next.live_map = true;
         super::super::feature_local_minimap::state::lock(&next.minimap).observe(map);
+        next.remember_minimap(map);
         next.rebuild()?;
         *self = next;
         Ok(())
@@ -102,6 +103,7 @@ impl PlayView {
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.weather_scene();
+        self.project_minimap_memory();
         self.scene.set_minimap(
             self.live_map && self.preferences().panel_visible("minimap"),
             self.minimap.clone(),

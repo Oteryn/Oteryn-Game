@@ -224,3 +224,7 @@ fn newhaven_starter_wire_data_reaches_native_equipment_backpack_and_quiver_panel
     assert!(oteryn_client_ui::container_tree::view::panel_text(&panel).contains("2 / 8 items"));
     Ok(())
 }
+
+mod bulk {
+    include!("bulk.rs");
+}

@@ -29,8 +29,32 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
             .count(),
         36
     );
-    let (link, mut commands, _) = play_channel();
+    let (link, mut commands, outbox) = play_channel();
     let mut play = view()?;
+    let catalog: Vec<_> = (71..107)
+        .map(
+            |cast_index| oteryn_session::spell_catalog::SpellCatalogEntry {
+                cast_index,
+                name: format!("Spell {cast_index}"),
+                words: format!("cast {cast_index}"),
+                level: 1,
+                mana: 0,
+                mana_percent: false,
+                soul: 0,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![],
+                rune_item: None,
+            },
+        )
+        .collect();
+    outbox.spell_catalog_initialize(
+        true,
+        Some(
+            oteryn_session::spell_catalog::encode_catalog(&catalog)
+                .map_err(|e| format!("{e:?}"))?,
+        ),
+    )?;
     let fields: Vec<String> = (71..107).map(|id| id.to_string()).collect();
     assert!(link.spell_bar_bind(&fields));
     // Drive the same slot-selection handler used by the native Bind button.

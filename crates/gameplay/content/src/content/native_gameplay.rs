@@ -522,6 +522,10 @@ impl NativeGameplayState {
             .collect();
         &actual == expected
     }
+    /// Immutable public-template metadata of the active native generation.
+    pub fn item_profiles(&self) -> impl Iterator<Item = &ItemProfileRecord> {
+        self.items.iter().flat_map(|items| &items.records)
+    }
     pub fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
     }

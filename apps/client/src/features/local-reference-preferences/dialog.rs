@@ -7,6 +7,8 @@ use controls::Controls;
 mod custom_editor;
 #[path = "transfer.rs"]
 mod transfer;
+#[path = "transfer.rs"]
+mod transfer;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
@@ -18,7 +20,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             760,
-            540,
+            650,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -79,6 +81,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             lock(&shared).open = false;
             return;
         };
+        let navigation = navigation_controls::create(hwnd);
         let mut bindings = preference_bindings().unwrap_or_default();
         let mut binding_page = SettingsPage::Hotkeys;
         let mut held = None;
@@ -131,6 +134,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            for handle in &navigation {
+                ShowWindow(*handle, SW_SHOW);
+            }
+            actor_hud.show(state.page == SettingsPage::ActorHud);
+            console.show(state.page == SettingsPage::Console);
+            layout.show(state.page == SettingsPage::Status);
             actor_hud.show(state.page == SettingsPage::ActorHud);
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
@@ -212,6 +221,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if (160..=166).contains(&action) {
+                    drop(state);
+                    subpages::open(action, Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    continue;
+                }
                 if (110..=113).contains(&action) {
                     drop(state);
                     transfer::apply(action, hwnd, &shared, &text(transfer_path));
@@ -365,21 +380,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = match state.page {
-                SettingsPage::CustomHotkeys => {
-                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Use New / edit to assign object, text and read-only ability cooldown actions."
-                }
-                SettingsPage::BarHotkeys => {
-                    "Configure all three action bar rows (12 slots each). Empty chords clear slots 5–36. The first four slots retain their legacy defaults until rebound."
-                }
-                SettingsPage::Graphics => {
-                    "Renderer and window options use the supported native renderer. Additional controls are not available yet."
-                }
-                SettingsPage::Sound => {
-                    "Master volume % (0–100). Changes apply to playback immediately."
-                }
-                _ => "",
-            };
+            let page_help = navigation_controls::page_help(state.page);
             SetWindowTextW(
                 feedback,
                 wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
@@ -393,3 +394,5 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         lock(&shared).open = false;
     }
 }
+#[path = "navigation_controls.rs"]
+mod navigation_controls;

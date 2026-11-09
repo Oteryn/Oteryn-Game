@@ -8,8 +8,14 @@ mod actor_hud;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
-use oteryn_session::{PresentationColor, PresentationEventKind, PresentationValue};
+use oteryn_session::{PresentationColor, PresentationEventKind};
 use std::time::Instant;
+#[path = "view/tutorial.rs"]
+mod tutorial;
+#[path = "view/value_text.rs"]
+mod value_text;
+use tutorial::draw_tutorial;
+use value_text::number;
 
 impl PlayView {
     pub(in crate::play) fn receive_presentation(
@@ -147,48 +153,6 @@ impl PlayView {
     }
 }
 
-// Original compact 3 × 5 decimal glyphs, most significant row first.
-const DIGITS: [[u8; 5]; 10] = [
-    [7, 5, 5, 5, 7],
-    [2, 6, 2, 2, 7],
-    [7, 1, 7, 4, 7],
-    [7, 1, 7, 1, 7],
-    [5, 5, 7, 1, 1],
-    [7, 4, 7, 1, 7],
-    [7, 4, 7, 5, 7],
-    [7, 1, 1, 1, 1],
-    [7, 5, 7, 5, 7],
-    [7, 5, 7, 1, 7],
-];
-
-fn number(
-    batch: &mut SpriteBatch,
-    view: &TileView,
-    atlas: &AtlasImage,
-    [center, top]: [f32; 2],
-    value: PresentationValue,
-) -> Result<(), BatchError> {
-    let text = value.value.to_string();
-    let left = center - (text.len() as f32 * 8.0 - 2.0) / 2.0;
-    for (i, digit) in text.bytes().enumerate() {
-        for (row, bits) in DIGITS[usize::from(digit - b'0')].iter().enumerate() {
-            for column in 0..3 {
-                if bits & (4 >> column) != 0 {
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [left + (i * 8 + column * 2) as f32, top + row as f32 * 2.0],
-                        [2.0, 2.0],
-                        value.color,
-                    )?;
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
 fn rgb(color: PresentationColor) -> [u8; 3] {
     use PresentationColor::*;
     match color {
@@ -240,56 +204,4 @@ fn pixel(
         size,
         uv: [u, v, u, v],
     })
-}
-
-fn draw_tutorial(
-    batch: &mut SpriteBatch,
-    view: &TileView,
-    atlas: &AtlasImage,
-    overlay: &crate::play::tutorial_overlay::Overlay,
-    now: Instant,
-) -> Result<(), BatchError> {
-    if !overlay.enabled {
-        return Ok(());
-    }
-    for [x, y] in overlay.points(now) {
-        pixel(
-            batch,
-            view,
-            atlas,
-            [x as f32, y as f32],
-            [3.0, 3.0],
-            PresentationColor::Yellow,
-        )?;
-    }
-    if let Some([x, y]) = overlay.marker {
-        for (dx, dy) in [(-8, 0), (8, 0), (0, -8), (0, 8)] {
-            pixel(
-                batch,
-                view,
-                atlas,
-                [(x + dx) as f32, (y + dy) as f32],
-                [4.0, 4.0],
-                PresentationColor::LightGreen,
-            )?;
-        }
-    }
-    for (index, character) in overlay.hint().chars().enumerate() {
-        let glyph = oteryn_renderer::name_text::glyph_rgba(character);
-        for y in 0..7usize {
-            for x in 0..5usize {
-                if glyph[(((y * 32 + 16) / 8) * 32 + (x * 32 + 16) / 6) * 4 + 3] == 255 {
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [8.0 + index as f32 * 6.0 + x as f32, 8.0 + y as f32],
-                        [1.0, 1.0],
-                        PresentationColor::White,
-                    )?;
-                }
-            }
-        }
-    }
-    Ok(())
 }
