@@ -98,7 +98,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
 }
 /// Test-only open terrain at real donor coordinates. Item identities and compact
 /// references come from the actual active generation; production geometry is untouched.
-fn cake_bundle(
+pub(super) fn cake_bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
@@ -116,6 +116,53 @@ fn cake_bundle(
         let key = format!("oteryn:item.tibia.i{id}");
         if !keys.contains(&key) {
             keys.push(key);
+        }
+    }
+    // Use the same authored Terrain routes that the normal world compiler
+    // attaches to canonical Item entries (including map-only Cake base/machines).
+    let mut grounds = std::collections::BTreeMap::new();
+    let directory =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/world/terrain");
+    for file in std::fs::read_dir(directory)? {
+        let path = file?.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("json") {
+            continue;
+        }
+        let document: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(path)?).map_err(debug)?;
+        if document["family"] != "Terrain" {
+            continue;
+        }
+        for record in document["records"].as_array().ok_or("Terrain catalogue")? {
+            let Some(key) = record["provenance"]["item_pointer"]["key"].as_str() else {
+                continue;
+            };
+            if !keys.iter().any(|wanted| wanted == key) {
+                continue;
+            }
+            if record["kind"]["state"] != "KNOWN" || record["kind"]["value"] != "ground" {
+                return Err(format!("Cake fixture requires source ground: {key}").into());
+            }
+            let known = |field: &str| {
+                (record[field]["state"] == "KNOWN").then_some(&record[field]["value"])
+            };
+            let terrain = Terrain {
+                kind: TerrainKind::Ground,
+                walkable: Some(
+                    known("walkable")
+                        .and_then(serde_json::Value::as_bool)
+                        .ok_or("source walkability")?,
+                ),
+                ground_speed: Some(u16::try_from(
+                    known("ground_speed")
+                        .and_then(serde_json::Value::as_u64)
+                        .ok_or("source ground speed")?,
+                )?),
+                blocks_projectile: known("blocks_projectile").and_then(serde_json::Value::as_bool),
+            };
+            if grounds.insert(key.to_owned(), terrain).is_some() {
+                return Err("duplicate source ground".into());
+            }
         }
     }
     let palette = keys
@@ -138,12 +185,16 @@ fn cake_bundle(
                         .get()
                         - 1
                 },
-                terrain: (n == 0).then_some(Terrain {
-                    kind: TerrainKind::Ground,
-                    walkable: Some(true),
-                    ground_speed: Some(150),
-                    blocks_projectile: None,
-                }),
+                terrain: if n == 0 {
+                    Some(Terrain {
+                        kind: TerrainKind::Ground,
+                        walkable: Some(true),
+                        ground_speed: Some(150),
+                        blocks_projectile: None,
+                    })
+                } else {
+                    grounds.get(key).copied()
+                },
             })
         })
         .collect::<TestResult<Vec<_>>>()?;
@@ -288,15 +339,12 @@ fn cake_bundle(
             Some(crate::map::facts::ItemDefinition {
                 reference: index.definition_ref("Item", key, "definition-r1")?,
                 solid: native
-                    .item_policy(key, "definition-r1")?
-                    .record()
-                    .attributes
-                    .blocks_movement,
+                    .item_policy(key, "definition-r1")
+                    .and_then(|policy| policy.record().attributes.blocks_movement),
                 blocks_projectile: native
-                    .item_policy(key, "definition-r1")?
-                    .record()
-                    .attributes
-                    .blocks_projectile?,
+                    .item_policy(key, "definition-r1")
+                    .and_then(|policy| policy.record().attributes.blocks_projectile)
+                    .unwrap_or(true),
                 pickupable: false,
                 door: false,
             })

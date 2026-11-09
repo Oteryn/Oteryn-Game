@@ -926,6 +926,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
     // Cake bridge geometry is combat-only; this fixture never supplies qualification.
     ("gameplay_transport/postgres_tests/m57_cake_bridge.rs", 1),
+    ("gameplay_transport/postgres_tests/m57_cake_errand.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
@@ -1195,7 +1196,7 @@ fn owned_room_parser_rejects_qualification_and_accessor_gate_bypasses()
 
 #[test]
 fn cake_bundle_fixture_keeps_its_qualified_room_closed() {
-    for file in ["cake_phases.rs", "m57_cake_bridge.rs"] {
+    for file in ["cake_phases.rs", "m57_cake_bridge.rs", "m57_cake_errand.rs"] {
         let fixture = parse_source(&format!("src/gameplay_transport/postgres_tests/{file}"));
         let mut constructions = Constructions::default();
         constructions.visit_file(&fixture);

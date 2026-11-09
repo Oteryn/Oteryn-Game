@@ -4,6 +4,10 @@ use super::DurabilityError;
 use crate::foundation::WorldId;
 use sqlx::{Postgres, Transaction};
 
+#[path = "cake_errand.rs"]
+mod errand;
+pub use errand::CakeErrandStep;
+
 /// Crystal globalevents_cake_eating_window.lua:29-80. The normal current world
 /// cadence settles at most the single current annual eating window. The phase
 /// lock serializes concurrent Channel owners, so one layer cannot settle twice.

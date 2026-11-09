@@ -220,6 +220,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 drop(states);
                 drop(runtime);
+                self.step_cake_errand(&permit, actor, session, snapshot)
+                    .await;
                 super::echo_warden::step_in(self, actor, session, now / 1000).await;
                 if let Some(event) = snowbunny_progress_operation(
                     snow_origin,
