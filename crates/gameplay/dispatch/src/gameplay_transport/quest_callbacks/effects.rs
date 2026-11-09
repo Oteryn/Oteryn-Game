@@ -18,9 +18,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         map: &BundleMap,
         callback: &Callback,
+        key: u64,
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(portal) = &callback.effects.source_portal {
+            if close
+                || map
+                    .facts
+                    .quest_portal_group_live(&portal.group, self.owner_now().get())
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            let at = tile(portal.position);
+            let to = tile(portal.destination);
+            if map.facts.house_tile(at)
+                || map.facts.house_tile(to)
+                || map.overlay.base().tile(at.x, at.y, at.floor).is_none()
+                || map.overlay.base().tile(to.x, to.y, to.floor).is_none()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            let entry = map
+                .facts
+                .movement_item_facts(portal.appearance)
+                .ok_or(UseDisposition::Rejected)?;
+            if entry.pickupable {
+                return Err(UseDisposition::Rejected);
+            }
+            let restore = if portal.restore_source {
+                let original = *after;
+                *after = map
+                    .facts
+                    .quest_callback_replacement(key, portal.appearance)
+                    .ok_or(UseDisposition::Rejected)?;
+                Some(original)
+            } else {
+                None
+            };
+            return Ok(Some(QuestCallbackProjection::SourcePortal {
+                position: at,
+                destination: to,
+                entry,
+                restore,
+                expires: 0,
+                group: portal.group.clone(),
+            }));
+        }
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
         }

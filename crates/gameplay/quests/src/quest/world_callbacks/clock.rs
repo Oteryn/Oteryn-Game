@@ -45,6 +45,7 @@ impl Callback {
     /// Item custody is fenced even when the source writes no personal progress.
     pub fn requires_durable_commit(&self) -> bool {
         self.has_personal_state()
+            || self.effects.source_portal.is_some()
             || super::super::dreamer_fire_bug::shared_input(self)
             || super::super::dreamer_carrot::shared_input(self)
     }

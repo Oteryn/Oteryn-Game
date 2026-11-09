@@ -188,7 +188,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
+        let mut projection = match self.prepare_quest_projection(map, callback, key, close, &mut after) {
             Ok(projection) => projection,
             Err(result) => return result,
         };
@@ -1138,6 +1138,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = published_due;
             }
+        if let Some(portal) = &callback.effects.source_portal
+            && let Some(crate::map::facts::QuestCallbackProjection::SourcePortal {
+                expires, ..
+            }) = projection.as_mut()
+        {
+            let Some(due) = self.owner_now().get().checked_add(portal.lifetime_us) else {
+                return UseDisposition::Exhausted;
+            };
+            *expires = due;
+        }
             // Crystal actions_lions_rock.lua:69: start the shared reset after
             // durable success. Commit latency must not shorten its visible lifetime.
             if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
@@ -1196,6 +1206,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()
             || callback.effects.target_transform.is_some()
+            || callback.effects.source_portal.is_some()
             || callback
                 .effects
                 .portals

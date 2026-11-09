@@ -35,6 +35,8 @@ mod asura_authored;
 mod character_requirements;
 pub use character_requirements::CharacterRequirements;
 mod clear_area;
+#[cfg(test)]
+mod source_portal_tests;
 pub use clear_area::ClearArea;
 mod clock;
 mod completed_quests;
@@ -67,7 +69,7 @@ mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPhase,
     EncounterPlayer, EncounterTiming, Facing, ItemCycle, ItemDisguiseRequirement, ItemPresence,
-    MagicEffect, MountReward, Portal, PortalPair, TargetTransform,
+    MagicEffect, MountReward, Portal, PortalPair, SourcePortal, TargetTransform,
 };
 pub use ground_stack::{
     GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
@@ -514,6 +516,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
+    callbacks.push(super::source_world_objects::dreamer_entrance());
     callbacks.extend(flames);
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
     callbacks.extend(super::source_world_objects::lions_amphora());
@@ -671,6 +674,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     .world_requirements
                     .iter()
                     .any(|r| r.ground.is_some()))
+                && callback.effects.source_portal.is_none()
                 && (callback.storage.iter().all(|state| state.preserve)
                     || callback.native_rule.is_some()))
             || (callback.opening_only
@@ -850,6 +854,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || (callback.trigger != Trigger::Use
                         && !super::dreamer_carrot::shared_input(callback))
                     || (item.selected_instance && !callback.requires_world_admission)
+                && callback.effects.source_portal.is_none()
                     || item.count == 0
                     || item.count > 100
                     || item.ingredients.len() > 15
