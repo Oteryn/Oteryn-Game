@@ -201,6 +201,8 @@ pub(super) async fn exercise(
     );
     eprintln!("QN1_ELEMENTAL_ENERGY_FIELD_COUNT_PG_EXECUTED");
     tx.rollback().await?;
+    drop(permit);
+    super::handoff::exercise(owner, h, field.item.item_instance_id).await?;
     eprintln!("QN1_ELEMENTAL_ENERGY_SOIL_PG_EXECUTED");
     Ok(())
 }

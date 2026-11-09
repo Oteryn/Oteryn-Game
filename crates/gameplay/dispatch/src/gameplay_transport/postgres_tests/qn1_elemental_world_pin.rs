@@ -7,6 +7,8 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 mod arrival;
 #[path = "qn1_elemental_world_pin/energy.rs"]
 mod energy;
+#[path = "qn1_elemental_world_pin/handoff.rs"]
+mod handoff;
 #[path = "qn1_elemental_world_pin/soil.rs"]
 mod soil;
 
