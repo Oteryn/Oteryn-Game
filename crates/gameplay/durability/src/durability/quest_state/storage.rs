@@ -164,6 +164,25 @@ impl DurabilityRoot {
                     .bind(bound(QUESTSTATE0_RL_08_TRACKS))
                     .fetch_all(&mut *tx)
                     .await?;
+                    // Keep completion-only receipts: LEFT LATERAL retains one
+                    // row when the receipt has no tracks. Counter-qualified
+                    // history is read above with its longer-lived cycle ID.
+                    let save_progress_limit = QUESTSTATE0_RL_08_TRACKS + QUESTSTATE0_RL_08_STATES;
+                    let save_progress = sqlx::query(
+                        "SELECT DISTINCT ON (p.quest_key,t.track_key) p.quest_key,p.reset_epoch::text, \
+                                bool_or(p.completes) OVER (PARTITION BY p.quest_key) AS completed, \
+                                t.track_key,t.value \
+                           FROM game_current_event_quest_progress p \
+                           JOIN game_character_roots c ON c.character_id=p.character_id AND c.world_id=p.world_id \
+                           LEFT JOIN game_character_counter_quest_scopes s ON s.character_id=p.character_id AND s.committed_character_revision=p.committed_character_revision AND s.world_id=p.world_id \
+                           LEFT JOIN LATERAL unnest(p.track_keys,p.values_after) AS t(track_key,value) ON true \
+                          WHERE p.character_id=encode($1,'hex')::uuid AND s.character_id IS NULL \
+                          ORDER BY p.quest_key,t.track_key,p.committed_character_revision DESC LIMIT $2",
+                    )
+                    .bind(id)
+                    .bind(bound(save_progress_limit))
+                    .fetch_all(&mut *tx)
+                    .await?;
                     let obligations = sqlx::query(
                         "SELECT claim_game_session_id::text, claim_command_id::text, \
                                 transition_key, state \
@@ -200,6 +219,7 @@ impl DurabilityRoot {
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
                         || over(&counter_progress, QUESTSTATE0_RL_08_TRACKS)
+                        || over(&save_progress, save_progress_limit)
                         || over(&obligations, QUESTSTATE0_RL_07)
                         || over(&xp_obligations, QUESTGATE0_RL_10)
                     {
@@ -234,6 +254,31 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                         progress.tracks.insert(track, row.try_get("value")?);
+                    }
+                    for row in &save_progress {
+                        let quest: String = row.try_get("quest_key")?;
+                        // Legacy counter history without a qualified cycle must
+                        // never acquire daily scope by falling back to this view.
+                        if matches!(quest.as_str(),
+                            oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST
+                            | oteryn_gameplay_quests::quest::shared_world_progress::DEEPLING_QUEST) {
+                            continue;
+                        }
+                        let epoch = numeric_u64(row,"reset_epoch")?;
+                        let progress = copy.save_events.entry(quest).or_insert_with(|| SaveEventQuestProgress {
+                            reset_epoch: epoch,completed:false,tracks:BTreeMap::new(),
+                        });
+                        if progress.reset_epoch != epoch { return Err(DurabilityError::InvalidStoredState); }
+                        progress.completed |= row.try_get::<bool,_>("completed")?;
+                        match (row.try_get::<Option<String>,_>("track_key")?,row.try_get::<Option<i64>,_>("value")?) {
+                            (Some(track),Some(value)) => {progress.tracks.insert(track,value);}
+                            (None,None) => {},
+                            _ => return Err(DurabilityError::InvalidStoredState),
+                        }
+                    }
+                    if copy.save_events.len() > QUESTSTATE0_RL_08_STATES
+                        || copy.save_events.values().map(|progress|progress.tracks.len()).sum::<usize>() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
                     if primal_completed {

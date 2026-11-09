@@ -268,6 +268,12 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
         .counter_quest_progress(shared_world_progress::HIVE_QUEST)
         .ok_or("current cycle missing from admission")?;
     assert_eq!(progress.occurrence_generation, 1);
+    assert!(
+        copy.save_event_quest_progress(shared_world_progress::HIVE_QUEST)
+            .is_none(),
+        "counter cycles cannot fall back to save scope"
+    );
+
     assert_eq!(
         progress.tracks.get(shared_world_progress::ACTIVE_TRACKS[0]),
         Some(&1)
