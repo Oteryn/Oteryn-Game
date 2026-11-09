@@ -481,6 +481,7 @@ fn scenario(case: Case) -> TestResult {
             )
             .ok_or("pot definition")?;
             let request = crate::durability::map_item_mint::MapItemMintRequest {
+                flat_crate: None,
                 command: crate::foundation::CommandRef::new(
                     admitted.game_session_id,
                     crate::foundation::CommandId::new(901).map_err(debug)?,

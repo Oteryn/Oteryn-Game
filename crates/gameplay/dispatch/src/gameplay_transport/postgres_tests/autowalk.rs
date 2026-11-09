@@ -1004,6 +1004,7 @@ async fn pick_origin(
     let item = generation_item_facts(native, &definition).map_err(debug)?;
     let fence = admitted.item_fence.ok_or("fence")?;
     let request = MapItemMintRequest {
+        flat_crate: None,
         command: crate::foundation::CommandRef::new(
             admitted.game_session_id,
             crate::foundation::CommandId::new(901).map_err(debug)?,

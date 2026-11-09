@@ -828,6 +828,7 @@ fn entry(x: u16, y: u16, ordinal: u8) -> TestResult<u64> {
 /// The pickup of `quantity` coins of the entry `key` in reset epoch `epoch`.
 fn pickup(command: CommandRef, key: u64, epoch: u64, quantity: u32) -> MapItemMintRequest {
     MapItemMintRequest {
+        flat_crate: None,
         command,
         base_bundle_digest: DIGEST,
         placement_key: key,
@@ -1172,6 +1173,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
         let refusals: [(MapItemMintRequest, MapItemMintRefusal); 3] = [
             (
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: backpack_facts(),
                     quantity: 1,
                     ..pickup(command(1)?, key, 0, 1)
@@ -1180,6 +1182,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             ),
             (
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: facts(STONE, ItemStackClass::Unknown),
                     ..pickup(command(2)?, key, 0, 1)
                 },
@@ -1187,6 +1190,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             ),
             (
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: facts(STONE, ItemStackClass::NonStackable),
                     ..pickup(command(3)?, key, 0, 2)
                 },
@@ -1207,6 +1211,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             (
                 "not an Item definition",
                 MapItemMintRequest {
+                    flat_crate: None,
                     item: ItemDefinitionFacts {
                         weight: Some(1),
                         definition: definition("Outfit", COIN),
@@ -1218,6 +1223,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
             (
                 "empty content revision",
                 MapItemMintRequest {
+                    flat_crate: None,
                     content_revision: String::new(),
                     ..pickup(command(7)?, key, 0, 1)
                 },

@@ -480,6 +480,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         let mut stale_pickup = if target_id == 7441 {
             let definition = crate::gameplay_transport::item_look::typed_definition(index, reference(water).ok_or("ice")?).ok_or("ice definition")?;
             let request = crate::durability::map_item_mint::MapItemMintRequest {
+                flat_crate: None,
                 command: crate::foundation::CommandRef::new(admitted.game_session_id, crate::foundation::CommandId::new(999).map_err(debug)?),
                 base_bundle_digest: map.base().digest(),
                 placement_key: crate::map::view::placement_key(target_pos,1).ok_or("placement")?,

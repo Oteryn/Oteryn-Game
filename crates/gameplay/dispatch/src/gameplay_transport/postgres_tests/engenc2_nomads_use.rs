@@ -10,11 +10,18 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 #[test]
 fn engenc2_nomads_native_use_refuses_missing_ground_before_quest_receipt() -> TestResult {
+    scenario(false)
+}
+#[test]
+fn engenc2_nomads_flat_source_crate_materializes_once_postgres() -> TestResult {
+    scenario(true)
+}
+fn scenario(materialize_crate: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e::scenario_thread::run("engenc2-nomads-use", || {
+    let result = super::kill_reward_e2e::scenario_thread::run("engenc2-nomads-use", move || {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "engenc2_nomads_use", true, false)
@@ -191,6 +198,122 @@ fn engenc2_nomads_native_use_refuses_missing_ground_before_quest_receipt() -> Te
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
 
+            if materialize_crate {
+                use crate::durability::map_item_mint::{
+                    FlatMapCrateProof, MapItemMintOutcome, MapItemMintRequest,
+                };
+                let definition = crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i2471".into(),
+                    revision_ref: "definition-r1".into(),
+                };
+                let item = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                    native,
+                    &definition,
+                )
+                .map_err(debug)?;
+                let placement_key = oteryn_world_bundle::bundle::placement_key(-9, 33218, 32854, 1)
+                    .ok_or("source crate key")?;
+                let tile = world.base().tile(33218, 32854, -9).ok_or("source tile")?;
+                let proof = FlatMapCrateProof::qualify(
+                    &item,
+                    world.base().digest(),
+                    placement_key,
+                    tile.depths(),
+                )
+                .ok_or("native empty source crate proof")?;
+                let request = MapItemMintRequest {
+                    flat_crate: Some(proof),
+                    command: crate::foundation::CommandRef::new(
+                        admitted.game_session_id,
+                        crate::foundation::CommandId::new(900).map_err(debug)?,
+                    ),
+                    base_bundle_digest: world.base().digest(),
+                    placement_key,
+                    reset_epoch: 0,
+                    item,
+                    quantity: 1,
+                    content_revision: format!(
+                        "sha256:{}",
+                        native
+                            .source_digest()
+                            .iter()
+                            .map(|b| format!("{b:02x}"))
+                            .collect::<String>()
+                    ),
+                    ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION
+                        .into(),
+                    sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+                };
+                let mut unqualified = request.clone();
+                unqualified.flat_crate = None;
+                let mut frozen = owner
+                    .root
+                    .freeze_map_item_mint(
+                        owner.character,
+                        owner.holder,
+                        fence.item_fence(),
+                        request,
+                    )
+                    .await
+                    .map_err(debug)?;
+                let permit = owner.spell_lane_permit().await.ok_or("crate lane")?;
+                let first = owner
+                    .root
+                    .commit_map_item_mint(
+                        &permit,
+                        owner.character,
+                        owner.holder,
+                        fence.item_fence(),
+                        &mut frozen,
+                    )
+                    .await
+                    .map_err(debug)?;
+                let MapItemMintOutcome::Committed(first) = first else {
+                    return Err("empty crate must materialize".into());
+                };
+                let conflict = owner
+                    .root
+                    .freeze_map_item_mint(
+                        owner.character,
+                        owner.holder,
+                        fence.item_fence(),
+                        unqualified,
+                    )
+                    .await;
+                assert!(
+                    matches!(
+                        conflict,
+                        Err(crate::durability::map_item_mint::MapItemMintError::ConflictingCause)
+                    ),
+                    "the empty-source witness must be part of the frozen intent"
+                );
+                let replay = owner
+                    .root
+                    .commit_map_item_mint(
+                        &permit,
+                        owner.character,
+                        owner.holder,
+                        fence.item_fence(),
+                        &mut frozen,
+                    )
+                    .await
+                    .map_err(debug)?;
+                let MapItemMintOutcome::AlreadyCommitted(replay) = replay else {
+                    return Err("map crate replay must reuse receipt".into());
+                };
+                assert_eq!(first.item_instance_id, replay.item_instance_id);
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_map_item_mint_receipts")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(receipts, 1);
+                drop(permit);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let key = oteryn_world_bundle::bundle::placement_key(-9, 33216, 32855, 1)
                 .ok_or("window placement")?;
             let mut placement = world.base().digest().to_vec();

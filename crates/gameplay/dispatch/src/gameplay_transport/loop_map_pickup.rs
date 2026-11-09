@@ -4,7 +4,8 @@
 
 use super::*;
 use crate::durability::map_item_mint::{
-    MapItemMintError, MapItemMintOutcome, MapItemMintRequest, plan_map_item_mint,
+    FlatMapCrateProof, MapItemMintError, MapItemMintOutcome, MapItemMintRequest,
+    plan_map_item_mint_request,
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::map::overlay::pickup::{self, MintResolution};
@@ -127,13 +128,8 @@ pub(super) async fn move_map_item(
     let Ok(item) = generation_item_facts(native, &definition) else {
         return stale;
     };
-    if plan_map_item_mint(&item, entry.quantity, false).is_err() {
-        return stale;
-    }
-    let Some(ground) = loop_ground(admission, base, Some(index)).await else {
-        return LoopMoveResult::Unknown;
-    };
     let mint = MapItemMintRequest {
+        flat_crate: FlatMapCrateProof::qualify(&item, bundle_digest, placement_key, tile.depths()),
         command: CommandRef::new(command.game_session_id, command_id),
         base_bundle_digest: bundle_digest,
         placement_key,
@@ -143,6 +139,12 @@ pub(super) async fn move_map_item(
         content_revision: sha256_revision(native.source_digest()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+    };
+    if plan_map_item_mint_request(&mint, false).is_err() {
+        return stale;
+    }
+    let Some(ground) = loop_ground(admission, base, Some(index)).await else {
+        return LoopMoveResult::Unknown;
     };
     let hidden = ground
         .overlay()
