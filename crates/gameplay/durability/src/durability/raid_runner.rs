@@ -2,6 +2,7 @@
 pub mod cake;
 mod effects;
 mod end;
+mod feroxa;
 mod live_guard;
 mod pending;
 pub use live_guard::raid_effect_pending_in_transaction;
@@ -240,7 +241,7 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(None);
             }
-            let firing = sqlx::query("SELECT fired_at_ms,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+            let firing = sqlx::query("SELECT fired_at_ms,state,raid_key FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(firing_id.as_slice()).fetch_one(&mut *tx).await?;
             let target: Option<String> = sqlx::query_scalar("SELECT owner_generation::text FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
                 .bind(firing_id.as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
@@ -265,6 +266,13 @@ impl DurabilityRoot {
                 let effect = effects::lose(&mut tx, identity, state, &owner, now_ms).await?;
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(effect);
+            }
+            // Source timers continue independently of announcement delivery.
+            // The current World/reset, node and target generation were proved above.
+            if state == 1 && firing.try_get::<i16, _>("state")? == 1
+                && firing.try_get::<String, _>("raid_key")? == super::raid_schedule::FEROXA_KEY
+            {
+                feroxa::advance_active_in_transaction(&mut tx, firing_id, now_ms).await?;
             }
             if let Some(pending) = effects::pending(&mut tx, identity).await? {
                 commit_semantic_transaction(tx, deadline).await?;

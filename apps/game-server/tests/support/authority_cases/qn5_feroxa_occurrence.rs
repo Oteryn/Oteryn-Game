@@ -7,6 +7,15 @@ use oteryn_gameplay_encounter_rules::raid::RaidCatalogue;
 
 #[test]
 fn qn5_feroxa_unset_chance_selects_first_due_full_moon_check() -> fixture::TestResult {
+    run_case(false)
+}
+
+#[test]
+fn qn5_feroxa_active_clock_is_fenced_and_independent_of_pending_delivery() -> fixture::TestResult {
+    run_case(true)
+}
+
+fn run_case(prove_clock: bool) -> fixture::TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -17,11 +26,18 @@ fn qn5_feroxa_unset_chance_selects_first_due_full_moon_check() -> fixture::TestR
                 .map_err(fixture::debug)?
                 .block_on(async {
                     let start = std::time::Instant::now();
-                    for initial_chance in [None, Some(10)] {
-                        let h =
-                            fixture::Harness::create(admin.clone(), "qn5_feroxa_occurrence", false)
-                                .await?;
-                        let result = exercise(&h, initial_chance).await;
+                    for initial_chance in if prove_clock {
+                        vec![None]
+                    } else {
+                        vec![None, Some(10)]
+                    } {
+                        let tag = if prove_clock {
+                            "qn5_feroxa_clock"
+                        } else {
+                            "qn5_feroxa_occurrence"
+                        };
+                        let h = fixture::Harness::create(admin.clone(), tag, false).await?;
+                        let result = exercise(&h, initial_chance, prove_clock).await;
                         h.cleanup().await?;
                         result?;
                     }
@@ -39,7 +55,11 @@ fn qn5_feroxa_unset_chance_selects_first_due_full_moon_check() -> fixture::TestR
         .map_err(Into::into)
 }
 
-async fn exercise(h: &fixture::Harness, initial_chance: Option<i16>) -> fixture::TestResult {
+async fn exercise(
+    h: &fixture::Harness,
+    initial_chance: Option<i16>,
+    prove_clock: bool,
+) -> fixture::TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&h.pool)
         .await?;
@@ -140,6 +160,60 @@ async fn exercise(h: &fixture::Harness, initial_chance: Option<i16>) -> fixture:
         "the fixed deterministic sequence reaches a qualifying prior chance"
     );
     let selected_at = request.now_ms;
+    if prove_clock {
+        exercise_clock(h, &request, selected_at).await?;
+        // Hold the actual firing while the scheduler reaches its write. It must
+        // not hold the occurrence row, which the runner locks after this firing.
+        let mut locked = h.pool.begin().await?;
+        let blocker: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut *locked)
+            .await?;
+        sqlx::query("SELECT 1 FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(fixture::id(88).as_slice()).execute(&mut *locked).await?;
+        request.now_ms = selected_at + 2_760_000;
+        let scheduler = h
+            .root
+            .check_raid_schedules(&authority, &h.node, request.clone());
+        let probe = async move {
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+            loop {
+                let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))")
+                    .bind(blocker).fetch_one(&h.pool).await?;
+                if blocked {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("scheduler did not reach held firing".into());
+                }
+                tokio::task::yield_now().await;
+            }
+            sqlx::query("SELECT 1 FROM game_world_feroxa_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1 FOR UPDATE NOWAIT")
+                .bind(request.world.as_bytes().as_slice()).execute(&mut *locked).await?;
+            locked.rollback().await?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        };
+        // This target deliberately has no Tokio macro feature. Drive the
+        // scheduler alongside the database probe without adding a dependency.
+        let mut scheduler = std::pin::pin!(scheduler);
+        let mut probe = std::pin::pin!(probe);
+        let mut completed = None;
+        std::future::poll_fn(|cx| {
+            if completed.is_none()
+                && let std::task::Poll::Ready(result) =
+                    std::future::Future::poll(scheduler.as_mut(), cx)
+            {
+                completed = Some(result);
+            }
+            std::future::Future::poll(probe.as_mut(), cx)
+        })
+        .await?;
+        let scheduled = match completed {
+            Some(result) => result,
+            None => scheduler.await,
+        };
+        assert!(scheduled?.firings.is_empty());
+        return Ok(());
+    }
     // Source Active remains set after the boss is gone, until the next reset.
     sqlx::query(
         "UPDATE game_world_raid_firings SET state=2 WHERE firing_id=encode($1,'hex')::uuid",
@@ -174,5 +248,76 @@ async fn exercise(h: &fixture::Harness, initial_chance: Option<i16>) -> fixture:
     let upgraded: (i16, Option<i64>) = sqlx::query_as("SELECT phase,selected_at_ms FROM game_world_feroxa_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
         .bind(world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(upgraded, (1, Some(selected_at)));
+    Ok(())
+}
+
+async fn exercise_clock(
+    h: &fixture::Harness,
+    request: &RaidSchedulerCheck,
+    selected_at: i64,
+) -> fixture::TestResult {
+    let mut receipt = None;
+    for (elapsed, expected) in [
+        (1_799_999, 1_i16),
+        (1_800_000, 2),
+        (2_699_999, 2),
+        (2_700_000, 3),
+        (1_800_000, 3),
+    ] {
+        if expected == 2 {
+            // Change only the current ownership generation; a stale owner cannot
+            // use a future timer to advance this World occurrence.
+            assert!(
+                h.root
+                    .advance_raid_run(
+                        &h.node,
+                        fixture::id(88),
+                        request.channel,
+                        ScopeOwnershipGeneration::new(2).map_err(fixture::debug)?,
+                        request.candidates[0].definition.clone(),
+                        selected_at + 2_700_000
+                    )
+                    .await?
+                    .is_none()
+            );
+        }
+        let pending = h
+            .root
+            .advance_raid_run(
+                &h.node,
+                fixture::id(88),
+                request.channel,
+                request.generation,
+                request.candidates[0].definition.clone(),
+                selected_at + elapsed,
+            )
+            .await?
+            .ok_or("source initial announcement")?;
+        assert!(matches!(
+            pending.action,
+            crate::durability::raid_runner::CommittedRaidAction::Announcement { .. }
+        ));
+        if let Some(identity) = receipt {
+            assert_eq!(
+                pending.identity, identity,
+                "phase clocks do not acknowledge a pending effect"
+            );
+        } else {
+            receipt = Some(pending.identity);
+        }
+        let state: (i16, i16, Option<i64>) = sqlx::query_as("SELECT chance,phase,selected_at_ms FROM game_world_feroxa_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
+            .bind(request.world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            state,
+            (-1, expected, Some(selected_at)),
+            "source Active advances at 30/45 minutes without rerolling chance or regressing on replay"
+        );
+        if elapsed == 1_799_999 {
+            // Upgrading a real firing with no occurrence row must reconstruct
+            // its original selection clock, including while delivery is pending.
+            sqlx::query("DELETE FROM game_world_feroxa_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
+                .bind(request.world.as_bytes().as_slice()).execute(&h.pool).await?;
+        }
+    }
     Ok(())
 }
