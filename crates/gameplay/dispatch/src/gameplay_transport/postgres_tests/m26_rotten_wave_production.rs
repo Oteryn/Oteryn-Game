@@ -232,8 +232,61 @@ pub(super) async fn check(
         !states.rotten_waves.wave_children(boss).is_empty(),
         "the replacement wave is runnable"
     );
+    let mushrooms = runtime
+        .positioned_melee_census()
+        .map_err(debug)?
+        .into_iter()
+        .filter_map(|(actor, _, _)| {
+            runtime
+                .companion_snapshot(actor)
+                .ok()
+                .filter(|row| row.state.policy.definition_key == "oteryn:creature.mushroom")
+                .map(|_| actor)
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        !mushrooms.is_empty(),
+        "live source population before boss departure"
+    );
+    runtime.remove_test_actor(boss).map_err(debug)?;
+    states.monster_melee.creature_ai.remove(boss);
+    let tick_now = now + 11_000_000;
+    states.monster_melee.creature_ai.wake(
+        position,
+        |actor| {
+            runtime
+                .read_actor_position(actor)
+                .ok()
+                .map(|row| row.position())
+        },
+        tick_now,
+    );
+    owner
+        .drive_monster_profiles(
+            &mut runtime,
+            &mut states,
+            &mut attack,
+            room,
+            native,
+            &permit,
+            &revisions,
+            &[],
+            tick_now,
+        )
+        .await
+        .map_err(|_| "production orphan cleanup drive")?;
+    for mushroom in mushrooms {
+        assert!(
+            runtime.read_actor_position(mushroom).is_err(),
+            "current native Mushroom disappears when its source boss leaves"
+        );
+        assert!(
+            states.monster_melee.creature_ai.state(mushroom).is_none(),
+            "administrative despawn also retires native AI"
+        );
+    }
     eprintln!(
-        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true"
+        "M26_ROTTEN_WAVE production_driver=true pg_map=true native_ai=true cadence_cleanup=true orphan_cleanup=true"
     );
     Ok(())
 }

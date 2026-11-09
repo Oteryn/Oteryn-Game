@@ -5,6 +5,8 @@ use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::movement::monster_map::{CurrentMonsterMap, MonsterMap};
 use oteryn_gameplay_encounters::bosses::rotten_blood::{
     RoomPosition,
+    mushroom_think::MUSHROOM_KEY,
+    native_mushroom::remove_orphan,
     native_wave_spawn::{NativeWaveSpawnMap, NativeWaveSpawnOwner},
     summon_wave::{
         SummonNeighbour, SummonPlacement, SummonWaveEffect, SummonWaveFacts, SummonWaveOwner,
@@ -17,6 +19,11 @@ use std::collections::BTreeMap;
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct RoomWaveStates {
     owners: BTreeMap<[u8; 16], RoomWave>,
+}
+impl RoomWaveStates {
+    pub(super) fn has_attempts(&self) -> bool {
+        !self.owners.is_empty()
+    }
 }
 impl std::fmt::Debug for RoomWaveStates {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -198,6 +205,12 @@ impl RoomWaveStates {
         }
         // An attack-schedule refusal does not cancel a committed source onThink.
         // The map and spawn owners independently prove this callback's current work.
+        if key == MUSHROOM_KEY && !report.over_budget {
+            if remove_orphan(runtime, actor, native.source_digest()).map_err(|_| ())? {
+                table.remove(actor);
+            }
+            return Ok(());
+        }
         if !supports(key) || report.over_budget {
             return Ok(());
         }

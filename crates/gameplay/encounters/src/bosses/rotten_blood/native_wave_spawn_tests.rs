@@ -335,3 +335,44 @@ fn cleanup_excludes_population_repairs_and_requires_a_live_scope_owner() {
         Err(NativeWaveSpawnError::StaleOwner)
     );
 }
+
+#[test]
+fn mushroom_current_owner_removes_orphan_without_a_death() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.ichgahal");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("wave owner");
+    let stamp = runtime.issue_owner_work().expect("current owner");
+    let child = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &effect(2), &mut map())
+        .expect("native Mushroom")
+        .child;
+    let content = runtime.content_pin().server_artifact_digest();
+    assert_eq!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content),
+        Ok(false)
+    );
+    assert!(runtime.read_actor_position(child).is_ok());
+    runtime.remove_test_actor(boss).expect("boss leaves");
+    assert_eq!(
+        super::super::native_mushroom::remove_orphan(&mut runtime, child, content),
+        Ok(true)
+    );
+    assert!(runtime.read_actor_position(child).is_err());
+}
+
+#[test]
+fn mushroom_cleanup_rejects_wrong_pin_identity_and_retired_owner() {
+    let (mut runtime, boss, _, _) = setup("oteryn:creature.murcion");
+    let mut owner = NativeWaveSpawnOwner::for_boss(&runtime, boss).expect("wave owner");
+    let stamp = runtime.issue_owner_work().expect("current owner");
+    let child = owner
+        .spawn_current(&mut runtime, stamp, 1, 0, &effect(1), &mut map())
+        .expect("native Mushroom")
+        .child;
+    let content = runtime.content_pin().server_artifact_digest();
+    assert!(super::super::native_mushroom::remove_orphan(&mut runtime, child, [0; 32]).is_err());
+    assert!(super::super::native_mushroom::remove_orphan(&mut runtime, boss, content).is_err());
+    assert!(runtime.read_actor_position(child).is_ok());
+    runtime.remove_test_actor(boss).expect("boss leaves");
+    runtime.retire_owner_cycle();
+    assert!(super::super::native_mushroom::remove_orphan(&mut runtime, child, content).is_err());
+}
