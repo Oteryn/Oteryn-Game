@@ -81,3 +81,23 @@ fn offence_augments_pages_preserve_sources_sort_units_and_unknowns() -> Result<(
     }
     Ok(())
 }
+
+#[test]
+fn merged_character_request_selectors_are_distinct() -> Result<(), Error> {
+    use crate::cyclopedia_character::{achievements, gallery, items, offence, profile, protection};
+    let selectors = [
+        achievements::SELECTOR,
+        gallery::SELECTOR,
+        items::SELECTOR,
+        protection::SELECTOR,
+        profile::SELECTOR,
+        offence::SELECTOR,
+    ];
+    let distinct: std::collections::BTreeSet<_> = selectors.into_iter().collect();
+    assert_eq!(
+        distinct.len(),
+        selectors.len(),
+        "each Character query must reach its own handler"
+    );
+    Ok(())
+}

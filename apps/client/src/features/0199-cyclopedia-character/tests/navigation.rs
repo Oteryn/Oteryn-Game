@@ -12,14 +12,14 @@ fn native_character_navigation_and_input_gates() -> Result<(), &'static str> {
     for tab in 1..=10 {
         p.pending = false;
         let c = native_controls::submit(&mut p, 100 + tab, ["258", "20", ""]);
-        assert_eq!(
-            c.map(|c| c.payload),
-            Some(if tab == 7 {
-                vec![129]
-            } else {
-                vec![tab as u8, 2, 1, 20]
-            })
-        );
+        let expected = if tab == 4 {
+            vec![128, 0]
+        } else if tab == 7 {
+            vec![132]
+        } else {
+            vec![tab as u8, 2, 1, 20]
+        };
+        assert_eq!(c.map(|c| c.payload), Some(expected));
         assert!(native_controls::submit(&mut p, 100 + tab, ["258", "20", ""]).is_none());
     }
     p.pending = false;
@@ -28,7 +28,7 @@ fn native_character_navigation_and_input_gates() -> Result<(), &'static str> {
     assert!(p.feedback.is_some());
     assert!(native_controls::submit(&mut p, 111, ["bad", "bad", "bad"]).is_none());
     let command = native_controls::submit(&mut p, 111, ["bad", "bad", ""]);
-    assert_eq!(command.map(|c| (c.kind, c.payload)), Some((388, vec![129])));
+    assert_eq!(command.map(|c| (c.kind, c.payload)), Some((388, vec![132])));
     p.result = Some("Badges: Hero".into());
     assert!(native_controls::display(&p).contains("Badges: Hero"));
     Ok(())
@@ -57,7 +57,7 @@ fn native_character_target_and_page_validation() -> Result<(), &'static str> {
     assert_eq!(
         command.map(|c| c.payload),
         Some(vec![
-            129, 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255
+            132, 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255
         ])
     );
     p.pending = false;

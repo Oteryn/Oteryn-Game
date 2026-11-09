@@ -14,8 +14,14 @@ impl Stepper for Peer {
         true
     }
     async fn stash(&mut self, command: &StashCommand) -> Result<StashResponse, SessionError> {
-        let intent = stash::decode_stash_intent(&command.payload)
+        let (intent, filter) = stash::decode_stash_query(&command.payload)
             .map_err(|_| SessionError::SessionUnusable)?;
+        if let Some(filter) = filter && !filter.search.is_empty() {
+            assert_eq!(filter.search, "apple");
+            assert_eq!(filter.category, "other");
+            assert_eq!(filter.trader, "Sam");
+            assert_eq!(intent.page, 0);
+        }
         let reply = stash::StashReply {
             outcome: stash::StashOutcome::Opened,
             stowed_quantity: 0,
@@ -84,6 +90,10 @@ fn stash_panel_request_uses_codec_and_applies_encoded_reply() -> Result<(), Erro
                 link.stash_request(Intent::Refresh);
                 ready(&link).await?;
                 assert!(panel_text(&link.stash_panel()).contains("item.apple"));
+                link.stash_filter("apple".into(), "other".into(), "Sam".into());
+                ready(&link).await?;
+                assert_eq!(link.stash_panel().trader, "Sam");
+                assert!(link.stash_panel().server_filtered);
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())

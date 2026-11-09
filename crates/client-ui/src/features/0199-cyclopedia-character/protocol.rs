@@ -1,9 +1,9 @@
+#[path = "protocol/decode.rs"]
+mod decode;
+use decode::{decode_badges, decode_general, decode_history, decode_store, decode_tab};
 #[path = "protocol/blessings.rs"]
 mod blessings;
 pub use blessings::{BlessingsPanel, request_blessings};
-#[path = "protocol/tabs.rs"]
-mod tabs;
-use tabs::{decode_badges, decode_general, decode_history, decode_store, decode_tab};
 #[path = "protocol/stamina.rs"]
 mod stamina;
 use super::CyclopediaCharacterPanel;
@@ -14,6 +14,13 @@ use oteryn_client_runtime::{
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Protection,
+    Items,
+    ItemsNext,
+    ItemsPrevious,
+    Appearances,
+    GalleryNext,
+    GalleryPrevious,
     Achievements,
     Badges,
     ProfileBadges,
@@ -40,7 +47,25 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     p.augments.open = false;
     p.augments.requested = None;
     p.profile_pending = false;
-    if matches!(intent, Intent::Achievements) {
+    if matches!(intent, Intent::Protection) {
+        return super::protection::request(p);
+    }
+    if matches!(
+        intent,
+        Intent::Items | Intent::ItemsNext | Intent::ItemsPrevious
+    ) {
+        return super::items::request(p, intent);
+    }
+    if matches!(
+        intent,
+        Intent::Appearances | Intent::GalleryNext | Intent::GalleryPrevious
+    ) {
+        return super::gallery::request(p, intent);
+    }
+    if matches!(
+        intent,
+        Intent::Achievements | Intent::SelectTab(cyclopedia_character::CharacterTab::Achievements)
+    ) {
         p.tab = cyclopedia_character::CharacterTab::Achievements;
         return super::achievements::request(p, crate::account_achievements::Intent::Refresh);
     }
@@ -78,10 +103,17 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
-        Intent::Achievements
-        | Intent::ProfileBadges
+        Intent::ProfileBadges
         | Intent::ProfileInspection
-        | Intent::SpellAugments(_) => return None,
+        | Intent::SpellAugments(_)
+        | Intent::Protection
+        | Intent::Items
+        | Intent::ItemsNext
+        | Intent::ItemsPrevious
+        | Intent::Appearances
+        | Intent::GalleryNext
+        | Intent::GalleryPrevious
+        | Intent::Achievements => return None,
         Intent::Badges => (387, Vec::new()),
         Intent::Tab
         | Intent::SelectTab(_)
@@ -133,11 +165,20 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
-    if p.blessings.pending {
-        return blessings::apply(&mut p.blessings, r);
+    if p.protection.awaiting {
+        return super::protection::apply(p, r);
+    }
+    if p.items.pending_offset.is_some() {
+        return super::items::apply(p, r);
+    }
+    if p.gallery.pending_offset.is_some() {
+        return super::gallery::apply(p, r);
     }
     if p.augments.requested.is_some() {
         return super::augments::apply(p, r);
+    }
+    if p.blessings.pending {
+        return blessings::apply(&mut p.blessings, r);
     }
     if p.achievement_pending {
         return super::achievements::apply(p, r);

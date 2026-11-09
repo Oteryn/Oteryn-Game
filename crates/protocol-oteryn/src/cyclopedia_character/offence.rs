@@ -1,6 +1,6 @@
 //! Named spell modifiers from one fenced combat observation, never cast authority.
 use crate::charm_wire::CyclopediaWireError as Error;
-pub const SELECTOR: u8 = 131;
+pub const SELECTOR: u8 = 133;
 pub const MAX_ROWS: usize = 1024;
 pub const MAX_SOURCES: usize = 32;
 pub const MAX_SNAPSHOT_BYTES: usize = 262_144;

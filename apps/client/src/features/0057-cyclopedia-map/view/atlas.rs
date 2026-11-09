@@ -16,7 +16,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     open(
         link,
         Form {
-            title: "World atlas — Ctrl+Alt+Shift+F11",
+            title: "World atlas — Ctrl+Alt+Shift+F9",
             labels: &[],
             buttons: &[
                 "Regions",

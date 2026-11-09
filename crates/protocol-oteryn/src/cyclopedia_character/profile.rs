@@ -1,7 +1,7 @@
 //! A coherent, consent-controlled identity, badge and equipment snapshot.
 use super::{Badge, EquippedItem, encode_badges};
 use crate::charm_wire::CyclopediaWireError as Error;
-pub const SELECTOR: u8 = 129;
+pub const SELECTOR: u8 = 132;
 pub const MAX_ITEMS: usize = 32;
 pub const MAX_BYTES: usize = 17_000;
 pub fn request(target: Option<[u8; 16]>) -> Vec<u8> {

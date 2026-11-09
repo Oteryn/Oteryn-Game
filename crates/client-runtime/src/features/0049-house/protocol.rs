@@ -2,6 +2,11 @@
 //! Donor: Crystal 201189f8 src/server/network/protocol/protocolgame.cpp:11338,2238.
 //! ACL/doors/kick: Crystal src/map/house/house.cpp:230,252,523,806.
 //! Bounds/UUIDs/CAS: accepted HOUSE-WIRE-1 D1261/D1350/D1354/D1384 (task parity table).
+pub use oteryn_session::property_services::house::{
+    HouseAclRead, HouseAclSelector, HouseAclSnapshot, decode_house_acl_snapshot,
+    encode_house_acl_snapshot,
+};
+
 use crate::raw_feature::FeatureCommand;
 type Result<T> = std::result::Result<T, &'static str>;
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -275,4 +280,15 @@ pub fn result(body: &[u8]) -> Result<(u64, u64)> {
     let revision = r.var()?;
     require(r.0.is_empty(), "Trailing result")?;
     Ok((d, revision))
+}
+
+pub fn acl_query(world: [u8; 16], town: &str, read: &HouseAclRead) -> Result<FeatureCommand> {
+    let payload =
+        oteryn_session::property_services::house::encode_house_acl_read_query(world, town, read)
+            .map_err(|_| "Invalid house ACL query")?;
+    Ok(FeatureCommand {
+        capability: 49,
+        kind: 57,
+        payload,
+    })
 }

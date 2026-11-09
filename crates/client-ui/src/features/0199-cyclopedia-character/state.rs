@@ -1,6 +1,9 @@
 use oteryn_client_runtime::cyclopedia_character::CharacterTab;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CyclopediaCharacterPanel {
+    pub protection: super::Protection,
+    pub items: super::ItemSummary,
+    pub gallery: super::Gallery,
     pub badges: Option<Vec<u8>>,
     pub badge_filter: BadgeFilter,
     pub hidden_badges: std::collections::BTreeSet<u8>,
@@ -37,6 +40,9 @@ pub struct CyclopediaCharacterPanel {
 impl Default for CyclopediaCharacterPanel {
     fn default() -> Self {
         Self {
+            protection: Default::default(),
+            items: Default::default(),
+            gallery: Default::default(),
             badges: None,
             badge_filter: Default::default(),
             hidden_badges: Default::default(),
@@ -85,6 +91,9 @@ impl CyclopediaCharacterPanel {
     pub fn change_target(&mut self, target: Option<[u8; 16]>) {
         if self.target != target {
             self.target = target;
+            self.protection = Default::default();
+            self.items = Default::default();
+            self.gallery = Default::default();
             self.badges = None;
             self.hidden_badges.clear();
             self.profile_generation = self.profile_generation.saturating_add(1);

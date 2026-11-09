@@ -1,5 +1,4 @@
 use super::stamina;
-use crate::cyclopedia_character::HistoryRow;
 use oteryn_client_runtime::cyclopedia_character;
 pub(super) fn decode_badges(b: &[u8]) -> Option<String> {
     let (&count, ids) = b.split_first()?;
@@ -196,7 +195,7 @@ pub(super) fn decode_history(
     b: &[u8],
     tab: cyclopedia_character::CharacterTab,
     limit: u8,
-) -> Option<Vec<HistoryRow>> {
+) -> Option<Vec<super::super::HistoryRow>> {
     use cyclopedia_character::{CharacterTab, KillStatus};
     if b.first() != Some(&(tab as u8)) {
         return None;
@@ -215,7 +214,7 @@ pub(super) fn decode_history(
         } else {
             None
         };
-        rows.push(HistoryRow {
+        rows.push(super::super::HistoryRow {
             at,
             status,
             description: r.text()?.into(),

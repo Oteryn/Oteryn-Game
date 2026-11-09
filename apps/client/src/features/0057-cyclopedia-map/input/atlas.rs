@@ -47,7 +47,7 @@ impl PlayLink {
         let modifiers = Modifiers::one(Modifier::Control)
             .with(Modifier::Alt)
             .with(Modifier::Shift);
-        if !events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: actual, repeat: false } if code.get() == 68 && *actual == modifiers)) { return false; }
+        if !events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: actual, repeat: false } if code.get() == 66 && *actual == modifiers)) { return false; }
         self.cyclopedia_atlas_open();
         true
     }

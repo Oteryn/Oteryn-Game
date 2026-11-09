@@ -25,7 +25,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=117 | 140 | 145..=150 | 180..=185)
+                && matches!(id, 101..=119 | 140 | 145..=150 | 180..=185)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -113,7 +113,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             let mut analytics = false;
-            let mut browse_achievements = false;
+            let mut browser = None;
             for action in std::mem::take(&mut actions.0) {
                 if action == 150 {
                     super::profile_table::toggle_badge(
@@ -122,12 +122,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     );
                     continue;
                 }
-                if action == 117 {
-                    analytics = true;
+                if let Some(selected) =
+                    super::browsers::Browser::for_action(action, &mailbox.cyclopedia_character)
+                {
+                    browser = Some(selected);
                     continue;
                 }
-                if action == 140 {
-                    browse_achievements = true;
+                if action == 117 {
+                    analytics = true;
                     continue;
                 }
                 let values = edits.map(read_text);
@@ -187,14 +189,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 &mut tables,
             );
             drop(mailbox);
+            if let Some(browser) = browser {
+                browser.open(weak.clone(), commands.clone());
+            }
             if analytics {
                 crate::play::feature_0010_analyser::view::open_shared(&shared, &commands);
-            }
-            if browse_achievements {
-                crate::play::feature_local_account_achievements::view::open_character(
-                    weak.clone(),
-                    commands.clone(),
-                );
             }
             std::thread::sleep(Duration::from_millis(25));
         }

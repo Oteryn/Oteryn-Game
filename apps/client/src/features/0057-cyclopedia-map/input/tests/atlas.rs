@@ -14,8 +14,19 @@ fn atlas_geometry_pages_layers_and_floor_filters_use_real_queue()
     lock(&link.mailbox).properties.cyclopedia_map.selected = true;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     assert!(
-        link.cyclopedia_atlas_input(&[NormalizedInputEvent::Key {
+        !link.cyclopedia_atlas_input(&[NormalizedInputEvent::Key {
             code: KeyCode::new(68)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control)
+                .with(Modifier::Alt)
+                .with(Modifier::Shift),
+            repeat: false,
+        }])
+    );
+    assert!(receiver.try_recv().is_err());
+    assert!(
+        link.cyclopedia_atlas_input(&[NormalizedInputEvent::Key {
+            code: KeyCode::new(66)?,
             state: ButtonState::Pressed,
             modifiers: Modifiers::one(Modifier::Control)
                 .with(Modifier::Alt)

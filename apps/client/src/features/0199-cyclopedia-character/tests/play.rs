@@ -177,11 +177,88 @@ fn statistics_reject_malformed_results_and_keep_unknown_distinct_from_zero()
 
 #[path = "achievements.rs"]
 mod achievements;
+#[path = "gallery.rs"]
+mod gallery;
+#[path = "item_summary.rs"]
+mod item_summary;
 #[path = "misc.rs"]
 mod misc;
 #[path = "navigation.rs"]
 mod navigation;
+#[path = "protection.rs"]
+mod protection;
 
+#[test]
+fn blessings_dialog_requests_self_and_reduces_the_real_server_reply()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{combat_input::PlayCommand, play::play_channel};
+    use oteryn_client_runtime::cyclopedia_character::{CharacterTab, StoreSummary, TabView};
+    let (link, mut incoming, outbox) = play_channel();
+    link.blessings_request();
+    assert!(incoming.try_recv().is_err());
+    outbox.cyclopedia_character_initialize(true);
+    link.blessings_request();
+    let command = incoming.try_recv()?;
+    assert!(
+        matches!(command, PlayCommand::Feature(c) if c.capability == 199 && c.kind == 388 && c.payload == [CharacterTab::StoreSummary as u8, 0, 0, 20])
+    );
+    link.blessings_request();
+    assert!(incoming.try_recv().is_err());
+    let payload = TabView::StoreSummary(StoreSummary {
+        blessings: vec!["oteryn:blessing.twist_of_fate".into()],
+        permanent_prey_slots: 0,
+        prey_wildcards: 0,
+        hirelings: 0,
+    })
+    .encode()
+    .map_err(|_| "encode store")?;
+    outbox.cyclopedia_character_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload,
+    });
+    let panel = link.blessings_panel();
+    assert!(panel.text().contains("Twist Of Fate"));
+    assert!(!panel.pending);
+    assert!(link.cyclopedia_character_panel().store.is_none());
+    link.blessings_request();
+    assert!(incoming.try_recv().is_ok());
+    outbox.cyclopedia_character_result(&GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: CommandStatus::Rejected,
+        payload: vec![],
+    });
+    assert!(link.blessings_panel().text().contains("refused"));
+    assert!(link.blessings_panel().text().contains("Twist Of Fate"));
+    Ok(())
+}
+
+#[test]
+fn blessings_shortcut_opens_dedicated_state_and_rejects_repeat()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut incoming, outbox) = crate::play::play_channel();
+    outbox.cyclopedia_character_initialize(true);
+    let event = |repeat| NormalizedInputEvent::Key {
+        code: KeyCode::new(69).unwrap_or_else(|_| unreachable!()),
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+        repeat,
+    };
+    assert!(link.cyclopedia_character_input(&[event(false)]));
+    assert!(link.blessings_panel().open);
+    assert!(incoming.try_recv().is_ok());
+    assert!(!link.cyclopedia_character_input(&[event(true)]));
+    assert!(incoming.try_recv().is_err());
+    outbox.cyclopedia_character_initialize(false);
+    assert!(!link.blessings_panel().open);
+    assert!(!link.blessings_panel().pending);
+    Ok(())
+}
 #[path = "profile.rs"]
 mod profile;
 
