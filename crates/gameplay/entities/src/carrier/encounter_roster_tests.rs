@@ -209,6 +209,10 @@ fn engenc_encounter_roster_rolls_back_late_spawn_and_map_projection_failures() -
 fn qm50_platform_displaces_every_occupant_and_rolls_back_failed_projection() -> TestResult {
     let mut runtime = runtime(1)?;
     let rider = player(&mut runtime)?;
+    let second_session = checked(GameSessionId::decode(&id(6)))?;
+    let reservation = checked(runtime.reserve_fresh_session(second_session))?;
+    let second_player = checked(runtime.commit_fresh_session(reservation))?;
+    checked(runtime.initialize_pinned_test_position(second_player, position(100)))?;
     let creatures = checked(runtime.commit_quest_creature_spawn(&[
         ("creature:rat", 20, position(100)),
         ("creature:rat", 20, position(100)),
@@ -232,8 +236,8 @@ fn qm50_platform_displaces_every_occupant_and_rolls_back_failed_projection() -> 
         |_, _, _| true,
         || true,
     ))?;
-    assert_eq!(moved.len(), 3);
-    for actor in [rider.actor, creatures[0], creatures[1]] {
+    assert_eq!(moved.len(), 4);
+    for actor in [rider.actor, second_player, creatures[0], creatures[1]] {
         assert_eq!(
             checked(runtime.read_actor_position(actor))?.position(),
             position(110)
