@@ -930,6 +930,16 @@
                       "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
                     }
                   }
+                },
+                {
+                  "const": {
+                    "engine": "canary",
+                    "repository": "opentibiabr/canary",
+                    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                    "profile": "OTERYN_QM50_ELEVATOR_GROUND/v1",
+                    "items_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+                    "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+                  }
                 }
               ]
             }
