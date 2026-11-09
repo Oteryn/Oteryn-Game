@@ -2250,6 +2250,13 @@ impl ChannelSpellStates {
                     {
                         return None;
                     }
+                    let amount = self.elite_condition_damage(
+                        runtime,
+                        target,
+                        session,
+                        &tick.provenance,
+                        amount,
+                    );
                     let (successor, hit) =
                         crate::spell::actor_conditions::stage_typed_hit_in_world(
                             runtime,
@@ -2309,6 +2316,13 @@ impl ChannelSpellStates {
                         {
                             return None;
                         }
+                        let amount = self.elite_condition_damage(
+                            runtime,
+                            target,
+                            session,
+                            &tick.provenance,
+                            amount,
+                        );
                         let (successor, hit) = crate::spell::actor_conditions::stage_agony_hit(
                             &next,
                             amount,
@@ -2487,7 +2501,10 @@ impl ChannelSpellStates {
                 }) => damage_dealt_percent,
                 _ => 100,
             };
-            Ok(Some(percent))
+            let elite = r.companion_snapshot(target).is_ok_and(|victim| {
+                self.elite_bounty(r, source, *session, &victim.state.policy.definition_key)
+            });
+            Ok(Some(if elite { percent / 2 } else { percent }))
         };
         let receipt = runtime.apply_creature_periodic_turn_with_sources(
             target,

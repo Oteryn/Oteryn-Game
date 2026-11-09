@@ -19,6 +19,8 @@ pub struct PartyKillXpMember<const N: usize> {
     pub fence: CurrentCharacterGameplayFence,
     pub request: ExperienceAwardRequest<N>,
     pub premium: bool,
+    /// Proven membership of the frozen Task Board kill recipients.
+    pub task_board_eligible: bool,
     /// Full dust award, independent of the member's XP share and stamina.
     pub forge_dust: Option<u32>,
     /// Current runtime stamina; durable stamina remains the upper bound.
@@ -287,7 +289,7 @@ pub async fn commit_in_transaction<const N: usize>(
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
-        let elite_dust = if member.premium {
+        let elite_dust = if member.premium && member.task_board_eligible {
             bounty.completion_dust(&input.creature)
         } else {
             0

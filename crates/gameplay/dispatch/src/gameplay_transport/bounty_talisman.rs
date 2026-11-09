@@ -190,6 +190,96 @@ pub(in crate::gameplay_transport) fn apply_timer_leech(
     }
 }
 
+impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn set_elite_bounty(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+        race: Option<&str>,
+    ) {
+        self.elite_bounties.retain(|(actor, id, _)| {
+            *id != session && runtime.player_control_facts(*actor, *id).is_ok()
+        });
+        if let Some(race) = race
+            && let Ok(Some((actor, _))) = runtime.positioned_player_for_session(session)
+            && runtime.player_control_facts(actor, session).is_ok()
+        {
+            self.elite_bounties.push((actor, session, race.to_owned()));
+        }
+    }
+    /// The condition owner has already qualified the tick. Historical race facts
+    /// identify its creature even after that exact source generation retires.
+    pub(in crate::gameplay_transport) fn elite_condition_damage(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        provenance: &crate::foundation::condition::ConditionProvenance<String>,
+        amount: u32,
+    ) -> u32 {
+        use crate::foundation::condition::{ConditionHistoricalSource, ConditionSourceKind};
+        if provenance.source_kind != ConditionSourceKind::Creature {
+            return amount;
+        }
+        let race = match provenance.historical_source.as_ref() {
+            Some(ConditionHistoricalSource::Creature { key, .. }) => Some(key.as_str()),
+            Some(ConditionHistoricalSource::Unpublishable {
+                creature_key: Some(key),
+                ..
+            }) => Some(key.as_str()),
+            _ => None,
+        };
+        let elite = if let Some(race) = race {
+            self.elite_bounty(runtime, target, session, race)
+        } else {
+            // Older live-source conditions have an exact placement label but no history.
+            runtime.visible_entities().creatures.iter().any(|creature| {
+                provenance.source.as_deref()
+                    == Some(
+                        format!(
+                            "creature:{}",
+                            creature
+                                .actor
+                                .placement_identity()
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        )
+                        .as_str(),
+                    )
+                    && runtime
+                        .companion_snapshot(creature.actor)
+                        .is_ok_and(|source| {
+                            self.elite_bounty(
+                                runtime,
+                                target,
+                                session,
+                                &source.state.policy.definition_key,
+                            )
+                        })
+            })
+        };
+        if elite {
+            amount.saturating_mul(2)
+        } else {
+            amount
+        }
+    }
+    pub(in crate::gameplay_transport) fn elite_bounty(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        race: &str,
+    ) -> bool {
+        self.get(runtime, actor, session).is_some()
+            && self
+                .elite_bounties
+                .iter()
+                .any(|(present, id, key)| *present == actor && *id == session && key == race)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(
@@ -536,37 +626,5 @@ mod tests {
             runtime.live_creature_health(second),
             Some(if elite { 11 } else { 8 })
         );
-    }
-}
-
-impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
-    pub(in crate::gameplay_transport) fn set_elite_bounty(
-        &mut self,
-        runtime: &ChannelRuntimeV1,
-        session: GameSessionId,
-        race: Option<&str>,
-    ) {
-        self.elite_bounties.retain(|(actor, id, _)| {
-            *id != session && runtime.player_control_facts(*actor, *id).is_ok()
-        });
-        if let Some(race) = race
-            && let Ok(Some((actor, _))) = runtime.positioned_player_for_session(session)
-            && runtime.player_control_facts(actor, session).is_ok()
-        {
-            self.elite_bounties.push((actor, session, race.to_owned()));
-        }
-    }
-    pub(in crate::gameplay_transport) fn elite_bounty(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        race: &str,
-    ) -> bool {
-        self.get(runtime, actor, session).is_some()
-            && self
-                .elite_bounties
-                .iter()
-                .any(|(present, id, key)| *present == actor && *id == session && key == race)
     }
 }
