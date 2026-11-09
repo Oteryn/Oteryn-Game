@@ -163,6 +163,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
+    // QNPCFX: generated from qnpcfx_item_profiles.py KEYS and pinned source proofs.
+    // Koshei pieces/amulet, Hallowed Axe and tender venison; existing equipment owner.
+    ("QNPCFX", 7),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     ("QUESTPC4-TREASURE-REWARDS", 5),
@@ -359,6 +362,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // QENGINE2 captures 63 source-qualified Items (qengine_reward_item_profiles.IDS).
     // QENGINE2 captures the closed shared, QUESTPC4, M12 and QN4 Item cohorts.
     // QENGINE2 adds exactly the 62 independently captured physical quest Items.
+    // QENGINE2: generated witness of the producer's explicit IDS set.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -388,6 +392,77 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     assert_eq!(added_keys.len(), 63);
     assert_eq!(added_keys.len(), QENGINE_SOURCE_PROFILES);
     assert_eq!(added_keys.len(), 62);
+    // QENGINE2 identities: generated begin
+    assert_eq!(added_keys.len(), 63);
+    assert_eq!(
+        added_keys,
+        std::collections::BTreeSet::from([
+            "oteryn:item.tibia.i10198",
+            "oteryn:item.tibia.i10199",
+            "oteryn:item.tibia.i11544",
+            "oteryn:item.tibia.i11700",
+            "oteryn:item.tibia.i11701",
+            "oteryn:item.tibia.i12413",
+            "oteryn:item.tibia.i12517",
+            "oteryn:item.tibia.i12599",
+            "oteryn:item.tibia.i12601",
+            "oteryn:item.tibia.i12803",
+            "oteryn:item.tibia.i133",
+            "oteryn:item.tibia.i139",
+            "oteryn:item.tibia.i15698",
+            "oteryn:item.tibia.i16103",
+            "oteryn:item.tibia.i16128",
+            "oteryn:item.tibia.i16129",
+            "oteryn:item.tibia.i16165",
+            "oteryn:item.tibia.i16167",
+            "oteryn:item.tibia.i16242",
+            "oteryn:item.tibia.i20275",
+            "oteryn:item.tibia.i20276",
+            "oteryn:item.tibia.i21291",
+            "oteryn:item.tibia.i21504",
+            "oteryn:item.tibia.i21505",
+            "oteryn:item.tibia.i22516",
+            "oteryn:item.tibia.i22721",
+            "oteryn:item.tibia.i28792",
+            "oteryn:item.tibia.i28793",
+            "oteryn:item.tibia.i30168",
+            "oteryn:item.tibia.i30169",
+            "oteryn:item.tibia.i3244",
+            "oteryn:item.tibia.i3537",
+            "oteryn:item.tibia.i3543",
+            "oteryn:item.tibia.i3587",
+            "oteryn:item.tibia.i3589",
+            "oteryn:item.tibia.i3590",
+            "oteryn:item.tibia.i3593",
+            "oteryn:item.tibia.i37002",
+            "oteryn:item.tibia.i37003",
+            "oteryn:item.tibia.i3723",
+            "oteryn:item.tibia.i4867",
+            "oteryn:item.tibia.i5886",
+            "oteryn:item.tibia.i5903",
+            "oteryn:item.tibia.i5921",
+            "oteryn:item.tibia.i5924",
+            "oteryn:item.tibia.i5937",
+            "oteryn:item.tibia.i5938",
+            "oteryn:item.tibia.i5939",
+            "oteryn:item.tibia.i5940",
+            "oteryn:item.tibia.i5945",
+            "oteryn:item.tibia.i5947",
+            "oteryn:item.tibia.i6099",
+            "oteryn:item.tibia.i6100",
+            "oteryn:item.tibia.i6101",
+            "oteryn:item.tibia.i6102",
+            "oteryn:item.tibia.i6107",
+            "oteryn:item.tibia.i6126",
+            "oteryn:item.tibia.i7289",
+            "oteryn:item.tibia.i768",
+            "oteryn:item.tibia.i769",
+            "oteryn:item.tibia.i770",
+            "oteryn:item.tibia.i875",
+            "oteryn:item.tibia.i9041",
+        ])
+    );
+    // QENGINE2 identities: generated end
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -395,11 +470,38 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let npc_additions = npc_proof["records"]
         .as_array()
         .ok_or("NPC source profiles")?;
-    assert_eq!(npc_additions.len(), 1);
+    // QNPCFX identities: generated begin
+    assert_eq!(npc_additions.len(), 7);
+    let npc_keys = npc_additions
+        .iter()
+        .map(|row| {
+            row["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("NPC profile identity")
+        })
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
     assert_eq!(
-        npc_additions[0]["production_definition"]["production_key"],
-        "oteryn:item.tibia.i52636"
+        npc_keys,
+        std::collections::BTreeSet::from([
+            "oteryn:item.tibia.i52636",
+            "oteryn:item.tibia.i7528",
+            "oteryn:item.tibia.i7529",
+            "oteryn:item.tibia.i7530",
+            "oteryn:item.tibia.i7531",
+            "oteryn:item.tibia.i7532",
+            "oteryn:item.tibia.i919",
+        ])
     );
+    for key in npc_keys {
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing NPC source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    // QNPCFX identities: generated end
     let venison = profiles
         .records
         .iter()

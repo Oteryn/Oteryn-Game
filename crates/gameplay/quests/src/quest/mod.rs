@@ -52,6 +52,7 @@ pub mod map_marks;
 pub mod monk_shrines;
 pub mod native_kills;
 pub mod native_rules;
+pub mod npc_magic;
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;

@@ -33,7 +33,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/hot_cuisine.json",
-      "sha256": "0db245ea075d9c2d721948b717b41e8fdd339424c3ed1df000af78fe86b117c6"
+      "sha256": "85c0aacf53b84026771216441bf596b1e592ba4bad18299ea8a28b1d09aed0b6"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/in_service_of_yalahar.json",
@@ -45,7 +45,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_hidden_city_of_beregar.json",
-      "sha256": "c91ea5245afd922aae7a22c8bb8a24613a32def50c738ed5b9f94c4117c81c15"
+      "sha256": "18cba8039698b0b35c4411c6b4217d662e47f44cf3c1d587e25fceacabe36248"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_way_of_the_monk.json",
@@ -197,7 +197,7 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "7e77fa9a344e98e078be35bb2407c31fc5a6d00c12cd44d9d9a0789f21598eb5"
+      "sha256": "fdd0125ef000da9e10e2d6dd799092b995c35054e00df32bf52fc3620e4d3a76"
     }
   ],
   "canonical_inputs": [
@@ -243,7 +243,7 @@
     },
     {
       "path": "content/items/definitions/items-16500-16999.json",
-      "sha256": "51ef1e1da1d46f71dff970a095748a6d04c9062b6bcb63b1b8b9631c454ccfac"
+      "sha256": "0976b3f6cedb987b93c6b6702cdcf4e0cabffb6c1477896cf9ac6aba0339842e"
     },
     {
       "path": "content/items/definitions/items-17000-17499.json",
@@ -251,11 +251,11 @@
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "33ba93d9207b89351f736f3ec15a84ab88ce6354e3d4109037657256d6b1693a"
+      "sha256": "30c6afeb92bc4b03e80d816d16f58f7c4306f50dd0857f8b02e983645ae85d51"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
-      "sha256": "2dd573f4c0857a86c2034f8ec4f497325b8fc2cb68a09038673e37f23f7c5cf2"
+      "sha256": "80fa7cc512cf1734a891a4acdad00c63689cc33ca2943b90501fef80bfe5920c"
     },
     {
       "path": "content/items/definitions/items-18500-18999.json",
@@ -267,7 +267,7 @@
     },
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "1b0927bf7da1965c551822031860c22c41e85fc25b2b90b0891f7e8fd693aa7b"
+      "sha256": "09d3b5409a8a5098cedaf47777a2d050e3faeee4f200139e5ae8a9da5d4a91d8"
     },
     {
       "path": "content/items/definitions/items-21500-21999.json",
@@ -303,7 +303,7 @@
     },
     {
       "path": "content/items/definitions/items-28500-28999.json",
-      "sha256": "2db3c8ce0a4b3b7d80063e458b8ed2a4b627f73789c835410d4364902d35e886"
+      "sha256": "ab430f09558a741812d55deaaf88cb64637515e965ccda9b31f5dd9a7aec2bd8"
     },
     {
       "path": "content/items/definitions/items-29000-29499.json",
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "976bc7a100b4a87063b9d98289aa8bf95f9874cfafda8efe4481d6264734fea0"
+      "sha256": "5a815878dbbf6bd4f6f9768b4710b6209b52570589b44e330829f754ec0f1954"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -23235,7 +23235,7 @@
           ]
         }
       ],
-      "canonical_materializable": false,
+      "canonical_materializable": true,
       "existing_native_profile": true,
       "holds": [
         "INSTANCE_CHARGE_ATTRIBUTE_LOWERING_MISSING"
@@ -23477,9 +23477,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -23823,9 +23823,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -24689,9 +24689,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25651,9 +25651,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -25930,9 +25930,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -26322,7 +26322,7 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:armor"
@@ -27022,9 +27022,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28476,9 +28476,9 @@
         }
       ],
       "canonical_materializable": true,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28578,9 +28578,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28679,9 +28679,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -28751,9 +28751,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -29159,9 +29159,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     },
     {
@@ -29259,7 +29259,7 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
       "classification": "HELD",
       "reason": "UNSUPPORTED_SOURCE_ATTRIBUTES:armor"

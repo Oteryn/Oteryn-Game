@@ -174,8 +174,15 @@ def xml_lines(raw):
     return result
 
 
-def capture(source_root, root=ROOT):
+def capture(source_root, root=ROOT, *, additional_inputs=()):
     references, inputs = selected(root)
+    for relative in additional_inputs:
+        path = root / relative
+        document = json.loads(path.read_bytes())
+        inputs.append(descriptor(root, path))
+        for key, pointer, sources in item_references(document):
+            references.setdefault(key, []).append({
+                'path': relative, 'pointer': pointer, 'sources': sources})
     selected_keys = set(references)
     xml_raw = (source_root / 'items.xml').read_bytes()
     client_raw = (root / reward.CLIENT).read_bytes()

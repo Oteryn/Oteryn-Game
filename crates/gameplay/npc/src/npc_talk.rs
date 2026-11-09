@@ -23,11 +23,14 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
+    include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
+    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
 ];
@@ -1619,5 +1622,29 @@ mod s10_tests {
             "Dawnport banker escaped the S10 scope"
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod qnpcfx_m10_greeting_tests {
+    use super::*;
+    #[test]
+    fn production_reward_greetings_admit_all_m10_npcs_without_fixture_overrides() {
+        for key in [
+            "oldrak",
+            "henricus",
+            "kulag_the_guard",
+            "grof_the_guard",
+            "tim_the_guard",
+            "walter_the_guard",
+            "miles_the_guard",
+        ] {
+            let key = format!("oteryn:npc.{key}");
+            assert!(reward_callback_npc(&key));
+            assert!(
+                reward_messages(&key)
+                    .is_some_and(|r| !r.greet.is_empty() && !r.farewell.is_empty())
+            );
+        }
     }
 }

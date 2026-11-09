@@ -93,6 +93,22 @@ pub(super) fn prepare(
     if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
         offers.offers.extend(rows.iter().cloned());
     }
+    let koshei: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"
+    ))
+    .ok()?;
+    if koshei.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(koshei.offers);
+    let m10: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/qnpcfx-m10.json"
+    ))
+    .ok()?;
+    if m10.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(m10.offers);
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)

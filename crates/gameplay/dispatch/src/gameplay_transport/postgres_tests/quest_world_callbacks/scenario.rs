@@ -506,7 +506,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if name.starts_with("qengine-rewards-l12-") {
+            if name == "qengine-rewards-qnpcfx-m10-inquisition" {
+                7 // One player and the six source NPCs for the full interview story.
+            } else if name.starts_with("qengine-rewards-l12-") {
                 128
             } else if native_story || (native_upper && name.ends_with("-complete")) {
                 6

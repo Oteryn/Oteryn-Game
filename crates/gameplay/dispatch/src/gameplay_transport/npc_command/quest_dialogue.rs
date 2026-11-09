@@ -384,18 +384,15 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
-        .ok()
-        .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
-    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
         .ok()
         .and_then(|callbacks| {
             callbacks
                 .into_iter()
                 .find(|c| c.key == request.transition_key)
-        })
-        .is_some_and(|c| c.fee.is_some())
-    {
+        });
+    let value_callback = reward_callback.is_some();
+    let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
             Ok(payment) => Some(payment),
             Err(outcome) => {
@@ -451,6 +448,7 @@ pub(super) async fn apply(
     if value_callback && let Err(error) = &outcome {
         eprintln!("quest reward commit: {error:?}");
     }
+    let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
             #[cfg(test)]
@@ -471,6 +469,17 @@ pub(super) async fn apply(
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
             let runtime = admission.runtime.lock().await;
+            if newly_committed && let Some(callback) = &reward_callback {
+                super::magic_effects::publish(
+                    admission,
+                    &runtime,
+                    actor,
+                    command,
+                    &intent,
+                    &step.context,
+                    &callback.magic_effects,
+                );
+            }
             publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
