@@ -7,7 +7,11 @@
       "sources": [
         "content/quests/definitions/quests-00200-00299.json",
         "content/world/areas/hunting-places/hunting-places-00000-00444.json",
-        "content/world/placements/region-z07-x128-y127.b3"
+        "content/world/placements/region-z07-x128-y127.b3",
+        "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+        "content/world/placements/region-z03-x128-y127.b3",
+        "content/world/placements/region-z04-x128-y127.b3",
+        "content/world/placements/region-z02-x128-y127.b3"
       ],
       "tracks": [
         {
@@ -18,6 +22,60 @@
         },
         {
           "key": "oteryn:quest-progress/authored/asura_palace_quest/s1/visited/entry",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s2/count",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s2/entered",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s2/opened",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s3/count",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s3/entered",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s3/opened",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s4/count",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s4/entered",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/s4/opened",
           "initial": 0,
           "minimum": 0,
           "maximum": 1
@@ -83,6 +141,609 @@
                 "content/world/placements/region-z07-x128-y127.b3",
                 "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
               ]
+            }
+          }
+        },
+        {
+          "key": "s2-entry",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/s2/entry",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32959,
+                  "y": 32675,
+                  "floor": -3
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 21973,
+                "native": {
+                  "position": {
+                    "x": 32959,
+                    "y": 32675,
+                    "floor": -3
+                  },
+                  "ordinal": 1,
+                  "appearance": 21973
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/asura_palace_quest/s1",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s2/entered",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule"
+              ],
+              "effects": {
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "encounter": {
+                  "minimum_level": 1,
+                  "players": [
+                    {
+                      "from": {
+                        "x": 32959,
+                        "y": 32675,
+                        "floor": -3
+                      },
+                      "to": {
+                        "x": 32959,
+                        "y": 32675,
+                        "floor": -4
+                      }
+                    }
+                  ],
+                  "monsters": [
+                    {
+                      "position": {
+                        "x": 32960,
+                        "y": 32674,
+                        "floor": -4
+                      },
+                      "creature": "oteryn:creature.destroyer"
+                    },
+                    {
+                      "position": {
+                        "x": 32959,
+                        "y": 32677,
+                        "floor": -4
+                      },
+                      "creature": "oteryn:creature.destroyer"
+                    }
+                  ],
+                  "room_min": {
+                    "x": 32957,
+                    "y": 32673,
+                    "floor": -4
+                  },
+                  "room_max": {
+                    "x": 32962,
+                    "y": 32678,
+                    "floor": -4
+                  },
+                  "timing": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/engenc-asura-s2",
+              "creature": "oteryn:creature.destroyer",
+              "track": "oteryn:quest-progress/engenc/asura/s2/count",
+              "gate": "oteryn:quest-progress/engenc/asura/s2/entered",
+              "gate_value": 1,
+              "maximum": 2,
+              "encounter_source": "oteryn:quest-callback/engenc/asura/s2/entry"
+            }
+          }
+        },
+        {
+          "key": "s2-door",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/s2/door",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32963,
+                  "y": 32677,
+                  "floor": -4
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 5736,
+                "native": {
+                  "position": {
+                    "x": 32963,
+                    "y": 32677,
+                    "floor": -4
+                  },
+                  "ordinal": 1,
+                  "appearance": 5736
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s2/entered",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s2/count",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s2/opened",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule"
+              ],
+              "effects": {
+                "transform": 5737,
+                "facing": null,
+                "magic": null
+              }
+            }
+          }
+        },
+        {
+          "key": "s3-entry",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/s3/entry",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32960,
+                  "y": 32679,
+                  "floor": -2
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 923,
+                "native": {
+                  "position": {
+                    "x": 32960,
+                    "y": 32679,
+                    "floor": -2
+                  },
+                  "ordinal": 0,
+                  "appearance": 923
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s2/opened",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s3/entered",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule"
+              ],
+              "effects": {
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "encounter": {
+                  "minimum_level": 1,
+                  "players": [
+                    {
+                      "from": {
+                        "x": 32960,
+                        "y": 32679,
+                        "floor": -2
+                      },
+                      "to": {
+                        "x": 32958,
+                        "y": 32679,
+                        "floor": -2
+                      }
+                    }
+                  ],
+                  "monsters": [
+                    {
+                      "position": {
+                        "x": 32958,
+                        "y": 32677,
+                        "floor": -2
+                      },
+                      "creature": "oteryn:creature.greater_fire_elemental"
+                    },
+                    {
+                      "position": {
+                        "x": 32958,
+                        "y": 32680,
+                        "floor": -2
+                      },
+                      "creature": "oteryn:creature.greater_fire_elemental"
+                    }
+                  ],
+                  "room_min": {
+                    "x": 32953,
+                    "y": 32677,
+                    "floor": -2
+                  },
+                  "room_max": {
+                    "x": 32958,
+                    "y": 32681,
+                    "floor": -2
+                  },
+                  "timing": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "s3",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/engenc-asura-s3",
+              "creature": "oteryn:creature.greater_fire_elemental",
+              "track": "oteryn:quest-progress/engenc/asura/s3/count",
+              "gate": "oteryn:quest-progress/engenc/asura/s3/entered",
+              "gate_value": 1,
+              "maximum": 2,
+              "encounter_source": "oteryn:quest-callback/engenc/asura/s3/entry"
+            }
+          }
+        },
+        {
+          "key": "s3-door",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/s3/door",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32959,
+                  "y": 32679,
+                  "floor": -2
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 1674,
+                "native": {
+                  "position": {
+                    "x": 32959,
+                    "y": 32679,
+                    "floor": -2
+                  },
+                  "ordinal": 1,
+                  "appearance": 1674
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s3/entered",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s3/count",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s3/opened",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule"
+              ],
+              "effects": {
+                "transform": 1675,
+                "facing": null,
+                "magic": null
+              }
+            }
+          }
+        },
+        {
+          "key": "s4-entry",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/s4/entry",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32948,
+                  "y": 32679,
+                  "floor": -2
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 923,
+                "native": {
+                  "position": {
+                    "x": 32948,
+                    "y": 32679,
+                    "floor": -2
+                  },
+                  "ordinal": 0,
+                  "appearance": 923
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s3/opened",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s4/entered",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule"
+              ],
+              "effects": {
+                "transform": null,
+                "facing": null,
+                "magic": null,
+                "encounter": {
+                  "minimum_level": 1,
+                  "players": [
+                    {
+                      "from": {
+                        "x": 32948,
+                        "y": 32679,
+                        "floor": -2
+                      },
+                      "to": {
+                        "x": 32946,
+                        "y": 32679,
+                        "floor": -2
+                      }
+                    }
+                  ],
+                  "monsters": [
+                    {
+                      "position": {
+                        "x": 32944,
+                        "y": 32677,
+                        "floor": -2
+                      },
+                      "creature": "oteryn:creature.greater_energy_elemental"
+                    },
+                    {
+                      "position": {
+                        "x": 32945,
+                        "y": 32680,
+                        "floor": -2
+                      },
+                      "creature": "oteryn:creature.greater_energy_elemental"
+                    }
+                  ],
+                  "room_min": {
+                    "x": 32943,
+                    "y": 32676,
+                    "floor": -2
+                  },
+                  "room_max": {
+                    "x": 32946,
+                    "y": 32681,
+                    "floor": -2
+                  },
+                  "timing": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "s4",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/engenc-asura-s4",
+              "creature": "oteryn:creature.greater_energy_elemental",
+              "track": "oteryn:quest-progress/engenc/asura/s4/count",
+              "gate": "oteryn:quest-progress/engenc/asura/s4/entered",
+              "gate_value": 1,
+              "maximum": 2,
+              "encounter_source": "oteryn:quest-callback/engenc/asura/s4/entry"
+            }
+          }
+        },
+        {
+          "key": "s4-door",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/s4/door",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32947,
+                  "y": 32679,
+                  "floor": -2
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 1674,
+                "native": {
+                  "position": {
+                    "x": 32947,
+                    "y": 32679,
+                    "floor": -2
+                  },
+                  "ordinal": 1,
+                  "appearance": 1674
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s4/entered",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s4/count",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s4/opened",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule"
+              ],
+              "effects": {
+                "transform": 1675,
+                "facing": null,
+                "magic": null
+              }
             }
           }
         }

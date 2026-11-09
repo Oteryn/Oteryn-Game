@@ -386,7 +386,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && (!lever
                 || callback.has_personal_state()
                 || !callback.passages.is_empty()
-                || callback.teleport.is_some()))
+                || callback.teleport.is_some())
+            && !(effects.encounter.is_some() && super::asura_authored::admitted(callback)))
     {
         return false;
     }

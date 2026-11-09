@@ -134,3 +134,20 @@ and the exact door appearance at ordinal 1. It does not claim these authoring
 inputs are runtime bindings or PostgreSQL-qualified routes yet. Remaining work
 is encounter callback generation, missing elemental native policy admission,
 participant-scoped death/door wiring and real-caller PostgreSQL qualification.
+
+The chamber generator now emits three exact native map-USE encounter callbacks,
+each with two defenders and a distinct entered/count/opened track, followed by
+its counter and personal door callback. The southern Destroyer door opens to
+5737; the floor-2 doors open to 1675. Entry requires the preceding chamber's
+opened track (s2 requires s1), and the door requires entered=1 and count=2.
+No chamber transition completes the quest. Native encounter minimum level is 1,
+the engine's positive minimum, so it excludes no playable character.
+
+These are owner-authored callbacks, not counterfeit Crystal receipts. A closed
+admission matcher accepts only the exact generated Asura callbacks, including
+their native selectors, storage and rosters. Existing donor callback admission
+is unchanged. The shared effect validator permits personal encounter data only
+for these exact callbacks; completing their dispatch transaction remains a
+separate runtime step. Unit checks cover one-shot doors, sequential chambers,
+unchanged admission epochs and rejection of rebound native selectors. These
+checks do not replace real-caller PostgreSQL qualification.

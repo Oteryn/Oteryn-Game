@@ -29,6 +29,7 @@ pub enum Trigger {
 
 #[cfg(test)]
 mod admission_tests;
+mod asura_authored;
 mod clock;
 mod counterparts;
 mod effects;
@@ -543,6 +544,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && !imported_explore::admitted(callback))
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
+                || asura_authored::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")

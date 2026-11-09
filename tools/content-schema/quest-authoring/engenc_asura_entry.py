@@ -1,8 +1,4 @@
-"""M30: bind the canonical palace entry only after checking its actual base tile.
-
-The three unbound sealed doors are not three admitted defender rosters. This
-producer deliberately supplies no guessed chamber, spawn or door association.
-"""
+"""M30: bind canonical palace entry and owner-authored native chamber identities."""
 
 import argparse
 import hashlib
@@ -98,7 +94,7 @@ def entry_binding(root=ROOT):
             recipe, sort_keys=True, ensure_ascii=False, separators=(",", ":")
         ).encode()
     ).hexdigest()
-    return {
+    document = {
         "schema": 1,
         "quests": [
             {
@@ -119,6 +115,10 @@ def entry_binding(root=ROOT):
             }
         ],
     }
+
+    from engenc_asura_chambers import attach_chambers
+
+    return attach_chambers(document, root)
 
 
 def main():
