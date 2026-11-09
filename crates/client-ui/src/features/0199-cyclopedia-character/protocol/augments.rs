@@ -24,7 +24,7 @@ pub enum AugmentIntent {
     Sort,
 }
 pub fn request(p: &mut CyclopediaCharacterPanel, intent: AugmentIntent) -> Option<FeatureCommand> {
-    if !p.selected || p.pending {
+    if !p.selected || p.pending || p.blessings.pending {
         p.feedback = Some("Spell modifiers are unavailable or waiting for the server");
         return None;
     }

@@ -38,7 +38,7 @@ impl Stepper for Peer {
         items
     }
     async fn stash(&mut self, command: &StashCommand) -> Result<StashResponse, SessionError> {
-        let intent = stash::decode_stash_intent(&command.payload)
+        let (intent, _filter) = stash::decode_stash_query(&command.payload)
             .map_err(|_| SessionError::SessionUnusable)?;
         let outcome = match intent.action {
             stash::StashAction::Browse => stash::StashOutcome::Opened,
