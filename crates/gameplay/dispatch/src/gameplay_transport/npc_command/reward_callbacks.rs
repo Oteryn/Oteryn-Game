@@ -10,6 +10,7 @@ use serde::Deserialize;
 mod any_topic_tests;
 #[cfg(test)]
 mod fixture_offers;
+mod offer_match;
 mod offer_topic;
 
 #[derive(Deserialize)]
@@ -81,6 +82,7 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(markers.offers);
+    offers.offers.extend(offer_match::rafzan_offers()?.offers);
     #[cfg(test)]
     if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
         offers.offers.extend(rows.iter().cloned());
@@ -135,13 +137,11 @@ pub(super) fn prepare(
                     reply: callback.reply.clone(),
                 });
             }
-            if let Some(offer) = offers.offers.iter().find(|c| {
-                c.npc == context.2
-                    && c.matches_topic(topic.number)
-                    && c.keywords.contains(&text)
-                    && eligible(&c.storage)
-                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-            }) {
+            if let Some(offer) = offers
+                .offers
+                .iter()
+                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
+            {
                 return Some(Choice {
                     transition: None,
                     next_topic: Some(Topic::from(offer.next_topic)),
@@ -187,4 +187,20 @@ fn sterling_marker_offer_requires_the_source_morla_report() -> Result<(), serde_
             .any(|r| r.track.ends_with("/morla_done") && r.minimum == 1 && r.maximum == 1)
     );
     Ok(())
+}
+
+#[cfg(any(test, feature = "test-support"))]
+pub(in crate::gameplay_transport) fn fixture_rafzan_resume(
+    npc: &str,
+    topic: u16,
+    text: &str,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<(u16, Vec<String>)> {
+    let offers = offer_match::rafzan_offers()?;
+    let offer = offers
+        .offers
+        .iter()
+        .find(|o| o.admits(npc, topic, text, catalogue, tracks))?;
+    Some((offer.next_topic, offer.reply.clone()))
 }

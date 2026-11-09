@@ -155,3 +155,14 @@ pub fn cancel_capture(runtime: &mut ChannelRuntimeV1) {
     let guard = super::cosmetic_item_use::capture_commit::CaptureCommitGuard::new(runtime, true);
     guard.arm();
 }
+
+/// Same read-only offer selector as NPC prepare, with the test's real persisted tracks.
+pub fn rafzan_resume_offer(
+    npc: &str,
+    topic: u16,
+    text: &str,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<(u16, Vec<String>)> {
+    super::npc_command::reward_callbacks::fixture_rafzan_resume(npc, topic, text, catalogue, tracks)
+}
