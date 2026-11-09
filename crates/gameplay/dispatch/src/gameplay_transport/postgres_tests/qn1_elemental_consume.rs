@@ -409,6 +409,62 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     assert_eq!(retired, None);
+    let projection = crate::durability::item_loop_move::ElementalSummonScope {
+        map: [7; 32],
+        reset_epoch: 0,
+    };
+    let pending = h
+        .root
+        .read_elemental_summons(
+            &permit,
+            &authority,
+            &h.node,
+            f::fence()?,
+            &Content,
+            projection,
+        )
+        .await
+        .map_err(f::debug)?;
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].altar, recipe.altar);
+    assert_eq!(pending[0].creature_key, recipe.creature);
+    assert_eq!(pending[0].position, position);
+    for mismatched in [
+        crate::durability::item_loop_move::ElementalSummonScope {
+            map: [8; 32],
+            ..projection
+        },
+        crate::durability::item_loop_move::ElementalSummonScope {
+            reset_epoch: 1,
+            ..projection
+        },
+    ] {
+        assert!(
+            h.root
+                .read_elemental_summons(
+                    &permit,
+                    &authority,
+                    &h.node,
+                    f::fence()?,
+                    &Content,
+                    mismatched,
+                )
+                .await
+                .map_err(f::debug)?
+                .is_empty()
+        );
+    }
+    for replaced in [stale_connection, stale_lease, stale_scope] {
+        assert!(
+            h.root
+                .read_elemental_summons(
+                    &permit, &authority, &h.node, replaced, &Content, projection
+                )
+                .await
+                .map_err(f::debug)?
+                .is_empty()
+        );
+    }
     Ok(())
 }
 
