@@ -570,6 +570,8 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let journal_achievement = super::world_change_journal_rewards::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let mount_achievement = super::super::quest_mount_rewards::prepare(callback.as_ref())
@@ -648,6 +650,7 @@ impl DurabilityRoot {
         if let Some(death) = &native {
             death.bind(&mut binding)?;
         }
+        super::world_change_journal_rewards::bind(&mut binding, journal_achievement.as_ref())?;
         if let Some(source) = &grizzly_party {
             grizzly::bind_party(&mut binding, source)?;
         }
@@ -1404,6 +1407,8 @@ impl DurabilityRoot {
                         }
                     }
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
+                    super::world_change_journal_rewards::earn(&mut tx, fence, &request, &catalogue,
+                        &changes, native.is_some(), journal_achievement.as_ref()).await?;
                     super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;
                     super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;
                     if let Some(plan) = &grizzly_plan {
