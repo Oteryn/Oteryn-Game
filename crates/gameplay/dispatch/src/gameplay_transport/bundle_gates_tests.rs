@@ -266,7 +266,13 @@ const INVENTORY: &[Entry] = &[
         state: Gate::Closed {
             owners: &["MAP-CUTOVER-1c"],
         },
-        calls: &[("gameplay_transport/source_item_cycle.rs", 1)],
+        calls: &[
+            (
+                "gameplay_transport/postgres_tests/m26_static_instance.rs",
+                1,
+            ),
+            ("gameplay_transport/source_item_cycle.rs", 1),
+        ],
     },
     // The door overlay, step blocking, `use_object` and the chase step's and a creature push's
     // door blocking serve a bundle World from `bundle_map`.
@@ -924,6 +930,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
+    ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/m26_static_instance.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
@@ -963,6 +974,10 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/soulpit/content.rs", 2),
     (
         "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srvgap2_primal_chain.rs",
         2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
