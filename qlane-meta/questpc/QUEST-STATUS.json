@@ -1114,5 +1114,5 @@
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
-  "m01b_latest_batch": "WIP Lion fixture fix:normal native Longsword visit establishes revision;live-root SQL rewrite removed;strong definite-refusal assertions+unavailable diagnostic added. StrictClippy2m50s/fmt GREEN;workspacealltargets on f846 GREEN7m39s. OwnnativePG rerun pending after RED68.003s. NOTqualified;M01b PARTIAL."
+  "m01b_latest_batch": "Lion PG GREEN71.099338698s on ea921c4f6. WIP Deeplings survey wiring:strictClippy5m06s,6profile0.07s,114modules/1203authoringtests/checks/tree/fmt/pins PASS;own nativePG building,NOTyetqualified.33wiredroutes/34stages,32PG-provenroutes/33stages;M01b PARTIAL."
 }

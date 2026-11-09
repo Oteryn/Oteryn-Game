@@ -477,6 +477,61 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/deeplings-worldchange/s1/entry",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33641,
+          "y": 31379,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8287,
+        "native": {
+          "position": {
+            "x": 33641,
+            "y": 31379,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 8287
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/deeplings_worldchange/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/deeplings_worldchange/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/deeplings_worldchange/actions_golden_anchor.lua",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "world_change": "deeplings",
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/dragon-corpse/s1/entry",
       "quest": "oteryn:quest.dragon_corpse_quest",
       "trigger": "step_in",
