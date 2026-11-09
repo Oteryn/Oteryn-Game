@@ -701,7 +701,7 @@ fn candidate_container_placement(
                 Some(body.to_owned())
             }
         };
-        let expected_fluid = (matches!(result.crystal_unique_id, Some(6197..=6200))
+        let expected_fluid = (matches!(result.crystal_unique_id, Some(6119 | 6197..=6200))
             && child.item.key().as_str() == "oteryn:item.tibia.i2874")
             .then_some(1);
         let fluid_subtype = match row.get("fluid_subtype") {
@@ -1152,32 +1152,38 @@ mod container_tests {
     }
 
     #[test]
-    fn wine_projection_requires_the_exact_source_water_subtype() -> Result<(), String> {
-        let source = authored("quest.u7_9.dreamers_challenge.chests_wine").ok_or("wine source")?;
-        let parsed = candidate(source.as_object().ok_or("definition")?, &|_| true)
-            .map_err(|e| format!("{e:?}"))?
-            .map_err(|e| format!("{e:?}"))?;
-        assert_eq!(parsed.placements.len(), 4);
-        for placement in &parsed.placements {
-            assert_eq!(placement.contents.len(), 3);
-            assert_eq!(placement.contents[1].fluid_subtype, Some(1));
-        }
-        for subtype in [None, Some(0), Some(15)] {
-            let mut changed = source.clone();
-            let child = &mut changed["native_contents"]["placements"][0]["contents"][1];
-            if let Some(subtype) = subtype {
-                child["fluid_subtype"] = serde_json::json!(subtype);
-            } else {
-                child
-                    .as_object_mut()
-                    .ok_or("child")?
-                    .remove("fluid_subtype");
+    fn source_water_projections_require_the_exact_subtype() -> Result<(), String> {
+        for (key, child_index, count) in [
+            ("quest.u7_9.dreamers_challenge.chests_wine", 1, 4),
+            ("kv.goblintemple2", 2, 1),
+        ] {
+            let source = authored(key).ok_or("source water claim")?;
+            let parsed = candidate(source.as_object().ok_or("definition")?, &|_| true)
+                .map_err(|e| format!("{e:?}"))?
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(parsed.placements.len(), count);
+            for placement in &parsed.placements {
+                assert_eq!(placement.contents.len(), 3);
+                assert_eq!(placement.contents[child_index].fluid_subtype, Some(1));
             }
-            assert!(
-                candidate(changed.as_object().ok_or("definition")?, &|_| true)
-                    .map_err(|e| format!("{e:?}"))?
-                    .is_err()
-            );
+            for subtype in [None, Some(0), Some(15)] {
+                let mut changed = source.clone();
+                let child =
+                    &mut changed["native_contents"]["placements"][0]["contents"][child_index];
+                if let Some(subtype) = subtype {
+                    child["fluid_subtype"] = serde_json::json!(subtype);
+                } else {
+                    child
+                        .as_object_mut()
+                        .ok_or("child")?
+                        .remove("fluid_subtype");
+                }
+                assert!(
+                    candidate(changed.as_object().ok_or("definition")?, &|_| true)
+                        .map_err(|e| format!("{e:?}"))?
+                        .is_err()
+                );
+            }
         }
         Ok(())
     }

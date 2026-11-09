@@ -313,3 +313,228 @@ passed. Both live Fire Axe tests passed in184.12 seconds, with
 `M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED` and
 `M35_FIRE_AXE_TWO_FLOOR_POSTGRES_CASE_COMPLETED`. This closes the previously
 recorded combined Fire Axe caller-proof gap. No production pins or data changed.
+
+## Emperor's Cookies caller and container-key guard repair
+
+The new literal caller case was RED: the cookie bag was rejected at commit.
+The retained PostgreSQL log confirmed `game_item_key_proven` raised
+'a key number is set only by the reward-claim MINT of its one item'. Migration
+2150 replaced that guard and omitted the complete-container proof arm installed
+by0762. The failed commit left a frozen pending claim, with no completed reward
+in the RED run. The lane needs both the original container arm and M21's map arm.
+
+New migration2601 restores the already-owned complete frozen-container arm by
+inserting it into the installed function definition. It preserves every map,
+inbox and root-key arm, the installed privileges and pinned search path. The
+proof still requires the current physical transaction and its whole reserved
+child plan. It adds no table, privilege or new value-grant API. Migration2601
+was the next free number from next-free-numbers.py against origin/main7723ead5a
+and origin/qmech856a420d6 plus open PR claims when authoring began. The final
+scan saw a new unrelated peer2701, advancing its next suggestion to2702;2601
+remained unused in both refs and peer PRs. Existing main peer-PR clashes do not
+involve2601; no reference branch was merged.
+
+The GREEN case drives both source endpoints in both orders: UID5004,
+(32648,31905,3), appearance2472, bag2853 holding Key3801 (2970 x1) and27 cookies
+(3598); UID5005, (32599,31923,6), appearance2472, Key3802 (2970 x1). It checks
+exact roots, nested quantities, immutable key numbers, receipts, consumed
+obligations and canonical completion only after both claims. Replay and a
+fresh repeated USE add no reward. An adversarial insertion of Key3800 onto
+the already-minted bag is rejected with SQLSTATE23514 and leaves two key rows.
+The live guard retains all four installed provenance-owner references.
+
+Dispatch all-features/all-target clippy with `-D warnings` and formatting pass.
+The live case passes in126.35 seconds and prints
+`M35_EMPEROR_COOKIES_POSTGRES_CASE_COMPLETED`. Temporary diagnostics were
+removed. The forward migration and its real-caller/negative proof form the
+coordinator's review packet for this persistence repair; no PR or review was
+requested by this single-agent lane.
+
+## Draconia complete charged-weapon bag and caller proof
+
+The new authoring check was RED because UID6023's complete bag was held on the
+canonical Ice Rapier3284 materialization flag. Its already-admitted native
+profile has exactly one charge and matching physical, custody and weapon facts.
+The scoped charged-item qualification now includes `kv/draconia1` and3284's
+one-charge definition. It also checks agreeing weapon facts; the regression
+rejects changed attack and charge count. The canonical Item and the entire
+published native Item provider remain byte-identical to the preceding head.
+
+The generated complete recipes increase72->73, held shapes33->32, and bag-member
+closure142->144 (Ice Rapier3284 and Serpent Sword3297). No source quantity,
+immutable capture, migration or protocol identity changes. The source roots are
+UID6023 at(32803,31582,2) and UID6024 at(32804,31582,2), both appearance2472.
+The actual caller grants bag2853 with3284+3297 and bag2853 with3081+3051,
+all one instance each. The PostgreSQL case checks either bag first remains
+incomplete, both together complete, exact roots/children, consumed obligations,
+duplicate replay and refusal of a fresh duplicate, with durable tracks reloaded
+between source claims.
+
+Fresh checks passed: formatting; content+dispatch all-features/all-target clippy
+with `-D warnings`; content decoder12; container authoring16 (RED before the fix,
+GREEN after regeneration); variant authoring13; callback generator14; existing
+authoring29; native-only generation/reproducibility. The live case passed
+in128.99 seconds with `M35_DRACONIA_POSTGRES_CASE_COMPLETED`. No local node boot.
+
+
+## Goblin Temple complete water bag and caller proof
+
+The new authoring regression was RED because UID6119's complete bag was held
+on its source WATER vial. The existing native fluid MINT now admits this exact
+claim alongside Dreamer's already-qualified water claim. It requires UID6119,
+`quest_kv/goblintemple2`, vial2874 count1 and subtype1; missing or substituted
+subtypes remain rejected by the content decoder. The immutable donor capture
+and canonical vial definition remain unchanged.
+
+Crystal 201189f binds UID6118 at(31973,32209,12) and UID6119
+at(31977,32209,12), both appearance2472. Their bag2853 contents are sandals3551
+x1, small stones1781 x5 and gold3031 x50; and pan3466 x1, snowballs2992 x4
+and WATER vial2874 x1. The caller case exercises both orders and checks all
+six quantities, root bags, fluid subtype and same-root/same-child transaction
+proofs, completion only after both claims, replay, duplicate refusal and
+track reload between chests.
+
+Complete native recipes increase73->74, held shapes32->31 and callback child
+closure144->146. The native provider adds only pan3466 (5802->5803 identities).
+The earlier callback generator now seeds Snowball2992 from its retained
+seasonal profile, preserving every existing known semantic and attribute;
+its canonical trade policy becomes known through the existing admission pass.
+No migration, protocol or source quantity changes.
+
+Fresh checks passed: formatting; content+dispatch all-features/all-target clippy
+with `-D warnings`; content decoder12; container authoring17 (RED before the
+fix, GREEN after regeneration); variant authoring13; callback generator15;
+existing authoring29; native-only generation and reproducibility. The live
+caller passed in134.43 seconds and printed
+`M35_GOBLIN_TEMPLE_POSTGRES_CASE_COMPLETED`. Local node boot remains skipped
+as instructed. The previously recorded final-binding, partial-charge and
+remaining caller-proof gaps still prevent a complete26-quest DONE claim.
+The full pinned-production equipment/attribute check also passed in76.86
+seconds with the exact5803 profile union. Self-review covered all handwritten
+changes and semantic generated deltas; no significant finding. Independent
+coordinator review and CI are not claimed by this lane.
+
+## Crystal Wand real-caller qualification
+
+Crystal 201189f8 `chest.lua:1540-1554` binds UID6124 at(32479,31611,15)
+and UID6125 at(32481,31611,15), both appearance2472. The independent rewards
+are item3068 x1 and item11609 x1. The mounted PostgreSQL case uses those
+literal endpoints and the production wire USE/RewardClaim/quest-obligation
+path. In each order it requires the first reward to leave the quest incomplete
+and the second to complete it, with exact persisted rewards, consumed
+obligations, duplicate replay, fresh-repeat refusal and track reload between
+claims. Existing production group declarations and grants remain unchanged.
+
+Fresh validation: formatting and dispatch all-features/all-target clippy with
+`-D warnings` passed. The live PostgreSQL case passed in135.59 seconds and
+printed `M35_CRYSTAL_WAND_POSTGRES_CASE_COMPLETED`. Self-review found no
+significant issue; existing assertions are retained and exact-reward checks
+are extended. No generated content changed. The full M35 scope remains PARTIAL
+for the source-binding, partial-charge and remaining caller-proof gaps above.
+
+## Circle Room real-caller qualification
+
+Crystal 201189f8 `chest.lua:1525-1539` binds UID6122 at(32495,31992,14)
+and UID6123 at(32497,31992,14), both appearance2469. The independent rewards
+are war hammer3279 x1 and dwarven axe3323 x1. The mounted case drives literal
+wire USE through production dispatch, durable MINT and quest obligations.
+Both chest orders require incomplete state after the first claim and complete
+state only after the second. It checks exact reward identities and quantities,
+receipts, consumed obligations, replay and fresh-repeat refusal, with a quest
+state reload between claims. No production declaration or grant is changed.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL18.6 caller case in147.08 seconds, with
+`M35_CIRCLE_ROOM_POSTGRES_CASE_COMPLETED`. The full handwritten diff was
+reviewed against the pinned donor endpoints and quantities; no significant
+finding. No assertion was removed or loosened, and no generated file changed.
+M35 remains PARTIAL for the previously documented final-source binding,
+partial-charge and remaining real-caller proof requirements. Node boot was
+skipped as instructed.
+
+## Demona Ring and Double Hero real-caller qualification
+
+Crystal 201189f8 `chest.lua:1555-1569` binds Demona Ring UID6126
+at(32504,31596,14) and UID6127 at(32515,31596,14), both appearance2472,
+with stealth ring3049 x1 and energy ring3051 x1. `chest.lua:819-833`
+binds Double Hero UID6032 at(33109,31679,13) and UID6033
+at(33110,31679,13), both appearance2469, with red gem3039 x1 and club
+ring3093 x1. Each mounted PostgreSQL case drives both source orders through
+literal wire USE, production RewardClaim MINT and durable quest obligations.
+The existing completion, replay, fresh-repeat refusal, receipt and obligation
+checks remain strict; exact persisted reward assertions cover each new pair.
+Neither first chest may complete its quest, and state is reloaded between
+claims. No production content or grant behaviour changes.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; both live PostgreSQL cases (2 passed, 0 failed) in274.78
+seconds, printing `M35_DEMONA_RING_POSTGRES_CASE_COMPLETED` and
+`M35_DOUBLE_HERO_POSTGRES_CASE_COMPLETED`. Self-review covered the complete
+handwritten delta and donor source records; no significant finding. No
+assertion was removed or loosened and no generated file changed. Node boot
+was skipped as instructed. The documented final-binding, partial-charge and
+remaining caller-proof requirements still leave the complete M35 row PARTIAL.
+
+## Katana corpse-pair real-caller qualification
+
+Crystal 201189f8 `chest.lua:1850-1864` binds UID6162 at(32175,32145,11)
+and UID6163 at(32174,32149,11), both appearance4240. The independent
+rewards are item3367 x1 and item3300 x1. The mounted test preserves both
+literal positions through the existing source-world helper and drives actual
+wire USE through production RewardClaim MINT and quest obligations in both
+orders. It checks exact durable rewards, incomplete state after the first
+claim, complete state after the second, receipt and consumed-obligation
+counts, replay and fresh-repeat refusal, and state reload between claims.
+No production declaration, reward data or generated pin is changed.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL case in138.05 seconds, printing
+`M35_KATANA_POSTGRES_CASE_COMPLETED`. Self-review covered all handwritten
+changes against donor endpoints and quantities; no significant finding. No
+existing assertion was removed or loosened. Local node boot was skipped as
+instructed. The complete M35 row remains PARTIAL for the final-source binding,
+partial-charge and remaining caller-proof requirements documented above.
+
+## Longsword three-claim real-caller qualification
+
+Crystal 201189f8 `chest.lua:1712-1735` binds UID6146/6147/6148 at
+(32649/32650/32651,31969,9), all appearance2472. The first two grant
+item3285 x1 and item3004 x1. The third grants bag2853 with item3147 x3,
+item2989 x1, gold3031 x76 and item3463 x1. The mounted caller case exercises
+ascending and descending source order, so the bag is tested both first and
+last. It requires incomplete quest state after both the first and second
+claims and completion only after the third. Exact roots and all four bag
+contents, receipt/consumed-obligation counts, replay and fresh-repeat refusal
+are checked at each step, with quest state reloaded between claims. Existing
+production declarations, rewards and generated content remain unchanged.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL case in122.67 seconds, printing
+`M35_LONGSWORD_POSTGRES_CASE_COMPLETED`. Self-review covered the full
+handwritten delta and exact donor quantities; no significant finding. No
+existing assertion was removed or loosened. No generated file changed and
+local node boot was skipped as instructed. M35 remains PARTIAL for its
+previously documented final-source binding, partial-charge and remaining
+real-caller proof requirements.
+
+## Griffin Shield three-claim real-caller qualification
+
+Crystal 201189f8 `chest.lua:1872-1893` binds UID6165 at(32498,31721,15)
+with carrier4240, UID6166 at(32500,31721,15) with carrier4024 and UID6167
+at(32503,31724,15) with carrier4024. Their independent rewards are Griffin
+Shield3433 x1, Obsidian Lance3313 x1 and Dwarven Axe3323 x1. The mounted case
+preserves all positions and carrier appearances through the existing source
+world helper and drives literal wire USE in ascending and descending source
+order. Completion stays false after the first and second claims and becomes
+true only after the third. Exact durable roots/quantities, receipts, consumed
+obligations, replay, fresh-repeat refusal and quest state reloads are checked.
+No production reward, declaration or generated content changes.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL case in133.60 seconds, printing
+`M35_GRIFFIN_SHIELD_POSTGRES_CASE_COMPLETED`. Self-review covered all
+handwritten changes and donor positions/carriers/quantities; no significant
+finding. No existing assertion was removed or loosened, and no generated file
+changed. Node boot was skipped as instructed. M35 remains PARTIAL for the
+previously documented final-source binding, partial-charge and remaining
+real-caller proof requirements.

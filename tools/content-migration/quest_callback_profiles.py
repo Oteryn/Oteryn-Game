@@ -284,6 +284,22 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
                        for field in ('movable', 'pickupable'))):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
+        if key == 'oteryn:item.tibia.i2992' and key not in present:
+            # Goblin Temple reuses the seasonal owner's existing Snowball.
+            # Preserve its complete equipment/weapon facts before this pass.
+            import seasonal_item_profiles as seasonal
+            packet = json.loads((root / seasonal.PATH).read_bytes())
+            if (packet['schema'] != 'OTERYN_SEASONAL_ITEM_PROFILES/v1'
+                    or packet['crystal_commit'] != seasonal.PIN
+                    or len(packet['records']) != len(seasonal.IDS)
+                    or {r['production_definition']['production_key'] for r in packet['records']}
+                        != {f'oteryn:item.tibia.i{i}' for i in seasonal.IDS}):
+                raise ValueError('GOBLIN_SNOWBALL_SOURCE_DRIFT')
+            candidates = [r for r in packet['records'] if r['production_definition']['production_key'] == key]
+            if len(candidates) != 1:
+                raise ValueError('GOBLIN_SNOWBALL_SOURCE_ITEM')
+            present[key] = copy.deepcopy(candidates[0])
+            document['records'].append(present[key])
         if key == 'oteryn:item.tibia.i2955' and key not in present:
             # Fanfare already belongs to the retained House provider. Seed its
             # exact source profile before this earlier callback pass can create

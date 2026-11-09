@@ -55,6 +55,23 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_goblin_snowballs_preserve_the_established_seasonal_profile(self):
+        key = 'oteryn:item.tibia.i2992'
+        document = json.loads(self.generated[PROFILE])
+        document['records'] = [r for r in document['records']
+                               if r['production_definition']['production_key'] != key]
+        self.generated[PROFILE] = json.dumps(document).encode()
+        self.admit()
+        row = self.generated_record(key)
+        packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/seasonal-item-profiles.json').read_bytes())
+        source = next(r for r in packet['records'] if r['production_definition']['production_key'] == key)
+        for group in ('classification','container','charges','temporal','skill_modifiers',
+                      'equipment','weapon','presentation','physical','stack'):
+            self.assertEqual(row['semantics'][group],source['semantics'][group])
+        self.assertEqual(row['attributes'],source['attributes'])
+        self.assertEqual(row['authoring'],source['authoring'])
+        self.assertEqual(row['production_binding'],source['production_binding'])
+
     def test_fanfare_preserves_its_established_house_profile(self):
         key = 'oteryn:item.tibia.i2955'
         document = json.loads(self.generated[PROFILE])
@@ -217,7 +234,11 @@ class QuestCallbackProfiles(unittest.TestCase):
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
         # 3083), with 3083 also used by Triangle Tower: 130 + 4 identities.
-        self.assertEqual(len(expected), 142)
+        self.assertEqual(len(expected), 146)
+        # Goblin Temple adds pan3466 and snowball2992; vial2874 was already present.
+        self.assertTrue({'oteryn:item.tibia.i3466','oteryn:item.tibia.i2992'} <= expected)
+        # Draconia adds the one-charge ice rapier and serpent sword to full bags.
+        self.assertTrue({'oteryn:item.tibia.i3284', 'oteryn:item.tibia.i3297'} <= expected)
         # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
         self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
         # Dreamer adds certificate, bread and a WATER vial to the exact closure.

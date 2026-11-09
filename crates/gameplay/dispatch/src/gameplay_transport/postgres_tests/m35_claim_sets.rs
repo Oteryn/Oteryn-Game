@@ -66,6 +66,16 @@ enum Case {
     BlackKnight,
     FireAxeBag,
     FireAxeAll,
+    EmperorCookies,
+    Draconia,
+    GoblinTemple,
+    CrystalWand,
+    CircleRoom,
+    DemonaRing,
+    DoubleHero,
+    Katana,
+    Longsword,
+    GriffinShield,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -85,6 +95,193 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: UID6165..6167 are independent corpse rewards.
+#[test]
+fn m35_griffin_shield_dispatch_requires_all_three_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::GriffinShield).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Griffin Shield scenario panicked")??;
+    println!("M35_GRIFFIN_SHIELD_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: UID6146..6148 are three independent rewards.
+#[test]
+fn m35_longsword_dispatch_requires_all_three_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Longsword).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Longsword scenario panicked")??;
+    println!("M35_LONGSWORD_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:1850-1864: independent Katana corpse rewards.
+#[test]
+fn m35_katana_dispatch_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Katana).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Katana scenario panicked")??;
+    println!("M35_KATANA_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: Demona Ring's two independent rewards.
+#[test]
+fn m35_source_pair_demona_ring_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::DemonaRing).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Demona Ring scenario panicked")??;
+    println!("M35_DEMONA_RING_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: Double Hero's two independent rewards.
+#[test]
+fn m35_source_pair_double_hero_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::DoubleHero).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Double Hero scenario panicked")??;
+    println!("M35_DOUBLE_HERO_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: Circle Room's two independent rewards.
+#[test]
+fn m35_circle_room_dispatch_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::CircleRoom).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Circle Room scenario panicked")??;
+    println!("M35_CIRCLE_ROOM_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:1540-1554: independent Crystal Wand rewards.
+#[test]
+fn m35_crystal_wand_dispatch_requires_both_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::CrystalWand).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Crystal Wand scenario panicked")??;
+    println!("M35_CRYSTAL_WAND_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_goblin_temple_dispatch_requires_both_complete_bags_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::GoblinTemple).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Goblin Temple scenario panicked")??;
+    println!("M35_GOBLIN_TEMPLE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_draconia_dispatch_requires_both_complete_bags_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Draconia).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Draconia scenario panicked")??;
+    println!("M35_DRACONIA_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+#[test]
+fn m35_emperor_cookies_and_key3802_complete_only_after_both_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::EmperorCookies).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Emperor Cookies scenario panicked")??;
+    println!("M35_EMPEROR_COOKIES_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 #[test]
@@ -179,6 +376,66 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::GriffinShield => (
+            (32498, 31721, -15),
+            4240,
+            "oteryn:quest.griffin_shield_quest",
+            &[(32498, 6165), (32500, 6166), (32503, 6167)],
+        ),
+        Case::Longsword => (
+            (32649, 31969, -9),
+            2472,
+            "oteryn:quest.longsword_quest",
+            &[(32649, 6146), (32650, 6147), (32651, 6148)],
+        ),
+        Case::Katana => (
+            (32175, 32145, -11),
+            4240,
+            "oteryn:quest.katana_quest",
+            &[(32175, 6162), (32174, 6163)],
+        ),
+        Case::DemonaRing => (
+            (32504, 31596, -14),
+            2472,
+            "oteryn:quest.demona_ring_quest",
+            &[(32504, 6126), (32515, 6127)],
+        ),
+        Case::DoubleHero => (
+            (33109, 31679, -13),
+            2469,
+            "oteryn:quest.double_hero_quest",
+            &[(33109, 6032), (33110, 6033)],
+        ),
+        Case::CircleRoom => (
+            (32495, 31992, -14),
+            2469,
+            "oteryn:quest.circle_room_quest",
+            &[(32495, 6122), (32497, 6123)],
+        ),
+        Case::CrystalWand => (
+            (32479, 31611, -15),
+            2472,
+            "oteryn:quest.crystal_wand_quest",
+            &[(32479, 6124), (32481, 6125)],
+        ),
+        Case::GoblinTemple => (
+            (31973, 32209, -12),
+            2472,
+            "oteryn:quest.goblin_temple_quest",
+            &[(31973, 6118), (31977, 6119)],
+        ),
+        Case::Draconia => (
+            (32803, 31582, -2),
+            2472,
+            "oteryn:quest.draconia_quest",
+            &[(32803, 6023), (32804, 6024)],
+        ),
+        Case::EmperorCookies => (
+            (32648, 31905, -3),
+            2472,
+            "oteryn:quest.emperor_s_cookies_quest",
+            &[(32648, 5004), (32599, 5005)],
+        ),
         Case::FireAxeAll => (
             (33078, 31656, -11),
             2472,
@@ -249,6 +506,28 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     (33084, 31650, -12, 6036, 4024),
                 ],
             )?
+        } else if matches!(case, Case::EmperorCookies) {
+            source_world_spatial(
+                chest,
+                &[
+                    (32648, 31905, -3, 5004, 2472),
+                    (32599, 31923, -6, 5005, 2472),
+                ],
+            )?
+        } else if matches!(case, Case::GriffinShield) {
+            source_world_objects(
+                chest,
+                &[
+                    (32498, 31721, 6165, 4240),
+                    (32500, 31721, 6166, 4024),
+                    (32503, 31724, 6167, 4024),
+                ],
+            )?
+        } else if matches!(case, Case::Katana) {
+            source_world_objects(
+                chest,
+                &[(32175, 32145, 6162, 4240), (32174, 32149, 6163, 4240)],
+            )?
         } else if matches!(case, Case::Koshei) {
             source_world_objects(
                 chest,
@@ -272,9 +551,22 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(
+            if matches!(case, Case::Longsword | Case::GriffinShield) {
+                3
+            } else if matches!(
                 case,
-                Case::Alawar | Case::Koshei | Case::BlackKnight | Case::FireAxeAll
+                Case::Alawar
+                    | Case::Koshei
+                    | Case::BlackKnight
+                    | Case::FireAxeAll
+                    | Case::EmperorCookies
+                    | Case::Draconia
+                    | Case::GoblinTemple
+                    | Case::CrystalWand
+                    | Case::CircleRoom
+                    | Case::DemonaRing
+                    | Case::DoubleHero
+                    | Case::Katana
             ) {
                 2
             } else {
@@ -389,14 +681,20 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 index
             };
             let x = choices[position_index].0;
-            let y = if matches!(case, Case::FireAxeAll) {
+            let y = if matches!(case, Case::EmperorCookies) {
+                if position_index == 0 { 31905 } else { 31923 }
+            } else if matches!(case, Case::FireAxeAll) {
                 if position_index == 0 { 31656 } else { 31650 }
-            } else if matches!(case, Case::Koshei) {
+            } else if matches!(case, Case::GriffinShield) && position_index == 2 {
+                31724
+            } else if matches!(case, Case::Koshei | Case::Katana) {
                 chest.1 + 4 * u16::try_from(position_index)?
             } else {
                 chest.1
             };
-            let floor = if matches!(case, Case::FireAxeAll) && position_index == 1 {
+            let floor = if matches!(case, Case::EmperorCookies) && position_index == 1 {
+                -6
+            } else if matches!(case, Case::FireAxeAll) && position_index == 1 {
                 -12
             } else {
                 chest.2
@@ -406,7 +704,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 y: i32::from(y),
                 floor: -i16::from(floor),
             };
-            if matches!(case, Case::FireAxeAll) {
+            if matches!(case, Case::FireAxeAll | Case::EmperorCookies) {
                 // Fixture admission at each literal source endpoint; travel is not
                 // under test. Keep the same SQL session fence and command stream.
                 let (runtime, actor) = runtime_at(destination)?;
@@ -511,11 +809,249 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
+                        || matches!(case, Case::Longsword | Case::GriffinShield) && index == 2
                         || matches!(
                             case,
-                            Case::Alawar | Case::Koshei | Case::BlackKnight | Case::FireAxeAll
+                            Case::Alawar
+                                | Case::Koshei
+                                | Case::BlackKnight
+                                | Case::FireAxeAll
+                                | Case::EmperorCookies
+                                | Case::Draconia
+                                | Case::GoblinTemple
+                                | Case::CrystalWand
+                                | Case::CircleRoom
+                                | Case::DemonaRing
+                                | Case::DoubleHero
+                                | Case::Katana
                         ) && index == 1
                 );
+            }
+            if matches!(case, Case::GriffinShield) {
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 4")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    let key = match pos {
+                        0 => "oteryn:item.tibia.i3433",
+                        1 => "oteryn:item.tibia.i3313",
+                        _ => "oteryn:item.tibia.i3323",
+                    };
+                    expected.push((key.to_owned(), 1));
+                }
+                expected.sort();
+                assert_eq!(roots, expected);
+            }
+            if matches!(case, Case::Longsword) {
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 4")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                let mut bag_claimed = false;
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    let key = match pos {
+                        0 => "oteryn:item.tibia.i3285",
+                        1 => "oteryn:item.tibia.i3004",
+                        _ => {
+                            bag_claimed = true;
+                            "oteryn:item.tibia.i2853"
+                        }
+                    };
+                    expected.push((key.to_owned(), 1));
+                }
+                expected.sort();
+                assert_eq!(roots, expected);
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 5")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    children,
+                    if bag_claimed {
+                        vec![
+                            ("oteryn:item.tibia.i2989".to_owned(), 1),
+                            ("oteryn:item.tibia.i3031".to_owned(), 76),
+                            ("oteryn:item.tibia.i3147".to_owned(), 3),
+                            ("oteryn:item.tibia.i3463".to_owned(), 1),
+                        ]
+                    } else {
+                        Vec::new()
+                    }
+                );
+            }
+            if matches!(case, Case::GoblinTemple) {
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 7")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    let source_items = if pos == 0 {
+                        [
+                            ("oteryn:item.tibia.i3551", 1),
+                            ("oteryn:item.tibia.i1781", 5),
+                            ("oteryn:item.tibia.i3031", 50),
+                        ]
+                    } else {
+                        [
+                            ("oteryn:item.tibia.i3466", 1),
+                            ("oteryn:item.tibia.i2992", 4),
+                            ("oteryn:item.tibia.i2874", 1),
+                        ]
+                    };
+                    expected.extend(
+                        source_items
+                            .into_iter()
+                            .map(|(key, qty)| (key.to_owned(), qty)),
+                    );
+                }
+                expected.sort();
+                assert_eq!(children, expected);
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    roots,
+                    vec![("oteryn:item.tibia.i2853".to_owned(), 1); index + 1]
+                );
+                let fluids: Vec<(i64,i16,bool,bool)> = sqlx::query_as(
+                    "SELECT i.quantity,f.fluid_subtype,m.root_transaction_id=r.transaction_id, \
+                     f.last_transaction_id=m.transaction_id FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_nested_entries e ON e.parent_item_instance_id=r.item_instance_id \
+                     JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id \
+                     JOIN game_item_fluid_states f ON f.item_instance_id=i.item_instance_id \
+                     JOIN game_item_fluid_reward_mints m ON m.item_instance_id=i.item_instance_id \
+                     WHERE i.definition_production_key='oteryn:item.tibia.i2874' LIMIT 2")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    fluids,
+                    if reverse || index == 1 {
+                        vec![(1, 1, true, true)]
+                    } else {
+                        Vec::new()
+                    }
+                );
+            }
+            if matches!(case, Case::Draconia) {
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 5")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    for item in if pos == 0 {
+                        ["oteryn:item.tibia.i3284", "oteryn:item.tibia.i3297"]
+                    } else {
+                        ["oteryn:item.tibia.i3081", "oteryn:item.tibia.i3051"]
+                    } {
+                        expected.push((item.to_owned(), 1));
+                    }
+                }
+                expected.sort();
+                assert_eq!(children, expected);
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    roots,
+                    vec![("oteryn:item.tibia.i2853".to_owned(), 1); index + 1]
+                );
+            }
+            if matches!(case, Case::EmperorCookies) {
+                let cookies_claimed = !reverse || index == 1;
+                let key_claimed = reverse || index == 1;
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let expected_children = if cookies_claimed {
+                    vec![
+                        ("oteryn:item.tibia.i2970".to_owned(), 1),
+                        ("oteryn:item.tibia.i3598".to_owned(), 27),
+                    ]
+                } else {
+                    Vec::new()
+                };
+                assert_eq!(children, expected_children);
+                let keys: Vec<(i32, String, i64)> = sqlx::query_as(
+                    "SELECT k.key_number,i.definition_production_key,i.quantity FROM game_item_keys k \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY k.key_number LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let mut expected_keys = Vec::new();
+                if cookies_claimed {
+                    expected_keys.push((3801, "oteryn:item.tibia.i2970".to_owned(), 1));
+                }
+                if key_claimed {
+                    expected_keys.push((3802, "oteryn:item.tibia.i2970".to_owned(), 1));
+                }
+                assert_eq!(keys, expected_keys);
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let mut expected_roots = Vec::new();
+                if cookies_claimed {
+                    expected_roots.push(("oteryn:item.tibia.i2853".to_owned(), 1));
+                }
+                if key_claimed {
+                    expected_roots.push(("oteryn:item.tibia.i2970".to_owned(), 1));
+                }
+                assert_eq!(roots, expected_roots);
+                if index == 1 {
+                    let guard: String = sqlx::query_scalar(
+                        "SELECT pg_get_functiondef('game_item_key_proven()'::regprocedure)",
+                    )
+                    .fetch_one(&h.pool)
+                    .await?;
+                    for arm in [
+                        "game_reward_claim_container_item_proven",
+                        "game_map_item_mint_receipts",
+                        "game_reward_claim_inbox_item_proven",
+                        "game_reward_claim_mint_receipts",
+                    ] {
+                        assert!(guard.contains(arm), "missing key provenance owner: {arm}");
+                    }
+                    // A completed, earlier bag MINT cannot authorize a fresh key.
+                    let forged = sqlx::query(
+                        "INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id) \
+                         SELECT i.item_instance_id,3800,i.minted_transaction_id \
+                         FROM game_reward_claim_mint_receipts r JOIN game_item_instances i USING(item_instance_id) \
+                         WHERE i.definition_production_key='oteryn:item.tibia.i2853' LIMIT 1")
+                        .execute(&h.pool).await;
+                    let Err(sqlx::Error::Database(error)) = forged else {
+                        return Err(format!("stale bag key proof must refuse: {forged:?}").into());
+                    };
+                    assert_eq!(error.code().as_deref(), Some("23514"));
+                    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_keys")
+                        .fetch_one(&h.pool)
+                        .await?;
+                    assert_eq!(count, 2);
+                }
             }
             if matches!(case, Case::FireAxeBag | Case::FireAxeAll) {
                 let bag_claimed = matches!(case, Case::FireAxeBag) || !reverse || index == 1;
@@ -556,7 +1092,16 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     }
                 }
             }
-            if matches!(case, Case::Koshei | Case::BlackKnight) {
+            if matches!(
+                case,
+                Case::Koshei
+                    | Case::BlackKnight
+                    | Case::CrystalWand
+                    | Case::CircleRoom
+                    | Case::DemonaRing
+                    | Case::DoubleHero
+                    | Case::Katana
+            ) {
                 let rewards: Vec<(String, i64)> = sqlx::query_as(
                     "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
                      JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
@@ -574,6 +1119,51 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 "oteryn:item.tibia.i3381"
                             } else {
                                 "oteryn:item.tibia.i3419"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::Katana) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3367"
+                            } else {
+                                "oteryn:item.tibia.i3300"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::DemonaRing) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3049"
+                            } else {
+                                "oteryn:item.tibia.i3051"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::DoubleHero) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3039"
+                            } else {
+                                "oteryn:item.tibia.i3093"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::CircleRoom) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3279"
+                            } else {
+                                "oteryn:item.tibia.i3323"
+                            },
+                            1,
+                        )
+                    } else if matches!(case, Case::CrystalWand) {
+                        (
+                            if pos == 0 {
+                                "oteryn:item.tibia.i3068"
+                            } else {
+                                "oteryn:item.tibia.i11609"
                             },
                             1,
                         )
