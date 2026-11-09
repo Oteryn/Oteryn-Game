@@ -21,6 +21,25 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_deeplings_navigator_approach_preserves_current_world_and_premium(self):
+        bindings = (('oteryn:quest.deeplings_worldchange','s1',
+                     'source-approach:deeplings-navigator-hub','chosen-source/deeplings_worldchange'),)
+        with mock.patch.object(explore,'BINDINGS',bindings):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['world_change'],'deeplings')
+            self.assertEqual(callback['admission'],{'premium':True})
+            self.assertEqual(callback['selector']['native'], {
+                'position':{'x':33641,'y':31379,'floor':-9},'ordinal':0,'appearance':8287})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_lion_trophy_entry_is_activated_with_its_completion_guard(self):
+        callbacks = [c for c in explore.callbacks(ROOT)
+                     if c['quest']=='oteryn:quest.lion_trophy_quest']
+        self.assertEqual(len(callbacks),1,'guarded Lion Trophy entry is activated')
+        self.assertEqual(callbacks[0]['required_completed_quests'],
+                         ['oteryn:quest.the_ice_islands_quest'])
+        self.assertEqual(callbacks[0]['admission'],{'premium':True})
+
     def test_elvenbane_dragon_floor_is_activated(self):
         callbacks = [c for c in explore.callbacks(ROOT)
                      if c['quest']=='oteryn:quest.authored.elvenbane_quest' and '/s2/' in c['key']]

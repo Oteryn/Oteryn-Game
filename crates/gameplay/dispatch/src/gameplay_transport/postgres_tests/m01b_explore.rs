@@ -66,6 +66,9 @@ mod hero_entry;
 #[path = "m01b_explore/elvenbane_dragon.rs"]
 mod elvenbane_dragon;
 
+#[path = "m01b_explore/lion_trophy.rs"]
+mod lion_trophy;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -343,6 +346,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/lion-trophy/s1/entry" {
+        return lion_trophy::world(native);
+    }
     if name == "m01b/elvenbane/s2/entry" {
         return elvenbane_dragon::world(native);
     }
@@ -557,6 +563,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/lion-trophy/s1/entry" {
+        return lion_trophy::exercise(owner, admitted, h).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/elvenbane/s2/entry" {
         return elvenbane_dragon::exercise(owner, admitted, h).await;
     }

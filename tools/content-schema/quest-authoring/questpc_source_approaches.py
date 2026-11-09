@@ -7,6 +7,9 @@ QUEST = 'oteryn:quest.ferumbras_ascension_quest'
 BASE = ('https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/'
         'data-otservbr-global/scripts/quests/')
 SITES = {
+    'deeplings-navigator-hub': ('oteryn:quest.deeplings_worldchange',
+        'canary:quest/deeplings_worldchange', 'deeplings_worldchange/actions_golden_anchor.lua',
+        (33640, 31379, -9), (33641, 31379, -9, 8287)),
     'ferumbras-entrance': (QUEST, 'canary:quest/ferumbras_ascension_quest',
         'ferumbras_ascension/movements_entrance.lua',
         (33275, 32390, -8), (33276, 32390, -8, 410)),

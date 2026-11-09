@@ -171,3 +171,7 @@ Canonical chosen recipe s2 requires reaching the dragon floor after s1 basement 
 ## Completion prerequisites for imported exploration
 
 Lion Trophy canonically requires The Ice Islands Quest (content/quests/definitions/quests-00200-00299.json and the Lion recipe). Exact display names resolve to one canonical quest key; unknown, ambiguous, duplicate and self dependencies are refused. The server checks completed_character_revision for the fenced character in game_character_quest_states and locks matching rows FOR SHARE until its callback transaction ends. Character completion is independent of Current Premium. This guard does not create prerequisite progress or claim that the prerequisite route is playable. Native Lion activation is a separate tested slice.
+
+## Deeplings navigator survey approach
+
+Deeplings chosen survey geometry: use the clear eastern approach33641,31379,z9 (8287),one tile east of pinned Canary navigator destination33640,31379,z9;start33642,31379(8276). Source: https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/data-otservbr-global/scripts/quests/deeplings_worldchange/actions_golden_anchor.lua . This selects a survey point using the return-anchor destination as geometry evidence; existing travel and boss-access interactions retain their own rules. Preserve CurrentPremium and current Worldowner keydeeplings. Resolver tested INACTIVE; native activation follows separately.

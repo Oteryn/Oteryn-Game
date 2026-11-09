@@ -2388,6 +2388,64 @@
       "minimum_level": 40
     },
     {
+      "key": "oteryn:quest-callback/m01b/lion-trophy/s1/entry",
+      "quest": "oteryn:quest.lion_trophy_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32146,
+          "y": 31120,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6685,
+        "native": {
+          "position": {
+            "x": 32146,
+            "y": 31120,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 6685
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/lion_trophy_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/lion_trophy_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/149",
+        "https://tibia.fandom.com/index.php?curid=17206&oldid=1114444",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      },
+      "required_completed_quests": [
+        "oteryn:quest.the_ice_islands_quest"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/lions-rock/s1/entry",
       "quest": "oteryn:quest.lions_rock",
       "trigger": "step_in",

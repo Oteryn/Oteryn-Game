@@ -38,9 +38,10 @@
       "Mad Mage Room Quest",
       "Bear Room Quest",
       "Ghoul Room Quest",
-      "Hero of Rathleton Quest"
+      "Hero of Rathleton Quest",
+      "Lion Trophy Quest"
     ],
-    "wired_explore_stages": 32,
+    "wired_explore_stages": 33,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -74,7 +75,7 @@
       "Ghoul Room Quest",
       "Hero of Rathleton Quest"
     ],
-    "wired_native_visit_anchors": 46,
+    "wired_native_visit_anchors": 47,
     "pg_proven_explore_stages": 32
   },
   "validation": {
@@ -200,9 +201,16 @@
     "completed_quest_guard_units": "GREEN377quest library tests44.13s,0ignored",
     "completed_quest_guard_full_authoring": "GREEN113modules1200tests,0failing modules;8preexisting skips;checks/content-tree PASS",
     "completed_quest_guard_clippy": "GREEN quests+durability+dispatch all-targets strict5m22s",
-    "completed_quest_guard_pins": "GREEN qengine_access --check,equipment profile pins5795,duplicate migrations andfmt;activecallbackJSONunchanged"
+    "completed_quest_guard_pins": "GREEN qengine_access --check,equipment profile pins5795,duplicate migrations andfmt;activecallbackJSONunchanged",
+    "lion_activation": "REDmissing0.413s ->GREEN62Python22.790s;latest inactive Deeplings source preparation63Python24.210s",
+    "lion_native": "WIP/PENDING:prior realPG RED57.598458847s Invalid before movement from unrelated Fresh fixture;replaced with this Harness.seed_pvp_target (real other Character101),corrected native rerun building;NOTclaimed green",
+    "deeplings_preparation": "INACTIVE resolver:REDunsupported0.511s ->GREEN1.273s;native8287ground/currentWorld keydeeplings/Premium retained;source pinned actions_golden_anchor.lua destination33640,31379,z9",
+    "lion_clippy": "GREEN quests+durability+dispatch all-targets3m58s;after observer-fixture correction dispatch all-targets2m48s",
+    "lion_profile": "GREEN6imported profile tests0.05s",
+    "lion_full_authoring": "GREEN113modules1202tests,0failing modules;checks andcontent-tree PASS",
+    "lion_publication": "WIP cadence exception:compiles+clippy+ownunits+authoring green;corrected native PG and current workspace-wide check pending"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "31wiredroutes/32PG-proven EXPLOREstages,46anchors;15routes/24stages unwired. Completion-prerequisite engine tested;Lion native activation remains next. M01b PARTIAL."
+  "continuation": "32wiredroutes/33stages,31PG-proven routes/32stages,47anchors;14routes/23stages unwired. Lion nativePG pending. Deeplings source helper prepared inactive. M01b PARTIAL."
 }
