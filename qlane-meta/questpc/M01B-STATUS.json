@@ -43,9 +43,11 @@
       "Deeplings World Change",
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change",
-      "Horse Station World Change"
+      "Horse Station World Change",
+      "Bewitched",
+      "Chakoya Iceberg Mini World Change"
     ],
-    "wired_explore_stages": 39,
+    "wired_explore_stages": 45,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -82,10 +84,12 @@
       "Deeplings World Change",
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change",
-      "Horse Station World Change"
+      "Horse Station World Change",
+      "Bewitched",
+      "Chakoya Iceberg Mini World Change"
     ],
-    "wired_native_visit_anchors": 53,
-    "pg_proven_explore_stages": 39
+    "wired_native_visit_anchors": 59,
+    "pg_proven_explore_stages": 45
   },
   "validation": {
     "quest_unit_tests": "GREEN381passed,0failed,0ignored,185.02s withstationbinding",
@@ -259,7 +263,7 @@
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "34wiredroutes/35stages,33PG-proven routes/34stages,49anchors;12routes/21stages unwired. FireEarth nativePG pending. M01b PARTIAL.",
+  "continuation": "Chakoya s3 chamber native PG GREEN66.819570055s; first-visit regression GREEN64.969116186s;2 passed,0 failed,0 ignored.38 routes/45 stages/59 anchors PG-proven;8 routes/11 stages remain.124 modules/1234 authoring tests,checks,tree,pins,duplicates,strict all-feature Clippy,workspace all-targets and fmt PASS. M01b PARTIAL;no whole-quest completion claim.",
   "native_anchor_generation": {
     "state": "SLICE_GREEN",
     "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
@@ -268,5 +272,52 @@
     "postgres": "m01b_horse_station_native_landmark_visit_never_activates_escape_state GREEN118.467654971s; real dispatch STEP, once/replay/revisit, no World escape activation.",
     "remaining": "No new route qualification.36routes/39stages proven,10routes/17stages unwired.",
     "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
+  },
+  "bewitched_cauldron_survey": {
+    "state": "FIRST_SURVEY_NATIVE_PG_QUALIFIED",
+    "scope": "Bewitched s1 only: exact authored personal-daily adaptation, first objective, pinned spoiler and retained huge cauldron corner required; global event and later stages are untouched.",
+    "native_landmark": "32732,31935,z12 source stack[7272,12023];clear entry32733,31935,-12ground7272;startEast32734,31935,-12.",
+    "red_green": "Liveactivation RED0vs1->GREEN3focusedtests1.275s;full121modules1225tests0failingmodules.",
+    "pending": "Dailyreentry,ingredients,brewing,combat,reward/completion remain separate later-stage obligations;allfirst-surveypublicationgatespassed.",
+    "native_postgres": "m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew GREEN71.68814649s,0ignored;exactnativecauldron[7272,12023]preserved;realSTEPonce/replay/revisit,no laterstage/completion/globaleventcredit.",
+    "publication_gates": "PASS121modules1225authoringtests;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt;strictquests+dispatchalltargetsClippy5m11s;workspacealltargets4m49s.",
+    "additional_feature_gate": "Post-publication strictdispatchall-targets/all-featuresClippyGREEN4m12s on07594a170;no source fix required."
+  },
+  "iceberg_fixed_expedition": {
+    "state": "FIRST_SURVEY_NATIVE_PG_QUALIFIED",
+    "scope": "Chakoya s1 fixed personal expedition only;canonical Premium retained;no global World-owner promotion. Other stages/dynamic expedition/repeat/objective/source changes reject.",
+    "native": "ExactArea75507rev1117033 marker32623,32584,z7;retained stack[799,7152];clear approach32622,32585,-7ground6585;startSouth32622,32586ground6582.",
+    "red_green": "LiveactivationRED0vs1->GREEN4focusedtests1.679s;full122modules1229tests0failingmodules.",
+    "regression_postgres": "ExistingBewitched realnativeSTEPcase GREEN181.037823667s,0ignored. This isNOTaChakoyaPGqualification.",
+    "pending": "Kill stage,chamber visit,reward/completionremainunqualified. First-surveypublicationgatesallGREEN;no syntheticglobalWorldflag/HELDownerpromotion.",
+    "workspace": "GREENworkspacealltargets8m23s andfmt. No Rust/SQLcontentchange in thispreparedslice.",
+    "publication_gates": "GREEN122authoringmodules1229tests,0failingmodules;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt+explicitauto-mountedparent/newcaseformatchecks;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s;nativePG78.48657683s.",
+    "native_postgres": "m01b_chakoya_native_personal_iceberg_entry_requires_current_premium GREEN78.48657683s,0ignored;exactlandmark[799,7152]preserved;realCurrentPremium/refusedreplay/freshonce/revisit;laterstage/completion/globalstate0."
+  },
+  "remaining_stage_audit": "46routes56stagescountedfrompacketandcanonicaldefs;45boundandPG-proven. Remaining11:Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.",
+  "later_native_surveys": {
+    "state": "LATER_VISITS_NATIVE_PG_QUALIFIED",
+    "scope": "DragonCorpse s3 fire corridor,DragonTower s3 lastfloor,EdronGoblin s3 throneapproach;real s1STEPbeforeevidence,onlyseparateUSE/KILLconditionarranged;noExplore/receipt/rootrevisionseeding;EdronCurrentPremium;freshonce/refusedreplay/revisit/wholecomplete0.",
+    "postgres": {
+      "dragon_corpse_s3_seconds": 67.987155645,
+      "dragon_tower_s3_seconds": 68.044933223,
+      "edron_goblin_s3_seconds": 68.476461392,
+      "result": "3passed0failed0ignored,total204.51s"
+    },
+    "red_green": "2focusedtestsRED3unsupportedclaims+3missingbindings->GREEN2.059s. Initialfullauthoringfound2failures:prependedS3shadoweds1andlegacyone-callbacktotal. Appendedlaterbindings;nowexact2DragonCorpsekeyswithoriginals1assertionretained+news3assertion. Focused65GREEN47.055s;FULLretry123modules1231tests0failures.",
+    "build_recovery": "FirstdispatchtestbuildSIGKILLbeforerunningPG;16GiBcgroup. ReranwithCARGO_BUILD_JOBS=2afterdependencycachecompleted;compileGREEN6m51s,all3realPGcasesGREEN.",
+    "pending": "No new reward/kill/action/transport/fullquestqualification;allpublicationgatesGREEN.",
+    "publication_gates": "PASS123modules1231testsafterfullretry;authoringchecks;content-tree;nativeproviderregeneration;callbackcheck/equipment5795pin/dupmigrations;strictquests+dispatchalltargetsALLFEATURESClippy4m17s;workspacealltargets4m47s;fmt+explicitauto-mountedparent/newfilechecks;3realPGcases204.51s."
+  },
+  "iceberg_chamber_survey": {
+    "state": "NATIVE_PG_GREEN_PUBLISHED_GATES",
+    "scope": "Authoredfixedpersonalnorthernice-walledalcove;frozenchair+threewallsSourcefootprintpreserved;actuals1STEP,onlynonExplorethree-killevidencearranged;Premium/refusedreplay/freshonce/revisit;wholecompletion0. No globalWorldownerpromotion.",
+    "postgres": {
+      "new_chamber_seconds": 66.819570055,
+      "first_visit_regression_seconds": 64.969116186,
+      "result": "2passed0failed0ignored,total131.79s"
+    },
+    "red_green": "3focusedtestsREDmissingresolver/currentWorldowner/live0vs1->GREEN1.523s;4firsttestsGREEN1.427s;65bindingtestsGREEN41.116s.124modules1234authoringtests0failures. FirstPGRED58.114248801s expectedsource4vs6 becausehalf-opencropmaxexcludedwall/start;expandedboundsretainingALL6assertions;BOTHnativePGcasesGREENafterfix.",
+    "pending": "First and chamber visits qualified;kill/reward/completion/transport qualification remains outside these visit proofs. All publication gates GREEN."
   }
 }

@@ -4,6 +4,7 @@ from pathlib import Path
 
 SOURCE = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 APPROACHES = {
+    'oteryn:area.hunting_place.chakoya_iceberg': ((32623, 32584, -7), (32622, 32585, -7, 6585)),
     'oteryn:area.hunting_place.cobra_bastion': ((33301, 32647, -7), (33301, 32648, -7, 231)),
     'oteryn:area.hunting_place.grimvale': ((33333, 31690, -7), (33335, 31690, -7, 4515)),
     'oteryn:area.hunting_place.rookgaard_bear_cave': ((32147, 32208, -7), (32147, 32207, -7, 4409)),
@@ -11,7 +12,8 @@ APPROACHES = {
     'oteryn:area.hunting_place.shadowthorn': ((33075, 32170, -7), (33075, 32169, -7, 408)),
     'oteryn:area.hunting_place.helheim': ((32478, 31179, -7), (32479, 31179, -7, 6593)),
 }
-DISTANCES = {'oteryn:area.hunting_place.edron_dragon_lair': 2,
+DISTANCES = {'oteryn:area.hunting_place.chakoya_iceberg': 2,
+             'oteryn:area.hunting_place.edron_dragon_lair': 2,
              'oteryn:area.hunting_place.grimvale': 2}
 
 
