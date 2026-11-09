@@ -9,13 +9,13 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:37:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:253:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:271:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -26,7 +26,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:145:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -37,7 +37,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:163:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -48,7 +48,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:181:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -59,7 +59,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:199:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -70,7 +70,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:217:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -81,7 +81,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:235:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -92,7 +92,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:415:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -104,13 +104,13 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:37:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:253:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:271:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -122,13 +122,13 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:37:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:253:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:271:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -139,7 +139,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:289:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -150,7 +150,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:307:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -161,7 +161,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:325:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -172,7 +172,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:343:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -183,7 +183,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:361:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -194,7 +194,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:379:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     },
@@ -205,7 +205,7 @@
         "oteryn:quest.forgotten_knowledge_quest"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:82e5b24cab1cbecb889d5b730501159650cd129e298feac44d4b9e0e8f237424",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:17a51bf2d10c0d4584e81995cae20539042340195c28e458c18cc73610f0cd7a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/XML/imbuements.xml:397:sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
       ]
     }

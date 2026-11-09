@@ -34,10 +34,20 @@ def main():
                          f'assert_eq!(added_keys.len(), {len(expected)});', before)
     if count != 1:
         raise SystemExit('QENGINE_EQUIPMENT_AUDIT_ANCHOR')
-    after, count = re.subn(r'QENGINE2 (?:captures 53 shared Items plus seven portable QUESTPC4 Items|adds exactly the [0-9]+ independently captured physical quest Items)\.',
+    after, count = re.subn(r'(?:QENGINE2 (?:captures 53 shared Items plus seven portable QUESTPC4 Items|adds exactly the [0-9]+ independently captured physical quest Items)|Source-pinned physical quest Items retain existing mechanic owners)\.',
                          f'QENGINE2 adds exactly the {len(expected)} independently captured physical quest Items.', after)
     if count != 1:
         raise SystemExit('QENGINE_EQUIPMENT_AUDIT_COMMENT')
+    # The merged branch also states the exact delta from its frozen main base.
+    # Keep that independently named base and every attribute assertion intact.
+    base = re.findall(r'const QENGINE2_BASE_PROFILES: usize = ([0-9]+);', after)
+    if base:
+        if base != ['53'] or len(expected) < 53:
+            raise SystemExit('QENGINE_EQUIPMENT_BASE_COUNT')
+        after, count = re.subn(r'assert_eq!\(additions\.len\(\), QENGINE2_BASE_PROFILES \+ [0-9]+\);',
+                             f'assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + {len(expected) - 53});', after)
+        if count != 1:
+            raise SystemExit('QENGINE_EQUIPMENT_DELTA_ANCHOR')
     if args.check and after != before:
         raise SystemExit('QENGINE_EQUIPMENT_COUNT_STALE: run tools/content-migration/qengine_equipment_audit.py content')
     if not args.check and after != before:

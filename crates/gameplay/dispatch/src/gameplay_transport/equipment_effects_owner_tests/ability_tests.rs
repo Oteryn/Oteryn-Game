@@ -347,7 +347,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // Source-pinned physical quest Items retain existing mechanic owners.
+    // QENGINE2 adds exactly the 128 independently captured physical quest Items.
     // In particular the pre-existing pick keeps its unknown equipment speed;
     // custody completion must not replace that owner with a fabricated zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(

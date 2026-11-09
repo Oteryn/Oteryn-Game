@@ -23,6 +23,7 @@
     "Document": 1609,
     "Effect": 5800,
     "Encounter": 108,
+    "Encounter.Raid": 240,
     "Formula": 6129,
     "Item": 34111,
     "Loot": 1292,
@@ -241,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "652fc1afd55fded6e61ae6da2d3bec52198c2f7dc3eb80cae4c63f5c1eed57a7"
+          "sha256": "c858de925fc959a24179effdbc153768ae215874d913174877a1a5f29535de39"
         },
         {
           "creates_canonical_identities": false,

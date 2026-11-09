@@ -1414,6 +1414,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3114",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Rubbish"
         }
       },
       "semantics": {
@@ -1609,6 +1612,9 @@
           "family": "Item",
           "key": "candidate:item/3120",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rubbish"
         }
       },
       "semantics": {
@@ -1736,7 +1742,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -1771,6 +1779,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3205",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -2101,6 +2112,9 @@
           "family": "Item",
           "key": "candidate:item/3214",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -2227,7 +2241,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -2262,6 +2278,9 @@
           "family": "Item",
           "key": "candidate:item/3231",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -2388,7 +2407,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -2423,6 +2444,9 @@
           "family": "Item",
           "key": "candidate:item/3232",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Documents and Papers"
         }
       },
       "semantics": {
@@ -2549,7 +2573,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -2584,6 +2610,9 @@
           "family": "Item",
           "key": "candidate:item/3233",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -2710,7 +2739,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -2745,6 +2776,9 @@
           "family": "Item",
           "key": "candidate:item/3234",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Books"
         }
       },
       "semantics": {
@@ -2908,6 +2942,9 @@
           "family": "Item",
           "key": "candidate:item/3243",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -3034,7 +3071,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -3749,6 +3788,9 @@
           "family": "Item",
           "key": "candidate:item/3560",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Legs"
         }
       },
       "semantics": {
@@ -3917,7 +3959,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -4832,6 +4876,9 @@
           "family": "Item",
           "key": "candidate:item/3661",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -4959,7 +5006,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -6739,6 +6788,9 @@
           "family": "Item",
           "key": "candidate:item/5941",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -6865,7 +6917,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -8609,7 +8663,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -8751,7 +8807,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -9059,7 +9117,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -9573,6 +9633,9 @@
           "family": "Item",
           "key": "candidate:item/11545",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -9699,7 +9762,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -9734,6 +9799,9 @@
           "family": "Item",
           "key": "candidate:item/11546",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -9860,7 +9928,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -9895,6 +9965,9 @@
           "family": "Item",
           "key": "candidate:item/11547",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10021,7 +10094,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -10056,6 +10131,9 @@
           "family": "Item",
           "key": "candidate:item/11548",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10182,7 +10260,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -10217,6 +10297,9 @@
           "family": "Item",
           "key": "candidate:item/11549",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10343,7 +10426,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -10378,6 +10463,9 @@
           "family": "Item",
           "key": "candidate:item/11550",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10504,7 +10592,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -10539,6 +10629,9 @@
           "family": "Item",
           "key": "candidate:item/11551",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10665,7 +10758,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -10700,6 +10795,9 @@
           "family": "Item",
           "key": "candidate:item/11552",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -10827,7 +10925,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -13338,6 +13438,9 @@
           "family": "Item",
           "key": "candidate:item/17668",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -13447,7 +13550,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -13482,6 +13587,9 @@
           "family": "Item",
           "key": "candidate:item/17669",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -13590,7 +13698,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -13625,6 +13735,9 @@
           "family": "Item",
           "key": "candidate:item/17670",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -13733,7 +13846,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -13768,6 +13883,9 @@
           "family": "Item",
           "key": "candidate:item/17671",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -13876,7 +13994,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -13911,6 +14031,9 @@
           "family": "Item",
           "key": "candidate:item/17672",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -14019,7 +14142,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -14054,6 +14179,9 @@
           "family": "Item",
           "key": "candidate:item/17673",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -14162,7 +14290,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -14197,6 +14327,9 @@
           "family": "Item",
           "key": "candidate:item/17674",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -14305,7 +14438,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -14340,6 +14475,9 @@
           "family": "Item",
           "key": "candidate:item/17675",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -14448,7 +14586,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -14483,6 +14623,9 @@
           "family": "Item",
           "key": "candidate:item/17676",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -14591,7 +14734,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -14734,7 +14879,9 @@
         "has_height": true,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -14768,6 +14915,9 @@
           "family": "Item",
           "key": "candidate:item/17679",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -14876,7 +15026,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": true,
+        "always_on_top_order": 2
       },
       "admission": {
         "materializable": true,
@@ -15018,7 +15170,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -15052,6 +15206,9 @@
           "family": "Item",
           "key": "candidate:item/19083",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -15179,7 +15336,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -15214,6 +15373,9 @@
           "family": "Item",
           "key": "candidate:item/19151",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -15340,7 +15502,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -15816,7 +15980,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": true,
+        "always_on_top_order": 2
       },
       "admission": {
         "materializable": true,
@@ -15850,6 +16016,9 @@
           "family": "Item",
           "key": "candidate:item/21897",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -15995,6 +16164,9 @@
           "family": "Item",
           "key": "candidate:item/21898",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -16158,6 +16330,9 @@
           "family": "Item",
           "key": "candidate:item/21899",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -16321,6 +16496,9 @@
           "family": "Item",
           "key": "candidate:item/21901",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -16484,6 +16662,9 @@
           "family": "Item",
           "key": "candidate:item/21902",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -16647,6 +16828,9 @@
           "family": "Item",
           "key": "candidate:item/21905",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -16810,6 +16994,9 @@
           "family": "Item",
           "key": "candidate:item/21906",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Taming Items"
         }
       },
       "semantics": {
@@ -16973,6 +17160,9 @@
           "family": "Item",
           "key": "candidate:item/22074",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -17081,7 +17271,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -17116,6 +17308,9 @@
           "family": "Item",
           "key": "candidate:item/22082",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -17243,7 +17438,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -17720,7 +17917,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": true,
+        "always_on_top_order": 2
       },
       "admission": {
         "materializable": true,
@@ -17754,6 +17953,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i23986",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Books"
         }
       },
       "semantics": {
@@ -17881,7 +18083,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -17916,6 +18120,9 @@
           "family": "Item",
           "key": "candidate:item/27565",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -18090,7 +18297,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -18897,7 +19106,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": true,
+        "always_on_top_order": 1
       },
       "admission": {
         "materializable": true,
@@ -18931,6 +19142,9 @@
           "family": "Item",
           "key": "candidate:item/32197",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Creature Products"
         }
       },
       "semantics": {
@@ -19040,7 +19254,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -19075,6 +19291,9 @@
           "family": "Item",
           "key": "candidate:item/32225",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -19183,7 +19402,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -19218,6 +19439,9 @@
           "family": "Item",
           "key": "candidate:item/32226",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -19326,7 +19550,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -19695,6 +19921,9 @@
           "family": "Item",
           "key": "candidate:item/32537",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -19803,7 +20032,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": true,
+        "always_on_top_order": 3
       },
       "admission": {
         "materializable": true,
@@ -19837,6 +20068,9 @@
           "family": "Item",
           "key": "candidate:item/32582",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -19945,7 +20179,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -20147,6 +20383,9 @@
           "family": "Item",
           "key": "candidate:item/32584",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Liquids"
         }
       },
       "semantics": {
@@ -20255,7 +20494,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -20290,6 +20531,9 @@
           "family": "Item",
           "key": "candidate:item/32585",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Armors"
         }
       },
       "semantics": {
@@ -20445,7 +20689,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -20480,6 +20726,9 @@
           "family": "Item",
           "key": "candidate:item/32602",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -20589,7 +20838,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -20624,6 +20875,9 @@
           "family": "Item",
           "key": "candidate:item/32757",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -20732,7 +20986,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
