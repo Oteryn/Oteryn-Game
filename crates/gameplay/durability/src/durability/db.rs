@@ -35,6 +35,96 @@ const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
 /// when (NBDIAG-4).
 type HolderOwner = Option<(&'static std::panic::Location<'static>, Instant)>;
 
+/// Records the maintenance window's own checkout of the holder when it ends (NBDIAG-5).
+struct MaintenanceUsage(Instant);
+
+impl Drop for MaintenanceUsage {
+    fn drop(&mut self) {
+        record_holder_usage(None, Some(self.0.elapsed()));
+    }
+}
+
+/// How long a holder usage report covers (NBDIAG-5).
+const HOLDER_USAGE_WINDOW: Duration = Duration::from_secs(10);
+
+/// One call site's use of the single holder within a usage window (NBDIAG-5). `None` as the
+/// call site is the readiness maintenance window.
+#[derive(Default)]
+struct CallerUsage {
+    passes: u64,
+    held: Duration,
+    refused: u64,
+}
+
+struct HolderUsage {
+    since: Instant,
+    callers: Vec<(Option<&'static std::panic::Location<'static>>, CallerUsage)>,
+}
+
+static HOLDER_USAGE: StdMutex<Option<HolderUsage>> = StdMutex::new(None);
+
+/// Adds one checkout (`Some` held time) or one refused checkout (`None`) to the usage window
+/// and reports the window on stderr once it is complete (NBDIAG-5).
+fn record_holder_usage(
+    caller: Option<&'static std::panic::Location<'static>>,
+    held: Option<Duration>,
+) {
+    let Ok(mut usage) = HOLDER_USAGE.lock() else {
+        return;
+    };
+    let now = Instant::now();
+    let window = usage.get_or_insert_with(|| HolderUsage {
+        since: now,
+        callers: Vec::new(),
+    });
+    let position = window
+        .callers
+        .iter()
+        .position(|(known, _)| match (known, caller) {
+            (Some(known), Some(caller)) => std::ptr::eq(*known, caller),
+            (None, None) => true,
+            _ => false,
+        });
+    let index = position.unwrap_or_else(|| {
+        window.callers.push((caller, CallerUsage::default()));
+        window.callers.len() - 1
+    });
+    if let Some((_, entry)) = window.callers.get_mut(index) {
+        match held {
+            Some(held) => {
+                entry.passes += 1;
+                entry.held += held;
+            }
+            None => entry.refused += 1,
+        }
+    }
+    let elapsed = now.duration_since(window.since);
+    if elapsed < HOLDER_USAGE_WINDOW {
+        return;
+    }
+    let held: Duration = window.callers.iter().map(|(_, entry)| entry.held).sum();
+    let passes: u64 = window.callers.iter().map(|(_, entry)| entry.passes).sum();
+    let refused: u64 = window.callers.iter().map(|(_, entry)| entry.refused).sum();
+    eprintln!(
+        "DURABILITY_HOLDER_WINDOW window_ms={} held_ms={} passes={passes} refused={refused}",
+        elapsed.as_millis(),
+        held.as_millis(),
+    );
+    window
+        .callers
+        .sort_by_key(|(_, entry)| std::cmp::Reverse(entry.held));
+    for (caller, entry) in window.callers.iter().take(8) {
+        let site = caller.map_or_else(|| "maintenance".to_owned(), ToString::to_string);
+        eprintln!(
+            "DURABILITY_HOLDER_USAGE caller={site} passes={} held_ms={} refused={}",
+            entry.passes,
+            entry.held.as_millis(),
+            entry.refused,
+        );
+    }
+    *usage = None;
+}
+
 /// Records which semantic pass has the holder checked out, and reports a pass that drops it
 /// without finishing its operation: a cancelled caller or one that never ran the pass
 /// (NBDIAG-4).
@@ -65,6 +155,7 @@ impl PassOwner {
 
 impl Drop for PassOwner {
     fn drop(&mut self) {
+        record_holder_usage(Some(self.caller), Some(self.issued.elapsed()));
         if !self.finished {
             eprintln!(
                 "DURABILITY_PASS_DROPPED caller={} held_ms={}",
@@ -1112,6 +1203,7 @@ impl DurabilityRoot {
             Ok(holder) => holder,
             Err(error) => return Err(DurabilityError::from(error)),
         };
+        let _usage = MaintenanceUsage(Instant::now());
 
         let remaining = deadline.saturating_duration_since(Instant::now());
         let compatibility =
@@ -1223,7 +1315,9 @@ impl DurabilityRoot {
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let holder = self.try_acquire_ready()?;
+        let holder = self.try_acquire_ready().inspect_err(|_| {
+            record_holder_usage(Some(caller), None);
+        })?;
         let issued = Instant::now();
         Ok(IssuedSemanticPass {
             root: self.clone(),
@@ -1246,7 +1340,9 @@ impl DurabilityRoot {
         if deadline <= now {
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
-        let holder = self.try_acquire_ready()?;
+        let holder = self.try_acquire_ready().inspect_err(|_| {
+            record_holder_usage(Some(caller), None);
+        })?;
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
