@@ -877,7 +877,7 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
             seed_feroxa_clear_item(harness, &owner, id(114), 33457, 31531).await?;
             for n in 0..if prove_batches { 30 } else { 1 } {
                 clear_corpses.push(mint_feroxa_clear_corpse(harness, &owner, 119 + n,
-                    if prove_batches { 16 } else { 1 }).await?);
+                    if prove_batches { 16 } else { 1 }, !prove_batches && !prove_handoff).await?);
             }
         }
         if prove_handoff {
@@ -1452,7 +1452,7 @@ async fn seed_feroxa_clear_item(
 async fn mint_feroxa_clear_corpse(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    local: u32, entries: u32,
+    local: u32, entries: u32, nested: bool,
 ) -> TestResult<([u8; 16], Vec<[u8; 16]>)> {
     use crate::durability::item_mint::*;
     let runtime = owner.runtime.lock().await;
@@ -1482,9 +1482,11 @@ async fn mint_feroxa_clear_corpse(
         other => return Err(debug(other)),
     };
     let mut loot = Vec::new();
-    for ordinal in 1..=entries {
+    for ordinal in 1..=entries + if nested { 2 } else { 0 } {
     let mut candidate = h.root.freeze_corpse_loot_mint(owner.character, &h.node, CorpseLootMintRequest {
-        cause: cause("fixture:purpose.feroxa-clear", ordinal), item: definition("oteryn:item.tibia.i3031"), quantity: 17,
+        cause: cause("fixture:purpose.feroxa-clear", ordinal),
+        item: definition(if nested && ordinal==entries+1 { "oteryn:item.tibia.i2854" } else { "oteryn:item.tibia.i3031" }),
+        quantity: if nested && ordinal==entries+1 { 1 } else { 17 },
         placement: CorpseContainerPlacement { corpse_item_instance_id: corpse, placement_ordinal: ordinal, fluid_subtype: None },
         content_revision: "content-1".into(), ruleset_revision: "ruleset-1".into(), sim_revision: "sim-1".into(),
     }).await.map_err(debug)?;
@@ -1493,6 +1495,18 @@ async fn mint_feroxa_clear_corpse(
         other => return Err(debug(other)),
     };
     loot.push(item);
+    }
+    if nested {
+        let bag = loot.get(usize::try_from(entries)?).ok_or("nested bag")?;
+        let child = loot.last().ok_or("nested gold")?;
+        let mut tx = h.pool.begin().await?;
+        // Trusted imported custody baseline only; the tested clear uses all guards.
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(child.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(child.as_slice()).bind(bag.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
     }
     Ok((corpse, loot))
 }
