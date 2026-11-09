@@ -99,3 +99,33 @@ metadata and verify the full identity witness rather than only a stale count.
 The complete source cohort still declares 6251 profiles against a runtime union
 of 6219; its independent sum guard remains enabled. This batch preserves the
 generated inputs while that source ownership overlap is investigated.
+
+### Independently proved cohort overlaps
+
+The overlap composer now checks the exact identities of each source packet
+before subtracting a closed, explicit intersection. Elemental Spheres shares
+14 identities with floor assembly; Rafzane shares eight with the elevator;
+five endgame corpses already belong to SRX3; crafting shares two QENGINE items;
+ENGNPC-M05 and the two talisman declarations each share one QENGINE item.
+These 32 duplicate contributions explain the previous 6251/6219 mismatch.
+The runtime union is not an input to these deductions, and its independent
+sum check remains enabled. Both regeneration and `--check` pass at 6219.
+Four new tests cover exact deductions, idempotence, a missing corpse proof,
+duplicate/foreign source identities, and refusal to repair an arbitrary prior
+declaration.
+
+The focused Rust production-profile test compiled successfully (4m49s), then
+ran for 104.913 seconds and exposed a separate Galthen loot defect: item 44648
+has raw speed 15 but its native ability sum is zero. This batch does not alter
+that assertion. Quest-authoring checks still report the two reward-claim
+variant failures; content-tree validation reaches `LOCK_COUNTS`. Those checks
+are not reported as green.
+
+The post-fix native PG rerun reached real database migrations, but neither
+mechanic body ran: `srx3_cloak_` cases took 74.825 and 75.355 seconds and both
+failed with `while executing migration 2020: error returned from database:
+quest reward quantity variable requires exact guard anchor: actual BIGINT;
+at line 3909`. Migration 2020 belongs to another lane and is outside this
+lane's 2170–2179 range. A later migration cannot repair an earlier fresh-schema
+failure. No foreign or merged migration was edited; current PG qualification
+remains PARTIAL pending that prerequisite fix.

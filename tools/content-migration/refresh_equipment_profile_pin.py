@@ -313,8 +313,13 @@ def main():
     source = qengine_reward_equipment_pin.refresh(
         source, json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
     )
+    import equipment_source_overlaps
+    srx3 = source_cohorts(ROOT)
+    boss_corpses = keys(next(document for name, document, _ in srx3
+                            if name == 'SRX3-BOSS-CORPSES'))
+    source = equipment_source_overlaps.refresh(source, ROOT, boss_corpses)
     generated, count = regenerate(
-        register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
+        register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=srx3,
         coowners=source_coowners(ROOT),
     )
     if args.check and generated != original:
