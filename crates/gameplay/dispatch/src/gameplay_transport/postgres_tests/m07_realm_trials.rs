@@ -10,7 +10,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
 const NAME:&str="m07/realm-trial";
 const BEGIN:Position=Position{x:33080,y:32582,floor:-3};
 const CONTROL:Position=Position{x:33080,y:32583,floor:-3};
-pub(super) fn start()->Position {Position{x:33079,y:32582,floor:-3}}
+pub(super) fn start()->Position {Position{x:33079,y:32583,floor:-3}}
 #[test]
 fn m07_realm_postgres_retained_key_multifloor_clear_and_independent_resets()->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
@@ -26,11 +26,11 @@ pub(super) fn world(native:&NativeGameplayState)->TestResult<crate::map::boot::B
     native_scene_with_appearances(native,vec![
         NativeCrop{
             bytes:include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../content/world/placements/region-z03-x129-y127.b3")),
-            region:(3,129,127),bounds:(33073,32580,33084,32593),start:(33079,32582),
+            region:(3,129,127),bounds:(33073,32580,33084,32593),start:(33079,32583),
             expected:vec![
                 ExpectedTile{position:(33080,32582),ids:vec![104,1772,1823,2772],counted_entry:None},
                 ExpectedTile{position:(33080,32583),ids:vec![430,2124],counted_entry:None},
-                ExpectedTile{position:(33079,32582),ids:vec![104,2189],counted_entry:None},
+                ExpectedTile{position:(33079,32583),ids:vec![104],counted_entry:None},
                 ExpectedTile{position:(33075,32591),ids:vec![104,2129],counted_entry:None},
             ],
         },

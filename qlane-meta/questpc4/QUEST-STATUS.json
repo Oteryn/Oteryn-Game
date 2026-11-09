@@ -11240,7 +11240,22 @@
       "fmt": "PASS",
       "equipment_profile_pin": "PASS 5799 union/67engine profiles",
       "pin_check_seconds": 30.741,
-      "duplicate_migrations": "PASS"
+      "duplicate_migrations": "PASS",
+      "live_carrier_multifloor_regression_seconds": 0.016,
+      "module_registration_seconds": 0.01,
+      "postgres_native_realm": {
+        "version": "18.6",
+        "seconds": 60.501319708,
+        "test": "m07_realm_postgres_retained_key_multifloor_clear_and_independent_resets"
+      },
+      "remote_adapter_preflight_seconds": 0.051,
+      "clock_fix_validation": {
+        "dispatch_clippy_seconds": 224.423,
+        "workspace_all_targets_seconds": 223.709,
+        "fmt_seconds": 16.074,
+        "pin_check_seconds": 27.624,
+        "duplicate_migrations": "PASS"
+      }
     },
     "capability": "up to3 explicitly opted-in extra floors of the same bounded clear footprint; legacy single-floor validation unchanged",
     "bindings": [
@@ -11248,7 +11263,20 @@
       "oteryn:quest-callback/m07/realm-trial"
     ],
     "decision": "native existing lever starts level40 retained-key trial; adjacent native fire atomically reveals/operates chosen switch; wall60s/control300s; explicit chosen mapping, no recovered AID claim",
-    "pending": "native Realm PG story and expanded live-carrier floor test",
-    "remaining": "Compiling native Realm/multi-floor slice ready for cadence push; complete focused PG story and remaining M07 families"
+    "pending": "none for the native Realm retained-key/multi-floor trial slice",
+    "remaining": "Realm trial slice PG GREEN; other M07 families remain incomplete",
+    "native_pg_red": [
+      {
+        "seconds": 54.9329459,
+        "error": "StartNotEnterable",
+        "cause": "fixture start carried sandstone statue2189; changed to adjacent captured bare sand104"
+      },
+      {
+        "seconds": 59.973569411,
+        "postgres": "18.6",
+        "error": "reset delta239999989 !=240000000",
+        "cause": "source and remote reset preparations sampled owner clock separately; use one operation timestamp"
+      }
+    ]
   }
 }

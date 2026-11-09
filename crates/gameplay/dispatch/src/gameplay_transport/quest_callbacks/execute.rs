@@ -104,8 +104,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        // Both lifecycle deadlines belong to this operation, even when preparing
+        // its remote object read set takes time.
+        let lifecycle_now = self.owner_now().get();
         if !close && let Some(delay) = callback.effects.reset_after_ms {
-            let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
+            let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
             projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
@@ -249,7 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map,
             callback,
             (key, expected_revision),
-            self.owner_now().get(),
+            lifecycle_now,
             projection,
             &mut passages,
             &mut replacements,
