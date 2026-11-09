@@ -52,6 +52,13 @@ class LionTrialItemProfiles(unittest.TestCase):
             'materializable': True, 'stack_class': 'NonStackable',
             'legal_destinations': ['CharacterInventory', 'Ground']})
 
+    def test_retained_source_resolver_returns_the_complete_exact_pair(self):
+        records = profiles.records(ROOT, self.xml, self.definitions)
+        self.assertEqual(set(records), {f'oteryn:item.tibia.i{i}' for i in profiles.SOURCE_RECORDS})
+        for item_id in profiles.SOURCE_RECORDS:
+            self.assertEqual(records[f'oteryn:item.tibia.i{item_id}'],
+                             profiles.qualify(*self.values(item_id)))
+
     def test_source_duration_and_custom_action_changes_are_refused(self):
         for item_id in profiles.SOURCE_RECORDS:
             for key, value in [('duration', '1'), ('script', 'custom')]:

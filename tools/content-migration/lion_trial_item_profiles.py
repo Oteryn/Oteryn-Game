@@ -60,3 +60,22 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
         {'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': [record]},
         bindings, {item_id},
     )['records'][0]
+
+
+def records(root, xml, definitions):
+    """Resolve the exact two native records from the retained pinned providers."""
+    import qengine_reward_item_profiles as shared
+
+    source = owner.source
+    raw = (root / shared.CLIENT).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != shared.CLIENT_SHA:
+        raise ValueError('LION_TRIAL_CLIENT_SOURCE')
+    appearances = source.engine_items.load_appearance_objects(raw)
+    physical = {row['server_item_id']: row for row in source.policies(
+        raw, xml, set(SOURCE_RECORDS))}
+    nodes = source.xml_index(xml)
+    bindings = source.binding_index(
+        (root / 'imports/crystalserver/bindings/items.json').read_bytes())
+    return {f'oteryn:item.tibia.i{item_id}': qualify(
+        item_id, nodes[item_id], appearances[item_id], physical[item_id], bindings,
+        definitions[f'oteryn:item.tibia.i{item_id}']) for item_id in SOURCE_RECORDS}
