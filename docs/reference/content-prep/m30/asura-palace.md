@@ -241,3 +241,20 @@ the participant beside the exact native door before literal USE. The checks
 require refusal, no door receipt, an unchanged object revision and both live
 defenders. These are negative door qualifications; successful personal opening
 after ordinary combat deaths remains separate work.
+
+Combat/door qualification extends each native dispatch case after its early
+refusal. The admitted player negotiates combat capabilities, walks to a reachable
+cardinal neighbor of each exact admitted defender, sends framed ATTACK_TARGET,
+and drains ordinary auto-attacks and production kill settlement. Durable count
+one must still refuse the door; count two must commit exactly one door receipt
+and change the native object revision. A level-10000 player fixture keeps the
+combat loop bounded; native defender health, armor, resistances and policies
+are unchanged. No death or quest receipt is manufactured by fixture setup.
+
+All three expanded native dispatch PostgreSQL cases passed on 2026-11-09
+(3 passed, 0 failed, 115.71 s): Destroyer, Greater Fire Elemental and Greater
+Energy Elemental admission, ordinary combat credit and corresponding personal
+door opening. Both elemental and Destroyer cases require count one to refuse
+and count two to commit. Dispatch all-target clippy, workspace fmt and explicit
+formatting of the mounted test file also passed. This supersedes the earlier
+notes identifying ordinary deaths and successful opening as pending.
