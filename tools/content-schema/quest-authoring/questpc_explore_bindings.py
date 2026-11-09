@@ -95,7 +95,10 @@ def callbacks(root):
         requirements = recipe['requirements']
         if requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
-        if area.startswith('area-approach:'):
+        if area.startswith('spawn-approach:'):
+            import questpc_spawn_approaches
+            at, appearance, sources = questpc_spawn_approaches.resolve(root, quest, area)
+        elif area.startswith('area-approach:'):
             import questpc_area_approaches
             at, appearance, sources = questpc_area_approaches.resolve(root, area)
         elif area.startswith('claim:'):

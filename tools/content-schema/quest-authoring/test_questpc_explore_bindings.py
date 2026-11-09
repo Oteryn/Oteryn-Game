@@ -21,6 +21,23 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_behemoth_visit_reaches_the_retained_behemoth_floor(self):
+        reference = 'spawn-approach:oteryn:spawn.x33230_y31696_z12#3'
+        binding = (('oteryn:quest.behemoth_quest', 's1', reference, 'chosen-source/behemoth_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 33235, 'y': 31695, 'floor': -12},
+                'ordinal': 0, 'appearance': 499})
+            self.assertEqual(callback['minimum_level'], 80)
+            self.assertEqual(callback['admission'], {'premium': True})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+        foreign = (('oteryn:quest.dragon_tower_quest', 's1', reference,
+                    'chosen-source/dragon_tower_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', foreign):
+            with self.assertRaisesRegex(ValueError, 'same quest'):
+                explore.callbacks(ROOT)
+
     def test_dragon_tower_and_berserk_potion_approaches_are_activated(self):
         callbacks = explore.callbacks(ROOT)
         for quest in ('oteryn:quest.dragon_tower_quest', 'oteryn:quest.berserk_potion_quest'):
