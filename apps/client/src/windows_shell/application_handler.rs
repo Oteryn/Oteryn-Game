@@ -113,6 +113,23 @@ impl ApplicationHandler for Application {
         event: WindowEvent,
     ) {
         // Touch owns its contacts; keyboard and mouse keep their existing adapter and router.
+        #[cfg(windows)]
+        if matches!(
+            event,
+            WindowEvent::CursorMoved { .. }
+                | WindowEvent::MouseInput { .. }
+                | WindowEvent::MouseWheel { .. }
+        ) {
+            // Read this thread's current message metadata before any adapter or UI dispatch.
+            // SAFETY: GetMessageExtraInfo takes no pointers and only reads thread-local metadata.
+            #[allow(unsafe_code)]
+            let extra = unsafe {
+                windows_sys::Win32::UI::WindowsAndMessaging::GetMessageExtraInfo() as u32
+            };
+            if oteryn_client::play::is_touch_promoted(extra) {
+                return;
+            }
+        }
         if matches!(event, WindowEvent::Touch(_)) {
             self.touch_seen = true;
         }

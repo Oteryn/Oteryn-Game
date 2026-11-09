@@ -92,6 +92,7 @@ mod session_stepper;
 mod status_window;
 mod stepper;
 mod tick;
+pub use feature_0233_touch_controls::promoted::is_touch_promoted;
 pub use feature_0233_touch_controls::state::Phase as TouchPhase;
 pub use resource_hud::ResourceHudOptions;
 mod window_controls;
