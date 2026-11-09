@@ -9,6 +9,7 @@ import re
 import tempfile
 from pathlib import Path
 
+import qengine_reward_equipment_pin
 import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
@@ -106,6 +107,9 @@ def main():
     source = qready1_cradle_equipment_pin.refresh(
         source,
         json.loads((ROOT / "tools/content-schema/native-gameplay/qready1-cradle-item-profiles.json").read_bytes()),
+    )
+    source = qengine_reward_equipment_pin.refresh(
+        source, json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
     )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)
