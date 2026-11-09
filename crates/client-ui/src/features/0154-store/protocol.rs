@@ -5,6 +5,16 @@ use oteryn_client_runtime::server_mechanic::{
 };
 
 pub fn command(command_type: u32, payload: Vec<u8>) -> Option<ServerMechanicCommand> {
+    if matches!(
+        command_type,
+        store::cosmetic_tokens::BALANCE | store::cosmetic_tokens::PURCHASE
+    ) {
+        return Some(ServerMechanicCommand {
+            capability: store::cosmetic_tokens::CAPABILITY,
+            command_type,
+            payload,
+        });
+    }
     ((183..=186).contains(&command_type) || command_type == store::browse::COMMAND_TYPE).then_some(
         ServerMechanicCommand {
             capability: 154,
@@ -69,7 +79,14 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
     }
     if let Some(payload) = panel.confirmed_purchase.clone() {
         panel.purchase_confirmed = false;
-        return encoded(panel, COMMAND_TYPE_STORE_PURCHASE, Ok(payload));
+        let kind = if store::decode_purchase_request(&payload).ok()?.currency
+            == store::cosmetic_tokens::CURRENCY
+        {
+            store::cosmetic_tokens::PURCHASE
+        } else {
+            COMMAND_TYPE_STORE_PURCHASE
+        };
+        return encoded(panel, kind, Ok(payload));
     }
     let offer = panel
         .catalogue
@@ -119,7 +136,12 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
         Some(c) => store::encode_hireling_purchase_request(&quote, &c),
         None => store::encode_purchase_request(&quote),
     };
-    let command = encoded(panel, COMMAND_TYPE_STORE_PURCHASE, payload)?;
+    let kind = if quote.currency == store::cosmetic_tokens::CURRENCY {
+        store::cosmetic_tokens::PURCHASE
+    } else {
+        COMMAND_TYPE_STORE_PURCHASE
+    };
+    let command = encoded(panel, kind, payload)?;
     panel.confirmed_purchase = Some(command.payload.clone());
     Some(command)
 }
@@ -162,6 +184,8 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         return;
     }
     let decoded = match panel.pending_action {
+        store::cosmetic_tokens::BALANCE => store::cosmetic_tokens::decode_balance(&result.payload)
+            .map(|balance| panel.cosmetic_tokens = Some(balance)),
         COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             store::decode_catalogue_page(&result.payload).map(|v| {
                 panel.selected_offer = 0;
@@ -180,6 +204,11 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         }
         _ => store::decode_purchase_result(&result.payload).map(|v| {
             panel.confirmed_purchase = None;
+            if panel.pending_action == store::cosmetic_tokens::PURCHASE
+                && v.code == StorePurchaseCode::Accepted
+            {
+                panel.token_balance_refresh = true;
+            }
             panel.purchase = Some(v);
         }),
     };
@@ -196,6 +225,66 @@ pub fn browse_request(
     step: i8,
 ) -> Option<ServerMechanicCommand> {
     super::browser::browse(panel, category, search, sort, step)
+}
+
+/// Explicit input choice; the selected quote carries the currency through confirmation.
+pub fn choose_payment(panel: &mut StorePanel, tokens: bool) -> bool {
+    if panel.pending || panel.confirmed_purchase.is_some() {
+        return false;
+    }
+    let Some(page) = &mut panel.catalogue else {
+        return false;
+    };
+    let Some(offer) = page.offers.get_mut(panel.selected_offer) else {
+        return false;
+    };
+    let category = panel
+        .browser
+        .page
+        .as_ref()
+        .and_then(|p| p.products.get(panel.browser.selected))
+        .filter(|p| p.offer.offer_key == offer.offer_key)
+        .map_or(panel.category.as_str(), |p| p.category.as_str());
+    if tokens
+        && (!panel.token_supported
+            || panel.cosmetic_tokens.is_none()
+            || !store::cosmetic_tokens::eligible(category))
+    {
+        return false;
+    }
+    offer.currency = if tokens {
+        store::cosmetic_tokens::CURRENCY
+    } else {
+        "TIBIA_COIN"
+    }
+    .into();
+    panel.purchase_confirmed = false;
+    true
+}
+
+/// Retain the server product identity and price while confirming an explicit token choice.
+pub fn confirmation_quote(panel: &StorePanel) -> Option<StoreCataloguePage> {
+    let quote = panel.catalogue.as_ref()?;
+    if panel.confirmed_purchase.is_some() {
+        return Some(quote.clone());
+    }
+    let product = panel
+        .browser
+        .page
+        .as_ref()?
+        .products
+        .get(panel.browser.selected)?;
+    let selected = quote.offers.first()?;
+    let mut expected = product.offer.clone();
+    if selected.currency == store::cosmetic_tokens::CURRENCY
+        && panel.token_supported
+        && panel.cosmetic_tokens.is_some()
+        && store::cosmetic_tokens::eligible(&product.category)
+    {
+        expected.currency = store::cosmetic_tokens::CURRENCY.into();
+    }
+    (quote.catalog_revision == product.revision && quote.offers.len() == 1 && *selected == expected)
+        .then(|| quote.clone())
 }
 
 #[cfg(test)]

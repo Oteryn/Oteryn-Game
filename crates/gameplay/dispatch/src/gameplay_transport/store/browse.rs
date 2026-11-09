@@ -16,7 +16,7 @@ pub(super) async fn execute(
             .ok()?;
     }
     let native = owner.active_generation?.native_gameplay()?;
-    let mut catalogues = vec![CATALOGUE.as_ref()?];
+    let mut catalogues = vec![CATALOGUE.as_ref()?, COSMETIC_CATALOGUE.as_ref()?];
     if admitted.continuity.selected_capabilities.contains(250) {
         catalogues.push(HIRELING_CATALOGUE.as_ref()?);
     }

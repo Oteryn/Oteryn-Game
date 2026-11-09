@@ -65,6 +65,7 @@ pub mod newhaven_tutorial_land;
 pub mod npc_catalogue;
 mod production;
 mod project;
+pub mod store_cosmetics;
 pub use project::{
     ImportedWeaponProficiencyData, ProjectV2ProficiencyThresholdClass,
     import_committed_weapon_proficiency_data,

@@ -11,6 +11,9 @@ pub enum StorePage {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct StorePanel {
+    pub cosmetic_tokens: Option<u64>,
+    pub token_supported: bool,
+    pub token_balance_refresh: bool,
     pub gift: super::GiftPanel,
     pub browser: super::Browser,
     pub coin_history: super::CoinHistory,

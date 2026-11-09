@@ -141,6 +141,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+    oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -246,6 +247,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
     spell_catalog::spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1,
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+    oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
