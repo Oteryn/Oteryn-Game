@@ -417,13 +417,60 @@ impl PlayerSpellState {
         Some((next, ticks))
     }
 
-    /// Sole canonical Player store: consume only this admitted field's application
-    /// tick. Existing overdue combat/regeneration ticks retain their counters.
-    /// The movement owner supplies the incoming-hit stage at its independently
-    /// qualified destination, before committing either movement or the successor.
+    /// Environmental fields have no creature or player caster. The movement
+    /// owner separately qualifies the field and the current receiver/destination.
+    pub fn stage_environment_field_contact(
+        &self,
+        source: String,
+        definition: &native::ConditionDefinition,
+        facts: &native::ApplicationFacts<'_>,
+        element: impl Into<Option<values::DotElement>>,
+        stage_hit: impl FnMut(
+            &Self,
+            u32,
+            values::DotElement,
+            u64,
+        ) -> Option<(Self, crate::ability::creature_bite::FlooredDamage)>,
+    ) -> Option<(Self, u32)> {
+        self.stage_field_contact(
+            source,
+            native::ConditionSourceKind::Field,
+            definition,
+            facts,
+            element,
+            stage_hit,
+        )
+    }
+
+    /// Consume only this admitted Creature field's application tick. Overdue
+    /// combat/regeneration ticks retain their counters until their own owner pass.
     pub fn stage_creature_field_contact(
         &self,
         source: String,
+        definition: &native::ConditionDefinition,
+        facts: &native::ApplicationFacts<'_>,
+        element: impl Into<Option<values::DotElement>>,
+        stage_hit: impl FnMut(
+            &Self,
+            u32,
+            values::DotElement,
+            u64,
+        ) -> Option<(Self, crate::ability::creature_bite::FlooredDamage)>,
+    ) -> Option<(Self, u32)> {
+        self.stage_field_contact(
+            source,
+            native::ConditionSourceKind::Creature,
+            definition,
+            facts,
+            element,
+            stage_hit,
+        )
+    }
+
+    fn stage_field_contact(
+        &self,
+        source: String,
+        source_kind: native::ConditionSourceKind,
         definition: &native::ConditionDefinition,
         facts: &native::ApplicationFacts<'_>,
         element: impl Into<Option<values::DotElement>>,
@@ -435,21 +482,23 @@ impl PlayerSpellState {
         )
             -> Option<(Self, crate::ability::creature_bite::FlooredDamage)>,
     ) -> Option<(Self, u32)> {
+        let valid_source = match source_kind {
+            native::ConditionSourceKind::Creature => source.starts_with("creature:field:"),
+            native::ConditionSourceKind::Field => source.starts_with("environment:"),
+            _ => false,
+        };
         if self.health == 0
             || !facts.target_is_player
-            || !source.starts_with("creature:field:")
+            || !valid_source
             || !self.conditions.accepts_time(facts.now)
         {
             return None;
         }
         let mut next = self.clone();
-        match next.conditions.apply(
-            definition,
-            Some(source.clone()),
-            native::ConditionSourceKind::Creature,
-            &[],
-            facts,
-        ) {
+        match next
+            .conditions
+            .apply(definition, Some(source.clone()), source_kind, &[], facts)
+        {
             Ok(_) => {}
             Err(
                 values::ConditionRefusal::Immune
@@ -468,7 +517,7 @@ impl PlayerSpellState {
         );
         let mut damage = 0u32;
         for tick in ticks {
-            if tick.provenance.source_kind != native::ConditionSourceKind::Creature
+            if tick.provenance.source_kind != source_kind
                 || tick.provenance.source.as_deref() != Some(source.as_str())
             {
                 return None;
@@ -504,6 +553,174 @@ impl PlayerSpellState {
 mod creature_field_initial_tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
+    #[test]
+    fn qn1_environment_energy_field_2126_deals_its_source_entry_hit() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        let record = document["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["source"]["server"] == "crystal" && r["source"]["server_item_id"] == 2126)
+            .unwrap();
+        let recipe: oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition =
+            serde_json::from_value(record.clone()).unwrap();
+        let definition = native::ConditionDefinition::new(
+            "native.field.i2126",
+            1,
+            recipe.condition_values().unwrap().unwrap(),
+        )
+        .unwrap();
+        let state = PlayerSpellState::new(
+            super::super::cast::CharacterCastFacts {
+                vocation: super::super::Vocation::Knight,
+                level: 100,
+                magic_level: 10,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .unwrap();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([9; 32]);
+        let facts = native::ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([9; 16]),
+        };
+        let source = "environment:field:i2126".to_owned();
+        assert!(
+            state
+                .stage_creature_field_contact(
+                    source.clone(),
+                    &definition,
+                    &facts,
+                    recipe.element().unwrap(),
+                    |_, _, _, _| None
+                )
+                .is_none()
+        );
+        let (next, damage) = state
+            .stage_environment_field_contact(
+                source,
+                &definition,
+                &facts,
+                recipe.element().unwrap(),
+                |before, amount, element, now| {
+                    assert_eq!(element, values::DotElement::Energy);
+                    super::super::actor_conditions::stage_creature_hit(before, amount, now).ok()
+                },
+            )
+            .expect("source energy field must accept an environmental cause");
+        assert_eq!(damage, 100);
+        assert_eq!(next.vitals().health, 900);
+        assert_eq!(state.vitals().health, 1000, "staging preserves the input");
+        assert!(
+            next.owned_conditions()
+                .clone()
+                .take_due(5_000_000, native::TickFacts::default())
+                .is_empty(),
+            "2126 has one entry, not an invented residual DOT"
+        );
+        assert!(
+            state
+                .stage_environment_field_contact(
+                    "creature:field:i2126".into(),
+                    &definition,
+                    &facts,
+                    recipe.element().unwrap(),
+                    |_, _, _, _| None
+                )
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn qn1_environment_drown_keeps_field_provenance_and_delayed_ticks() {
+        let state = PlayerSpellState::new(
+            super::super::cast::CharacterCastFacts {
+                vocation: super::super::Vocation::Knight,
+                level: 100,
+                magic_level: 10,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .unwrap();
+        let definition = native::ConditionDefinition::new(
+            "environment.drowning",
+            1,
+            values::ConditionValues::DamageOverTime {
+                element: values::DotElement::Drown,
+                total_min: 100,
+                total_max: 100,
+                per_tick: 20,
+                interval_ms: 4000,
+                delayed: true,
+            },
+        )
+        .unwrap();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([9; 32]);
+        let facts = native::ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([9; 16]),
+        };
+        let (next, damage) = state
+            .stage_environment_field_contact(
+                "environment:drowning".into(),
+                &definition,
+                &facts,
+                Some(values::DotElement::Drown),
+                |_, _, _, _| panic!("delayed drowning has no entry hit"),
+            )
+            .unwrap();
+        assert_eq!(damage, 0);
+        assert_eq!(next.vitals().health, 1000);
+        let mut conditions = next.owned_conditions().clone();
+        assert!(
+            conditions
+                .take_due(3_999_999, native::TickFacts::default())
+                .is_empty()
+        );
+        let ticks = conditions.take_due(4_000_000, native::TickFacts::default());
+        assert_eq!(ticks.len(), 1);
+        assert_eq!(
+            ticks[0].provenance.source_kind,
+            native::ConditionSourceKind::Field
+        );
+        assert_eq!(
+            ticks[0].provenance.source.as_deref(),
+            Some("environment:drowning")
+        );
+        assert!(ticks[0].provenance.lineage.is_none());
+        assert!(matches!(
+            ticks[0].kind,
+            native::TickKind::Damage {
+                element: values::DotElement::Drown,
+                amount: 20,
+                refused: false
+            }
+        ));
+    }
+
     #[test]
     fn c08_agony_field_43297_applies_entry_and_residual_damage_bypassing_mana_shield() {
         let document: serde_json::Value = serde_json::from_str(include_str!(
