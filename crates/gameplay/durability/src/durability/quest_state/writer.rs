@@ -898,9 +898,12 @@ impl DurabilityRoot {
                     }
                     // Resolve World authority before planning lifecycle-driven
                     // Character resets. Receipt replay returned above this boundary.
+                    let hive_progress = quest == oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST
+                        && oteryn_gameplay_quests::quest::shared_world_progress::records_counter_progress(transition);
                     let shared_counter = if refusal.is_none() && (
                         oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
-                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()) {
+                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()
+                        || hive_progress) {
                         let world=fence.runtime_scope.world_id();
                         let epoch:String=sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
                             .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -912,17 +915,23 @@ impl DurabilityRoot {
                         };
                         Some((epoch,counter_authority))
                     } else { None };
-                    let counter_reset_plan = if let (Some(task),Some(_)) = (
-                        oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key), &shared_counter) {
+                    // Every Hive objective and turn-in must belong to a cycle
+                    // with a fresh acceptance. Old active flags are not that proof.
+                    let first_hive_cycle = if hive_progress && shared_counter.is_some() {
                         match super::super::world_event::changes::counters::shared_progress::first_in_hive_cycle(
                             &mut tx,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,
                         ).await? {
-                            Some(true) => match oteryn_gameplay_quests::quest::shared_world_progress::plan_hive_cycle_acceptance(&catalogue,&stored,task) {
-                                Ok(plan) => Some(plan),
-                                Err(refusal) => return Ok(Ok(QuestTransitionOutcome::Refused(refusal))),
-                            },
-                            Some(false) => None,
+                            Some(first) => Some(first),
                             None => return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))),
+                        }
+                    } else { None };
+                    let counter_reset_plan = if first_hive_cycle == Some(true) {
+                        let Some(task) = oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key) else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        match oteryn_gameplay_quests::quest::shared_world_progress::plan_hive_cycle_acceptance(&catalogue,&stored,task) {
+                            Ok(plan) => Some(plan),
+                            Err(refusal) => return Ok(Ok(QuestTransitionOutcome::Refused(refusal))),
                         }
                     } else { None };
                     let refusal = if refusal.is_none() {
@@ -1170,7 +1179,10 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if let Some((epoch,counter_authority)) = &shared_counter {
+                    if let Some((epoch,counter_authority)) = &shared_counter
+                        && (oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                            || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()) {
+
                         let credited=super::super::world_event::changes::counters::shared_progress::credit_completed(
                             &mut tx,counter_authority,fence.runtime_scope,crate::foundation::CharacterId::decode(character.as_bytes()).map_err(|_|DurabilityError::InvalidStoredState)?,*epoch,
                             &request.transition_key,request.cause,&changes,

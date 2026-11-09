@@ -162,6 +162,7 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
         .chain([shared_world_progress::HATCHLINGS_TRACK])
         .collect();
     let seed_key = "oteryn:quest-transition/qm55-prior-mission-progress";
+    let objective_key = "oteryn:quest-transition/qm55-observe-mission";
     let seed_tracks: Vec<_> = mission_tracks
         .iter()
         .copied()
@@ -176,6 +177,33 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
                 .collect::<Result<Vec<_>, _>>()?,
             vec![
                 catalogue
+                    .transition(&shared_world_progress::accept_key(1))
+                    .cloned()
+                    .ok_or("second native mission acceptance")?,
+                catalogue
+                    .transition(shared_world_progress::BINDINGS[0].key)
+                    .cloned()
+                    .ok_or("native turn-in")?,
+                QuestTransition {
+                    key: objective_key.into(),
+                    quest: shared_world_progress::HIVE_QUEST.into(),
+                    effects: vec![
+                        QuestEffect {
+                            track: shared_world_progress::BINDINGS[1].track.into(),
+                            from: QuestComparison::Between(0, 6),
+                            effect: QuestEffectKind::Add(1),
+                        },
+                        QuestEffect {
+                            track: shared_world_progress::ACTIVE_TRACKS[1].into(),
+                            from: QuestComparison::Between(1, 1),
+                            effect: QuestEffectKind::Set(1),
+                        },
+                    ],
+                    completes: false,
+                    experience: None,
+                    world_change: None,
+                },
+                catalogue
                     .transition(&shared_world_progress::accept_key(0))
                     .cloned()
                     .ok_or("native acceptance")?,
@@ -189,6 +217,8 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
                             from: QuestComparison::Between(0, 1),
                             effect: QuestEffectKind::Set(if *key == hive_access::FAVOUR {
                                 49
+                            } else if *key == shared_world_progress::BINDINGS[0].track {
+                                8
                             } else {
                                 1
                             }),
@@ -321,6 +351,33 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
             "cycle projection does not rewrite canonical receipt history"
         );
     }
+    for (key, ordinal) in [
+        (shared_world_progress::BINDINGS[0].key, 11),
+        (objective_key, 12),
+    ] {
+        let stale_progress = QuestTransitionRequest {
+            transition_key: key.into(),
+            cause: QuestCause::Command(CommandRef::new(
+                GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+                CommandId::new(ordinal).map_err(f::debug)?,
+            )),
+        };
+        let result = h
+            .root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                f::fence(3)?,
+                stale_progress,
+                catalogue.clone(),
+            )
+            .await?;
+        assert!(
+            matches!(result, QuestTransitionOutcome::Refused(_)),
+            "old-cycle action must require fresh acceptance: {key}: {result:?}"
+        );
+        assert_eq!(h.root_revision().await?, "3");
+    }
     let restart_request = QuestTransitionRequest {
         cause: QuestCause::Command(CommandRef::new(
             GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
@@ -405,6 +462,60 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
         ),
         "same-cycle acceptance cannot reset progress"
     );
+    let second = QuestTransitionRequest {
+        transition_key: shared_world_progress::accept_key(1),
+        cause: QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(13).map_err(f::debug)?,
+        )),
+    };
+    assert!(matches!(
+        h.root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                f::fence(4)?,
+                second,
+                catalogue.clone()
+            )
+            .await?,
+        QuestTransitionOutcome::Committed(_)
+    ));
+    let current_objective = QuestTransitionRequest {
+        transition_key: objective_key.into(),
+        cause: QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(14).map_err(f::debug)?,
+        )),
+    };
+    assert!(matches!(
+        h.root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                f::fence(5)?,
+                current_objective,
+                catalogue.clone()
+            )
+            .await?,
+        QuestTransitionOutcome::Committed(_)
+    ));
+    let copy = h
+        .root
+        .read_character_quest_state(&authority, character)
+        .await?;
+    assert_eq!(
+        copy.counter_quest_progress(shared_world_progress::HIVE_QUEST)
+            .ok_or("current objectives missing")?
+            .tracks
+            .get(shared_world_progress::BINDINGS[1].track),
+        Some(&1)
+    );
+    let credits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_change_credit_receipts WHERE world_id=encode($1,'hex')::uuid AND source_kind=2").bind(world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        credits, 0,
+        "refused turn-in and objective-only progress must not credit the World"
+    );
     assert!(matches!(
         h.root
             .commit_character_quest_transition(
@@ -421,7 +532,7 @@ async fn personal_cycle(h: &f::Harness) -> f::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(
-        count, 3,
+        count, 5,
         "replay must not rebind an old receipt to the new cycle"
     );
     let error =

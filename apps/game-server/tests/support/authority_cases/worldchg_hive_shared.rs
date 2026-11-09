@@ -85,11 +85,15 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         let seeded = std::sync::Arc::new(
             QuestStateCatalogue::new(
                 "content-1",
-                fixture_tracks
-                    .iter()
+                shared_world_progress::hive_mission_tracks()
+                    .chain([access::FAVOUR, access::PURCHASED])
                     .map(|track| catalogue.track(track).cloned().ok_or("source track"))
                     .collect::<Result<Vec<_>, _>>()?,
                 vec![
+                    catalogue
+                        .transition(&shared_world_progress::accept_key(0))
+                        .cloned()
+                        .ok_or("native mission acceptance")?,
                     catalogue
                         .transition(binding.key)
                         .ok_or("native completion")?
@@ -118,7 +122,10 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                             .zip(values)
                             .map(|(track, value)| QuestEffect {
                                 track: (*track).into(),
-                                from: QuestComparison::Between(0, 0),
+                                from: QuestComparison::Between(
+                                    0,
+                                    i64::from(*track == shared_world_progress::ACTIVE_TRACKS[0]),
+                                ),
                                 effect: QuestEffectKind::Set(value),
                             })
                             .collect(),
@@ -136,6 +143,24 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                     &authority,
                     &h.node,
                     fixture::fence(1)?,
+                    QuestTransitionRequest {
+                        transition_key: shared_world_progress::accept_key(0),
+                        cause: QuestCause::Command(CommandRef::new(
+                            session,
+                            CommandId::new(98).map_err(fixture::debug)?
+                        ))
+                    },
+                    seeded.clone()
+                )
+                .await?,
+            QuestTransitionOutcome::Committed(_)
+        ));
+        assert!(matches!(
+            h.root
+                .commit_character_quest_transition(
+                    &authority,
+                    &h.node,
+                    fixture::fence(2)?,
                     QuestTransitionRequest {
                         transition_key: seed_key.into(),
                         cause: QuestCause::Command(CommandRef::new(
@@ -170,7 +195,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .commit_character_quest_transition(
             &authority,
             &h.node,
-            fixture::fence(2)?,
+            fixture::fence(3)?,
             request(1)?,
             catalogue.clone(),
         )
@@ -189,7 +214,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!(counts().await?, (1, 1));
     let copy = h
         .root
-        .read_character_quest_state(&authority, fixture::fence(1)?.character_id)
+        .read_character_quest_state(&authority, fixture::fence(2)?.character_id)
         .await?;
     let progress = copy
         .counter_quest_progress(shared_world_progress::HIVE_QUEST)
@@ -253,7 +278,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .commit_character_quest_transition(
                 &authority,
                 &h.node,
-                fixture::fence(3)?,
+                fixture::fence(4)?,
                 request(1)?,
                 catalogue.clone()
             )
@@ -265,7 +290,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .commit_character_quest_transition(
                 &authority,
                 &h.node,
-                fixture::fence(3)?,
+                fixture::fence(4)?,
                 request(2)?,
                 catalogue.clone()
             )
@@ -297,7 +322,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 .commit_character_quest_transition(
                     &authority,
                     &h.node,
-                    fixture::fence(3)?,
+                    fixture::fence(4)?,
                     purchase(3)?,
                     catalogue.clone()
                 )
@@ -325,7 +350,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .commit_character_quest_transition(
                 &authority,
                 &h.node,
-                fixture::fence(3)?,
+                fixture::fence(4)?,
                 purchase(4)?,
                 catalogue.clone()
             )
@@ -376,7 +401,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 .commit_character_quest_transition(
                     &authority,
                     &h.node,
-                    fixture::fence(4)?,
+                    fixture::fence(5)?,
                     purchase(5)?,
                     catalogue.clone()
                 )
@@ -392,7 +417,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .commit_character_quest_transition(
                 &authority,
                 &h.node,
-                fixture::fence(4)?,
+                fixture::fence(5)?,
                 QuestTransitionRequest {
                     transition_key: old_scent_key.into(),
                     cause: QuestCause::Command(CommandRef::new(
@@ -410,7 +435,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .commit_character_quest_transition(
                 &authority,
                 &h.node,
-                fixture::fence(5)?,
+                fixture::fence(6)?,
                 purchase(4)?,
                 catalogue
             )
@@ -468,7 +493,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(
-        entries, 2,
+        entries, 3,
         "replay and refused actions do not add occurrence progress"
     );
     // The view follows independently owned World reset state, preserving history.
@@ -491,7 +516,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         sqlx::query_scalar("SELECT count(*) FROM game_character_event_quest_progress")
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(history, 2);
+    assert_eq!(history, 3);
     let stale = sqlx::query("INSERT INTO game_character_event_quest_progress SELECT character_id,world_id,2,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after FROM game_character_event_quest_progress").execute(&h.pool).await.err().ok_or("historical receipt accepted in a new occurrence")?;
     assert_eq!(
         stale.as_database_error().and_then(|e| e.code()).as_deref(),
