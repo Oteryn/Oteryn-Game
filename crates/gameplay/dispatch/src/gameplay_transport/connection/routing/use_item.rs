@@ -211,26 +211,24 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         };
         // Probe the quest receipt before fresh handle/custody admission. A
         // committed sample remains replayable after either handle disappears.
-        if matches!(
-            intent.use_with_map_item,
-            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
-        ) && let Some(outcome) = tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            authority.use_quest_tool(
-                actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                intent.clone(),
-                source,
-                item_target,
-            ),
-        )
-        .await
-        .ok()?
-        .ok()?
+        if transport::cosmetic_item_use::quest_targets::probes(intent)
+            && let Some(outcome) = tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                authority.use_quest_tool(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent.clone(),
+                    source,
+                    item_target,
+                ),
+            )
+            .await
+            .ok()?
+            .ok()?
         {
             return Some(Dispatch::Use(outcome));
         }

@@ -1,5 +1,5 @@
 //! USE cosmetic items through the shared item-action transaction and existing Premium owner.
-mod quest_targets;
+pub(super) mod quest_targets;
 
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
@@ -391,8 +391,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let source = match (&intent.target, source) {
+            (
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_),
+                Some(ItemKey::Instance(item)),
+            ) => Some(item),
+            (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
         };
         let Ok(inventory) = self
             .root
@@ -406,10 +411,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
-            .find(|item| item.item_instance_id == source)
+            .find(|item| {
+                super::mount_taming::quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    item.item_instance_id,
+                    self.active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &item.definition.family,
+                                &item.definition.production_key,
+                                &item.definition.revision_ref,
+                            )
+                        }),
+                )
+            })
         else {
             return Ok(None);
         };
+        let source = item.item_instance_id;
         let Some(catalogue) = self.quest_catalogue.as_deref() else {
             return Ok(None);
         };

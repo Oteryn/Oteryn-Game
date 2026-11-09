@@ -18,6 +18,15 @@ pub(super) fn accepts(callback: &RewardCallback, intent: &UseIntent) -> bool {
     }
 }
 
+/// Receipt-first probe for carried quest subjects at the connection ingress.
+pub(crate) fn probes(intent: &UseIntent) -> bool {
+    intent.use_with_position.is_none()
+        && matches!(
+            (intent.use_with.is_some(), intent.use_with_map_item.as_ref()),
+            (true, None) | (false, Some(MapUseTarget::Item(_)))
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,5 +72,30 @@ mod tests {
             "corpse policy always needs exact race"
         );
         Ok(())
+    }
+    #[test]
+    fn live_hotkey_and_corpse_routes_probe_the_quest_receipt_first() {
+        let mut intent = UseIntent {
+            target: UseTarget::ItemByDefinition(std::num::NonZeroU32::MIN),
+            use_with: Some(EntityRef {
+                identity: [3; ENTITY_IDENTITY_BYTES],
+                generation: 1,
+            }),
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        assert!(probes(&intent), "live hotkeys must reach the quest caller");
+        intent.use_with_map_item = Some(MapUseTarget::Item(std::num::NonZeroU64::MIN));
+        assert!(
+            !probes(&intent),
+            "hybrid actors and map targets are rejected"
+        );
+        intent.use_with = None;
+        assert!(probes(&intent));
+        intent.use_with_map_item = None;
+        assert!(
+            !probes(&intent),
+            "ordinary self-use keeps its existing owner"
+        );
     }
 }

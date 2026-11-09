@@ -215,6 +215,25 @@ async fn exercise(h: &f::Harness, production: bool) -> f::TestResult {
         use_with_map_item: None,
         use_with_position: None,
     };
+    assert!(super::engnpc2_corpse_routing::routing_contract::probes(
+        &intent
+    ));
+    assert!(
+        super::engnpc2_corpse_routing::world_quest_tools::matches_source(
+            &intent.target,
+            None,
+            f::id(92),
+            Some(definition),
+        )
+    );
+    assert!(
+        !super::engnpc2_corpse_routing::world_quest_tools::matches_source(
+            &intent.target,
+            None,
+            f::id(92),
+            None,
+        )
+    );
     let fence = f::fence(1)?;
     let command = CommandRef::new(session, CommandId::new(10100).map_err(f::debug)?);
     let request = QuestTransitionRequest {

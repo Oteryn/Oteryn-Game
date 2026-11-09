@@ -1,5 +1,5 @@
 //! MOUNTTAME: existing USE -> carried item -> current creature -> fenced durable attempt.
-mod quest_objects;
+pub(super) mod quest_objects;
 
 use super::{
     ComposedFreshAdmission,
