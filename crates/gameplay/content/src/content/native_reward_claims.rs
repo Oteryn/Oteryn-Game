@@ -205,7 +205,6 @@ fn placement_candidate(placement: &Value) -> Result<Option<CandidatePlacement>, 
             };
             result.contents.push(RewardContainerItem {
                 fluid_subtype,
-                fluid_subtype: None,
                 item: child.item,
                 count: child.count,
                 key_number: None,

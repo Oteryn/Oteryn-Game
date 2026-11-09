@@ -46,6 +46,7 @@ pub(crate) fn callbacks() -> [Callback; 1] {
     ignite.effects.transform = Some(1949);
     ignite.effects.reset_after_ms = Some(300_000);
     ignite.item_on_target = Some(ItemOnTarget {
+        on_step: false,
         item: "oteryn:item.tibia.i5467".into(),
         alternatives: vec![],
         count: 1,

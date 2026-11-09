@@ -88,7 +88,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
-        if preflight && callback.has_personal_state()
+        if preflight
+            && callback.has_personal_state()
             && (!callback.requires_world_admission || encounter.timing.is_some())
         {
             return UseDisposition::Rejected;

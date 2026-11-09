@@ -40,6 +40,10 @@ def generated(root):
     # Admit its four schedules only after exact full-body source qualification.
     from engenc2_fugue_profile import inventory_extension
     extra_native, extra_schedules = inventory_extension(root, native)
+    from engenc_elemental_profiles import inventory_extension as elemental_inventory
+    elemental_native, elemental_schedules = elemental_inventory(native)
+    extra_native += elemental_native
+    extra_schedules += elemental_schedules
     if len(rows) != 1863 + 1 or len(native) != len(rows) + extra_native or schedules != 7201 + 4 + extra_schedules:
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
     result = {}

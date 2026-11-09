@@ -25,31 +25,31 @@
     "Encounter": 108,
     "Encounter.Raid": 240,
     "Formula": 6129,
-    "Item": 34111,
+    "Item": 34121,
     "Loot": 1292,
     "Mount": 252,
     "NPC": 1282,
     "Presentation": 3146,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 336,
+    "RewardClaim": 345,
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
-    "item_conversion": 130
+    "item_conversion": 131
   },
   "item_authoring_counts": {
     "authoring": 700,
     "relation_sources": 880,
-    "taxonomy": 12252
+    "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "931400d1aa2f48d068879a7d27faf1f33a2e5bfb",
+    "declarations": "3e8752c1a5c578e3d74b93e92c4839f2c35603cc",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "2581f7b7711076371ac4c85869ab2a89d65ea333",
+    "imports": "4c8aa501e96ffa0c84ac6a448f0fe9836433ea90",
     "reference": "5ea6d7f635a63d18d48f368c70e252e39910bc76",
     "sources": "4f6b825b939e0b74d049f6be23306972299ecf28"
   },
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1871,
+          "record_count": 1874,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "5b0531550dc98b86ad6767d3622367501019147dc7a6e7275fa7ef25295fa13e"
+          "sha256": "f2d1b91a93d92e8262d4c7258661fe1614d8f7a44f32909d9573c371930cfd25"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5784,
+          "record_count": 6217,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "542f0dda53b523d9122a94acef5fcfcd19bcf77e3f1d3d12549bd98c3684216c"
+          "sha256": "e018e0f5ba658a49f1a73522c29ad25b403a4d0eb8db4e6fb1f7ce1c3d132dd1"
         },
         {
           "creates_canonical_identities": false,
@@ -262,7 +262,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1871,
+          "record_count": 1872,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -270,12 +270,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "2518c0afd2555bfbab808ddd22f20c0bca664eda9def01a58f4a15f1f9cbd8ff"
+          "sha256": "4876bc43e9ccfea6f6d3bfa82f007d4b1ebd67bcfb2e1630fa7e1ded93f37a06"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/bindings/spell-appearances.json",
-          "record_count": 334,
+          "record_count": 336,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1",
@@ -283,7 +283,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_spell_appearances.rs#SpellAppearancesDocument"
           },
-          "sha256": "f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"
+          "sha256": "bf34f281dd2c7a26acc5b262d3123a22a4fcdb5716ad37da696d67d9dc239b52"
         },
         {
           "creates_canonical_identities": false,

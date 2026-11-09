@@ -131,9 +131,9 @@ class CanonicalVariantTests(unittest.TestCase):
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
         # ITEMHOLD-Q, QUESTPC4 and the scoped Dreamer water vial retain source witnesses.
-        # Fire Axe admits one more complete, source-qualified charged bag.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 72)
-        self.assertEqual(len(errors), 33)
+        # Fire Axe and Draconia each admit one complete, source-qualified charged bag.
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 73)
+        self.assertEqual(len(errors), 32)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

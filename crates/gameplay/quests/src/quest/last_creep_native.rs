@@ -163,6 +163,7 @@ pub fn callbacks() -> Result<Vec<Callback>, String> {
     );
     start.storage = vec![state(stage(1), 1, 1, 0, true)];
     start.item_on_target = Some(super::world_callbacks::ItemOnTarget {
+        on_step: false,
         target_remove: false,
         selected_instance: false,
         ingredients: Vec::new(),

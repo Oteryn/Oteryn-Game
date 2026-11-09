@@ -60,6 +60,16 @@ class ElementalProfiles(unittest.TestCase):
             self.assertEqual(creatures[0]["identity"], row["profile"]["target"])
             self.assertIsNone(creatures[0]["loot"])
 
+        count, schedules = elemental.inventory_extension(document["records"])
+        self.assertEqual(count, 2)
+        self.assertEqual(schedules, sum(
+            len(row["behavior"]["data"]["profile"].get(kind, []))
+            for row in document["records"][-2:] for kind in ("attacks", "defenses")))
+        changed = copy.deepcopy(document["records"])
+        changed[-1]["profile"]["data"]["profile"]["experience"] = 1
+        with self.assertRaisesRegex(ValueError, "ENGENC_ELEMENTAL_INVENTORY_SOURCE_MISMATCH"):
+            elemental.inventory_extension(changed)
+
         loot = json.loads(
             (root / "tools/content-schema/native-gameplay/loot-tables.json").read_text()
         )

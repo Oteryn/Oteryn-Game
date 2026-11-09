@@ -53,3 +53,19 @@ def apply(document):
                     closure["profiles"][index] = copy.deepcopy(row["profile"])
         additions.append(row)
     records.extend(additions)
+
+
+def inventory_extension(rows):
+    """Qualify both complete authored copies before extending native-only pins."""
+    keys = {"oteryn:creature." + target for _, target, _ in PAIRS}
+    selected = [row for row in rows if row["profile"]["target"]["key"] in keys]
+    if not selected:
+        return 0, 0
+    original = {"records": [row for row in rows if row["profile"]["target"]["key"] not in keys]}
+    apply(original)
+    expected = original["records"][-len(PAIRS):]
+    if selected != expected:
+        raise ValueError("ENGENC_ELEMENTAL_INVENTORY_SOURCE_MISMATCH")
+    schedules = sum(len(row["behavior"]["data"]["profile"].get(kind, []))
+                    for row in expected for kind in ("attacks", "defenses"))
+    return len(PAIRS), schedules

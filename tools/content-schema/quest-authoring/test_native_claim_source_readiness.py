@@ -25,9 +25,13 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         self.assertEqual(native[desert]['data_holds'], [])
         self.assertIn('native_contents', native[desert])
         self.assertEqual(source[desert]['data_holds'][0]['item'], 'oteryn:item.tibia.i3084')
+        draconia = 'oteryn:reward-claim.kv.draconia1'
+        self.assertEqual(native[draconia]['data_holds'], [])
+        self.assertIn('native_contents', native[draconia])
+        self.assertEqual(source[draconia]['data_holds'][0]['item'], 'oteryn:item.tibia.i3284')
         changed = {key for key in native if native[key] != source[key]}
         self.assertEqual(changed, {
-            'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
+            'oteryn:reward-claim.kv.madmageroom3', triangle, desert, draconia,
             'oteryn:reward-claim.kv.ornamentedshield',
             'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',

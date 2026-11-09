@@ -113,7 +113,8 @@ def native_water_vial(item, profile):
         return item
     qualified = copy.deepcopy(item)
     qualified['materializable'] = True
-    qualified['semantics']['fluid'] = copy.deepcopy(semantics['fluid'])
+    for group in ('fluid', 'container', 'charges', 'temporal'):
+        qualified['semantics'][group] = copy.deepcopy(semantics[group])
     return qualified
 
 

@@ -51,15 +51,15 @@ mod guarded_routes;
 #[cfg(test)]
 mod ice_islands_tests;
 mod imported_explore;
-#[cfg(test)]
-mod paid_step_tests;
-#[cfg(test)]
-mod scripted_teleport_tests;
 mod live_admission;
 mod native_trials;
+#[cfg(test)]
+mod paid_step_tests;
 mod per_use_reward;
 pub mod personal_trial;
 pub mod phase;
+#[cfg(test)]
+mod scripted_teleport_tests;
 #[cfg(test)]
 mod selected_tool_tests;
 #[cfg(test)]
@@ -698,7 +698,11 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 !r.valid()
                     || (r.ground.is_none()
                         && r.appearance == 0
-                        && !(r.ground_stack.is_some() && ((callback.has_personal_state() && callback.requires_world_admission && callback.trigger != Trigger::Use) || nomads_window::exact(callback))))
+                        && !(r.ground_stack.is_some()
+                            && ((callback.has_personal_state()
+                                && callback.requires_world_admission
+                                && callback.trigger != Trigger::Use)
+                                || nomads_window::exact(callback))))
                     || r.ground_stack.as_ref().is_some_and(|stack| {
                         callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })
@@ -845,7 +849,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.requires_durable_commit()
                     || if item.on_step {
-                        callback.trigger != Trigger::StepIn
+                        !callback.has_personal_state()
+                            || callback.trigger != Trigger::StepIn
                             || !callback.requires_world_admission
                             || callback.selector.native.is_none()
                             || item.reusable

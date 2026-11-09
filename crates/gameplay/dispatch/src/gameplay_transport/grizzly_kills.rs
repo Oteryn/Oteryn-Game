@@ -182,7 +182,8 @@ fn freeze_at(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature && counter.encounter_source.is_none()
+            if counter.creature == creature
+                && counter.encounter_source.is_none()
                 && counter.death_area.is_none_or(|area| {
                     death_position.is_some_and(|position| area.contains(position))
                 })

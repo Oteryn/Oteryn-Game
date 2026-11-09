@@ -7,7 +7,10 @@ RETURNS BIGINT LANGUAGE sql STABLE AS $$
    LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.transaction_id=i.minted_transaction_id AND l.operation_kind=1
    WHERE g.world_id=p_world AND g.channel_id=p_channel AND i.lifecycle=1
      AND NOT (uuid_send(i.item_instance_id)=ANY(coalesce(p_removed,ARRAY[]::bytea[])))
-     AND ((l.transaction_id IS NOT NULL AND (l.expires_at_unix_ms IS NOT NULL OR EXISTS(
+     AND ((l.transaction_id IS NOT NULL AND (l.expires_at_unix_ms IS NOT NULL
+       OR (l.definition_production_key='oteryn:item.tibia.i2126'
+           AND (l.definition_family,l.definition_production_key,l.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))
+       OR EXISTS(
        SELECT 1 FROM game_spell_field_temporal_schedules p WHERE p.item_instance_id=i.item_instance_id AND p.source_transaction_id=l.transaction_id)))
        OR EXISTS(SELECT 1 FROM game_elemental_energy_field_receipts e WHERE e.item_instance_id=i.item_instance_id AND e.transaction_id=i.minted_transaction_id))
    LIMIT 20001

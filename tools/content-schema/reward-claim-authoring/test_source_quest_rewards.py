@@ -123,7 +123,7 @@ class SourceQuestRewards(unittest.TestCase):
                 self.assertFalse(container_native.full_charge_leaf(item, claim, {**position, 'x': position['x'] + 1}, key, charges))
                 self.assertFalse(container_native.full_charge_leaf(item, claim + '_other', position, key, charges))
 
-    def test_qualification_changes_only_the_six_owned_claims(self):
+    def test_qualification_changes_only_the_merged_owned_claims(self):
         after = self.build(self.items)
         variants_after = variant.derive(plain.ROOT, self.items, plain.stack_problem)
         with patch.object(container_native, 'claim_items', side_effect=lambda _key, items: items):
@@ -136,7 +136,8 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertEqual([r['definition']['identity']['key']
                           for r, old in zip(variants_after, variants_before) if r != old],
                          ['oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.draconia1',
-                          'oteryn:reward-claim.kv.triangletower'])
+                          'oteryn:reward-claim.kv.fireaxe1', 'oteryn:reward-claim.kv.triangletower',
+                          'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine'])
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ import copy
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from native_container_fluids import project_fluid_child
 
@@ -39,8 +40,11 @@ class NativeContainerFluidTests(unittest.TestCase):
         import container_native
         import reward_claim_authoring as plain
         items = plain.load_items()
-        rows = [row['definition'] for path in (plain.ROOT / plain.CONTENT_DIR).glob('reward-claim-variants-*.json')
-                for row in json.loads(path.read_bytes())['records']]
+        import reward_claim_variant_authoring as variant
+        # The base now qualifies this claim. Rebuild the historical held source
+        # without that qualification so the refusal assertions remain exercised.
+        with patch.object(container_native, 'claim_items', side_effect=lambda _key, source: source):
+            rows = [row['definition'] for row in variant.derive(plain.ROOT, items, plain.stack_problem)]
         wine = next(row for row in rows if row['identity']['key'] ==
                     'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine')
         self.assertTrue(wine['data_holds'])

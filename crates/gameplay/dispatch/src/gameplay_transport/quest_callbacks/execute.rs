@@ -1081,7 +1081,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                     pending.remove(&session);
                 }
-                if let Some(message) = success_message {
+                if callback.has_personal_state()
+                    && let Some(message) = success_message
+                {
                     self.states.chat.push_quest_feedback(session, &message);
                 }
             }

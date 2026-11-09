@@ -710,7 +710,12 @@ fn candidate_container_placement(
         else {
             return Ok(None);
         };
-        if fluid_subtype.is_some() && (child.count != 1 || number.is_some() || text.is_some()) {
+        let expected_fluid = (matches!(result.crystal_unique_id, Some(6197..=6200))
+            && child.item.key().as_str() == "oteryn:item.tibia.i2874")
+            .then_some(1);
+        if fluid_subtype != expected_fluid
+            || fluid_subtype.is_some() && (child.count != 1 || number.is_some() || text.is_some())
+        {
             return Ok(None);
         }
         result.contents.push(RewardContainerItem {
