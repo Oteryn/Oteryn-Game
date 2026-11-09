@@ -282,7 +282,13 @@ unsafe fn window(
                     }
                 } else if panel == 285 && action == 5 {
                     if let [offer, from, until] = values.as_slice() {
-                        link.purchase_history_filter(offer, from, until);
+                        if link.store_panel().page
+                            == oteryn_client_ui::store::StorePage::CoinHistory
+                        {
+                            link.coin_history_filter(offer, from, until);
+                        } else {
+                            link.purchase_history_filter(offer, from, until);
+                        }
                     }
                 } else if panel == 285 && action == 4 {
                     lock(&link.mailbox).store.page = oteryn_client_ui::store::StorePage::History;
@@ -341,6 +347,15 @@ unsafe fn window(
                     store.selected && !store.pending
                 } else if panel == 285 && i == 1 {
                     match store.page {
+                        oteryn_client_ui::store::StorePage::CoinHistory => {
+                            store.selected
+                                && !store.pending
+                                && store
+                                    .coin_history
+                                    .page
+                                    .as_ref()
+                                    .is_some_and(|page| !page.next_page_cursor.is_empty())
+                        }
                         oteryn_client_ui::store::StorePage::Catalogue => {
                             store.selected
                                 && !store.pending

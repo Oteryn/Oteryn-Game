@@ -490,3 +490,5 @@ fn proficiency_state_is_advertised_and_uses_the_real_gated_command_route()
     assert!(route.2.is_empty());
     Ok(())
 }
+
+include!("session_tests_coin_history.rs");

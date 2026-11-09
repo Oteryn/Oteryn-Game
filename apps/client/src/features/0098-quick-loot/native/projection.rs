@@ -63,7 +63,13 @@ pub(super) fn project(
             )
         }
         _ => (
-            if store.page == oteryn_client_ui::store::StorePage::Catalogue {
+            if store.page == oteryn_client_ui::store::StorePage::CoinHistory {
+                let mut text = oteryn_client_ui::store::coin_history_text(&store.coin_history);
+                if let Some(feedback) = &store.feedback {
+                    text.push_str(&format!("\r\n{feedback}"));
+                }
+                text
+            } else if store.page == oteryn_client_ui::store::StorePage::Catalogue {
                 oteryn_client_ui::store::panel_text(&store)
             } else {
                 oteryn_client_ui::purchase_history::panel_text(&state.history)

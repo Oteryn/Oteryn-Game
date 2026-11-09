@@ -86,10 +86,11 @@ pub(super) fn specs(
                 "Next page in current tab",
                 "Catalogue",
                 "Purchase history",
-                "Apply purchase history filters",
+                "Apply history filters",
+                "Coin ledger",
             ],
             &[
-                ("Offer text (this page)", ""),
+                ("Offer / ledger kind (this page)", ""),
                 ("From Unix milliseconds", ""),
                 ("Through Unix milliseconds", ""),
             ],
