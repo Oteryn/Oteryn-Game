@@ -1038,6 +1038,7 @@ mod tests {
         let key = "oteryn:quest-reward/worldchg-m31/lumberjack/wood";
         barter["key"] = key.into();
         barter["keywords"] = serde_json::json!(["sell wood"]);
+        barter["repeatable"] = true.into();
         barter["storage"][0] = serde_json::json!({"track":programme["phase_track"],
             "minimum":2,"maximum":4,"set":2,"preserve":true});
         barter["take"] = serde_json::json!([{"item":"oteryn:item.tibia.i5901","count":1}]);
@@ -1061,6 +1062,30 @@ mod tests {
             .into_iter()
             .find(|c| c.key == key)
             .ok_or("barter")?;
+        assert!(
+            callback.is_paid_exchange(),
+            "an explicitly repeatable, guarded sale needs command-scoped mint receipts"
+        );
+        for unsafe_shape in 0..5 {
+            let mut edited = callback.clone();
+            match unsafe_shape {
+                0 => edited.repeatable = false,
+                1 => edited.completes = true,
+                2 => edited.storage[0].preserve = false,
+                3 => edited.carried_item = Some("oteryn:item.tibia.i5901".into()),
+                _ => edited
+                    .state_ops
+                    .push(super::super::reward_callbacks::StateOperation {
+                        track: programme.phase_track.clone(),
+                        from: super::super::reward_callbacks::StateCondition::Any,
+                        effect: super::super::reward_callbacks::StateMutation::Add { value: 1 },
+                    }),
+            }
+            assert!(
+                !edited.is_paid_exchange(),
+                "unsafe repeatable sale shape {unsafe_shape}"
+            );
+        }
         let catalogue = |callback: &super::super::reward_callbacks::RewardCallback| {
             super::super::QuestStateCatalogue::new(
                 "m31-barter",
@@ -1100,9 +1125,20 @@ mod tests {
                     .is_err()
             );
         }
-        let mut legacy = callback.clone();
+        let mut generic = callback.clone();
+        generic.key = "oteryn:quest-reward/m31-generic-guarded-sale".into();
+        generic.minimum_level = None;
+        assert!(generic.is_paid_exchange());
+        assert!(super::super::reward_callbacks::gated_binding(&generic)?.is_some());
+        let before = catalogue(&generic)?.definition_hash(&programme.quest);
+        generic.give.as_mut().ok_or("generic payment")?.count = 51;
+        assert_ne!(
+            before,
+            catalogue(&generic)?.definition_hash(&programme.quest)
+        );
+        let mut legacy = generic;
         legacy.key = "oteryn:quest-reward/m31-legacy-guard".into();
-        legacy.minimum_level = None;
+        legacy.repeatable = false;
         assert!(super::super::reward_callbacks::gated_binding(&legacy)?.is_none());
         let legacy_transition = super::super::reward_callbacks::primary_transition(&legacy)?;
         assert!(

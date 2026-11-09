@@ -366,7 +366,15 @@ impl RewardCallback {
     }
     /// Paid exchanges and exact carried recipes repeat under distinct CommandRefs.
     pub fn is_paid_exchange(&self) -> bool {
-        ((self.storage.is_empty() && self.state_ops.is_empty()) || self.carried_target.is_some())
+        let guarded_sale = self.repeatable
+            && !self.completes
+            && self.carried_item.is_none()
+            && self.world_claim.is_none()
+            && self.state_ops.is_empty()
+            && self.storage.iter().all(|state| state.preserve);
+        ((self.storage.is_empty() && self.state_ops.is_empty())
+            || self.carried_target.is_some()
+            || guarded_sale)
             && self.participants.is_empty()
             && !self.take.is_empty()
             && self.give.is_some()
@@ -884,6 +892,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
+        && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
         && callback.self_target.is_none()
         && !callback
