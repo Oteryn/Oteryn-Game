@@ -13,7 +13,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     item_view: &Option<SessionItemView>,
     open_rows: &mut Option<Vec<[u8; 16]>>,
 ) -> Option<Dispatch> {
-    let Ok(intent) = decode_stash_intent(command.payload) else {
+    let Ok((intent, filter)) = decode_stash_query(command.payload) else {
         return Some(Dispatch::Unregistered);
     };
     let selected = match intent.action {
@@ -28,7 +28,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         StashAction::Browse => false,
     };
     let reply = authority
-        .stash(
+        .stash_filtered(
             actor,
             UseCommand {
                 game_session_id: admitted.game_session_id,
@@ -36,6 +36,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 item_fence: admitted.item_fence,
             },
             intent,
+            filter,
             selected,
             row_open,
         )

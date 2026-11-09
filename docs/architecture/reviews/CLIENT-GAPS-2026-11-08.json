@@ -972,8 +972,9 @@
   "src": "TIBAUD-1",
   "area": "Stash",
   "feature": "Stow/withdraw/paging i search/filter/sort",
-  "status": "PARTIAL",
-  "gap": "Stow/withdraw/paging są; brak pełnej wyszukiwarki, filtrów trader/category i sort stock/name.",
+  "status": "DONE",
+  "gap": "—",
+  "evidence": "apps/client/src/features/0062-stash/input.rs:33 + stash_panel_request_uses_codec_and_applies_encoded_reply; crates/gameplay/durability/src/durability/character_stash/browse.rs:13 + stash_global_filter_precedes_pagination_and_stock_order_is_stable; stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays",
   "lane": "cg_ui"
  },
  {

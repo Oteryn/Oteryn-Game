@@ -67,6 +67,7 @@ impl Mailbox {
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();
+        self.properties.house.invalidate();
         self.properties.house_move_out.pending = Default::default();
         self.properties.house_transfer.pending = Default::default();
         self.properties.staff.pending = Default::default();
