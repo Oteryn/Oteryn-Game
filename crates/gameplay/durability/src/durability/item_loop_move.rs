@@ -1793,6 +1793,43 @@ impl DurabilityRoot {
             .await
     }
 
+    /// Resolve an uncertain ordinary or elemental-arrival move against its exact request.
+    /// The command lock waits out an in-flight writer before absence is returned. This
+    /// historical read needs the current recovery seal, but no live item or old session
+    /// authority: a successful arrival has already retired its input corpse.
+    pub async fn reconcile_item_loop_move(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+        request: LoopMoveRequest,
+    ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let read: LoopResult<_> = async {
+                        let intent = intent_bytes(character_id, &request)?;
+                        lock_loop_command(&mut tx, command).await?;
+                        committed_loop_move(&mut tx, command, character_id, &intent).await
+                    }
+                    .await;
+                    match read {
+                        Ok(replay) => {
+                            super::db::commit_semantic_transaction(tx, deadline).await?;
+                            Ok(replay)
+                        }
+                        Err(error) => loop_error(error).map(|refusal| Some(Err(refusal))),
+                    }
+                })
+            })
+            .await
+    }
+
     /// ITEM-LOOP-1 replay first: the loop receipt of `command`, read by its CommandRef alone.
     pub async fn read_item_loop_move_receipt(
         &self,

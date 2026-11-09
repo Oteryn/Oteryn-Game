@@ -453,6 +453,38 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(intents, 0);
+    assert!(
+        h.root
+            .reconcile_item_loop_move(
+                &authority,
+                f::fence()?.character_id,
+                f::command(100)?,
+                request.clone()
+            )
+            .await
+            .map_err(f::debug)?
+            .is_none()
+    );
+    // Absence must wait for a writer holding this CommandRef's actual lock.
+    let mut inflight = h.pool.begin().await?;
+    let mut command_key = f::command(100)?.game_session_id().as_bytes().to_vec();
+    command_key.extend_from_slice(&100_u64.to_be_bytes());
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:item-loop-move:' || encode($1, 'hex'), 0))")
+        .bind(command_key).execute(&mut *inflight).await?;
+    let pending = h.root.reconcile_item_loop_move(
+        &authority,
+        f::fence()?.character_id,
+        f::command(100)?,
+        request.clone(),
+    );
+    tokio::pin!(pending);
+    assert!(
+        tokio::time::timeout(std::time::Duration::from_millis(30), &mut pending)
+            .await
+            .is_err()
+    );
+    inflight.rollback().await?;
+    assert!(pending.await.map_err(f::debug)?.is_none());
     let result = h
         .root
         .commit_item_loop_elemental_arrival(
@@ -469,6 +501,37 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         .map_err(f::debug)?;
     let receipt = result.map_err(|e| format!("arrival refused {e:?}"))?;
     assert!(!receipt.replayed);
+    let recovered = h
+        .root
+        .reconcile_item_loop_move(
+            &authority,
+            f::fence()?.character_id,
+            f::command(100)?,
+            request.clone(),
+        )
+        .await
+        .map_err(f::debug)?
+        .ok_or("missing committed arrival during reconciliation")?
+        .map_err(f::debug)?;
+    assert!(recovered.replayed);
+    assert_eq!(recovered.transaction_id, receipt.transaction_id);
+    assert_eq!(recovered.event_id, receipt.event_id);
+    let mut conflicting = request.clone();
+    conflicting.destination = LoopDestination::MainBackpack;
+    assert_eq!(
+        h.root
+            .reconcile_item_loop_move(
+                &authority,
+                f::fence()?.character_id,
+                f::command(100)?,
+                conflicting
+            )
+            .await
+            .map_err(f::debug)?,
+        Some(Err(
+            crate::durability::item_loop_move::LoopMoveRefusal::Rejected
+        ))
+    );
     let state:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(state, (0, 2));
     let counts:(i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_elemental_arrival_receipts),(SELECT count(*) FROM game_elemental_summon_intents),(SELECT count(*) FROM game_elemental_boss_leases)").fetch_one(&h.pool).await?;
