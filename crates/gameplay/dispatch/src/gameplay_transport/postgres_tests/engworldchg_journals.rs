@@ -12,6 +12,10 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 
 #[test]
+fn engworldchg_fury_native_admission_completion_egress_postgres() -> TestResult {
+    scenario("fury_gates", "entry", "seal", "fury", 10)
+}
+#[test]
 fn engworldchg_fire_goal_achievement_atomic_postgres() -> TestResult {
     scenario("fire_from_the_earth", "volcano", "volcano", "dragon", 50)
 }
@@ -233,7 +237,19 @@ fn scenario(
             let phase = format!("oteryn:quest-progress/world-change-journal/{program}/phase");
             let kills = format!("oteryn:quest-progress/world-change-journal/{program}/kills");
             let mut journal_command_override = None;
-            if program == "fire_from_the_earth" {
+            if program == "fury_gates" {
+                journal_command_override = Some(
+                    super::engworldchg_fury::exercise(
+                        &mut owner,
+                        &mut admitted,
+                        &h,
+                        &authority,
+                        &entry_callback,
+                        &final_callback,
+                    )
+                    .await?,
+                );
+            } else if program == "fire_from_the_earth" {
                 journal_command_override = Some(
                     super::engworldchg_fire::exercise(
                         &mut owner,
@@ -591,12 +607,22 @@ pub(super) async fn use_marker(
     callback: &Callback,
     command: u64,
 ) -> TestResult<oteryn_protocol_oteryn::world_object::UseDisposition> {
+    use_marker_at_depth(owner, admitted, callback, command, 1).await
+}
+
+pub(super) async fn use_marker_at_depth(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+    callback: &Callback,
+    command: u64,
+    ordinal: u8,
+) -> TestResult<oteryn_protocol_oteryn::world_object::UseDisposition> {
     use oteryn_protocol_oteryn::world_object::{
         WorldObjectTarget, decode_use_result, encode_use_intent,
     };
     let p = callback.selector.position.ok_or("marker")?;
-    let key =
-        oteryn_world_bundle::bundle::placement_key(p.floor, p.x, p.y, 1).ok_or("placement")?;
+    let key = oteryn_world_bundle::bundle::placement_key(p.floor, p.x, p.y, ordinal)
+        .ok_or("placement")?;
     let mut placement = owner
         .bundle_map()
         .ok_or("map")?
@@ -617,6 +643,9 @@ pub(super) async fn use_marker(
 }
 
 fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+    if entry.key.contains("/fury_gates/") {
+        return super::engworldchg_fury::scene(entry, marker);
+    }
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let at = entry.selector.position.ok_or("entry")?;
