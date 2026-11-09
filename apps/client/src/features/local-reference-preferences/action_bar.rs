@@ -3,12 +3,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ActionBarPreferences {
+    pub auto_insert: bool,
     pub three_rows: bool,
     pub labels: bool,
     pub cooldowns: bool,
 }
 impl Default for ActionBarPreferences {
-    fn default() -> Self { Self { three_rows: false, labels: true, cooldowns: true } }
+    fn default() -> Self { Self { auto_insert: false, three_rows: false, labels: true, cooldowns: true } }
 }
 impl ActionBarPreferences {
     pub fn grid(self) -> (usize,usize) { if self.three_rows { (4,3) } else { (12,1) } }

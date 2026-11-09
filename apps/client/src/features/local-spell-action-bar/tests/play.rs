@@ -263,3 +263,19 @@ fn t058_row_layout_preserves_all_twelve_slots() {
     crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.three_rows = true;
     assert_eq!(link.action_bar_grid(), (4, 3));
 }
+
+#[test]
+fn t058_auto_insert_uses_learned_server_catalog_once() {
+    use oteryn_client_runtime::spell_catalog::{SpellCatalog, SpellCatalogEntry};
+    let (link, _, _) = crate::play::play_channel();
+    {
+        let mut mailbox=crate::play::mailbox::lock(&link.mailbox);
+        mailbox.local_preferences.action_bar.auto_insert=true;
+        mailbox.spell_catalog.catalog.replace(SpellCatalog { revision:1, entries: vec![SpellCatalogEntry {
+            cast_index:77,name:"Oteryn test spell".into(),words:String::new(),level:1,mana:1,mana_percent:false,soul:0,learned:true,available:true,cooldown_groups:vec![],rune_item:None,
+        }] });
+    }
+    assert!(link.spell_slot_labels()[4].contains("Oteryn test spell"));
+    crate::play::mailbox::lock(&link.mailbox).spell_bar.bar.bind(4,None);
+    assert!(!link.spell_slot_labels()[4].contains("Oteryn test spell"));
+}

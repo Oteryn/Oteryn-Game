@@ -112,6 +112,17 @@ impl crate::play::PlayLink {
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
+        if mailbox.local_preferences.action_bar.auto_insert {
+            let learned: Vec<_> = mailbox.spell_catalog.catalog.entries().iter().filter(|entry| entry.learned).map(|entry| entry.cast_index).collect();
+            for id in learned {
+                if !mailbox.spell_bar.observed_spells.insert(id) { continue; }
+                let fields=mailbox.spell_bar.bar.fields();
+                if fields.iter().any(|field| field.parse::<u32>().ok()==Some(id)) { continue; }
+                if let Some(slot)=fields.iter().position(String::is_empty) {
+                    mailbox.spell_bar.bar.bind(slot,std::num::NonZeroU32::new(id));
+                }
+            }
+        }
         let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(
             &mailbox.spell_bar, &mailbox.spell_catalog.catalog,
         );
