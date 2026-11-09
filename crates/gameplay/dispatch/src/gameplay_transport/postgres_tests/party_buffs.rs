@@ -32,7 +32,15 @@ fn train_party_real_dispatch_members_values_duration_postgres() -> TestResult {
     run_party_buffs(Some(("train_party", "knight")))
 }
 
+pub(super) fn run_party_list() -> TestResult {
+    run_case(None, true)
+}
+
 pub(super) fn run_party_buffs(extra: Option<(&'static str, &'static str)>) -> TestResult {
+    run_case(extra, false)
+}
+
+fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -44,7 +52,9 @@ pub(super) fn run_party_buffs(extra: Option<(&'static str, &'static str)>) -> Te
                 let h = Harness::create(admin, extra.map_or("party_buffs", |(key, _)| key), false)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, extra).await.map_err(|error| error.to_string());
+                let result = scenario(&h, extra, party_list)
+                    .await
+                    .map_err(|error| error.to_string());
                 h.cleanup().await.map_err(debug)?;
                 eprintln!(
                     "POSTGRES_EXECUTED case={} elapsed={:.3}s",
@@ -116,7 +126,7 @@ fn open_party_world(
     .map_err(debug)?)
 }
 
-async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
+async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -564,6 +574,9 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
         }
     }
     super::party_member_effects::check(&owner, &players).await?;
+    if party_list {
+        super::party_list::check(&owner, &players).await?;
+    }
     Ok(())
 }
 pub(super) async fn initialize_build(

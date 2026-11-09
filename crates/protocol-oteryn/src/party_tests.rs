@@ -19,6 +19,7 @@ fn party_wire_roundtrips() -> Result<()> {
         disposition: PartyDisposition::Ok,
         shared_xp_enabled: true,
         members: vec![PartyEntry {
+            list: Vec::new(),
             handle: 1,
             name: "Leader".into(),
             leader: true,
@@ -26,6 +27,7 @@ fn party_wire_roundtrips() -> Result<()> {
             party_spell_remaining_ms: None,
         }],
         invitations: vec![PartyEntry {
+            list: Vec::new(),
             handle: 2,
             name: "Inviter".into(),
             leader: false,
@@ -68,6 +70,7 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
     let mut maximum = PartyResult::refused(PartyDisposition::Ok);
     for i in 1..=50 {
         maximum.members.push(PartyEntry {
+            list: Vec::new(),
             handle: i,
             name: "a".repeat(64),
             leader: i == 1,
@@ -77,6 +80,7 @@ fn party_wire_bounds_and_malformed_inputs() -> Result<()> {
     }
     for i in 51..=70 {
         maximum.invitations.push(PartyEntry {
+            list: Vec::new(),
             handle: i,
             name: "a".repeat(64),
             leader: false,
@@ -130,5 +134,71 @@ fn party_member_effect_durations_decode_and_replace_on_refresh() -> Result<()> {
     let mut invited = PartyResult::refused(PartyDisposition::Ok);
     invited.invitations.push(invitation);
     assert!(encode_party_result(&invited).is_err());
+    Ok(())
+}
+
+#[test]
+fn party_list_wire_bounds_range_and_portrait_identity() -> Result<()> {
+    let entity = EntityRef {
+        identity: [1; 16],
+        generation: 2,
+    };
+    let row = PartyListEntity {
+        entity,
+        name: "Knight".into(),
+        vocation: 1,
+        summon: false,
+        distance: 30,
+        health_percent: Some(0),
+        mana_percent: Some(100),
+        skull: Some(6),
+        portrait: Some(crate::appearance::Binding {
+            context: crate::appearance::Context {
+                content_generation: [1; 32],
+                cosmetics_digest: [2; 32],
+            },
+            appearance_ref: 1,
+            entity,
+            root_revision: 1,
+            condition_revision: 0,
+            owner_time_us: 1,
+            look: crate::appearance::Look::Outfit {
+                look_type: 128,
+                colours: [0; 4],
+                addons: 3,
+            },
+            selection_revision: None,
+            forge_stacks: None,
+        }),
+        portrait_colours: [[255, 0, 0]; 4],
+    };
+    let mut result = PartyResult::refused(PartyDisposition::Ok);
+    result.members.push(PartyEntry {
+        list: vec![row],
+        handle: 1,
+        name: "Knight".into(),
+        leader: true,
+        expires_at: 0,
+        party_spell_remaining_ms: None,
+    });
+    let encoded = encode_party_result(&result)?;
+    assert_eq!(decode_party_result(&encoded)?, result);
+    let row_bytes = result.members[0].list[0].encode()?;
+    for end in 0..row_bytes.len() {
+        assert!(PartyListEntity::decode(&row_bytes[..end]).is_err());
+    }
+    result.members[0].list[0].distance = 31;
+    assert!(encode_party_result(&result).is_err());
+    result.members[0].list[0].health_percent = None;
+    result.members[0].list[0].mana_percent = None;
+    result.members[0].list[0].skull = None;
+    assert!(encode_party_result(&result).is_ok());
+    result.members[0].list[0]
+        .portrait
+        .as_mut()
+        .ok_or(PartyWireError::Malformed)?
+        .entity
+        .generation = 3;
+    assert!(encode_party_result(&result).is_err());
     Ok(())
 }

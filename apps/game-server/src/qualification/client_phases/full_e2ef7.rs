@@ -2385,6 +2385,7 @@ mod continuation_tests {
         let mut a = parties::PartyResult::refused(parties::PartyDisposition::Ok);
         a.members = vec![
             parties::PartyEntry {
+                list: Vec::new(),
                 handle: 1,
                 name: "Caster".into(),
                 leader: true,
@@ -2392,6 +2393,7 @@ mod continuation_tests {
                 party_spell_remaining_ms: None,
             },
             parties::PartyEntry {
+                list: Vec::new(),
                 handle: 2,
                 name: "Peer".into(),
                 leader: false,

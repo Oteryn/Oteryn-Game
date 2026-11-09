@@ -9,6 +9,7 @@ fn member_effects_replace_and_count_down() -> Result<(), Box<dyn std::error::Err
     };
     let mut state = party::PartyResult::refused(party::PartyDisposition::Ok);
     state.members.push(party::PartyEntry {
+        list: Vec::new(),
         handle: 1,
         name: "Friend".into(),
         leader: false,
