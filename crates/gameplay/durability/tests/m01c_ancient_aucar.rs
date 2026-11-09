@@ -46,6 +46,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     let catalogue = loaded.catalogue();
     let quest = "oteryn:quest.ancient_aucar_outfits_quest";
     assert!(admission_probe::requires_premium(catalogue, quest));
+    assert!(admission_probe::permits_level(catalogue, quest, 0));
     let counter = oteryn_gameplay_quests::quest::native_kills::counter_for(
         catalogue,
         "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
