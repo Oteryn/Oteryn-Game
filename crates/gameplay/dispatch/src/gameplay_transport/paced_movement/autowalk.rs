@@ -79,11 +79,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: at.y,
                 floor: at.floor.checked_neg().ok_or(())?,
             },
-            AutoWalkTarget::Cell(at) => MovementLocalPosition {
-                x: at.x,
-                y: at.y,
-                floor: at.floor,
-            },
+            AutoWalkTarget::Cell(at) => self
+                .wire_position_frame(&runtime)
+                .and_then(|frame| frame.unproject(at))
+                .ok_or(())?,
             AutoWalkTarget::Follow(target) => {
                 let census = runtime.visible_entities();
                 let named = |other: ExactActorRef, generation| {

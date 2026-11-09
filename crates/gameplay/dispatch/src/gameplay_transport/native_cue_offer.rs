@@ -71,7 +71,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let room = self.effective_rooms().gate_wire_position()?;
         let runtime = self.runtime.lock().await;
         (runtime.owner_fence().is_ok() && source_available(active, room, runtime.content_pin()))
-            .then_some(room.pinned_activity_source_room().is_some())
+            .then_some(true)
     }
 }
 
