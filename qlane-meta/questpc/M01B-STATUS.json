@@ -47,7 +47,7 @@
       "Bewitched",
       "Chakoya Iceberg Mini World Change"
     ],
-    "wired_explore_stages": 41,
+    "wired_explore_stages": 44,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -88,8 +88,8 @@
       "Bewitched",
       "Chakoya Iceberg Mini World Change"
     ],
-    "wired_native_visit_anchors": 55,
-    "pg_proven_explore_stages": 41
+    "wired_native_visit_anchors": 58,
+    "pg_proven_explore_stages": 44
   },
   "validation": {
     "quest_unit_tests": "GREEN381passed,0failed,0ignored,185.02s withstationbinding",
@@ -263,7 +263,7 @@
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s.38routes41stages55anchorsPG-proven;8routes15stagesunwired.122modules1229authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s. FirstsurveyONLY;M01bPARTIAL.",
+  "continuation": "Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.",
   "native_anchor_generation": {
     "state": "SLICE_GREEN",
     "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
@@ -294,5 +294,19 @@
     "publication_gates": "GREEN122authoringmodules1229tests,0failingmodules;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt+explicitauto-mountedparent/newcaseformatchecks;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s;nativePG78.48657683s.",
     "native_postgres": "m01b_chakoya_native_personal_iceberg_entry_requires_current_premium GREEN78.48657683s,0ignored;exactlandmark[799,7152]preserved;realCurrentPremium/refusedreplay/freshonce/revisit;laterstage/completion/globalstate0."
   },
-  "remaining_stage_audit": "Countedfrom46MISSINGexplorerowsandcanonicalrecipe.stages:56stages;41bound/PG-proven. EarlierclaimallnonWorldextrasfinishedwasincorrect:DragonCorpses3,DragonTowers3,EdronGoblins3remainunwired;prioritizetheseaftercurrentpush."
+  "remaining_stage_audit": "Counted46MISSINGexplorerows/canonicalrecipe.stages:56stages;44boundandPG-proven. Remaining12:Chakoya3,Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.",
+  "later_native_surveys": {
+    "state": "LATER_VISITS_NATIVE_PG_QUALIFIED",
+    "scope": "DragonCorpse s3 fire corridor,DragonTower s3 lastfloor,EdronGoblin s3 throneapproach;real s1STEPbeforeevidence,onlyseparateUSE/KILLconditionarranged;noExplore/receipt/rootrevisionseeding;EdronCurrentPremium;freshonce/refusedreplay/revisit/wholecomplete0.",
+    "postgres": {
+      "dragon_corpse_s3_seconds": 67.987155645,
+      "dragon_tower_s3_seconds": 68.044933223,
+      "edron_goblin_s3_seconds": 68.476461392,
+      "result": "3passed0failed0ignored,total204.51s"
+    },
+    "red_green": "2focusedtestsRED3unsupportedclaims+3missingbindings->GREEN2.059s. Initialfullauthoringfound2failures:prependedS3shadoweds1andlegacyone-callbacktotal. Appendedlaterbindings;nowexact2DragonCorpsekeyswithoriginals1assertionretained+news3assertion. Focused65GREEN47.055s;FULLretry123modules1231tests0failures.",
+    "build_recovery": "FirstdispatchtestbuildSIGKILLbeforerunningPG;16GiBcgroup. ReranwithCARGO_BUILD_JOBS=2afterdependencycachecompleted;compileGREEN6m51s,all3realPGcasesGREEN.",
+    "pending": "No new reward/kill/action/transport/fullquestqualification;allpublicationgatesGREEN.",
+    "publication_gates": "PASS123modules1231testsafterfullretry;authoringchecks;content-tree;nativeproviderregeneration;callbackcheck/equipment5795pin/dupmigrations;strictquests+dispatchalltargetsALLFEATURESClippy4m17s;workspacealltargets4m47s;fmt+explicitauto-mountedparent/newfilechecks;3realPGcases204.51s."
+  }
 }

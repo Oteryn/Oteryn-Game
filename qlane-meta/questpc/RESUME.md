@@ -1,24 +1,27 @@
 # Current questpc continuation: M01b
 
-Work branch: `claude/happy-davinci-ijz3wy-qm-questpc`. Push only this branch,
-normal fast-forward; verify every push with git ls-remote. Do not merge qmech or
-main. Do not edit CLAIMS.md. Older branch/publication instructions below are history.
+Work branch: `claude/happy-davinci-ijz3wy-qm-questpc`. Normal push only; verify
+every push with git ls-remote. Never merge qmech/main or edit CLAIMS.md.
+Old publication instructions below are historical.
 
-Packet audit:46 routes,56 EXPLORE stages.38 routes/41 stages/55 native anchors
-have first/stage-level PG proofs;8 routes/15 stages remain unwired. This does not
-claim whole-quest completion. Latest slice: Chakoya first personal iceberg survey,
-real native STEP with Current Premium/refused replay/fresh once/revisit;
-PG78.48657683s;no kill/chamber/reward/completion/global-event credit.
+Packet audit:46 routes,56 EXPLORE stages.38 routes/44 stages/58 native anchors
+have stage-level PG proofs;8 routes/12 stages remain unwired. This does not claim
+whole-quest completion. Latest three later visits:Dragon Corpse s3 fire corridor,
+Dragon Tower s3 top floor,Edron Goblin s3 throne room. Each first survey is a real
+native STEP;only separate non-EXPLORE action/kill evidence was arranged.
 
-All latest gates passed:122 authoring modules/1229 tests,checks/content-tree,
-regeneration/pins/duplicates,strict all-feature quests+dispatch Clippy5m02s,
-workspace all-targets5m32s,fmt and explicit auto-mounted Rust format checks.
+PG durations:67.987155645s,68.044933223s,68.476461392s;3passed0failed0ignored,
+total204.51s. Full123 modules/1231 authoring tests pass after fixing callback order
+and requiring exactly the two intended Dragon Corpse callback keys. No assertion
+was loosened. Checks/tree/regeneration/pins/duplicates/fmt and explicit mounted
+Rust format checks pass;all-feature strict Clippy4m17s;workspacealltargets4m47s.
+An initial compiler SIGKILL was recovered by a two-job rebuild;all cases then ran.
 
-Next prioritize the unwired non-World follow-ups Dragon Corpse s3,Dragon Tower s3,
-Edron Goblin s3. The older claim that all non-World extra stages were finished
-was incorrect. Exact claim placements and approach candidates are in local lane
-notes;verify physical traversal,retain all predecessor guards,and never seed an
-EXPLORE counter in its own PG proof. Other missing stages are listed below.
+Remaining stages:Chakoya s3,Chyllfroest s1,Deeplings s4,Devovorga Essence s1,
+Down the Drain s1,Fury Gates s2,Hive Outpost s1,Insectoid Invasion s1,Jungle Camp
+s1+s3,Kingsday s1,Lumberjack s1. Prioritize source-verified personal routes and
+existing admitted World mechanics. Never substitute a nearby unverified landmark,
+fake activation flag or promoted HELD global owner for a real physical visit.
 
 ## Historical continuation notes
 
@@ -258,3 +261,7 @@ IcebergpreparedpublicationgatesALLGREEN:122modules1228tests,checks/tree/callback
 Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s:realPremiumguard/refusedreplay/freshonce/revisit,actualsnow/iceSourcepreserved;kill/chambertracks0,wholecompletion0,globalWorldstate0.38routes41stages55anchorsPG-proven;8routes15stagesunwired. M01bPARTIAL;finalClippy/workspace gatesrunning. Packet-auditconfirms46routes56Explorestages;earlierhandoffclaimallnonWorldextrasfinishedwasWRONG. NextprioritizeDragonCorpse s3,DragonTower s3,EdronGoblin s3;exactsingleclaimplacementsandclearapproachcandidatesretainedlocally. OtherremainingstagesChakoya3,Chyll1,Deeplings4,DevEssence1,DownDrain1,Fury2,Hive1,Insectoid1,Jungle1+3,Kingsday1,Lumberjack1.
 
 Chakoya s1 fixed personal iceberg nativePG GREEN78.48657683s.38routes41stages55anchorsPG-proven;8routes15stagesunwired.122modules1229authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictquests+dispatchalltargetsALLFEATURESClippy5m02s;workspacealltargets5m32s. FirstsurveyONLY;M01bPARTIAL.
+
+Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain. Full123modules1231testsGREENafterordering/exact-two-keyfix;Clippy/workspacepending. M01bPARTIAL,notfullquestcompletion.
+
+Three later EXPLORE hooks PG GREEN:DragonCorpse67.987155645s,DragonTower68.044933223s,EdronGoblin68.476461392s;3passed0failed0ignored,total204.51s.38routes44stages58anchorsPG-proven;8routes12stagesremain.123modules1231tests/checks/tree/regeneration/pins/dupmigrations/fmt PASS;strictALLFEATURESClippy4m17s;workspacealltargets4m47s. StagevisitsONLY;M01bPARTIAL.

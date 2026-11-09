@@ -693,6 +693,72 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/dragon-corpse/s3/dragoncorpse",
+      "quest": "oteryn:quest.dragon_corpse_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32178,
+          "y": 32224,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 355,
+        "native": {
+          "position": {
+            "x": 32178,
+            "y": 32224,
+            "floor": -9
+          },
+          "ordinal": 0,
+          "appearance": 355
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s3/visited/dragoncorpse",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_corpse_quest/s2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/51",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/dragon-tower/s1/entry",
       "quest": "oteryn:quest.dragon_tower_quest",
       "trigger": "step_in",
@@ -741,6 +807,72 @@
       "sources": [
         "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/357",
         "https://tibia.fandom.com/index.php?curid=1545&oldid=1113770",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/dragon-tower/s3/backpack1",
+      "quest": "oteryn:quest.dragon_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33073,
+          "y": 32169,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 408,
+        "native": {
+          "position": {
+            "x": 33073,
+            "y": 32169,
+            "floor": -2
+          },
+          "ordinal": 0,
+          "appearance": 408
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s3/visited/backpack1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dragon_tower_quest/s2",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/215",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
       ]
     },
@@ -794,6 +926,75 @@
         "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/109",
         "https://tibia.fandom.com/index.php?curid=27120&oldid=748545",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/edron-goblin/s3/edrongoblin1",
+      "quest": "oteryn:quest.edron_goblin_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33096,
+          "y": 31800,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 353,
+        "native": {
+          "position": {
+            "x": 33096,
+            "y": 31800,
+            "floor": -10
+          },
+          "ordinal": 0,
+          "appearance": 353
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s3/visited/edrongoblin1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s2",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/52",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
       ],
       "admission": {
         "premium": true
