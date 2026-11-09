@@ -365,6 +365,13 @@ fn qmech_m21_postgres_nested_key_pickup() -> TestResult {
     Ok(())
 }
 
+
+
+
+
+#[path = "qmech_m22_captured_stack/postgres.rs"]
+mod captured_stack;
+
 #[test]
 fn qmech_m21_postgres_immovable_source_without_native_custody_policy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

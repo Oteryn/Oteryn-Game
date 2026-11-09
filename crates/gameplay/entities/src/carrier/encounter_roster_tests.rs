@@ -2,6 +2,9 @@
 use super::*;
 use crate::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
 
+#[path = "elemental_boss_spawns_tests.rs"]
+mod elemental_boss_spawns_tests;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn checked<T, E: std::fmt::Debug>(value: Result<T, E>) -> TestResult<T> {
@@ -247,6 +250,44 @@ fn qm50_platform_displaces_every_occupant_and_rolls_back_failed_projection() -> 
 }
 
 #[test]
+fn qm50_platform_ride_carries_only_the_exact_rider_and_projects_atomically() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let rider = player(&mut runtime)?;
+    let creatures =
+        checked(runtime.commit_quest_creature_spawn(&[("creature:rat", 20, position(100))]))?;
+    let before = runtime.encounter_fixture_snapshot();
+    assert!(
+        runtime
+            .commit_quest_platform_ride(
+                position(100),
+                position(110),
+                rider.actor,
+                |_, _, _| true,
+                || false
+            )
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let moved = checked(runtime.commit_quest_platform_ride(
+        position(100),
+        position(110),
+        rider.actor,
+        |_, _, _| true,
+        || true,
+    ))?;
+    assert_eq!(moved.len(), 1);
+    assert_eq!(
+        checked(runtime.read_actor_position(rider.actor))?.position(),
+        position(110)
+    );
+    assert_eq!(
+        checked(runtime.read_actor_position(creatures[0]))?.position(),
+        position(100)
+    );
+    Ok(())
+}
+
+#[test]
 fn qm50_platform_checks_all_destinations_before_projecting_or_moving() -> TestResult {
     let mut runtime = runtime(1)?;
     let rider = player(&mut runtime)?;
@@ -308,6 +349,103 @@ fn engenc_defender_completion_is_exact_participant_fenced_and_idempotent() -> Te
         .0
         .set_scope_generation(checked(ScopeOwnershipGeneration::new(2))?);
     assert!(EncounterDefenders::new(&[step.actor], &[foreign]).is_err());
+    Ok(())
+}
+
+#[test]
+fn qn5_group_relocation_rolls_back_late_proof_or_projection_failure() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let mut projected = false;
+    assert!(
+        runtime
+            .commit_quest_relocation(vec![step, step], || {
+                projected = true;
+                true
+            })
+            .is_err(),
+        "the second proof is stale after the first move"
+    );
+    assert!(!projected);
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    assert!(
+        runtime
+            .commit_quest_relocation(vec![step], || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let moved = checked(runtime.commit_quest_relocation(vec![step], || true))?;
+    assert_eq!(moved.len(), 1);
+    assert_eq!(moved[0].position(), step.destination);
+    Ok(())
+}
+
+#[test]
+fn engenc_typed_roster_is_prepared_inside_atomic_entry() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let monsters = [("creature:rat", 20, position(111))];
+    assert!(
+        runtime
+            .commit_quest_encounter_entry_with_defenders(vec![step], &monsters, || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let (positions, roster) = checked(runtime.commit_quest_encounter_entry_with_defenders(
+        vec![step],
+        &monsters,
+        || true,
+    ))?;
+    assert_eq!(positions.len(), 1);
+    assert_eq!(roster.participants(), &[step.actor]);
+    assert_eq!(roster.defenders().len(), 1);
+    assert!(runtime.contains_live_creature(roster.defenders()[0]));
+    assert!(!roster.complete_for(step.actor));
+    Ok(())
+}
+
+#[test]
+fn worldchg_preflight_retains_actor_slots_and_movement_for_the_real_commit() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let step = player(&mut runtime)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let monsters = [("creature:rat", 20, position(111))];
+    checked(runtime.preflight_quest_encounter_entry(vec![step], &monsters))?;
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    assert_eq!(
+        checked(runtime.read_actor_position(step.actor))?,
+        step.expected
+    );
+    assert!(runtime.visible_entities().creatures.is_empty());
+    let (players, actors) =
+        checked(runtime.commit_quest_encounter_entry_with_roster(vec![step], &monsters, || true))?;
+    assert_eq!(players[0].position(), step.destination);
+    assert_eq!(actors.len(), 1);
+    assert!(runtime.contains_live_creature(actors[0]));
+    Ok(())
+}
+
+#[test]
+fn qm50_platform_rider_keeps_other_occupants_and_rolls_back_failed_map_batch() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let rider = player(&mut runtime)?;
+    let creatures =
+        checked(runtime.commit_quest_creature_spawn(&[("creature:rat", 20, position(100))]))?;
+    let before = runtime.encounter_fixture_snapshot();
+    assert!(
+        runtime
+            .commit_quest_platform_rider(rider, || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let landed = checked(runtime.commit_quest_platform_rider(rider, || true))?;
+    assert_eq!(landed.position(), rider.destination);
+    assert_eq!(
+        checked(runtime.read_actor_position(creatures[0]))?.position(),
+        position(100)
+    );
     Ok(())
 }
 

@@ -829,11 +829,12 @@ async fn entity_target(
         .row("oteryn:creature.minotaur")
         .map_err(debug)?;
     let race = row.race.clone().ok_or("canonical minotaur race")?;
+    let corpse = row.corpse_item.as_ref().ok_or("canonical minotaur corpse")?;
     seed_scavenge(h, 3, race.key()).await?;
     let definition = TypedDefinitionRef {
-        family: row.corpse_item.family.clone(),
-        production_key: row.corpse_item.production_key.clone(),
-        revision_ref: row.corpse_item.revision_ref.clone(),
+        family: corpse.family.clone(),
+        production_key: corpse.production_key.clone(),
+        revision_ref: corpse.revision_ref.clone(),
     };
     let cause = ItemMintCause::from_creature_death(
         death,
@@ -966,3 +967,6 @@ async fn provenance_refuses_late_binding(h: &Harness, unregistered: [u8; 16]) ->
     assert_eq!(after, before);
     Ok(())
 }
+
+#[path = "srx2_scavenge/m41.rs"]
+mod m41;

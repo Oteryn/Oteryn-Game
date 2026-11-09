@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "native_encounter_current.rs"]
+mod current;
+
 /// Immutable source-qualified admission description. It grants no scope or placement authority.
 /// The source adapter binds exact child revision; current physical owner reads its active policy.
 #[derive(Debug, Clone)]
@@ -80,11 +83,90 @@ impl ChannelRuntimeV1 {
         at: MovementLocalPosition,
         map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
     ) -> Result<ExactActorRef, EncounterSpawnError> {
+        self.admit_native_encounter_masterless_bound(
+            Some(current),
+            stamp,
+            parent,
+            spec,
+            at,
+            map_admits,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_current_native_callback_masterless(
+        &mut self,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeEncounterSpawnSpec,
+        source: &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn,
+        requested_center: MovementLocalPosition,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
+        self.admit_native_encounter_masterless_bound(
+            None,
+            stamp,
+            parent,
+            spec,
+            at,
+            map_admits,
+            Some((native, source, requested_center)),
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_native_callback_masterless(
+        &mut self,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeEncounterSpawnSpec,
+        source: &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn,
+        requested_center: MovementLocalPosition,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
+        self.admit_native_encounter_masterless_bound(
+            Some(current),
+            stamp,
+            parent,
+            spec,
+            at,
+            map_admits,
+            Some((native, source, requested_center)),
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn admit_native_encounter_masterless_bound(
+        &mut self,
+        current: Option<&oteryn_gameplay_foundation::foundation::ScopeRuntimeFence>,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeEncounterSpawnSpec,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+        source: Option<(
+            &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+            &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn,
+            MovementLocalPosition,
+        )>,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
         use EncounterSpawnError as E;
         let b = self.binding();
-        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
-            || !current.accepts_stamp(stamp)
-        {
+        let valid = match current {
+            Some(current) => {
+                current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+                    && current.accepts_stamp(stamp)
+            }
+            None => self.owner_fence().is_ok_and(|current| {
+                current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+                    && current.accepts_stamp(stamp)
+            }),
+        };
+        if !valid {
             return Err(E::StaleOwner);
         }
         if spec.content != self.content.server_artifact_digest()
@@ -92,11 +174,39 @@ impl ChannelRuntimeV1 {
         {
             return Err(E::Native(CarrierError::CreatureTargetMismatch));
         }
-        self.admit_native_masterless_at(
+        let occupied_allowed = if let Some((native, source, requested_center)) = source {
+            self.validate_native_callback_spawn_source(native, parent, source)
+                .map_err(E::Native)?;
+            if spec.parent.as_ref() != source.parent().key
+                || spec.child.as_ref() != source.child().key
+                || spec.child_revision.as_ref() != source.child().revision
+                || spec.content != source.source_digest()
+            {
+                return Err(E::Native(CarrierError::CreatureTargetMismatch));
+            }
+            // Source force bypasses queryAdd only at the original, existing
+            // center (whose existence the current Map closure proves).
+            if source.forced() && at == requested_center {
+                true
+            } else {
+                if !self
+                    .current_native_source_occupancy(native, &source.child().key, at, None)
+                    .map_err(E::Native)?
+                    .admits_occupants
+                {
+                    return Err(E::Native(CarrierError::CapacityExceeded));
+                }
+                true
+            }
+        } else {
+            false
+        };
+        self.admit_native_masterless_with_placement(
             &spec.child,
             &spec.child_revision,
             spec.content,
             at,
+            occupied_allowed,
             map_admits,
         )
     }
@@ -109,6 +219,24 @@ impl ChannelRuntimeV1 {
         revision: &str,
         content: [u8; 32],
         at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
+        self.admit_native_masterless_with_placement(
+            creature, revision, content, at, false, map_admits,
+        )
+    }
+
+    /// Only source-specific adapters supply the internal occupancy approval:
+    /// an authorized forced center or freshly checked normal pushable occupants.
+    /// Independent map, content and current-owner proofs remain required.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn admit_native_masterless_with_placement(
+        &mut self,
+        creature: &str,
+        revision: &str,
+        content: [u8; 32],
+        at: MovementLocalPosition,
+        source_occupied_allowed: bool,
         map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
     ) -> Result<ExactActorRef, EncounterSpawnError> {
         use EncounterSpawnError as E;
@@ -131,7 +259,7 @@ impl ChannelRuntimeV1 {
         // `CREATUREAI0-RL-04` (Codex 4242954089), as for native summons: it replaces the D57
         // envelope of 64 live creatures.
         if self.carrier.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
-            || !self.native_summon_cell_free(at)
+            || (!source_occupied_allowed && !self.native_summon_cell_free(at))
         {
             return Err(E::Native(CarrierError::CapacityExceeded));
         }
@@ -201,20 +329,53 @@ impl ChannelRuntimeV1 {
         self.remove_native_masterless_subject(actor, expected_key, expected_content)
     }
 
-    pub(super) fn preflight_native_masterless_removal(
+    pub(super) fn native_masterless_subject_index(
         &self,
         actor: ExactActorRef,
         expected_key: &str,
         expected_content: [u8; 32],
+        death: bool,
     ) -> Result<usize, CarrierError> {
         if self.content_pin().server_artifact_digest() != expected_content
-            || !self.matches_live_creature_identity(actor, expected_key.as_bytes())
+            || (!death && !self.matches_live_creature_identity(actor, expected_key.as_bytes()))
         {
             return Err(CarrierError::CreatureTargetMismatch);
         }
         let index = self
             .carrier
             .validate_summon_actor(&self.continuity, actor)?;
+        if death
+            && !matches!(&self.carrier.slots[index], Slot::CreatureOccupied { health: 0, target_identity, .. }
+            if target_identity.as_ref() == expected_key.as_bytes())
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        Ok(index)
+    }
+
+    pub(super) fn preflight_native_masterless_removal(
+        &self,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+    ) -> Result<usize, CarrierError> {
+        self.preflight_native_masterless_removal_with_liveness(
+            actor,
+            expected_key,
+            expected_content,
+            false,
+        )
+    }
+
+    pub(super) fn preflight_native_masterless_removal_with_liveness(
+        &self,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+        death: bool,
+    ) -> Result<usize, CarrierError> {
+        let index =
+            self.native_masterless_subject_index(actor, expected_key, expected_content, death)?;
         self.carrier.assert_slot_spell_unreserved(index)?;
         // Existing removal cascades intrinsic children. Preflight every fallible current-slot
         // check before entering it; no mutation can occur between checks in this owner turn.
@@ -242,6 +403,16 @@ impl ChannelRuntimeV1 {
         expected_content: [u8; 32],
     ) -> Result<(), CarrierError> {
         self.preflight_native_masterless_removal(actor, expected_key, expected_content)?;
+        self.carrier.remove(&self.continuity, actor.0).map(|_| ())
+    }
+    pub(super) fn remove_native_raid_body_subject(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+        content: [u8; 32],
+        death: bool,
+    ) -> Result<(), CarrierError> {
+        self.preflight_native_masterless_removal_with_liveness(actor, key, content, death)?;
         self.carrier.remove(&self.continuity, actor.0).map(|_| ())
     }
 }

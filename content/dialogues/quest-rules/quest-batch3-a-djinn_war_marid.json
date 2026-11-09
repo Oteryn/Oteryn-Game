@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_djinn_war_marid_faction",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:87-140"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:87-140"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:87-140"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.gabel",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:87-140"
+      ],
+      "key": "oteryn:quest-npc/the_djinn_war_marid_faction/gabel/report-offer",
+      "keywords": [
+        "mission"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Have you found Fa'hradin's lamp and placed it in Malor's personal chambers?"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "npc": "oteryn:npc.gabel",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:87-140"
+      ],
+      "key": "oteryn:quest-npc/the_djinn_war_marid_faction/gabel/report-complete",
+      "keywords": [
+        "yes"
+      ],
+      "exclude_keywords": [
+        "mission"
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/door_to_efreet_territory",
+          "value": 1
+        },
+        {
+          "kind": "achievement",
+          "name": "Marid Ally"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Daraman shall bless you and all humans! You have done us all a huge service! Soon, this awful war will be over! ...",
+        "Know, that from now on you are considered one of us and are welcome to trade with Haroun and Nah'bob whenever you want to!",
+        "Farewell, stranger. May Uman open your minds and your hearts to Daraman's wisdom!"
+      ],
+      "completes": true
+    }
+  ],
+  "source_files": [
+    {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/gabel.lua",
+      "sha256": "4691a0a07d65bc9972acc3641e8c89fc0476c7a3033c128a51801e19fdbedeaa"
+    }
+  ]
+}

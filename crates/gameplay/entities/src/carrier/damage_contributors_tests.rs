@@ -221,6 +221,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
     // accumulation path alone. D132 rule 2 (simultaneous application within the same deterministic ordinal)
     // is still a defined, deterministic outcome, proven here directly against the data.
     let higher = DamageContributor {
+        source_player: None,
         character: character(9),
         total: 7,
         current_session_total: 0,
@@ -229,6 +230,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         last_damage_at_ms: None,
     };
     let lower = DamageContributor {
+        source_player: None,
         character: character(3),
         total: 7,
         current_session_total: 0,
@@ -251,6 +253,7 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
 fn top_damage_character_is_independent_of_entry_insertion_order() {
     let base = [
         DamageContributor {
+            source_player: None,
             character: character(4),
             total: 12,
             current_session_total: 0,
@@ -259,6 +262,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             last_damage_at_ms: None,
         },
         DamageContributor {
+            source_player: None,
             character: character(1),
             total: 20,
             current_session_total: 0,
@@ -267,6 +271,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             last_damage_at_ms: None,
         },
         DamageContributor {
+            source_player: None,
             character: character(8),
             total: 20,
             current_session_total: 0,
@@ -275,6 +280,7 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             last_damage_at_ms: None,
         },
         DamageContributor {
+            source_player: None,
             character: character(2),
             total: 3,
             current_session_total: 0,

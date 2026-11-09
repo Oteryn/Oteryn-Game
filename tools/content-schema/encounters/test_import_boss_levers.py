@@ -50,5 +50,48 @@ class PrimalHookCapture(unittest.TestCase):
                 self.assertEqual(IMPORTER.capture_primal_hooks(root), ([], False))
 
 
+class GalthenHookCapture(unittest.TestCase):
+    def test_exact_source_and_native_profile_are_required_for_typed_exit(self):
+        import copy
+        # Test-owned source bytes exercise the exact proof protocol; production
+        # constants remain pinned to the complete donor bodies.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            key = "oteryn:creature.ahau"
+            lever = root / "lever.lua"
+            lever.write_text('local config = { boss = {name = "Ahau"}, exitTeleporter = Position(34002,31706,10) }\nBossLever(config)')
+            monster = root / "monster.lua"
+            monster.write_text('monster.events = {}')
+            profile = {"profile": {"target": {"key": key}}}
+            digest = lambda value: hashlib.sha256(value).hexdigest()
+            proof = ("lever.lua", digest(lever.read_bytes()), "monster.lua",
+                     digest(monster.read_bytes()), digest(IMPORTER.canonical(profile)),
+                     [34002, 31706, 10])
+            with patch.object(IMPORTER, "GALTHEN_CLOSURES", {key: proof}):
+                actual = IMPORTER.capture(root, lever, {key: profile}, {"cooldown": 72000, "timeout": 1200})
+                self.assertTrue(actual["callbacks_known"])
+                self.assertEqual(actual["required_callbacks"], ["BossLeverOnDeath"])
+                self.assertNotIn("config.exitTeleporter", actual["blockers"])
+                self.assertEqual(actual["source_exit_teleporter"], [34002, 31706, 10])
+                changed = copy.deepcopy(profile)
+                changed["new_callback"] = "unsupported"
+                for profiles in ({key: changed}, {}):
+                    rejected = IMPORTER.capture(root, lever, profiles, {"cooldown": 72000, "timeout": 1200})
+                    self.assertFalse(rejected["callbacks_known"])
+                    self.assertIn("config.exitTeleporter", rejected["blockers"])
+                monster.write_text(monster.read_text() + " -- changed")
+                self.assertIsNone(IMPORTER.galthen_callback_closure(root, lever, key, {key: profile}))
+                monster.write_text('monster.events = {}')
+                lever.write_text(lever.read_text().replace("34002", "34003"))
+                self.assertIsNone(IMPORTER.galthen_callback_closure(root, lever, key, {key: profile}))
+
+    def test_unknown_boss_cannot_borrow_native_closure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "lever.lua"
+            path.write_text("BossLever({})")
+            self.assertIsNone(IMPORTER.galthen_callback_closure(root, path, "oteryn:creature.other", {}))
+
+
 if __name__ == "__main__":
     unittest.main()

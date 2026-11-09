@@ -80,6 +80,13 @@ pub async fn holds_in_transaction(
     if root.content_revision != catalogue.content_revision() {
         return Ok(false);
     }
+    // Departure or death can commit before runtime projection catches up. The
+    // retained peer root lock serializes this read with those Character writers.
+    let transitioning: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid)")
+        .bind(peer.fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if transitioning {
+        return Ok(false);
+    }
     let pin = sqlx::query("SELECT definition_hash,pinned_content_revision FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
         .bind(peer.fence.character_id.as_bytes().as_slice()).bind(&track.quest)
         .fetch_optional(&mut **tx).await?;
@@ -116,3 +123,6 @@ pub async fn holds_in_transaction(
     Ok((track.min..=track.max).contains(&value)
         && (requirement.minimum..=requirement.maximum).contains(&value))
 }
+
+#[cfg(test)]
+mod tests;

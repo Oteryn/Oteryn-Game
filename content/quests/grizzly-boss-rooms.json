@@ -697,7 +697,8 @@
     "content/world/objects/objects-12782-12876.json": "a5b1b3f7fb8beb9b82b089f099bd401a62372a9a6602a2c5b4eb5bd6ac9a0a3a",
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
-    "content/world/placements/index.json": "2529d97ab2e1e7f6700b603df9942f27a456a8deac4f5db5520566144d1e462f",
+    "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
+    "content/world/placements/index.json": "d3fe23fda5dd903f012df91294ec703ff167e86d9bb70342aa635541bb61977b",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -738,7 +739,7 @@
     "content/world/terrain/terrain-04000-04499.json": "63c1b34729be8f3e3f5dc74cf22d0ea2299ee86753413d8ecc4681e58e3d8d99",
     "content/world/terrain/terrain-04500-04999.json": "36df80df1261b23cbbfaea69581de80622ef02a0c4cb65ff7333324f7d2b2b11",
     "content/world/terrain/terrain-05000-05499.json": "1087f8892f6cf73ca2a2d22a4a9ed9dae945d2599f3b3de9cd7562e3a03d47cb",
-    "content/world/terrain/terrain-05500-05999.json": "c5081d0589d6e65a40baf89178c4e29f81089147d463d168474ac286d546a66a",
+    "content/world/terrain/terrain-05500-05999.json": "7ba587fc470273980e0a75f0d597a13543b827d39e7f948ec469d1473a40d6c9",
     "content/world/terrain/terrain-06000-06499.json": "a5845d01e5f3599cf11e265af28e3f3c8de5eacde44e408d44a14c69d7cf8d22",
     "content/world/terrain/terrain-06500-06999.json": "cfd84788ad5cc0fa3b870a9b22accca570f4cdf3615f55275452897055734b52",
     "content/world/terrain/terrain-07000-07499.json": "f5ea86d83b0a4b5fc3c33c8f831b1dd308636529f4c5d9c51e7bb2d15ad1342c",
@@ -749,7 +750,9 @@
     "content/world/terrain/terrain-08578-08611.json": "471e062add36ecdf53b6f4d4ab9d22313bab683fce781cb63ffbba8a165f00f4",
     "content/world/terrain/terrain-08612-08612.json": "fc560952a802576672c9473d12d1fab8013eeca07136a79c0b8732b5a2f485cf",
     "content/world/terrain/terrain-08613-08613.json": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa",
-    "content/world/terrain/terrain-08614-08668.json": "dfd54e670a7de3eb8b5a444df9c8efc15faf8ddafadab761347338d80141f820",
-    "content/world/terrain/terrain-08614-08692.json": "aee31f886f134c8dd308e06cccaee0960fd570c4b5bfd2af95327e660ce04562"
+    "content/world/terrain/terrain-08614-08668.json": "0c35e7cc19b8d799b9f33cccb0f989986f13e19006f379a28b110df76f50efe5",
+    "content/world/terrain/terrain-08614-08692.json": "aee31f886f134c8dd308e06cccaee0960fd570c4b5bfd2af95327e660ce04562",
+    "content/world/terrain/terrain-08669-08720.json": "7ac60833042bb552d12ca1b75cccd9b18a9161c2ca0de779809e8f4898d3f081",
+    "content/world/terrain/terrain-08693-08693.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3"
   }
 }

@@ -33,7 +33,11 @@ mod catalogue;
 mod entry;
 mod quest_encounter;
 #[cfg(any(test, feature = "test-support"))]
-pub use quest_encounter::fixture_first_dragon_trials_permit;
+pub use quest_encounter::{fixture_first_dragon_trials_permit, fixture_first_dragon_entry_permit};
+mod outburst;
+mod primal;
+mod rotten_blood;
+mod soul_war;
 pub mod soulpit;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
@@ -50,6 +54,8 @@ mod retirement;
 pub use retirement::RetiringActivity;
 pub(crate) use retirement::read_retiring_activity_in_transaction;
 pub mod boss_room;
+mod native_step;
+pub use native_step::ActivityNativeStepExit;
 
 /// Existing boss group storage ceiling, not a client-controlled allocation size.
 pub const ACTIVITY_PARTICIPANTS_MAX: usize = 15;
@@ -178,7 +184,7 @@ pub enum ActivityReturnReason {
     },
 }
 impl ActivityReturnReason {
-    fn stored(self) -> i16 {
+    pub(super) fn stored(self) -> i16 {
         match self {
             Self::Exit => 1,
             Self::Timeout => 2,
@@ -244,6 +250,7 @@ pub type ActivityRecoveryOutcome = ActivityReturnOutcome;
 pub struct ActivityHandoffOwner {
     root: DurabilityRoot,
 }
+
 impl ActivityHandoffOwner {
     pub fn new(root: DurabilityRoot) -> Self {
         Self { root }
@@ -255,7 +262,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, false).await
+        self.enter_inner(authority, node, request, false, &super::quest_state::grizzly::NoGrizzlyPremium).await
     }
 
     pub async fn enter_boss_room(
@@ -264,20 +271,34 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityEnterRequest,
     ) -> Result<ActivityEnterOutcome> {
-        self.enter_inner(authority, node, request, true).await
+        self.enter_inner(authority, node, request, true, &super::quest_state::grizzly::NoGrizzlyPremium).await
     }
 
-    async fn enter_inner(
+    /// Join the selected quest's Premium predicate to the same admission transaction.
+    pub async fn enter_boss_room_with_premium<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityEnterRequest,
+        premium: &G,
+    ) -> Result<ActivityEnterOutcome> {
+        self.enter_inner(authority, node, request, true, premium).await
+    }
+
+    async fn enter_inner<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         mut request: ActivityEnterRequest,
         boss_room: bool,
+        premium: &G,
     ) -> Result<ActivityEnterOutcome> {
         request
             .participants
             .sort_by_key(|p| *p.source.character_id.as_bytes());
-        if !entry::valid_request(&request, boss_room) {
+        if !entry::valid_request(&request, boss_room)
+            || request.activity_key == super::soulpit::SOULPIT_ACTIVITY_KEY
+        {
             return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
         }
         let recovery = authority
@@ -285,15 +306,16 @@ impl ActivityHandoffOwner {
             .map_err(|_| DurabilityError::Unavailable)?;
         let root = self.root.clone();
         let node = node.clone();
+        let mut premium = premium;
         self.root
             .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut premium, move |holder, deadline, premium| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = entry::enter_in_transaction(
-                        &mut tx, &root, &node, &request, boss_room, None,
+                        &mut tx, &root, &node, &request, boss_room, None, *premium,
                     )
                     .await?;
                     if !matches!(result, ActivityEnterOutcome::Refused(_)) {
@@ -316,7 +338,21 @@ impl ActivityHandoffOwner {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.return_inner(authority, node, request, false).await
+        self.return_inner(authority, node, request, false, None)
+            .await
+    }
+
+    /// Autonomous source STEP uses the same return transaction and exact
+    /// immutable movement receipt, without fabricating a client command.
+    pub async fn return_participant_for_native_step(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityReturnRequest,
+        movement: ActivityNativeStepExit,
+    ) -> Result<ActivityReturnOutcome> {
+        self.return_inner(authority, node, request, false, Some(movement))
+            .await
     }
 
     pub async fn recover(
@@ -328,7 +364,8 @@ impl ActivityHandoffOwner {
         request.reason = ActivityReturnReason::OwnerLost;
         request.command_id = None;
         request.destination_transport = None;
-        self.return_inner(authority, node, request, true).await
+        self.return_inner(authority, node, request, true, None)
+            .await
     }
 
     async fn return_inner(
@@ -337,6 +374,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityReturnRequest,
         recovering: bool,
+        movement: Option<ActivityNativeStepExit>,
     ) -> Result<ActivityReturnOutcome> {
         if request.command_id == Some(0)
             || matches!(request.reason, ActivityReturnReason::Abandoned { .. } | ActivityReturnReason::StaffKick { .. }
@@ -347,7 +385,14 @@ impl ActivityHandoffOwner {
                 && (request.command_id.is_some()
                     || request.destination_transport.is_none()
                     || recovering))
-            || (request.command_id.is_none() && request.reason == ActivityReturnReason::Exit)
+            || (movement.is_some()
+                && (recovering
+                    || !movement
+                        .as_ref()
+                        .is_some_and(|proof| proof.matches_request(&request))))
+            || (request.command_id.is_none()
+                && request.reason == ActivityReturnReason::Exit
+                && movement.is_none())
             || (request.reason == ActivityReturnReason::SoulpitTerminal
                 && (request.command_id.is_some() || recovering))
             || matches!(request.reason, ActivityReturnReason::Death { occurrence } if !uuid_v7(&occurrence) || request.command_id.is_some())
@@ -377,7 +422,12 @@ impl ActivityHandoffOwner {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = returning::return_in_transaction(
-                        &mut tx, &root, &node, &request, recovering,
+                        &mut tx,
+                        &root,
+                        &node,
+                        &request,
+                        recovering,
+                        movement.as_ref(),
                     )
                     .await?;
                     if !matches!(result, ActivityReturnOutcome::Refused(_)) {
@@ -425,6 +475,22 @@ async fn now_ms(tx: &mut Transaction<'_, Postgres>) -> Result<i64> {
             .fetch_one(&mut **tx)
             .await?,
     )
+}
+
+// The existing root-scoped fixture quest clock can advance this quest's room
+// deadline without changing source policy or sleeping for the donor's twenty minutes.
+async fn quest_activity_now_ms(tx: &mut Transaction<'_, Postgres>, root: &DurabilityRoot) -> Result<i64> {
+    let now = now_ms(tx).await?;
+    #[cfg(any(test, feature = "test-support"))]
+    if let Some(clock) = root.quest_test_clock_handle() {
+        let seconds = clock.load(std::sync::atomic::Ordering::Acquire);
+        if seconds >= 0 {
+            return seconds.checked_mul(1000).ok_or(DurabilityError::InvalidStoredState);
+        }
+    }
+    #[cfg(not(any(test, feature = "test-support")))]
+    let _ = root;
+    Ok(now)
 }
 
 /// Publication history and session-identity history are separate from live mirrors.

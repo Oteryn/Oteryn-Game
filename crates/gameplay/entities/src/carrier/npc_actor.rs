@@ -449,10 +449,14 @@ impl ChannelRuntimeV1 {
             actor_local_id,
             ActorLocalGeneration(generation),
         );
+        let order = carrier
+            .next_tile_entry_order()
+            .map_err(NpcPlacementError::Carrier)?;
         carrier.slots[index] = Slot::NpcOccupied {
             generation,
             key,
             hireling: None,
+            tile_entry_order: order,
             position: VersionedPosition {
                 actor_local_id,
                 actor_local_generation: ActorLocalGeneration(generation),
@@ -465,6 +469,7 @@ impl ChannelRuntimeV1 {
         };
         carrier.free_head = next_free;
         carrier.occupied.push(free_head);
+        carrier.install_tile_entry_order(index, order);
         Ok(ExactActorRef(actor_ref))
     }
 

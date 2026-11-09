@@ -540,6 +540,12 @@ mod fresh_source {
             if account_id != self.current.account_id {
                 return Err(Fnd04EvidenceError::ExplicitlyDenied);
             }
+            if let Some(security) = self.rows.iter().find_map(|row| match &row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, .. } => Some(security),
+                _ => None,
+            }) {
+                return Ok(security.clone());
+            }
             Ok(FreshAccountSecurityObservationV1 {
                 account_id: account_id.into(),
                 minimum_generation: 1,
@@ -873,13 +879,23 @@ async fn bootstrap_owned_character(
     account: u8,
     now: i64,
 ) -> TestResult<crate::domain::CharacterId> {
+    bootstrap_owned_character_from_source(h, character, account, now, None).await
+}
+async fn bootstrap_owned_character_from_source(
+    h: &FreshPlayerOwners<'_>,
+    character: u8,
+    account: u8,
+    now: i64,
+    existing_source: Option<&str>,
+) -> TestResult<crate::domain::CharacterId> {
     // The independent producer fixture supplies a bounded authenticated decision. Only the
     // real bootstrap writer creates the root, issuer floor, operation receipt and audit data.
     use crate::durability::native_admission_source::{
         DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
         SourceObservation,
     };
-    if character == 60 {
+    let source_authority = existing_source.unwrap_or("platform");
+    if character == 60 && existing_source.is_none() {
         let descriptor = DescriptorRegistration {
             revision: 1,
             facts: vec![1],
@@ -888,7 +904,7 @@ async fn bootstrap_owned_character(
         let provenance = FreshStoreProvenance {
             namespace: "party-fixture-source".into(),
             authorization: "independent-platform-fixture".into(),
-            source_authority: "platform".into(),
+            source_authority: source_authority.into(),
             initialized_at: now,
         };
         assert!(
@@ -907,10 +923,14 @@ async fn bootstrap_owned_character(
             .map_err(debug)?;
     }
     let account_text = fresh_source::uuid_text(&id(account));
-    let revision = u64::from(character);
+    let revision = if existing_source.is_some() {
+        1
+    } else {
+        u64::from(character)
+    };
     let security = serde_json::json!({
         "version": 1, "operation": "ReadAccountSecurityV1", "result": "observed",
-        "source_authority": "platform", "source_revision": revision.to_string(),
+        "source_authority": source_authority, "source_revision": revision.to_string(),
         "decision_identity": revision.to_string(), "source_observed_at": now.to_string(),
         "clock_uncertainty_seconds": "0", "account_id": account_text,
         "purpose": "platform_security", "scope": "fresh_admission", "allowed": true,
@@ -920,7 +940,7 @@ async fn bootstrap_owned_character(
         .accept_native_source_observation(
             &h.node,
             SourceObservation {
-                source_authority: "platform".into(),
+                source_authority: source_authority.into(),
                 operation: NativeSourceOperation::ReadAccountSecurityV1,
                 subject: NativeSourceSubject::account_security(account_text.clone())
                     .map_err(debug)?,
@@ -936,7 +956,9 @@ async fn bootstrap_owned_character(
         "contract_version": 3, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
         "issuer_decision_id": fresh_source::uuid_text(&id(character + 20)),
-        "source_revision": revision.to_string(),
+        // Character bootstrap has a global issuer floor, separate from the
+        // new Account's first security observation above.
+        "source_revision": u64::from(character).to_string(),
         "operation_id": fresh_source::uuid_text(&id(character)),
         "operation": "INITIAL_CHARACTER_BOOTSTRAP", "account_id": account_text,
         "target_world_id": fresh_source::uuid_text(&id(WORLD)),
@@ -997,12 +1019,51 @@ pub(crate) async fn committed_fresh_player_owned(
 ) -> TestResult<
     crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
 > {
+    Ok(
+        committed_fresh_player_from_source_owned(h, character, account, session, now, None)
+            .await?
+            .0,
+    )
+}
+/// Reuse an independently installed native source without replacing its singleton registration.
+/// Return the actual committed Fresh operation for its equipment initialization.
+pub(crate) async fn committed_fresh_player_from_source_owned(
+    h: &FreshPlayerOwners<'_>,
+    character: u8,
+    account: u8,
+    session: u8,
+    now: i64,
+    existing_source: Option<&str>,
+) -> TestResult<(
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+    crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
     use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
-    let character_id = bootstrap_owned_character(h, character, account, now).await?;
+    let character_id =
+        bootstrap_owned_character_from_source(h, character, account, now, existing_source).await?;
     let mut source = fresh_source::Source::new(now, *character_id.as_bytes(), account, session)?;
+    if let Some(authority) = existing_source {
+        use crate::foundation::admission_authority_publication::{
+            AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+        };
+        for row in &mut source.rows {
+            if matches!(
+                row.key,
+                AdmissionAuthorityGuardKeyV1::Account { .. }
+                    | AdmissionAuthorityGuardKeyV1::Character(_)
+            ) {
+                row.source.authority =
+                    crate::durability::fresh_admission_composition::COMPOSITION_SOURCE_AUTHORITY
+                        .into();
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state {
+                    security.provenance.source_authority = authority.into();
+                }
+            }
+        }
+    }
     let guards = AdmissionGuardStore::from_root(h.root.clone());
     // Keep independently committed runtime/signing publications exactly as actually read.
     // The fixture does not overwrite the actual assignment owner or invent its high-water.
@@ -1031,7 +1092,9 @@ pub(crate) async fn committed_fresh_player_owned(
     }
     let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
     guards.publish(&publication).await.map_err(debug)?;
-    let request = source.request()?;
+    let request = source
+        .request()
+        .map_err(|error| format!("Party Fresh request from published guards: {error}"))?;
     let store = FreshAdmissionStore::from_root(h.root.clone());
     let outcome = store.commit(&request).await.map_err(debug)?;
     let FreshAdmissionDurableOutcomeV1::Committed(receipt) = outcome else {
@@ -1049,7 +1112,7 @@ pub(crate) async fn committed_fresh_player_owned(
     );
     assert_eq!(current.current_connection_generation().get(), 1);
     assert_eq!(current.current_character_lease().generation(), 2);
-    Ok(current)
+    Ok((current, request.operation().clone()))
 }
 
 /// D88 initialization and A13 vocation choice use the actual Character writers. The

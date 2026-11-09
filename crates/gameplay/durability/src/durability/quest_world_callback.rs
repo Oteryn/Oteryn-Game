@@ -1,13 +1,26 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
+pub(crate) mod character_requirements;
+mod completed_quests;
 pub(super) mod completion;
-#[cfg(feature = "test-support")]
-pub mod ground_stack;
-#[cfg(not(feature = "test-support"))]
+mod ground_read;
 pub(crate) mod ground_stack;
+mod selected_tool;
+mod tool_reads;
+pub use selected_tool::QuestWorldToolContext;
+
+/// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
+/// authority and all production Ground locks are checked by the same participant.
 #[cfg(any(test, feature = "test-support"))]
-#[doc(hidden)]
-pub use ground_stack::matches as fixture_ground_stack_matches;
+pub async fn test_ground_stack_matches_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+    target: &super::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, super::DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
+}
+
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
@@ -30,6 +43,8 @@ pub struct QuestWorldContext {
 
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
+#[path = "quest_world_callback/reward_inventory.rs"]
+mod reward_inventory;
 
 struct Input {
     item: String,
@@ -50,15 +65,20 @@ pub(super) async fn consume_reward_inputs(
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
 ) -> Result<bool, DurabilityError> {
-    let super::quest_state::QuestCause::Command(_) = request.cause else {
-        return Ok(false);
-    };
-    let keys: Vec<_> = callback
+    match request.cause {
+        super::quest_state::QuestCause::Command(_) if callback.world_claim.is_none() => {}
+        super::quest_state::QuestCause::Use(_) if callback.world_claim.is_some() => {}
+        _ => return Ok(false),
+    }
+    let mut keys: Vec<_> = callback
         .take
         .iter()
         .chain(&callback.present)
         .map(|i| i.item.as_str())
         .collect();
+    keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
+    keys.sort_unstable();
+    keys.dedup();
     let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if let Some(use_) = carried_use {
@@ -92,6 +112,9 @@ pub(super) async fn consume_reward_inputs(
         }) {
             return Ok(false);
         }
+    }
+    if !reward_inventory::holds(&rows, &callback.inventory)? {
+        return Ok(false);
     }
     if callback.exact_take {
         for input in &callback.take {
@@ -173,13 +196,18 @@ pub(super) async fn consume_reward_inputs(
     reward_inputs::apply(tx, fence, request, callback, carried_use, &inputs).await
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing fenced participant also receives the exact locked quest plan"
+)]
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
-    context: &QuestWorldContext,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
+    context: &QuestWorldToolContext,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
         &super::runtime_scope_assignment::NodeIncarnationProof,
@@ -197,7 +225,17 @@ pub(super) async fn consume(
     else {
         return Ok(false);
     };
+    let exact = callback
+        .item_on_target
+        .as_ref()
+        .is_some_and(|item| item.selected_instance);
+    if exact != context.selected_tool.is_some() {
+        return Ok(false);
+    }
     if !context_is_current(tx, permit, fence, context).await? {
+        return Ok(false);
+    }
+    if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }
     if let Some(change) = &callback.world_change
@@ -215,6 +253,13 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    // M03: promotion is a permanent Character purchase, not a client vocation
+    // name or copied quest storage. The outer writer holds the Character root.
+    if callback.admission.as_ref().is_some_and(|a| a.promotion)
+        && !super::character_promotion::read_durable_promotion(tx, fence.character_id).await?
+    {
+        return Ok(false);
+    }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
             "SELECT level FROM game_character_progression_state \
@@ -226,11 +271,6 @@ pub(super) async fn consume(
         if level.is_none_or(|level| level < i64::from(minimum)) {
             return Ok(false);
         }
-    }
-    if !ground_stack::matches_requirements(tx, permit, fence, context, &callback.world_requirements)
-        .await?
-    {
-        return Ok(false);
     }
     if !ground_stack::require(
         tx,
@@ -258,20 +298,51 @@ pub(super) async fn consume(
                 oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             if !catalogue
-                .blessings
-                .iter()
-                .filter(|blessing| blessing.storage_key != "oteryn:blessing.twist_of_fate")
+                .regular()
                 .all(|blessing| held.contains(&blessing.storage_key))
             {
                 return Ok(false);
             }
         }
     }
+    for requirement in &callback.world_requirements {
+        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement {
+            position,
+            ground: Some(ground),
+            ..
+        } = requirement
+        else {
+            continue;
+        };
+        if !callback.has_personal_state()
+            || !ground_read::matches(
+                tx,
+                &ground_read::Context {
+                    world: world_id.as_bytes(),
+                    channel: channel_id.as_bytes(),
+                    generation: fence.scope_ownership_generation.get(),
+                    map: &context.map_revision,
+                    content: &context.content_revision,
+                    placement: &context.placement_context,
+                },
+                *position,
+                ground,
+            )
+            .await?
+        {
+            return Ok(false);
+        }
+    }
+    if let Some(requirements) = &callback.character_requirements
+        && !character_requirements::satisfied(tx, fence.character_id, requirements).await?
+    {
+        return Ok(false);
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }
     consume_inputs(
-        tx, permit, fence, request, callback, context, command, world_id, channel_id,
+        tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
     .await
 }
@@ -340,7 +411,8 @@ async fn consume_inputs(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
-    context: &QuestWorldContext,
+    changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
+    context: &QuestWorldToolContext,
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
     channel_id: crate::foundation::ChannelId,
@@ -358,12 +430,13 @@ async fn consume_inputs(
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) \
-             AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+             AND i.quantity >= $4 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(&accepted)
         .bind(i64::from(required.count))
+        .bind(context.selected_tool.as_ref().map(|tool| tool.source.to_vec()))
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };
@@ -416,7 +489,62 @@ async fn consume_inputs(
         // Retained tools still require a positive quantity, live custody and the
         // same location lock. The enclosing Quest receipt binds this read to the
         // action without inventing an item consumption or changing its identity.
-        if !required.reusable {
+        let consume = match callback.native_rule {
+            Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint {
+                seal,
+            }) => {
+                use oteryn_gameplay_quests::quest::ice_islands_seals;
+                if required.item != ice_islands_seals::PAINT
+                    || required.count != 1
+                    || !required.reusable
+                    || required.replacement.is_some()
+                    || required.target_replacement.is_some()
+                    || !required.alternatives.is_empty()
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                ice_islands_seals::consumes_paint(seal, changes)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?
+            }
+            _ => !required.reusable,
+        };
+        if consume {
+            inputs.push(input);
+        } else if required.selected_instance
+            && !tool_reads::record(tx, fence, request, callback, context, &input).await?
+        {
+            return Ok(false);
+        }
+        for material in &required.ingredients {
+            let row = sqlx::query(
+                "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
+                 c.location,c.kind,i.quantity FROM \
+                 game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
+                 JOIN game_item_instances i ON i.item_instance_id=c.item \
+                 WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
+                 AND i.definition_family='Item' AND i.definition_production_key=$3 \
+                 AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(world_id.as_bytes().as_slice())
+            .bind(&material.item)
+            .bind(i64::from(material.count))
+            .fetch_optional(&mut **tx)
+            .await?;
+            let Some(row) = row else { return Ok(false) };
+            let input = Input {
+                item: row.try_get("item")?,
+                before: row.try_get("before_item")?,
+                location: row.try_get("location")?,
+                kind: row.try_get("kind")?,
+                quantity: row.try_get("quantity")?,
+                count: material.count,
+                replacement: None,
+            };
+            if inputs.iter().any(|prior| prior.item == input.item) {
+                return Ok(false);
+            }
+            lock_location(tx, &input).await?;
             inputs.push(input);
         }
     }
@@ -660,16 +788,16 @@ pub(super) async fn consume_npc_inputs(
         return Ok(false);
     };
     use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
-    let mut remaining = std::collections::BTreeMap::<String, i64>::new();
+    let mut remaining = std::collections::BTreeMap::<(String, Option<u16>), i64>::new();
     for effect in &plan.effects {
         if let NpcRuleEffect::TakeItem {
             item,
             count,
-            subtype: None,
+            subtype,
             optional: false,
         } = effect
         {
-            let total = remaining.entry(item.clone()).or_default();
+            let total = remaining.entry((item.clone(), *subtype)).or_default();
             *total = total
                 .checked_add(i64::from(*count))
                 .ok_or(DurabilityError::InvalidStoredState)?;
@@ -681,11 +809,15 @@ pub(super) async fn consume_npc_inputs(
     if remaining.is_empty() {
         return Ok(true);
     }
-    if remaining.len() > 8 {
+    let cooking = plan.quest == oteryn_gameplay_quests::quest::hot_cuisine::QUEST
+        && plan.selected_rule_keys.first().is_some_and(|key| {
+            key.starts_with("oteryn:quest-npc/hot_cuisine_quest/jean_pierre/native-cook-")
+        });
+    if remaining.len() > if cooking { 16 } else { 8 } {
         return Ok(false);
     }
-    let keys: Vec<_> = remaining.keys().cloned().collect();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let keys: Vec<_> = remaining.keys().map(|(item, _)| item.clone()).collect();
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id) AS fluid_subtype FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
         return Ok(false);
@@ -693,7 +825,12 @@ pub(super) async fn consume_npc_inputs(
     let mut inputs = Vec::new();
     for row in rows {
         let key: String = row.try_get("definition_production_key")?;
-        let Some(required) = remaining.get_mut(&key) else {
+        let subtype = row
+            .try_get::<Option<i16>, _>("fluid_subtype")?
+            .map(u16::try_from)
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let Some(required) = remaining.get_mut(&(key, subtype)) else {
             continue;
         };
         let quantity: i64 = row.try_get("quantity")?;
@@ -741,3 +878,21 @@ pub(super) async fn consume_npc_inputs(
     }
     Ok(true)
 }
+
+/// Exercise the exact durable predicate from auto-mounted PostgreSQL cases.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn matches_ground_stack_for_test(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+    target: &super::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
+}
+
+#[cfg(test)]
+#[path = "quest_world_callback/entry_postgres_tests.rs"]
+mod entry_postgres_tests;
+
+#[cfg(any(test, feature = "test-support"))]
+pub use ground_stack::fixture_matches as fixture_ground_stack_matches;

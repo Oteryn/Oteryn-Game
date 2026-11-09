@@ -221,9 +221,11 @@ def lower_quest(definition, owned, mission_values):
         completion = 'NOT_LOWERED_FOREIGN_TRACK'
     else:
         completion = 'LOWERED'
-    return {'quest': quest, 'source_quest': source['identity']['key'], 'completion': completion,
-            'tracks': sorted(tracks, key=lambda t: t['key']),
-            'transitions': sorted(transitions, key=lambda t: t['key'])}
+    import galthen_native_kills
+    return galthen_native_kills.append_selected(definition, {
+        'quest': quest, 'source_quest': source['identity']['key'], 'completion': completion,
+        'tracks': sorted(tracks, key=lambda t: t['key']),
+        'transitions': sorted(transitions, key=lambda t: t['key'])})
 
 
 def chest_transitions(root, quests):
@@ -368,7 +370,7 @@ def expected(root):
     payload = {
         'schema': SCHEMA, 'classification': 'OTS_HYPOTHESIS_ONLY', 'family': 'Quest',
         'contract': 'docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md',
-        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py', 'tools/content-schema/quest-authoring/questpc_chest_completion.py')],
+        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL, 'tools/content-schema/quest-authoring/quests_2_emperor_state.py', 'tools/content-schema/quest-authoring/questpc_chest_completion.py', 'tools/content-schema/quest-authoring/galthen_native_kills.py')],
         'counts': {
             'quests': len(quests), 'tracks': sum(len(q['tracks']) for q in quests), 'transitions': len(transitions),
             'effects': {kind: effects.count(kind) for kind in sorted(set(effects))},

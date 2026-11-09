@@ -2,8 +2,8 @@
 //! The same Character -> Guild -> House -> house-items locks as native placement
 //! protect missing-row collision checks. A published step may release its
 //! original native entry reservation through the existing handoff owner.
-use super::*;
 use super::super::character_equipment::EquipmentSnapshot;
+use super::*;
 
 #[derive(Debug, Clone)]
 pub struct HouseStepReadRequest {
@@ -40,7 +40,9 @@ impl DurabilityRoot {
         if request.house.runtime_scope()? != request.fence.runtime_scope {
             return Err(DurabilityError::Unavailable);
         }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run_with_context(owner, move |holder, deadline, owner| {
             Box::pin(async move {
@@ -83,25 +85,39 @@ impl DurabilityRoot {
 }
 
 async fn release_placed_entry(
-    tx: &mut Transaction<'_, Postgres>, node: &NodeIncarnationProof,
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
 ) -> DbResult<()> {
-    use super::super::house_scope_handoff::{HouseReleaseOutcome, release_house_entry_tile_in_transaction};
+    use super::super::house_scope_handoff::{
+        HouseReleaseOutcome, release_house_entry_tile_in_transaction,
+    };
     // The full current House fence and native property locks are still held.
     // A released handoff needs no further writes on subsequent movement turns.
-    let Some(row) = sqlx::query("SELECT uuid_send(handoff_id) AS id, \
+    let Some(row) = sqlx::query(
+        "SELECT uuid_send(handoff_id) AS id, \
         floor(extract(epoch FROM clock_timestamp()))::bigint AS now \
         FROM game_house_scope_handoffs WHERE destination_game_session_id=encode($1,'hex')::uuid \
-          AND character_id=encode($2,'hex')::uuid AND state=2")
-        .bind(fence.game_session_id.as_bytes().as_slice())
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
-    else { return Ok(()); };
-    let id: [u8;16] = row.try_get::<Vec<u8>,_>("id")?.try_into()
+          AND character_id=encode($2,'hex')::uuid AND state=2",
+    )
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(());
+    };
+    let id: [u8; 16] = row
+        .try_get::<Vec<u8>, _>("id")?
+        .try_into()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
-    match release_house_entry_tile_in_transaction(tx, node, id, row.try_get("now")?).await
-        .map_err(|_| DurabilityError::Unavailable)? {
-        HouseReleaseOutcome::Released(_) | HouseReleaseOutcome::Replayed(_)
-            | HouseReleaseOutcome::NotPlaced => Ok(()),
+    match release_house_entry_tile_in_transaction(tx, node, id, row.try_get("now")?)
+        .await
+        .map_err(|_| DurabilityError::Unavailable)?
+    {
+        HouseReleaseOutcome::Released(_)
+        | HouseReleaseOutcome::Replayed(_)
+        | HouseReleaseOutcome::NotPlaced => Ok(()),
         _ => Err(DurabilityError::InvalidStoredState),
     }
 }

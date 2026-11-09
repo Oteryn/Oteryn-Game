@@ -3,6 +3,7 @@
 pub mod concoctions;
 pub mod depot;
 pub mod drome_cube;
+pub mod elemental_soil;
 pub mod equipment_effects;
 pub mod event_items;
 pub mod event_planting;

@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+pub(super) mod elemental_arrival;
 mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
@@ -36,7 +37,7 @@ use crate::durability::item_loop_move::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts};
-use crate::foundation::{ChannelId, CommandId, CommandRef, ExactActorRef, WorldId};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::WorldBase;
 use crate::map::overlay::{AddedItem, ChannelOverlay, EntryId, TilePos, map_revision};
 use crate::map::view::{self, EntryFacts, MapFacts};
@@ -44,18 +45,60 @@ use oteryn_protocol_oteryn::container_tree::MAX_CONTAINER_VIEW_ENTRIES;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
 /// D1211: the loop decides every touched definition from this exact admitted native generation.
 impl ItemLoopContent for NativeItemWeights<'_> {
+    fn npc_outfit_content(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        Some(self.0)
+    }
     fn loop_content_digest(&self) -> [u8; 32] {
         self.0.source_digest()
     }
 
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         generation_item_facts(self.0, definition).ok()
+    }
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(self.0, definition)
+            .ok()
+    }
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        use crate::content::ReferenceItemField;
+        use crate::content::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+        if !matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i8139"
+                | "oteryn:item.tibia.i8140"
+                | "oteryn:item.tibia.i8141"
+                | "oteryn:item.tibia.i8106"
+        ) {
+            return None;
+        }
+        let mut facts = generation_item_facts(self.0, definition).ok()?;
+        let policy = self
+            .0
+            .item_policy(&definition.production_key, &definition.revision_ref)?;
+        let record = policy.record();
+        if record.admission.stack_class != NativeItemStackClass::NonStackable
+            || !record
+                .admission
+                .legal_destinations
+                .contains(&NativeItemDestination::Ground)
+            || !matches!(&record.semantics.physical, ReferenceItemField::Known(physical)
+                if physical.movable==ReferenceItemField::Known(true) && physical.pickupable==ReferenceItemField::Known(false))
+        {
+            return None;
+        }
+        // The native corpse receipt, not portable admission, proves this whole
+        // Ground body. Unknown physical facts never acquire a stack class.
+        facts.stack = crate::durability::item_transfer::ItemStackClass::NonStackable;
+        Some(facts)
     }
     fn loop_definition(&self, reference: u32) -> Option<TypedDefinitionRef> {
         let (key, revision) = self
@@ -153,37 +196,21 @@ impl ItemLoopContent for NativeItemWeights<'_> {
 pub struct LoopGroundOverlay {
     overlay: ChannelOverlay,
     facts: HashMap<[u8; 16], EntryFacts>,
+    ordinals: HashMap<[u8; 16], u64>,
+    native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
+    source_plain_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
 }
 
 impl LoopGroundOverlay {
-    /// An overlay of `items` over `base`, lowest stack ordinal first. An item that does not
-    /// belong to this World, Channel and bundle, whose cell is not a base tile, or whose
-    /// definition `index` does not name, is left out.
-    pub fn build(
-        base: Arc<WorldBase>,
-        world: WorldId,
-        channel: ChannelId,
-        index: &ItemDefinitionIndex,
-        field_pin: ([u8; 32], [u8; 32], u64),
-        items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
-    ) -> Self {
-        Self::build_for_scope(
-            base,
-            crate::foundation::RuntimeScopeRefV1::channel(world, channel),
-            index,
-            field_pin,
-            items,
-        )
-    }
-
-    pub fn build_for_scope(
+    fn build_with_native(
         base: Arc<WorldBase>,
         scope: crate::foundation::RuntimeScopeRefV1,
         index: &ItemDefinitionIndex,
         field_pin: ([u8; 32], [u8; 32], u64),
         mut items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
+        native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     ) -> Self {
         items.sort_by_key(|item| item.stack_ordinal);
         let revision = map_revision(&base);
@@ -191,10 +218,30 @@ impl LoopGroundOverlay {
         let field_content = sha256_revision(field_pin.0);
         let mut overlay = ChannelOverlay::for_scope(base, scope);
         let mut facts = HashMap::new();
+        let mut ordinals = HashMap::new();
+        let mut native_pickup_cells = HashMap::new();
+        let mut source_plain_corpses = HashSet::new();
         for entry in items {
+            let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
-            if entry.field_collision.is_some() || entry.native_corpse {
-                if item.ground.map_revision != field_revision
+            // A native MINT uses runtime coordinates. After an ordinary loop
+            // move, the same nonportable corpse uses the loop's map coordinates.
+            let native_axes = entry.field_collision.is_some()
+                || ((entry.native_corpse
+                    || entry.source_plain_corpse
+                    || entry.source_native_ground)
+                    && item.ground.map_revision == field_revision);
+            if entry.field_collision.is_some()
+                || entry.native_corpse
+                || entry.source_plain_corpse
+                || entry.source_native_ground
+            {
+                let expected_map = if native_axes {
+                    &field_revision
+                } else {
+                    &revision
+                };
+                if &item.ground.map_revision != expected_map
                     || item.ground.content_revision != field_content
                     || item.ground.native_room_placement_context.as_slice()
                         != field_pin.1.as_slice()
@@ -203,26 +250,56 @@ impl LoopGroundOverlay {
                 {
                     continue;
                 }
-                item.ground.map_revision = revision.clone();
             } else if item.ground.map_revision != revision {
                 continue;
             }
             let Some(reference) = definition_ref(index, &item.definition) else {
                 continue;
             };
+            let (pickupable, native_projectile) =
+                if entry.source_plain_corpse || entry.source_native_ground {
+                    use crate::content::ReferenceItemField as F;
+                    let Some(policy) = native.and_then(|native| {
+                        native.item_policy(
+                            &item.definition.production_key,
+                            &item.definition.revision_ref,
+                        )
+                    }) else {
+                        continue;
+                    };
+                    let F::Known(physical) = &policy.record().semantics.physical else {
+                        continue;
+                    };
+                    let (F::Known(movable), F::Known(pickupable)) =
+                        (&physical.movable, &physical.pickupable)
+                    else {
+                        continue;
+                    };
+                    let Some(projectile) = policy.record().attributes.blocks_projectile else {
+                        continue;
+                    };
+                    (*movable && *pickupable, projectile)
+                } else {
+                    (
+                        entry.field_collision.is_none() && !entry.native_corpse,
+                        false,
+                    )
+                };
             let entry_facts = EntryFacts {
                 definition: MapDefinition::Item(reference),
                 terrain_kind: None,
                 appearance_id: view::appearance_id(&item.definition.production_key, None),
                 blocks_projectile: entry
                     .field_collision
-                    .is_some_and(|(_, projectile)| projectile),
-                pickupable: entry.field_collision.is_none() && !entry.native_corpse,
+                    .map_or(native_projectile, |(_, projectile)| projectile),
+                pickupable,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
             };
-            if entry.field_collision.is_some() || entry.native_corpse {
+            let native_cell =
+                (entry.native_corpse && native_axes).then(|| item.ground.spatial_position.clone());
+            if native_axes {
                 let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
                     &item.ground.spatial_position,
                 ) else {
@@ -234,13 +311,32 @@ impl LoopGroundOverlay {
                 item.ground.spatial_position = ground_cell(cell.x, cell.y, floor);
             }
             let id = item.item_instance_id;
-            if overlay.add_ground(item).is_ok() {
+            let added = if entry.native_corpse && entry.field_collision.is_none() {
+                // `native_corpse` comes only from the scoped materialized MINT,
+                // audit and reservation join. A live field never uses history.
+                overlay.add_committed_corpse_ground_view(item, field_pin)
+            } else if entry.source_plain_corpse || entry.source_native_ground {
+                overlay.add_native_ground_view(item, field_pin)
+            } else {
+                overlay.add_ground(item)
+            };
+            if added.is_ok() {
+                if entry.source_plain_corpse {
+                    source_plain_corpses.insert(id);
+                }
                 facts.insert(id, entry_facts);
+                ordinals.insert(id, ordinal);
+                if let Some(cell) = native_cell {
+                    native_pickup_cells.insert(id, cell);
+                }
             }
         }
         Self {
             overlay,
             facts,
+            ordinals,
+            native_pickup_cells,
+            source_plain_corpses,
             field_pin,
             taken_sources: Default::default(),
         }
@@ -250,9 +346,32 @@ impl LoopGroundOverlay {
         &self.overlay
     }
 
+    /// The durable append ordinal retained by this exact custody projection.
+    pub(super) fn ground_ordinal(&self, item: &[u8; 16]) -> Option<u64> {
+        self.ordinals.get(item).copied()
+    }
+
     /// Where a loop Ground item lies.
     pub fn ground_entry(&self, item: &[u8; 16]) -> Option<(TilePos, EntryId)> {
         self.overlay.ground_entry(item)
+    }
+
+    /// Preserve the durable source bytes while reach is checked in map coordinates.
+    /// The item owner independently rechecks this observation under its row lock.
+    pub fn pickup_cell(&self, item: &[u8; 16]) -> Option<Vec<u8>> {
+        let (position, _) = self.ground_entry(item)?;
+        Some(
+            self.native_pickup_cells
+                .get(item)
+                .cloned()
+                .unwrap_or_else(|| {
+                    ground_cell(
+                        i32::from(position.x),
+                        i32::from(position.y),
+                        i16::from(position.floor),
+                    )
+                }),
+        )
     }
 
     /// `inner` with the facts of these Ground items.
@@ -271,6 +390,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        self.inner.phase_tile(pos)
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.inner.movement_item(id)
     }
@@ -357,6 +479,27 @@ impl LoopGroundCache {
                 && current.overlay.runtime_scope() == runtime.binding().runtime_scope()
                 && current.overlay.base().digest() == base.digest()
         })
+    }
+
+    /// The complete scoped corpse read also reconciles an ambiguous retirement.
+    /// Only representation metadata is compared; Ground custody stays in Items.
+    pub(super) fn reconcile_plain_corpses(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        live: &[[u8; 16]],
+    ) {
+        if let Ok(mut state) = self.state.lock()
+            && state.current.as_ref().is_some_and(|current| {
+                current.overlay.runtime_scope() == scope
+                    && current
+                        .source_plain_corpses
+                        .iter()
+                        .any(|item| !live.contains(item))
+            })
+        {
+            state.epoch = state.epoch.wrapping_add(1);
+            state.current = None;
+        }
     }
 
     fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
@@ -458,15 +601,16 @@ pub async fn loop_ground(
     } else {
         Vec::new()
     };
-    let mut built = match scope {
-        crate::foundation::RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } => LoopGroundOverlay::build(base.clone(), world_id, channel_id, index, field_pin, items),
-        crate::foundation::RuntimeScopeRefV1::Instance { .. } => {
-            LoopGroundOverlay::build_for_scope(base.clone(), scope, index, field_pin, items)
-        }
-    };
+    let mut built = LoopGroundOverlay::build_with_native(
+        base.clone(),
+        scope,
+        index,
+        field_pin,
+        items,
+        admission
+            .active_generation
+            .and_then(|generation| generation.native_gameplay()),
+    );
     let valid_source = |key| {
         map_sources::is_top_level(base, key)
             || admission
@@ -583,7 +727,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let refused = LoopMoveResult::Refused;
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
-    let Some(permit) = admission.spell_lane_permit().await else {
+    let Some(mut permit) = admission.spell_lane_permit().await else {
         return LoopMoveResult::Unknown;
     };
     if !admission.states.player_trades.physical(
@@ -691,7 +835,9 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
     let pickup_cell = match (pickup, actor_at) {
-        (Some(cell), Some(at)) if in_reach(at, cell) => Some(ground_cell(cell.0, cell.1, cell.2)),
+        (Some(cell), Some(at)) if in_reach(at, cell) => {
+            ground.as_ref().and_then(|ground| ground.pickup_cell(&item))
+        }
         (Some(_), _) => return LoopMoveResult::TooFar,
         (None, _) => None,
     };
@@ -759,8 +905,19 @@ pub(super) async fn move_loop_item_with_house_capacity(
     } else {
         None
     };
-    let seed_result = match seed_target {
-        Some(target) => {
+    let elemental_result = admission
+        .commit_elemental_arrival(
+            &mut permit,
+            actor,
+            command,
+            native,
+            &loop_request,
+            ground.as_deref(),
+        )
+        .await;
+    let seed_result = match (elemental_result, seed_target) {
+        (Some(result), _) => result.map(Some),
+        (None, Some(target)) => {
             admission
                 .root
                 .commit_item_loop_seed_drop(
@@ -775,7 +932,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
                 )
                 .await
         }
-        None => Ok(None),
+        (None, None) => Ok(None),
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
@@ -1224,6 +1381,7 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         use crate::durability::item_loop_move::LoopGroundItem;
         use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
+        use crate::foundation::WorldId;
         let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
         let world = WorldId::decode(&id(1))?;
         let scope = crate::foundation::RuntimeScopeRefV1::Instance {
@@ -1239,6 +1397,8 @@ mod tests {
         let pin = ([7; 32], [8; 32], 2);
         let item = LoopGroundItem {
             native_corpse: true,
+            source_native_ground: false,
+            source_plain_corpse: false,
             field_collision: None,
             stack_ordinal: 1,
             item: GroundItemInstance {
@@ -1269,12 +1429,35 @@ mod tests {
             y: 0,
             floor: -7,
         };
-        let project =
-            |item| LoopGroundOverlay::build_for_scope(base.clone(), scope, &index, pin, vec![item]);
+        let project = |item| {
+            LoopGroundOverlay::build_with_native(base.clone(), scope, &index, pin, vec![item], None)
+        };
         assert!(
             project(item.clone()).overlay().has_added_item(tile),
             "accepted corpse history survives owner replacement"
         );
+        assert_eq!(
+            project(item.clone()).pickup_cell(&id(3)),
+            Some(ground_cell(1, 0, 7))
+        );
+        let mut moved = item.clone();
+        moved.item.ground.map_revision = map_revision(&base);
+        moved.item.ground.spatial_position = ground_cell(1, 0, -7);
+        assert!(
+            project(moved.clone()).overlay().has_added_item(tile),
+            "an ordinary ground move keeps the same corpse visible in map coordinates"
+        );
+        let moved_view = project(moved.clone());
+        assert_eq!(moved_view.pickup_cell(&id(3)), Some(ground_cell(1, 0, -7)));
+        assert!(
+            !moved_view
+                .facts
+                .get(&id(3))
+                .ok_or("moved corpse facts")?
+                .pickupable
+        );
+        moved.item.ground.native_room_placement_context = vec![9; 32];
+        assert!(!project(moved).overlay().has_added_item(tile));
         let mut foreign = item.clone();
         foreign.item.ground.native_room_placement_context = vec![9; 32];
         assert!(!project(foreign).overlay().has_added_item(tile));
@@ -1284,6 +1467,12 @@ mod tests {
             instance_id: id(5),
         };
         assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut future = item.clone();
+        future.item.runtime_scope_ownership_generation = pin.2 + 1;
+        assert!(
+            !project(future).overlay().has_added_item(tile),
+            "future owner history is not visible under an older current fence"
+        );
         let mut field = item;
         field.native_corpse = false;
         field.field_collision = Some((false, false));

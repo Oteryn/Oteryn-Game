@@ -22,8 +22,16 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m07_machinery = name.starts_with("m07/machinery-");
+    let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
+    let m07_realm = name.starts_with("m07/realm-");
+    let m07_lion = name.starts_with("m07/lion-");
+    let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let qm48 = name == "qm48/mammoth";
+    let elemental_pin = name.starts_with("qn1-elemental-");
     let m01b_explore = name.starts_with("m01b/");
+    let qready_craft = name == super::super::qready1_crafting::NAME;
+    let qready_workbench = super::super::qready1_workbenches::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
@@ -41,8 +49,8 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = qm48
-        || m01b_explore
+    let last_creep = name == "qengine-rewards-m23-last-creep";
+    let native_crop = last_creep || elemental_pin || m07_machinery || m07_realm || m07_lion || m07_dreamer || qready_workbench || qready_craft || qm48 || m01b_explore
         || small_ruby
         || mead
         || spirit
@@ -57,7 +65,27 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "unnatural-selection-dance-2" {
+    let start = if m07_machinery {
+        super::super::m07_machinery_burn::start(name)
+    } else if m07_realm {
+        super::super::m07_realm_trials::start()
+    } else if m07_lion {
+        super::super::m07_lion_offerings::start(name)
+    } else if m07_dreamer {
+        Position { x:32762,y:32289,floor:-14 }
+    } else if qready_workbench {
+        super::super::qready1_workbenches::start(name)?
+    } else if qready_craft {
+        Position {
+            x: 32011,
+            y: 32907,
+            floor: -7,
+        }
+    } else if name.starts_with("qengine-rewards-m39-tomes") {
+        super::super::m39_tomes_journey::world::start()?
+    } else if last_creep {
+        super::super::m23_last_creep::start()
+    } else if name == "unnatural-selection-dance-2" {
         let (x, y, floor) = oteryn_gameplay_quests::quest::unnatural_selection::TILES[7];
         Position { x, y, floor }
     } else if qm48 {
@@ -67,10 +95,7 @@ fn scenario_case(
             ..trigger
         }
     } else if m01b_explore {
-        Position {
-            x: trigger.x + 1,
-            ..trigger
-        }
+        super::super::m01b_explore::start(name, trigger)
     } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
@@ -128,7 +153,10 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let classic_npc = qengine_reward
+    let classic_npc = name.starts_with("engoutfit-") || qengine_reward
+        || name.starts_with("npcfix-m38-mistrock")
+        || name == "npcfix-m38-minzy"
+        || name == "npcfix-m38-rascalio"
         || matches!(
             name,
             "m16-marker"
@@ -138,6 +166,9 @@ fn scenario_case(
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"
                 | "nx6-wayfarer"
+                | "npc-item-exchanges"
+                | "m42-hot-typed"
+                | "m42-hot-final"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -145,7 +176,13 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_signs || diprath_room {
+    let mut callback = if name == "unnatural-selection-dance-native" {
+        callback("unnatural-selection-dance-2")?
+    } else if name.starts_with("qengine-rewards-m39-bone") {
+        callback("bone-pit-collect")?
+    } else if last_creep {
+        callback("last-creep-native-start")?
+    } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
         callback("ancient-tombs-morguthis-seven-flame-gate")?
@@ -162,7 +199,9 @@ fn scenario_case(
             "rotten-blood/sacrifice"
         } else if monk {
             "monk-guidance"
-        } else if target_swap
+        } else if m07_machinery {
+            name.strip_suffix("-level49").unwrap_or(name)
+        } else if elemental_pin || target_swap
             || reusable_tool
             || floor_profiles
             || floor_assembly
@@ -292,18 +331,19 @@ fn scenario_case(
             name.ends_with("-refuse"),
         );
     }
+    if name.ends_with("-srv7-m02") {
+        callback = super::super::srv7_m02_ground_stack::fixture(callback)?;
+    }
     if name == "qengine-rewards-questpc4-puzzle-presence" {
         callback = super::super::l6_world_puzzles::presence_fixture(callback, trigger);
     }
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    if name.starts_with("qengine-rewards-qworld-phase-") {
-        callback = super::super::qworld_phase_steps::geometry(callback, name)?;
-    }
+    if name.starts_with("qengine-rewards-qworld-phase-") { callback = super::super::qworld_phase_steps::geometry(callback, name)?; }
     let world = world(&callback, trigger)?;
     run(async |admin| {
-        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" {
+        let h = if qengine_reward || outfit_world || name == "srv7-reliable-ram" || name.starts_with("m09-treasure-") || name.starts_with("engoutfit-") || name == "engitem-targuna-selected-tool" || name == "engitem-native-seal-paint" {
             Harness::create_quest_reward(
                 admin,
                 "quest_rewards",
@@ -311,9 +351,17 @@ fn scenario_case(
             )
             .await
         } else {
-            Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
+            Harness::create_with_admission_seed(admin, "quest_world_callbacks", m07_realm || (m07_machinery && !m07_machinery_level49), false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
+        if m07_machinery_level49 {
+            // Seed a separate historical character, as the shared harness does;
+            // never bypass the progression owner's typed successor guard.
+            sqlx::query("INSERT INTO game_character_progression_state VALUES \
+                (encode($1,'hex')::uuid,1,49,999,'profile-1','ruleset-1','content-1',\
+                 'simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
+                .bind(id(41).as_slice()).execute(&h.pool).await?;
+        }
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
@@ -344,7 +392,28 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if qm48 {
+        let world = if elemental_pin {
+            super::super::qn1_elemental_world_pin::world(
+                generation.native_gameplay().ok_or("elemental policies")?,
+            )?
+        } else if qready_workbench {
+            super::super::qready1_workbenches::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("workbench native policies")?,
+                name,
+            )?
+        } else if qready_craft {
+            super::super::qready1_crafting::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("grinder native policies")?,
+            )?
+        } else if name.starts_with("qengine-rewards-m39-tomes") {
+            super::super::m39_tomes_journey::world::build(generation.native_gameplay().ok_or("Tomes native profiles")?)?
+        } else if last_creep {
+            super::super::m23_last_creep::world(generation.native_gameplay().ok_or("Last Creep native")?)?
+        } else if qm48 {
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
@@ -431,6 +500,14 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if m07_machinery {
+            super::super::m07_machinery_burn::world(generation.native_gameplay().ok_or("Machinery policies")?,name)?
+        } else if m07_realm {
+            super::super::m07_realm_trials::world(generation.native_gameplay().ok_or("Realm policies")?)?
+        } else if m07_lion {
+            super::super::m07_lion_offerings::world(generation.native_gameplay().ok_or("native Lion policies")?,name)?
+        } else if m07_dreamer {
+            super::super::m07_dreamer_levers::world(generation.native_gameplay().ok_or("native Dreamer policies")?)?
         } else if mead {
             super::super::l6_mead::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
@@ -486,7 +563,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if name.starts_with("qengine-rewards-l12-") {
+            if name == "qengine-rewards-qnpcfx-m10-inquisition" {
+                7 // One player and the six source NPCs for the full interview story.
+            } else if name.starts_with("qengine-rewards-l12-") {
                 128
             } else if native_story || (native_upper && name.ends_with("-complete")) {
                 6
@@ -511,7 +590,11 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-")
+        let premium = if (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium)) || matches!(
+            name,
+            "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
+        ) || name.contains("l6-beggar-")
+            || name == "npcfix-m38-mistrock"
             || name.contains("l7-knight-")
             || name.contains("l8-")
             || name.contains("l9-")
@@ -546,7 +629,7 @@ fn scenario_case(
         };
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-        if mead {
+        if mead || m07_lion || m07_realm {
             h.root
                 .latch_premium_activation(
                     &activation.activation_id,
@@ -565,7 +648,7 @@ fn scenario_case(
             );
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
-        if mead {
+        if mead || m07_lion || m07_realm {
             owner.premium_coordinator = Some(&mead_premium);
         }
         owner.active_generation = Some(generation);
@@ -660,14 +743,42 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead {
+        if mead || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium)) || m07_lion || m07_realm || name == "npcfix-m38-mistrock" {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if name == "barbarian-test-mead" {
+        if elemental_pin {
+            super::super::qn1_elemental_world_pin::exercise(
+                &owner,
+                &h,
+                name,
+                deps.actor,
+                fence.item_fence(),
+            )
+            .await?;
+        } else if qready_workbench {
+            super::super::qready1_workbenches::exercise(&owner, &mut admitted, &h, &callback, name)
+                .await?;
+        } else if qready_craft {
+            super::super::qready1_crafting::exercise(&owner, &mut admitted, &h, &callback).await?;
+        } else if matches!(
+            name,
+            "qready1-bewitched-contribution" | "qready1-threatened-raven-herb"
+        ) {
+            super::super::qready1_world_clocks::exercise(&owner, &mut admitted, &h, &callback)
+                .await?;
+        } else if name == "barbarian-test-mead" {
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if m07_machinery {
+            Box::pin(super::super::m07_machinery_burn::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+        } else if m07_realm {
+            Box::pin(super::super::m07_realm_trials::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+        } else if m07_lion {
+            Box::pin(super::super::m07_lion_offerings::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+        } else if m07_dreamer {
+            super::super::m07_dreamer_levers::exercise(&mut owner,&mut admitted,&h,&callback).await?;
         } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;
@@ -893,6 +1004,12 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name == "engoutfit-rock-steady" {
+            super::super::engoutfit::exercise_rock(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name.starts_with("engoutfit-source") {
+            super::super::engoutfit::exercise_source(
+                &mut owner, &mut admitted, &h, &authority, name.ends_with("-fault"),
+            ).await?;
         } else if name == "m16-marker" {
             super::super::m16_personal_map_marker::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "engnpc-m04" {
@@ -903,6 +1020,20 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "npc-item-exchanges" {
+            super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name == "m42-hot-final" {
+            super::super::m42_hot_cuisine::exercise_final(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "m42-hot-typed" {
+            super::super::m42_hot_cuisine::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-xp" {
             super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -912,6 +1043,10 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "engitem-native-seal-paint" {
+            super::super::engitem_seal_paint::exercise(&mut owner,&mut admitted,&h,&callback,trigger).await?;
+        } else if name == "engitem-targuna-selected-tool" {
+            super::super::srv7_reliable_ram::exercise_selected(&mut owner, &mut admitted, &h, &callback, trigger).await?;
         } else if name == "srv7-reliable-ram" {
             super::super::srv7_reliable_ram::exercise(
                 &mut owner,
@@ -932,6 +1067,10 @@ fn scenario_case(
                 trigger,
             )
             .await?;
+        } else if name.starts_with("m09-treasure-") {
+            super::super::m09_treasure_rewards::exercise(
+                &mut owner, &mut admitted, &h, &callback, trigger,
+            ).await?;
         } else if qengine_reward {
             super::super::qengine_rewards::exercise(
                 &mut owner,
@@ -986,6 +1125,19 @@ fn scenario_case(
             .await?;
         } else if name == "nx6-wayfarer" {
             super::super::nx6_wayfarer::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "npcfix-m38-minzy" {
+            super::super::npcfix_m38_minzy::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "npcfix-m38-rascalio" {
+            super::super::npcfix_m38_rascalio::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name.starts_with("npcfix-m38-mistrock") {
+            super::super::npcfix_m38_mistrock::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                !name.ends_with("-free"),
+            )
+            .await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,
@@ -1143,6 +1295,8 @@ fn scenario_case(
                 origin,
             )
             .await?;
+        } else if name == "unnatural-selection-dance-native" {
+            super::super::m40_native_dance::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "unnatural-selection-dance-2" {
             super::unnatural_selection::exercise(
                 &mut owner,

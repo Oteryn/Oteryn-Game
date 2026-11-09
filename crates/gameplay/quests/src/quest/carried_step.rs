@@ -141,7 +141,7 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 }
 
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
-    RECIPES.iter().map(|recipe| Callback { admission: None, requires_premium: false,
+    RECIPES.iter().map(|recipe| Callback { required_completed_quests: Vec::new(), admission: None, requires_premium: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         state_ops: Vec::new(), world_requirements: Vec::new(),
@@ -150,7 +150,7 @@ world_change: None,
         selector: Selector { native: None, position: None, unique: Some(recipe.unique), action: None, appearance: None },
         lever: None, reversible: false, passages: Vec::new(),
         teleport: Some(recipe.missing), facing: None, effects: Default::default(),
-        storage: Vec::new(), minimum_level: None, experience: None, monk_reward: None,
+        storage: Vec::new(), minimum_level: None, character_requirements: None, experience: None, monk_reward: None,
         offerings: Vec::new(), item_on_target: None, return_on_failure: true,
         failure_message: None, success_message: None, native_rule: None,
         sources: vec![format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:{}", recipe.source_line)],

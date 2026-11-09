@@ -382,3 +382,76 @@ fn production_distance_area_and_fleeing_profiles_match_crystal() {
         }
     }
 }
+
+#[test]
+fn srx3_native_type_change_preserves_attack_and_defense_ticks_target_and_anchor() {
+    // Crystal201189f monster_functions.cpp144-190 setType changes mType,
+    // preserves HP/maxHP by default and leaves attackTicks/defenceTicks intact.
+    let old = behavior(
+        rat_targeting(),
+        vec![entry("bolt", 4000, 8)],
+        vec![entry("heal", 4000, 0)],
+        None,
+    );
+    let new = behavior(
+        rat_targeting(),
+        vec![entry("phase_bolt", 4000, 8)],
+        vec![entry("heal", 4000, 0)],
+        None,
+    );
+    // Both forms use spells: native melee selections belong to the independent
+    // swing owner and deliberately do not appear in report.proposals.
+    let mut definitions = abilities();
+    let bolt: ProjectV2DefinitionRef =
+        serde_json::from_value(reference("bolt")).expect("old spell ref");
+    let phase_bolt: ProjectV2DefinitionRef =
+        serde_json::from_value(reference("phase_bolt")).expect("new spell ref");
+    let body = definitions.get(&bolt).expect("source spell body").clone();
+    definitions.insert(phase_bolt, body);
+    let old = CreatureBehaviourProfile::project_native(Some(&old), &definitions)
+        .expect("old native source");
+    let new = CreatureBehaviourProfile::project_native(Some(&new), &definitions)
+        .expect("new native source");
+    let mut state = CreatureAiState::new(rat(), old, at(100, 100));
+    let facts = Facts::new();
+    let players = [player(10, at(101, 100))];
+    for sequence in 1..=3 {
+        let report = think(
+            &mut state,
+            sequence,
+            &facts.at(at(100, 100), 20, &players, (sequence - 1) * 1_000_000),
+        );
+        assert!(report.proposals.is_empty());
+    }
+    let anchor = state.anchor;
+    let target = state.target();
+    let creature = crate::content::ProjectV2DefinitionRef {
+        family: crate::content::ProjectV2Family::Creature,
+        key: "oteryn:creature.changed_source_type".into(),
+        revision: "definition-r1".into(),
+    };
+    state.rebind_native_profile(new, &creature);
+    assert_eq!(state.anchor, anchor);
+    assert_eq!(state.target(), target);
+    let report = think(
+        &mut state,
+        4,
+        &facts.at(at(100, 100), 20, &players, 3_000_000),
+    );
+    assert_eq!(report.refusal, None);
+    assert!(
+        report
+            .proposals
+            .iter()
+            .any(|p| p.list == ScheduleList::Attack && p.ability.key == "oteryn:ability.phase_bolt"),
+        "the inherited fourth-second attack clock must use the new type"
+    );
+    assert!(
+        report
+            .proposals
+            .iter()
+            .any(|p| p.list == ScheduleList::Defence && p.ability.key == "oteryn:ability.heal"),
+        "the inherited defense clock must also remain due"
+    );
+    assert_eq!(state.creature_key(), Some(creature.key.as_str()));
+}

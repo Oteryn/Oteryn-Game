@@ -69,7 +69,20 @@ pub(super) fn check_intent(intent: &ChatIntent, selected: &[u32]) -> Result<(), 
 }
 
 pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, SessionError> {
-    let line = chat::decode_chat_line(payload)?;
+    validate_line(chat::decode_chat_line(payload)?, selected)
+}
+
+pub(super) fn decode_native_line(
+    payload: &[u8],
+    selected: &[u32],
+) -> Result<ChatLine, SessionError> {
+    validate_line(
+        oteryn_protocol_oteryn::native_map_cues::decode_native_map_chat_line(payload)?,
+        selected,
+    )
+}
+
+fn validate_line(line: ChatLine, selected: &[u32]) -> Result<ChatLine, SessionError> {
     if matches!(
         line,
         ChatLine::Local {

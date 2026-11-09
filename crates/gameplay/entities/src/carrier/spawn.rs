@@ -58,6 +58,10 @@ pub enum RespawnStep {
     Due,
     /// A retry of the Occupied chain: it repeats the warning (never blocked).
     Retry,
+    /// Second warning of an independently qualified XML source occurrence.
+    XmlWarningSecond,
+    /// Third warning of that same XML source occurrence.
+    XmlWarningThird,
     /// The warning has run; admission checks occupancy now.
     Admit,
 }
@@ -197,8 +201,31 @@ impl RespawnSchedule {
                 pending.step = RespawnStep::Admit;
                 Ok(RespawnOutcome::Warned { admit_due_micros })
             }
-            RespawnStep::Admit => Err(SpawnScheduleError::NotDue),
+            RespawnStep::Admit | RespawnStep::XmlWarningSecond | RespawnStep::XmlWarningThird => {
+                Err(SpawnScheduleError::NotDue)
+            }
         }
+    }
+
+    /// The existing owner selects this only for a sealed, current XML definition.
+    /// Each warning replaces the same pending occurrence and deadline-index row.
+    pub(super) fn run_xml_warning_step(
+        &mut self,
+        point: SpawnPoint,
+        now: u64,
+    ) -> Result<RespawnOutcome, SpawnScheduleError> {
+        let pending = self.due_pending(point, now)?;
+        let (next, remaining) = match pending.step {
+            RespawnStep::Due | RespawnStep::Retry => (RespawnStep::XmlWarningSecond, 3),
+            RespawnStep::XmlWarningSecond => (RespawnStep::XmlWarningThird, 2),
+            RespawnStep::XmlWarningThird => (RespawnStep::Admit, 1),
+            RespawnStep::Admit => return Err(SpawnScheduleError::NotDue),
+        };
+        let next_due = after(now, SPAWN_WARNING_MICROS / 3)?;
+        let admit_due_micros = after(now, (SPAWN_WARNING_MICROS / 3) * remaining)?;
+        pending.step = next;
+        pending.due_micros = next_due;
+        Ok(RespawnOutcome::Warned { admit_due_micros })
     }
 
     /// Runs a due `Admit` step with the caller's occupancy result at `now`.

@@ -810,10 +810,15 @@ async fn wardrobe(
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
         map_mark: None,
+        world_claim: None,
+        magic_effects: vec![],
         carried_item: None,
         carried_target: None,
         peer_requires: None,
+        capture_creature: false,
+        corpse_target: None,
         creature_target: None,
+        fresh_corpse: false,
         self_target: None,
         minimum_level: None,
         requires_addons: vec![],
@@ -837,6 +842,7 @@ async fn wardrobe(
         take: vec![],
         fee: None,
         present: vec![],
+        inventory: vec![],
         give: None,
         outfit: Some(reward.clone()),
         outfits: vec![],
@@ -844,6 +850,9 @@ async fn wardrobe(
         achievement: None,
         achievement_progress: vec![],
         reply: vec![],
+        failure_reply: vec![],
+        experience: None,
+        repeatable: false,
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;

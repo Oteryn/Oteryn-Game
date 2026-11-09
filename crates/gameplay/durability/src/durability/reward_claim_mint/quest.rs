@@ -89,7 +89,7 @@ pub struct QuestRewardAdmission<'a> {
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
     pub carried_use: Option<&'a QuestCarriedUse>,
-    pub creature_use: Option<&'a super::quest_creature::QuestCreatureUseProof>,
+    pub creature_use: Option<&'a super::quest_creature::QuestCreatureUseProof<'a>>,
     pub peer_use: Option<&'a super::quest_peer::QuestPeerUseProof>,
 }
 
@@ -100,6 +100,7 @@ pub struct QuestRewardAdmission<'a> {
 pub(crate) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
+    owner: (&super::super::DurabilityRoot, &crate::character_recovery_fence::CharacterRecoveryFenceV1),
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
@@ -109,11 +110,20 @@ pub(crate) async fn apply(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     reserve_primary_state: bool,
 ) -> std::result::Result<bool, DurabilityError> {
-    let super::super::quest_state::QuestCause::Command(command) = request.cause else {
-        return Ok(false);
+    let command = match request.cause {
+        super::super::quest_state::QuestCause::Command(command) if callback.world_claim.is_none() => command,
+        super::super::quest_state::QuestCause::Use(command) if callback.world_claim.is_some() => command,
+        _ => return Ok(false),
     };
-    if callback.carried_target.is_some() != admission.carried_use.and_then(|u| u.recipe_target).is_some()
-        || admission.carried_use.is_some_and(|u| u.recipe_target.is_some_and(|target| target == u.source || target == [0;16]))
+    if callback.carried_target.is_some()
+        != admission
+            .carried_use
+            .and_then(|u| u.recipe_target)
+            .is_some()
+        || admission.carried_use.is_some_and(|u| {
+            u.recipe_target
+                .is_some_and(|target| target == u.source || target == [0; 16])
+        })
         || callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
@@ -123,16 +133,35 @@ pub(crate) async fn apply(
     }
     match (callback.creature_target.is_some() || callback.self_target.is_some(), admission.creature_use, admission.carried_use) {
         (false, None, _) => {}
-        (true, Some(proof), Some(carried)) if proof.permits(fence, request, callback, carried) => {}
+        (true, Some(proof), Some(carried)) if callback.fresh_corpse => {
+            if !proof.permits_corpse(tx,owner,node,fence,request,callback,carried,admission.native).await? {
+                return Ok(false);
+            }
+        }
+        (true, Some(proof), Some(carried)) if !callback.fresh_corpse && proof.corpse().is_some() == callback.corpse_target.is_some() && proof.permits(fence, request, callback, carried) => {}
         _ => return Ok(false),
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
     }
-    match (&callback.peer_requires, admission.peer_use, admission.carried_use) {
+    match (
+        &callback.peer_requires,
+        admission.peer_use,
+        admission.carried_use,
+    ) {
         (None, None, _) => {}
         (Some(requirement), Some(peer), Some(carried)) => {
-            if !super::quest_peer::holds_in_transaction(tx, node, fence, peer, requirement, catalogue, carried).await? {
+            if !super::quest_peer::holds_in_transaction(
+                tx,
+                node,
+                fence,
+                peer,
+                requirement,
+                catalogue,
+                carried,
+            )
+            .await?
+            {
                 return Ok(false);
             }
         }
@@ -353,9 +382,14 @@ pub(crate) async fn apply(
             fence,
             command,
             &callback.key,
-            if callback.is_paid_exchange() { QuestMintClaim::PaidExchange } else { QuestMintClaim::Once },
+            if callback.is_paid_exchange() {
+                QuestMintClaim::PaidExchange
+            } else {
+                QuestMintClaim::Once
+            },
             reward,
             admission,
+            callback.world_claim.as_ref(),
         )
         .await?
         else {
@@ -396,6 +430,20 @@ pub(crate) async fn apply(
     }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+    if callback.corpse_target.is_some() {
+        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else { return Ok(false); };
+        if !super::quest_corpse::record(tx, fence, request, callback, carried, proof, admission.native).await? {
+            return Ok(false);
+        }
+    }
+    if callback.capture_creature {
+        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
+            return Ok(false);
+        };
+        if !proof.record_capture(tx, carried).await? {
+            return Ok(false);
+        }
+    }
     Ok(true)
 }
 
@@ -413,7 +461,11 @@ pub(crate) async fn mint(
     claim: QuestMintClaim<'_>,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
+    native_claim: Option<&oteryn_gameplay_quests::quest::reward_callbacks::NativeClaimBinding>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+    if !reward.valid_literal_text() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     if reward.premium {
         let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -458,8 +510,13 @@ pub(crate) async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
-    // Every occurrence still uses the existing MINT once ledger and reservations.
-    let claim_key = claim::key(fence.character_id, command, callback_key, claim)?;
+    if native_claim.is_some() && !matches!(claim, QuestMintClaim::Once) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let claim_key = if let Some(binding) = native_claim {
+        binding.key.clone()
+    } else { claim::key(fence.character_id, command, callback_key, claim)? };
+
     let request = RewardClaimMintRequest {
         additional_items: reward
             .additional
@@ -481,7 +538,7 @@ pub(crate) async fn mint(
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
             production_key: claim_key,
-            revision_ref: content_revision.clone(),
+            revision_ref: native_claim.map_or_else(|| content_revision.clone(), |binding| binding.revision.clone()),
         },
         source_placement: callback_key.into(),
         item: resolve(&reward.item)?,
@@ -489,7 +546,8 @@ pub(crate) async fn mint(
         contents: reward
             .contents
             .iter()
-            .map(|i| {
+            .enumerate()
+            .map(|(index, i)| {
                 if i.fluid_subtype.is_some() {
                     use oteryn_gameplay_content::content::{
                         ReferenceItemField, ReferenceItemFluid,
@@ -512,11 +570,19 @@ pub(crate) async fn mint(
                     item: resolve(&i.item)?,
                     quantity: u32::from(i.count),
                     key_number: None,
-                    text: None,
+                    text: reward
+                        .text
+                        .as_ref()
+                        .and_then(|text| text.content(index))
+                        .map(str::to_owned),
                 })
             })
             .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
-        root_text: reward.text.clone(),
+        root_text: reward
+            .text
+            .as_ref()
+            .and_then(|text| text.root())
+            .map(str::to_owned),
         backpack: resolve(&backpack)?,
         content_revision,
         ruleset_revision,

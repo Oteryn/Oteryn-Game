@@ -10,7 +10,7 @@ pub const VISITED: &str = "oteryn:quest-progress/schrodingers_island/visited";
 pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 
 pub(crate) fn callback() -> Callback {
-    Callback { admission: None, requires_premium: false,
+    Callback { required_completed_quests: Vec::new(), admission: None, requires_premium: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: ENTER.into(),
@@ -24,7 +24,7 @@ world_change: None,
         facing:None,
         state_ops: Vec::new(), world_requirements: Vec::new(),
         storage:vec![Storage { track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false, increment:false, at_least:false }],
-        minimum_level:Some(999),
+        minimum_level:Some(999), character_requirements: None,
         experience:None,
         monk_reward:None,
         offerings:Vec::new(),

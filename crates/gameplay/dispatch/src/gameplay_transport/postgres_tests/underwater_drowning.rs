@@ -416,9 +416,8 @@ fn scenario_in_world(
             let position = |x| Position { x, y: 0, floor: -7 };
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
-            let fixture = Callback {
-                admission: None,
-                requires_premium: false,
+            let fixture = Callback { required_completed_quests: Vec::new(),
+                admission: None, requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
@@ -455,7 +454,7 @@ fn scenario_in_world(
                     vec![]
                 },
                 offerings: vec![],
-                minimum_level: None,
+                minimum_level: None, character_requirements: None,
                 experience: None,
                 monk_reward: None,
                 item_on_target: None,
@@ -970,8 +969,12 @@ fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
             let speech = bundle.facts.movement_speech_since(0);
             assert_eq!(speech.len(), 1);
             assert_eq!(
-                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
-                (deps.actor, "Faaart!", 36)
+                (
+                    speech[0].1.speaker,
+                    speech[0].1.text.clone(),
+                    speech[0].1.talk_type
+                ),
+                (deps.actor, "Faaart!".to_owned(), 36)
             );
             assert_eq!(
                 bundle

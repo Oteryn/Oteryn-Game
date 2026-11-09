@@ -773,7 +773,8 @@ mod connection {
             entity: EntityRef {
                 identity: ExactActorRef::transport_fixture(world_id, channel_id)
                     .placement_identity(),
-                generation: 0,
+                generation: ExactActorRef::transport_fixture(world_id, channel_id)
+                    .actor_local_generation(),
             },
             position: HERE,
             detail: EntityDetail::Actor {

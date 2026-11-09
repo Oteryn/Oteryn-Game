@@ -7,6 +7,8 @@ struct EffectStaging {
     touched: Vec<usize>,
     player_effects: Vec<OwnerCombatEffect>,
     effect_receipts: Vec<EffectReceipt>,
+    mirror: MirrorBatchDelta,
+    cloak_blood: Vec<super::super::soul_war_native_health_events::CommittedCloakBloodEvent>,
 }
 
 impl ChannelRuntimeV1 {
@@ -41,6 +43,8 @@ impl ChannelRuntimeV1 {
             touched,
             player_effects,
             effect_receipts,
+            mirror: MirrorBatchDelta::default(),
+            cloak_blood: Vec::new(),
         };
         self.stage_spell_effects(batch, binding, deferred, &mut staging)?;
         let EffectStaging {
@@ -48,6 +52,8 @@ impl ChannelRuntimeV1 {
             mut touched,
             player_effects,
             effect_receipts,
+            mut mirror,
+            cloak_blood,
         } = staging;
         let receipt = CombatBatchReceipt {
             applied: true,
@@ -88,27 +94,43 @@ impl ChannelRuntimeV1 {
         if let Some(authority) = &batch.deferred {
             updated_caster.deferred_high_water = authority.admission_sequence();
         }
+        mirror.finish(&next)?;
         touched.sort_unstable();
         let originals = touched
             .iter()
             .map(|i| (*i, self.carrier.slots[*i].clone()))
             .collect();
-        let replacements = touched
+        let mut replacements = touched
             .iter()
             .map(|i| {
                 let mut slot = next.slots[*i].clone();
-                state_mut(&mut slot)
-                    .expect("qualified touched actor")
-                    .pending_owner = None;
+                if !matches!(slot, Slot::VacantReusable { .. }) {
+                    state_mut(&mut slot)
+                        .expect("qualified touched actor")
+                        .pending_owner = None;
+                }
                 (*i, slot)
             })
             .collect();
+        mirror.add_spare_replacements(&next, &mut replacements)?;
+        let mut native_deaths = Vec::new();
+        for notice in &next.native_deaths {
+            if !self.carrier.native_deaths.contains(notice) {
+                native_deaths
+                    .try_reserve(1)
+                    .map_err(|_| Error::AllocationFailed)?;
+                native_deaths.push(notice.clone());
+            }
+        }
         Ok(StagedSpellBatch {
             reservation: caster_state.pending_owner.clone(),
             batch: batch.clone(),
             originals,
             replacements,
             companion_touch_indices: vec![],
+            mirror,
+            cloak_blood,
+            native_deaths,
             relocation: None,
             player_preflight_bound: player_effects.is_empty()
                 && batch.anchor.is_none()
@@ -130,9 +152,19 @@ impl ChannelRuntimeV1 {
             touched,
             player_effects,
             effect_receipts,
+            mirror,
+            cloak_blood,
         } = staging;
         let digest: [u8; 32] = Sha256::digest(binding).into();
         for effect in &batch.effects {
+            if mirror.retired(effect.target) {
+                effect_receipts.push(EffectReceipt {
+                    target: effect.target,
+                    sub_ordinal: effect.sub_ordinal,
+                    health: None,
+                });
+                continue;
+            }
             // W17: the Channel-local Drome room has the same combat isolation as an
             // Instance. Qualified familiars inherit their exact current master's room.
             if self.is_tibiadrome(batch.caster) != self.is_tibiadrome(effect.target) {
@@ -165,6 +197,61 @@ impl ChannelRuntimeV1 {
                 touched.push(index);
             }
             let mut health_receipt = None;
+            let primary = match effect.change {
+                // Lua receives signed original components, before absolute
+                // values and the final HP clamp (Crystal game.cpp:7934-7948).
+                OwnerCombatChange::Damage { magnitude, .. } => {
+                    magnitude.checked_neg().ok_or(Error::InvalidMagnitude)?
+                }
+                OwnerCombatChange::Heal { magnitude, .. } => magnitude,
+                // Crystal game.cpp:7400-7401 sends absorbed healing through
+                // combatChangeHealth(nullptr, ...): it has no attacker and no
+                // health-change event. Only actual residual Player loss may
+                // qualify the narrowly accepted Q6a hit rule.
+                OwnerCombatChange::DamageWithHealing { damage, .. } => {
+                    damage.checked_neg().ok_or(Error::InvalidMagnitude)?
+                }
+                _ => 0,
+            };
+            if primary != 0 && matches!(next.slots[index], Slot::CreatureOccupied { .. }) {
+                let source = self.carrier.soul_war_health_context(
+                    &self.continuity,
+                    Some(batch.caster),
+                    Some(batch.command),
+                    Some(batch.now_ms),
+                    super::super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
+                    &self.content,
+                )?;
+                let occurrence = Sha256::new()
+                    .chain_update(b"oteryn:cloak-health-event:v1")
+                    .chain_update(digest)
+                    .chain_update(effect.sub_ordinal.to_be_bytes())
+                    .chain_update(effect.target.placement_identity())
+                    .finalize()
+                    .into();
+                if let Some(event) = self.carrier.stage_cloak_blood_event(
+                    &self.continuity,
+                    &self.content,
+                    effect.target,
+                    &source,
+                    primary,
+                    0,
+                    occurrence,
+                )? {
+                    cloak_blood
+                        .try_reserve(1)
+                        .map_err(|_| Error::AllocationFailed)?;
+                    cloak_blood.push(event);
+                }
+            }
+            if let Some(result) = mirror.try_stage(self, batch, effect, next, &digest)? {
+                effect_receipts.push(EffectReceipt {
+                    target: effect.target,
+                    sub_ordinal: effect.sub_ordinal,
+                    health: Some(result),
+                });
+                continue;
+            }
             if matches!(next.slots[index], Slot::Occupied { .. }) {
                 let Slot::Occupied {
                     game_session_id: Some(_),
@@ -201,6 +288,16 @@ impl ChannelRuntimeV1 {
         deferred: bool,
     ) -> Result<Option<OwnerDamageResult>, Error> {
         let mut health_receipt = None;
+        let health_source = || {
+            self.carrier.soul_war_health_context(
+                &self.continuity,
+                Some(batch.caster),
+                Some(batch.command),
+                Some(batch.now_ms),
+                super::super::soul_war_player_source::SoulWarPlayerSourceOrigin::Combat,
+                &self.content,
+            )
+        };
         match &effect.change {
             OwnerCombatChange::CompanionMaster(assignment) => {
                 if assignment.actor() != effect.target
@@ -256,9 +353,10 @@ impl ChannelRuntimeV1 {
                 target_atom,
                 magnitude,
             } => {
+                let source = health_source()?;
                 let mut hit_binding = digest.to_vec();
                 hit_binding.extend_from_slice(&effect.sub_ordinal.to_be_bytes());
-                health_receipt = Some(next.commit_creature_damage_inner_bounded(
+                health_receipt = Some(next.commit_creature_damage_inner_limited_source(
                     &self.continuity,
                     effect.target.0,
                     OwnerDamageCommand {
@@ -274,9 +372,11 @@ impl ChannelRuntimeV1 {
                         effect.sub_ordinal,
                     )),
                     false,
-                    MAX_EFFECTS as u16,
+                    Some(MAX_EFFECTS as u16),
                     deferred,
                     Some(batch.now_ms),
+                    Some(&source),
+                    batch.now_us.map(|value| value.get()),
                 )?);
             }
             OwnerCombatChange::DamageWithHealing {
@@ -284,6 +384,7 @@ impl ChannelRuntimeV1 {
                 damage,
                 healing,
             } => {
+                let source = health_source()?;
                 if *damage < 0 || *healing <= 0 {
                     return Err(Error::InvalidMagnitude);
                 }
@@ -304,6 +405,8 @@ impl ChannelRuntimeV1 {
                     if *health <= 0 || spell_combat.maximum_health <= 0 {
                         return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
                     }
+                    // The absorbed-heal component has a NULL attacker. The
+                    // positive residual below owns the sole Player health event.
                     before_health = *health;
                     *health = health
                         .saturating_add(*healing)
@@ -312,7 +415,7 @@ impl ChannelRuntimeV1 {
                 if *damage > 0 {
                     let mut hit_binding = digest.to_vec();
                     hit_binding.extend_from_slice(&effect.sub_ordinal.to_be_bytes());
-                    next.commit_creature_damage_inner_bounded(
+                    next.commit_creature_damage_inner_limited_source(
                         &self.continuity,
                         effect.target.0,
                         OwnerDamageCommand {
@@ -328,9 +431,11 @@ impl ChannelRuntimeV1 {
                             effect.sub_ordinal,
                         )),
                         false,
-                        MAX_EFFECTS as u16,
+                        Some(MAX_EFFECTS as u16),
                         deferred,
                         Some(batch.now_ms),
+                        Some(&source),
+                        batch.now_us.map(|value| value.get()),
                     )?;
                 }
                 let Slot::CreatureOccupied { health, .. } = &next.slots[index] else {
@@ -346,10 +451,12 @@ impl ChannelRuntimeV1 {
                 target_atom,
                 magnitude,
             } => {
+                let source = health_source()?;
                 let Slot::CreatureOccupied {
                     target_identity,
                     health,
                     spell_combat,
+                    companion,
                     ..
                 } = &mut next.slots[index]
                 else {
@@ -363,6 +470,9 @@ impl ChannelRuntimeV1 {
                 }
                 if *health <= 0 || spell_combat.maximum_health <= 0 {
                     return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
+                }
+                if let Some(companion) = companion.as_ref() {
+                    spell_combat.stage_hatred_incoming_health(&companion.policy, &source)?;
                 }
                 let before = *health;
                 *health = before

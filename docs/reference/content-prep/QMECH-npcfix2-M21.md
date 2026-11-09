@@ -78,3 +78,37 @@ Four policy regressions ran red then green and also passed inside the World
 crate. Focused World/Dispatch check, clippy and formatting passed. The PG fixture
 additionally checks that the actual map wire snapshot advertises the root handle
 and that command 21 emits an ordinary domain-14 container view.
+
+The expanded PostgreSQL run passed all four cases: source view 63.405104 s,
+fixed source without portable policy 63.451307 s, nested key pickup 53.929822 s,
+and the production Small Ruby pickup/reset scenario 128.635764 s. The latter
+observed a real world-reset epoch transition before a second physical pickup.
+
+## Outlaw source wiring
+
+`npcfix2_shared_sources.py` captures the three wiki-qualified key locations and
+restores the nested key entries through the World authoring pipeline. The
+physical placement regression first failed for all three keys. Six tests now
+check the committed positions/numbers, exact nested representation, additive
+counts, idempotency, unrelated-crop preservation and refusal to overwrite conflicting contents.
+
+Skeleton Decoration's Tyrsung barrel is the personal claim UID 6216, with a bag
+containing decoration 6525, 89 gold and one Shard of Ancient Winters in the donor.
+The native personal-claim packet already records that container source. It must
+not also become a second shared-source reward. The chosen recipe's separate
+journal completion remains under the authored-binding owner (M01).
+
+## Live source handles
+
+The map projection previously issued live handles only to pickupable unbound
+leaves. Fixed trees and bags with captured contents stayed ordinal targets, so
+command 21 could not open them. Captured unbound Item containers now participate
+in the existing handle budget with a separate `openable_source` flag. Their
+`movable` flag stays false; personal/bound and House sources keep their old policy.
+The ordinary capability-14 container command can therefore resolve the same
+bundle/placement/reset identity without creating portable custody.
+
+Four policy regressions ran red then green and also passed inside the World
+crate. Focused World/Dispatch check, clippy and formatting passed. The PG fixture
+additionally checks that the actual map wire snapshot advertises the root handle
+and that command 21 emits an ordinary domain-14 container view.

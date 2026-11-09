@@ -48,7 +48,7 @@ pub trait RewardClaimTile {
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
     ),
@@ -64,6 +64,7 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
     ),
+    include_str!("../../../../../content/interactions/reward_claims/engclaim-native.json"),
 ];
 
 /// Why a placement is not bound (§1.4). Each is exactly one reason.
@@ -116,6 +117,8 @@ pub struct BoundPlacement {
     pub contents: Vec<RewardContainerItem>,
     /// Source-authored text on a leaf reward; this is not player writing.
     pub root_text: Option<String>,
+    /// Optional typed quest reward owner for native inventory exchanges/allocations.
+    pub reward_callback: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,6 +134,7 @@ pub struct RewardContainerItem {
 pub struct ServedClaim {
     pub key: ProductionKey,
     pub revision: DefinitionRevisionRef,
+    pub authority_digest: [u8; 32],
     pub placements: Vec<BoundPlacement>,
 }
 
@@ -224,7 +228,14 @@ pub fn bind_reward_claims(
             }
             match candidate(definition, admitted)? {
                 Err(left_out) => report.left_out.push((key.to_owned(), left_out)),
-                Ok(candidate) => bind_candidate(base, key, &candidate, &mut report)?,
+                Ok(candidate) => {
+                    let terms = serde_json::json!({"identity": definition.get("identity"), "claim": definition.get("claim"), "placements": definition.get("placements")});
+                    let digest = Sha256::digest(
+                        serde_json::to_vec(&terms).map_err(|_| ClaimsError("authority terms"))?,
+                    )
+                    .into();
+                    bind_candidate(base, key, &candidate, digest, &mut report)?;
+                }
             }
         }
     }
@@ -276,8 +287,11 @@ struct CandidatePlacement {
     cell: Option<BoundCell>,
     crystal_unique_id: Option<u64>,
     native_ordinal: Option<u8>,
+    extra_items: Vec<RewardClaimItem>,
+    reward_callback: Option<String>,
     item: TypedDefinitionRef,
     count: u32,
+    additional_items: Vec<RewardClaimItem>,
     quest_transition: Option<String>,
     key_number: Option<u16>,
     achievement: Option<String>,
@@ -380,6 +394,10 @@ fn candidate(
     }
     if parsed.iter().any(|placement| {
         !admitted(&placement.item)
+            || placement
+                .additional_items
+                .iter()
+                .any(|item| !admitted(&item.item))
             || placement
                 .contents
                 .iter()
@@ -780,8 +798,34 @@ fn authored_text_matches(
         && written.get("text_ref") == Some(&expected_ref)
 }
 
-/// `None` for a placement with a field or shape the server artifact does not encode. A key
-/// variant's placement must carry a key binding of one item; no other placement may.
+/// Decode one plain reward leaf without discarding its source identity or quantity.
+fn candidate_reward_item(entry: &Value) -> Result<Option<RewardClaimItem>, ClaimsError> {
+    let bad = ClaimsError("reward item is not in the shard shape");
+    if !only(entry, &["count", "item"]) {
+        return Ok(None);
+    }
+    let count = entry
+        .get("count")
+        .and_then(Value::as_u64)
+        .and_then(|count| u32::try_from(count).ok())
+        .filter(|count| *count > 0)
+        .ok_or(bad.clone())?;
+    let item = entry.get("item").ok_or(bad.clone())?;
+    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
+    if text("family")? != "Item" {
+        return Ok(None);
+    }
+    Ok(Some(RewardClaimItem {
+        count,
+        item: TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new(text("key")?)?,
+            DefinitionRevisionRef::new(text("revision")?)?,
+        ),
+    }))
+}
+
+/// A key variant remains a single key; plain rewards admit a bounded item vector.
 fn candidate_placement(
     placement: &Value,
     key_variant: bool,
@@ -819,32 +863,27 @@ fn candidate_placement(
         .get("items")
         .and_then(Value::as_array)
         .ok_or(bad.clone())?;
-    let [entry] = items.as_slice() else {
+    let Some((entry, rest)) = items.split_first() else {
         return Ok(None);
     };
-    if !only(entry, &["count", "item"]) {
+    if items.len() > 20 || (key_variant && !rest.is_empty()) {
         return Ok(None);
     }
-    let count = entry
-        .get("count")
-        .and_then(Value::as_u64)
-        .and_then(|count| u32::try_from(count).ok())
-        .filter(|count| *count > 0)
-        .ok_or(bad.clone())?;
-    // A key is one non-stackable item.
+    let Some(first) = candidate_reward_item(entry)? else {
+        return Ok(None);
+    };
+    let item = first.item;
+    let count = first.count;
     if key_number.is_some() && count != 1 {
         return Ok(None);
     }
-    let item = entry.get("item").ok_or(bad.clone())?;
-    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
-    if text("family")? != "Item" {
-        return Ok(None);
+    let mut additional_items = Vec::with_capacity(rest.len());
+    for entry in rest {
+        let Some(item) = candidate_reward_item(entry)? else {
+            return Ok(None);
+        };
+        additional_items.push(item);
     }
-    let item = TypedDefinitionRef::new(
-        DefinitionFamily::Item,
-        ProductionKey::new(text("key")?)?,
-        DefinitionRevisionRef::new(text("revision")?)?,
-    );
     let crystal_unique_id = binding
         .get("legacy_unique_ids")
         .and_then(Value::as_array)
@@ -874,8 +913,11 @@ fn candidate_placement(
         cell: native_cell(position),
         crystal_unique_id,
         native_ordinal: None,
+        extra_items: Vec::new(),
+        reward_callback: None,
         item,
         count,
+        additional_items,
         quest_transition,
         key_number,
         achievement: None,
@@ -900,6 +942,7 @@ fn bind_candidate(
     base: &impl RewardClaimBase,
     key: &str,
     candidate: &Candidate,
+    authority_digest: [u8; 32],
     report: &mut BindingReport,
 ) -> Result<(), ClaimsError> {
     let local = key
@@ -912,10 +955,13 @@ fn bind_candidate(
             Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
                 placement: RewardClaimPlacement {
                     placement: PlacementKey::new(&format!("oteryn:placement/{local}/{index}"))?,
-                    items: vec![RewardClaimItem {
+                    items: std::iter::once(RewardClaimItem {
                         item: placement.item.clone(),
                         count: placement.count,
-                    }],
+                    })
+                    .chain(placement.extra_items.iter().cloned())
+                    .chain(placement.additional_items.iter().cloned())
+                    .collect(),
                     achievement: placement.achievement.clone(),
                     quest_transition: placement.quest_transition.clone(),
                     key_number: placement.key_number,
@@ -924,6 +970,7 @@ fn bind_candidate(
                 bundle_placement_key,
                 contents: placement.contents.clone(),
                 root_text: placement.root_text.clone(),
+                reward_callback: placement.reward_callback.clone(),
             }),
             Err(reason) => unbound.push(UnboundPlacement {
                 claim: key.to_owned(),
@@ -936,6 +983,7 @@ fn bind_candidate(
         report.served.push(ServedClaim {
             key: ProductionKey::new(key)?,
             revision: DefinitionRevisionRef::new(&candidate.revision)?,
+            authority_digest,
             placements: bound,
         });
     } else {
@@ -1012,6 +1060,51 @@ mod container_tests {
             }
         }
         None
+    }
+
+    #[test]
+    fn multiple_top_level_rewards_retain_every_source_item() {
+        let source = authored("kv.bear_chest1").expect("source fixture");
+        let mut placement = source["placements"][0].clone();
+        // Exercise the plain, top-level reward shape rather than a container.
+        placement["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("container");
+        let parsed = candidate_placement(&placement, false)
+            .expect("valid reward shape")
+            .expect("both top-level items must be encoded");
+        assert_eq!(parsed.item.key().as_str(), "oteryn:item.tibia.i3447");
+        assert_eq!(parsed.count, 12);
+        assert_eq!(parsed.additional_items.len(), 1);
+        assert_eq!(
+            parsed.additional_items[0].item.key().as_str(),
+            "oteryn:item.tibia.i3031"
+        );
+        assert_eq!(parsed.additional_items[0].count, 40);
+        placement["reward"]["items"][1]["count"] = serde_json::json!(0);
+        assert!(candidate_placement(&placement, false).is_err());
+    }
+
+    #[test]
+    fn top_level_reward_vectors_are_nonempty_and_bounded() {
+        let source = authored("kv.bear_chest1").expect("source fixture");
+        let mut placement = source["placements"][0].clone();
+        placement["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("container");
+        let item = placement["reward"]["items"][0].clone();
+        for count in [0, 1, 20, 21] {
+            placement["reward"]["items"] = Value::Array(vec![item.clone(); count]);
+            assert_eq!(
+                candidate_placement(&placement, false)
+                    .expect("valid shape")
+                    .is_some(),
+                (1..=20).contains(&count),
+                "{count} reward items"
+            );
+        }
     }
 
     #[test]

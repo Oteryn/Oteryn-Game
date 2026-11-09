@@ -18,19 +18,24 @@ const TRACK: &str = "oteryn:quest-progress/clock_fixture/stage";
 const POINT: &str = "oteryn:quest-progress/clock_fixture/points";
 const RULE: &str = "oteryn:quest-npc/clock_fixture/accept";
 
-struct Content(bool);
-impl ItemWeightLookup for Content {
+struct Content<'a>(
+    bool,
+    &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+);
+impl ItemWeightLookup for Content<'_> {
     fn wheel_premium_current(&self, account: [u8; 16]) -> bool {
         self.0 && account == fixture::id(40)
     }
     fn generation_digest(&self) -> [u8; 32] {
         [1; 32]
     }
-    fn weight_of(&self, _: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
-        Ok(1)
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        self.loop_facts(definition)
+            .and_then(|facts| facts.weight)
+            .ok_or(ItemWeightRefused::Unknown)
     }
 }
-impl ItemLoopContent for Content {
+impl ItemLoopContent for Content<'_> {
     fn loop_content_digest(&self) -> [u8; 32] {
         [1; 32]
     }
@@ -38,10 +43,8 @@ impl ItemLoopContent for Content {
         if definition.production_key == "fixture:b3.backpack" {
             Some(crate::item_transfer_postgres_cases::backpack_facts())
         } else {
-            Some(crate::item_transfer_postgres_cases::facts(
-                &definition.production_key,
-                crate::durability::item_transfer::ItemStackClass::NonStackable,
-            ))
+            oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.1, definition)
+                .ok()
         }
     }
 }
@@ -59,7 +62,7 @@ fn qn3_m05_item_points_and_clock_commit_together() -> fixture::TestResult {
                 .block_on(async {
                     let started = std::time::Instant::now();
                     let h = fixture::Harness::create(admin, "qn3_m05", true).await?;
-                    let result = exercise(&h).await;
+                    let result = exercise(&h, false).await;
                     h.cleanup().await?;
                     result?;
                     assert!(started.elapsed().as_secs_f64() > 0.01);
@@ -76,16 +79,70 @@ fn qn3_m05_item_points_and_clock_commit_together() -> fixture::TestResult {
         .map_err(Into::into)
 }
 
-async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
+#[test]
+fn m04_npc_item_completion_is_canonical_atomic_and_replay_bound() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create(admin, "engnpc_m04_item", true).await?;
+                    let result = exercise(&h, true).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGNPC_M04_ITEM_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "M05 PG thread failed")?
+        .map_err(Into::into)
+}
+
+async fn exercise(h: &fixture::Harness, terminal: bool) -> fixture::TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&h.pool)
         .await?;
     eprintln!("M05_POSTGRES_VERSION={version}");
+    let (controller, _) =
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+            fixture::fence(1)?.runtime_scope.world_id(),
+            None,
+        );
+    let native = controller
+        .active()
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native generation")?;
+    let gift = oteryn_gameplay_items::item_ref_admission::generation_item_facts(
+        native,
+        &TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i27654".into(),
+            revision_ref: "definition-r1".into(),
+        },
+    )
+    .map_err(|error| format!("M05 real native gift: {error:?}"))?;
+    assert_eq!(
+        gift.stack,
+        crate::durability::item_transfer::ItemStackClass::NonStackable
+    );
+    assert_eq!(gift.weight, Some(1000));
+    assert_eq!(gift.container_capacity, None);
     let reference = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13";
     let text = serde_json::json!({"schema":1,"quest":QUEST,
         "tracks":[{"key":TRACK,"quest":QUEST,"initial":0,"min":0,"max":4102444800_i64,"sources":[reference]},{"key":POINT,"quest":QUEST,"initial":0,"min":0,"max":100,"sources":[reference]}],
         "rules":[{"key":RULE,"quest":QUEST,"npc":"oteryn:npc.fixture","trigger":"say",
-            "keywords":["mission"],"guards":[{"kind":"storage_time","track":TRACK,"op":"le"}],
+            "completes":terminal,"keywords":["mission"],"guards":[{"kind":"storage_time","track":TRACK,"op":"le"}],
             "effects":[{"kind":"add","track":POINT,"value":1},{"kind":"set_now_plus","track":TRACK,"value":72000},{"kind":"give_item","item":"oteryn:item.tibia.i27654","count":1}],"reply":["Accepted."],"sources":[reference]}]
     }).to_string();
     let source = NpcRuleCatalog::from_json_documents(&[&text]).map_err(fixture::debug)?;
@@ -165,7 +222,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fence,
             request(9500)?,
             catalog.clone(),
-            &Content(true),
+            &Content(true, native),
             &source,
         )
         .await
@@ -203,12 +260,39 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 stale,
                 request(9501)?,
                 catalog.clone(),
-                &Content(true),
+                &Content(true, native),
                 &source
             )
             .await
             .is_err()
     );
+    if terminal {
+        let before = item_completion_snapshot(h).await?;
+        sqlx::raw_sql("CREATE FUNCTION engnpc_m04_item_corrupt() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.completes:=false;RETURN NEW;END$$;CREATE TRIGGER engnpc_m04_item_corrupt BEFORE INSERT ON game_quest_npc_program_receipts FOR EACH ROW EXECUTE FUNCTION engnpc_m04_item_corrupt()")
+            .execute(&h.pool).await?;
+        assert!(
+            h.root
+                .commit_fixture_npc_program(
+                    &authority,
+                    &h.node,
+                    &permit,
+                    fence,
+                    request(9502)?,
+                    catalog.clone(),
+                    &Content(true, native),
+                    &source
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            item_completion_snapshot(h).await?,
+            before,
+            "late receipt failure must roll back header, tracks, item MINT, source proof and Root revision"
+        );
+        sqlx::raw_sql("DROP TRIGGER engnpc_m04_item_corrupt ON game_quest_npc_program_receipts;DROP FUNCTION engnpc_m04_item_corrupt()")
+            .execute(&h.pool).await?;
+    }
     let good = h
         .root
         .commit_fixture_npc_program(
@@ -218,7 +302,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fence,
             request(9502)?,
             catalog.clone(),
-            &Content(true),
+            &Content(true, native),
             &source,
         )
         .await
@@ -230,6 +314,13 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(receipt.changes.len(), 2);
+    assert_eq!(receipt.completes, terminal);
+    let canonical: (bool, bool, bool, bool) = sqlx::query_as("SELECT coalesce(s.completed_character_revision=q.committed_character_revision,false), q.completes, n.completes, s.xmin=q.xmin AND q.xmin=n.xmin AND n.xmin=i.xmin FROM game_character_quest_states s JOIN game_character_quest_receipts q USING(character_id,quest_key) JOIN game_quest_npc_program_receipts n ON n.character_id=q.character_id AND n.game_session_id=q.cause_id::uuid AND n.command_id=q.cause_ordinal JOIN game_quest_npc_item_sources i ON i.character_id=n.character_id AND i.cause_id=n.game_session_id AND i.cause_ordinal=n.command_id WHERE s.quest_key=$1")
+        .bind(QUEST).fetch_one(&h.pool).await?;
+    if terminal {
+        assert_eq!(canonical, (true, true, true, true));
+    }
+
     assert_eq!(
         receipt
             .changes
@@ -266,7 +357,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fixture::fence(2)?,
             request(9503)?,
             catalog.clone(),
-            &Content(true),
+            &Content(true, native),
             &source,
         )
         .await
@@ -285,7 +376,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             fence,
             request(9502)?,
             catalog,
-            &Content(false),
+            &Content(false, native),
             &source,
         )
         .await
@@ -304,4 +395,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .is_err()
     );
     Ok(())
+}
+
+async fn item_completion_snapshot(h: &fixture::Harness) -> fixture::TestResult<serde_json::Value> {
+    Ok(sqlx::query_scalar("SELECT jsonb_build_array((SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid),(SELECT count(*) FROM game_item_instances),(SELECT count(*) FROM game_character_quest_states),(SELECT count(*) FROM game_character_quest_tracks),(SELECT count(*) FROM game_character_quest_receipts),(SELECT count(*) FROM game_quest_npc_program_receipts),(SELECT count(*) FROM game_quest_npc_item_sources),(SELECT count(*) FROM game_reward_claim_mint_receipts))")
+        .bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?)
 }

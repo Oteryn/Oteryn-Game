@@ -137,6 +137,7 @@ where
             session.cast_chat_revision = revision;
         }
     }
+    super::native_cues::refresh(stream, authority, session).await?;
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
     super::vip_presence::refresh(stream, authority, session).await?;
@@ -392,6 +393,19 @@ where
         }
         return Ok(());
     };
+    if outcome.disposition == StepDisposition::Moved {
+        authority
+            .committed_paced_movement(session.admitted, outcome.moved_to)
+            .await;
+    }
+    if authority
+        .pending_activity_switch(session.admitted)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?
+        .is_some()
+    {
+        return Ok(());
+    }
     let Some(observation) = outcome.moved_to else {
         return Ok(());
     };
@@ -430,6 +444,7 @@ where
     A: FreshAdmissionAuthority,
 {
     sounds(stream, authority, session).await?;
+    super::native_cues::refresh(stream, authority, session).await?;
     if let Some(view) = session.item_view.as_mut()
         && view.inventory_refresh_pending
     {

@@ -38,6 +38,8 @@ struct Saved {
 pub struct Minimap {
     pub cells: BTreeMap<(i16, i32, i32), u8>,
     pub markers: Vec<Marker>,
+    /// Current Character facts; never serialized into the World-only local cache.
+    pub quest_marks: oteryn_client_ui::personal_map_marks::PersonalMapMarks,
     pub quest_markers: Vec<Marker>,
     pub x: i32,
     pub y: i32,
@@ -60,6 +62,7 @@ impl Default for Minimap {
         Self {
             cells: BTreeMap::new(),
             markers: Vec::new(),
+            quest_marks: Default::default(),
             quest_markers: Vec::new(),
             x: 0,
             y: 0,
@@ -110,21 +113,35 @@ impl Minimap {
     }
 
     pub fn bind_world(&mut self, world: &str) {
+        // Native admission calls this even when another Character enters the same World.
+        self.quest_marks = Default::default();
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
             self.feedback = "Invalid minimap world binding; local saving is disabled".into();
             self.world = None;
+            self.quest_marks = Default::default();
         } else if self.world.as_deref() != Some(world) {
             if let Err(error) = self.save() {
                 self.feedback = error.to_string();
             }
             self.quest_markers.clear();
             self.world = Some(world.into());
+            self.quest_marks = Default::default();
             self.binding = None;
             self.cells.clear();
             self.markers.clear();
         }
+    }
+    pub fn replace_quest_marks(
+        &mut self,
+        marks: oteryn_client_ui::personal_map_marks::PersonalMapMarks,
+    ) -> bool {
+        if marks.encode().is_none() {
+            return false;
+        }
+        self.quest_marks = marks;
+        true
     }
     fn path(&self) -> Option<PathBuf> {
         let (generation, bundle, epoch) = self.binding?;
@@ -501,5 +518,72 @@ mod tests {
         assert!(!map.cells.contains_key(&(-7, 1000, 200)));
         map.observe(&snapshot(100, 0));
         assert!(!map.cells.contains_key(&(-7, 100, 200)));
+    }
+}
+
+#[cfg(test)]
+mod quest_mark_tests {
+    use super::*;
+    use oteryn_client_ui::personal_map_marks::{PersonalMapMark, PersonalMapMarks};
+    fn treasure() -> PersonalMapMarks {
+        PersonalMapMarks(vec![PersonalMapMark {
+            key: "sterling".into(),
+            x: 31948,
+            y: 31924,
+            floor: -7,
+            text: "Treasure".into(),
+        }])
+    }
+    #[test]
+    fn personal_quest_marks_are_not_editable_or_saved_in_world_only_cache()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = std::env::temp_dir().join(format!(
+            "questpc5-personal-map-privacy-{}",
+            std::process::id()
+        ));
+        let mut map = Minimap::default();
+        map.root = Some(directory.clone());
+        map.bind_world("11111111-1111-4111-8111-111111111111");
+        map.binding = Some(([1; 32], [2; 32], 1));
+        assert!(map.replace_quest_marks(treasure()));
+        map.bind_world("11111111-1111-4111-8111-111111111111");
+        assert!(
+            map.quest_marks.0.is_empty(),
+            "a new admission to the same World clears Character facts"
+        );
+        assert!(map.replace_quest_marks(treasure()));
+        map.edit_marker(31948, 31924, -7, "Local label".into(), 0)?;
+        assert_eq!(map.quest_marks, treasure());
+        map.remove_marker(31948, 31924, -7)?;
+        assert_eq!(map.quest_marks, treasure());
+        map.edit_marker(10, 20, -7, "Home".into(), 1)?;
+        let path = map.path().ok_or("path")?;
+        let encoded = std::fs::read_to_string(path)?;
+        assert!(!encoded.contains("Treasure"));
+        assert!(!encoded.contains("quest_marks"));
+        assert!(encoded.contains("Home"));
+        let mut other = Minimap::default();
+        other.root = Some(directory.clone());
+        other.bind_world("11111111-1111-4111-8111-111111111111");
+        other.binding = Some(([1; 32], [2; 32], 1));
+        other.load()?;
+        assert_eq!(other.markers.len(), 1);
+        assert!(
+            other.quest_marks.0.is_empty(),
+            "another Character never inherits server facts from the World cache"
+        );
+        map.bind_world("22222222-2222-4222-8222-222222222222");
+        assert!(map.quest_marks.0.is_empty());
+        std::fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+    #[test]
+    fn malformed_personal_quest_marks_cannot_replace_confirmed_facts() {
+        let mut map = Minimap::default();
+        assert!(map.replace_quest_marks(treasure()));
+        let mut invalid = treasure();
+        invalid.0[0].text = "bad\0label".into();
+        assert!(!map.replace_quest_marks(invalid));
+        assert_eq!(map.quest_marks, treasure());
     }
 }

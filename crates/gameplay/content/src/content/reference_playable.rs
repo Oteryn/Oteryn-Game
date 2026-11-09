@@ -2284,7 +2284,7 @@ const REWARD_CLAIM_ACHIEVEMENT_PREFIX: &str = "oteryn:achievement/";
 const REWARD_CLAIM_TRANSITION_PREFIX: &str = "oteryn:quest-transition/";
 
 /// Shape of a first-slice RewardClaim: server-only, at least one placement, no placement listed
-/// twice, and each placement rewards exactly one item with a positive count and names its
+/// twice, and each placement rewards one to twenty items with positive counts and names its
 /// achievement, if any, by an `oteryn:achievement/` key. The item references are resolved by
 /// `validate_definition_references`; facts such as stack maximum are enforced by the MINT
 /// admission; the achievement key binds to the runtime catalogue at Content activation.
@@ -2309,9 +2309,9 @@ fn validate_reward_claim_definition(
                 entry.placement.as_str().to_owned(),
             ));
         }
-        if entry.items.len() != 1 {
+        if entry.items.is_empty() || entry.items.len() > 20 {
             return Err(ContentError::InvalidArtifact(
-                "reference-playable reward claim placement requires exactly one reward item",
+                "reference-playable reward claim placement requires 1..20 reward items",
             ));
         }
         if entry.items.iter().any(|item| item.count == 0) {

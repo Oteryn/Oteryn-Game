@@ -274,6 +274,17 @@ pub(super) async fn exchange(
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    exchange_selected(owner, admitted, command_id, payload, current_source, 0).await
+}
+
+pub(super) async fn exchange_selected(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+    source_offset: usize,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
     }
@@ -288,7 +299,7 @@ pub(super) async fn exchange(
                 for domain in domains {
                     if domain.domain_id == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
                         let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory(domain.payload).map_err(debug)?;
-                        source = inventory.entries.iter().find(|entry| Some(entry.item_definition_ref) == current_source).map(|entry| entry.handle);
+                        source = inventory.entries.iter().filter(|entry| Some(entry.item_definition_ref) == current_source).nth(source_offset).map(|entry| entry.handle);
                     }
                 }
             }

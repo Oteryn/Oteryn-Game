@@ -194,3 +194,17 @@ fn chagorz_think_starts_the_cycle_once_and_tops_up_summons_only_while_enabled() 
     assert_eq!(CHAGORZ_KEY, "oteryn:creature.chagorz");
     assert_eq!(PILLAR_COUNT_RANGE_TILES, 16);
 }
+
+#[test]
+fn paused_global_portal_reschedules_before_the_current_boss_presence_check() {
+    // Crystal chagorz.lua:224-229 (and Vemiath/Bakragore equivalents):
+    // the Lua paused branch returns after rescheduling, before spectator lookup.
+    let mut cycle = TeleportCycle::new(CHAGORZ_ROOM_CENTRE);
+    cycle.start(0);
+    assert_eq!(cycle.due(90_000, false, true, false), None);
+    assert_eq!(cycle.next_at_ms(), Some(180_000));
+    assert_eq!(
+        cycle.due(180_000, true, false, true).map(|p| p.item_id),
+        Some(37000)
+    );
+}

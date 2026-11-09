@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+mod literal_contacts;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -23,12 +24,24 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
+    include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
 ];
+#[cfg(test)]
+mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
+    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
 ];
 
 #[derive(serde::Deserialize)]
@@ -303,7 +316,7 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -326,6 +339,7 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
+                literal_contacts::REVISION_MATERIAL,
             )),
             ..Self::default()
         };
@@ -492,15 +506,10 @@ impl NpcTalkBook {
                     None,
                     dialogue.keywords.clone(),
                 )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-            ) && npc.services.is_empty()
-            {
-                // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                // literal, single-line lore is qualified here. Quest callbacks and
-                // multipart/stateful branches remain outside the talk consumer.
+            } else if literal_contacts::admitted(&reference.key) && npc.services.is_empty() {
+                // The historical `bank_dialogue` carrier also holds these explicitly
+                // qualified lore contacts. Per-contact topic scope and the literal
+                // matcher keep quest callbacks and exchange topics outside this path.
                 let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
@@ -508,13 +517,17 @@ impl NpcTalkBook {
                     continue;
                 }
                 (
-                    dialogue.greet[0].clone(),
+                    literal_contacts::greeting(&reference.key)
+                        .unwrap_or(&dialogue.greet[0])
+                        .to_owned(),
                     dialogue.farewell[0].clone(),
                     None,
                     dialogue
                         .keywords
                         .iter()
-                        .filter(|keyword| literal_keyword(keyword))
+                        .filter(|keyword| {
+                            literal_contacts::keyword_allowed(&reference.key, keyword)
+                        })
                         .cloned()
                         .collect(),
                 )
@@ -575,6 +588,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
                         || dark_messages.is_some()
@@ -782,6 +796,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn goblin_capture_intro_has_source_rafzan_greeting() -> Result<(), String> {
+        assert!(reward_callback_npc("oteryn:npc.rafzan"));
+        let greeting = reward_messages("oteryn:npc.rafzan").ok_or("Rafzan greeting")?;
+        assert_eq!(greeting.greet, "Greetings, |PLAYERNAME|.");
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -801,6 +823,7 @@ mod tests {
             "sam",
             "oldrak",
             "zoltan",
+            "rafzan",
         ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
@@ -1618,5 +1641,29 @@ mod s10_tests {
             "Dawnport banker escaped the S10 scope"
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod qnpcfx_m10_greeting_tests {
+    use super::*;
+    #[test]
+    fn production_reward_greetings_admit_all_m10_npcs_without_fixture_overrides() {
+        for key in [
+            "oldrak",
+            "henricus",
+            "kulag_the_guard",
+            "grof_the_guard",
+            "tim_the_guard",
+            "walter_the_guard",
+            "miles_the_guard",
+        ] {
+            let key = format!("oteryn:npc.{key}");
+            assert!(reward_callback_npc(&key));
+            assert!(
+                reward_messages(&key)
+                    .is_some_and(|r| !r.greet.is_empty() && !r.farewell.is_empty())
+            );
+        }
     }
 }

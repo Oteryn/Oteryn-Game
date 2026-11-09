@@ -16,8 +16,8 @@ impl DurabilityRoot {
         let RuntimeScopeRefV1::Channel { world_id, .. } = scope else {
             return Err(DurabilityError::Unavailable);
         };
-        let ownership = ScopeOwnershipGeneration::new(generation)
-            .map_err(|_| DurabilityError::Unavailable)?;
+        let ownership =
+            ScopeOwnershipGeneration::new(generation).map_err(|_| DurabilityError::Unavailable)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;

@@ -157,9 +157,10 @@ mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
 mod marriage;
 pub(crate) use marriage::grant_marriage_outfits;
+pub mod npc_outfits;
 pub(crate) mod quest_grants;
-pub(crate) use quest_grants::{QuestOutfitGrant, grant_content_outfit, grant_quest_outfit};
 pub use current_appearance::CurrentCharacterAppearance;
+pub(crate) use quest_grants::{QuestOutfitGrant, grant_content_outfit, grant_quest_outfit};
 
 impl DurabilityRoot {
     /// Commit the selection under the native Character fence. The owner supplies its current
@@ -321,10 +322,12 @@ impl DurabilityRoot {
 /// starter-or-earned rules as its own look (Crystal 201189f8 `game.cpp:4692-4699`
 /// `canWearOutfit` / `hasMount`). Addons are not displayed and are never asked for.
 pub(super) async fn podium_cosmetic_owned<C: AppearanceContent<String>>(
-    connection:&mut sqlx::PgConnection,character:CharacterId,content:&C,
-    target:crate::domain::appearance::EarnedCosmetic<'_>,
-)->Result<bool,DurabilityError> {
-    cosmetic_owned_for_sex(connection,character,content,target,None).await
+    connection: &mut sqlx::PgConnection,
+    character: CharacterId,
+    content: &C,
+    target: crate::domain::appearance::EarnedCosmetic<'_>,
+) -> Result<bool, DurabilityError> {
+    cosmetic_owned_for_sex(connection, character, content, target, None).await
 }
 
 pub(super) async fn cosmetic_owned_for_sex<C: AppearanceContent<String>>(
@@ -337,35 +340,47 @@ pub(super) async fn cosmetic_owned_for_sex<C: AppearanceContent<String>>(
     use crate::domain::appearance::{AccountUnlocks, EarnedCosmetic, EarnedCosmetics, UnlockFact};
     // Outfit/addon starter admission depends on sex; mounts belong to the account.
     let sex = match target {
-        EarnedCosmetic::Outfit(_) | EarnedCosmetic::Addon(..) if required_sex.is_some() => required_sex,
-        EarnedCosmetic::Outfit(_) | EarnedCosmetic::Addon(..) => match character_sex::read(&mut *connection, character).await {
-            Ok(sex) => Some(sex),
-            Err(AppearanceWriteError::Unavailable(error)) => return Err(error),
-            Err(_) => return Ok(false),
-        },
+        EarnedCosmetic::Outfit(_) | EarnedCosmetic::Addon(..) if required_sex.is_some() => {
+            required_sex
+        }
+        EarnedCosmetic::Outfit(_) | EarnedCosmetic::Addon(..) => {
+            match character_sex::read(&mut *connection, character).await {
+                Ok(sex) => Some(sex),
+                Err(AppearanceWriteError::Unavailable(error)) => return Err(error),
+                Err(_) => return Ok(false),
+            }
+        }
         _ => None,
     };
     let facts = earned_unlocks::read(connection, character, &content.earned_grant_keys())
         .await
         .map_err(read_storage_error)?;
-    let unlocks = EarnedCosmetics { content, facts: &facts };
+    let unlocks = EarnedCosmetics {
+        content,
+        facts: &facts,
+    };
     Ok(match target {
         EarnedCosmetic::Outfit(key) => {
             let key = key.to_owned();
             content.outfit_addon_count(&key).is_some()
                 && (sex.is_some_and(|sex| content.outfit_is_starter(&key, sex))
-                    || unlocks.fact_for(EarnedCosmetic::Outfit(&key),sex) == UnlockFact::Compatible)
+                    || unlocks.fact_for(EarnedCosmetic::Outfit(&key), sex)
+                        == UnlockFact::Compatible)
         }
         EarnedCosmetic::Mount(key) => {
             let key = key.to_owned();
             content.mount_exists(&key) && unlocks.mount(&key) == UnlockFact::Compatible
         }
-        EarnedCosmetic::Addon(key,addon) => {
-            let key=key.to_owned();
-            addon>0 && content.outfit_addon_count(&key).is_some_and(|count|addon<=count)
-                && (sex.is_some_and(|sex|content.addon_is_starter(&key,sex,addon))
-                    || unlocks.fact_for(EarnedCosmetic::Addon(&key,addon),sex)==UnlockFact::Compatible)
-        },
+        EarnedCosmetic::Addon(key, addon) => {
+            let key = key.to_owned();
+            addon > 0
+                && content
+                    .outfit_addon_count(&key)
+                    .is_some_and(|count| addon <= count)
+                && (sex.is_some_and(|sex| content.addon_is_starter(&key, sex, addon))
+                    || unlocks.fact_for(EarnedCosmetic::Addon(&key, addon), sex)
+                        == UnlockFact::Compatible)
+        }
     })
 }
 

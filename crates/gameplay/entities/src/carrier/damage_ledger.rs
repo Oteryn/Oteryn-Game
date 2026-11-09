@@ -51,6 +51,14 @@ pub struct DamageReceipts {
 }
 
 impl DamageReceipts {
+    /// Original authoritative lethal owner clock, retained independently of
+    /// corpse projection or later deferred-task execution.
+    pub(super) fn lethal_owner_time_ms(&self) -> Option<u64> {
+        self.lethal_at_ms
+    }
+    pub(super) fn stamp_prepared_lethal_owner_time(&mut self, at_ms: Option<u64>) {
+        self.lethal_at_ms = at_ms;
+    }
     /// Test builds only: the retained receipts, oldest first.
     #[cfg(any(test, feature = "test-support"))]
     pub fn entries(&self) -> &[OwnerCommitRecord] {
@@ -127,6 +135,9 @@ pub const COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX: usize = 16;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DamageContributor {
     pub(super) character: CharacterId,
+    /// Literal Player(cid) source span. Familiar/master reward credit above
+    /// never creates this actual-player identity.
+    pub(super) source_player: Option<super::native_source_death::SourcePlayerDamageShare>,
     pub total: u64,
     /// AI targeting follows Crystal's actor-scoped damage map. Reward totals above survive
     /// reconnection, but this subtotal belongs only to the high-water lease and session.
@@ -211,11 +222,58 @@ impl DamageContributors {
         }
         self.entries.push(DamageContributor {
             character,
+            source_player: None,
             total: damage,
             current_session_total: if high_water.is_some() { damage } else { 0 },
             last_update_ordinal: ordinal,
             high_water,
             last_damage_at_ms: at_ms,
+        });
+    }
+
+    /// Add the checked physical Player source to the SAME bounded damage map.
+    /// Call only after the ordinary owner has attributed known applied damage;
+    /// neither master credit nor ORIGIN_NONE alone identifies a Player source.
+    pub(super) fn record_source_player(
+        &mut self,
+        character: CharacterId,
+        damage: u64,
+        source: Option<&super::soul_war_health::HealthSourceContext>,
+        at_ms: Option<u64>,
+    ) {
+        let Some(source) = source else {
+            return;
+        };
+        if damage == 0
+            || !matches!(
+                source.kind,
+                super::soul_war_health::HealthSourceKind::Player(_)
+            )
+        {
+            return;
+        }
+        let Some(actor) = source.actor else {
+            return;
+        };
+        let Some(contributor) = self
+            .entries
+            .iter_mut()
+            .find(|entry| entry.character == character)
+        else {
+            return;
+        };
+        let previous = contributor
+            .source_player
+            .filter(|entry| entry.actor == actor);
+        contributor.source_player = Some(super::native_source_death::SourcePlayerDamageShare {
+            actor,
+            character,
+            total: previous
+                .map_or(0, |entry| entry.total)
+                .saturating_add(damage),
+            last_damage_at_ms: previous
+                .and_then(|entry| entry.last_damage_at_ms)
+                .max(at_ms),
         });
     }
 
@@ -233,7 +291,7 @@ impl DamageContributors {
     /// session (`SupersededAttackerSession`); an equal generation and session at or below the
     /// mark's `(sequence, sub_ordinal)` is `StaleAttackerSequence`; a higher generation is a
     /// genuinely newer session (FND-04B sections 16 and 21) and replaces the mark.
-    fn admission(&self, attacker: AttackerCommand) -> Result<(), CarrierError> {
+    pub(super) fn admission(&self, attacker: AttackerCommand) -> Result<(), CarrierError> {
         let Some((lease, session, sequence, sub_ordinal)) = self.high_water(attacker.character)
         else {
             return Ok(());
@@ -390,6 +448,7 @@ impl ChannelActorCarrier {
             None,
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             None,
+            None,
         )
     }
     /// `max_sub_ordinal` and `now_ms` as in [`Self::commit_creature_damage_inner_limited`];
@@ -405,6 +464,42 @@ impl ChannelActorCarrier {
         current_pin: Option<&ChannelContentPin>,
         max_sub_ordinal: Option<u16>,
         now_ms: Option<u64>,
+        enqueue_us: Option<u64>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let source = current_pin.filter(|_| attacker.is_none()).map(|pin| {
+            super::soul_war_health::HealthSourceContext {
+                kind: super::soul_war_health::HealthSourceKind::Null,
+                actor: None,
+                content: pin.server_artifact_digest(),
+                invoke_health_change: false,
+            }
+        });
+        self.commit_creature_damage_with_pin_source_inner(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            current_pin,
+            max_sub_ordinal,
+            now_ms,
+            source.as_ref(),
+            enqueue_us,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn commit_creature_damage_with_pin_source_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+        current_pin: Option<&ChannelContentPin>,
+        max_sub_ordinal: Option<u16>,
+        now_ms: Option<u64>,
+        source: Option<&super::soul_war_health::HealthSourceContext>,
+        enqueue_us: Option<u64>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         if let Some(hooks) = self.encounter_hooks.take() {
             let result = hooks.damage(
@@ -423,7 +518,7 @@ impl ChannelActorCarrier {
                 return result;
             }
         }
-        let (index, staged, result) = self.prepare_creature_damage_inner_bounded(
+        let (index, staged, result) = self.prepare_creature_damage_inner_bounded_source(
             continuity,
             actor_ref,
             command,
@@ -432,9 +527,14 @@ impl ChannelActorCarrier {
             max_sub_ordinal,
             false,
             now_ms,
+            source,
         )?;
         if let Some(staged) = staged {
+            let notice =
+                self.native_death_notice_for_slot(ExactActorRef(actor_ref), &staged, enqueue_us)?;
+            self.reserve_native_death_capacity(notice.as_slice())?;
             self.slots[index] = staged;
+            self.install_native_death_events(notice);
         }
         Ok(result)
     }
@@ -534,14 +634,7 @@ impl ChannelActorCarrier {
         deferred: bool,
         now_ms: Option<u64>,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        if self
-            .encounter_hooks
-            .as_ref()
-            .is_some_and(|hooks| hooks.contains(ExactActorRef(actor_ref)))
-        {
-            return Err(CarrierError::PositionContextMismatch);
-        }
-        let (index, staged, result) = self.prepare_creature_damage_inner_bounded(
+        self.commit_creature_damage_inner_limited_source(
             continuity,
             actor_ref,
             command,
@@ -550,9 +643,48 @@ impl ChannelActorCarrier {
             max_sub_ordinal,
             deferred,
             now_ms,
+            None,
+            None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn commit_creature_damage_inner_limited_source(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+        max_sub_ordinal: Option<u16>,
+        deferred: bool,
+        now_ms: Option<u64>,
+        source: Option<&super::soul_war_health::HealthSourceContext>,
+        enqueue_us: Option<u64>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        if self
+            .encounter_hooks
+            .as_ref()
+            .is_some_and(|hooks| hooks.contains(ExactActorRef(actor_ref)))
+        {
+            return Err(CarrierError::PositionContextMismatch);
+        }
+        let (index, staged, result) = self.prepare_creature_damage_inner_bounded_source(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            max_sub_ordinal,
+            deferred,
+            now_ms,
+            source,
         )?;
         if let Some(staged) = staged {
+            let notice =
+                self.native_death_notice_for_slot(ExactActorRef(actor_ref), &staged, enqueue_us)?;
+            self.reserve_native_death_capacity(notice.as_slice())?;
             self.slots[index] = staged;
+            self.install_native_death_events(notice);
         }
         Ok(result)
     }
@@ -567,6 +699,31 @@ impl ChannelActorCarrier {
         max_sub_ordinal: Option<u16>,
         deferred: bool,
         now_ms: Option<u64>,
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
+        self.prepare_creature_damage_inner_bounded_source(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            max_sub_ordinal,
+            deferred,
+            now_ms,
+            None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn prepare_creature_damage_inner_bounded_source(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+        max_sub_ordinal: Option<u16>,
+        deferred: bool,
+        now_ms: Option<u64>,
+        source: Option<&super::soul_war_health::HealthSourceContext>,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let OwnerDamageCommand {
             target,
@@ -683,13 +840,119 @@ impl ChannelActorCarrier {
             },
             _ => return Err(CarrierError::NotCreature),
         };
-        let next = health
-            .checked_sub(effective_damage)
+        let original_health = *health;
+        let mut damage_phase_health = original_health;
+        let mut actual_damage = effective_damage;
+        let mut prepared_w01_conditions = None;
+        // Source prepareDeath can cancel the complete hit while healing or
+        // transforming HP. This fact is independent of before/after HP deltas.
+        let mut source_damage_canceled = false;
+        if let Slot::CreatureOccupied {
+            spell_combat,
+            companion: Some(companion),
+            ..
+        } = &self.slots[index]
+            && let Some(policy) = spell_combat.soul_war_health.as_deref()
+            && policy.kind() != oteryn_gameplay_content::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::PassiveHealth
+        {
+            let source = source.ok_or(CarrierError::PlanConflict)?;
+            if !policy.matches(
+                source.content,
+                &companion.policy.definition_key,
+                &companion.policy.definition_revision,
+            ) {
+                return Err(CarrierError::ContentPinWorldMismatch);
+            }
+            use super::soul_war_health::HealthSourceKind as S;
+            use oteryn_gameplay_content::content::native_soul_war_callbacks::SoulWarHealthCallbackKind as K;
+            match policy.kind() {
+                K::PassiveHealth => {}
+                K::FourthTaint => {
+                    use oteryn_gameplay_domain::domain::soul_war_fourth_taint::{
+                        self as fourth, Killer,
+                    };
+                    let killer = match source.kind {
+                        S::Null => Killer::Null,
+                        S::NonPlayer => Killer::NonPlayer,
+                        S::Player(Some(data)) => Killer::Player {
+                            taints: data.taints,
+                            in_realm: data.realm.is_some(),
+                        },
+                        S::Player(None) if effective_damage < original_health => Killer::Player {
+                            taints: 0,
+                            in_realm: false,
+                        },
+                        S::Player(None) => return Err(CarrierError::PlanConflict),
+                    };
+                    let mut invalid = false;
+                    let response = fourth::resolve(
+                        original_health,
+                        spell_combat.maximum_health,
+                        effective_damage,
+                        killer,
+                        || match super::soul_war_health::source_rule_draw(
+                            binding,
+                            actor_ref,
+                            b"fourth-taint",
+                            10,
+                        ) {
+                            Ok(draw) => draw + 1,
+                            Err(_) => {
+                                invalid = true;
+                                0
+                            }
+                        },
+                    )
+                    .map_err(|_| CarrierError::InvalidDamage)?;
+                    if invalid {
+                        return Err(CarrierError::InvalidCommitBinding);
+                    }
+                    damage_phase_health = response.damage_before;
+                    actual_damage = response.damage;
+                }
+                K::HirintrorHeal | K::WhitePaleHeal if effective_damage >= original_health => {
+                    let Slot::CreatureOccupied { committed, .. } = &self.slots[index] else {
+                        return Err(CarrierError::NotCreature);
+                    };
+                    if let Some(successor) = committed.conditions.prepare_w01_lethal_heal(
+                        ExactActorRef(actor_ref),
+                        source.content,
+                        binding,
+                        now_ms.ok_or(CarrierError::InvalidCommitBinding)?,
+                    )? {
+                        let heal = if policy.kind() == K::HirintrorHeal {
+                            1000
+                        } else {
+                            400
+                        };
+                        damage_phase_health = original_health
+                            .checked_add(heal)
+                            .ok_or(CarrierError::DamageOverflow)?
+                            .min(spell_combat.maximum_health);
+                        actual_damage = 0;
+                        source_damage_canceled = true;
+                        prepared_w01_conditions = Some(successor);
+                    }
+                }
+                K::HirintrorHeal | K::WhitePaleHeal => {}
+                // Direct/DOT player transformation is joined at its prepared
+                // native source stage; a caller cannot silently damage an image.
+                K::MirrorImage if !source.invoke_health_change => {}
+                K::MirrorImage => match source.kind {
+                    S::Null | S::NonPlayer => {
+                        actual_damage = effective_damage.min(original_health.saturating_sub(1))
+                    }
+                    S::Player(_) => return Err(CarrierError::PlanConflict),
+                },
+            }
+        }
+        let next = damage_phase_health
+            .checked_sub(actual_damage)
             .ok_or(CarrierError::DamageOverflow)?
             .max(0);
         let result = OwnerDamageResult {
             applied: true,
-            health_before: *health,
+            health_before: damage_phase_health,
             health_after: next,
         };
         let binding = copy_bounded_binding(binding)?;
@@ -710,6 +973,35 @@ impl ChannelActorCarrier {
         if write_index != index {
             return Err(CarrierError::StaleActorGeneration);
         }
+        let drome_source = attacker.and_then(|attacker| {
+            self.slots
+                .iter()
+                .enumerate()
+                .find_map(|(source_index, slot)| {
+                    let Slot::Occupied {
+                        generation,
+                        game_session_id: Some(session),
+                        spell_combat,
+                        ..
+                    } = slot
+                    else {
+                        return None;
+                    };
+                    if *session != attacker.session {
+                        return None;
+                    }
+                    let run = spell_combat.tibiadrome_modifiers.as_ref()?.run;
+                    Some((
+                        run,
+                        ExactActorRef(ActorRef::from_scoped_owner_parts(
+                            self.runtime_scope,
+                            self.scope_generation,
+                            ActorLocalId(u32::try_from(source_index + 1).ok()?),
+                            ActorLocalGeneration(*generation),
+                        )),
+                    ))
+                })
+        });
         let mut staged = self.slots[index].clone();
         let Slot::CreatureOccupied {
             generation,
@@ -718,6 +1010,7 @@ impl ChannelActorCarrier {
             committed,
             damage_contributors,
             companion,
+            spell_combat,
             ..
         } = &mut staged
         else {
@@ -725,7 +1018,7 @@ impl ChannelActorCarrier {
         };
         if *generation != actor_ref.actor_local_generation.0
             || target_identity.as_ref() != target
-            || *health != result.health_before
+            || *health != original_health
             || committed.next_ordinal != ordinal
             || committed.entries.len() != read_len
         {
@@ -739,12 +1032,25 @@ impl ChannelActorCarrier {
                 .map_err(|_| CarrierError::CommitAllocationFailed)?;
         }
         if attacker.is_some()
+            && !source_damage_canceled
             && damage_contributors.entries.len() < COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX
         {
             damage_contributors
                 .entries
                 .try_reserve(1)
                 .map_err(|_| CarrierError::CommitAllocationFailed)?;
+        }
+        if let Some(successor) = prepared_w01_conditions {
+            committed.conditions = successor;
+        }
+        if let (Some(source), Some(companion)) = (source, companion.as_ref()) {
+            spell_combat.stage_hatred_incoming_health(&companion.policy, source)?;
+        }
+        if next != 0 && result.health_after < result.health_before {
+            // Monster::drainHealth removes invisibility from the same canonical
+            // actor condition store read by native spell/visibility consumers.
+            // This is still the staged slot: refusal cannot partially publish HP.
+            committed.conditions.remove_invisibility_on_drain()?;
         }
         if let Some(evicted) = evict {
             committed.entries.remove(evicted);
@@ -754,11 +1060,21 @@ impl ChannelActorCarrier {
         if next == 0 && *health > 0 {
             committed.lethal_at_ms = now_ms;
         }
+        if result.health_after < result.health_before
+            && let Some((run, source)) = drome_source
+            && let Some(policy) = &mut spell_combat.tibiadrome_modifiers
+            && policy.run == run
+        {
+            policy.last_hitter = Some(source);
+        }
         *health = next;
         // Frozen source Monster::drainHealth removes invisibility on an applied
-        // health drain. This is the target's actual condition owner; players
-        // retain their invisibility and historical replay returns above.
-        if let Some(companion) = companion {
+        // health drain. Retain legacy companion compatibility as well; the
+        // canonical native actor store was staged above. Players keep their
+        // invisibility, and historical replay returned before either mutation.
+        if let Some(companion) = companion
+            && result.health_after < result.health_before
+        {
             companion
                 .conditions
                 .remove_type(oteryn_gameplay_domain::domain::condition::ConditionType::Invisible);
@@ -770,7 +1086,9 @@ impl ChannelActorCarrier {
         // boundary, after every replay/staleness check above -- an idempotent replay of a
         // retained occurrence returns earlier and never reaches here, so it can never
         // double-attribute. D141 sets the attacker's high-water mark from the same commit.
-        if let Some(attacker) = attacker {
+        if let Some(attacker) = attacker.filter(|_| !source_damage_canceled) {
+            // The original command receipt still completes and deduplicates a
+            // canceled source event. It creates no zero-damage contributor.
             // Codex P1: credit the HP actually removed, not the requested/planned damage -- an
             // overkill hit (e.g. 100 damage on 1 remaining HP) must only ever credit the 1 HP
             // that could actually be removed (`next <= health` always, since `damage > 0`).
@@ -790,6 +1108,12 @@ impl ChannelActorCarrier {
                     }
                     _ => attacker.high_water(),
                 }),
+                now_ms,
+            );
+            damage_contributors.record_source_player(
+                attacker.character,
+                u64::try_from(removed).unwrap_or(u64::MAX),
+                source,
                 now_ms,
             );
         }

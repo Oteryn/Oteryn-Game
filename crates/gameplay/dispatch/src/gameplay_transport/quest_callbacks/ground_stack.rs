@@ -44,6 +44,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &map.facts,
             &callback.world_requirements,
             index,
+            &|id| ground.ground_ordinal(id),
         )
     }
 }
@@ -53,6 +54,7 @@ fn requirements_match(
     facts: &impl MapFacts,
     requirements: &[WorldRequirement],
     index: &ItemDefinitionIndex,
+    ordinal: &impl Fn(&[u8; 16]) -> Option<u64>,
 ) -> bool {
     let mut required = Vec::new();
     let mut observed = Vec::new();
@@ -60,7 +62,7 @@ fn requirements_match(
         let Some(stack) = &requirement.ground_stack else {
             continue;
         };
-        let Some(snapshot) = snapshot(overlay, facts, tile(requirement.position)) else {
+        let Some(snapshot) = snapshot(overlay, facts, tile(requirement.position), ordinal) else {
             return false;
         };
         let mut items = Vec::with_capacity(stack.len());
@@ -87,6 +89,7 @@ fn snapshot(
     overlay: &ChannelOverlay,
     facts: &impl MapFacts,
     pos: TilePos,
+    ordinal: &impl Fn(&[u8; 16]) -> Option<u64>,
 ) -> Option<GroundStackSnapshot> {
     // Base roots are distinct from portable custody. A movable base root or a
     // volatile overlay object cannot stand in for a durable Item instance.
@@ -104,7 +107,7 @@ fn snapshot(
         return None;
     }
     let mut entries = Vec::new();
-    for (ordinal, entry) in view.added().iter().enumerate() {
+    for entry in view.added() {
         let AddedItem::Ground(ground) = entry.item() else {
             return None;
         };
@@ -120,9 +123,8 @@ fn snapshot(
             item: ground.definition.production_key.clone(),
             revision: ground.definition.revision_ref.clone(),
             quantity: ground.quantity,
-            // ChannelOverlay preserves the Ground owner's append order. Its
-            // internal entry ids are not the persisted sequence values.
-            ordinal: u64::try_from(ordinal).ok()?.checked_add(1)?,
+            // Preserve the durable append ordinal retained by the custody owner.
+            ordinal: ordinal(&ground.item_instance_id)?,
         });
     }
     Some(GroundStackSnapshot {
@@ -160,6 +162,7 @@ fn matches(
         overlay,
         facts,
         &[WorldRequirement {
+            ground: None,
             position: Position {
                 x: pos.x,
                 y: pos.y,
@@ -169,6 +172,7 @@ fn matches(
             ground_stack: Some(required.to_vec()),
         }],
         &index,
+        &|id| Some(u64::from(id[0])),
     )
 }
 

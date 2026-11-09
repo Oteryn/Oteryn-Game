@@ -106,6 +106,7 @@ impl Scene {
                 }
             }
         }
+        self.draw_personal_map_marks(&map)?;
         if map.floor == self.minimap_floor {
             let cell = TileCoord::new(
                 self.own.x.saturating_sub(map.x).div_euclid(map.zoom) + 15,

@@ -1,0 +1,165 @@
+{
+  "schema": "SRX3_INSTANCE_CORPSE_RACE_SCOPE_PROOF/v1",
+  "migration": "apps/game-server/migrations/1421_instance_corpse_race_scope.sql",
+  "migration_sha256": "69d99602f589d12170af6c74978f7f1a52c96cdf11177e61eda16682b4c84ccd",
+  "before_actual_native_case": {
+    "filter": "boss_activity_postgres_real_instance_native_boss_death_and_reward_custody",
+    "actual": "Deferred",
+    "expected": "Drained",
+    "duration_seconds": 85.668,
+    "log": "/tmp/srx3-final-focused-pg50.log"
+  },
+  "sql_guard_probe": {
+    "total_seconds": 0.085562,
+    "exit_code": 0,
+    "transaction": "BEGIN/ROLLBACK; no persistent SQL",
+    "lock_timeout_seconds": 2,
+    "statement_timeout_seconds": 8,
+    "source": "pg_get_functiondef(game_corpse_source_race_admit()) from retained native failure database",
+    "old_guard_confirmed": "exactly one g.channel_id=r.death_channel_id; no scope-kind equality",
+    "fixture": "Production trigger body copied unchanged except function name and three source relation names redirected to TEMP projections of their actual database row types. FK/other owner triggers are not exercised; no native MINT journey claim.",
+    "forward_migration": "actual1421 applied to production function inside transaction before cloning resulting body for matrix",
+    "acl_search_path_owner_preserved": true,
+    "log_sha256": "96c17dd722bf10314ed4d66db729f57675947f400af3e288d0e6ee64be17e4eb",
+    "cases": [
+      {
+        "case": "OLD_channel_positive",
+        "expected_admitted": true,
+        "actual_admitted": true,
+        "duration_ms": 6.656,
+        "rejection_sqlstate": null
+      },
+      {
+        "case": "OLD_instance_NULL_channels_rejected",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 2.751,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_channel_positive",
+        "expected_admitted": true,
+        "actual_admitted": true,
+        "duration_ms": 4.006,
+        "rejection_sqlstate": null
+      },
+      {
+        "case": "NEW_instance_positive",
+        "expected_admitted": true,
+        "actual_admitted": true,
+        "duration_ms": 3.326,
+        "rejection_sqlstate": null
+      },
+      {
+        "case": "NEW_unsupported_scope3",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 3.412,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_cross_kind_reject",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 3.157,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_instance_UUID_mismatch",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 3.064,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_channel_UUID_mismatch",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 2.907,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_instance_channel_alias_reject",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 2.252,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_channel_instance_alias_reject",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 2.047,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_instance_NULL_identity_reject",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 2.039,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_channel_NULL_identity_reject",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.99,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_generation_mismatch",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 2.059,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_historical_XID_reject",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.784,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_world_mismatch",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.92,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_identity_mismatch",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.746,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_wrong_purpose",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.936,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_wrong_draw",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.265,
+        "rejection_sqlstate": "23514"
+      },
+      {
+        "case": "NEW_quantity_mismatch",
+        "expected_admitted": false,
+        "actual_admitted": false,
+        "duration_ms": 1.377,
+        "rejection_sqlstate": "23514"
+      }
+    ]
+  },
+  "limits": [
+    "Full native failed case must rerun with the fresh executable/embedded migration.",
+    "Scope-provenance acceptance does not grant Instance skinning eligibility.",
+    "No runtime/Rust fixture/assertion was changed."
+  ]
+}

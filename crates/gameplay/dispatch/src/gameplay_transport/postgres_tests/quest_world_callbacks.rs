@@ -11,6 +11,12 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == "engitem-native-seal-paint" {
+        return oteryn_gameplay_quests::quest::ice_seal_paint::callbacks().map_err(|e| -> Box<dyn std::error::Error> {e.into()})?.into_iter().next().ok_or_else(||"seal callback".into());
+    }
+    if name == "engitem-targuna-selected-tool" {
+        return oteryn_gameplay_quests::quest::targuna_ram::callback().map_err(Into::into);
+    }
     if name == "triangle-tower-lever" {
         // This source-equivalent adapter is deliberately absent from production:
         // the established Triangle callback owns the physical lever selector.
@@ -353,6 +359,11 @@ pub(super) fn world(
             }),
         });
     }
+    if callback.key.starts_with(oteryn_gameplay_quests::quest::ice_seal_paint::PREFIX) {
+        let middle=u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {key:"oteryn:terrain.tibia.i4734".into(),family:bundle::Family::Terrain,id:middle,terrain:Some(bundle::Terrain {kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None,blocks_projectile:None})});
+        cells.entry((trigger.floor,trigger.x,trigger.y)).or_default().push(sector::Item {palette:middle,depth:0,attrs:Default::default()});
+    }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
         .or_default()
@@ -365,6 +376,16 @@ pub(super) fn world(
                 ..Default::default()
             },
         });
+    if callback.key.starts_with("oteryn:quest-callback/unnatural-selection-dance-") {
+        for (x,y,floor) in oteryn_gameplay_quests::quest::unnatural_selection::TILES {
+            if (x,y,floor)==(trigger.x,trigger.y,trigger.floor) { continue; }
+            cells.entry((floor,x,y)).or_default().push(sector::Item {
+                palette:1, depth:0, attrs:sector::Attrs {
+                    action:callback.selector.action, ..Default::default()
+                }
+            });
+        }
+    }
     if callback.key == "oteryn:quest-callback/l6-shared-gate-fixture" {
         let (action, _, _) =
             super::l6_shared_gates::spec(callback.selector.unique.ok_or("gate UID")?)?;

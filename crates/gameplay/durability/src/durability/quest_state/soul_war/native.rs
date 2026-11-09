@@ -1,5 +1,5 @@
-use super::*;
 use super::super::super::character_progression::numeric_u64;
+use super::*;
 use crate::domain::CharacterId;
 use oteryn_gameplay_quests::quest::soul_war::{
     SoulWarBoss, qualifies_for_taint_experience, taint_experience,
@@ -10,10 +10,14 @@ use sqlx::{Postgres, Transaction};
 /// stamina modifiers and before accepting any boss-death taint. Its transaction
 /// subsequently checks and locks that receiver's supplied CharacterRevision.
 pub async fn soul_war_experience_in_transaction(
-    tx: &mut Transaction<'_, Postgres>, character: CharacterId,
-    creature: &str, raw_experience: i64,
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    creature: &str,
+    raw_experience: i64,
 ) -> Result<i64> {
-    if !qualifies_for_taint_experience(creature) { return Ok(raw_experience); }
+    if !qualifies_for_taint_experience(creature) {
+        return Ok(raw_experience);
+    }
     let state = storage::load(tx, character).await?;
     let now = storage::database_time(tx).await?;
     taint_experience(raw_experience, state.taint_count(now))
@@ -25,39 +29,60 @@ pub async fn soul_war_experience_in_transaction(
 /// The caller holds all member revision slots and the original gameplay fences,
 /// and invokes this after XP writes but before the same transaction commits.
 pub async fn apply_soul_war_kill_in_transaction(
-    tx: &mut Transaction<'_, Postgres>, node: &NodeIncarnationProof,
-    death_key: &[u8], creature: &str,
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    death_key: &[u8],
+    creature: &str,
     participants: &[(CurrentCharacterGameplayFence, bool)],
 ) -> Result<()> {
-    let Some(boss) = SoulWarBoss::from_creature(creature) else { return Ok(()); };
+    let Some(boss) = SoulWarBoss::from_creature(creature) else {
+        return Ok(());
+    };
     if participants.is_empty() || participants.len() > 50 {
         return Err(CharacterProgressionError::InvalidInput);
     }
     let transition = SoulWarTransition::BossDefeated(boss);
     let binding = storage::binding(transition)?;
+    let (death_scope, death_generation) =
+        crate::durability::party_kill_xp::decoded_death_scope(death_key)
+            .ok_or(CharacterProgressionError::AuthorityRejected)?;
     for (fence, dealt_damage) in participants {
-        if !dealt_damage { continue; }
-        if super::super::super::party_kill_xp::decoded_death_scope(death_key)
-            != Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
+        if !dealt_damage {
+            continue;
+        }
+        // Tagged Instance53 and legacy Channel52 remain disjoint even when
+        // their UUID bytes coincide. This DATA comparison grants no death:
+        // same-xact native receipt, membership and all Character fences follow.
+        if death_scope != fence.runtime_scope
+            || death_generation != fence.scope_ownership_generation.get()
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let source_matches: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND d.creature_key=$2 AND m.character_id=encode($3,'hex')::uuid)")
             .bind(death_key).bind(creature).bind(fence.character_id.as_bytes().as_slice())
             .fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
-        if !source_matches { return Err(CharacterProgressionError::AuthorityRejected); }
+        if !source_matches {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         let occurrence: [u8; 32] = Sha256::new()
             .chain_update(b"oteryn:soul-war:death:v1")
-            .chain_update(death_key).chain_update(fence.character_id.as_bytes())
-            .finalize().into();
+            .chain_update(death_key)
+            .chain_update(fence.character_id.as_bytes())
+            .finalize()
+            .into();
         storage::lock_occurrence(tx, fence.character_id, &occurrence).await?;
-        if storage::replay(tx, fence.character_id, &occurrence, &binding).await??.is_some() {
+        if storage::replay(tx, fence.character_id, &occurrence, &binding)
+            .await??
+            .is_some()
+        {
             continue;
         }
         let native_member: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND d.created_xact_id=pg_current_xact_id() AND d.creature_key=$2 AND m.character_id=encode($3,'hex')::uuid)")
             .bind(death_key).bind(creature).bind(fence.character_id.as_bytes().as_slice())
             .fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
-        if !native_member { return Err(CharacterProgressionError::AuthorityRejected); }
+        if !native_member {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         // XP and forge dust can advance this root within the already-fenced
         // transaction. Rebind only its revision, then recheck session, connection,
         // Character lease, scope generation and node incarnation unchanged.
@@ -65,10 +90,20 @@ pub async fn apply_soul_war_kill_in_transaction(
             .bind(fence.character_id.as_bytes().as_slice())
             .fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
         let mut current = *fence;
-        current.expected_character_revision = CharacterRevision::new(numeric_u64(&row, "character_revision")?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        current.expected_character_revision =
+            CharacterRevision::new(numeric_u64(&row, "character_revision")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
         let root = assert_gameplay_fence(tx, &current, node).await??;
-        storage::commit_locked(tx, fence.character_id, &root, &occurrence, transition, Some(death_key), None).await?;
+        storage::commit_locked(
+            tx,
+            fence.character_id,
+            &root,
+            &occurrence,
+            transition,
+            Some(death_key),
+            None,
+        )
+        .await?;
     }
     Ok(())
 }

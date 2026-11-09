@@ -75,6 +75,9 @@ use crate::foundation::{ChannelId, CommandRef, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+mod flat_crate;
+pub use flat_crate::FlatMapCrateProof;
+
 type Result<T> = std::result::Result<T, MapItemMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, MapItemMintError>, DurabilityError>;
 const INTENT_BINDING_VERSION: u8 = 1;
@@ -114,6 +117,8 @@ impl MapItemPlacement {
 /// the fenced runtime scope's.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapItemMintRequest {
+    /// Optional server-qualified, scope-bound flat empty-crate source.
+    pub flat_crate: Option<FlatMapCrateProof>,
     /// Captured key action number; committed with its original source identity.
     pub key_number: Option<u16>,
     /// The actual FND-02 CommandRef of the player's pickup.
@@ -283,11 +288,40 @@ pub fn plan_map_item_mint(
     quantity: u32,
     already_taken: bool,
 ) -> std::result::Result<(), MapItemMintRefusal> {
+    plan_admission(item, quantity, already_taken, false)
+}
+
+/// The existing MINT owner admits only the exact scope of an empty-crate witness.
+pub fn plan_map_item_mint_request(
+    request: &MapItemMintRequest,
+    already_taken: bool,
+) -> std::result::Result<(), MapItemMintRefusal> {
+    if already_taken {
+        return Err(MapItemMintRefusal::AlreadyTaken);
+    }
+    let allowed = request.flat_crate.as_ref().is_some_and(|proof| {
+        proof.matches(
+            &request.item,
+            request.base_bundle_digest,
+            request.placement_key,
+        )
+    });
+    if request.flat_crate.is_some() && !allowed {
+        return Err(MapItemMintRefusal::ItemIsContainer);
+    }
+    plan_admission(&request.item, request.quantity, false, allowed)
+}
+fn plan_admission(
+    item: &ItemDefinitionFacts,
+    quantity: u32,
+    already_taken: bool,
+    flat_crate: bool,
+) -> std::result::Result<(), MapItemMintRefusal> {
     use MapItemMintRefusal as Refusal;
     if already_taken {
         return Err(Refusal::AlreadyTaken);
     }
-    if item.container_capacity.is_some() {
+    if item.container_capacity.is_some() && !flat_crate {
         return Err(Refusal::ItemIsContainer);
     }
     let (maximum, _) = stack_maximum(item.stack).map_err(from_stack_refusal)?;
@@ -827,10 +861,7 @@ async fn admit(
     .bind(request.reset_epoch.to_string())
     .fetch_one(&mut **tx)
     .await?;
-    Ok(
-        plan_map_item_mint(&request.item, request.quantity, already_taken)
-            .map_err(MapItemMintError::Refused),
-    )
+    Ok(plan_map_item_mint_request(request, already_taken).map_err(MapItemMintError::Refused))
 }
 
 /// The Ground line the MINT places: the entry's own tile, in the fenced
@@ -1253,6 +1284,9 @@ fn intent_binding(
     ] {
         push_text(&mut canonical, revision.as_bytes()).map_err(from_transfer_input)?;
     }
+    if let Some(proof) = &request.flat_crate {
+        proof.append_binding(&mut canonical);
+    }
     // Preserve historical non-key intent bindings.
     if let Some(number) = request.key_number {
         canonical.extend_from_slice(b"captured-map-key-v1");
@@ -1302,6 +1336,7 @@ mod tests {
     fn request() -> MapItemMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         MapItemMintRequest {
+            flat_crate: None,
             key_number: None,
             command: CommandRef::new(
                 GameSessionId::decode(&id(50)).expect("session"),
@@ -1379,14 +1414,17 @@ mod tests {
         assert!(validate_request(&request()).is_ok());
         let invalid = [
             MapItemMintRequest {
+                flat_crate: None,
                 quantity: 0,
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 placement_key: 64,
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 item: ItemDefinitionFacts {
                     weight: None,
                     definition: TypedDefinitionRef {
@@ -1398,6 +1436,7 @@ mod tests {
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 content_revision: String::new(),
                 ..request()
             },
@@ -1424,26 +1463,32 @@ mod tests {
         assert_eq!(base[0], INTENT_BINDING_VERSION);
         let changed = [
             MapItemMintRequest {
+                flat_crate: None,
                 base_bundle_digest: [0xac; 32],
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 placement_key: key(-7, 32000, 31000, 3),
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 reset_epoch: 1,
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 quantity: 4,
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 item: facts("fixture:map.other", COIN),
                 ..request()
             },
             MapItemMintRequest {
+                flat_crate: None,
                 content_revision: "content-2".into(),
                 ..request()
             },

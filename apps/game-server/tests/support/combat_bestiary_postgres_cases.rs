@@ -70,8 +70,8 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
 fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInput<2>> {
     let context = context();
     Ok(CreatureDeathRewardInput {
-        corpse_item: definition("ItemType", "fixture:bestiary.item.rat_corpse"),
-        loot_table_ref: definition("LootTable", "fixture:bestiary.loot.rat"),
+        corpse_item: Some(definition("ItemType", "fixture:bestiary.item.rat_corpse")),
+        loot_table_ref: Some(definition("LootTable", "fixture:bestiary.loot.rat")),
         loot_table: LootTableDefinition {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
             entries: vec![LootTableEntry {
@@ -213,7 +213,11 @@ fn a_credited_death_counts_its_race_once_after_loot_and_xp_and_replays() -> Test
             )
             .await
             .map_err(debug)?;
-            outcome.rewards.loot.map_err(debug)?;
+            outcome
+                .rewards
+                .loot
+                .map_err(debug)?
+                .ok_or("fixture physical corpse")?;
             let xp = outcome.rewards.xp.map_err(debug)?;
             let kill = match outcome.bestiary.map_err(debug)? {
                 CombatBestiaryOutcome::Recorded(kill) => kill,
@@ -300,7 +304,16 @@ fn a_non_bestiary_or_uncredited_death_counts_nothing_and_never_touches_loot_or_x
             )
             .await
             .map_err(debug)?;
-            assert_eq!(outcome.rewards.loot.map_err(debug)?.entries.len(), 1);
+            assert_eq!(
+                outcome
+                    .rewards
+                    .loot
+                    .map_err(debug)?
+                    .ok_or("fixture physical corpse")?
+                    .entries
+                    .len(),
+                1
+            );
             assert!(matches!(
                 outcome.rewards.xp,
                 Ok(ExperienceCommitOutcome::Committed(_))
@@ -376,7 +389,11 @@ fn a_failed_xp_award_neither_blocks_the_kill_nor_is_rolled_back_by_it() -> TestR
                 CharacterProgressionError::Calculation(_)
             ))
         ));
-        outcome.rewards.loot.map_err(debug)?;
+        outcome
+            .rewards
+            .loot
+            .map_err(debug)?
+            .ok_or("fixture physical corpse")?;
         let Ok(CombatBestiaryOutcome::Recorded(BestiaryKillOutcome::Committed(kill))) =
             outcome.bestiary
         else {

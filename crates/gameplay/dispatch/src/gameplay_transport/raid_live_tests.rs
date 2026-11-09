@@ -39,6 +39,7 @@ fn status(wave: u16, entry: u16, index: u16, alive: bool) -> TestResult<RaidCrea
         outcome: RaidSpawnOutcome::Placed(actor),
         alive,
         boss: true,
+        replacement_pending: false,
     })
 }
 
@@ -337,5 +338,21 @@ fn raids_global_completed_compaction_prunes_only_its_firing_and_keeps_retry_unti
     assert!(progress.terminal(firing).is_some());
     progress.retries.remove(&firing);
     assert_eq!(progress.retry_work(), vec![(other, key)]);
+    Ok(())
+}
+
+#[test]
+fn qn5_intermediate_body_death_cannot_finish_a_pending_source_continuation() -> TestResult {
+    let mut selected = selected_boss()?;
+    let &(wave, entry) = selected.boss_entries.first().ok_or("boss entry")?;
+    selected.definition.waves[usize::from(wave)].entries[usize::from(entry)].count = 1;
+    let mut body = status(wave, entry, 0, false)?;
+    body.replacement_pending = true;
+    assert_eq!(dead_bosses(&selected, &[body]), None);
+    body.replacement_pending = false;
+    assert_eq!(
+        dead_bosses(&selected, &[body]),
+        Some(vec![creature_identity(body.identity)])
+    );
     Ok(())
 }

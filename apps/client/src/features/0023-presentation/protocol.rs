@@ -9,7 +9,9 @@ pub(in crate::play) fn presentation(
     for event in delta.value {
         if matches!(
             event.kind,
-            PresentationEventKind::ValueText { .. } | PresentationEventKind::MagicEffect { .. }
+            PresentationEventKind::ValueText { .. }
+                | PresentationEventKind::MagicEffect { .. }
+                | PresentationEventKind::Missile { .. }
         ) {
             absorb_visuals(&mut pushed.visuals, [event.kind]);
         }

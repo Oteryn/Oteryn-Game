@@ -306,7 +306,11 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         arc_allocation_request::<Mutex<()>>()?,
         arc_allocation_request::<RootICharge>()?,
         arc_allocation_request::<RootBudgetAdapter>()?,
-        arc_allocation_request::<std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>>()?,
+        arc_allocation_request::<
+            std::sync::OnceLock<
+                Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>,
+            >,
+        >()?,
     ] {
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
@@ -853,7 +857,9 @@ pub struct DurabilityRoot {
     /// budget. `None` when the root was built without them.
     relay_options: Option<Box<PgConnectOptions>>,
     _root_i_charge: Option<Arc<RootICharge>>,
-    pub(super) staff_trust: Arc<std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>>,
+    pub(super) staff_trust: Arc<
+        std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>,
+    >,
 }
 
 /// While it lives, every semantic pass of its root runs under the boot deadline

@@ -13,10 +13,12 @@ use oteryn_gameplay_quests::quest::{
 };
 use std::sync::Arc;
 
-const KEY: &str = "oteryn:quest-reward/questpc5-map-fixture";
+const KEY: &str = "oteryn:quest-reward/targuna/sterling-mark-treasure";
 const QUEST: &str = "oteryn:quest.targuna_quest";
 const MARKED: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/treasure_marked";
+const MISSION: &str =
+    "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/mission";
 const MORLA: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/morla_done";
 const READY: &str = "oteryn:quest-transition/questpc5-marker-fixture/morla-ready";
@@ -76,24 +78,22 @@ async fn counts(h: &f::Harness) -> f::TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_map_marks),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?)
 }
 async fn exercise(h: &f::Harness) -> f::TestResult {
-    let callback: RewardCallback = serde_json::from_value(serde_json::json!({
-        "key":KEY,"quest":QUEST,"npc":"oteryn:npc.sterling","keywords":["yes"],"topic":2,"next_topic":0,
-        "storage":[{"track":MARKED,"minimum":0,"maximum":0,"set":1}],
-        "requires":[{"track":MORLA,"minimum":1,"maximum":1}],
-        "take":[],"give":null,"outfit":null,"achievement":null,"reply":["Marked."],"sources":["M16 source-equivalent fixture"],
-        "map_mark":{"position":{"x":31948,"y":31924,"floor":-7},"kind":"cross","text":"Treasure"}
-    }))?;
+    let callback: RewardCallback = reward_callbacks::load()
+        .map_err(f::debug)?
+        .into_iter()
+        .find(|row| row.key == KEY)
+        .ok_or("production Sterling map callback")?;
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             "content-1",
-            [MARKED, MORLA]
+            [MISSION, MARKED, MORLA]
                 .into_iter()
                 .map(|key| QuestTrack {
                     key: key.into(),
                     quest: QUEST.into(),
-                    initial: 0,
+                    initial: if key == MISSION { 3 } else { 0 },
                     min: 0,
-                    max: 1,
+                    max: if key == MISSION { 5 } else { 1 },
                 })
                 .collect(),
             vec![

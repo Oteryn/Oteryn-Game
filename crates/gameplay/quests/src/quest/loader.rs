@@ -240,7 +240,11 @@ fn admit_native_bindings(
         }
     }
     lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 
@@ -248,6 +252,10 @@ pub(super) fn lower_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    lowered.catalogue =
+        super::world_change_journals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -271,13 +279,15 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::rotten_blood::area_icons::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::soul_war::source_items::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
-        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::source_deaths::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -294,6 +304,7 @@ pub(super) fn lower_embedded_quest_state(
     for callback in super::fire_feathered_native::callbacks()
         .into_iter()
         .chain(super::shared_world_progress::callbacks())
+        .chain(super::last_creep_native::callbacks().map_err(QuestLoadError::Json)?)
     {
         for storage in callback.storage {
             lowered

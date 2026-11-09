@@ -38,7 +38,7 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
-mod catalogue;
+pub(super) mod catalogue;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
@@ -53,15 +53,18 @@ pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
+mod magic_effects;
 mod marriage;
 mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
 mod reward_callbacks;
+mod reward_facts;
 mod seasonal;
 mod service_context;
 mod session_transfer;
+mod stag_beaks;
 mod threatened_dreams;
 mod wrath_sleeping_dragon;
 #[path = "yeo.rs"]
@@ -684,6 +687,11 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    let stag_beaks = match stag_beaks::preview(admission, actor, command, &intent).await {
+        Ok(proof) => proof,
+        Err(()) => return unknown(),
+    };
+    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -799,7 +807,52 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+    let inventory = if reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime) {
+        let context = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        );
+        drop(runtime);
+        let Some(facts) = reward_facts::read(admission, command).await else {
+            return rejected();
+        };
+        runtime = admission.runtime.lock().await;
+        if !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+            || admission
+                .states
+                .spell_states
+                .try_lock()
+                .map_or(true, |states| states.is_dead(actor))
+        {
+            return rejected();
+        }
+        if admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        ) != context
+        {
+            return rejected();
+        }
+        Some(facts)
+    } else {
+        None
+    };
+    if let Some(step) = reward_callbacks::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        inventory.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
@@ -855,8 +908,16 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
+    if let Some(step) = catalogue::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        &ordinary,
+        stag_beaks.as_ref(),
+        source_appearance.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;

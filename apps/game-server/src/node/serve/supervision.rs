@@ -378,6 +378,13 @@ async fn timed_npc_loop(
             Ok(present) => timed_npcs.set_brutus_present(present),
             Err(_) => event("event=cake_brutus_projection state=retry"),
         }
+        if timed_npcs
+            .refresh_event_contacts(root, world)
+            .await
+            .is_err()
+        {
+            event("event=npc_event_presence state=retry");
+        }
         let mut runtime = runtime.lock().await;
         if let Some(Err(error)) = timed_npcs.tick(&mut runtime, now) {
             event(&format!(

@@ -111,12 +111,12 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     let weights = PremiumWeights(Weights(native));
     let admission = QuestRewardAdmission {
-        creature_use: None,
         native,
         weights: &weights,
         fee_payment: None,
         actor_conditions: None,
         carried_use: None,
+        creature_use: None,
         peer_use: None,
     };
     let context = crate::durability::quest_world_callback::QuestWorldContext {

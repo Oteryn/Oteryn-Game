@@ -560,6 +560,7 @@ fn gathering_scenario(
             )
             .ok_or("ice definition")?;
             let request = crate::durability::map_item_mint::MapItemMintRequest {
+                flat_crate: None,
                 key_number: None,
                 command: crate::foundation::CommandRef::new(
                     admitted.game_session_id,

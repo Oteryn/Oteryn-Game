@@ -145,6 +145,11 @@ message ClientCommand {
   bytes payload = 4;
 
   reserved 5 to 15;
+  // Current GameSession UUID v7. Required after an activity scope barrier on
+  // this socket, before command IDs restart at 1. Legacy cold connections may
+  // omit it; a provided identifier must always match the admitted session.
+  optional bytes game_session_id = 16;
+
 }
 
 enum CommandStatus {

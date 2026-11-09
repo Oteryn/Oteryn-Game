@@ -34,13 +34,13 @@ impl<S: SessionStream> Session<S> {
     pub(super) async fn adopt_activity_snapshot(
         &mut self,
         body: &[u8],
-    ) -> Result<bool, SessionError> {
+    ) -> Result<Option<SessionError>, SessionError> {
         let domains = decode_snapshot_body(body)?;
         let Some(row) = domains
             .iter()
             .find(|row| row.domain_id == STATE_DOMAIN_ACTIVITY_SCOPE)
         else {
-            return Ok(false);
+            return Ok(None);
         };
         if domains.len() != 1
             || row.snapshot_type != 1
@@ -50,9 +50,7 @@ impl<S: SessionStream> Session<S> {
             return Err(invalid());
         }
         let receipt = decode_activity_scope(row.payload).map_err(|_| invalid())?;
-        if receipt.source_session != *self.join_snapshot.game_session_id.as_bytes()
-            || receipt.selection != self.selected_capabilities
-        {
+        if receipt.source_session != *self.join_snapshot.game_session_id.as_bytes() {
             return Err(invalid());
         }
         let frame = bounded(
@@ -69,7 +67,29 @@ impl<S: SessionStream> Session<S> {
             return Err(invalid());
         }
         let begin = decode_snapshot_begin(envelope.payload())?;
-        if begin.target_server_sequence != 0 {
+        if begin.target_server_sequence == 1 && !receipt.requires_ack {
+            let world = match receipt.scope {
+                activity_scope::ActivityScope::Channel { world, .. }
+                | activity_scope::ActivityScope::Instance { world, .. } => world,
+            };
+            if world != self.world_id
+                || row.revision != 1
+                || receipt
+                    .selection
+                    .iter()
+                    .any(|capability| !self.selected_capabilities.contains(capability))
+            {
+                return Err(invalid());
+            }
+            let source_sequence = self
+                .last_server_sequence
+                .checked_add(1)
+                .ok_or(FoundationProtocolError::ServerSequenceGap)?;
+            self.finish_activity_scope(receipt, source_sequence, begin, row.payload)
+                .await?;
+            return Ok(Some(SessionError::ScopeChanged));
+        }
+        if begin.target_server_sequence != 0 || receipt.selection != self.selected_capabilities {
             return Err(invalid());
         }
         let destination = snapshot_transfer::read_body(
@@ -142,7 +162,7 @@ impl<S: SessionStream> Session<S> {
         self.vip_presence = None;
         self.last_received = tokio::time::Instant::now();
         self.events.extend(events);
-        Ok(true)
+        Ok(Some(SessionError::ActivityScopeChanged))
     }
 
     /// The barrier's full fresh snapshot is validated before acknowledging it. Until the

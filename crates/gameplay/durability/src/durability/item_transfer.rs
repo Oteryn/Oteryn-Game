@@ -1332,15 +1332,17 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let vocation = vocation
         .as_deref()
         .unwrap_or(super::character_build::NO_VOCATION);
-    let base = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let base =
+        oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
     let wheel = if weights.wheel_premium_current(account) {
         super::character_wheel::read_capacity_bonus_in_transaction(tx, character, vocation, level)
             .await?
     } else {
         0
     };
-    base.checked_add(wheel).ok_or(DurabilityError::InvalidStoredState)
+    base.checked_add(wheel)
+        .ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn load_source(

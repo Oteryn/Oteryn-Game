@@ -569,3 +569,104 @@ fn qn5_raid_body_handoff_capacity_refusal_restores_original_position_and_identit
     );
     Ok(())
 }
+
+#[test]
+fn qn5_raid_death_handoff_requires_actual_zero_hp_and_keeps_boss_alive() -> TestResult {
+    let mut owner = runtime(1)?;
+    let base = spec(&owner, true)?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    let stamp = checked(owner.issue_owner_work())?;
+    let first = checked(owner.realize_raid_spawn(
+        stamp,
+        identity(0),
+        &base,
+        Some(position(100)),
+        |_, _| Some(true),
+    ))?;
+    let RaidSpawnOutcome::Placed(actor) = first.outcome else {
+        return Err("initial boss".into());
+    };
+    let live = checked(owner.companion_snapshot(actor))?;
+    assert!(
+        owner
+            .replace_dead_raid_body(stamp, identity(0), &live, &next)
+            .is_err()
+    );
+    checked(owner.commit_monster_lab_damage(actor, b"feroxa-intermediate-death", 20))?;
+    let dead = checked(owner.companion_snapshot_including_dead(actor))?;
+    assert_eq!(dead.health, 0);
+    assert!(
+        owner
+            .replace_raid_body(stamp, identity(0), &dead, &next)
+            .is_err()
+    );
+    let result = owner.replace_dead_raid_body(stamp, identity(0), &dead, &next);
+    assert!(
+        result.is_ok(),
+        "the actual intermediate death must admit its successor: {result:?}"
+    );
+    let next_actor = checked(result)?;
+    assert_ne!(next_actor, actor);
+    assert_eq!(checked(owner.companion_snapshot(next_actor))?.health, 40);
+    assert!(checked(owner.raid_creatures(id(4)))?[0].alive);
+    assert!(
+        owner
+            .replace_dead_raid_body(stamp, identity(0), &dead, &next)
+            .is_err(),
+        "a replay of the old death cannot create another successor"
+    );
+    assert_eq!(checked(owner.finish_raid_run(stamp, id(4), true))?, 1);
+    assert!(!owner.contains_live_creature(next_actor));
+    Ok(())
+}
+
+#[test]
+fn qn5_raid_pending_death_survives_capacity_refusal_and_deadline_cleanup() -> TestResult {
+    let mut owner = runtime(1)?;
+    let base = spec(&owner, true)?;
+    let stamp = checked(owner.issue_owner_work())?;
+    for index in 0..8 {
+        checked(owner.realize_raid_spawn(
+            stamp,
+            identity(index),
+            &base,
+            Some(position(100 + i32::from(index))),
+            |_, _| Some(true),
+        ))?;
+    }
+    let RaidSpawnOutcome::Placed(actor) = checked(owner.raid_creatures(id(4)))?[0].outcome else {
+        return Err("initial boss".into());
+    };
+    checked(owner.commit_monster_lab_damage(actor, b"pending-feroxa-death", 20))?;
+    let dead = checked(owner.companion_snapshot_including_dead(actor))?;
+    let next = checked(NativeRaidSpawnSpec::qualified(
+        "creature:rat.form",
+        "test-1",
+        owner.content_pin().server_artifact_digest(),
+        true,
+    ))?;
+    assert!(
+        owner
+            .replace_dead_raid_body(stamp, identity(0), &dead, &next)
+            .is_err()
+    );
+    let status = checked(owner.raid_creatures(id(4)))?[0];
+    assert!(!status.alive && status.replacement_pending);
+    assert_eq!(
+        checked(owner.companion_snapshot_including_dead(actor))?,
+        dead
+    );
+    assert_eq!(
+        checked(owner.finish_raid_run(stamp, id(4), true))?,
+        8,
+        "expiry removes the pending dead body as well as its seven live peers"
+    );
+    assert!(owner.companion_snapshot_including_dead(actor).is_err());
+    assert_eq!(checked(owner.acknowledge_raid_run_end(stamp, id(4)))?, 8);
+    Ok(())
+}

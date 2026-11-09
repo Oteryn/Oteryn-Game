@@ -121,7 +121,7 @@ pub(super) fn install_route(
                 motion.stop();
                 return;
             }
-            let steps: Vec<_> = route
+            let steps: Option<Vec<_>> = route
                 .into_iter()
                 .map(|step| {
                     let node = match step {
@@ -129,14 +129,18 @@ pub(super) fn install_route(
                         crate::movement::CardinalStep::East => 1,
                         crate::movement::CardinalStep::South => 2,
                         crate::movement::CardinalStep::West => 3,
-                        crate::movement::CardinalStep::NorthEast => 0,
-                        crate::movement::CardinalStep::SouthEast => 2,
-                        crate::movement::CardinalStep::SouthWest => 2,
-                        crate::movement::CardinalStep::NorthWest => 0,
+                        crate::movement::CardinalStep::NorthEast
+                        | crate::movement::CardinalStep::SouthEast
+                        | crate::movement::CardinalStep::SouthWest
+                        | crate::movement::CardinalStep::NorthWest => return None,
                     };
-                    RouteStep::new(node, 1)
+                    Some(RouteStep::new(node, 1))
                 })
                 .collect();
+            let Some(steps) = steps else {
+                motion.stop();
+                return;
+            };
             motion.route = build_path_proposal(
                 PathRequest::new(provenance(runtime, actor, motion), entry.sequence, 1, work),
                 &steps,

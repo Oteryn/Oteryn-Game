@@ -42,6 +42,22 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key) {
             intent.boss_key = canonical;
         }
+        let outburst = super::outburst_entry::is_outburst(&intent.boss_key);
+        if outburst {
+            intent.boss_key = "oteryn:boss.outburst".into();
+        }
+        let primal = super::primal_entry::is_primal(&intent.boss_key);
+        if primal {
+            intent.boss_key = super::primal_entry::BOSS.into();
+        }
+        let soul_war = super::soul_war_entry::is_soul_war(&intent.boss_key);
+        if let Some(canonical) = soul_war {
+            intent.boss_key = canonical.into();
+        }
+        let rotten = super::rotten_blood_entry::is_rotten_blood(&intent.boss_key);
+        if let Some(canonical) = rotten {
+            intent.boss_key = canonical.into();
+        }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,
             admitted.item_fence,
@@ -92,6 +108,39 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             }
         };
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && outburst
+            && let Err(reason) = self
+                .prepare_outburst_catalogue(admitted, &intent.boss_key)
+                .await
+        {
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && primal
+            && let Err(reason) = self.prepare_primal_catalogue(admitted).await
+        {
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && soul_war.is_some()
+            && let Err(reason) = self
+                .prepare_soul_war_catalogue(admitted, &intent.boss_key)
+                .await
+        {
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && rotten.is_some()
+            && let Err(reason) = self
+                .prepare_rotten_blood_catalogue(admitted, &intent.boss_key)
+                .await
+        {
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !primal
+            && soul_war.is_none()
+            && rotten.is_none()
             && super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some()
         {
             match self.endgame_boss_entry(admitted, payload).await {
@@ -153,7 +202,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
             return refusal(ActivityRefusal::AuthorityRejected);
         }
-        if let Err(reason) = self.ensure_activity_template_runtime(&definition).await {
+        let template_ready = if outburst {
+            self.ensure_outburst_definition_runtime(&definition).await
+        } else if rotten.is_some() {
+            self.ensure_rotten_blood_definition_runtime(&definition)
+                .await
+        } else if soul_war.is_some() {
+            self.ensure_soul_war_definition_runtime(&definition).await
+        } else {
+            self.ensure_activity_template_runtime(&definition).await
+        };
+        if let Err(reason) = template_ready {
             return refusal(reason);
         }
         let loaded = self.activity_runtimes.activity_owners().ok()?;
@@ -214,7 +273,24 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             let runtime = self.runtime.lock().await;
             let census = runtime.positioned_actor_census().ok()?;
+            let partition = if definition.boss_key == "oteryn:boss.bakragore" {
+                let cell = runtime.read_actor_position(actor).ok()?.position();
+                let ordinal = definition
+                    .lever_positions
+                    .iter()
+                    .position(|p| (p.x, p.y, p.floor) == (cell.x, cell.y, cell.floor));
+                let Some(ordinal) = ordinal else {
+                    return refusal(ActivityRefusal::Position);
+                };
+                Some(ordinal / 5)
+            } else {
+                None
+            };
             for (ordinal, lever_cell) in definition.lever_positions.iter().enumerate() {
+                if partition.is_some_and(|selected| ordinal / 5 != selected) {
+                    continue;
+                }
+
                 let mut occupants = census.iter().filter(|(_, position, session)| {
                     let cell = position.position();
                     session.is_some()
@@ -320,7 +396,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             time_limit_ms: definition.policy.time_limit_ms,
             participants,
         };
-        self.boss_activity_result(self.enter_native_activity(request, true).await.ok()?)
+        use sha2::Digest;
+        let wire_binding = sha2::Sha256::digest(payload).into();
+        self.boss_activity_result(
+            self.enter_native_boss_activity(request, wire_binding)
+                .await
+                .ok()?,
+        )
     }
 
     fn boss_activity_result(&self, result: NativeActivityOutcome) -> BossActivityResult {
@@ -367,3 +449,6 @@ fn refusal(reason: ActivityRefusal) -> BossActivityResult {
         wire::encode_boss_activity_reply(&wire::BossActivityReply::Refused(reason)).ok()?,
     ))
 }
+
+#[path = "boss_activity/source_extra.rs"]
+mod source_extra;

@@ -55,8 +55,9 @@ Read through `world_region_codec.py` over the committed placement shards:
 Kormarak's exact treasure tile already contains top-level ordinal1, appearance
 4240 (`dead human`), beside wooden coffin appearances2474/2475. The Mastermind
 marker tile contains ordinal1, appearance2473 (`box`). No source UID is needed
-for either binding. The archival Magic Sword coordinates currently have no
-native tile; that selected restoration requires authored geometry/placements.
+for either binding. The archival Magic Sword coordinates contain nonwalkable mountain filler
+(appearance1128); the selected restoration replaces unowned filler with authored
+floors, chests and a paired entrance.
 The Valley shrine map markers identify approaches, so each final shrine's floor
 and exact object must be selected and checked independently.
 
@@ -67,3 +68,24 @@ historical Fandom MediaWiki revision API returned402. No protection bypass was
 attempted. The public retained sources above and existing pinned wiki records
 provide independent working routes. Full response bodies are scratch evidence,
 not redistributed in this repository.
+
+
+Chosen placement restoration: Magic Sword restores a 4 by 3 dirt-floor room
+at x32410–32413/y32245–32247/z15, two chests at32411/32412,32247,
+and a paired trapdoor/ladder at32411,32246,z14/z15. These replace unowned
+mountain filler; the existing walkable z14 approach is preserved.
+The three Valley shrines use existing empty walkable platforms at
+32463,31092,5;33187,31191,6;33836,31677,4 (northwest of Tefrit).
+The final shrine is33082,32670,3. This is an explicit Oteryn placement choice,
+not a claim that archived wiki prose contains these exact modern coordinates.
+Yellow Spell Wand uses the explicitly restored successor appearance3073:
+https://github.com/hampusborgos/rme/blob/da7152ec94031c76732e997de4624c8f1c010225/data/740/items.xml#L3653
+and the same server2189 wand in860 items.xml, with860 OTB client3073.
+The three fragments retain50336/50337/50338, and quest statue50335;
+weights9/3/3/3oz come from pinned Wiki revisions1143035/1143038/1143037/1143036
+in imports/tibiawiki/facts/items-stats.json, independently checked against
+admitted15.30 appearance flags. Ordinary Guardian Statue8009 is not substituted.
+Valley access gates use Ice Islands mission06=8 (Cure the Dogs) and
+New Frontier mission08=2 (Offer You Can't Refuse), source:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ztiss.lua#L90
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua#L2

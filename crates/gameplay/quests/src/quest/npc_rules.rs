@@ -481,9 +481,10 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
-                let supplemental = Self::from_json_documents(&[include_str!(
-                    "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                )])?;
+                let supplemental = Self::from_json_documents(&[
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
+                ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
@@ -492,6 +493,10 @@ impl NpcRuleCatalog {
                             == Some("oteryn:quest-npc-program.first-dragon-calendar")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.citizen-source-sagas")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.citizen-source-sagas")
                         || matches!(
@@ -505,7 +510,11 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_djinn_war_efreet_faction"
+                                | "oteryn:quest.the_djinn_war_marid_faction"
+                                | "oteryn:quest.the_white_raven_monastery_quest"
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
@@ -545,6 +554,67 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         evaluate::plan(self, input, &BTreeMap::new(), true)
+    }
+
+    /// Inventory recipes own exact carried items and UTC calendar facts. Other
+    /// effect/guard families remain refused until their durable owner participates.
+    pub fn plan_inventory(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        if self
+            .programs
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == input.npc && rule.trigger == input.trigger)
+            .flat_map(|rule| &rule.guards)
+            .any(|guard| {
+                !matches!(
+                    guard,
+                    NpcRuleGuard::Storage { .. }
+                        | NpcRuleGuard::StorageTime { .. }
+                        | NpcRuleGuard::Item { .. }
+                        | NpcRuleGuard::CalendarMonth { .. }
+                )
+            })
+        {
+            return Err(NpcRuleError::MissingNativeResolution(
+                "inventory recipe guard".into(),
+            ));
+        }
+        let plan = evaluate::plan(self, input, &BTreeMap::new(), false)?;
+        if plan.as_ref().is_some_and(|plan| {
+            (plan.track_changes.is_empty()
+                && plan.effects.iter().any(|effect| {
+                    matches!(
+                        effect,
+                        NpcRuleEffect::TakeItem { .. } | NpcRuleEffect::GiveItem { .. }
+                    )
+                }))
+                || plan.effects.iter().any(|effect| {
+                    !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                            | NpcRuleEffect::TakeItem { .. }
+                            | NpcRuleEffect::GiveItem { .. }
+                    ) && !matches!(effect, NpcRuleEffect::Achievement { name }
+                        if plan.quest == crate::quest::hot_cuisine::QUEST && name == "Culinary Master")
+                })
+                || plan
+                    .effects
+                    .iter()
+                    .filter(|effect| matches!(effect, NpcRuleEffect::GiveItem { .. }))
+                    .count()
+                    > 1
+        }) {
+            return Err(NpcRuleError::MissingNativeResolution(
+                "inventory recipe effect".into(),
+            ));
+        }
+        Ok(plan)
     }
 
     /// Tereban's fixed material hand-ins have an inventory and quest-XP owner.
@@ -618,6 +688,7 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     let mut legacy = catalogue.npc_legacy.clone();
+    let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
         if quest != "oteryn:quest.the_order_of_the_stag_quest"
@@ -709,6 +780,8 @@ pub(super) fn extend(
     )
     .map_err(|e| format!("{e:?}"))?;
     active.npc_legacy = legacy;
+    active.predecessors = predecessors;
+    completion_predecessors::register(&mut active, source)?;
     Ok(active)
 }
 
@@ -761,3 +834,8 @@ mod draconia_source_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod engnpc_finales;
+
+mod completion_predecessors;

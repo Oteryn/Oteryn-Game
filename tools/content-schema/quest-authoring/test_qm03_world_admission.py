@@ -1,8 +1,10 @@
 """M03 binds live admission to retained native entrance objects."""
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import qengine_access
 
@@ -16,8 +18,9 @@ class WorldAdmissionTests(unittest.TestCase):
 
     def test_entrances_require_the_chosen_live_facts(self):
         callbacks = self.callbacks()
-        self.assertEqual(len(callbacks), 2)
-        anniversary, pits = callbacks
+        self.assertEqual(len(callbacks), 10)
+        anniversary = next(c for c in callbacks if c['key'].endswith('/anniversary'))
+        pits = next(c for c in callbacks if c['key'].endswith('/pits'))
         self.assertEqual(anniversary['quest'], 'oteryn:quest.25_years_of_tibia_quest')
         self.assertEqual(anniversary['admission'], dict(regular_blessings=True, promotion=True, premium=True))
         self.assertEqual(anniversary['minimum_level'], 20)
@@ -33,11 +36,57 @@ class WorldAdmissionTests(unittest.TestCase):
             self.assertTrue(callback['storage'][0]['at_least'])
             self.assertEqual(callback['storage'][0]['set'], 1)
 
+    def test_every_source_time_machine_tile_has_the_same_live_guards(self):
+        rows = [c for c in self.callbacks() if c['quest'] == 'oteryn:quest.25_years_of_tibia_quest']
+        self.assertEqual(len(rows), 9)
+        self.assertEqual({(c['selector']['position']['x'], c['selector']['position']['y']) for c in rows},
+                         {(x, y) for x in range(32429, 32432) for y in range(32164, 32167)})
+        primary = next(c for c in rows if c['key'].endswith('/anniversary'))
+        for row in rows:
+            for field in ('admission', 'minimum_level', 'teleport', 'storage', 'requires_world_admission'):
+                self.assertEqual(row[field], primary[field])
+
+    def write_requirements(self, root, extra=None, promotion=True):
+        directory = Path(root) / 'content/quests/definitions'
+        directory.mkdir(parents=True)
+        for shard, quest, requirements in (
+            ('quests-00200-00299.json', '25_years_of_tibia_quest',
+             dict(min_level=21, premium=True,
+                  prerequisites=['All regular blessings'] + (['Vocation promotion'] if promotion else []))),
+            ('quests-00000-00099.json', 'the_pits_of_inferno_quest',
+             dict(min_level=80, premium=False, prerequisites=['Rope', 'Shovel'])),
+        ):
+            if extra and quest == '25_years_of_tibia_quest':
+                requirements['prerequisites'].append(extra)
+            definition = dict(identity=dict(key='oteryn:quest.' + quest),
+                              oteryn_recipe=dict(payload=dict(recipe=dict(requirements=requirements))))
+            (directory / shard).write_text(json.dumps(dict(records=[dict(definition=definition)])))
+
+    def test_canonical_requirements_drive_the_emitted_admission(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.write_requirements(directory, promotion=False)
+            with mock.patch.object(qengine_access, 'ROOT', Path(directory)), \
+                    mock.patch('questpc_explore_bindings.callbacks', return_value=[]):
+                rows = self.callbacks()
+            anniversary = next(c for c in rows if c['key'].endswith('/anniversary'))
+            pits = next(c for c in rows if c['key'].endswith('/pits'))
+            self.assertEqual(anniversary['minimum_level'], 21)
+            self.assertEqual(anniversary['admission'], dict(regular_blessings=True, premium=True))
+            self.assertIsNone(pits.get('admission'))
+
+    def test_unknown_canonical_admission_requirement_is_not_dropped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.write_requirements(directory, extra='Unbound prerequisite')
+            with mock.patch.object(qengine_access, 'ROOT', Path(directory)), \
+                    mock.patch('questpc_explore_bindings.callbacks', return_value=[]):
+                with self.assertRaisesRegex(ValueError, 'unsupported prerequisite'):
+                    self.callbacks()
+
     def test_selectors_exist_in_retained_native_map(self):
         sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
         import world_region_codec as codec
         callbacks = self.callbacks()
-        self.assertEqual(len(callbacks), 2)
+        self.assertEqual(len(callbacks), 10)
         palette = json.loads((ROOT / 'content/world/placements/index.json').read_text())['palette']
         for callback in callbacks:
             native = callback['selector']['native']

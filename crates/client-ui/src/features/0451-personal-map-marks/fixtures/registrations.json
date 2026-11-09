@@ -1,0 +1,26 @@
+[
+  {
+    "mechanic": "0451-personal-map-marks",
+    "kind": "panels",
+    "id": "0451-personal-map-marks-caption",
+    "status": "supported",
+    "entry": "view.rs::caption"
+  },
+  {
+    "mechanic": "0451-personal-map-marks",
+    "kind": "handlers",
+    "id": "0451-personal-map-marks-query",
+    "status": "supported",
+    "commands": [
+      733
+    ],
+    "direction": "client_to_server",
+    "capability": 451,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "input": "Automatic bounded read-only refresh; no marker mutation command.",
+      "settings": "Uses the existing minimap visibility and navigation settings.",
+      "state": "Confirmed facts live in the app minimap state, separately from editable local markers."
+    }
+  }
+]

@@ -5,6 +5,10 @@
 //! 04b83b51 + Crystal 9f5a72c6). The separate key-4601 claim opens access;
 //! it is not a fourth treasure chest. This source slice does not certify the
 //! chosen recipe's full travel or switch sequence.
+//!
+//! Behemoth's four required treasure claims use kv/behemothquest1..4 from
+//! the same pinned capture, at (33294..33298,31658,13). The first is a
+//! container reward; its existing native contents and grant owner are retained.
 use super::*;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +17,9 @@ use serde::{Deserialize, Serialize};
 pub struct CompletionSet {
     /// Every group is required; one track in each group suffices.
     pub groups: Vec<Vec<String>>,
+    /// These members can advance only from their own durable once-claim MINT.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub mint_only: bool,
 }
 
 impl QuestStateCatalogue {
@@ -41,11 +48,131 @@ impl QuestStateCatalogue {
     }
 }
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+fn parse(text: &str) -> Result<BTreeMap<String, CompletionSet>, String> {
+    let rules: BTreeMap<String, CompletionSet> =
+        serde_json::from_str(text).map_err(|e| e.to_string())?;
+    if rules.len() > super::QUESTSTATE0_RL_05 {
+        return Err("completion owner bounds".into());
+    }
+    let mut seen = BTreeSet::new();
+    let mut claims = BTreeSet::new();
+    for (quest, rule) in &rules {
+        if !super::valid_quest_key(quest) || rule.groups.is_empty() || rule.groups.len() > 32 {
+            return Err("completion set bounds".into());
+        }
+        for group in &rule.groups {
+            if group.is_empty() || group.len() > 32 {
+                return Err("completion group bounds".into());
+            }
+            for marker in group {
+                if !super::valid_quest_key(&format!("oteryn:quest-progress/{marker}/claimed"))
+                    || !seen.insert(marker.clone())
+                    || !claims.insert(marker.replace('/', "."))
+                {
+                    return Err("invalid or duplicate completion member".into());
+                }
+            }
+        }
+    }
+    Ok(rules)
+}
+fn declarations() -> Result<&'static BTreeMap<String, CompletionSet>, String> {
+    static RULES: std::sync::OnceLock<Result<BTreeMap<String, CompletionSet>, String>> =
+        std::sync::OnceLock::new();
+    RULES
+        .get_or_init(|| {
+            parse(include_str!(
+                "../../../../../content/quests/claim-sets.json"
+            ))
+        })
+        .as_ref()
+        .map_err(Clone::clone)
+}
+fn member_transition(
+    quest: &str,
+    marker: &str,
+    rule: &CompletionSet,
+) -> Result<QuestTransition, String> {
+    let effect = if rule.mint_only {
+        QuestEffectKind::SetWithBinding {
+            value: 1,
+            binding: Sha256::new()
+                .chain_update(b"oteryn:mint-completion-member/v1")
+                .chain_update(
+                    serde_json::to_vec(&(quest, marker, rule)).map_err(|e| e.to_string())?,
+                )
+                .finalize()
+                .into(),
+        }
+    } else {
+        QuestEffectKind::Set(1)
+    };
+    Ok(QuestTransition {
+        key: format!("oteryn:quest-transition/{marker}/chest"),
+        quest: quest.into(),
+        effects: vec![QuestEffect {
+            track: format!("oteryn:quest-progress/{marker}/claimed"),
+            from: QuestComparison::Eq(0),
+            effect,
+        }],
+        completes: false,
+        experience: None,
+        world_change: None,
+    })
+}
+struct MintMember {
+    claim: String,
+    transition: QuestTransition,
+}
+fn mint_members() -> Result<&'static [MintMember], String> {
+    static MEMBERS: std::sync::OnceLock<Result<Vec<MintMember>, String>> =
+        std::sync::OnceLock::new();
+    MEMBERS
+        .get_or_init(|| {
+            let mut members = Vec::new();
+            for (quest, rule) in declarations()? {
+                if rule.mint_only {
+                    for marker in rule.groups.iter().flatten() {
+                        members.push(MintMember {
+                            claim: format!("oteryn:reward-claim.{}", marker.replace('/', ".")),
+                            transition: member_transition(quest, marker, rule)?,
+                        });
+                    }
+                }
+            }
+            Ok(members)
+        })
+        .as_ref()
+        .map(Vec::as_slice)
+        .map_err(Clone::clone)
+}
+pub fn mint_transitions() -> Result<Vec<QuestTransition>, String> {
+    Ok(mint_members()?
+        .iter()
+        .map(|m| m.transition.clone())
+        .collect())
+}
+/// Only the shared canonical claim binder selects this immutable obligation.
+pub fn mint_transition_for_claim(claim: &str) -> Result<Option<&'static str>, String> {
+    Ok(mint_members()?
+        .iter()
+        .find(|m| m.claim == claim)
+        .map(|m| m.transition.key.as_str()))
+}
+/// The durable writer requires the matching MINT receipt, including on cold recovery.
+pub fn required_mint_claim(transition: &str) -> Result<Option<&'static str>, String> {
+    Ok(mint_members()?
+        .iter()
+        .find(|m| m.transition.key == transition)
+        .map(|m| m.claim.as_str()))
+}
+
 pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let declarations: BTreeMap<String, CompletionSet> = serde_json::from_str(include_str!(
-        "../../../../../content/quests/claim-sets.json"
-    ))
-    .map_err(|e| e.to_string())?;
+    let declarations = declarations()?;
     let mut tracks: Vec<_> = base.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = base.transitions.values().cloned().collect();
     let mut rules = BTreeMap::new();
@@ -55,7 +182,7 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
         }
         let mut seen = BTreeSet::new();
         let mut groups = Vec::new();
-        for group in declaration.groups {
+        for group in &declaration.groups {
             if group.is_empty() || group.len() > 32 {
                 return Err("completion group bounds".into());
             }
@@ -72,23 +199,18 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
                     min: 0,
                     max: 1,
                 });
-                transitions.push(QuestTransition {
-                    key: format!("oteryn:quest-transition/{marker}/chest"),
-                    quest: quest.clone(),
-                    effects: vec![QuestEffect {
-                        track: key.clone(),
-                        from: QuestComparison::Eq(0),
-                        effect: QuestEffectKind::Set(1),
-                    }],
-                    completes: false,
-                    experience: None,
-                    world_change: None,
-                });
+                transitions.push(member_transition(quest, marker, declaration)?);
                 keys.push(key);
             }
             groups.push(keys);
         }
-        rules.insert(quest, CompletionSet { groups });
+        rules.insert(
+            quest.clone(),
+            CompletionSet {
+                groups,
+                mint_only: declaration.mint_only,
+            },
+        );
     }
     let mut catalogue =
         QuestStateCatalogue::new(base.content_revision.clone(), tracks, transitions)
@@ -139,6 +261,7 @@ mod tests {
         catalogue.completion_sets.insert(
             quest.into(),
             CompletionSet {
+                mint_only: false,
                 groups: vec![
                     vec![keys[0].clone(), keys[1].clone()],
                     vec![keys[2].clone()],
@@ -184,6 +307,44 @@ mod tests {
                 stored.insert(change.track, change.after);
             }
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod mint_authority_tests {
+    use super::*;
+    #[test]
+    fn engclaim_m35_completion_document_refuses_missing_duplicate_and_unknown_members() {
+        for text in [
+            r#"{"oteryn:quest.test":{"groups":[],"mint_only":true}}"#,
+            r#"{"oteryn:quest.test":{"groups":[[]],"mint_only":true}}"#,
+            r#"{"oteryn:quest.test":{"groups":[["kv/a"],["kv/a"]],"mint_only":true}}"#,
+            r#"{"oteryn:quest.test":{"groups":[["kv/a.b"],["kv/a/b"]],"mint_only":true}}"#,
+            r#"{"oteryn:quest.test":{"groups":[["kv/a"]],"invented_grant":true}}"#,
+            r#"{"oteryn:quest.test":{"groups":[["bad marker"]],"mint_only":true}}"#,
+        ] {
+            assert!(parse(text).is_err(), "{text}");
+        }
+    }
+    #[test]
+    fn engclaim_m35_required_members_are_bound_without_changing_legacy_encoding()
+    -> Result<(), String> {
+        let mut rule = CompletionSet {
+            groups: vec![vec!["kv/a".into()], vec!["kv/b".into()]],
+            mint_only: false,
+        };
+        assert_eq!(
+            serde_json::to_string(&rule).map_err(|e| e.to_string())?,
+            r#"{"groups":[["kv/a"],["kv/b"]]}"#
+        );
+        rule.mint_only = true;
+        let original = member_transition("oteryn:quest.test", "kv/a", &rule)?;
+        rule.groups[1].push("kv/c".into());
+        assert_ne!(
+            member_transition("oteryn:quest.test", "kv/a", &rule)?,
+            original
+        );
         Ok(())
     }
 }

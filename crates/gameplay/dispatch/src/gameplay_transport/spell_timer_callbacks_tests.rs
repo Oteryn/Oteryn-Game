@@ -151,8 +151,16 @@ fn rewards() -> CreatureRewardTable {
         "fixture:rat",
         Ok(CreatureRewardRow {
             xp_amount: ExactI64::new(5),
-            corpse_item: LootDefinitionRef::new("Item", "oteryn:item.corpse", "definition-r1"),
-            loot_table_ref: LootDefinitionRef::new("Loot", "oteryn:loot.rat", "definition-r1"),
+            corpse_item: Some(LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.corpse",
+                "definition-r1",
+            )),
+            loot_table_ref: Some(LootDefinitionRef::new(
+                "Loot",
+                "oteryn:loot.rat",
+                "definition-r1",
+            )),
             loot_table: LootTableDefinition {
                 algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
                 entries: vec![],

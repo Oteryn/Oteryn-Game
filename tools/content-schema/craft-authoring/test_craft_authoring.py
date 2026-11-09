@@ -14,7 +14,18 @@ class CraftAuthoringTests(unittest.TestCase):
         first = craft.outputs()
         self.assertEqual(craft.canonical_bytes(first), craft.canonical_bytes(craft.outputs()))
         self.assertEqual(craft.content_command(check=True), 0)
-        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 129)
+        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 130)
+
+    def test_m22_talisman_captures_whole_target_and_only_one_used_unit(self):
+        row = next(r['recipe'] for r in craft.build()
+                   if r['identity']['key'].endswith('.tainted-antler-talisman'))
+        self.assertEqual(row['input_item'], craft.item(3736))
+        self.assertEqual(row['operands'][0], craft.operand('USED', 3736, 'CONSUME'))
+        target = row['operands'][1]
+        self.assertEqual(target['item_id'], craft.item(10297))
+        self.assertTrue(target['capture_target_stack'])
+        self.assertEqual(target['output_item_id'], craft.item(22008))
+        self.assertEqual(row['outputs'], craft.fixed())
 
     def test_source_snapshot_substitution_is_rejected(self):
         with mock.patch.object(craft, "SNAPSHOT_SHA256", "0" * 64):

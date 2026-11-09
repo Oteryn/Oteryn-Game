@@ -1,0 +1,1211 @@
+{
+  "records": [
+    {
+      "creature_key": "oteryn:creature.goshnar_s_greed",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "e9c11a26a1c18f42947b8a5b37ba9dcea8ca5b0322dfb2fc047c3d2e33b07ad0",
+      "on_death": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "0a869103c09426c6e8816de9b028bc63908681c1",
+      "parent_path": "data-global/monster/quests/soul_war/goshnars_greed.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.greedbeast",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "c2500e72847896d8db62eda89a2674e4a7443cd9b4db9a98d35b46443477d158",
+      "on_death": [
+        {
+          "line": 23,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "db7076d57104de6d16127771ff08edabba9b4102",
+      "parent_path": "data-global/monster/quests/soul_war/greedbeast.lua",
+      "registered_events": [
+        {
+          "line": 23,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.soulsnatcher",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "d852709c53c6099051b8009bb88a23283ece21ed9ebb9b905b43f59b5e63155b",
+      "on_death": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "faa819dec6e1b6905f87b5642e454468667dde8f",
+      "parent_path": "data-global/monster/quests/soul_war/soulsnatcher.lua",
+      "registered_events": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.weak_soul",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "91d0f2a5f5d82a63f72e71260f0d1d70571e2d6a41b3e07a71c136fede4414a6",
+      "on_death": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "b7150efa00f3340240944ffd8233d3e81e2d7a6a",
+      "parent_path": "data-global/monster/quests/soul_war/weak_soul.lua",
+      "registered_events": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.strong_soul",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "c8baadc57f446ab7ba972ae4d93ce92c3eba1e3b4db4c47c6c2b19d81b48cbbb",
+      "on_death": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "ae3615b6eb4937947e5601477a0d8514225bddd7",
+      "parent_path": "data-global/monster/quests/soul_war/strong_soul.lua",
+      "registered_events": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.powerful_soul",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "86e23cad8a54abc6dde2adb32644ddb29f6d6efab8ee137c36f86acd7bfb5f2e",
+      "on_death": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "0ece602eab5b0592925c70b1c96e632c7857154f",
+      "parent_path": "data-global/monster/quests/soul_war/powerful_soul.lua",
+      "registered_events": [
+        {
+          "line": 24,
+          "name": "GreedMonsterDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.soul_sphere",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "6a986338ec930ed02bbecc6da59230a2355b50a11091b59f4489f1210b2ef2dc",
+      "on_death": [
+        {
+          "line": 57,
+          "name": "SoulSphereDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "093eb9e9f2210dd6a93d131bd73b5ab9846e72c6",
+      "parent_path": "data-global/monster/quests/soul_war/soul_sphere.lua",
+      "registered_events": [
+        {
+          "line": 57,
+          "name": "SoulSphereDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_malice",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "2394dae37135ca27aea35459e7879e95a566a5c7b68bd5491e9bc625f84839ec",
+      "on_death": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "1cda5185bbe9caa2b3b01bc9fc47320005d80305",
+      "parent_path": "data-global/monster/quests/soul_war/goshnars_malice.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 18,
+          "name": "Goshnar's-Malice",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.soul_cage",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "3514e57d4d6cc95a8e51f98495d8d56095c5a9a50f24f2b9cc1254da44f59490",
+      "on_death": [
+        {
+          "line": 39,
+          "name": "SoulCageDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "c6c65b32547d17405f5b0e7c8084100e6a46db94",
+      "parent_path": "data-global/monster/quests/soul_war/soul_cage.lua",
+      "registered_events": [
+        {
+          "line": 39,
+          "name": "SoulCageDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 40,
+          "name": "SoulCageHealthChange",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.dreadful_harvester",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "c716b140a444501bc741047c6828c30b7ca7e76f519b0efc2833a0045ba6ae01",
+      "on_death": [],
+      "parent_git_blob": "64bd8a98008ff3adca6f05eeb2bc8a21d1d6532e",
+      "parent_path": "data-global/monster/quests/soul_war/dreadful_harvester.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.mirror_image",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "9500f7a6b157c5bf84ac68536811e37a4bb36542b7d0cd47db4c15ea36495af4",
+      "on_death": [],
+      "parent_git_blob": "651287501e7d336eba121c7bc11c6b9c3d5e5380",
+      "parent_path": "data-global/monster/quests/soul_war/mirror_image.lua",
+      "registered_events": [
+        {
+          "line": 110,
+          "name": "MirrorImageTransform",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.druid_s_apparition",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "bbf27786e559fedd1bada108bd606b67895a97df43d6f01e5c61fe98ec1732d1",
+      "on_death": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "86a05484e5d11810ebcdffa80d7880841723528e",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/druid's_apparition.lua",
+      "registered_events": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.knight_s_apparition",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "cdc4fe5f4092fd5ff2a2477de10f3a279cbd87955fc4f9fba5a6fa2f3d2eefda",
+      "on_death": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "f763e9b4dfe4d8e79d69969f9bdc789f797fdb7f",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/knight's_apparition.lua",
+      "registered_events": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.monk_s_apparition",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "924385010008a9157872d090073bb7dd237b8eafe67440b8b81eac3f2651c1a7",
+      "on_death": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "1bfde26b27078347f9da50f077dd7064b81d5b98",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/monk's_apparition.lua",
+      "registered_events": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.paladin_s_apparition",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "426a0931a9dfa70ab7c79771e6ad8132e5e38d23dd93369e4e53ba4040d1c1d3",
+      "on_death": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "2dc7a49555c2ac869d543f81516fe96341bc149d",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/paladin's_apparition.lua",
+      "registered_events": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.sorcerer_s_apparition",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "0230f650868a4201f49bdd2084615f270faa24fda0b5263c36c134e630146caa",
+      "on_death": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "6ba156f5b701baf279feb1ccfc50f6b568487028",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/sorcerer's_apparition.lua",
+      "registered_events": [
+        {
+          "line": 37,
+          "name": "MirroredNightmareBossAccess",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.bony_sea_devil",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "90ba74bd1eee3c552ca62fe4a6c82d9bd0477d0b824e8278ace4e429ce20f540",
+      "on_death": [],
+      "parent_git_blob": "d6e4bcfcafe29b5f73251d86305d64b406cc915d",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/bony_sea_devil.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.brachiodemon",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "64f42388be10a378704ff7615e6ed0bd3f716fa8f8a383acb46f4ea418771186",
+      "on_death": [],
+      "parent_git_blob": "a76c9f40ee96911f7c07fc574ce0fe4b6efb7d75",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/brachiodemon.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.branchy_crawler",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "01e75364bae48acb69344a84304beeab41ebf2528a9f336b6b87675251e0f302",
+      "on_death": [],
+      "parent_git_blob": "f5dccd47eb5f43a8d62ae3e7a95e3964b113f2ca",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/branchy_crawler.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.cloak_of_terror",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "2fca76ce2fcdc41edb87152d385ceefb8bb6bfd34f995eb0e7fc3a62add3b78b",
+      "on_death": [],
+      "parent_git_blob": "ff25ab1f058c2f514dccb273b0ac135a148ed510",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/cloak_of_terror.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 31,
+          "name": "CloakOfTerrorHealthLoss",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.many_faces",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "5334231a5065d6a6ee0d98b0fbd92583339e83f94a3233a0fed8da90fc94e97c",
+      "on_death": [],
+      "parent_git_blob": "f60b999dbce5ad947e0c14d4132d0587e55de2c8",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/many_faces.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.spiteful_spitter",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "9fc035a2a17539121fc7cd5564970cd1ba5da7ac10a7a10998a0081c1cb31d3a",
+      "on_death": [],
+      "parent_git_blob": "d51b52e2e84f46e3653d7854e5726463d188dc98",
+      "parent_path": "data-global/monster/quests/soul_war/spiteful_spitter.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.capricious_phantom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "eb969c6d5ee5ba34d7f664a09e2bd2a9c63692cd15f0c6d4726fff2352a82b0f",
+      "on_death": [],
+      "parent_git_blob": "da2bbec208ede2059e2984b69af2c94bb0f89718",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/capricious_phantom.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.distorted_phantom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "2b192bb6905f04d54e465850a35eaf4f6413c109f7239fd2e040f449141fde06",
+      "on_death": [],
+      "parent_git_blob": "2b01546672d5fe1ace8258878ff22abf5e55c93e",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/distorted_phantom.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.courage_leech",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "b526c138a084017fca13cfa41ecab7621e7655e3677183fe71a46200efa864f0",
+      "on_death": [],
+      "parent_git_blob": "615e463784123c4a2b162074d2279233b4343781",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/courage_leech.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.vibrant_phantom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "988d04119545416af195a5e190db07a3de6545215d60329195ae7a8e176df591",
+      "on_death": [],
+      "parent_git_blob": "305ae9adb50130e0e4f73dc80c6c16f0914ef737",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/vibrant_phantom.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.infernal_demon",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "e7e579673b88242d8563c493083b2e27714f9342fb0c82b5eee902a4f7412ee1",
+      "on_death": [],
+      "parent_git_blob": "0ec107c192ff1ad82b9f55516d5a7e748ceae2c8",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/infernal_demon.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.infernal_phantom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "2062ac9de68efee63b56d21b5712999c35f0ea2dae79c40c6a793edca757cc32",
+      "on_death": [],
+      "parent_git_blob": "d6e6583ef648166204959719d787beb1d61bab5c",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/infernal_phantom.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.mould_phantom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "baf5b67c2f1dcdc0803e6161c8c9d7491d3cb0f7dfe47121f3cf645c6b13bcf3",
+      "on_death": [],
+      "parent_git_blob": "c23412d0bd096538ce8d15043ffb4fabd21eb1f2",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/mould_phantom.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.rotten_golem",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "a74071a649dcdeaba636b4fb22815ac3b5eed76be07f0c62ce8cac73ddeb56a5",
+      "on_death": [],
+      "parent_git_blob": "f5d5808b05c14e6f94b060509a79ea7642de9d21",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/rotten_golem.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.turbulent_elemental",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "f0e18007ae9886f6793c97ac44c318bc23e99453a6cab703067a1dd0779f08f2",
+      "on_death": [],
+      "parent_git_blob": "6d7804f2207b14ef597a4b664c5b9e6d2198cbdc",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/turbulent_elemental.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "FourthTaintBossesPrepareDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_spite",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "50c678660280d5f455b97e90a8c976bc022f3120b616f64b7e799fddf6264fd0",
+      "on_death": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "1daedf2a19178f90bc7f6ea6041f8f3fd1bacef6",
+      "parent_path": "data-global/monster/quests/soul_war/goshnars_spite.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.weeping_soul",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "900ca29c72c64313b0315ce9fd42d93bc6c933d039a68b3d0c5dfb67e2ba2f04",
+      "on_death": [],
+      "parent_git_blob": "0c45ec43fff093054def38605a66bc2b90de727f",
+      "parent_path": "data-global/monster/quests/soul_war/weeping_soul.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_hatred",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "2f5c8e63b499eddca333e39421b651607f2992afbf13873dc5e0fdd498511fef",
+      "on_death": [
+        {
+          "line": 18,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 1,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "cc6652eb9d91f15b5d182206076bb216c0e43bf9",
+      "parent_path": "data-global/monster/quests/soul_war/goshnars_hatred.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "GoshnarsHatredBuff",
+          "registration_index": 0
+        },
+        {
+          "line": 18,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.ashes_of_burning_hatred",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "510556a30b9b9b40c3035f1ef3c99733b8d38c317efe52121d749598308168f6",
+      "on_death": [],
+      "parent_git_blob": "995cad06686c3a5115a884f272a895d1a2333918",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/ashes_of_burning_hatred.lua",
+      "registered_events": [
+        {
+          "line": 31,
+          "name": "BurningChangeForm",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.spark_of_burning_hatred",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "3efe638127dfd357f32b23a89f33e33941603ddf45f9f65b7b78e3688462a0e9",
+      "on_death": [],
+      "parent_git_blob": "c3c9d73749f95caa7bc2e360b86d9a532ce6bc1c",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/spark_of_burning_hatred.lua",
+      "registered_events": [
+        {
+          "line": 31,
+          "name": "BurningChangeForm",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.flame_of_burning_hatred",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "36b43b904f5d4691440643b7ac0c08562b41617cb3105f3206f7c9de02445e2d",
+      "on_death": [],
+      "parent_git_blob": "20f253efa7960ecdc25afdf8d3ee4f8d05afde9c",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/flame_of_burning_hatred.lua",
+      "registered_events": [
+        {
+          "line": 31,
+          "name": "BurningChangeForm",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.blaze_of_burning_hatred",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "e4df78075fa078cecc890dafef68d4ce35b545ea998b12dd9f5512e531b42283",
+      "on_death": [],
+      "parent_git_blob": "77b619b70eaf259e124c00e5f7e3951684a74088",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/blaze_of_burning_hatred.lua",
+      "registered_events": [
+        {
+          "line": 31,
+          "name": "BurningChangeForm",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.symbol_of_hatred",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "3aad1b0b58dbdfd7d39bd7020b960da7cddee736c0c9325a7ee065818d053643",
+      "on_death": [],
+      "parent_git_blob": "1f94f6998c21e5bcac24ce0ee2d8ab8cc2bddc4d",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/symbol_of_hatred.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_cruelty",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "5f71c7170921b537ba5bd397b70805c00cb3457da97f08a915383b3e34e58c0b",
+      "on_death": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "468e6a312e446b328771641f2feb7878f101e8b8",
+      "parent_path": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+      "registered_events": [
+        {
+          "line": 17,
+          "name": "SoulWarBossesDeath",
+          "registration_index": 0
+        },
+        {
+          "line": 18,
+          "name": "GoshnarsCrueltyBuff",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.a_greedy_eye",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "f150dd14d1f90bfaa9377117556cef93b035e9dfedad47bc66c7b6a1f8a6a4ee",
+      "on_death": [],
+      "parent_git_blob": "8622ed190a2da9030ce1eb111029581d88a0d922",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.poor_soul",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "58c2d9b4e5d2989f5e927c5d5248e77d3e414d3a70b0103cb6eb2dee32da978d",
+      "on_death": [],
+      "parent_git_blob": "0596c7516d3add732f4617f8ad8f3c8f3accc413",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/poor_soul.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_megalomania_purple",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "cd2cae8c72c72a46064ec084c5db1684a4223e4150d3670f154a88bcb2589b2b",
+      "on_death": [],
+      "parent_git_blob": "7781c66516d83abbe905496cff7c3caf44902bf9",
+      "parent_path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "registered_events": [
+        {
+          "line": 30,
+          "name": "GoshnarsHatredBuff",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_megalomania_green",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "073de955c173424a484e50885c2538749725fd437e3499382d3dc6c5199761f0",
+      "on_death": [
+        {
+          "line": 36,
+          "name": "MegalomaniaDeath",
+          "registration_index": 1,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "787ab94b6627f5785fc9a574e6192f679e933235",
+      "parent_path": "data-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+      "registered_events": [
+        {
+          "line": 35,
+          "name": "GoshnarsHatredBuff",
+          "registration_index": 0
+        },
+        {
+          "line": 36,
+          "name": "MegalomaniaDeath",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.goshnar_s_megalomania_blue",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "d1ba4b9e8303d804ceaa75b0c4d24f9bf3181ed7ad6736861ba5ff67b7a64848",
+      "on_death": [
+        {
+          "line": 37,
+          "name": "MegalomaniaDeath",
+          "registration_index": 1,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "cf81168aa00b063ba9ce379e48b7254a4522e160",
+      "parent_path": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "registered_events": [
+        {
+          "line": 36,
+          "name": "GoshnarsHatredBuff",
+          "registration_index": 0
+        },
+        {
+          "line": 37,
+          "name": "MegalomaniaDeath",
+          "registration_index": 1
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.aspect_of_power",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "0192030dc0c2a176a9f7e30d32943a4c6ff6b43f9828a37245075e922f50bee6",
+      "on_death": [
+        {
+          "line": 29,
+          "name": "SoulWarAspectOfPowerDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "896cb5207226ff460039f2c96b1eee39b5cda3ee",
+      "parent_path": "data-global/monster/quests/soul_war/aspect_of_power.lua",
+      "registered_events": [
+        {
+          "line": 29,
+          "name": "SoulWarAspectOfPowerDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.hazardous_phantom",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "70201a5829a62c603decc9316d6bb282d0f74ff17c2f3dc7317aa32a607aca17",
+      "on_death": [
+        {
+          "line": 24,
+          "name": "HazardousPhantomDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "b258d617766db2e6e1d2ab012147673832fe5d0c",
+      "parent_path": "data-global/monster/quests/soul_war/hazardous_phantom.lua",
+      "registered_events": [
+        {
+          "line": 24,
+          "name": "HazardousPhantomDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.dreadful_disruptor",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "3743ad3bfe451927878ff4a8245ae1da6ed29c2e7ccfcaa6b81706014737524a",
+      "on_death": [],
+      "parent_git_blob": "c00d8ef47c6a6e5198ed60b98acfa451ef161eee",
+      "parent_path": "data-global/monster/quests/soul_war/dreadful_disruptor.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.necromantic_focus",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "a064c450c8a973530fcefe0104806ff126f37586d67b02794803a5217a7e8188",
+      "on_death": [
+        {
+          "line": 19,
+          "name": "NecromanticFocusDeath",
+          "registration_index": 0,
+          "source_path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "source_sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+        }
+      ],
+      "parent_git_blob": "9fcadf66e86b5051f7d47cb09925a55089790736",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/necromantic_focus.lua",
+      "registered_events": [
+        {
+          "line": 19,
+          "name": "NecromanticFocusDeath",
+          "registration_index": 0
+        }
+      ]
+    },
+    {
+      "creature_key": "oteryn:creature.lesser_splinter_of_madness",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "9893e70705a8d517a4b7c20b07e9d73f888bfab54601d9fff235059c399a615c",
+      "on_death": [],
+      "parent_git_blob": "9b39776a4b77434a7e59b6517b29aed34a8895f9",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/lesser_splinter_of_madness.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.greater_splinter_of_madness",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "2e57d8357687d4c69e2dc5fa01ddb9a72a3dd7a5b5eb7febf79a99e449b4d3a3",
+      "on_death": [],
+      "parent_git_blob": "d96ae1461657f09448914690bd12c39064607e3c",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/greater_splinter_of_madness.lua",
+      "registered_events": []
+    },
+    {
+      "creature_key": "oteryn:creature.mighty_splinter_of_madness",
+      "creature_revision": "definition-r1",
+      "monster_sha256": "3918ebb53db6790edf666efc8fe25372940953beb148f149b65a8cb0b61ff050",
+      "on_death": [],
+      "parent_git_blob": "21d7229366b5caae1632afa83f322bc686b6c4e6",
+      "parent_path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/mighty_splinter_of_madness.lua",
+      "registered_events": []
+    }
+  ],
+  "schema": "SRX3_SOUL_WAR_ORDERED_DEATH_EVENTS/v1",
+  "source_definitions_sha256": "97b6be5d2d4d1de6f263393c696709b1bc00f0f7b41750f369b4b84c3b4afbcf",
+  "source_repository": "zimbadev/crystalserver",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "git_blob": "896cb5207226ff460039f2c96b1eee39b5cda3ee",
+      "path": "data-global/monster/quests/soul_war/aspect_of_power.lua",
+      "sha256": "0192030dc0c2a176a9f7e30d32943a4c6ff6b43f9828a37245075e922f50bee6"
+    },
+    {
+      "git_blob": "c00d8ef47c6a6e5198ed60b98acfa451ef161eee",
+      "path": "data-global/monster/quests/soul_war/dreadful_disruptor.lua",
+      "sha256": "3743ad3bfe451927878ff4a8245ae1da6ed29c2e7ccfcaa6b81706014737524a"
+    },
+    {
+      "git_blob": "64bd8a98008ff3adca6f05eeb2bc8a21d1d6532e",
+      "path": "data-global/monster/quests/soul_war/dreadful_harvester.lua",
+      "sha256": "c716b140a444501bc741047c6828c30b7ca7e76f519b0efc2833a0045ba6ae01"
+    },
+    {
+      "git_blob": "cf81168aa00b063ba9ce379e48b7254a4522e160",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "sha256": "d1ba4b9e8303d804ceaa75b0c4d24f9bf3181ed7ad6736861ba5ff67b7a64848"
+    },
+    {
+      "git_blob": "787ab94b6627f5785fc9a574e6192f679e933235",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+      "sha256": "073de955c173424a484e50885c2538749725fd437e3499382d3dc6c5199761f0"
+    },
+    {
+      "git_blob": "7781c66516d83abbe905496cff7c3caf44902bf9",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "sha256": "cd2cae8c72c72a46064ec084c5db1684a4223e4150d3670f154a88bcb2589b2b"
+    },
+    {
+      "git_blob": "468e6a312e446b328771641f2feb7878f101e8b8",
+      "path": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+      "sha256": "5f71c7170921b537ba5bd397b70805c00cb3457da97f08a915383b3e34e58c0b"
+    },
+    {
+      "git_blob": "0a869103c09426c6e8816de9b028bc63908681c1",
+      "path": "data-global/monster/quests/soul_war/goshnars_greed.lua",
+      "sha256": "e9c11a26a1c18f42947b8a5b37ba9dcea8ca5b0322dfb2fc047c3d2e33b07ad0"
+    },
+    {
+      "git_blob": "cc6652eb9d91f15b5d182206076bb216c0e43bf9",
+      "path": "data-global/monster/quests/soul_war/goshnars_hatred.lua",
+      "sha256": "2f5c8e63b499eddca333e39421b651607f2992afbf13873dc5e0fdd498511fef"
+    },
+    {
+      "git_blob": "1cda5185bbe9caa2b3b01bc9fc47320005d80305",
+      "path": "data-global/monster/quests/soul_war/goshnars_malice.lua",
+      "sha256": "2394dae37135ca27aea35459e7879e95a566a5c7b68bd5491e9bc625f84839ec"
+    },
+    {
+      "git_blob": "1daedf2a19178f90bc7f6ea6041f8f3fd1bacef6",
+      "path": "data-global/monster/quests/soul_war/goshnars_spite.lua",
+      "sha256": "50c678660280d5f455b97e90a8c976bc022f3120b616f64b7e799fddf6264fd0"
+    },
+    {
+      "git_blob": "db7076d57104de6d16127771ff08edabba9b4102",
+      "path": "data-global/monster/quests/soul_war/greedbeast.lua",
+      "sha256": "c2500e72847896d8db62eda89a2674e4a7443cd9b4db9a98d35b46443477d158"
+    },
+    {
+      "git_blob": "b258d617766db2e6e1d2ab012147673832fe5d0c",
+      "path": "data-global/monster/quests/soul_war/hazardous_phantom.lua",
+      "sha256": "70201a5829a62c603decc9316d6bb282d0f74ff17c2f3dc7317aa32a607aca17"
+    },
+    {
+      "git_blob": "651287501e7d336eba121c7bc11c6b9c3d5e5380",
+      "path": "data-global/monster/quests/soul_war/mirror_image.lua",
+      "sha256": "9500f7a6b157c5bf84ac68536811e37a4bb36542b7d0cd47db4c15ea36495af4"
+    },
+    {
+      "git_blob": "d6e4bcfcafe29b5f73251d86305d64b406cc915d",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/bony_sea_devil.lua",
+      "sha256": "90ba74bd1eee3c552ca62fe4a6c82d9bd0477d0b824e8278ace4e429ce20f540"
+    },
+    {
+      "git_blob": "a76c9f40ee96911f7c07fc574ce0fe4b6efb7d75",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/brachiodemon.lua",
+      "sha256": "64f42388be10a378704ff7615e6ed0bd3f716fa8f8a383acb46f4ea418771186"
+    },
+    {
+      "git_blob": "f5dccd47eb5f43a8d62ae3e7a95e3964b113f2ca",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/branchy_crawler.lua",
+      "sha256": "01e75364bae48acb69344a84304beeab41ebf2528a9f336b6b87675251e0f302"
+    },
+    {
+      "git_blob": "995cad06686c3a5115a884f272a895d1a2333918",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/ashes_of_burning_hatred.lua",
+      "sha256": "510556a30b9b9b40c3035f1ef3c99733b8d38c317efe52121d749598308168f6"
+    },
+    {
+      "git_blob": "77b619b70eaf259e124c00e5f7e3951684a74088",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/blaze_of_burning_hatred.lua",
+      "sha256": "e4df78075fa078cecc890dafef68d4ce35b545ea998b12dd9f5512e531b42283"
+    },
+    {
+      "git_blob": "20f253efa7960ecdc25afdf8d3ee4f8d05afde9c",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/flame_of_burning_hatred.lua",
+      "sha256": "36b43b904f5d4691440643b7ac0c08562b41617cb3105f3206f7c9de02445e2d"
+    },
+    {
+      "git_blob": "c3c9d73749f95caa7bc2e360b86d9a532ce6bc1c",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/spark_of_burning_hatred.lua",
+      "sha256": "3efe638127dfd357f32b23a89f33e33941603ddf45f9f65b7b78e3688462a0e9"
+    },
+    {
+      "git_blob": "1f94f6998c21e5bcac24ce0ee2d8ab8cc2bddc4d",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/burning_hatred/symbol_of_hatred.lua",
+      "sha256": "3aad1b0b58dbdfd7d39bd7020b960da7cddee736c0c9325a7ee065818d053643"
+    },
+    {
+      "git_blob": "da2bbec208ede2059e2984b69af2c94bb0f89718",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/capricious_phantom.lua",
+      "sha256": "eb969c6d5ee5ba34d7f664a09e2bd2a9c63692cd15f0c6d4726fff2352a82b0f"
+    },
+    {
+      "git_blob": "2b01546672d5fe1ace8258878ff22abf5e55c93e",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/distorted_phantom.lua",
+      "sha256": "2b192bb6905f04d54e465850a35eaf4f6413c109f7239fd2e040f449141fde06"
+    },
+    {
+      "git_blob": "86a05484e5d11810ebcdffa80d7880841723528e",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/druid's_apparition.lua",
+      "sha256": "bbf27786e559fedd1bada108bd606b67895a97df43d6f01e5c61fe98ec1732d1"
+    },
+    {
+      "git_blob": "8622ed190a2da9030ce1eb111029581d88a0d922",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua",
+      "sha256": "f150dd14d1f90bfaa9377117556cef93b035e9dfedad47bc66c7b6a1f8a6a4ee"
+    },
+    {
+      "git_blob": "ff25ab1f058c2f514dccb273b0ac135a148ed510",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/cloak_of_terror.lua",
+      "sha256": "2fca76ce2fcdc41edb87152d385ceefb8bb6bfd34f995eb0e7fc3a62add3b78b"
+    },
+    {
+      "git_blob": "615e463784123c4a2b162074d2279233b4343781",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/courage_leech.lua",
+      "sha256": "b526c138a084017fca13cfa41ecab7621e7655e3677183fe71a46200efa864f0"
+    },
+    {
+      "git_blob": "0596c7516d3add732f4617f8ad8f3c8f3accc413",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/poor_soul.lua",
+      "sha256": "58c2d9b4e5d2989f5e927c5d5248e77d3e414d3a70b0103cb6eb2dee32da978d"
+    },
+    {
+      "git_blob": "305ae9adb50130e0e4f73dc80c6c16f0914ef737",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/vibrant_phantom.lua",
+      "sha256": "988d04119545416af195a5e190db07a3de6545215d60329195ae7a8e176df591"
+    },
+    {
+      "git_blob": "0ec107c192ff1ad82b9f55516d5a7e748ceae2c8",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/infernal_demon.lua",
+      "sha256": "e7e579673b88242d8563c493083b2e27714f9342fb0c82b5eee902a4f7412ee1"
+    },
+    {
+      "git_blob": "d6e6583ef648166204959719d787beb1d61bab5c",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/infernal_phantom.lua",
+      "sha256": "2062ac9de68efee63b56d21b5712999c35f0ea2dae79c40c6a793edca757cc32"
+    },
+    {
+      "git_blob": "f763e9b4dfe4d8e79d69969f9bdc789f797fdb7f",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/knight's_apparition.lua",
+      "sha256": "cdc4fe5f4092fd5ff2a2477de10f3a279cbd87955fc4f9fba5a6fa2f3d2eefda"
+    },
+    {
+      "git_blob": "f60b999dbce5ad947e0c14d4132d0587e55de2c8",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/many_faces.lua",
+      "sha256": "5334231a5065d6a6ee0d98b0fbd92583339e83f94a3233a0fed8da90fc94e97c"
+    },
+    {
+      "git_blob": "d96ae1461657f09448914690bd12c39064607e3c",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/greater_splinter_of_madness.lua",
+      "sha256": "2e57d8357687d4c69e2dc5fa01ddb9a72a3dd7a5b5eb7febf79a99e449b4d3a3"
+    },
+    {
+      "git_blob": "9b39776a4b77434a7e59b6517b29aed34a8895f9",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/lesser_splinter_of_madness.lua",
+      "sha256": "9893e70705a8d517a4b7c20b07e9d73f888bfab54601d9fff235059c399a615c"
+    },
+    {
+      "git_blob": "21d7229366b5caae1632afa83f322bc686b6c4e6",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/mighty_splinter_of_madness.lua",
+      "sha256": "3918ebb53db6790edf666efc8fe25372940953beb148f149b65a8cb0b61ff050"
+    },
+    {
+      "git_blob": "9fcadf66e86b5051f7d47cb09925a55089790736",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/megalomania_room/necromantic_focus.lua",
+      "sha256": "a064c450c8a973530fcefe0104806ff126f37586d67b02794803a5217a7e8188"
+    },
+    {
+      "git_blob": "1bfde26b27078347f9da50f077dd7064b81d5b98",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/monk's_apparition.lua",
+      "sha256": "924385010008a9157872d090073bb7dd237b8eafe67440b8b81eac3f2651c1a7"
+    },
+    {
+      "git_blob": "c23412d0bd096538ce8d15043ffb4fabd21eb1f2",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/mould_phantom.lua",
+      "sha256": "baf5b67c2f1dcdc0803e6161c8c9d7491d3cb0f7dfe47121f3cf645c6b13bcf3"
+    },
+    {
+      "git_blob": "2dc7a49555c2ac869d543f81516fe96341bc149d",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/paladin's_apparition.lua",
+      "sha256": "426a0931a9dfa70ab7c79771e6ad8132e5e38d23dd93369e4e53ba4040d1c1d3"
+    },
+    {
+      "git_blob": "f5d5808b05c14e6f94b060509a79ea7642de9d21",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/rotten_golem.lua",
+      "sha256": "a74071a649dcdeaba636b4fb22815ac3b5eed76be07f0c62ce8cac73ddeb56a5"
+    },
+    {
+      "git_blob": "6ba156f5b701baf279feb1ccfc50f6b568487028",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/sorcerer's_apparition.lua",
+      "sha256": "0230f650868a4201f49bdd2084615f270faa24fda0b5263c36c134e630146caa"
+    },
+    {
+      "git_blob": "6d7804f2207b14ef597a4b664c5b9e6d2198cbdc",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/turbulent_elemental.lua",
+      "sha256": "f0e18007ae9886f6793c97ac44c318bc23e99453a6cab703067a1dd0779f08f2"
+    },
+    {
+      "git_blob": "0ece602eab5b0592925c70b1c96e632c7857154f",
+      "path": "data-global/monster/quests/soul_war/powerful_soul.lua",
+      "sha256": "86e23cad8a54abc6dde2adb32644ddb29f6d6efab8ee137c36f86acd7bfb5f2e"
+    },
+    {
+      "git_blob": "c6c65b32547d17405f5b0e7c8084100e6a46db94",
+      "path": "data-global/monster/quests/soul_war/soul_cage.lua",
+      "sha256": "3514e57d4d6cc95a8e51f98495d8d56095c5a9a50f24f2b9cc1254da44f59490"
+    },
+    {
+      "git_blob": "093eb9e9f2210dd6a93d131bd73b5ab9846e72c6",
+      "path": "data-global/monster/quests/soul_war/soul_sphere.lua",
+      "sha256": "6a986338ec930ed02bbecc6da59230a2355b50a11091b59f4489f1210b2ef2dc"
+    },
+    {
+      "git_blob": "faa819dec6e1b6905f87b5642e454468667dde8f",
+      "path": "data-global/monster/quests/soul_war/soulsnatcher.lua",
+      "sha256": "d852709c53c6099051b8009bb88a23283ece21ed9ebb9b905b43f59b5e63155b"
+    },
+    {
+      "git_blob": "d51b52e2e84f46e3653d7854e5726463d188dc98",
+      "path": "data-global/monster/quests/soul_war/spiteful_spitter.lua",
+      "sha256": "9fc035a2a17539121fc7cd5564970cd1ba5da7ac10a7a10998a0081c1cb31d3a"
+    },
+    {
+      "git_blob": "ae3615b6eb4937947e5601477a0d8514225bddd7",
+      "path": "data-global/monster/quests/soul_war/strong_soul.lua",
+      "sha256": "c8baadc57f446ab7ba972ae4d93ce92c3eba1e3b4db4c47c6c2b19d81b48cbbb"
+    },
+    {
+      "git_blob": "b7150efa00f3340240944ffd8233d3e81e2d7a6a",
+      "path": "data-global/monster/quests/soul_war/weak_soul.lua",
+      "sha256": "91d0f2a5f5d82a63f72e71260f0d1d70571e2d6a41b3e07a71c136fede4414a6"
+    },
+    {
+      "git_blob": "0c45ec43fff093054def38605a66bc2b90de727f",
+      "path": "data-global/monster/quests/soul_war/weeping_soul.lua",
+      "sha256": "900ca29c72c64313b0315ce9fd42d93bc6c933d039a68b3d0c5dfb67e2ba2f04"
+    },
+    {
+      "git_blob": "43014ae797edfa6553971a2c084b0af8735deec0",
+      "path": "data-global/scripts/creaturescripts/monster/mirror_image_transform.lua",
+      "sha256": "32b662ad8bfcc3b6afe557a99ad4e58eb39392dbf1bfaa725f04190b5ca3a34b"
+    },
+    {
+      "git_blob": "51d42e7e970a2f24fc8438a833aacac2c061dfc2",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "sha256": "9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916"
+    }
+  ]
+}

@@ -81,11 +81,11 @@ fn builds_the_bound_row() {
     assert_eq!(rat.xp_amount, ExactI64::new(5));
     assert_eq!(
         rat.corpse_item,
-        LootDefinitionRef::new("Item", CORPSE, REVISION)
+        Some(LootDefinitionRef::new("Item", CORPSE, REVISION))
     );
     assert_eq!(
         rat.loot_table_ref,
-        LootDefinitionRef::new("Loot", TABLE, REVISION)
+        Some(LootDefinitionRef::new("Loot", TABLE, REVISION))
     );
     assert_eq!(
         rat.loot_table.algorithm,

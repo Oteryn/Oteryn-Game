@@ -14,9 +14,14 @@ pub(crate) async fn write_prey_expansion_receipt(
     fulfilment: &str,
     recovery_generation: u64,
 ) -> Result<DeliveryReceipt, DurabilityError> {
-    if [operation_id, account, character, world].iter().any(|id| !uuid_v7(id))
-        || fulfilment.is_empty() || fulfilment.len() > 512
-        || fulfilment.chars().any(char::is_control) || recovery_generation == 0 {
+    if [operation_id, account, character, world]
+        .iter()
+        .any(|id| !uuid_v7(id))
+        || fulfilment.is_empty()
+        || fulfilment.len() > 512
+        || fulfilment.chars().any(char::is_control)
+        || recovery_generation == 0
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-delivery:'||encode($1,'hex'),0))")
@@ -33,8 +38,10 @@ pub(crate) async fn write_prey_expansion_receipt(
         return serde_json::from_slice(&row.try_get::<Vec<u8>,_>("receipt")?)
             .map_err(|_| DurabilityError::InvalidStoredState);
     }
-    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
-        .fetch_one(&mut **tx).await?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
     let receipt = DeliveryReceipt {
         operation_id: uuid_string(&operation_id),
         account_id: uuid_string(&account),
@@ -51,6 +58,8 @@ pub(crate) async fn write_prey_expansion_receipt(
         .bind(world.as_slice()).bind(fulfilment).bind(recovery_generation.to_string())
         .bind(now).bind(bytes).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO store_receipt_outbox(operation_id) VALUES(encode($1,'hex')::uuid)")
-        .bind(operation_id.as_slice()).execute(&mut **tx).await?;
+        .bind(operation_id.as_slice())
+        .execute(&mut **tx)
+        .await?;
     Ok(receipt)
 }

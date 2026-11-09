@@ -20,6 +20,8 @@ pub mod charm_progression;
 pub mod container_sort;
 #[path = "features/0057-cyclopedia-map/mod.rs"]
 pub mod cyclopedia_map;
+#[path = "features/0449-diagonal-movement/mod.rs"]
+pub mod diagonal_movement;
 #[path = "features/0055-guild-bank/mod.rs"]
 pub mod guild_bank;
 #[path = "features/0103-guild-war/mod.rs"]
@@ -305,3 +307,9 @@ pub mod rest_status;
 pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
+
+#[path = "features/0371-native-creature-icons/mod.rs"]
+pub mod native_creature_icons;
+
+#[path = "features/0451-personal-map-marks/mod.rs"]
+pub mod personal_map_marks;

@@ -728,13 +728,20 @@ impl SessionItemView {
     ) -> Result<(), ItemViewError> {
         let keys: Vec<ItemKey> = entities
             .iter()
-            .filter(|entity| matches!(entity.detail, EntityDetail::Object { .. }))
+            .filter(|entity| {
+                matches!(
+                    entity.detail,
+                    EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. }
+                )
+            })
             .map(|entity| ItemKey::Entity(entity.entity.identity))
             .collect();
         self.table.replace(View::Spatial, &keys)?;
         for entity in entities {
             let key = ItemKey::Entity(entity.entity.identity);
-            if let EntityDetail::Object { item_handle, .. } = &mut entity.detail {
+            if let EntityDetail::Object { item_handle, .. }
+            | EntityDetail::ObjectWithAppearance { item_handle, .. } = &mut entity.detail
+            {
                 *item_handle = self.table.handle(&key);
             }
         }

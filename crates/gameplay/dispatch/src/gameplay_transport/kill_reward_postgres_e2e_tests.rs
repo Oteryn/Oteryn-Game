@@ -446,7 +446,10 @@ fn scenario_with_creature_observed(
                 );
                 let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
                     death,
-                    &reward.loot_table_ref,
+                    reward
+                        .loot_table_ref
+                        .as_ref()
+                        .expect("physical reward table"),
                     &reward.loot_table,
                 )?;
                 if !plan.entries.is_empty() {
@@ -1403,7 +1406,13 @@ fn scenario_with_creature_observed(
                     death.actor_local_id(),
                     death.actor_local_generation(),
                 ),
-                &entry.row.as_ref().expect("reward row").loot_table_ref,
+                entry
+                    .row
+                    .as_ref()
+                    .expect("reward row")
+                    .loot_table_ref
+                    .as_ref()
+                    .expect("physical reward table"),
                 &entry.row.as_ref().expect("reward row").loot_table,
             )
             .map_err(debug)?;
@@ -1467,7 +1476,7 @@ fn scenario_with_creature_observed(
                         death.actor_local_id(),
                         death.actor_local_generation(),
                     ),
-                    &row.loot_table_ref,
+                    row.loot_table_ref.as_ref().expect("physical reward table"),
                     table,
                 )
                 .map(|plan| {

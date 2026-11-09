@@ -66,6 +66,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Release the item lane before the existing snapshot owner reacquires it.
                 drop(permit);
                 self.refresh_terrain_tools().await;
+                crate::gameplay_transport::quest_terrain_uses::after_tool(self, actor, command)
+                    .await;
             }
             return Ok(Some(outcome(result)));
         }
@@ -264,24 +266,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 plan.binding.yield_item,
             )
         };
-        if let Some(yield_item) = mutation.1 {
+        let soil = mutation
+            .0
+            .tool_key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u16>().ok())
+            .and_then(|soil| {
+                u16::try_from(mutation.0.before)
+                    .ok()
+                    .and_then(|target| oteryn_gameplay_items::elemental_soil::charge(soil, target))
+            });
+        if soil.is_some() || mutation.1.is_some() {
             let tool = mutation.0.tool;
             let after = u16::try_from(mutation.0.after).map_err(|_| ())?;
             let request = ItemCraftRequest {
                 command: command_ref,
                 source: tool,
-                tool: Some(tool),
+                tool: if soil.is_some() { None } else { Some(tool) },
                 ingredient: None,
                 station: None,
                 intent: encoded,
                 gathering: Some(crate::durability::item_craft::GatheringCraft {
                     scope,
                     mutation: mutation.0,
-                    attempt: oteryn_gameplay_items::fishing::GatheringAttempt {
+                    attempt: soil.unwrap_or(oteryn_gameplay_items::fishing::GatheringAttempt {
                         after: Some(after),
-                        yield_item: Some(u16::try_from(yield_item).map_err(|_| ())?),
+                        yield_item: mutation.1.map(u16::try_from).transpose().map_err(|_| ())?,
                         consumes_bait: false,
-                    },
+                    }),
                 }),
                 enchanting: None,
             };
@@ -376,6 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
+            crate::gameplay_transport::quest_terrain_uses::after_tool(self, actor, command).await;
         }
         Ok(Some(outcome(result)))
     }

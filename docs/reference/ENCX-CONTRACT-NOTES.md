@@ -1208,3 +1208,112 @@ rejecting use of a prior physical transaction's sealed scope token. Clippy
 for quests/durability/dispatch passed with warnings denied in2m17s; fmt passed.
 No upstream M02-specific PostgreSQL cases were found under authority_cases;
 the added PG case is the actual durable readset/locking coverage.
+
+### M03 promotion admission (tested engine slice)
+The chosen Oteryn 25 Years recipe explicitly requires vocation promotion
+(`tools/content-schema/quest-authoring/samples/completion242/recipes.json:28`).
+The existing shared world callback `admission.promotion` reads the permanent Character promotion owner
+in the fenced quest transaction before consuming items or applying quest effects.
+The shared schema requires personal Player state. This slice
+adds no migration and does not claim that the full M03 blessing/Premium route is wired.
+The PostgreSQL scenario exercises refusal, the real NPC promotion purchase, quest
+commit and command replay through the existing fixture catalogue resolver.
+Validation: `encx_m03_world_promotion_postgres_refusal_purchase_commit_and_replay`
+passed against PostgreSQL in 51.14 s (scenario 46.174806262 s). The preceding
+52.22 s red run exposed an invalid MINT participant in the rewardless fixture;
+the adapter now selects it only for an actual item reward. Production writer
+validation is unchanged. Generic context-free commits also reject live admission
+callbacks, so promotion cannot be bypassed through the weaker entry point.
+
+### M29: refuse an unversioned party snapshot before admission
+Crystal `data/libs/functions/boss_lever.lua:183-218` checks every roster slot.
+The shared qualifier now also rejects Character revision zero, which cannot
+represent a current fenced Character snapshot, before invoking the Instance
+owner. The regression covers each of the five Primal slots and verifies that
+admission is never called. This adds no game requirement or migration.
+Red evidence: `primal_entry_rejects_unversioned_party_member_before_shared_owner`
+returned `Ready(Ok(()))` rather than `InvalidInput` before the fix.
+The unchanged deadline PG regression was rerun from the existing durability test
+binary: one case passed in 16.18 s; this is not a newly compiled PG binary.
+
+### M29: native presentation of a party level refusal
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data/libs/functions/boss_lever.lua:183-218`, checks each party participant.
+The existing `Level` reply therefore does not identify the lever user. The
+native boss panel now explains that a party member fails the level requirement
+instead of showing the raw enum name. It does not infer a threshold or alter
+server admission. A rejected encoded reply is tested through the real client
+handler and panel projection, with pending cleared and no fabricated snapshot.
+No command, capability, migration, content input or generated registry changes.
+The same native presentation now explains server-provided `PartyCount` and
+`Position` refusals without guessing a roster size or coordinates. The encoded
+reply regression proves confirmed boss state is preserved and entry can be
+retried after either refusal; the existing Cooldown presentation is unchanged.
+
+### M29: reject a refusal inside a success envelope
+The production refusal encoder pairs `BossActivityReply::Refused` exclusively
+with `CommandStatus::Rejected` (`crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs:365-367`).
+The native client now enforces that pairing. `Accepted` and `DuplicateReplay`
+envelopes carrying party size, position or level refusals are malformed, not
+accepted entry results. Tests cover all six combinations, preserving the last
+confirmed snapshot and summary, clearing pending, and showing invalid-data feedback.
+This is protocol consistency, not a new game prerequisite or wire allocation.
+
+## M02 — first engine slice: exact physical Ground stack predicates
+
+Started INDEX M02 while it was OPEN/none. During pre-push merge ENGNPC2
+published the winning claim; their ownership is preserved. This tested engine
+slice is available to that lane, without a duplicate claim or DONE assertion.
+No new migration or public number.
+The optional `world_requirements[].ground_stack` lists one root per entry,
+bottom to top, with its exact Item key and quantity. It is read-only and requires
+a one-way personal player USE/STEP-IN callback, so it cannot bypass the existing fenced quest writer.
+The writer reissues current scope/node/recovery authority in the same physical
+transaction, holds the existing Ground-owner lock (advisory namespace33) and locks
+the actual Item/custody rows through COMMIT. No overlay is accepted as custody.
+No synthetic catalogue, custody table, reward or Item producer is introduced.
+
+Reference: Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+`src/items/tile.cpp:1443–1493,1635–1667` distinguishes actual ordered Item roots
+from the ground tile/creatures/top projections. URL:
+https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/tile.cpp#L1443
+This is OTS_HYPOTHESIS_ONLY for Global; Oteryn's existing Item owner supplies the
+physical stack ordinals and the 64-root bound, not donor pointer identities.
+Nomads Land's accepted authored recipe s4 requests crates/amphorae blocking the
+window, with source spoiler revision1002600:
+https://tibia.fandom.com/index.php?curid=22842&oldid=1002600
+The existing captured recipe is evidence of that selected objective, not a
+claim that its currently unresolved exact trigger/placement bindings are ready.
+
+RED: `m02_ground_stack_predicate_preserves_order_and_requires_a_durable_player_callback`
+failed with unknown `ground_stack` (0.02s); the same case now passes (0.02s).
+All340 quests library tests passed (41.57s). Real PostgreSQL18.6 case
+`m02_ground_stack_postgres_exact_order_quantity_and_scope` passed (6.25s total,
+312.548ms for the native MINT/predicate/lock scenario), including nonconsecutive
+ordinals, swapped roots, wrong quantity/key/cardinality/map/content/frame/address,
+and a competing backend denied the Ground-owner lock. All source guards stay on.
+This is an engine slice; canonical Nomads window binding and full quest passage
+remain the next piece. M02 is not claimed DONE by this checkpoint.
+
+Next queue row: M03 was OPEN/none on the pre-push qmech head; ENCX selects it
+for live blessing/promotion/Premium world admission after this engine hand-off.
+
+### M02 coordinator reconciliation against qmech 891284f07
+
+The earlier ENCX `GroundStackItem/quantity` proposal is superseded and removed.
+The sole world-callback wire contract is SRV7's `GroundStackEntry { item, count }`;
+SQL observations are fed into the same `ground_stack_matches` comparator via
+`GroundStackFact` with real UUID identities. Native/static anchor and cache
+admission remain exactly SRV7's implementation. The only additional production
+participant is the locked PostgreSQL re-check inside the existing personal
+quest transaction, retaining scope/node/recovery and current content proofs.
+The PostgreSQL fixture now mints canonical gold roots through the existing
+MINT writer; no fixture-only key circumvents the shared comparator's validation.
+
+Reconciled validation: all359 quests tests passed in43.46s, including both
+upstream Ground models, SRV7 schema tests and preserved M07 tests. The final
+PG case passed in5.46s (255.811ms measured participant scenario), now also
+rejecting use of a prior physical transaction's sealed scope token. Clippy
+for quests/durability/dispatch passed with warnings denied in2m17s; fmt passed.
+No upstream M02-specific PostgreSQL cases were found under authority_cases;
+the added PG case is the actual durable readset/locking coverage.

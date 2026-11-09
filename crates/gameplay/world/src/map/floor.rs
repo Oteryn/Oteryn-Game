@@ -29,6 +29,7 @@
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
+mod platform;
 mod quest_callback;
 mod rope;
 use super::overlay::TilePos;
@@ -40,7 +41,11 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
-pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
+pub use platform::prepare_quest_platform_rider;
+pub use quest_callback::{
+    prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
+    prepare_quest_encounter_ejection,
+};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -102,7 +107,14 @@ pub struct FloorTable {
 
 impl FloorTable {
     pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
-        let inside = |pos| super::activity_contains(bounds, pos);
+        self.activity_region_with_exit(bounds, None)
+    }
+    pub(super) fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        exit: Option<crate::content::LogicalCell>,
+    ) -> Self {
+        let inside = |pos| super::activity_footprint_contains(bounds, exit, pos);
         Self {
             tiles: self
                 .tiles
@@ -338,16 +350,7 @@ fn resolve_landing_with_teleports(
     teleport: impl Fn(TilePos) -> Option<TilePos>,
     suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-        CardinalStep::NorthEast => (1, -1),
-        CardinalStep::SouthEast => (1, 1),
-        CardinalStep::SouthWest => (-1, 1),
-        CardinalStep::NorthWest => (-1, -1),
-    };
+    let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
@@ -455,6 +458,40 @@ fn teleported(
     }
 }
 
+/// Read-only authored arrival composition over the actual qualified Bundle.
+/// This issues no movement proof and does not make the source Teleport walkable.
+/// Activity return separately checks its current physical owner and dynamic doors.
+/// The source `internalTeleport`/postAdd path reaches this same one-hop Teleport
+/// resolution without inventing an adjacent step or synthetic ground facts.
+pub fn resolve_teleport_arrival(
+    cells: &NativeEntryMovementCells,
+    cell: LogicalCell,
+) -> Result<LogicalCell, MovementError> {
+    table_of(cells).ok_or(MovementError::NotQualified)?;
+    let from = pos(cell.x, cell.y, cell.z).ok_or(MovementError::NotQualified)?;
+    if current_teleport(cells, from).is_none() {
+        return Err(MovementError::NotQualified);
+    }
+    let ground = ground_of(cells);
+    let known_landing = |(x, y, z)| {
+        cells
+            .spell_tiles()
+            .lookup(cells.scope(), LogicalCell { x, y, z })
+            .is_ok()
+    };
+    let origin = (cell.x, cell.y, cell.z);
+    let (x, y, z) = teleported(
+        &ground,
+        &known_landing,
+        &|at| current_teleport(cells, at),
+        origin,
+    );
+    if (x, y, z) == origin {
+        return Err(MovementError::NotQualified);
+    }
+    Ok(LogicalCell { x, y, z })
+}
+
 /// The floor table of the bundle `cells` run over; `None` on a fixture or source World.
 pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
     match cells.index() {
@@ -469,6 +506,9 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
         return None;
     };
     let bundle = index.map();
+    if let Some(destination) = bundle.facts.phase_teleport(at) {
+        return destination;
+    }
     bundle.floors.teleport_for_source(at, |ordinal| {
         let key = placement_key(at, ordinal)?;
         if bundle.facts.base_hidden(key) {
@@ -531,6 +571,31 @@ fn ground_of(cells: &NativeEntryMovementCells) -> impl Fn(Cell) -> Ground + '_ {
     }
 }
 
+/// Forced platform movement permits stacked occupants, while retaining the
+/// ordinary collision and protection-zone landing rules for every occupant.
+pub fn quest_platform_landable(
+    cells: &NativeEntryMovementCells,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &dyn CellBlocker,
+    projected_walkable: bool,
+) -> bool {
+    let cell = (destination.x, destination.y, i32::from(destination.floor));
+    projected_walkable
+        && cells
+            .index()
+            .lookup(
+                cells.scope(),
+                LogicalCell {
+                    x: cell.0,
+                    y: cell.1,
+                    z: cell.2,
+                },
+            )
+            .is_ok()
+        && landable_of(cells, pz_blocked, closed)(cell)
+}
+
 fn movement_error(refusal: Refusal) -> MovementError {
     match refusal {
         Refusal::Absent => MovementError::Cell(StaticCellEngineError::Absent),
@@ -572,7 +637,7 @@ pub fn prepare_bundle_step<'a>(
     closed: &'a dyn CellBlocker,
 ) -> Result<BundleStepProof<'a>, MovementError> {
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
-    qualify_origin(runtime, cells, actor, session, expected)?;
+    qualify_origin(runtime, cells, actor, session, expected, Some(direction))?;
     let (destination, starts_stairhop) = destination(
         cells,
         table,
@@ -601,6 +666,7 @@ fn qualify_origin(
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
+    direction: Option<CardinalStep>,
 ) -> Result<(), MovementError> {
     if runtime.actor_spell_reserved(actor)
         || cells.scope().world_id != runtime.binding().world_id()
@@ -610,9 +676,14 @@ fn qualify_origin(
             .read_actor_position(actor)
             .map_err(MovementError::Actor)?
             != expected
-        || !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
+        || !direction.map_or_else(
+            || {
+                runtime
+                    .player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            },
+            |direction| runtime.player_step_allowed(actor, session, direction.delta()),
+        )
     {
         return Err(MovementError::NotQualified);
     }
@@ -685,7 +756,14 @@ impl BundleStepProof<'_> {
     }
 
     fn validate(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            Some(self.direction),
+        )?;
         let observed = destination(
             self.cells,
             self.table,
@@ -720,16 +798,7 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-            CardinalStep::NorthEast => MovementFacing::North,
-            CardinalStep::SouthEast => MovementFacing::South,
-            CardinalStep::SouthWest => MovementFacing::South,
-            CardinalStep::NorthWest => MovementFacing::North,
-        };
+        let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
 }
