@@ -6,6 +6,7 @@ use crate::foundation::ChannelRuntimeV1;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::map::boot::BundleMap;
+use crate::map::view::MapFacts;
 use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
 use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
 use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
@@ -43,6 +44,12 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         let Some(destination) = tile_entries(map, step.to) else {
             continue;
         };
+        // The Grimvale callback is independent of generic spike-trap PZ/jaw gates.
+        for (key, entry) in &destination.entries {
+            if entry.appearance_id == 22059 {
+                silvered_trap_hit(runtime, map, step.actor, *key, step.to);
+            }
+        }
         if destination.protection_zone
             || destination
                 .entries
@@ -62,6 +69,74 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 spike_trap_hit(runtime, states, step.actor, *key, rule, now);
             }
         }
+    }
+}
+
+/// Crystal 9f5a72c data-global/scripts/quests/grimvale/movements_silvered_trap.lua:3-22.
+/// All five qualified bodies share the source name; only maxHP 50000 takes untyped damage.
+fn silvered_trap_hit(
+    runtime: &mut ChannelRuntimeV1,
+    map: &BundleMap,
+    actor: crate::foundation::ExactActorRef,
+    key: u64,
+    at: crate::foundation::MovementLocalPosition,
+) {
+    let Ok(body) = runtime.companion_snapshot(actor) else {
+        return;
+    };
+    if map.overlay.runtime_scope() != runtime.binding().runtime_scope()
+        || !matches!(
+            body.state.policy.definition_key.as_str(),
+            "oteryn:creature.feroxa"
+                | "oteryn:creature.feroxa2"
+                | "oteryn:creature.feroxa3"
+                | "oteryn:creature.feroxa4"
+                | "oteryn:creature.feroxa5"
+        )
+    {
+        return;
+    }
+    let damaging = body.maximum_health == 50_000;
+    let committed = if damaging {
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:feroxa-silvered-trap:v1")
+            .chain_update(actor.placement_identity())
+            .chain_update(body.position_revision.to_be_bytes())
+            .chain_update(key.to_be_bytes())
+            .chain_update(map.facts.object_revision(key).to_be_bytes())
+            .finalize();
+        let occurrence: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+        let mut binding = occurrence.as_bytes().to_vec();
+        binding.push(0);
+        binding.extend_from_slice(&1_000_i64.to_be_bytes());
+        runtime.borrow_exact_actor_commit().commit_raw_creature_damage_batch(
+            &[actor], oteryn_gameplay_entities::OwnerDamageCommand {
+                target: body.state.policy.definition_key.as_bytes(),
+                occurrence: occurrence.as_bytes(),
+                binding: &binding,
+                damage: 1_000,
+            }, |_| {
+                if transform(map, key, 22074) { Ok(()) }
+                else { Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict) }
+            },
+        ).is_ok()
+    } else {
+        transform(map, key, 22074)
+    };
+    if committed
+        && let Some(pos) = (|| {
+            Some(crate::map::overlay::TilePos {
+                x: at.x.try_into().ok()?,
+                y: at.y.try_into().ok()?,
+                floor: i8::try_from(at.floor).ok()?.checked_neg()?,
+            })
+        })()
+    {
+        // Qualified client effect bindings: DRAWBLOOD=1, BLOCKHIT=4.
+        if damaging {
+            map.facts.emit_movement_effect(pos, 1);
+        }
+        map.facts.emit_movement_effect(pos, 4);
     }
 }
 
@@ -157,6 +232,15 @@ mod tests {
     type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
     fn trap_case(trap: u16, protection_zone: bool) -> Result<(u16, u16, i64, i64), BoxError> {
+        trap_case_for(trap, protection_zone, "oteryn:creature.rat", 1_000)
+    }
+
+    fn trap_case_for(
+        trap: u16,
+        protection_zone: bool,
+        creature: &str,
+        health: i64,
+    ) -> Result<(u16, u16, i64, i64), BoxError> {
         let (mut runtime, actor, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x72);
         let key = format!("oteryn:item.tibia.i{trap}");
@@ -165,7 +249,7 @@ mod tests {
             super::trap(trap)
                 .map(|rule| rule.closed)
                 .filter(|closed| *closed != trap)
-                .unwrap_or(100)
+                .unwrap_or(if trap == 22059 { 22074 } else { 100 })
         );
         let (bytes, mut pins) = boot::tests::bundle_with_item_ids((&key, 0), (&other, 1));
         let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
@@ -235,10 +319,10 @@ mod tests {
         runtime.install_companion_policies(CompiledCreaturePolicies::from_active_artifact(
             server_digest,
             vec![CompiledCreaturePolicy {
-                definition_key: "oteryn:creature.rat".into(),
+                definition_key: creature.into(),
                 definition_revision: "fixture:1".into(),
                 display_name: "Rat".into(),
-                maximum_health: 1_000,
+                maximum_health: health,
                 forge_difficulty: None,
                 base_speed: 220,
                 outfit_look_type: 21,
@@ -249,7 +333,11 @@ mod tests {
                 is_familiar: false,
                 condition_immunities: vec![],
                 defense: Some(0),
-                armor: Some(0),
+                armor: Some(if creature == "oteryn:creature.feroxa2" {
+                    10_000
+                } else {
+                    0
+                }),
                 mitigation: Some(CreatureExactRatio {
                     numerator: 0,
                     denominator: 1,
@@ -268,9 +356,9 @@ mod tests {
             }],
         )?)?;
         let rat = runtime
-            .admit_pinned_monster_lab_creature(at, "oteryn:creature.rat", 1_000)
+            .admit_pinned_monster_lab_creature(at, creature, health)
             .map_err(|error| format!("{error:?}"))?;
-        runtime.install_creature_policy(rat, "oteryn:creature.rat")?;
+        runtime.install_creature_policy(rat, creature)?;
         let states = ChannelSpellStates::default();
         let health_before =
             i64::try_from(runtime.live_creature_health(rat).ok_or("rat before hit")?)?;
@@ -279,6 +367,13 @@ mod tests {
             from: away,
             to: at,
         }));
+        if trap == 22059 {
+            // Another committed move may precede draining the native step journal.
+            // The earlier trap contact still belongs to this exact actor generation.
+            runtime
+                .commit_quest_platform_displacement(at, away, |_, _, _| true, || true)
+                .map_err(|error| format!("{error:?}"))?;
+        }
         apply_monster_trap_steps(&mut runtime, &states, map, 1_000_000);
         let after_step_in = map
             .facts
@@ -287,6 +382,19 @@ mod tests {
             .appearance_id;
         let health_after =
             i64::try_from(runtime.live_creature_health(rat).ok_or("rat after hit")?)?;
+        if trap == 22059 {
+            assert!(map.facts.record_monster_step(MonsterStep {
+                actor: rat,
+                from: away,
+                to: at
+            }));
+            apply_monster_trap_steps(&mut runtime, &states, map, 1_000_001);
+            assert_eq!(
+                i64::try_from(runtime.live_creature_health(rat).ok_or("replayed trap")?)?,
+                health_after,
+                "a consumed silvered trap cannot hit again"
+            );
+        }
         assert!(map.facts.record_monster_step(MonsterStep {
             actor: rat,
             from: at,
@@ -299,6 +407,42 @@ mod tests {
             .ok_or("trap after step-out")?
             .appearance_id;
         Ok((after_step_in, after_step_out, health_before, health_after))
+    }
+
+    #[test]
+    fn qn5_silvered_trap_binds_feroxa_forms_and_bypasses_armor_only_for_second_form()
+    -> Result<(), BoxError> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), BoxError> {
+                for protected in [false, true] {
+                    let (closed, after_exit, before, after) =
+                        trap_case_for(22059, protected, "oteryn:creature.feroxa2", 50_000)?;
+                    assert_eq!((closed, after_exit), (22074, 22074));
+                    assert_eq!(
+                        (before, after),
+                        (50_000, 49_000),
+                        "source untyped hit ignores armor"
+                    );
+                }
+                for (key, hp) in [
+                    ("feroxa", 100_000),
+                    ("feroxa3", 130_000),
+                    ("feroxa4", 130_000),
+                    ("feroxa5", 150_000),
+                ] {
+                    let (closed, after_exit, before, after) =
+                        trap_case_for(22059, false, &format!("oteryn:creature.{key}"), hp)?;
+                    assert_eq!((closed, after_exit), (22074, 22074));
+                    assert_eq!((before, after), (hp, hp));
+                }
+                let (closed, after_exit, before, after) = trap_case(22059, false)?;
+                assert_eq!((closed, after_exit), (22059, 22059));
+                assert_eq!(before, after);
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "silvered trap test thread")?
     }
 
     #[test]
