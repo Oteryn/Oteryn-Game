@@ -21,7 +21,7 @@
 mod elemental_arrival;
 pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
 mod elemental_summons;
-pub use elemental_summons::{ElementalSummonIntent, ElementalSummonScope};
+pub use elemental_summons::{ElementalSummonClaim, ElementalSummonClock, ElementalSummonIntent, ElementalSummonScope};
 
 mod floor_assembly;
 pub(in crate::durability) mod floor_transform;

@@ -512,6 +512,19 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     assert_eq!(pending[0].altar, recipe.altar);
     assert_eq!(pending[0].creature_key, recipe.creature);
     assert_eq!(pending[0].position, position);
+    let claim = crate::durability::item_loop_move::ElementalSummonClaim {
+        scope: projection,
+        transaction_id: pending[0].transaction_id,
+    };
+    let claimed = h
+        .root
+        .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &Content, claim)
+        .await
+        .map_err(f::debug)?
+        .ok_or("live arrival clock claim")?;
+    assert_eq!(claimed.intent, pending[0]);
+    assert_eq!(claimed.cycle, 0);
+    assert_eq!(claimed.owner_generation.get(), 1);
     let spawn: String = sqlx::query_scalar("SELECT 'qn1.elemental:'||encode($1,'hex')")
         .bind(pending[0].transaction_id.as_slice())
         .fetch_one(&h.pool)
@@ -561,6 +574,13 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
                 .await
                 .map_err(f::debug)?
                 .is_empty()
+        );
+        assert!(
+            h.root
+                .claim_elemental_summon(&permit, &authority, &h.node, replaced, &Content, claim,)
+                .await
+                .map_err(f::debug)?
+                .is_none()
         );
     }
     let refused = sqlx::query("DELETE FROM game_elemental_boss_leases")
@@ -631,6 +651,14 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(terminal, (3, "1".into()));
+    assert!(
+        h.root
+            .claim_elemental_summon(&permit, &authority, &h.node, f::fence()?, &Content, claim,)
+            .await
+            .map_err(f::debug)?
+            .is_none(),
+        "a cached intent cannot resurrect its dead boss"
+    );
     let outcome = h
         .root
         .commit_boss_corpse_mint(

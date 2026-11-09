@@ -18,7 +18,69 @@ pub struct ElementalSummonIntent {
     pub position: Position,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ElementalSummonClaim {
+    pub scope: ElementalSummonScope,
+    pub transaction_id: [u8; 16],
+}
+
+/// Committed clock metadata. Native projection must still prove its current runtime
+/// binding and deduplicate this spawn key under that owner before installing an actor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ElementalSummonClock {
+    pub intent: ElementalSummonIntent,
+    pub spawn_key: String,
+    pub cycle: u64,
+    pub owner_generation: crate::foundation::ScopeOwnershipGeneration,
+}
+
 impl DurabilityRoot {
+    /// Read immutable spawn details, then independently re-prove current authority,
+    /// Content/frame, reset and the live lease in the clock's actual claiming transaction.
+    pub async fn claim_elemental_summon<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        content: &C,
+        request: ElementalSummonClaim,
+    ) -> Result<Option<ElementalSummonClock>, DurabilityError> {
+        let Some(intent) = self.read_elemental_summons(permit, recovery, node, fence, content, request.scope)
+            .await?.into_iter().find(|intent| intent.transaction_id == request.transaction_id)
+        else { return Ok(None); };
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let mut context = content;
+        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, content| {
+            Box::pin(async move {
+                let mut tx = crate::durability::db::begin_type2_transaction(holder, deadline).await?;
+                let attempt: LoopResult<Option<ElementalSummonClock>> = async {
+                    assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence,
+                        None, content.loop_content_digest()).await?;
+                    let (world,channel) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                    let source = crate::durability::boss_encounter::ElementalClockSource {
+                        world, channel, generation: fence.scope_ownership_generation,
+                        transaction: request.transaction_id, map: request.scope.map, reset_epoch: request.scope.reset_epoch,
+                    };
+                    let claimed = crate::durability::boss_encounter::claim_elemental_clock(&mut tx, &record, &node, source)
+                        .await.map_err(|error| match error {
+                            crate::durability::boss_encounter::BossClockError::Unavailable(error) => LoopError::Durability(error),
+                            crate::durability::boss_encounter::BossClockError::AuthorityRejected => LoopError::Refused(LoopMoveRefusal::Rejected),
+                            _ => LoopError::Durability(DurabilityError::InvalidStoredState),
+                        })?;
+                    Ok(claimed.map(|(key, clock)| ElementalSummonClock {
+                        intent, spawn_key: key.spawn, cycle: clock.cycle, owner_generation: fence.scope_ownership_generation,
+                    }))
+                }.await;
+                match attempt {
+                    Ok(clock) => { tx.commit(deadline).await?; Ok(clock) },
+                    Err(error) => loop_error(error).map(|_| None),
+                }
+            })
+        }).await
+    }
+
     /// Resolve at most one active intent per source altar. Recovery accepts the original
     /// intent's old ownership generation only after independently proving the current one.
     /// The caller still owns native actor admission, deduplication and projection.
