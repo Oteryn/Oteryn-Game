@@ -79,6 +79,7 @@ pub mod house;
 pub mod house_move_out;
 pub mod house_podium;
 pub mod house_rotation;
+pub mod house_sale;
 pub mod house_transfer;
 pub mod house_wrap;
 pub mod imbuement;

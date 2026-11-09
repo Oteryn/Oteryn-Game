@@ -6,6 +6,7 @@ pub use oteryn_session::property_services::house::{
     HouseAclRead, HouseAclSelector, HouseAclSnapshot, decode_house_acl_snapshot,
     encode_house_acl_snapshot,
 };
+pub use oteryn_session::property_services::house_sale;
 
 use crate::raw_feature::FeatureCommand;
 type Result<T> = std::result::Result<T, &'static str>;

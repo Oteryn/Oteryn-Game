@@ -64,3 +64,11 @@ pub fn read_acl(
     panel.pending = Some(command.clone());
     Ok(command)
 }
+
+/// Typed ownership route; mutations still require the model's exact confirmation.
+pub fn ownership_request(
+    panel: &mut super::sale::OwnershipPanel,
+    request: &oteryn_client_runtime::house::house_sale::HouseSaleRequest,
+) -> Result<FeatureCommand, &'static str> {
+    super::sale::request(panel, request)
+}

@@ -1,0 +1,10 @@
+{
+  "id": 6126,
+  "name": "HOUSE_OWNERSHIP_DISPOSITION",
+  "owner_decision": "B-2026-11-09-T135",
+  "capability": 49,
+  "payload_schema": "docs/contracts/HOUSE_CONTENTS_DISPOSITION_V1.md#request",
+  "result_schema": "docs/contracts/HOUSE_CONTENTS_DISPOSITION_V1.md#result",
+  "max_payload_bytes": 1088,
+  "max_result_payload_bytes": 16384
+}

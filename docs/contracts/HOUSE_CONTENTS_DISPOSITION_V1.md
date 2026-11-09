@@ -83,3 +83,55 @@ and an account already bidding on a house. Acceptance rechecks the nominated
 recipient, premium and vocation, available price-plus-rent balance and whether
 the offer was already accepted. Existing Oteryn Account/World housing-slot,
 ban and bank limits continue to apply; Platform remains premium authority.
+
+## Durable transfer terms
+
+An offer retains its nominated Character, both Account/World parties, current
+ownership revision, price, rent and date. Accepting debits price plus the pinned
+rent into a retained hold. Cancelling or rejecting an accepted offer refunds the
+whole hold; completion pays the seller the price and consumes the rent. Existing
+bank headroom includes both possible returns and the eventual seller payment.
+An accepted offer reserves the recipient's Account/World housing slot.
+
+The offer's creation is the notice origin for the existing 24-hour to 30-day
+window; accepting later does not move its agreed date. Accepted cancellation or
+rejection is allowed before that date and before disposition freezes. An
+unaccepted overdue offer remains cancellable/rejectable. Acceptance closes at
+the effective date: owner decision B 2026-11-09, reference silent on the boundary
+between a durable background job and a simultaneous acceptance.
+
+The buyer's first paid period follows the existing HOUSE-1a acquisition policy
+(`0143_house_ownership.sql:482-489`): thirty days from completion. An accepted
+sale retains its Character/Account participants against ownership or lifecycle
+transfer until refund or completion: owner decision B 2026-11-09, reference
+silent on Oteryn's independent character-sale authority. This is a Game
+participant restriction, not authority over a Platform coin balance.
+
+Every sale transition retains Foundation event 8, kind 5, with the offer,
+parties, terms and exact reserve/refund/payment/rent-consumption amounts in the
+same transaction. World completion also retains the existing physical
+contents-disposition event. No actor or session is fabricated for that job.
+
+## Request
+
+House capability 49 also owns command 6126. Version 1 is a bounded binary record
+in this exact order: version byte `1`, action byte (0 catalogue, 1 move-out,
+2 cancel move-out, 3 offer, 4 cancel transfer, 5 accept, 6 reject), house text,
+expected property revision (u64), date (nonnegative i64 milliseconds), recipient
+text, price (u64), catalogue cursor text. Integers are big endian; text is UTF-8
+with a big-endian u16 byte length. No trailing bytes are accepted. House/cursor
+are at most 512 bytes, recipient is a valid 2–29-byte character name. Maximum
+request is 1088 bytes. Only an offer carries recipient and price; only move-out
+or offer carries a date. Mutations require a selected house and nonzero revision;
+a catalogue request carries only its cursor. Empty/unused fields must be zero.
+
+## Result
+
+Version byte `1`, server calendar milliseconds (i64), has-more byte (0/1), row
+count byte (0–20), followed by ordered rows: house, display name, owner name,
+recipient name (length-prefixed text), revision, date, price, rent (eight-byte
+integers), transfer-state byte (0 none, 1 offered, 2 accepted), allowed-action
+bitmask (bits 1–6), move-out-state byte (0–4). Display name is at most 128 bytes;
+character names at most 64. Maximum result is 16384 bytes. The server qualifies
+house display names from its actual catalogue. Rejection is the existing
+CommandResult rejection; it never supplies invented success rows.

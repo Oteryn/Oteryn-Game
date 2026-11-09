@@ -13,11 +13,13 @@ use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
 use tokio::io::AsyncWriteExt;
-const HOUSE: &str = "oteryn:content.house.move_out_fixture";
+const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const WORLD: u8 = 42;
 
 #[path = "house_move_out/fixture.rs"]
 mod seed;
+#[path = "house_move_out/sale.rs"]
+mod sale;
 
 #[test]
 fn house_move_out_postgres_real_dispatch() -> TestResult {
