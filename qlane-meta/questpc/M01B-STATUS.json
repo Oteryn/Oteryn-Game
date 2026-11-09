@@ -203,12 +203,13 @@
     "completed_quest_guard_clippy": "GREEN quests+durability+dispatch all-targets strict5m22s",
     "completed_quest_guard_pins": "GREEN qengine_access --check,equipment profile pins5795,duplicate migrations andfmt;activecallbackJSONunchanged",
     "lion_activation": "REDmissing0.413s ->GREEN62Python22.790s;latest inactive Deeplings source preparation63Python24.210s",
-    "lion_native": "WIP/PENDING:prior realPG RED57.598458847s Invalid before movement from unrelated Fresh fixture;replaced with this Harness.seed_pvp_target (real other Character101),corrected native rerun building;NOTclaimed green",
+    "lion_native": "WIP/PENDING:second realPG RED68.003051293s:no command result during resume after2refusals. Fixture now establishes live-root revision through real native Longsword visit,never SQL-advances live Character;adds definite-refusal assertions and test-only unavailable-write diagnostic. Current native rerun building",
     "deeplings_preparation": "INACTIVE resolver:REDunsupported0.511s ->GREEN1.273s;native8287ground/currentWorld keydeeplings/Premium retained;source pinned actions_golden_anchor.lua destination33640,31379,z9",
-    "lion_clippy": "GREEN quests+durability+dispatch all-targets3m58s;after observer-fixture correction dispatch all-targets2m48s",
+    "lion_clippy": "GREEN revised fixture+test-only diagnostics strict Dispatch all-targets2m50s",
     "lion_profile": "GREEN6imported profile tests0.05s",
     "lion_full_authoring": "GREEN113modules1202tests,0failing modules;checks andcontent-tree PASS",
-    "lion_publication": "WIP cadence exception:compiles+clippy+ownunits+authoring green;corrected native PG and current workspace-wide check pending"
+    "lion_publication": "WIP cadence exception:compiles+clippy+ownunits+authoring green;corrected native PG and current workspace-wide check pending",
+    "latest_workspace_all_targets": "GREEN7m39s on f8465408c source before latest internal fixture refinements;public completion guard and all dependents compile"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],

@@ -661,7 +661,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     self.schedule_quest_refresh(session);
                 }
-                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                Err(ref error) if matches!(error, crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                    #[cfg(test)]
+                    eprintln!("quest callback {} unavailable: {error:?}", callback.key);
                     // A storage error can hide a committed receipt; reconcile its original cause.
                     return UseDisposition::Rejected;
                 }
