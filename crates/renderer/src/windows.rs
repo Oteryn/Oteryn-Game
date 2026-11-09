@@ -4,11 +4,14 @@ use crate::{
     SurfaceState, TileBatch,
 };
 use oteryn_foundation::ProcessGeneration;
+#[path = "offscreen_capture.rs"]
+mod offscreen_capture;
 
 pub struct WindowsRenderer<T>
 where
     T: Clone + Into<wgpu::SurfaceTarget<'static>>,
 {
+    presentation: crate::PresentationMode,
     capture_requested: bool,
     captured: Option<Result<crate::CapturedFrame, RendererError>>,
     target: T,
@@ -41,7 +44,9 @@ where
         height: u32,
     ) -> Result<Self, RendererError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::DX12,
+            backends: match crate::GRAPHICS_ENGINE {
+                crate::GraphicsEngine::Direct3D12 => wgpu::Backends::DX12,
+            },
             ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
         let surface = instance
@@ -65,6 +70,7 @@ where
             Ok::<_, RendererError>((adapter, device, queue))
         })?;
         let mut renderer = Self {
+            presentation: crate::PresentationMode::Synchronized,
             capture_requested: false,
             captured: None,
             target,
@@ -85,6 +91,24 @@ where
     #[must_use]
     pub const fn state(&self) -> &SurfaceState {
         &self.state
+    }
+
+    pub fn set_presentation(
+        &mut self,
+        generation: ProcessGeneration,
+        mode: crate::PresentationMode,
+    ) -> Result<(), RendererError> {
+        if self.presentation == mode {
+            return Ok(());
+        }
+        let old = self.presentation;
+        self.presentation = mode;
+        let size = self.state.size();
+        if let Err(error) = self.resize(generation, size.width(), size.height()) {
+            self.presentation = old;
+            return Err(error);
+        }
+        Ok(())
     }
 
     pub fn resize(
@@ -333,6 +357,10 @@ where
             .surface
             .get_default_config(&self.adapter, size.width(), size.height())
             .ok_or(RendererError::SurfaceUnsupported)?;
+        configuration.present_mode = match self.presentation {
+            crate::PresentationMode::Synchronized => wgpu::PresentMode::AutoVsync,
+            crate::PresentationMode::Unlocked => wgpu::PresentMode::AutoNoVsync,
+        };
         if self
             .surface
             .get_capabilities(&self.adapter)

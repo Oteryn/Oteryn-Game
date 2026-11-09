@@ -27,6 +27,12 @@ impl Stepper for Peer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
+        self.exchanges
+            .release
+            .acquire()
+            .await
+            .map_err(|_| SessionError::SessionUnusable)?
+            .forget();
         let (kind, payload, status, reply) = self
             .exchanges
             .entries
@@ -37,12 +43,6 @@ impl Stepper for Peer {
         assert_eq!(command.capability, 57);
         assert_eq!(command.kind, kind);
         assert_eq!(command.payload, payload);
-        self.exchanges
-            .release
-            .acquire()
-            .await
-            .map_err(|_| SessionError::SessionUnusable)?
-            .forget();
         Ok(GatedCommandResult {
             command_id: 1,
             server_sequence: 1,
@@ -267,6 +267,7 @@ fn pc06_cyclopedia_map_scenario() -> Result<(), Error> {
                     // An unexpected transport end while a request is in flight resets every session field.
                     link.cyclopedia_map_request(intent);
                     assert!(link.cyclopedia_map_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.cyclopedia_map_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);

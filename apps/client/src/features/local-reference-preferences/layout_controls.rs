@@ -86,10 +86,14 @@ impl LayoutControls {
             Ok(())
         }
     }
-    pub(crate) unsafe fn place_apply(&self, apply: HWND, active: bool) {
-        let [x, y] = if active { [610, 185] } else { [380, 145] };
+    pub(crate) unsafe fn place_apply(&self, apply: HWND, page: SettingsPage) {
+        let [x, y, width] = match page {
+            SettingsPage::Status => [610, 185, 110],
+            SettingsPage::Graphics => [10, 285, 300],
+            _ => [380, 145, 110],
+        };
         unsafe {
-            MoveWindow(apply, x, y, 110, 26, 1);
+            MoveWindow(apply, x, y, width, 26, 1);
         }
     }
     pub(crate) unsafe fn reorder(

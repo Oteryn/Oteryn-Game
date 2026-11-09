@@ -14,6 +14,7 @@ impl SpriteBatch {
                 ambient: [255; 3],
                 sources: Vec::new(),
                 palette: None,
+                dimmed: Vec::new(),
             },
         }
     }

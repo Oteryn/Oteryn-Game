@@ -1,6 +1,8 @@
 //! P12c: capture the same equipment and live skills that the production combat path consumes.
 //! No observation authorizes combat. Failure to refresh this read model never fails a swing.
 
+#[path = "cyclopedia_augments.rs"]
+mod augments;
 use super::*;
 use crate::durability::cyclopedia_character::combat::{CombatSnapshot, CombatSnapshotReceipt};
 use crate::gameplay_transport::equipment_move::equipment_effects_owner as equipment_owner;
@@ -93,6 +95,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?,
             equipment,
         };
+        let augments;
         {
             // Stats are best-effort. Never await another lock while holding the runtime lock.
             let runtime = self.runtime.lock().await;
@@ -162,6 +165,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             observation.offence(&mut snapshot.offence).map_err(|_| ())?;
             observation.defence(&mut snapshot.defence).map_err(|_| ())?;
             observation.misc(&mut snapshot.misc).map_err(|_| ())?;
+            let stages = if state.hunting_premium_current(now.get()) {
+                self.wheel_stages(
+                    session,
+                    vocation_key(facts.vocation),
+                    facts.level,
+                    state.wheel_promoted(),
+                )
+            } else {
+                Default::default()
+            };
+            augments = self
+                .capture_cyclopedia_augments(
+                    session,
+                    &snapshot.equipment,
+                    content,
+                    wheel.as_ref(),
+                    &stages,
+                )
+                .ok();
+
             snapshot
                 .misc
                 .set(Stat::Amplification, amplification_ppm(offence.boots_tier))
@@ -194,7 +217,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         self.root
-            .record_cyclopedia_combat(self.character, self.holder, fence, snapshot)
+            .record_cyclopedia_combat_with_augments(
+                self.character,
+                self.holder,
+                fence,
+                snapshot,
+                augments,
+            )
             .await
             .map_err(|_| ())
     }

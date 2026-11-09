@@ -15,6 +15,8 @@ pub struct Request {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Card {
+    pub outfit_look_type: u32,
+    pub object_look_type: Option<u32>,
     pub race: u16,
     pub name: String,
     pub category: String,
@@ -93,11 +95,22 @@ pub fn encode_page(page: &Page) -> Result<Vec<u8>> {
         text(card.name.as_bytes(), 128, false)?;
         text(card.category.as_bytes(), 128, false)?;
         text(card.detail.as_bytes(), 16000, true)?;
+        if card.object_look_type == Some(0)
+            || (card.object_look_type.is_some() && card.outfit_look_type != 0)
+        {
+            return Err(Error::Malformed);
+        }
         let mut row = Vec::new();
         scalar(&mut row, 1, card.race.into());
         bytes(&mut row, 2, card.name.as_bytes());
         bytes(&mut row, 3, card.category.as_bytes());
         bytes(&mut row, 4, card.detail.as_bytes());
+        if card.outfit_look_type != 0 {
+            scalar(&mut row, 5, card.outfit_look_type.into());
+        }
+        if let Some(object) = card.object_look_type {
+            scalar(&mut row, 6, object.into());
+        }
         bytes(&mut out, 2, &row);
     }
     for category in &page.categories {
@@ -115,7 +128,7 @@ fn card(body: &[u8]) -> Result<Card> {
     while cursor < body.len() {
         let key = read_varint(body, &mut cursor)?;
         let tag = key >> 3;
-        if !(1..=4).contains(&tag) || seen & (1 << tag) != 0 {
+        if !(1..=6).contains(&tag) || seen & (1 << tag) != 0 {
             return Err(Error::Malformed);
         }
         seen |= 1 << tag;
@@ -128,10 +141,22 @@ fn card(body: &[u8]) -> Result<Card> {
             18 => card.name = text(read_bytes(body, &mut cursor)?, 128, false)?,
             26 => card.category = text(read_bytes(body, &mut cursor)?, 128, false)?,
             34 => card.detail = text(read_bytes(body, &mut cursor)?, 16000, true)?,
+            40 => {
+                card.outfit_look_type = read_varint(body, &mut cursor)?
+                    .try_into()
+                    .map_err(|_| Error::Malformed)?
+            }
+            48 => {
+                card.object_look_type = Some(
+                    read_varint(body, &mut cursor)?
+                        .try_into()
+                        .map_err(|_| Error::Malformed)?,
+                )
+            }
             _ => return Err(Error::Malformed),
         }
     }
-    if seen != 30 {
+    if seen & 30 != 30 {
         return Err(Error::Malformed);
     }
     Ok(card)
@@ -165,9 +190,43 @@ pub fn decode_page(body: &[u8]) -> Result<Page> {
     Ok(page)
 }
 
+/// Charm names use the same bounded card/page reply, with a distinct opt-in request prefix.
+pub fn encode_charm_request(after: u16) -> Result<Vec<u8>> {
+    if u32::from(after) > crate::charm::MAX_CHARM {
+        return Err(Error::LimitExceeded);
+    }
+    Ok(vec![
+        254,
+        1,
+        u8::try_from(after).map_err(|_| Error::LimitExceeded)?,
+    ])
+}
+pub fn decode_charm_request(bytes: &[u8]) -> Result<u16> {
+    let [254, 1, after] = bytes else {
+        return Err(Error::Malformed);
+    };
+    let after = u16::from(*after);
+    encode_charm_request(after)?;
+    Ok(after)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn charm_catalogue_prefix_is_bounded_and_distinct_from_creatures() -> Result<()> {
+        assert_eq!(encode_charm_request(20)?, vec![254, 1, 20]);
+        assert_eq!(decode_charm_request(&[254, 1, 20])?, 20);
+        for len in 0..3 {
+            assert!(decode_charm_request(&[254, 1, 20][..len]).is_err());
+        }
+        assert!(decode_charm_request(&[254, 1, 20, 0]).is_err());
+        assert!(decode_charm_request(&[255, 1, 20]).is_err());
+        assert!(encode_charm_request(33).is_err());
+        assert!(decode_charm_request(&[254, 1, 33]).is_err());
+        Ok(())
+    }
+
     #[test]
     fn catalogue_wire_checks_bounds_duplicates_and_round_trip() -> Result<()> {
         let request = Request {
@@ -192,6 +251,8 @@ mod tests {
             next: Some(20),
             categories: vec!["Forest dwellers".into()],
             cards: vec![Card {
+                outfit_look_type: 128,
+                object_look_type: None,
                 race: 7,
                 name: "Grove watcher".into(),
                 category: "Forest dwellers".into(),

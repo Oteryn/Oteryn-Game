@@ -14,7 +14,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.item_forge.pending = false;
-            mailbox.item_forge.feedback = Some("The session has ended".into());
+            mailbox.item_forge.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn item_forge_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {

@@ -1,10 +1,10 @@
 //! Transient combat overlays use server positions, including the own actor and hidden attackers.
 //! Item effects retain their donor colours; fireworks expand into eight emissive sparks.
 //! Other magic effects retain the existing hit pulse until official sprites are resolved.
-#[path = "resources.rs"]
-mod resources;
 #[path = "actor_hud.rs"]
 mod actor_hud;
+#[path = "resources.rs"]
+mod resources;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
@@ -44,21 +44,48 @@ impl PlayView {
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
         // Palette pixels remain emissive: overlays must be legible in dark areas.
-        let atlas = self.local.world();
-        let atlas = atlas.atlas();
+        let world = self.local.world();
+        let atlas = world.atlas();
         let resource_options = resources::Options::from(self.preferences());
+        let opacity = self.preferences().effect_opacity;
+        let boss_opacity = self.preferences().boss_area_opacity;
         let effects = self.preferences().show_effects;
-        let own_ref = self.scene.own_identity().and_then(|identity| self.appearances.iter().find(|entry| entry.entity.entity.identity == identity).map(|entry| entry.entity.entity));
+        let game_window = self.preferences().game_window;
+        let own_ref = self.scene.own_identity().and_then(|identity| {
+            self.appearances
+                .iter()
+                .find(|entry| entry.entity.entity.identity == identity)
+                .map(|entry| entry.entity.entity)
+        });
         let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref);
         let (view, batch) = self.scene.presentation_base()?;
-        resources::draw(batch, view, atlas, self.vitals.as_ref(), self.own, resource_options)?;
-        actor_hud::draw(batch, view, atlas, self.own, &self.entities, &self.party_icons, actor_options)?;
+        batch.lighting.opacity.clear();
+        resources::draw(
+            batch,
+            view,
+            atlas,
+            self.vitals.as_ref(),
+            self.own,
+            resource_options,
+        )?;
+        actor_hud::draw(
+            batch,
+            view,
+            atlas,
+            self.own,
+            &self.entities,
+            &self.party_icons,
+            actor_options,
+        )?;
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         if !effects {
             return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
         for cue in &self.visuals {
+            if !game_window.visible(&cue.kind) {
+                continue;
+            }
             let age = now.saturating_duration_since(cue.received);
             if age >= VISUAL_LIFETIME {
                 continue;
@@ -88,8 +115,18 @@ impl PlayView {
                 PresentationEventKind::MagicEffect {
                     position,
                     effect_id,
-                    ..
+                    source,
                 } if position.floor == self.floor && progress < 0.5 => {
+                    let alpha = if world.effects().is_boss_area(effect_id) {
+                        boss_opacity
+                    } else {
+                        match source {
+                            oteryn_session::PresentationSource::Own => opacity[0],
+                            oteryn_session::PresentationSource::Others => opacity[1],
+                            oteryn_session::PresentationSource::Creatures => opacity[2],
+                            oteryn_session::PresentationSource::Global => 100,
+                        }
+                    };
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -119,13 +156,14 @@ impl PlayView {
                             [0.7, -0.7],
                             [0.7, 0.7],
                         ] {
-                            pixel(
+                            pixel_opacity(
                                 batch,
                                 view,
                                 atlas,
                                 [x + half + dx * radius, y + half + dy * radius],
                                 [3.0, 3.0],
                                 color,
+                                alpha,
                             )?;
                         }
                         continue;
@@ -136,13 +174,14 @@ impl PlayView {
                         [-radius, -radius, 2.0, radius * 2.0],
                         [radius, -radius, 2.0, radius * 2.0],
                     ] {
-                        pixel(
+                        pixel_opacity(
                             batch,
                             view,
                             atlas,
                             [x + half + dx, y + half + dy],
                             [w, h],
                             color,
+                            alpha,
                         )?;
                     }
                 }
@@ -204,4 +243,24 @@ fn pixel(
         size,
         uv: [u, v, u, v],
     })
+}
+
+fn pixel_opacity(
+    batch: &mut SpriteBatch,
+    view: &TileView,
+    atlas: &AtlasImage,
+    position: [f32; 2],
+    size: [f32; 2],
+    color: PresentationColor,
+    alpha: u8,
+) -> Result<(), BatchError> {
+    if alpha == 0 {
+        return Ok(());
+    }
+    let start = batch.len();
+    pixel(batch, view, atlas, position, size, color)?;
+    if batch.len() > start {
+        batch.lighting.opacity.push((start..batch.len(), alpha));
+    }
+    Ok(())
 }

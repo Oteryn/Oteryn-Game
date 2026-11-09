@@ -5,7 +5,7 @@ impl State {
         self.targeting = Some(source);
         self.rune_targeting = false;
         self.set_feedback(
-            "Use with: choose a target (Escape cancels)".into(),
+            tr!("Use with: choose a target (Escape cancels)").into(),
             std::time::Instant::now(),
         );
     }
@@ -13,7 +13,7 @@ impl State {
         if self.targeting.take().is_none() {
             return false;
         }
-        self.set_feedback("Use with cancelled".into(), std::time::Instant::now());
+        self.set_feedback(tr!("Use with cancelled").into(), std::time::Instant::now());
         true
     }
 }
@@ -22,7 +22,7 @@ impl State {
 pub fn source_current(state: &mut State, current: bool) {
     if !current && state.targeting.take().is_some() {
         state.set_feedback(
-            "Use with: source item disappeared".into(),
+            tr!("Use with: source item disappeared").into(),
             std::time::Instant::now(),
         );
     }

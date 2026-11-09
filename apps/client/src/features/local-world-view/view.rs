@@ -91,6 +91,7 @@ impl PlayView {
             &entities,
         )?;
         self.apply_preference_scale()?;
+        self.scene.target_frame = self.preferences().game_window.target_frame;
         self.scene.set_name_visibility(self.preferences().hud_names);
         self.scene.set_name_options(
             self.preferences().hud_marks_other,

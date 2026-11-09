@@ -149,17 +149,19 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Umiejętności, progress, loyalty",
-  "status": "PARTIAL",
-  "gap": "Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Skills widget z rzeczywistym postępem i paskami, poziomami trained/loyalty/current oraz trwałą konfiguracją widocznych statystyk i kolejności.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0274-loyalty-skills/native.rs:185 + native refresh and configurable skill rows; apps/client/src/features/0274-loyalty-skills/layout.rs:54 + server-backed widget projection; apps/client/src/features/0274-loyalty-skills/tests/play.rs:18 + skills_widget_uses_server_progress_and_saves_visible_order; apps/client/src/features/local-status-flows/tests/play.rs:298 + nx7_complete_skills_native_play_queue_decode_and_display; apps/client/src/features/local-reference-preferences/tests/status_order.rs:4 + status_order_settings_reach_confirmed_panels_and_survive_restart"
  },
  {
   "id": "T032",
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Spell list / spellbook",
-  "status": "PARTIAL",
-  "gap": "Jest katalog po name/words; brak wszystkich filtrów vocation/level/premium/group i pełnej książki czarów.",
+  "status": "DONE",
+  "gap": "Pełna książka czarów z filtrem nazwy/formuły, profesji, poziomu, premium i grupy; dane pochodzą z serwera.",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs:131 + spellbook_details_uses_real_book_vocations_premium_and_filters",
   "lane": "cg_options"
  },
  {
@@ -167,9 +169,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Magical Archive i przypisanie czaru",
-  "status": "PARTIAL",
-  "gap": "Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "T038",
@@ -266,20 +269,20 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Action Bar Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bindings.rs:77 + action_bar_hotkeys_route_every_supported_slot; Additional action-bar rows remain unsupported; all four existing slots are configurable."
+  "evidence": "apps/client/src/features/local-reference-preferences/bar_hotkeys.rs:85 + options_key_edit_uses_action_keys_and_executes_the_live_mixed_slot + action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch; Options reads and edits cg-options ActionKeys for all 36 slots; native bar edits sync back, named saved settings survive restart, mixed slots dispatch through the owner executor, repeats are suppressed and chat letters remain available. Legacy custom slot chords remain readable."
  },
  {
   "id": "T049",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Controls / Custom Hotkeys",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego edytora własnych object/text/passive actions i profili.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/profiles.rs:20 + hotkey_profiles_preserve_routes_across_restart; Object/text/passive action editor remains."
+  "evidence": "apps/client/src/features/local-reference-preferences/custom_dispatch.rs:8 + custom_passive_choices_use_confirmed_action_bar_status_interfaces; apps/client/src/features/local-reference-preferences/profiles.rs:107 + named_custom_profiles_restore_owner_bar_keys_and_mixed_assignments; apps/client/src/features/local-spell-action-bar/item_actions.rs:78 + custom_object_picker_uses_open_container_handles_and_current_combat_generation. Native custom actions reuse cg-options visible-item/combat-target resolution and confirmed passive labels. Profiles restore owner ActionKeys and mixed BarActions, explicit loads win older pending edits, and disconnect ends custom tracking. Existing text draft/send, equip and cooldown caller tests pass."
  },
  {
   "id": "T050",
@@ -345,99 +348,110 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Game Window: own/other spells, text, loot messages",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Zdarzenia są; brak przełączników według źródła i klasy tekstu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/game_window.rs:19 + t056_own_spell_filter_changes_live_projection; apps/client/src/features/0098-quick-loot/view.rs:3 + t056_loot_notice_filter_preserves_received_result"
  },
  {
   "id": "T057",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Game Window: target/PvP frame, banner, loot highlight",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Cel jest wybierany; brak konfiguracji ramek/banerów/kolorowania loot.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/actor_hud.rs:94 + t057_pvp_frames_follow_exact_server_entity_generation + t057_loot_highlight_tracks_live_corpse_visibility; apps/client/src/features/0092-zones-nologout/view.rs:29 + t057_banner_filter_retains_server_notice; apps/client/src/scene/tests.rs + t057_hiding_target_frame_preserves_selection"
  },
  {
   "id": "T058",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej strony ustawień barów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/view.rs:153 + t058_tooltip_toggle_projects_live_slot_details; apps/client/src/features/local-spell-action-bar/view.rs:165 + t058_rune_amounts_use_live_inventory_stacks + t058_auto_insert_uses_learned_server_catalog_once + t058_bar_labels_and_cooldowns_are_independent; apps/client/src/features/local-spell-action-bar/view.rs:162 + t058_row_layout_preserves_all_twelve_slots"
  },
  {
   "id": "T059",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Shortcuts: available/displayed, add/remove/order",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Rejestr akcji i visible_panels są; brak selektora i ustalania kolejności przycisków.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/shortcuts.rs:26 + apps/client/src/features/local-reference-preferences/shortcut_controls.rs:11 + apps/client/src/features/local-reference-preferences/native.rs:135 + apps/client/src/features/local-reference-preferences/tests/shortcuts.rs:3 t059_settings_selector_persists_order_and_routes_the_selected_shortcut"
  },
  {
   "id": "T060",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: engine, AA, fullscreen, VSync, integral scaling",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak strony konfiguracji obsługiwanych parametrów renderera/okna.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/graphics_controls.rs:9 + apps/client/src/windows_shell/graphics.rs:5 + apps/client/src/features/local-reference-preferences/graphics.rs:27 + apps/client/src/features/local-reference-preferences/tests/graphics.rs:3 t060_graphics_settings_restore_into_real_scene_and_presentation_request"
  },
  {
   "id": "T061",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: foreground/background FPS i FPS/latency indicator",
-  "status": "MISSING",
-  "gap": "Brak równoważnych kontrolek limitów i wskaźników w Settings.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings expose persisted foreground/background limits (1–360 FPS) and independent FPS/latency indicators. Window focus selects the live redraw limit; successful render presentations supply measured FPS and confirmed server cooldown observations supply latency, with explicit unavailable states.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:12 (native Frames settings entry); apps/client/src/features/local-reference-preferences/frames_native.rs:70 and :144 (controls, validation and saved preferences); apps/client/src/features/local-reference-preferences/frame_native.rs:29 (production focus-aware scheduling and indicators); apps/client/src/windows_shell/application_handler.rs:166 and apps/client/src/windows_shell/capture.rs:92 (live shell/render hooks); apps/client/src/features/local-reference-preferences/frames.rs:108 + frame_limits_follow_focus_and_report_measured_frames_and_server_latency (focus changes, measured FPS, real PlayLink server RTT, persistence and invalid-limit rejection)."
  },
  {
   "id": "T062",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: ambient/separator/indoor/cloud attenuation",
-  "status": "PARTIAL",
-  "gap": "Światło jest; brak grupy ambient/separator/attenuation.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0019-world-light/view.rs:7 + apps/client/src/features/local-reference-preferences/lighting_controls.rs:6 + graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation (apps/client/src/features/local-reference-preferences/tests/graphics.rs:44)"
  },
  {
   "id": "T063",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics / Effects: own/other/creature/boss-area opacity",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawień opacity według źródła efektu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/view.rs:120 + apps/client/src/features/local-reference-preferences/frame_controls.rs:20 + crates/client-assets/src/effects.rs:22; pinned_boss_area_category_reaches_wire_caller_and_gpu_alpha (apps/client/src/features/0023-presentation/tests/boss_area.rs:9), source_opacity_reaches_confirmed_effect_gpu_upload, pinned_manifest_owns_boss_area_classification and boss_area_metadata_rejects_invalid_and_duplicate_ids (crates/client-assets/tests/boss_area_metadata.rs). Four persisted opacity groups consume existing MagicEffect IDs; pinned asset metadata marks the boss-area appearance category independently of caster/source. Both offline and live world loading carry the catalog. Legacy packs without categories retain source-group rendering; no wire or capability extension."
  },
  {
   "id": "T064",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound: master/mute/device/music/ambient/items/events/UI",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "Existing implementation reverified after cgmech sync on 692b8b9da: apps/client/src/features/0023-presentation/native.rs:25 (device), native.rs:69 (active/new voice gains), native.rs:211 (UI); apps/client/src/features/local-reference-preferences/mixer_controls.rs:50 (settings caller). Tests: confirmed_sound_cues_use_pinned_mixer_routes (apps/client/tests/audio_mixer.rs:28), mixer_channels_are_independent_and_master_mute_wins (:4), requested_audio_device_is_exact_and_never_silently_falls_back (apps/client/tests/audio_device.rs:3), missing_device_choice_survives_preference_reload (:11), ambient_channel_gain_is_independent_and_honours_master_mute (apps/client/tests/ambient_sound_mix.rs:3). Main checked; full implementation is already on this lane."
  },
  {
   "id": "T065",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / Battle Sounds: own/others/creatures, attack/heal/support",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Playback istnieje; brak suwaków i filtrów walki.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/mixer.rs:37 + apps/client/src/features/0023-presentation/native.rs:72 + apps/client/src/features/local-reference-preferences/battle_filter_controls.rs:1; confirmed_battle_cues_respect_each_source_and_class (apps/client/tests/battle_filters.rs:34), battle_filters_separate_source_and_spell_class, battle_sound_source_gain_multiplies_master_and_mute. Nine persisted filters and three source gains consume confirmed sound cues and pinned battle_classes metadata; active voices reapply filters. Main and own branch checked first; legacy unclassified cues retain existing behaviour."
  },
  {
   "id": "T066",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Sound / UI Sounds: interactions/party/VIP/chat channels",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak filtrów dźwięków UI, party, VIP i kanałów.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/battle_sound_controls.rs:12 + apps/client/src/features/0023-presentation/ui_sound.rs:1 + apps/client/src/features/0023-presentation/native.rs:143; confirmed_ui_events_reach_filtered_native_audio_queue (apps/client/tests/ui_sound_filters.rs:13). Persisted interaction/party/VIP/chat filters drive native notification tones from confirmed events; queue bounded and VIP refreshes deduplicated. Checked origin/main and own branch before implementation."
  },
  {
   "id": "T067",
@@ -453,64 +467,70 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous: optimise connection stability",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/controls.rs:57 + apps/client/src/native_entry.rs:146 + crates/session-tcp/src/lib.rs:96; connection_optimisation_configures_real_tls_socket (crates/session-tcp/src/tests.rs:101), connection_optimisation_survives_the_admission_store_read. Settings disables TCP small-packet buffering at next login; existing TLS, admission and retries preserved. Checked origin/main 2033ddc54 and own branch first."
  },
  {
   "id": "T069",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Gameplay: inspect/chase cancel/nearby loot scheme",
-  "status": "PARTIAL",
-  "gap": "Inspect/loot/walk są osobno; brak pełnej strony i chase cancel/mouse loot controls.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/gameplay.rs:24 + gameplay_options_cancel_chase_before_manual_step; gameplay_mouse_loot_uses_negotiated_caller_and_saved_choices"
  },
  {
   "id": "T070",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: folder, game-only i manual capture",
-  "status": "MISSING",
-  "gap": "Brak systemu zrzutów i strony wyboru katalogu/zakresu.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Natywna strona Screenshots zapisuje folder i zakres game-only/full render; Print Screen pobiera klatkę z renderera i zapisuje BMP bez nadpisywania istniejących plików.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller; apps/client/src/features/local-reference-preferences/screenshot_native.rs:12 + native GPU/full-window capture; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
  },
  {
   "id": "T071",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: backlog i event triggers",
-  "status": "MISSING",
-  "gap": "Brak bufora wstecznego i automatycznych screenshotów zdarzeń.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Trwałe przełączniki level/death/achievement i opcjonalny backlog 0–10 s; renderowane klatki są próbkowane raz na sekundę, ograniczone do 64 MiB i zapisywane przy rzeczywistym zdarzeniu lub ręcznym capture.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native backlog and event settings; apps/client/src/features/local-reference-preferences/capture_backlog.rs:53 + bounded sampling and :94 + capture writer; apps/client/src/features/local-reference-preferences/screenshot_backlog.rs:44 + unified confirmed-event and bounded-backlog runner; apps/client/src/features/local-reference-preferences/screenshot_native.rs:12 + actual renderer/full-window capture caller; apps/client/src/screenshots_live_tests.rs:165 + screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_policy; apps/client/src/features/local-reference-preferences/capture_backlog.rs:126 + backlog_evicts_oldest_frames_before_exceeding_memory_budget"
  },
  {
   "id": "T072",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Help: FAQ/manual/client help/reports",
-  "status": "PARTIAL",
-  "gap": "Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Native Settings Help provides local FAQ, playing-manual and client-troubleshooting topics plus navigation to the existing Reports form. Report opening is deferred to the game thread, requires an active session and never submits a report automatically.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:8 (production Help navigation); apps/client/src/features/local-reference-preferences/help_native.rs:28 and :94 (native topics and report action); apps/client/src/features/local-reference-preferences/help.rs:12 and :32 (help content and session-bound report opening); apps/client/src/features/local-reference-preferences/native.rs:203 (game-thread consumer); apps/client/src/features/local-reference-preferences/tests/options_lane.rs:3 + help_navigation_opens_existing_report_without_submitting (all topics, unavailable-session rejection, real PlayLink report opening and empty command queue)."
  },
  {
   "id": "T073",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: settings import/export/backup/reset/defaults",
-  "status": "PARTIAL",
-  "gap": "Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults.",
+  "status": "DONE",
+  "gap": "Native settings expose confirmed import, export, backup restore and reset to defaults. Transfers validate bounded files, preserve the previous settings before replacement and refuse to overwrite an existing export. The former architecture blocker is resolved.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/store.rs:64 + active_settings_use_transfer_size_limit; existing settings_transfer_backup_and_defaults_survive_restart covers transfer/defaults. Remaining: workspace architecture validation blocked by unowned 0199-cyclopedia-character/native.rs (648 lines)."
+  "evidence": "apps/client/src/features/local-reference-preferences/dialog.rs:227 + apps/client/src/features/local-reference-preferences/transfer.rs:3 (production native actions 110–113); apps/client/src/features/local-reference-preferences/sync.rs:129 (SettingsState transfer/defaults API); apps/client/src/features/local-reference-preferences/store.rs:21 (validated 1 MiB reads and atomic storage); apps/client/src/features/local-reference-preferences/tests/play.rs:148 + settings_transfer_backup_and_defaults_survive_restart; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:275 + binding_snapshots_and_chat_profiles_survive_the_same_settings_transfer. Both caller tests and workspace architecture validation pass."
  },
  {
   "id": "T074",
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: minimap import/export",
-  "status": "MISSING",
-  "gap": "Brak narzędzia wymiany trwałych map/markerów.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings provide minimap import/export and marker editing. Imports require confirmation, validate bounded files and preserve character/world/channel/content scope; exports refuse to overwrite existing files. Imported observations never replace authoritative world geometry.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:11 (production settings navigation); apps/client/src/features/local-reference-preferences/minimap_native.rs:80 (import/export controls) and :181 (native transfer actions and confirmation); apps/client/src/features/local-minimap/view.rs:115 (export_new) and :131 (validated import); apps/client/src/features/local-minimap/tests/play.rs:239 + minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world (round-trip, markers, persistence, scope isolation, invalid and oversized files)."
  },
  {
   "id": "T076",
@@ -546,27 +566,30 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Map: areas/subareas/passages/PoI/NPC",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/atlas_native.rs:47 + atlas_real_playlink_projects_regions_markers_and_navigation + cyclopedia_postgres_real_dispatch (T079 framed atlas, NPCs, uncovered membership, POI visibility and fences)"
  },
  {
   "id": "T080",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bestiary: katalog/filter/combat/loot",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0067-bestiary-charm-progression/view/illustration.rs:4 + bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies + bestiary_catalogue_projects_active_creature_categories_stats_and_loot + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T080 framed complete catalogue, native combat/loot and category filter)"
  },
  {
   "id": "T081",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Charms: points/unlock/assign/remove/reset",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/metadata.rs:11 + named_charms_and_creatures_drive_the_real_progression_caller + duplicate_creature_captions_keep_the_selected_server_identity + charm_names_and_descriptions_match_the_actual_server_catalogue + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T081 framed names, stage costs/chances and authoritative unlock/assign/remove/reset)"
  },
  {
   "id": "T082",
@@ -611,54 +634,60 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Overview / General Stats",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnego wizualnego overview i układu statystyk.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:31 + character_statistics_decode_real_general_and_combat_results + overview_cards_and_resource_bars_project_the_confirmed_general_stats"
  },
  {
   "id": "T087",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Offence / źródła i spell augments",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tekstowy odczyt; brak pełnego układu i interaktywnych opisów źródeł.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/attack/cyclopedia_augments.rs:114 + t087_offence_augments_postgres_real_capture_privacy_replay_and_fences + spell_augments_reach_the_native_view_through_real_playlink_and_outbox + offence_sources_reach_the_native_table_through_the_real_adapter"
  },
  {
   "id": "T088",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Defence / mitigation/resistance",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej tabeli/układu i interaktywnych szczegółów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:136 + character_statistics_decode_real_general_and_combat_results"
  },
  {
   "id": "T089",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Misc Stats / skills/stamina",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Dane tekstowe; brak pełnej prezentacji i pasków.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:232 + misc_resource_read_uses_the_real_command_adapter_without_navigating_away"
  },
  {
   "id": "T090",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Recent Deaths",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Stronicowanie jest; brak pełnej tabeli szczegółów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:19 + character_histories_use_real_requests_results_and_local_status_filters"
  },
  {
   "id": "T091",
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Recent PvP Kills / Battle Results",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak pełnej tabeli i filtrów rodzajów zabójstw.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0199-cyclopedia-character/view.rs:19 + character_histories_use_real_requests_results_and_local_status_filters"
  },
  {
   "id": "T092",
@@ -715,9 +744,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Badges / cudza postać / inspection",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/durability/src/durability/cyclopedia_character/profile.rs:5 + character_profile_postgres_real_dispatch_and_privacy + native_badge_target_and_refresh_do_not_query_viewer_badges"
  },
  {
   "id": "T098",
@@ -865,8 +895,10 @@
   "area": "Hunting tasks",
   "feature": "Soul Seals fight dialog",
   "status": "PARTIAL",
-  "gap": "Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia.",
-  "lane": "cg_cyclo"
+  "gap": "BLOCKED: missing accepted Soulseal fight catalogue, costs, and entry contract; existing Task Board supplies balances only and Soulpit requires physical Soul Cores.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0072-task-board/view.rs:24 + soulseal_dialog_refreshes_confirmed_balance_without_inventing_fight_offers; remaining: BLOCKED: missing accepted Soulseal fight catalogue, costs, and entry contract; existing Task Board supplies balances only and Soulpit requires physical Soul Cores.",
+  "blocker_evidence": "Canary 99902524e052f37574194466c2949c576e4ab269 data/modules/scripts/soulseals/soulseals.lua:48-49 returns an empty dialog; no fight implementation or Soulseal spending rules. SHA256 506470c94d51c75ff9481a6de7399856ecb47e5bf6d18c8a423cb27972661af7."
  },
  {
   "id": "T115",
@@ -951,7 +983,8 @@
   "feature": "Browse/buy/sell/create/cancel/history",
   "status": "PARTIAL",
   "gap": "Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0063-market/input.rs:5 + market_side_filter_preserves_server_offer_identity (page side filter only; remaining gaps unchanged)"
  },
  {
   "id": "T125",
@@ -977,8 +1010,9 @@
   "src": "TIBAUD-1",
   "area": "Stash",
   "feature": "Stow/withdraw/paging i search/filter/sort",
-  "status": "PARTIAL",
-  "gap": "Stow/withdraw/paging są; brak pełnej wyszukiwarki, filtrów trader/category i sort stock/name.",
+  "status": "DONE",
+  "gap": "—",
+  "evidence": "apps/client/src/features/0062-stash/input.rs:33 + stash_panel_request_uses_codec_and_applies_encoded_reply; crates/gameplay/durability/src/durability/character_stash/browse.rs:13 + stash_global_filter_precedes_pagination_and_stock_order_is_stable; stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays",
   "lane": "cg_ui"
  },
  {
@@ -988,15 +1022,17 @@
   "feature": "Katalog/search/buy/confirmation/result",
   "status": "PARTIAL",
   "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0154-store/input.rs:33 + store_category_navigation_sends_server_key_with_fresh_cursor (category navigation; graphical preview remains)"
  },
  {
   "id": "T131",
   "src": "TIBAUD-1",
   "area": "Store",
   "feature": "Purchase history i coins history",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt historii istnieje; brak pełnych filtrów, szczegółów i wszystkich rodzajów transakcji.",
+  "evidence": "apps/client/src/features/0154-store/input.rs:64 + coin_history_real_caller_preserves_signed_ledger_kinds_filters_and_cursor; crates/gameplay/dispatch/src/gameplay_transport/store/coin_history.rs:4 + coin_history_dispatch_projection_reads_all_platform_kinds_and_rejects_foreign_accounts",
   "lane": "cg_ui"
  },
  {
@@ -1013,9 +1049,10 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Guest/subowner/door ACL, bid/leave/notice",
-  "status": "PARTIAL",
-  "gap": "Controller i wire są; brak play.json i produkcyjnego wywołania controller::submit (montaż tylko apps/client/tests/gap_house.rs:21).",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Produkcyjny formularz Houses i play.json montują komendy: bid, guest/subowner/door ACL, leave oraz notice/cancel. Zmiany wymagają potwierdzenia, bieżącego katalogu i rewizji ACL z odpowiedzi serwera.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0049-house/play.json:1 + mounted state/input/view; apps/client/src/features/0049-house/view.rs:11 + native form submit to production input; apps/client/src/features/0049-house/input.rs:122 + controller::submit and :136 + command queue; apps/client/src/features/0049-house/tests/play.rs:6 + house_production_queue_and_result_cleanup; apps/client/src/features/0049-house/tests/play.rs:50 + house_changes_require_confirmation_and_current_catalogue; apps/client/src/features/0049-house/tests/play.rs:117 + house_acl_editor_loads_each_server_list_and_saves_its_revision; apps/client/tests/gap_house.rs:24 + gap_house_all_action_selections"
  },
  {
   "id": "T135",
@@ -1031,9 +1068,10 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Podium: outfit/mount/creature/item",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Set/projection są; brak preview i kompletu przełączników creature podium.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0150-house-podium/graphic_window.rs:18; apps/client/src/features/0150-house-podium/preview_assets.rs:25; crates/gameplay/dispatch/src/gameplay_transport/house_podium.rs:183 + cp01_house_podium_scenario (observed red/green); podium_preview_composites_and_clips_real_sprite_cells; podium_artwork_route_decodes_draft_and_returns_real_artwork_codec"
  },
  {
   "id": "T137",
@@ -1062,7 +1100,7 @@
   "feature": "Offline / exercise / multi-character dialog",
   "status": "DONE",
   "gap": "Komendy offline/exercise są; brak pełnego multi-character wyboru treningu.",
-  "evidence": "apps/client/src/reentry.rs:204 + training_batch_reentry_advances_only_after_confirmation_and_cancel_clears_the_queue; apps/client/src/native_entry/authorize.rs:71 + training_batch_admits_each_owned_character_with_a_fresh_ticket",
+  "evidence": "apps/client/src/reentry.rs:204 + training_batch_reentry_advances_only_after_confirmation_and_cancel_clears_the_queue; apps/client/src/native_entry/authorize.rs:71 + training_batch_admits_each_owned_character_with_a_fresh_ticket; apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training",
   "lane": "cg_analytics"
  },
  {
@@ -1081,8 +1119,9 @@
   "area": "Highscores",
   "feature": "Kategorie/world/vocation, paging/show-me",
   "status": "PARTIAL",
-  "gap": "Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone.",
-  "lane": "cg_cyclo"
+  "gap": "Show Me exists; cross-world selection remains blocked: accepted HIGHSCORES0 reserves other-World filters for a separate decision or amendment; command 14 reads the admitted session World only.",
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0009-highscores/protocol.rs:21 (ShowMe); crates/gameplay/dispatch/src/gameplay_transport/connection/routing/highscores.rs:18 (admitted.world_id); docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md:39 (owning amendment prerequisite)."
  },
  {
   "id": "T144",
@@ -1090,9 +1129,9 @@
   "area": "Rewards",
   "feature": "Daily wall/streak/jokers/claim/pick items",
   "status": "PARTIAL",
-  "gap": "30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog.",
+  "gap": "Brak pick-items: DAILY_REWARD_V2 celowo usuwa wybór nagród; potrzebna decyzja właściciela o katalogu i regułach wyboru.",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0182-daily-reward/view.rs:3 + reward_calendar_records_only_server_confirmed_claims; PARTIAL: account history and item picker remain"
+  "evidence": "apps/client/src/features/0182-daily-reward/protocol.rs:4 + daily_reward_catalogue_and_account_history_cross_real_session_caller; 30-day Free/Premium catalogue and durable account/World history wired through command 738 on existing capability 182; production PostgreSQL caller daily_reward_real_dispatch_delivers_replays_reloads_and_orders_thirty_days; remaining item-choice picker conflicts with DAILY_REWARD_V2 one-click contract and awaits owner choice rules"
  },
  {
   "id": "T145",
@@ -1297,27 +1336,30 @@
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Lokalizacja interfejsu",
-  "status": "PARTIAL",
-  "gap": "Brakuje wyboru i kompletnego tłumaczenia interfejsu dla katalogu języków OTClient; ustawienia Oteryn przewidują przełącznik PL/EN.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/localization.rs:5 + crates/client-ui/src/components/localization/build.rs:8 + language_selection_persists_and_localizes_real_chat_view_without_changing_messages (apps/client/src/features/local-reference-preferences/tests/localization.rs:5)"
  },
  {
   "id": "O006",
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Opcje i ustawienia",
-  "status": "PARTIAL",
-  "gap": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/presentation.rs:72 + console_and_action_bar_settings_reach_received_chat_and_cast_caller; existing graphics projection covered by t012_visual_preferences_control_live_effect_projection"
  },
  {
   "id": "O010",
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Górne menu i przyciski okien",
-  "status": "PARTIAL",
-  "gap": "Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Wspólny pasek przycisków otwiera istniejące okna przez normalne wejścia klienta, respektuje zmienione skróty i zarządza widocznością paneli.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:115 + shared native window buttons and click routing at :298; apps/client/src/features/local-reference-preferences/sync.rs:115 + queue_window and take_window_events; apps/client/src/windows_shell/application_handler.rs:145 + live menu event dispatch; apps/client/src/features/local-reference-preferences/tests/presentation.rs:110 + o010_menu_uses_live_window_inputs_after_rebinding; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:130 + shortcut_order_persists_and_buttons_open_real_panels"
  },
  {
   "id": "O011",
@@ -1344,18 +1386,20 @@
   "src": "OTCAUD1108",
   "area": "Battle list",
   "feature": "Battle list i wybór celu",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0017-attack/metadata.rs:41; apps/client/src/features/0017-attack/metadata_native.rs:9; crates/gameplay/dispatch/src/gameplay_transport/battle_metadata.rs:23 + battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filtered_actor; battle_metadata_route_enforces_selection_and_bounded_request"
  },
  {
   "id": "O015",
   "src": "OTCAUD1108",
   "area": "Cyclopedia / Character",
   "feature": "Błogosławieństwa i ochrona po śmierci",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje panelu prognozy kary XP/PvP i utraty ekwipunku przed śmiercią; dostępne są listy błogosławieństw i ich zużycia po śmierci.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/view/protection_window.rs:32 + crates/client-ui/src/features/0199-cyclopedia-character/view/protection.rs:37 + apps/client/src/features/0199-cyclopedia-character/tests/protection.rs:8 o015_forecast_caller_renders_server_xp_pvp_item_risk_and_consumption + crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_protection.rs:13 cyclopedia_protection_forecast_real_dispatch"
  },
  {
   "id": "O017",
@@ -1391,9 +1435,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Okręgi HP/MP i status mnicha",
-  "status": "PARTIAL",
-  "gap": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Okręgi HP/MP wokół postaci i wskaźniki harmony/serene korzystają z potwierdzonych zasobów; widoczność, geometria i przezroczystość mają trwałe ustawienia.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:99 + monk indicators and player-centred HP/MP rings; apps/client/src/features/local-reference-preferences/arc_controls.rs:91 + native circle settings; apps/client/src/features/local-reference-preferences/tests/presentation.rs:171 + o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals; apps/client/src/features/local-reference-preferences/tests/hud_options.rs:104 + hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:218 + hud_arcs_project_server_vitals_and_persist_geometry_controls"
  },
  {
   "id": "O028",
@@ -1448,9 +1493,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Główny panel skrótów funkcji",
-  "status": "PARTIAL",
-  "gap": "Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Główny panel przycisków funkcji ma zwijanie, trwałą kolejność i selektor dodawania/usuwania; przyciski otwierają istniejące okna klienta.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:152 + collapsible function panel and saved ordering; apps/client/src/features/local-reference-preferences/native.rs:288 + persist collapse action; apps/client/src/features/local-reference-preferences/shortcut_controls.rs:52 + native add/remove/reorder controls; apps/client/src/features/local-reference-preferences/shortcuts.rs:27 + validated layout edits; apps/client/src/features/local-reference-preferences/tests/presentation.rs:196 + o037_shortcut_panel_collapse_and_order_survive_restart; apps/client/src/features/local-reference-preferences/tests/shortcuts.rs:3 + t059_settings_selector_persists_order_and_routes_the_selected_shortcut"
  },
  {
   "id": "O039",
@@ -1460,7 +1506,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation"
+  "evidence": "apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation; apps/client/src/features/local-minimap/state.rs:79 + live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_binding; apps/client/src/features/local-minimap/tests/play_persistence.rs:10"
  },
  {
   "id": "O040",
@@ -1516,9 +1562,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Lista czarów i wyszukiwanie",
-  "status": "PARTIAL",
-  "gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Filtry nazwy/formuły, profesji, grupy, poziomu i premium; karta szczegółów z czasem pozostałego cooldownu opartym na snapshotach serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:323 + native filtered spell detail with live cooldown projection; apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; apps/client/src/features/0287-actor-spell-catalog/book_detail.rs:50 + spellbook_details_project_live_spell_and_group_cooldowns_without_claiming_cast_authority"
  },
  {
   "id": "O066",
@@ -1595,9 +1642,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Cyklopedia: Magical Archive",
-  "status": "PARTIAL",
-  "gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "O083",

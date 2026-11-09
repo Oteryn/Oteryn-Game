@@ -71,6 +71,20 @@ macro_rules! dispatch {
                     Err(error) => error,
                 }
             }
+            Ok(crate::combat_input::PlayCommand::MoveContents(requests)) => {
+                let mut failure = None;
+                for request in requests {
+                    match $session.move_item(request).await {
+                        Ok(response) => {
+                            let more = $outbox.container_bulk_result(response);
+                            $publish(&mut $session, &$outbox, &mut $held);
+                            if !more { break; }
+                        }
+                        Err(error) => { failure = Some(error); break; }
+                    }
+                }
+                if let Some(error) = failure { error } else { continue; }
+            }
             $($arms)*
         }
     };

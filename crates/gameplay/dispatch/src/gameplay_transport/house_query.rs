@@ -5,6 +5,8 @@ use super::{
 };
 use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::house::{self as wire, HouseDisposition as D};
+#[path = "house_query/acl.rs"]
+mod acl;
 use serde::Deserialize;
 use std::sync::OnceLock;
 #[derive(Deserialize)]
@@ -168,6 +170,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             runtime.content_pin().server_artifact_digest()
         };
+        if let Some(read) = query.acl {
+            return self
+                .query_house_acl(fence, &query.town, read, content_digest, include_kind)
+                .await;
+        }
         let houses = catalogue()?
             .iter()
             .filter(|h| h.town.key == query.town)

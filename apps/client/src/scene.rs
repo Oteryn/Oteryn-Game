@@ -30,6 +30,7 @@ const _: () = assert!(
 #[derive(Debug, Clone)]
 pub struct Scene {
     minimap: bool,
+    floor_separator: u8,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
     pub(crate) minimap_floor: i16,
@@ -44,6 +45,7 @@ pub struct Scene {
     tiles: TileBatch,
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
+    pub(crate) target_frame: bool,
     target: Option<Targetable>,
     presentation_atlas: Option<Arc<AtlasImage>>,
     cache: appearance_cache::PresentationCache,
@@ -105,6 +107,7 @@ impl Scene {
             .collect();
         let mut scene = Self {
             minimap: false,
+            floor_separator: 0,
             minimap_state: None,
             minimap_floor: -7,
             minimap_memory: Default::default(),
@@ -118,6 +121,7 @@ impl Scene {
             tiles,
             sprites: SpriteBatch::new(),
             visible,
+            target_frame: true,
             target: None,
             presentation_atlas: None,
             cache: appearance_cache::PresentationCache::default(),
@@ -224,61 +228,8 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let (atlas, origin) = (self.atlas(), self.view.origin());
-        let mut sprites = oteryn_renderer::world::sprite_batch(
-            &self.view,
-            atlas,
-            |emit| {
-                for floor in self.world.draw_floors() {
-                    let own_floor = floor == self.world.center().2;
-                    visit_scene_entities(
-                        (origin.x, origin.y),
-                        self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                        (
-                            (self.own.x, self.own.y),
-                            if own_floor {
-                                self.own_draws
-                                    .as_deref()
-                                    .unwrap_or_else(|| self.world.player(self.facing))
-                            } else {
-                                &[]
-                            },
-                        ),
-                        |x, y| self.world.floor_tile(floor, x, y),
-                        |x, y| {
-                            let tile = TileCoord::new(x, y);
-                            if !own_floor {
-                                return Vec::new();
-                            }
-                            let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
-                            // Object markers remain below actors. Entity fallback glyphs are replaced.
-                            let marker = self.visible.iter().any(|v| {
-                                v.tile == tile
-                                    && ((v.kind == TargetKind::Object
-                                        && (v.glyph || v.item.is_none()))
-                                        || (v.glyph && !has_actor))
-                            });
-                            marker
-                                .then_some(Draw {
-                                    cell: MARKER_CELL,
-                                    offset: [0, 0],
-                                })
-                                .into_iter()
-                                .chain(
-                                    self.actor_draws
-                                        .iter()
-                                        .filter(|(at, _)| *at == tile)
-                                        .flat_map(|(_, draws)| draws.iter().copied()),
-                                )
-                                .collect()
-                        },
-                        &mut *emit,
-                    )?;
-                }
-                Ok(())
-            },
-            self.target.map(|target| target.tile),
-        )?;
+        let atlas = self.atlas();
+        let (mut sprites, dimmed) = self.world_sprites()?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
             let scale = f32::from(self.label_scale) / 100.0;
@@ -299,6 +250,7 @@ impl Scene {
         }
         sprites.lighting.clone_from(&self.sprites.lighting);
         sprites.lighting.opacity.clear();
+        sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
         if self.minimap {
             self.draw_minimap()?;
@@ -352,3 +304,6 @@ mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+
+#[path = "features/0019-world-light/scene.rs"]
+mod floor_lighting;

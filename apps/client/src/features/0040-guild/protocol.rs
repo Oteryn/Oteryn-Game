@@ -59,7 +59,7 @@ impl Outbox {
         if refusal.is_some() {
             mailbox.guild.feedback = refusal;
         } else if refresh && mailbox.guild.feedback.is_none() {
-            mailbox.guild.feedback = Some("Guild action accepted".into());
+            mailbox.guild.feedback = Some(tr!("Guild action accepted").into());
         }
         Ok(())
     }

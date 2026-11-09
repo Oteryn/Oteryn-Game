@@ -17,7 +17,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
             generation: panel.fields[3]
                 .trim()
                 .parse()
-                .map_err(|_| "Enter Aldo's current generation")?,
+                .map_err(|_| tr!("Enter Aldo's current generation"))?,
         })
     } else {
         None
@@ -28,10 +28,10 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         expected_revision: panel.fields[1]
             .trim()
             .parse()
-            .map_err(|_| "Enter the expected item revision")?,
+            .map_err(|_| tr!("Enter the expected item revision"))?,
         npc,
     })
-    .map_err(|_| "Invalid timed item request")?;
+    .map_err(|_| tr!("Invalid timed item request"))?;
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_TIMED_ITEM_V1,
         kind: wire::COMMAND_TYPE_TIMED_ITEM_INTENT,
@@ -53,9 +53,9 @@ pub(in crate::play) fn apply(
         Ok(state) => state,
         Err(_) => {
             panel.feedback = if accepted(result) {
-                "Invalid timed item reply"
+                tr!("Invalid timed item reply")
             } else {
-                "The server refused the request"
+                tr!("The server refused the request")
             }
             .into();
             return;
@@ -63,13 +63,13 @@ pub(in crate::play) fn apply(
     };
     use wire::TimedDisposition as Disposition;
     panel.feedback = match state.disposition {
-        Disposition::Rejected => "The server refused the timed item request",
-        Disposition::Stale => "The item revision is stale; inspect the item again",
-        Disposition::InsufficientFunds => "Insufficient funds for repair",
-        Disposition::Ok if !accepted(result) => "The server refused the request",
+        Disposition::Rejected => tr!("The server refused the timed item request"),
+        Disposition::Stale => tr!("The item revision is stale; inspect the item again"),
+        Disposition::InsufficientFunds => tr!("Insufficient funds for repair"),
+        Disposition::Ok if !accepted(result) => tr!("The server refused the request"),
         Disposition::Ok => {
-            panel.summary = format!("Revision {} | Charges {:?} | Remaining ms {:?}\r\nRetired: {} | Repair fee: {} gold", state.revision, state.charges, state.remaining_ms, state.retired, state.fee_gold);
-            "Timed item updated"
+            panel.summary = lfmt!("Revision {} | Charges {:?} | Remaining ms {:?}\r\nRetired: {} | Repair fee: {} gold", state.revision, state.charges, state.remaining_ms, state.retired, state.fee_gold);
+            tr!("Timed item updated")
         }
     }.into();
 }

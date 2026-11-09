@@ -12,24 +12,24 @@ pub(in crate::play) fn command(panel: &Panel, _: Intent) -> Result<FeatureComman
         "1" => FightMode::Offensive,
         "2" => FightMode::Balanced,
         "3" => FightMode::Defensive,
-        _ => return Err("Choose a fight mode from 1 to 3".into()),
+        _ => return Err(tr!("Choose a fight mode from 1 to 3").into()),
     };
     let chase = match panel.fields[1].trim() {
         "1" => ChaseMode::Stand,
         "2" => ChaseMode::Chase,
-        _ => return Err("Choose stand (1) or chase (2)".into()),
+        _ => return Err(tr!("Choose stand (1) or chase (2)").into()),
     };
     let secure = match panel.fields[2].trim() {
         "0" => false,
         "1" => true,
-        _ => return Err("Choose secure off (0) or on (1)".into()),
+        _ => return Err(tr!("Choose secure off (0) or on (1)").into()),
     };
     let expert = match panel.fields[3].trim() {
         "0" => wire::ExpertMode::Dove,
         "1" => wire::ExpertMode::WhiteHand,
         "2" => wire::ExpertMode::YellowHand,
         "3" => wire::ExpertMode::RedFist,
-        _ => return Err("Choose an expert mode from 0 to 3".into()),
+        _ => return Err(tr!("Choose an expert mode from 0 to 3").into()),
     };
     Ok(FeatureCommand {
         capability: wire::CAPABILITY_PVP_EXPERT_V1,
@@ -54,14 +54,14 @@ pub(in crate::play) fn apply(
     }
     panel.pending = false;
     panel.feedback = if !accepted(result) {
-        "The server refused the expert mode request"
+        tr!("The server refused the expert mode request")
     } else {
         match wire::attack::decode_attack_intent_result(&result.payload) {
             Ok(wire::attack::AttackIntentDisposition::Ok) => {
-                "Request accepted; confirmed modes follow the server state"
+                tr!("Request accepted; confirmed modes follow the server state")
             }
-            Ok(_) => "The server refused the expert mode request",
-            Err(_) => "Invalid expert mode reply",
+            Ok(_) => tr!("The server refused the expert mode request"),
+            Err(_) => tr!("Invalid expert mode reply"),
         }
     }
     .into();
@@ -79,9 +79,12 @@ fn state(panel: &mut Panel, modes: wire::ExpertFightModes) {
             (modes.expert as u32).to_string(),
         ];
     }
-    panel.summary = format!(
+    panel.summary = lfmt!(
         "Confirmed: {:?}, {:?}, secure {}, {:?}",
-        modes.modes.fight_mode, modes.modes.chase, modes.modes.secure, modes.expert
+        modes.modes.fight_mode,
+        modes.modes.chase,
+        modes.modes.secure,
+        modes.expert
     );
 }
 pub(in crate::play) fn initialize<T: Stepper>(panel: &mut Panel, session: &T) {
@@ -94,7 +97,7 @@ pub(in crate::play) fn initialize<T: Stepper>(panel: &mut Panel, session: &T) {
     {
         state(panel, modes);
     } else {
-        panel.feedback = "Invalid expert mode state".into();
+        panel.feedback = tr!("Invalid expert mode state").into();
     }
 }
 impl Outbox {

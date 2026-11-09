@@ -30,7 +30,7 @@ pub(in crate::play) fn enabled(panel: &DepotSearchPanel) -> bool {
 pub(in crate::play) fn presentation(panel: &DepotSearchPanel) -> String {
     let mut text = oteryn_client_ui::depot_search::panel_text(panel);
     if panel.pending {
-        text.push_str("\nWaiting for server…");
+        text.push_str(tr!("\nWaiting for server…"));
     }
 
     text
@@ -74,7 +74,7 @@ fn dispatch_panel(
         Some(())
     })();
     if parsed.is_none() {
-        panel.feedback = Some("Enter valid values for the labelled controls".into());
+        panel.feedback = Some(tr!("Enter valid values for the labelled controls").into());
         return;
     }
     let command = if detail {
@@ -86,7 +86,7 @@ fn dispatch_panel(
         && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         panel.pending = false;
-        panel.feedback = Some("The session has ended".into());
+        panel.feedback = Some(tr!("The session has ended").into());
     }
 }
 
@@ -94,15 +94,39 @@ fn dispatch_panel(
 pub(in crate::play) fn activate(link: &PlayLink, inputs: &Inputs, action: usize) {
     activate_shared(&link.mailbox, &link.commands, inputs, action);
 }
+#[cfg(test)]
 pub(in crate::play) fn activate_shared(
     shared: &SharedMailbox,
     commands: &UnboundedSender<PlayCommand>,
     inputs: &Inputs,
     action: usize,
 ) {
-    use oteryn_client_runtime::cui3::depot_search::{self as wire, Outcome, Request};
+    activate_panel(&mut lock(shared).depot_search, commands, inputs, action);
+}
+
+pub(in crate::play) fn activate_displayed(
+    shared: &SharedMailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    inputs: &Inputs,
+    action: usize,
+    displayed: Option<&oteryn_client_runtime::cui3::depot_search::Reply>,
+) {
     let mut mailbox = lock(shared);
     let panel = &mut mailbox.depot_search;
+    if matches!(action, 4 | 7 | 8) && panel.reply.as_ref() != displayed {
+        panel.feedback = Some("Results changed; select from the refreshed list".into());
+        return;
+    }
+    activate_panel(panel, commands, inputs, action);
+}
+
+fn activate_panel(
+    panel: &mut DepotSearchPanel,
+    commands: &UnboundedSender<PlayCommand>,
+    inputs: &Inputs,
+    action: usize,
+) {
+    use oteryn_client_runtime::cui3::depot_search::{self as wire, Outcome, Request};
     if action == 1 {
         dispatch_panel(panel, commands, inputs, false);
         return;
@@ -137,7 +161,7 @@ pub(in crate::play) fn activate_shared(
     };
     let Some(payload) = request.and_then(|r| wire::encode_request(r).ok()) else {
         panel.feedback =
-            Some("Select a current result, or list holdings for the first page".into());
+            Some(tr!("Select a current result, or list holdings for the first page").into());
         return;
     };
     if let Some(command) = oteryn_client_ui::depot_search::request(
@@ -146,7 +170,7 @@ pub(in crate::play) fn activate_shared(
     ) && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         panel.pending = false;
-        panel.feedback = Some("The session has ended".into());
+        panel.feedback = Some(tr!("The session has ended").into());
     }
 }
 

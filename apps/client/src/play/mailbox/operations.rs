@@ -109,6 +109,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
@@ -123,6 +124,7 @@ impl Outbox {
         mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
+        mailbox.bar_actions = Default::default();
         mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
@@ -158,6 +160,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
@@ -171,6 +174,7 @@ impl Outbox {
         mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
+        mailbox.bar_actions = Default::default();
         mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.battle_end();
@@ -279,6 +283,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
@@ -291,6 +296,7 @@ impl Drop for PlayLink {
         mailbox.spellbook_details = Default::default();
         mailbox.spell_catalog = Default::default();
         mailbox.spell_bar = Default::default();
+        mailbox.bar_actions = Default::default();
         mailbox.boss_encounter_end();
         mailbox.player_trade = Default::default();
         mailbox.world_event_shutdown = true;

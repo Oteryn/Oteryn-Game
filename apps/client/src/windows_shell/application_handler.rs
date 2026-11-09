@@ -16,7 +16,7 @@ impl ApplicationHandler for Application {
             return;
         }
         let attributes = WindowAttributes::default()
-            .with_title("Oteryn — Enter: connection and sign-in")
+            .with_title(tr!("Oteryn — Enter: connection and sign-in"))
             .with_active(self.smoke)
             .with_inner_size(LogicalSize::new(960.0, 540.0));
         let Ok(window) = event_loop.create_window(attributes) else {
@@ -48,7 +48,10 @@ impl ApplicationHandler for Application {
         } else {
             let (world, reason) = World::from_env(center);
             if let Some(reason) = reason {
-                println!("Oteryn: drawing without map sprites: {reason}");
+                lprintln!(
+                    "Oteryn: drawing without map sprites: {reason}",
+                    reason = reason
+                );
             }
             let Ok(world) = world.map(Arc::new) else {
                 self.fail(event_loop, ShellError::RendererInitialization);
@@ -138,6 +141,10 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if let Err(error) = self.apply_graphics() {
+            self.fail(event_loop, error);
+            return;
+        }
         let menu_events = self.settings.take_window_events(self.play.is_some());
         if !menu_events.is_empty() && self.play.is_some() {
             self.handle_input(event_loop, &menu_events);
@@ -157,7 +164,6 @@ impl ApplicationHandler for Application {
         if let (Some(play), Some(window)) = (&self.play, &self.window) {
             play.link.item_drag_tick(&play.view, window);
         }
-        self.capture_tick();
         self.update_hud();
         self.schedule_frames(event_loop);
     }

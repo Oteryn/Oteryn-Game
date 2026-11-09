@@ -19,23 +19,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Town key",
                 "House row (1 onwards)",
                 "Bid / notice Unix time",
-                "Member UUIDs (space separated)",
+                "Member UUIDs (space/newline separated)",
                 "Door: x y floor (uses current house ACL revision)",
                 "Type CONFIRM for changes",
             ],
-            buttons: &[
-                "Query",
-                "Next",
-                "Bid",
-                "Guests",
-                "Subowners",
-                "Door",
-                "Kick",
-                "Leave",
-                "Notice",
-                "Cancel notice",
-                "Show entrance map",
-            ],
+            buttons: super::input::BUTTONS,
             snapshot: |mailbox| {
                 let p = &mailbox.properties.house;
                 (
@@ -81,9 +69,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 #[cfg(windows)]
 fn text(panel: &oteryn_client_ui::house::Panel) -> String {
     let mut text = oteryn_client_ui::house::panel_text(panel);
-    text.push_str("\r\nSelect a row for changes:");
+    text.push_str(tr!("\r\nSelect a row for changes:"));
     for (index, row) in panel.page.rows.iter().enumerate() {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "\r\n{}: {} (owned: {})",
             index + 1,
             row.house,

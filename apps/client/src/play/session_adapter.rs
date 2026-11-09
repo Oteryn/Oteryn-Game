@@ -1,6 +1,12 @@
 use super::*;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> {
+        let entities = self.world_entities()?;
+        entities.iter().find_map(|entity| {
+            (entity.entity.identity == *entities.own_identity()).then_some(*entity)
+        })
+    }
     fn refusal_detail(&self) -> Option<oteryn_session::refusal_detail::RefusalDetail> {
         self.last_refusal_detail()
     }
@@ -376,8 +382,7 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
     fn guild_chat_state(&self) -> oteryn_session::GuildRoomState {
         self.chat_log()
-            .map(|log| log.guild_room().clone())
-            .unwrap_or_default()
+            .map_or_else(Default::default, |log| log.guild_room().clone())
     }
     fn chat_public_selected(&self) -> bool {
         self.is_selected(259)

@@ -11,8 +11,16 @@ pub(super) async fn dispatch(
     admitted: AdmittedSession,
     payload: &[u8],
 ) -> GuildReply {
-    let Ok(request) = wire::decode_request(payload) else {
-        return GuildReply::Rejected;
+    let named_races = if payload.starts_with(&[255,3]) && (4..=12).contains(&payload.len()) && payload.len().is_multiple_of(2) {
+        let races:Vec<_>=payload[2..].as_chunks::<2>().0.iter().map(|b|u16::from_le_bytes(*b)).collect();
+        if races.iter().any(|r|!(1..=1024).contains(r)) || races.windows(2).any(|p|p[0]>=p[1]) { return GuildReply::Rejected; }
+        Some(races)
+    } else { None };
+    let charm_after = match payload { [255, 2, after] if *after <= 32 => Some(*after), _ => None };
+    let metadata_after = if payload.first() == Some(&254) { match wire::decode_charm_request(payload) { Ok(after) => Some(after), Err(_) => return GuildReply::Rejected } } else { None };
+    let request = if metadata_after.is_some() || charm_after.is_some() || named_races.is_some() { Request { after: 0, race: 0, category: 0 } } else {
+        let Ok(request) = wire::decode_request(payload) else { return GuildReply::Rejected; };
+        request
     };
     let Some(current) =
         super::super::character_gameplay_fence::current(owner, admitted.game_session_id, false)
@@ -31,27 +39,44 @@ pub(super) async fn dispatch(
         return GuildReply::Rejected;
     }
     drop(runtime);
+    if let Some(after) = metadata_after {
+        return super::metadata::project(owner.imported_charms, after)
+            .and_then(|page| wire::encode_page(&page).ok())
+            .map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     let Some(native) = owner
         .active_generation
         .and_then(crate::content::ActiveGeneration::native_gameplay)
     else {
         return GuildReply::Rejected;
     };
+    if let Some(ids) = named_races {
+        let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
+        let cards:Option<Vec<_>>=ids.into_iter().map(|id|card(native,races.get(usize::from(id-1))?,id)).collect();
+        return cards.and_then(|cards| { let categories=cards.iter().map(|c|c.category.clone()).collect::<BTreeSet<_>>().into_iter().collect(); wire::encode_page(&Page {next:None,cards,categories}).ok() }).map_or(GuildReply::Rejected,GuildReply::Payload);
+    }
+    if let Some(after) = charm_after {
+        return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
     project(native, request)
         .and_then(|page| wire::encode_page(&page).ok())
         .map_or(GuildReply::Rejected, GuildReply::Payload)
 }
-fn category<'a>(native: &'a NativeGameplayState, key: &str) -> Option<&'a str> {
-    let record = native
+fn category<'a>(native: &'a NativeGameplayState, key: &str) -> &'a str {
+    native
         .creature_profiles()
         .records
         .iter()
-        .find(|r| r.profile.target.key == key)?;
-    let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
-        return None;
-    };
-    Some(&profile.details.as_ref()?.bestiary.as_ref()?.class)
+        .find(|record| record.profile.target.key == key)
+        .and_then(|record| match &record.profile.data {
+            ProjectV2AuthoringProfileData::Creature(profile) => {
+                profile.details.as_ref()?.bestiary.as_ref()
+            }
+            _ => None,
+        })
+        .map_or("Unclassified", |bestiary| bestiary.class.as_str())
 }
+
 fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Option<Card> {
     let policy = native
         .policies()
@@ -59,9 +84,11 @@ fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Opti
         .iter()
         .find(|p| p.definition_key == race.key())?;
     Some(Card {
+        outfit_look_type: policy.outfit_look_type,
+        object_look_type: policy.object_look_type,
         race: ordinal,
         name: policy.display_name.clone(),
-        category: category(native, race.key())?.into(),
+        category: category(native, race.key()).into(),
         detail: String::new(),
     })
 }
@@ -69,7 +96,7 @@ fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
     let races = super::canonical_races()?;
     let categories: Vec<_> = races
         .iter()
-        .filter_map(|r| category(native, r.key()))
+        .map(|r| category(native, r.key()))
         .collect::<BTreeSet<_>>()
         .into_iter()
         .map(str::to_owned)
@@ -277,6 +304,10 @@ mod tests {
                 assert!(detail.cards[0].detail.contains("Health:"));
                 assert!(detail.cards[0].detail.contains("Loot"));
                 assert!(!page.categories.is_empty());
+                let race_key = super::canonical_races().ok_or("races")?[usize::from(first.race - 1)].key();
+                let policy = native.policies().policies().iter().find(|p| p.definition_key == race_key).ok_or("policy")?;
+                assert_eq!(detail.cards[0].outfit_look_type, policy.outfit_look_type);
+                assert_eq!(detail.cards[0].object_look_type, policy.object_look_type);
                 let filtered = project(
                     native,
                     Request {
@@ -296,6 +327,32 @@ mod tests {
                 assert_eq!(
                     wire::decode_page(&bytes).map_err(|e| format!("{e:?}"))?,
                     detail
+                );
+                let mut after = 0;
+                let mut seen = BTreeSet::new();
+                loop {
+                    let page = project(
+                        native,
+                        Request {
+                            after,
+                            race: 0,
+                            category: 0,
+                        },
+                    )
+                    .ok_or("full catalogue page")?;
+                    wire::encode_page(&page).map_err(|e| format!("{e:?}"))?;
+                    for card in page.cards {
+                        assert!(seen.insert(card.race));
+                    }
+                    let Some(next) = page.next else { break };
+                    assert!(next > after);
+                    after = next;
+                }
+                assert_eq!(
+                    seen.len(),
+                    super::super::canonical_races()
+                        .ok_or("canonical races")?
+                        .len()
                 );
                 Ok(())
             })?

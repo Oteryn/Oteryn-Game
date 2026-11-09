@@ -1,6 +1,7 @@
 use super::*;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BattlePanel {
+    pub metadata: super::PlayerMetadataState,
     pub open: bool,
     pub pending: bool,
     pub pending_command: Option<CombatCommand>,

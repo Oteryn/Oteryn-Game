@@ -21,7 +21,7 @@ impl PotionDurationsPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Potion durations could not be refreshed. Try Refresh.");
+        self.error = Some(tr!("Potion durations could not be refreshed. Try Refresh."));
         false
     }
 }

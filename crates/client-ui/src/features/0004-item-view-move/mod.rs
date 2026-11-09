@@ -41,17 +41,20 @@ impl InventoryPanel {
     #[must_use]
     pub fn text(&self) -> String {
         if self.inventory.is_none() {
-            return "Inventory unavailable for this session".into();
+            return tr!("Inventory unavailable for this session").into();
         }
         if self.rows().is_empty() {
-            return "Backpack empty".into();
+            return tr!("Backpack empty").into();
         }
         match self.selected_item() {
-            Some(item) => format!(
+            Some(item) => lfmt!(
                 "Selected: {} ×{} (handle {}, subtype {})",
-                item.item_definition_ref, item.count, item.handle, item.sub_type
+                item.item_definition_ref,
+                item.count,
+                item.handle,
+                item.sub_type
             ),
-            None => "Select a backpack or item".into(),
+            None => tr!("Select a backpack or item").into(),
         }
     }
 }

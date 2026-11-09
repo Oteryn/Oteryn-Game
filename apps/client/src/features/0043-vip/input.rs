@@ -12,7 +12,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Vip(command)).is_err()
         {
             mailbox.vip.pending = false;
-            mailbox.vip.feedback = Some("The session has ended".into());
+            mailbox.vip.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn vip_input(&self, events: &[NormalizedInputEvent]) -> bool {

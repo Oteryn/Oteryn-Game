@@ -112,6 +112,14 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
     pub(super) local_preferences: crate::play::ReferencePreferences,
+    pub(super) ui_sounds: Vec<super::UiSound>,
+    pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,
+    pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
+    pub(super) custom_chat_paste: Option<String>,
+    pub(super) custom_hotkeys_ended: bool,
+    pub(super) tracked_custom_passive: Option<crate::play::PassiveAbility>,
+    pub(super) tracked_custom_ability: Option<u32>,
+    pub(super) custom_hotkey_feedback: Option<String>,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
@@ -245,8 +253,10 @@ pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 impl Mailbox {
     pub(super) fn combat_report(&mut self, report: CombatReport) {
         if let CombatReport::Cast(disposition) = &report {
-            self.spell_bar.feedback =
-                oteryn_client_runtime::spell::feedback_text(*disposition).into();
+            self.spell_bar.feedback = oteryn_client_ui::localization::tr(
+                oteryn_client_runtime::spell::feedback_text(*disposition),
+            )
+            .into();
         }
         if self.combat.len() == MAX_COMBAT_REPORTS {
             self.combat.pop_front();

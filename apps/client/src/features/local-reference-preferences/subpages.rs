@@ -11,6 +11,7 @@ pub(super) fn open(action: usize, shared: Arc<Mutex<Shared>>, parent: HWND) {
         164 => super::minimap_window::open(shared, parent),
         165 => super::frames_window::open(shared, parent),
         166 => super::basic_window::open(shared, parent),
+        167 => super::capture_window::open(shared, parent),
         _ => {}
     }
 }

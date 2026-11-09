@@ -10,6 +10,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Vec<HWND> {
             "Minimap...",
             "Frames...",
             "General options...",
+            "Screenshots...",
         ]
         .iter()
         .enumerate()
@@ -35,15 +36,47 @@ pub(super) unsafe fn create(hwnd: HWND) -> Vec<HWND> {
 pub(super) fn page_help(page: SettingsPage) -> &'static str {
     match page {
         SettingsPage::CustomHotkeys => {
-            "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Object, text and passive action assignment is not available yet."
+            "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Loading a profile selects manual hotkeys. Use New / edit to assign object, text and read-only ability cooldown actions."
         }
         SettingsPage::BarHotkeys => {
-            "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
+            "Configure all three action bar rows (12 slots each). Empty chords clear slots 5–36. The first four slots retain their legacy defaults until rebound."
         }
         SettingsPage::Graphics => {
-            "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+            "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."
         }
-        SettingsPage::Sound => "Master volume % (0–100). Changes apply to playback immediately.",
+        SettingsPage::Sound => {
+            tr!("Master volume % (0–100). Changes apply to playback immediately.")
+        }
         _ => "",
+    }
+}
+
+pub(super) unsafe fn feedback(handle: HWND, page: SettingsPage, message: &str) {
+    unsafe {
+        SetWindowTextW(
+            handle,
+            wide(&format!("{}\r\n{message}", page_help(page))).as_ptr(),
+        );
+    }
+}
+
+pub(super) unsafe fn refresh_bindings(
+    list: HWND,
+    bindings: &[oteryn_client::play::PreferenceBinding],
+    selected: isize,
+    state: &SettingsState,
+) {
+    unsafe {
+        let selection = selected.max(0) as usize;
+        SendMessageW(list, CB_RESETCONTENT, 0, 0);
+        for binding in bindings {
+            let label = format!(
+                "{}: {}",
+                binding.id,
+                state.preferences.binding_chord(binding)
+            );
+            SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+        }
+        SendMessageW(list, CB_SETCURSEL, selection, 0);
     }
 }

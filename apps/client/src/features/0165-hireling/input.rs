@@ -28,7 +28,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Hireling(command)).is_err()
         {
             mailbox.hireling.pending = None;
-            mailbox.hireling.feedback = Some("The session has ended");
+            mailbox.hireling.feedback = Some(tr!("The session has ended"));
         }
     }
 

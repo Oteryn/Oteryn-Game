@@ -10,20 +10,20 @@ pub struct TaskProgress {
 }
 pub fn goal(panel: &mut Panel, race: &str, target: Option<&str>) -> bool {
     let Some(race) = race.trim().parse::<u32>().ok().filter(|id| *id != 0) else {
-        panel.feedback = Some("Enter a creature race number from Kill Tracker");
+        panel.feedback = Some(tr!("Enter a creature race number from Kill Tracker"));
         return false;
     };
     if let Some(target) = target {
         let Some(target) = target.trim().parse::<u64>().ok().filter(|n| *n != 0) else {
-            panel.feedback = Some("Enter a positive kill target");
+            panel.feedback = Some(tr!("Enter a positive kill target"));
             return false;
         };
         if !panel.kills_by_race.contains_key(&race) && !panel.kill_goals.contains_key(&race) {
-            panel.feedback = Some("Choose a creature race listed in Kill Tracker");
+            panel.feedback = Some(tr!("Choose a creature race listed in Kill Tracker"));
             return false;
         }
         if panel.kill_goals.len() >= 128 && !panel.kill_goals.contains_key(&race) {
-            panel.feedback = Some("Track up to 128 creature goals");
+            panel.feedback = Some(tr!("Track up to 128 creature goals"));
             return false;
         }
         panel.kill_goals.insert(race, target);
@@ -45,12 +45,17 @@ pub fn task_rows(board: &crate::task_board::TaskBoardPanel) -> Option<Vec<TaskPr
                     continue;
                 }
                 let name = if task.race.is_empty() {
-                    "Any creature".into()
+                    tr!("Any creature").into()
                 } else {
                     crate::task_board::creature_name(&task.race)
                 };
                 rows.push(TaskProgress {
-                    label: format!("Week {} · kill {} · {name}", reply.period, i + 1),
+                    label: lfmt!(
+                        "Week {} · kill {} · {name}",
+                        reply.period,
+                        i + 1,
+                        name = name
+                    ),
                     current: u64::from(task.current),
                     required: u64::from(task.required),
                     complete: task.current >= task.required,
@@ -58,14 +63,14 @@ pub fn task_rows(board: &crate::task_board::TaskBoardPanel) -> Option<Vec<TaskPr
             }
             for task in &reply.weekly.deliveries {
                 rows.push(TaskProgress {
-                    label: format!(
+                    label: lfmt!(
                         "Week {} · delivery item #{} ({})",
                         reply.period,
                         task.item,
                         if task.delivered {
                             "delivered"
                         } else {
-                            "available for delivery"
+                            tr!("available for delivery")
                         }
                     ),
                     current: u64::from(task.current),
@@ -76,7 +81,7 @@ pub fn task_rows(board: &crate::task_board::TaskBoardPanel) -> Option<Vec<TaskPr
         }
         if let Some(task) = &reply.bounty.active {
             rows.push(TaskProgress {
-                label: format!("Bounty · {}", crate::task_board::creature_name(&task.race)),
+                label: lfmt!("Bounty · {}", crate::task_board::creature_name(&task.race)),
                 current: u64::from(reply.bounty.current),
                 required: u64::from(task.required),
                 complete: reply.bounty.current >= task.required,
@@ -95,7 +100,7 @@ pub fn task_rows(board: &crate::task_board::TaskBoardPanel) -> Option<Vec<TaskPr
         let current = u64::try_from(reply.kills).ok()?;
         let required = u64::try_from(task.required).ok()?;
         rows.push(TaskProgress {
-            label: format!(
+            label: lfmt!(
                 "Hunting task · {}",
                 crate::task_board::creature_name(&task.race)
             ),
@@ -107,7 +112,7 @@ pub fn task_rows(board: &crate::task_board::TaskBoardPanel) -> Option<Vec<TaskPr
     Some(rows)
 }
 pub fn text(panel: &Panel) -> String {
-    let mut text = format!(
+    let mut text = lfmt!(
         "Kill Tracker\r\nKills: {}\r\nConfirmed session kills by creature race\r\n",
         panel.kills
     );
@@ -120,24 +125,24 @@ pub fn text(panel: &Panel) -> String {
     for race in races {
         let count = panel.kills_by_race.get(&race).copied().unwrap_or(0);
         let name = if race == 0 {
-            "Race unavailable".into()
+            tr!("Race unavailable").into()
         } else {
-            format!("Race #{race}")
+            lfmt!("Race #{race}", race = race)
         };
         let _ = write!(text, "{name}: {count}");
         if let Some(goal) = panel.kill_goals.get(&race) {
             let remaining = goal.saturating_sub(count);
             let _ = write!(text, " / {goal} · {remaining} remaining");
             if remaining == 0 {
-                text.push_str(" · target reached");
+                text.push_str(tr!(" · target reached"));
             }
         }
         text.push_str("\r\n");
     }
-    text.push_str("\r\nLast confirmed hunting tasks\r\n");
+    text.push_str(tr!("\r\nLast confirmed hunting tasks\r\n"));
     match &panel.task_progress {
-        None => text.push_str("Refresh hunting tasks to read server progress.\r\n"),
-        Some(rows) if rows.is_empty() => text.push_str("No active hunting tasks\r\n"),
+        None => text.push_str(tr!("Refresh hunting tasks to read server progress.\r\n")),
+        Some(rows) if rows.is_empty() => text.push_str(tr!("No active hunting tasks\r\n")),
         Some(rows) => {
             for row in rows {
                 let _ = write!(

@@ -43,8 +43,26 @@ message BestiaryCataloguePageV1 {
   repeated string categories = 3; // <=64 unique ascending names, <=128 UTF-8 bytes each
 }
 message BestiaryCatalogueCardV1 {
+  uint32 outfit_look_type = 5; // 0 if unavailable or object appearance
+  optional uint32 object_look_type = 6; // nonzero; mutually exclusive with outfit
   uint32 race = 1; // 1..1024, the same canonical ordinal used for charm assignment
   string name = 2; // 1..128 UTF-8 bytes
   string category = 3; // an exact member of the page categories
   string detail = 4; // <=16000 UTF-8 bytes; empty on browse pages
 }
+
+// Optional read-only named catalogue on the same negotiated command 84:
+// request fe 01 after:u8 (0..32). Its strict bounded card/page reply is the
+// bestiary_catalogue codec: card.race is the existing Charm wire ordinal,
+// name/category/description come from the server's validated Charm import.
+// Pages contain at most 20 cards; next is the final ordinal on a nonfinal page.
+// This request neither unlocks a stage nor changes balances or assignments.
+// T081: command 84 also accepts ff 02 after:u8 (0..32) for paged charm
+// descriptions. Reply uses BestiaryCataloguePageV1: card.race is the 1-based
+// charm index in the same catalogue as progression; name is derived from its
+// canonical key, category Major/Minor, detail contains effect rules and all
+// stage values/costs. Appearance fields are absent. Cursor equals the last index.
+// This read uses the same admitted actor/generation fence as ff 01.
+// ff 03 followed by 1..5 strictly ascending nonzero race:u16le IDs (<=1024)
+// returns their active creature catalogue cards in the same page shape, no cursor.
+// The client batches confirmed discovered races to name the eligible race selector.

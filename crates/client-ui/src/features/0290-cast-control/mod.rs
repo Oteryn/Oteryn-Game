@@ -49,7 +49,7 @@ impl Panel {
             || ((action <= 1 || action == 5) && !self.selected)
             || ((2..=4).contains(&action) && !self.consent_selected)
         {
-            return Err("Cast controls unavailable");
+            return Err(tr!("Cast controls unavailable"));
         }
         let message = match action {
             5 => Message::ControlQuery,
@@ -58,7 +58,7 @@ impl Panel {
                 revision: self.consent_revision,
                 allowed: action == 3,
             },
-            3 | 4 => return Err("Refresh character consent first"),
+            3 | 4 => return Err(tr!("Refresh character consent first")),
             0 if self.active => Message::Update {
                 revision: self.revision,
                 access_revision: self.access_revision,
@@ -76,11 +76,11 @@ impl Panel {
             1 if self.active => Message::Stop {
                 revision: self.revision,
             },
-            _ => return Err("No active cast"),
+            _ => return Err(tr!("No active cast")),
         };
         message
             .encode()
-            .map_err(|_| "Delay must be 0–300 and viewer limit 1–50")?;
+            .map_err(|_| tr!("Delay must be 0–300 and viewer limit 1–50"))?;
         Ok(message)
     }
     pub fn apply(&mut self, message: Message) -> Result<(), &'static str> {
@@ -111,29 +111,26 @@ impl Panel {
                 self.epoch = 0;
                 self.viewers = 0;
             }
-            _ => return Err("Invalid cast control response"),
+            _ => return Err(tr!("Invalid cast control response")),
         }
         self.pending = false;
         Ok(())
     }
     pub fn text(&self) -> String {
-        format!(
-            "Casting {} · {} viewers · delay {} s · limit {}\n{}\nSave account preferences and passwords in account settings first. Game checks the saved access revision.",
-            if self.active { "on" } else { "off" },
+        lfmt!(
+            "Casting {} · {} viewers · delay {} s · limit {}\nAllow me to be shown in casts: {}\n{}\nSave account preferences and passwords in account settings first. Game checks the saved access revision.",
+            if self.active { tr!("on") } else { tr!("off") },
             self.viewers,
             self.delay,
             self.cap,
-            format_args!(
-                "Allow me to be shown in casts: {}\n{}",
-                if !self.consent_known {
-                    "unknown — refresh"
-                } else if self.allow_shown {
-                    "on"
-                } else {
-                    "off"
-                },
-                self.feedback
-            )
+            if !self.consent_known {
+                tr!("unknown — refresh")
+            } else if self.allow_shown {
+                tr!("on")
+            } else {
+                tr!("off")
+            },
+            self.feedback
         )
     }
 }

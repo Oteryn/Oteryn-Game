@@ -45,7 +45,7 @@ impl WeaponProficiencyPanel {
             return false;
         };
         if entry.definition == 0 {
-            self.feedback = Some("This weapon is not admitted by the server");
+            self.feedback = Some(tr!("This weapon is not admitted by the server"));
             return false;
         }
         self.weapon = entry.definition;

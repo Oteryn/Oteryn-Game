@@ -96,3 +96,41 @@ fn pem_certificate(der: &[u8]) -> String {
     pem.push_str("-----END CERTIFICATE-----\n");
     pem
 }
+
+#[test]
+fn connection_optimisation_configures_real_tls_socket() -> TestResult {
+    let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
+    let root = generated.cert.der().clone();
+    let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
+    let mut server = rustls::ServerConfig::builder_with_provider(Arc::new(
+        rustls::crypto::aws_lc_rs::default_provider(),
+    ))
+    .with_protocol_versions(&[&rustls::version::TLS13])?
+    .with_no_client_auth()
+    .with_single_cert(vec![root.clone()], key.into())?;
+    server.alpn_protocols = vec![ALPN_OTERYN_GAME_V1.as_bytes().to_vec()];
+    let acceptor = TlsAcceptor::from(Arc::new(server));
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0"))?;
+    let address = listener.local_addr()?;
+    runtime.spawn(async move {
+        while let Ok((tcp, _)) = listener.accept().await {
+            let _ = acceptor.accept(tcp).await;
+        }
+    });
+    for enabled in [false, true] {
+        let stream = runtime.block_on(connect_with_nodelay(
+            TcpConnect {
+                address,
+                server_name: "localhost",
+                root_certificate: &root,
+                deadline: Duration::from_secs(5),
+            },
+            enabled,
+        ))?;
+        assert_eq!(stream.get_ref().0.nodelay()?, enabled);
+    }
+    Ok(())
+}

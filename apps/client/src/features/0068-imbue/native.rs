@@ -78,7 +78,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Imbuement Shrine").as_ptr(),
+            wide(tr!("Imbuement Shrine")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -111,7 +111,7 @@ fn run(
         let open_bag = control(
             hwnd,
             "BUTTON",
-            "Open selected bag",
+            tr!("Open selected bag"),
             OPEN_BAG,
             [440, 10, 150, 30],
             WS_TABSTOP,
@@ -135,7 +135,7 @@ fn run(
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             REFRESH,
             [10, 325, 140, 30],
             WS_TABSTOP,
@@ -143,7 +143,7 @@ fn run(
         let apply = control(
             hwnd,
             "BUTTON",
-            "Apply selected",
+            tr!("Apply selected"),
             APPLY,
             [160, 325, 190, 30],
             WS_TABSTOP,
@@ -151,7 +151,7 @@ fn run(
         let clear = control(
             hwnd,
             "BUTTON",
-            "Clear selected slot",
+            tr!("Clear selected slot"),
             CLEAR,
             [360, 325, 230, 30],
             WS_TABSTOP,
@@ -243,9 +243,10 @@ fn run(
             if current != carried {
                 SendMessageW(items, LB_RESETCONTENT, 0, 0);
                 for entry in &current {
-                    let label = format!(
+                    let label = lfmt!(
                         "Carried item {} ×{}",
-                        entry.item_definition_ref, entry.count
+                        entry.item_definition_ref,
+                        entry.count
                     );
                     SendMessageW(items, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
@@ -272,9 +273,12 @@ fn run(
                 SendMessageW(offers, LB_RESETCONTENT, 0, 0);
                 if let Some(window) = &mailbox.imbue.window {
                     for (index, offer) in window.offers.iter().enumerate() {
-                        let label = format!(
+                        let label = lfmt!(
                             "{index}: family {} tier {} — {} gold",
-                            offer.family, offer.tier, offer.gold
+                            offer.family,
+                            offer.tier,
+                            offer.gold,
+                            index = index
                         );
                         SendMessageW(offers, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                     }

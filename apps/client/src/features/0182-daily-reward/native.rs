@@ -11,6 +11,7 @@ use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 const REFRESH: usize = 101;
 const CLAIM: usize = 102;
+const DETAILS: usize = 104;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 #[derive(Default)]
 struct Actions(Vec<usize>);
@@ -20,7 +21,10 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
-            if !actions.is_null() && matches!(id, REFRESH | CLAIM) && note == BN_CLICKED as usize {
+            if !actions.is_null()
+                && matches!(id, REFRESH | CLAIM | DETAILS)
+                && note == BN_CLICKED as usize
+            {
                 (*actions).0.push(id);
             }
             return 0;
@@ -58,12 +62,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Daily Reward").as_ptr(),
+            wide(tr!("Daily Reward")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             430,
-            300,
+            640,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -85,23 +89,31 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             "EDIT",
             "",
             103,
-            [10, 10, 390, 180],
+            [10, 10, 390, 480],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             REFRESH,
-            [10, 205, 180, 30],
+            [10, 505, 180, 30],
             WS_TABSTOP,
         );
         control(
             hwnd,
             "BUTTON",
-            "Claim reward",
+            tr!("Claim reward"),
             CLAIM,
-            [220, 205, 180, 30],
+            [220, 505, 180, 30],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Catalogue / account history",
+            DETAILS,
+            [10, 550, 390, 30],
             WS_TABSTOP,
         );
         let mut held = None;
@@ -120,6 +132,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == DETAILS {
+                    super::super::input::enqueue_details(&mut mailbox, &commands);
+                    continue;
+                }
                 let intent = if action == CLAIM {
                     Intent::Claim
                 } else {
@@ -129,7 +145,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(PlayCommand::DailyReward(command)).is_err()
                 {
                     mailbox.daily_reward.pending = false;
-                    mailbox.daily_reward.feedback = Some("The session has ended");
+                    mailbox.daily_reward.feedback = Some(tr!("The session has ended"));
                 }
             }
             if held.as_ref() != Some(&mailbox.daily_reward) {

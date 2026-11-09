@@ -30,6 +30,7 @@ pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
 
 #[derive(Debug, Clone)]
 pub struct World {
+    effects: oteryn_client_assets::EffectCatalog,
     center: (i32, i32, i16),
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
@@ -40,10 +41,21 @@ pub struct World {
 }
 
 impl World {
+    #[must_use]
+    pub fn with_effect_catalog(mut self, effects: oteryn_client_assets::EffectCatalog) -> Self {
+        self.effects = effects;
+        self
+    }
+    #[must_use]
+    pub const fn effects(&self) -> &oteryn_client_assets::EffectCatalog {
+        &self.effects
+    }
+
     /// Only the builtin cells: no map, and the player drawn as the marker glyph.
     pub fn builtin() -> Result<Self, BatchError> {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
+            effects: Default::default(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
             atlas,
             layers: BTreeMap::new(),
@@ -60,7 +72,7 @@ impl World {
     /// Loads from `OTERYN_ASSET_DIR`; any failure falls back to [`World::builtin`] with the reason.
     pub fn from_env(center: (i32, i32, i16)) -> (Result<Self, BatchError>, Option<String>) {
         let loaded = std::env::var_os(ASSET_DIR_ENV)
-            .ok_or_else(|| format!("{ASSET_DIR_ENV} is not set"))
+            .ok_or_else(|| lfmt!("{ASSET_DIR_ENV} is not set", ASSET_DIR_ENV = ASSET_DIR_ENV))
             .and_then(|root| Self::load_around(Path::new(&root), center));
         match loaded {
             Ok(world) => (Ok(world), None),
@@ -80,6 +92,7 @@ impl World {
     /// Decode the real join position's bounded map window, including its floor.
     pub fn load_around(root: &Path, center: (i32, i32, i16)) -> Result<Self, String> {
         let ResolvedWindow {
+            effects,
             entries,
             player,
             mut sheets,
@@ -112,12 +125,14 @@ impl World {
         }
         let atlas = atlas.into_image();
         Ok(Self {
+            effects: Default::default(),
             center,
             atlas,
             tiles,
             layers: BTreeMap::new(),
             player,
-        })
+        }
+        .with_effect_catalog(effects))
     }
 
     #[must_use]

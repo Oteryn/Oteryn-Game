@@ -1,27 +1,14 @@
-//! Settings message pump and preference application on its owning thread.
 use super::*;
 #[path = "controls.rs"]
 mod controls;
+#[path = "resource_checks.rs"]
+mod resource_checks;
 use controls::Controls;
-#[path = "transfer.rs"]
-mod transfer;
-
+#[path = "custom_editor.rs"]
+mod custom_editor;
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
-        let hwnd = CreateWindowExW(
-            0,
-            wide("STATIC").as_ptr(),
-            wide("Oteryn Settings").as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            760,
-            650,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            null(),
-        );
+        let hwnd = localization_window::create();
         if hwnd.is_null() {
             lock(&shared).open = false;
             return;
@@ -34,12 +21,26 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            graphics,
+            mut shortcuts,
+            language,
+            presentation,
+            minimap,
+            mut guide,
+            screenshots,
+            gameplay,
             actor_hud,
             manual,
             console,
             layout,
+            battle_filters,
+            mixer,
+            stability,
+            battle_sounds,
+            frames,
             arcs,
             interface,
+            custom_editor,
             profile_name,
             profile_save,
             profile_load,
@@ -101,7 +102,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 state.select_page(index);
             }
             if binding_page != state.page {
-                layout.place_apply(apply, state.page == SettingsPage::Status);
+                layout.place_apply(apply, state.page);
                 binding_page = state.page;
                 bindings = preference_bindings()
                     .unwrap_or_default()
@@ -129,22 +130,45 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            shortcuts.show(state.page == SettingsPage::Shortcuts);
+            graphics.show(state.page == SettingsPage::Graphics);
             for handle in &navigation {
                 ShowWindow(*handle, SW_SHOW);
             }
             actor_hud.show(state.page == SettingsPage::ActorHud);
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
+            actor_hud.show(state.page == SettingsPage::ActorHud);
+            console.show(state.page == SettingsPage::Console);
+            layout.show(state.page == SettingsPage::Status);
+            battle_sounds.show(state.page == SettingsPage::Sound);
+            battle_filters.show(state.page == SettingsPage::Battle);
+            mixer.show(state.page == SettingsPage::Mixer);
+            mixer.position_apply(apply, state.page);
+            frames.show(state.page == SettingsPage::Effects);
             arcs.show(state.page == SettingsPage::Arcs);
+            gameplay.show(state.page == SettingsPage::Gameplay);
+            screenshots.show(state.page == SettingsPage::Screenshots);
+            guide.update(&state);
+            minimap.show(state.page == SettingsPage::MinimapTransfer);
+            presentation.show(state.page);
+            language.show(state.page == SettingsPage::Language);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
-                    &[profile_name, profile_save, profile_load, profile_delete][..],
+                    &[
+                        custom_editor,
+                        profile_name,
+                        profile_save,
+                        profile_load,
+                        profile_delete,
+                    ][..],
                     SettingsPage::CustomHotkeys,
                 ),
                 (&[chat_on, chat_off, manual][..], SettingsPage::Hotkeys),
                 (
                     &[
+                        stability,
                         mouse_preset,
                         delay_label,
                         delay,
@@ -187,6 +211,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     SettingsPage::Interface
                         | SettingsPage::Status
                         | SettingsPage::Sound
+                        | SettingsPage::Mixer
+                        | SettingsPage::Effects
+                        | SettingsPage::Battle
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
                         | SettingsPage::ActorHud
@@ -207,7 +234,25 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
-                if (160..=166).contains(&action) {
+                if shortcuts.handle(action, &mut state) {
+                    continue;
+                }
+                if language.action(action, &mut state) {
+                    continue;
+                }
+                if presentation.action(action, &mut state) {
+                    continue;
+                }
+                if minimap.action(action, &mut state) {
+                    continue;
+                }
+                if guide.action(action, &mut state) {
+                    continue;
+                }
+                if screenshots.action(action, &mut state) {
+                    continue;
+                }
+                if (160..=167).contains(&action) {
                     drop(state);
                     subpages::open(action, Arc::clone(&shared), hwnd);
                     state = lock(&shared);
@@ -220,20 +265,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if (231..=233).contains(&action) {
-                    let name = text(profile_name);
-                    let result = match action {
-                        231 => preferences.save_hotkey_profile(&name),
-                        232 => preferences.load_hotkey_profile(&name),
-                        _ => {
-                            preferences.hotkey_profiles.remove(&name);
-                            Ok(())
-                        }
-                    };
-                    match result {
-                        Ok(()) => state.apply(preferences),
-                        Err(error) => state.feedback = error.to_string(),
-                    }
+                if (231..=234).contains(&action) {
+                    drop(state);
+                    custom_editor::profile_action(action, hwnd, &shared, &text(profile_name));
+                    state = lock(&shared);
                 } else if matches!(action, 225 | 226) {
                     if let Err(error) = state.apply_chat_preset(action == 225) {
                         state.feedback = error.to_string();
@@ -241,8 +276,11 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 } else if action == 227 {
                     state.manual_hotkeys();
                 } else if action == 223 {
+                    gameplay.read(&mut preferences);
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
+                            preferences.optimise_connection =
+                                SendMessageW(stability, BM_GETCHECK, 0, 0) == 1;
                             preferences.rotation_modifier =
                                 text(rotation).trim().to_ascii_uppercase();
                             preferences.keyboard_delay_ms = value;
@@ -258,7 +296,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             state.apply(preferences);
                         }
                         Err(_) => {
-                            state.feedback = "Enter a keyboard delay from 0 to 1000 ms".into()
+                            state.feedback = tr!("Enter a keyboard delay from 0 to 1000 ms").into()
                         }
                     }
                 } else if (241..=244).contains(&action) {
@@ -272,31 +310,34 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         match preferences.rebind(binding.id, &text(chord)) {
                             Ok(()) => state.apply(preferences),
                             Err(error) => {
-                                state.feedback = format!("{error}. Choose a different chord.")
+                                state.feedback =
+                                    lfmt!("{error}. Choose a different chord.", error = error)
                             }
                         }
                     }
                 } else {
+                    if let Err(error) = Controls::read_page(
+                        &mixer,
+                        &frames,
+                        &battle_sounds,
+                        &battle_filters,
+                        state.page,
+                        &mut preferences,
+                    ) {
+                        state.feedback = error;
+                        continue;
+                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
                             preferences.audio.master_volume = volume;
                             preferences.audio.muted = SendMessageW(mute, BM_GETCHECK, 0, 0) == 1;
-                            preferences.hud_bars =
-                                SendMessageW(hud_checks[0], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_harmony =
-                                SendMessageW(hud_checks[1], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_serene =
-                                SendMessageW(hud_checks[2], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_lights =
-                                SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
-                            preferences.show_effects =
-                                SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
-                            preferences.creature_bars =
-                                SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
-                            preferences.health_circle =
-                                SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
+                            resource_checks::read(&hud_checks, &mut preferences);
                             let result = match state.page {
+                                SettingsPage::Graphics => {
+                                    graphics.read(&mut preferences);
+                                    Ok(())
+                                }
                                 SettingsPage::Interface => interface.read(&mut preferences),
                                 SettingsPage::Arcs => arcs.read(&mut preferences),
                                 SettingsPage::Status => layout.read(&mut preferences),
@@ -313,74 +354,36 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                             }
                             state.apply(preferences);
                         }
-                        _ => state.feedback = "Enter valid zoom and volume percentages".into(),
+                        _ => state.feedback = tr!("Enter valid zoom and volume percentages").into(),
                     }
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                shortcuts.refresh(&state);
+                graphics.refresh(&state.preferences);
+                presentation.refresh(&state.preferences);
+                language.refresh(&state.preferences);
+                gameplay.refresh(&state.preferences);
+                screenshots.refresh(&state.preferences);
                 actor_hud.refresh(&state.preferences);
                 console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);
+                set_checked(stability, state.preferences.optimise_connection);
+                battle_sounds.refresh(&state.preferences);
+                battle_filters.refresh(&state.preferences);
+                mixer.refresh(&state.preferences);
+                frames.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
-                let selection = selected.max(0) as usize;
-                SendMessageW(list, CB_RESETCONTENT, 0, 0);
-                for binding in &bindings {
-                    let label = format!(
-                        "{}: {}",
-                        binding.id,
-                        state.preferences.binding_chord(binding)
-                    );
-                    SendMessageW(list, CB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
-                }
-                SendMessageW(list, CB_SETCURSEL, selection, 0);
-                SetWindowTextW(
-                    scale,
-                    wide(&state.preferences.ui_scale.to_string()).as_ptr(),
-                );
-                SetWindowTextW(
-                    volume,
-                    wide(&state.preferences.audio.master_volume.to_string()).as_ptr(),
-                );
-                SendMessageW(
-                    mute,
-                    BM_SETCHECK,
-                    usize::from(state.preferences.audio.muted),
-                    0,
-                );
-                for (control, checked) in hud_checks.iter().zip([
-                    state.preferences.hud_bars,
-                    state.preferences.show_harmony,
-                    state.preferences.show_serene,
-                    state.preferences.show_lights,
-                    state.preferences.show_effects,
-                    state.preferences.creature_bars,
-                    state.preferences.health_circle,
-                ]) {
-                    SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
-                }
-                SendMessageW(
-                    mouse_preset,
-                    CB_SETCURSEL,
-                    usize::from(state.preferences.swap_mouse_buttons),
-                    0,
-                );
-                SetWindowTextW(
-                    delay,
-                    wide(&state.preferences.keyboard_delay_ms.to_string()).as_ptr(),
-                );
-                SetWindowTextW(
-                    rotation,
-                    wide(&state.preferences.rotation_modifier).as_ptr(),
-                );
+                navigation_controls::refresh_bindings(list, &bindings, selected, &state);
+                refresh_scale_volume(scale, volume, &state.preferences);
+                set_checked(mute, state.preferences.audio.muted);
+                refresh_hud_checks(&hud_checks, &state.preferences);
+                refresh_input_controls(mouse_preset, delay, rotation, &state.preferences);
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = navigation_controls::page_help(state.page);
-            SetWindowTextW(
-                feedback,
-                wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
-            );
+            controls::update_feedback(feedback, &state, navigation_controls::page_help(state.page));
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }
@@ -390,5 +393,3 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         lock(&shared).open = false;
     }
 }
-#[path = "navigation_controls.rs"]
-mod navigation_controls;

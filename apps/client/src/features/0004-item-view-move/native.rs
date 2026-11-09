@@ -52,7 +52,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 let hwnd = CreateWindowExW(
                     0,
                     wide("STATIC").as_ptr(),
-                    wide("Inventory and equipment — drag items to equip or remove").as_ptr(),
+                    wide(tr!(
+                        "Inventory and equipment — drag items to equip or remove"
+                    ))
+                    .as_ptr(),
                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
@@ -89,7 +92,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     CreateWindowExW(
                         0,
                         wide("BUTTON").as_ptr(),
-                        wide("Open container").as_ptr(),
+                        wide(tr!("Open container")).as_ptr(),
                         WS_CHILD | WS_VISIBLE | WS_TABSTOP,
                         10,
                         364,
@@ -103,7 +106,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     CreateWindowExW(
                         0,
                         wide("BUTTON").as_ptr(),
-                        wide("Use with / Choose target").as_ptr(),
+                        wide(tr!("Use with / Choose target")).as_ptr(),
                         WS_CHILD | WS_VISIBLE | WS_TABSTOP,
                         10,
                         300,
@@ -117,7 +120,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     CreateWindowExW(
                         0,
                         wide("BUTTON").as_ptr(),
-                        wide("Use rune").as_ptr(),
+                        wide(tr!("Use rune")).as_ptr(),
                         WS_CHILD | WS_VISIBLE | WS_TABSTOP,
                         10,
                         332,
@@ -214,7 +217,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             for (i, item) in panel.rows().iter().enumerate() {
                                 let label = format!(
                                     "{}{} ×{}",
-                                    if i == 0 { "Backpack: " } else { "Item: " },
+                                    if i == 0 {
+                                        tr!("Backpack: ")
+                                    } else {
+                                        tr!("Item: ")
+                                    },
                                     item.item_definition_ref,
                                     item.count
                                 );

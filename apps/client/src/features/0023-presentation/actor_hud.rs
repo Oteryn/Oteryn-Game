@@ -4,6 +4,8 @@ use oteryn_client_runtime::party_skull::PartyIcon;
 use oteryn_session::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
 
 pub(super) struct Options {
+    pvp_frame: bool,
+    loot_highlight: bool,
     health: bool,
     own_marks: bool,
     other_marks: bool,
@@ -19,6 +21,8 @@ impl Options {
         own: Option<EntityRef>,
     ) -> Self {
         Self {
+            pvp_frame: preferences.game_window.pvp_frame,
+            loot_highlight: preferences.game_window.loot_highlight,
             health: preferences.creature_bars,
             scale: preferences.interface_scale,
             own_marks: preferences.hud_marks_own,
@@ -87,6 +91,15 @@ pub(super) fn draw(
             continue;
         }
         let [x, y] = view.tile_to_screen(tile);
+        let pvp = options.pvp_frame && icons.iter().any(|icon| icon.entity == entity.entity && icon.skull != 0);
+        let loot = options.loot_highlight && entity.kind == EntityKind::Corpse;
+        if pvp || loot {
+            let side = view.tile_px() as f32;
+            let color = if pvp { PresentationColor::Red } else { PresentationColor::Yellow };
+            for (at, size) in [([x,y], [side,2.0]), ([x,y+side-2.0], [side,2.0]), ([x,y], [2.0,side]), ([x+side-2.0,y], [2.0,side])] {
+                pixel(batch, view, atlas, at, size, color)?;
+            }
+        }
         if options.health
             && let EntityDetail::Actor { health_percent, .. } = entity.detail
         {

@@ -177,10 +177,16 @@ fn statistics_reject_malformed_results_and_keep_unknown_distinct_from_zero()
 
 #[path = "achievements.rs"]
 mod achievements;
+#[path = "gallery.rs"]
+mod gallery;
+#[path = "item_summary.rs"]
+mod item_summary;
 #[path = "misc.rs"]
 mod misc;
 #[path = "navigation.rs"]
 mod navigation;
+#[path = "protection.rs"]
+mod protection;
 
 #[test]
 fn blessings_dialog_requests_self_and_reduces_the_real_server_reply()
@@ -253,6 +259,16 @@ fn blessings_shortcut_opens_dedicated_state_and_rejects_repeat()
     assert!(!link.blessings_panel().pending);
     Ok(())
 }
+#[path = "profile.rs"]
+mod profile;
+
+#[path = "history.rs"]
+mod history;
+
+#[path = "augments.rs"]
+mod augments;
+#[path = "offence.rs"]
+mod offence;
 
 #[path = "visibility.rs"]
 mod visibility;

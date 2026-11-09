@@ -2,15 +2,15 @@ use super::SkillProgressPanel;
 
 pub fn panel_text(panel: &SkillProgressPanel) -> String {
     if !panel.selected {
-        return "Skill progress unavailable in this session".into();
+        return tr!("Skill progress unavailable in this session").into();
     }
     if let Some(error) = panel.error {
         return error.into();
     }
     let Some(snapshot) = panel.snapshot else {
-        return "Loading skill progress…".into();
+        return tr!("Loading skill progress…").into();
     };
-    let mut text = panel.complete.map_or_else(|| String::from("Trained skill progress\r\n"), |full| format!(
+    let mut text = panel.complete.map_or_else(|| String::from(tr!("Trained skill progress\r\n")), |full| lfmt!(
         "Level: {} — Experience: {} — {}.{:02}% to next level\r\nLoyalty skill-point bonus: {}%\r\nSkills: trained / with Loyalty / current\r\n",
         full.level, full.experience, full.level_percent / 100, full.level_percent % 100, full.loyalty_bonus_percent,
     ));
@@ -30,7 +30,7 @@ pub fn panel_text(panel: &SkillProgressPanel) -> String {
                     skill.level,
                     full.loyalty_levels[family],
                     full.current_levels.map_or_else(
-                        || "unavailable".to_owned(),
+                        || tr!("unavailable").to_owned(),
                         |values| values[family].to_string()
                     )
                 )

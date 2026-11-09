@@ -18,7 +18,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.battle_instinct_status.pending = false;
-            mailbox.battle_instinct_status.error = Some("Session ended");
+            mailbox.battle_instinct_status.error = Some(tr!("Session ended"));
         }
     }
     pub fn battle_instinct_status_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -27,9 +27,11 @@ impl PlayLink {
         }
         self.battle_instinct_status_request();
         #[cfg(windows)]
-        crate::play::status_window::open_window(self, "Battle Instinct — Ctrl+Alt+Shift+B", |mailbox| {
-            &mut mailbox.battle_instinct_status
-        });
+        crate::play::status_window::open_window(
+            self,
+            tr!("Battle Instinct — Ctrl+Alt+Shift+B"),
+            |mailbox| &mut mailbox.battle_instinct_status,
+        );
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).battle_instinct_status.open = true;

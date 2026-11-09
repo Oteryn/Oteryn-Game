@@ -8,8 +8,8 @@ pub fn panel_text(panel: &ContainerPanel) -> String {
         && view.browse.is_none()
     {
         text.replacen(
-            &format!("Container {}", view.container_handle),
-            "House container",
+            &lfmt!("Container {}", view.container_handle),
+            tr!("House container"),
             1,
         )
     } else {

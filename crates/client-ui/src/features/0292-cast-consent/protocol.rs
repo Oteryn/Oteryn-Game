@@ -8,9 +8,10 @@ pub fn request(panel: &Panel, allowed: Option<bool>) -> Result<Message, &'static
     })
 }
 pub fn apply(panel: &mut Panel, payload: &[u8]) -> Result<(), &'static str> {
-    let message = Message::decode(payload).map_err(|_| "Invalid character consent response")?;
+    let message =
+        Message::decode(payload).map_err(|_| tr!("Invalid character consent response"))?;
     if !matches!(message, Message::ConsentState { .. }) {
-        return Err("Invalid character consent response");
+        return Err(tr!("Invalid character consent response"));
     }
     panel.apply(message)
 }

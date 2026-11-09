@@ -18,7 +18,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.mechanics_status.pending = false;
-            mailbox.mechanics_status.error = Some("Session ended");
+            mailbox.mechanics_status.error = Some(tr!("Session ended"));
         }
     }
     pub fn mechanics_status_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -27,9 +27,11 @@ impl PlayLink {
         }
         self.mechanics_status_request();
         #[cfg(windows)]
-        crate::play::status_window::open_window(self, "Character effects — Ctrl+Alt+Shift+U", |mailbox| {
-            &mut mailbox.mechanics_status
-        });
+        crate::play::status_window::open_window(
+            self,
+            tr!("Character effects — Ctrl+Alt+Shift+U"),
+            |mailbox| &mut mailbox.mechanics_status,
+        );
         #[cfg(not(windows))]
         {
             lock(&self.mailbox).mechanics_status.open = true;

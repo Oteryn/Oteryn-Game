@@ -99,3 +99,5 @@ mod tests;
 #[cfg(test)]
 #[path = "daily_reward_codec_tests.rs"]
 mod codec_tests;
+#[path = "daily_reward_details.rs"]
+pub mod details;

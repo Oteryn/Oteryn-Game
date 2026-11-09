@@ -82,6 +82,7 @@ pub(in crate::play) fn submit(
             };
             panel.fields[1] = cards[index].race.to_string();
             panel.catalogue.detail.clear();
+            panel.catalogue.detail_card = None;
             panel.catalogue.next_loot = None;
             return;
         }
@@ -104,7 +105,7 @@ pub(in crate::play) fn submit(
         .is_err()
     {
         panel.catalogue.pending = None;
-        panel.failed("The session has ended");
+        panel.failed(tr!("The session has ended"));
     }
 }
 pub(in crate::play) fn apply(
@@ -137,6 +138,11 @@ pub(in crate::play) fn apply(
         panel.feedback = "Invalid creature catalogue cursor or category".into();
         return true;
     }
+    let confirmed_names: Vec<_> = page
+        .cards
+        .iter()
+        .map(|card| (card.race, card.name.clone()))
+        .collect();
     if request.race == 0 {
         if page
             .next
@@ -155,6 +161,7 @@ pub(in crate::play) fn apply(
         }
         panel.catalogue.category = request.category;
         panel.catalogue.detail.clear();
+        panel.catalogue.detail_card = None;
         panel.catalogue.next_loot = None;
         if let Some(card) = page.cards.first() {
             panel.fields[1] = card.race.to_string();
@@ -170,8 +177,10 @@ pub(in crate::play) fn apply(
             return true;
         }
         panel.catalogue.detail = format!("{} [{}]\r\n{}", card.name, card.category, card.detail);
+        panel.catalogue.detail_card = Some(card.clone());
         panel.catalogue.next_loot = page.next;
     }
+    panel.catalogue.names.extend(confirmed_names);
     panel.feedback = "Creature catalogue updated".into();
     true
 }

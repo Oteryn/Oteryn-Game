@@ -100,7 +100,7 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>, 
         let h = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Account achievements — Ctrl+Shift+A").as_ptr(),
+            wide(tr!("Account achievements — Ctrl+Shift+A")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -166,11 +166,13 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>, 
             SetWindowTextW(
                 detail,
                 wide(&selected.map_or_else(
-                    || "Select an achievement to read its description".into(),
+                    || tr!("Select an achievement to read its description").into(),
                     |r| {
-                        format!(
+                        lfmt!(
                             "{}\r\n{}\r\nEarned: {} (server Unix ms)",
-                            r.name, r.description, r.earned_at
+                            r.name,
+                            r.description,
+                            r.earned_at
                         )
                     },
                 ))
@@ -239,19 +241,19 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>, 
                     .collect();
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
                 for row in &shown {
-                    let label = format!(
+                    let label = lfmt!(
                         "{} — Grade {} — {} points{}",
                         row.name,
                         row.grade,
                         row.points,
-                        if row.secret { " — Secret" } else { "" }
+                        if row.secret { tr!(" — Secret") } else { "" }
                     );
                     SendMessageW(list, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
                 let status = if !p.selected {
-                    "Feature unavailable in this session"
+                    tr!("Feature unavailable in this session")
                 } else if p.catalog.collecting {
-                    "Loading the complete account list"
+                    tr!("Loading the complete account list")
                 } else {
                     p.error.unwrap_or("")
                 };
@@ -273,9 +275,9 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>, 
                 let scope = if p.catalog.ready {
                     "matching"
                 } else {
-                    "here; load all for filters"
+                    tr!("here; load all for filters")
                 };
-                SetWindowTextW(header, wide(&format!("{points} points · {earned} earned · {matching} {scope} · Page {page}\r\n{status}")).as_ptr());
+                SetWindowTextW(header, wide(&lfmt!("{points} points · {earned} earned · {matching} {scope} · Page {page}\r\n{status}",earned=earned,matching=matching,page=page,points=points,scope=scope,status=status)).as_ptr());
                 held = Some(signature);
             }
             EnableWindow(
@@ -322,6 +324,7 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>, 
         close(&weak, backend);
     }
 }
+
 fn close(weak: &Shared, backend: Backend) {
     if let Some(m) = weak.upgrade() {
         let mut m = lock(&m);

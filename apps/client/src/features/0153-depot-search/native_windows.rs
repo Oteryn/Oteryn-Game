@@ -169,7 +169,14 @@ fn run(
                             inputs.0[2] = row.to_string();
                             SetWindowTextW(handles[2], wide(&inputs.0[2]).as_ptr());
                         }
-                        activate_shared(&shared, &commands, &inputs, id - 100);
+                        activate_displayed(
+                            &shared,
+                            &commands,
+                            &inputs,
+                            id - 100,
+                            held.as_ref()
+                                .and_then(|p: &DepotSearchPanel| p.reply.as_ref()),
+                        );
                     }
                     let panel = lock(&shared).depot_search.clone();
                     if held.as_ref() != Some(&panel) {
@@ -180,12 +187,17 @@ fn run(
                                 let tiers = row
                                     .tiers
                                     .iter()
-                                    .map(|t| format!("tier {}: {}", t.tier, t.count))
+                                    .map(|t| lfmt!("tier {}: {}", t.tier, t.count))
                                     .collect::<Vec<_>>()
                                     .join(", ");
-                                let text = format!(
+                                let text = lfmt!(
                                     "{} | Item {} | Depot {} | Stash {} | Inbox {} | {}",
-                                    index, row.client_id, row.depot, row.stash, row.inbox, tiers
+                                    index,
+                                    row.client_id,
+                                    row.depot,
+                                    row.stash,
+                                    row.inbox,
+                                    tiers
                                 );
                                 SendMessageW(
                                     results,

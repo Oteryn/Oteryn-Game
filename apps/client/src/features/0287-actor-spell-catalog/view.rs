@@ -7,6 +7,9 @@ pub(in crate::play) use archive::{
 };
 #[path = "book.rs"]
 mod book;
+#[cfg(any(windows, test))]
+#[path = "book_detail.rs"]
+mod book_detail;
 #[path = "preferences.rs"]
 mod preferences;
 pub use book::{SpellbookFilter, SpellbookState};

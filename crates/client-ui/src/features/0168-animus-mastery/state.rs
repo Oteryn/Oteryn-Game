@@ -34,7 +34,7 @@ impl AnimusPanel {
                 && (decoded.keys.is_empty()
                     || usize::from(page.offset) + decoded.keys.len() <= usize::from(decoded.total))
         }) else {
-            self.error = Some("Animus request refused; refresh to try again");
+            self.error = Some(tr!("Animus request refused; refresh to try again"));
             return false;
         };
         self.total = decoded.total;

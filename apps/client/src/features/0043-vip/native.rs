@@ -56,7 +56,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     }
 }
 
-fn run(
+pub(super) fn run(
     weak: Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
     commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>,
 ) {
@@ -65,7 +65,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("VIP management — Ctrl+V").as_ptr(),
+            wide(tr!("VIP management — Ctrl+V")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -195,7 +195,7 @@ fn run(
                             }),
                             _ => {
                                 mailbox.vip.feedback =
-                                    Some("Select an entry and enter a numeric icon".into());
+                                    Some(tr!("Select an entry and enter a numeric icon").into());
                                 None
                             }
                         }
@@ -218,7 +218,7 @@ fn run(
                     && commands.send(PlayCommand::Vip(command)).is_err()
                 {
                     mailbox.vip.pending = false;
-                    mailbox.vip.feedback = Some("The session has ended".into());
+                    mailbox.vip.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(&mailbox.vip) {
@@ -245,9 +245,9 @@ fn run(
                     .and_then(|text| serde_json::from_str::<serde_json::Value>(text).ok())
                     .map(|value| {
                         if value["shown"] == false {
-                            "Status hidden. "
+                            tr!("Status hidden. ")
                         } else {
-                            "Status shown. "
+                            tr!("Status shown. ")
                         }
                     })
                     .unwrap_or("");
@@ -256,11 +256,11 @@ fn run(
                     .feedback
                     .as_deref()
                     .unwrap_or(if mailbox.vip.pending {
-                        "Loading…"
+                        tr!("Loading…")
                     } else if !mailbox.vip.selected {
-                        "VIP unavailable in this session"
+                        tr!("VIP unavailable in this session")
                     } else {
-                        "Select a named row to manage it. Refresh returns to the first page."
+                        tr!("Select a named row to manage it. Refresh returns to the first page.")
                     });
                 SetWindowTextW(status, wide(&format!("{visibility}{feedback}")).as_ptr());
                 for id in 110..124 {
@@ -278,6 +278,7 @@ fn run(
         close(&weak);
     }
 }
+
 unsafe fn control(
     parent: HWND,
     class: &str,

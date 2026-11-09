@@ -11,7 +11,7 @@ pub(super) unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LP
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=117 | 140 | 145..=148 | 150 | 152)
+                && matches!(id, 101..=119 | 140 | 145..=150 | 152 | 153 | 180..=185)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -36,7 +36,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         }
         m.cyclopedia_character.open = true;
     }
-    link.cyclopedia_character_request(Intent::Tab);
+    link.cyclopedia_character_request(super::super::target::refresh_intent(
+        &link.cyclopedia_character_panel(),
+    ));
     let weak = Arc::downgrade(&link.mailbox);
     let rollback = weak.clone();
     let commands = link.commands.clone();

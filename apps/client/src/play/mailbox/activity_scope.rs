@@ -14,6 +14,9 @@ impl Mailbox {
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
+        self.cyclopedia_character.augments = Default::default();
+        self.properties.cyclopedia_map.atlas = None;
+        self.properties.cyclopedia_map.atlas_query = Default::default();
         self.cyclopedia_tracker.pending = Default::default();
         self.world_event.pending = Default::default();
         self.daily_boost.pending = Default::default();
@@ -59,6 +62,11 @@ impl Mailbox {
         self.discovery.history.pending = Default::default();
         self.properties.appearance.pending = Default::default();
         self.properties.charm_progression.pending = Default::default();
+        self.properties.charm_progression.catalogue = Default::default();
+        self.properties.charm_progression.charm_browser = Default::default();
+        self.properties.charm_progression.reply = None;
+        self.properties.charm_progression.summary.clear();
+        self.properties.charm_progression.feedback.clear();
         self.properties.character_info.pending = Default::default();
         self.properties.raid_schedule.pending = Default::default();
         self.properties.container_sort.pending = Default::default();
@@ -67,6 +75,7 @@ impl Mailbox {
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();
+        self.properties.house.invalidate();
         self.properties.house_move_out.pending = Default::default();
         self.properties.house_transfer.pending = Default::default();
         self.properties.staff.pending = Default::default();
@@ -122,8 +131,10 @@ impl Outbox {
         mailbox.activity_reset_commands = true;
         mailbox.map = None;
         mailbox.action_feedback = Some(Some(match receipt.scope {
-            ActivityScope::Instance { .. } => "Entered activity instance. Use the exit to return.",
-            ActivityScope::Channel { .. } => "Returned to the channel.",
+            ActivityScope::Instance { .. } => {
+                tr!("Entered activity instance. Use the exit to return.")
+            }
+            ActivityScope::Channel { .. } => tr!("Returned to the channel."),
         }));
     }
 }

@@ -1,4 +1,6 @@
+#[cfg(not(windows))]
 use super::*;
+#[cfg(not(windows))]
 use crate::combat_input::PlayCommand;
 
 #[cfg(not(windows))]

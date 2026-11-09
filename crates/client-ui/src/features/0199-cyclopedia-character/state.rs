@@ -1,10 +1,14 @@
 use oteryn_client_runtime::cyclopedia_character::CharacterTab;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CyclopediaCharacterPanel {
+    pub protection: super::Protection,
+    pub items: super::ItemSummary,
+    pub gallery: super::Gallery,
     pub badges: Option<Vec<u8>>,
     pub badge_filter: BadgeFilter,
     pub badge_visibility_known: bool,
     pub hidden_badges: std::collections::BTreeSet<u8>,
+    pub augments: super::AugmentPanel,
     pub selected: bool,
     pub blessings: super::protocol::BlessingsPanel,
     pub open: bool,
@@ -19,6 +23,9 @@ pub struct CyclopediaCharacterPanel {
     pub achievement_profile: Option<([u8; 16], String)>,
     pub achievement_pending: bool,
     pub profile_generation: u64,
+    pub profile: Option<oteryn_client_runtime::cyclopedia_character::profile::Profile>,
+    pub profile_pending: bool,
+    pub badges_open: bool,
     pub offset: u16,
     pub limit: u8,
     pub target: Option<[u8; 16]>,
@@ -34,9 +41,13 @@ pub struct CyclopediaCharacterPanel {
 impl Default for CyclopediaCharacterPanel {
     fn default() -> Self {
         Self {
+            protection: Default::default(),
+            items: Default::default(),
+            gallery: Default::default(),
             badges: None,
             badge_filter: Default::default(),
             hidden_badges: Default::default(),
+            augments: Default::default(),
             badge_visibility_known: false,
             selected: false,
             blessings: Default::default(),
@@ -52,6 +63,9 @@ impl Default for CyclopediaCharacterPanel {
             achievement_profile: None,
             achievement_pending: false,
             profile_generation: 0,
+            profile: None,
+            profile_pending: false,
+            badges_open: false,
             offset: 0,
             limit: 20,
             target: None,
@@ -79,12 +93,18 @@ impl CyclopediaCharacterPanel {
     pub fn change_target(&mut self, target: Option<[u8; 16]>) {
         if self.target != target {
             self.target = target;
+            self.protection = Default::default();
+            self.items = Default::default();
+            self.gallery = Default::default();
             self.badges = None;
             self.hidden_badges.clear();
             self.badge_visibility_known = false;
             self.profile_generation = self.profile_generation.saturating_add(1);
             self.achievements = Default::default();
             self.achievement_profile = None;
+            self.profile = None;
+            self.augments = Default::default();
+            self.profile_pending = false;
             self.achievement_pending = false;
             self.result = None;
             self.general = None;

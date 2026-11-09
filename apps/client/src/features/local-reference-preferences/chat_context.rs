@@ -7,6 +7,7 @@ impl SettingsState {
         let mut preferences = self.preferences.clone();
         preferences.general_hotkey_preset(chat_on)?;
         preferences.chat_context_hotkeys = true;
+        preferences.manual_hotkey_profile = false;
         self.apply(preferences);
         self.pending_chat_mode = Some(chat_on);
         self.chat_context = None;
@@ -16,6 +17,7 @@ impl SettingsState {
     pub fn manual_hotkeys(&mut self) {
         let mut preferences = self.preferences.clone();
         preferences.chat_context_hotkeys = false;
+        preferences.manual_hotkey_profile = true;
         self.apply(preferences);
         self.pending_chat_mode = None;
         self.chat_context = None;
@@ -25,11 +27,17 @@ impl SettingsState {
         let chat_on = {
             let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
             if let Some(chat_on) = self.pending_chat_mode.take() {
-                mailbox.chat.console.mode = if chat_on { ComposerMode::On } else { ComposerMode::Off };
+                mailbox.chat.console.mode = if chat_on {
+                    ComposerMode::On
+                } else {
+                    ComposerMode::Off
+                };
             }
             mailbox.chat.console.mode != ComposerMode::Off
         };
-        if !self.preferences.chat_context_hotkeys || self.chat_context == Some(chat_on) { return; }
+        if !self.preferences.chat_context_hotkeys || self.chat_context == Some(chat_on) {
+            return;
+        }
         let mut preferences = self.preferences.clone();
         match preferences.general_hotkey_preset(chat_on) {
             Ok(()) => {
@@ -37,7 +45,9 @@ impl SettingsState {
                 self.preferences = preferences;
                 self.chat_context = Some(chat_on);
             }
-            Err(error) => self.feedback = format!("Chat preset conflicts with a custom binding: {error}"),
+            Err(error) => {
+                self.feedback = format!("Chat preset conflicts with a custom binding: {error}")
+            }
         }
     }
 }

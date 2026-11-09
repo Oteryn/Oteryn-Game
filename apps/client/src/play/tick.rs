@@ -11,6 +11,7 @@ impl PlayView {
     /// its public class, a committed logout to character selection; a view error is a render
     /// failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
+        self.poll_ui_sounds(link);
         #[cfg(windows)]
         link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
@@ -69,13 +70,17 @@ impl PlayView {
                     feature_0011_world_interaction::input::send_attack(link, target)
                 }
                 Input::TargetWalk(position) => {
+                    self.cancel_chase_for_walk(link);
                     if !link.request_target_walk(position) {
                         break;
                     }
                 }
                 Input::Logout => link.request_logout(),
                 Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
-                    Some(direction) => link.request(direction),
+                    Some(direction) => {
+                        self.cancel_chase_for_walk(link);
+                        link.request(direction);
+                    }
                     None => break,
                 },
             }
@@ -86,6 +91,7 @@ impl PlayView {
         if self.inputs.is_empty()
             && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
         {
+            self.cancel_chase_for_walk(link);
             link.request(direction);
         }
         Ok(())
