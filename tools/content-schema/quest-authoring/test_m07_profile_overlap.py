@@ -16,5 +16,16 @@ class RepairIntegrationProfiles(unittest.TestCase):
             self.assertFalse(elemental[key]['admission']['materializable'])
             self.assertEqual(floor[key], elemental[key], key)
 
+    def test_elevator_scenery_is_stationary_in_both_providers(self):
+        base = ROOT / 'tools/content-schema/native-gameplay'
+        def records(name):
+            return {r['production_definition']['production_key']: r for r in json.loads((base / name).read_text())['records']}
+        qm50 = records('qm50-elevator-item-profiles.json')
+        rafzane = records('rafzane-elevator-item-profiles.json')
+        self.assertEqual(len(qm50), 8)
+        for key, row in qm50.items():
+            self.assertFalse(row['admission']['materializable'], key)
+            self.assertEqual(row, rafzane[key], key)
+
 if __name__ == '__main__':
     unittest.main()

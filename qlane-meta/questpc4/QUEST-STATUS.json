@@ -11489,5 +11489,29 @@
     },
     "pending": "FullM07 remainsPARTIAL: Machinery repair groups,Dreamer remaining puzzle,TooHot cleaning/floor and journey admission",
     "sql_changed": false
+  },
+  "m07_machinery_repairs": {
+    "status": "PARTIAL",
+    "scope": "6 native sites/44 segments; exact7/8 kit budgets from separate plain instances; solid collision andpre-consumption occupancy guards",
+    "red": "m07_solid_repairs_admit_exact_fenced_native_consuming_trials rejected unknown replacement_passable;0.012s",
+    "green": {
+      "initial_model_tests": "14/14 4.675s before final source inclusion guard",
+      "geometry_tests": "2/2 1.105s",
+      "model_tests": "14/14 5.065s",
+      "workspace_all_targets_seconds": 463.18,
+      "authoring_checks_seconds": 585.923,
+      "authoring_unit_modules": 122,
+      "authoring_unit_seconds": 845.515,
+      "content_tree_seconds": 224.136
+    },
+    "pending": "NativePG/selected mint audit/clippy/fmt/pins",
+    "sql_changed": true,
+    "new_migrations": []
+  },
+  "qm50_stationary_overlap_fix": {
+    "status": "QUALIFIED_SLICE",
+    "red": "elevator overlap regression failed: stationary scenery admitted materializable",
+    "green": "2 profile-overlap tests PASS; QM50 capture regenerated with repo tool; py_compile PASS",
+    "scope": "Fixed-source elevator scenery only; no claim that repair PG or full postmerge gates are green"
   }
 }

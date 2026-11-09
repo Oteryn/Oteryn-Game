@@ -27,8 +27,13 @@ def capture(root=ROOT):
         identifier = facts['server_item_id']
         if facts['movable'] or facts['pickupable']:
             raise ValueError('QM50_FIXED_SCENERY_REQUIRED')
-        records.append(source.profile(identifier, nodes[identifier], objects[identifier],
-                                      facts, bindings, None))
+        row = source.profile(identifier, nodes[identifier], objects[identifier],
+                             facts, bindings, None)
+        if row['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+                                'legal_destinations': ['Ground']}:
+            raise ValueError('QM50_FIXED_SCENERY_ADMISSION')
+        row['admission']['materializable'] = False
+        records.append(row)
     bound = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
                                  'records': records}, bindings, IDS)
     return {'schema': SCHEMA, 'producer': 'tools/content-migration/qm50_elevator_profiles.py',
