@@ -438,5 +438,26 @@
     "owner_decision": "CI runs node boot; unavailable container qualification is not a blocker",
     "local": "NOT_RUN",
     "coordinator_action": "Refresh deployment manifest digest during integration; protected deployment path unchanged by this lane."
+  },
+  "travel_prompt_component": {
+    "state": "GREEN",
+    "capability": "Captured route and context; one or two confirmations; single-use exclusive 60-second deadline",
+    "red": "2 failing expiry cases; 2 passing context/route cases",
+    "green": "4 focused NPC unit cases PASS",
+    "production_wiring": "Next slice: replace Newhaven inline Prompt; Anna Targuna is not enabled",
+    "workspace": "PASS 10m44s",
+    "clippy": "PASS strict NPC and quests all-target/all-feature 4m04s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged content inputs",
+    "sql": "unchanged; no new PG claim",
+    "reuse_check": "QENGINE2 97cb9db791482391e77049c8a27fefd659003669 and qmech 0326dc2e5517435bbbe599df2007d835a7ee3477 lack captured travel prompt; no merges",
+    "whole_M38": "PARTIAL"
+  },
+  "optional_binding_watch_fix": {
+    "state": "GREEN",
+    "cause": "Missing optional content/quests/authored-bindings was always watched, forcing repeated Cargo rebuilds",
+    "fix": "Watch nearest existing ancestor until optional directory is created; keep registry scope/limits unchanged",
+    "red": "Real Cargo rebuilt unchanged fixture twice; expected once",
+    "green": "Cargo integration regression PASS 0.47s; unchanged builds cached and first new binding detected"
   }
 }
