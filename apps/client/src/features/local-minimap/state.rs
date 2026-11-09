@@ -115,6 +115,7 @@ impl Minimap {
     pub fn bind_world(&mut self, world: &str) {
         // Native admission calls this even when another Character enters the same World.
         self.quest_marks = Default::default();
+        self.quest_markers.clear();
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
@@ -546,7 +547,19 @@ mod quest_mark_tests {
         map.bind_world("11111111-1111-4111-8111-111111111111");
         map.binding = Some(([1; 32], [2; 32], 1));
         assert!(map.replace_quest_marks(treasure()));
+        assert!(
+            map.replace_quest_markers(&[oteryn_session::quest_log::QuestMapMark {
+                x: 31948,
+                y: 31924,
+                floor: -7,
+                text: "Treasure".into(),
+            }])
+        );
         map.bind_world("11111111-1111-4111-8111-111111111111");
+        assert!(
+            map.quest_markers.is_empty(),
+            "admission also clears legacy Character facts"
+        );
         assert!(
             map.quest_marks.0.is_empty(),
             "a new admission to the same World clears Character facts"

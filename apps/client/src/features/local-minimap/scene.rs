@@ -78,7 +78,12 @@ impl Scene {
                         .push(&view, self.world.atlas(), cell, MARKER_CELL)?;
                 }
                 if map.quest_markers.iter().any(|m| {
-                    m.floor == floor
+                    // Capability 451 owns the icon when both delivery paths contain it.
+                    !map.quest_marks.0.iter().any(|mark| {
+                        i32::from(mark.x) == m.x
+                            && i32::from(mark.y) == m.y
+                            && i16::from(mark.floor) == m.floor
+                    }) && m.floor == floor
                         && (0..map.zoom).contains(&m.x.saturating_sub(tx))
                         && (0..map.zoom).contains(&m.y.saturating_sub(ty))
                 }) {

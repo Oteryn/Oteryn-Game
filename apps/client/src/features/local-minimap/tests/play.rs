@@ -242,7 +242,7 @@ fn committed_quest_markers_reach_minimap_and_snapshot_replacement_clears_them()
     let mut play = minimap_view()?;
     let (link, _commands, outbox) = play_channel();
     let quest_snapshot = |revision,
-                    log: &QuestLog|
+                          log: &QuestLog|
      -> Result<oteryn_session::GatedSnapshot, Box<dyn std::error::Error>> {
         Ok(oteryn_session::GatedSnapshot {
             domain_id: 16,
@@ -311,9 +311,34 @@ fn committed_quest_markers_reach_minimap_and_snapshot_replacement_clears_them()
                 .is_err()
         );
     }
+    let personal = oteryn_client_ui::personal_map_marks::PersonalMapMarks(vec![
+        oteryn_client_ui::personal_map_marks::PersonalMapMark {
+            key: "sterling".into(),
+            x: 31948,
+            y: 31924,
+            floor: -7,
+            text: "Treasure".into(),
+        },
+    ]);
+    outbox.personal_map_marks_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 3,
+        status: CommandStatus::Accepted,
+        payload: personal.encode().ok_or("personal mark encoding")?,
+    })?;
+    play.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        crosses(&play),
+        0,
+        "capability 451 suppresses the duplicate legacy icon"
+    );
+    assert_eq!(
+        crate::play::feature_local_minimap::state::lock(&play.minimap).quest_marks,
+        personal
+    );
     outbox.push(vec![oteryn_session::SessionEvent::GatedSnapshotReplaced(
         oteryn_session::AppliedDelta {
-            server_sequence: 3,
+            server_sequence: 4,
             base_revision: 2,
             new_revision: 10,
             value: quest_snapshot(10, &QuestLog::default())?,
@@ -326,5 +351,9 @@ fn committed_quest_markers_reach_minimap_and_snapshot_replacement_clears_them()
             .is_empty()
     );
     assert_eq!(crosses(&play), 0);
+    assert_eq!(
+        crate::play::feature_local_minimap::state::lock(&play.minimap).quest_marks,
+        personal
+    );
     Ok(())
 }
