@@ -389,6 +389,8 @@ pub enum FirstEntryOutcome {
     RefusedStaleAuthority,
     /// Current authority could not be read; nothing was written.
     RefusedUnavailable,
+    /// Positioned and otherwise initialized, but final spell repair must be retried on resume.
+    AwaitingSpellRepair,
     /// The Channel owner refused the write; nothing was written.
     RefusedByChannel,
 }
