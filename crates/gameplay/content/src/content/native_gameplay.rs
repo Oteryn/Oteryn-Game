@@ -1207,7 +1207,10 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
-            if admitted.insert(id.clone(), record.production_binding.clone()).is_some() {
+            if admitted
+                .insert(id.clone(), record.production_binding.clone())
+                .is_some()
+            {
                 return Err(invalid("M20 Cradle identity collision"));
             }
         }
@@ -1240,8 +1243,13 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         }
         for record in &items.records {
             let binding = &record.production_binding;
-            if cradle_profiles.get(&binding.external_id).is_some_and(|source| source != record) {
-                return Err(invalid("M20 Cradle profile differs from its qualified source"));
+            if cradle_profiles
+                .get(&binding.external_id)
+                .is_some_and(|source| source != record)
+            {
+                return Err(invalid(
+                    "M20 Cradle profile differs from its qualified source",
+                ));
             }
             let external = binding
                 .external_id

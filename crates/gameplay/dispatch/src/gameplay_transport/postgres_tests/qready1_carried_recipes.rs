@@ -13,7 +13,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let started = std::time::Instant::now();
     let fence = admitted.item_fence.ok_or("recipe fence")?;
-    for (ordinal, item) in [(401, 11466), (402, 21504)] {
+    for (ordinal, item) in [(401, 21505)] {
         super::quest_world_callbacks::input_item(
             owner,
             fence,
@@ -66,9 +66,9 @@ pub(super) async fn exercise(
             .ok_or_else(|| "selected operand handle".into())
     };
     let intent = UseIntent {
-        target: UseTarget::Item(operand("oteryn:item.tibia.i11466")?),
+        target: UseTarget::Item(operand("oteryn:item.tibia.i21507")?),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Item(operand("oteryn:item.tibia.i21504")?)),
+        use_with_map_item: Some(MapUseTarget::Item(operand("oteryn:item.tibia.i21505")?)),
         use_with_position: None,
     };
     let command = UseCommand {
@@ -87,15 +87,21 @@ pub(super) async fn exercise(
     .await
     .ok_or("recipe dispatcher outcome")?;
     assert_eq!(result.disposition, UseDisposition::Committed);
-    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-reward/qready1/cursed-crystal-first-11466'")
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-reward/m20/cursed-crystal-final-dust'")
         .fetch_one(&h.pool).await?;
     assert_eq!(
         count, 2,
         "both selected instances are consumed by one recipe"
     );
-    let outputs: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21505'")
+    let outputs: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21506'")
         .fetch_one(&h.pool).await?;
     assert_eq!(outputs, (1, 1));
+    let progress: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline'")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(
+        progress, 2,
+        "the selected recipe raises the real Cursed Crystal quest track"
+    );
     let inventory = owner
         .root
         .read_item_use_inventory(owner.character, owner.holder, fence)
@@ -143,14 +149,14 @@ pub(super) async fn exercise(
     .await
     .ok_or("spent operand refusal")?;
     assert_eq!(retry.disposition, UseDisposition::StaleState);
-    let after: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21505'")
+    let after: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21506'")
         .fetch_one(&h.pool).await?;
     assert_eq!(
         after, outputs,
         "replay and another claim cannot mint another mixture"
     );
     eprintln!(
-        "POSTGRES_CASE_COMPLETED qready1-cursed-first-mixture duration={:?} success=true",
+        "POSTGRES_CASE_COMPLETED qready1-cursed-final-mixture duration={:?} success=true",
         started.elapsed()
     );
     Ok(())

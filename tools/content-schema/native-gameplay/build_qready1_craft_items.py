@@ -9,7 +9,7 @@ import build_source_item_profiles as native
 import build_world_change_item_profiles as sources
 
 ROOT = Path(__file__).resolve().parents[3]
-IDS = frozenset({8997, 9108, 9109, 21507, 21573})
+IDS = frozenset({8997, 9108, 9109, 21506, 21507, 21573})
 OUTPUT = Path(__file__).with_name("qready1-craft-item-profiles.json")
 
 

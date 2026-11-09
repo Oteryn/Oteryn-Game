@@ -5,7 +5,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import qready1_carried_crafts as carried
 import qready1_craft_callbacks as crafts
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -52,28 +51,15 @@ class Qready1CraftBindings(unittest.TestCase):
             self.assertEqual(str(evidence["appearance_id"]), identity["external_id"])
             self.assertEqual(f"fandom-r{evidence['wiki_fact']['revision_id']}", identity["source_revision"])
             self.assertEqual(evidence["official_name"].casefold(), evidence["wiki_fact"]["wiki_title"].casefold())
-    def test_first_mixture_spends_both_operands_without_a_progress_gate(self):
-        document = carried.build()
-        self.assertEqual(document, json.loads(carried.OUTPUT.read_bytes()))
-        recipes = document["callbacks"]
-        self.assertEqual(2, len(recipes))
-        pairs = set()
-        for recipe in recipes:
-            pairs.add((recipe["carried_item"], recipe["carried_target"]))
-            self.assertEqual([], recipe["storage"])
-            self.assertEqual(
-                [(recipe["carried_item"], 1), (recipe["carried_target"], 1)],
-                [(item["item"], item["count"]) for item in recipe["take"]],
-            )
-            self.assertEqual("oteryn:item.tibia.i21505", recipe["give"]["item"])
-            self.assertEqual(1, recipe["give"]["count"])
-        self.assertEqual(
-            {
-                ("oteryn:item.tibia.i11466", "oteryn:item.tibia.i21504"),
-                ("oteryn:item.tibia.i21504", "oteryn:item.tibia.i11466"),
-            },
-            pairs,
-        )
+    def test_first_mixture_reuses_existing_native_qn4_crafting_owner(self):
+        recipes = json.loads((ROOT / "content/quests/carried-recipes.json").read_bytes())
+        recipe = next(r for r in recipes if r["key"] == "oteryn:quest-craft/cursed-crystal/first-ointment")
+        self.assertEqual([11466, 21504], recipe["ingredients"])
+        self.assertEqual([[21505, 1]], recipe["outputs"])
+        final = json.loads((ROOT / "content/quests/npc-callbacks/m20-cursed-crystal-recipes.json").read_bytes())["callbacks"]
+        self.assertEqual(2, len(final))
+        self.assertTrue(all(row["storage"][0]["at_least"] for row in final))
+        self.assertTrue(all(row["give"]["item"] == "oteryn:item.tibia.i21506" for row in final))
 
     def test_registered_recipe_matches_generator_and_chosen_s2(self):
         self.assertEqual(crafts.build(), json.loads(crafts.OUTPUT.read_bytes()))
@@ -111,7 +97,7 @@ class Qready1CraftBindings(unittest.TestCase):
             r["production_definition"]["production_key"]: r for r in packet["records"]
         }
         self.assertEqual(
-            {f"oteryn:item.tibia.i{i}" for i in [8997, 9108, 9109, 21507, 21573]}, set(rows)
+            {f"oteryn:item.tibia.i{i}" for i in [8997, 9108, 9109, 21506, 21507, 21573]}, set(rows)
         )
         dust = rows["oteryn:item.tibia.i21507"]
         self.assertEqual(60, dust["semantics"]["physical"]["value"]["weight"]["value"])

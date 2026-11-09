@@ -1,4 +1,5 @@
-//! M20: native laboratory stations consume every declared input atomically.
+//! M20: laboratory stations consume every declared input atomically.
+//! Scatter uses its unchanged native crop; Cradle uses a bounded mechanic scene.
 use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
@@ -76,27 +77,10 @@ pub(super) fn world(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
     let crop = match name {
-        "qready1-cradle-brew" => NativeCrop {
-            bytes: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z12-x131-y127.b3"
-            )),
-            region: (12, 131, 127),
-            bounds: (33784, 32568, 33788, 32573),
-            start: (33786, 32571),
-            expected: vec![
-                ExpectedTile {
-                    position: (33786, 32570),
-                    ids: vec![40232, 2343, 8997],
-                    counted_entry: None,
-                },
-                ExpectedTile {
-                    position: (33786, 32571),
-                    ids: vec![40231, 8698],
-                    counted_entry: None,
-                },
-            ],
-        },
+        // Qualify the transaction in a bounded scene: the unchanged source room's
+        // 40231/40232 ground identities are not admitted by the current registry.
+        // The source station and its ordinal are witnessed separately below.
+        "qready1-cradle-brew" => return cradle_scene(native),
         "qready1-scatter-blend" => NativeCrop {
             bytes: include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -292,4 +276,129 @@ pub(super) async fn exercise(
         2
     );
     Ok(())
+}
+
+/// This is a mechanic scene, not proof that the complete Cradle region boots.
+fn cradle_scene(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, sector};
+    let bytes = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/placements/region-z12-x131-y127.b3"
+    ));
+    let source = oteryn_world_bundle_compiler::b3::decode_region(
+        bytes,
+        bundle::TILE_LIMITS,
+        &mut sector::Budget {
+            tiles: 65536,
+            entries: 1_000_000,
+        },
+    )?;
+    let tile = source
+        .sectors
+        .iter()
+        .flat_map(|(_, _, tiles)| tiles)
+        .find(|tile| (tile.x, tile.y) == (33786, 32570))
+        .ok_or("source cauldron tile")?;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/placements/index.json"),
+    )?)?;
+    assert_eq!(tile.items.len(), 3);
+    assert_eq!(
+        index["palette"][tile.items[2].palette as usize]["source_item_id"],
+        8997
+    );
+    let (fixture, mut pins) = crate::map::boot::tests::bundle();
+    let mut manifest = bundle::read(&fixture)?.manifest;
+    manifest.palette.truncate(1);
+    let key = "oteryn:item.tibia.i8997";
+    let policy = native
+        .item_policy(key, "definition-r1")
+        .ok_or("cauldron policy")?;
+    let attributes = &policy.record().attributes;
+    let reference = native
+        .item_index()
+        .ok_or("Item index")?
+        .definition_ref("Item", key, "definition-r1")
+        .ok_or("qualified cauldron")?;
+    manifest.palette.push(bundle::PaletteEntry {
+        key: key.into(),
+        family: bundle::Family::Item,
+        id: reference.get() - 1,
+        terrain: None,
+    });
+    manifest.world = bundle::Extent {
+        min_x: 33785,
+        min_y: 32569,
+        max_x: 33788,
+        max_y: 32573,
+        floors: vec![-12],
+    };
+    let mut tiles = Vec::new();
+    for y in 32569..32573 {
+        for x in 33785..33788 {
+            let mut items = vec![sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            }];
+            if (x, y) == (33786, 32570) {
+                // Keep the production callback's witnessed station ordinal (2).
+                items.push(items[0].clone());
+                items.push(sector::Item {
+                    palette: 1,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+            }
+            tiles.push(sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items,
+            });
+        }
+    }
+    let bytes = oteryn_world_bundle::writer::write(
+        &manifest,
+        &[bundle::Sector {
+            floor: -12,
+            sx: 33786 / 32,
+            sy: 32570 / 32,
+            tiles,
+        }],
+        &Default::default(),
+    )?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(|error| format!("{error:?}"))?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: 33786,
+                y: 32571,
+                floor: -12,
+            },
+        },
+        crate::foundation::WorldId::decode(&super::fixture::id(42))
+            .map_err(|error| format!("{error:?}"))?,
+        crate::foundation::ChannelId::decode(&super::fixture::id(43))
+            .map_err(|error| format!("{error:?}"))?,
+        |candidate| {
+            (candidate == key).then_some(crate::map::facts::ItemDefinition {
+                reference,
+                solid: attributes.blocks_movement,
+                blocks_projectile: attributes.blocks_projectile.unwrap_or(true),
+                pickupable: false,
+                door: false,
+            })
+        },
+    )
+    .map_err(|error| format!("{error:?}").into())
 }

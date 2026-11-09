@@ -200,7 +200,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -343,7 +345,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -486,7 +490,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,
@@ -630,7 +636,9 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "always_on_top": false,
+        "always_on_top_order": 0
       },
       "admission": {
         "materializable": true,

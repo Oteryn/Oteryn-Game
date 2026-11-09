@@ -85,6 +85,11 @@ def build(root=ROOT):
             "has_height": bool(flags.get("flags.height", False)),
         }
         record = native.profile(item_id, node, obj, physical, {}, None)
+        # Match the existing House/source normalization of official draw-order flags.
+        order = next((value for flag, value in [("clip", 1), ("top", 3), ("bottom", 2)]
+                      if flags.get("flags." + flag, False)), 0)
+        record["attributes"]["always_on_top"] = order != 0
+        record["attributes"]["always_on_top_order"] = order
         record["authoring"]["item"]["revision"] = "qready1-cradle-r1"
         record["production_definition"] = {
             "family": "Item", "production_key": f"oteryn:item.tibia.i{item_id}",

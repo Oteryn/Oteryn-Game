@@ -51,3 +51,22 @@ scoped in its packet. Source yolk expiry (the walkthrough says two minutes) and
 unspecified nutrient expiry remain source observations; no native timing value
 is guessed. This records the local selected-recipe decision, rather than a claim
 that source materials never expire.
+
+The existing `carried-recipes.json` QN4 first-mixture recipe remains the owner of
+11466 + 21504 -> 21505. The new ingress reuses QN4's existing two final-mixture
+reward callbacks and migration 2460 for dust + oil -> ointment and monotonic
+quest-line progress. It does not register another first-mixture reward owner.
+
+Qualification boundary: the Cradle crafting PG case uses the production Item 8997,
+source-witnessed coordinate/ordinal, and a bounded mechanic scene. It does not
+qualify the complete native room: its source ground IDs 40231/40232 currently lack
+registry admission (the native-crop test rejected donor item/40232). No ground
+identity binding or collision properties are guessed. Scatter uses its unchanged
+native B3 crop. Complete node-boot topology remains blocked in this workspace by
+missing sudo and Docker layer disk capacity; full-manifest decoding passed.
+
+The final mixture's output, special ointment 21506, is admitted through the same
+closed Crystal XML / official appearance / exact OTS binding normalizer as the
+other crafting Items. Its missing profile caused the initial real-dispatch final
+mixture case to fail before grant admission. The six-identity crafting cohort and
+its independent equipment pin are regenerated from that source packet.
