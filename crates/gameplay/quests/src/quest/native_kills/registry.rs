@@ -13,6 +13,7 @@ pub struct CounterRef<'a> {
     pub gate_value: i64,
     pub minimum: i64,
     pub maximum: i64,
+    pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
 }
 
 impl Counter {
@@ -26,6 +27,7 @@ impl Counter {
             gate_value: 1,
             minimum: 0,
             maximum: self.maximum,
+            death_area: None,
         }
     }
 }

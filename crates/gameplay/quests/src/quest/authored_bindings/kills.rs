@@ -6,6 +6,27 @@ use serde::{Deserialize, Serialize};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
 
+/// Inclusive victim bounds in native carrier coordinates (positive Tibia floor).
+/// Eligibility is frozen from the original lethal facts, never the recipient's later position.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathArea {
+    pub minimum: [i32; 3],
+    pub maximum: [i32; 3],
+}
+impl DeathArea {
+    fn valid(self) -> bool {
+        (0..3).all(|axis| {
+            self.minimum[axis] >= 0
+                && self.minimum[axis] <= self.maximum[axis]
+                && self.maximum[axis] <= if axis == 2 { 15 } else { 65535 }
+        })
+    }
+    pub fn contains(self, position: [i32; 3]) -> bool {
+        (0..3).all(|axis| (self.minimum[axis]..=self.maximum[axis]).contains(&position[axis]))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct KillCounter {
@@ -19,6 +40,10 @@ pub struct KillCounter {
     pub maximum: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub advance_gate_to: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub death_area: Option<DeathArea>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_change: Option<String>,
 }
 
 impl KillCounter {
@@ -32,6 +57,7 @@ impl KillCounter {
             || !self.creature.starts_with("oteryn:creature.")
             || self.track == self.gate
             || self.minimum >= self.maximum
+            || self.death_area.is_some_and(|area| !area.valid())
             || count
                 .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
             || gate.is_none_or(|track| {
@@ -82,6 +108,7 @@ impl KillCounter {
             gate_value: self.gate_value,
             minimum: self.minimum,
             maximum: self.maximum,
+            death_area: self.death_area,
         }
     }
 }

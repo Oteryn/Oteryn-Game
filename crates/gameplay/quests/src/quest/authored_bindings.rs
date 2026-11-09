@@ -386,7 +386,7 @@ impl Stage {
                 effects: counter.effects(),
                 completes: self.completes,
                 experience: None,
-                world_change: None,
+                world_change: counter.world_change.clone(),
             },
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
         };
