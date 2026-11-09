@@ -1,7 +1,7 @@
-"""Closed physical/temporal qualification for M07's two held trial inputs.
+"""Closed physical/temporal qualification for M07's held trial inputs and retained Fire Bug.
 
 Crystal 201189f8 items.xml and the retained Canary XML have byte-identical
-21389/21466 records (including their serialized XML tails). Native publication
+21389/21466/5467 records (including their serialized XML tails). Native publication
 must still select these records and regenerate the provider; this module does
 not change admission or invent decay rules from item descriptions.
 """
@@ -13,6 +13,7 @@ import grizzly_shop_profiles as owner
 # Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml,
 # complete file SHA256 8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509.
 SOURCE_RECORDS = {
+    5467: '6e788b59b3e1c3b5b68d0decc30a210007db94c63d4346f5352036562d94d3a4',
     21389: '593dda554a3c255633ad5c3278098f566447472a45c760561bf70ff5171408b6',
     21466: 'f5c7ba16e4b6941ff450ade217b079c4e42da9985e771fa10a86c3d1b978ee01',
 }
@@ -27,7 +28,7 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
             != SOURCE_RECORDS[item_id]
             or definition['identity'] != {'family': 'Item', 'key': key,
                                           'revision': 'definition-r1'}
-            or definition['materializable'] is not True):
+            or (definition['materializable'] is not True and item_id != 5467)):
         raise ValueError('LION_TRIAL_ITEM_SOURCE')
     binding = bindings.get(str(item_id))
     if (binding is None or binding['target'] != definition['identity']
@@ -53,7 +54,10 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
     for group in ('physical', 'stack', 'container', 'temporal'):
         if owner.known_conflict(definition['semantics'][group], record['semantics'][group]):
             raise ValueError('LION_TRIAL_ITEM_CANONICAL_CONFLICT:' + group)
-    if definition['stack_class'] != 'NonStackable':
+    # Fire Bug's accepted definition still has incomplete admission. Its exact
+    # pinned source/appearance pair supplies native custody, as for QENGINE inputs.
+    if definition['stack_class'] not in (('NonStackable', 'Unknown') if item_id == 5467
+                                          else ('NonStackable',)):
         raise ValueError('LION_TRIAL_ITEM_STACK')
     record['semantics'] = owner.accepted_first(definition['semantics'], record['semantics'])
     return source.bind_profiles(
@@ -63,7 +67,7 @@ def qualify(item_id, node, appearance, physical, bindings, definition):
 
 
 def records(root, xml, definitions):
-    """Resolve the exact two native records from the retained pinned providers."""
+    """Resolve the exact M07 native records from the retained pinned providers."""
     import qengine_reward_item_profiles as shared
 
     source = owner.source

@@ -1,8 +1,9 @@
 # M07 Lion trial slice
 
-M07 remains PARTIAL: Dreamer's Challenge's carrot, Fire Bug, Death Ring entrance
+M07 remains PARTIAL: Dreamer's Challenge's carrot and Death Ring entrance
 and shared tree restoration still require their native callers and durable item
-participation. This slice addresses the three Lion offerings and pagoda resets;
+participation. The Fire Bug owner is covered in
+[its separate slice](qmech-m07-dreamer-fire-bug.md). This slice addresses the three Lion offerings and pagoda resets;
 it does not qualify either full quest or the Lion treasure cache.
 
 Reference: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
@@ -50,8 +51,8 @@ The unchanged `published_ungated_quest_hash_baseline` test still has the previou
 reproduced Ice Islands mismatch (`ca68476c…` observed, `ce91fb47…` expected), also
 with the base loader and callback registry restored. Its assertion is unchanged.
 
-Remaining M07 work is Dreamer's Challenge's real entrance offering and reset
-caller. In particular, Death Ring 6299 is an AddItem offering at UID2244, not a
+Remaining M07 work is Dreamer's Challenge's carrot and Death Ring offering
+and tree reset caller. In particular, Death Ring 6299 is an AddItem offering at UID2244, not a
 surrogate USE: it removes trees 3636 at (32857,32231..32233,z11). UID9234 restores
 missing trees and teleports to (32819,32347,z9). The carrot entry retains its live
 Premium and carried-item requirements; the Fire Bug entrance retains its shared
@@ -85,8 +86,6 @@ at the same Crystal commit. Item5467 is reused, not consumed, on UID2243.
 The action explicitly replaces ashes3134 at (32849,32233,z9) with portal1949,
 sets its destination to (32857,32234,z11), and schedules restoration after five
 minutes. This literal source position corroborates the retained bare B3 ashes;
-it does not bind the separate Death Ring AddItem tile. The current callback
-validator requires personal state for any item-on-target binding, so faithfully
-wiring ignition needs shared reusable-item admission rather than a fabricated
-personal progress track. The existing lit-glyph entry guard alone is not that
-implementation.
+it does not bind the separate Death Ring AddItem tile. The shared-input writer and five-minute native portal lifecycle are now implemented
+and qualified in [the Fire Bug slice](qmech-m07-dreamer-fire-bug.md). The separate
+UID2243 movement handler is not assigned to the newly created, unkeyed teleport.

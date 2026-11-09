@@ -28,6 +28,9 @@ class LionTrialItemProfiles(unittest.TestCase):
         cls.definitions = {r['definition']['identity']['key']: r['definition']
                            for r in json.loads((ROOT / 'content/items/definitions/'
                                                 'items-10500-10999.json').read_bytes())['records']}
+        cls.definitions.update({r['definition']['identity']['key']:r['definition']
+                                for r in json.loads((ROOT / 'content/items/definitions/'
+                                                     'items-29000-29499.json').read_bytes())['records']})
 
     def values(self, item_id):
         return copy.deepcopy([item_id, self.nodes[item_id], self.appearances[item_id],
@@ -42,6 +45,13 @@ class LionTrialItemProfiles(unittest.TestCase):
             'decay_target': owner.source.NA}))
         self.assertEqual(record['production_definition']['production_key'],
                          'oteryn:item.tibia.i21389')
+
+    def test_fire_bug_is_a_reusable_uncharged_portable_instance(self):
+        record = profiles.qualify(*self.values(5467))
+        self.assertEqual(record['production_definition']['production_key'],'oteryn:item.tibia.i5467')
+        self.assertEqual(record['semantics']['temporal'],owner.source.NA)
+        self.assertEqual(record['semantics']['charges'],owner.source.NA)
+        self.assertEqual(record['semantics']['container'],owner.source.NA)
 
     def test_water_description_cannot_manufacture_a_timer_or_fluid_instance(self):
         record = profiles.qualify(*self.values(21466))

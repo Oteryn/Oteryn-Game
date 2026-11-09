@@ -463,8 +463,22 @@ impl DurabilityRoot {
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
+        let shared_entrance = context.is_some()
+            && world_callbacks.iter().any(|callback| {
+                callback.key == request.transition_key
+                    && oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
+            })
+            && catalogue.transition(&request.transition_key).is_some_and(
+                oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_transition,
+            );
+        if (request.transition_key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE)
+            != shared_entrance
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         if reward_callback.is_none()
             && benevola.is_none()
+            && !shared_entrance
             && catalogue
                 .transition(&request.transition_key)
                 .is_some_and(|t| t.effects.is_empty() && !t.completes)

@@ -129,6 +129,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
+    // M07: retained Fire Bug 5467 uses the exact pinned source physical owner.
+    ("M07-FIRE-BUG", 1),
     // M07: source-qualified flower 21389 (one-hour retirement) and water 21466.
     // lion_trial_item_profiles.py retains their exact Crystal 201189f records.
     ("M07-LION-TRIALS", 2),

@@ -9,6 +9,7 @@ pub(crate) mod ground_stack;
 #[doc(hidden)]
 pub use ground_stack::matches as fixture_ground_stack_matches;
 pub mod shared_count;
+mod shared_input;
 pub mod shared_switch;
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
@@ -416,6 +417,11 @@ async fn consume_inputs(
         // Retained tools still require a positive quantity, live custody and the
         // same location lock. The enclosing Quest receipt binds this read to the
         // action without inventing an item consumption or changing its identity.
+        if required.reusable
+            && oteryn_gameplay_quests::quest::dreamer_fire_bug::shared_input(callback)
+        {
+            shared_input::retain(tx, fence, request, callback, context, &input).await?;
+        }
         if !required.reusable {
             inputs.push(input);
         }

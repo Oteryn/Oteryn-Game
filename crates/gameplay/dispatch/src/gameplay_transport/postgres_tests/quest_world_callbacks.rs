@@ -260,6 +260,11 @@ pub(super) fn world(
         }
     }
     let mut effect_positions = Vec::new();
+    if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+        effect_positions.push(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION);
+        effect_positions.extend(oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_POSITIONS
+            .into_iter().map(|(x,y)|Position{x,y,floor:-9}));
+    }
     if let Some(pair) = &callback.effects.portals {
         for portal in &pair.portals {
             effect_positions.extend([portal.position, portal.destination]);
@@ -360,7 +365,9 @@ pub(super) fn world(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
-                unique: callback.selector.unique,
+                unique: if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+                    None // Retained B3 has the bare ashes at the source's literal position.
+                } else { callback.selector.unique },
                 action: callback.selector.action,
                 ..Default::default()
             },

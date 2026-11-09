@@ -32,6 +32,7 @@ pub mod completion_sets;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
+pub mod dreamer_fire_bug;
 pub mod elemental_spheres;
 pub mod fire_feathered_native;
 pub mod grave_danger;
@@ -400,6 +401,7 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
+                && !dreamer_fire_bug::shared_transition(&transition)
                 && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
                     && transition.quest == "oteryn:quest/worldchange/benevola")
                     || transition.key.starts_with("oteryn:quest-reward/"))

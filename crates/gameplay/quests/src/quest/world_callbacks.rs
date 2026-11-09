@@ -343,6 +343,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(super::fire_feathered_native::callbacks());
     callbacks.extend(super::shared_world_progress::callbacks());
     callbacks.extend(super::hive_access::callbacks());
+    callbacks.extend(super::dreamer_fire_bug::callbacks());
     callbacks.extend(super::lions_rock::callbacks());
     callbacks.push(super::targuna_ram::callback()?);
     callbacks.push(super::rotten_blood::altar_callback());
@@ -401,7 +402,9 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
-        if (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
+        if (callback.key == super::dreamer_fire_bug::IGNITE
+            && !super::dreamer_fire_bug::callbacks().contains(callback))
+            || (callback.key == nomads_window::KEY && !nomads_window::exact(callback))
             || operation_tracks.len() != callback.state_ops.len()
             || !operation_tracks.is_disjoint(&unique_storage)
             || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS
@@ -576,7 +579,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     .collect();
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
-                    || !callback.has_personal_state()
+                    || !callback.requires_durable_commit()
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100
@@ -643,7 +646,7 @@ fn extend_callbacks(
     let inherited: BTreeSet<_> = catalogue.tracks.keys().cloned().collect();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    for callback in callbacks.iter().filter(|c| c.has_personal_state()) {
+    for callback in callbacks.iter().filter(|c| c.requires_durable_commit()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
                 storage

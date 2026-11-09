@@ -113,6 +113,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 restore: before,
             });
         }
+        if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+            let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
+                projection
+            else {
+                return UseDisposition::Rejected;
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedEntrance {
+                due,
+                restore,
+                position: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE),
+                destination: tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION),
+            });
+        }
         projection = match super::conditional_cells::prepare(map, callback, projection) {
             Ok(projection) => projection,
             Err(result) => return result,
@@ -568,7 +581,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        let durable = callback.has_personal_state() && !(close && callback.opening_only);
+        let durable = callback.requires_durable_commit() && !(close && callback.opening_only);
         let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
@@ -727,6 +740,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             *due = deadline;
         }
+        if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+            && let Some(crate::map::facts::QuestCallbackProjection::TimedEntrance { due, .. }) =
+                &mut projection
+        {
+            let Some(deadline) = self.owner_now().get().checked_add(300_000_000) else {
+                return UseDisposition::Exhausted;
+            };
+            *due = deadline;
+        }
         if !map.facts.apply_quest_callback(
             key,
             expected_revision,
@@ -743,6 +765,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(
                 crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
+                    | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
             )
         ) || callback.effects.reset_after_ms.is_some()
             || callback
@@ -815,6 +838,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);
+        }
+        if fresh_effects && callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+        {
+            for (x, y) in oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_POSITIONS {
+                map.facts.emit_movement_effect(
+                    crate::map::overlay::TilePos { x, y, floor: -9 },
+                    oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_EFFECT,
+                );
+            }
         }
         for effect in &callback.effects {
             // Presentation uses the existing bounded movement occurrence stream;

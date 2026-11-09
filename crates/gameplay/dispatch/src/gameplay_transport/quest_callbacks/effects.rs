@@ -201,6 +201,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(snapshot) = runtime.commit_source_step(proof) else {
             return entered;
         };
+        if pos == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::SOURCE)
+            && to == tile(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION)
+        {
+            map.facts.emit_movement_effect(to, 11);
+        }
         states.stage_special_movement_step(
             &runtime,
             map,

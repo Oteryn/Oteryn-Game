@@ -44,7 +44,8 @@ class QuestCallbackProfiles(unittest.TestCase):
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
                                      BLOODY_TEAR, 'oteryn:item.tibia.i9388',
-                                     'oteryn:item.tibia.i21389', 'oteryn:item.tibia.i21466')]
+                                     'oteryn:item.tibia.i21389', 'oteryn:item.tibia.i21466',
+                                     'oteryn:item.tibia.i5467')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
 

@@ -67,6 +67,7 @@ pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
         UNEASY_CRYSTAL => appearance == 10186,
         // Crystal 201189f movement_fire_bug_teleport.lua:9-14.
         "oteryn:quest-callback/dreamers-challenge-fire-bug-entry" => appearance == 1949,
+        super::dreamer_fire_bug::IGNITE => appearance == 3134,
         _ => true,
     }
 }
