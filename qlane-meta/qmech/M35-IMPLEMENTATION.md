@@ -516,3 +516,25 @@ existing assertion was removed or loosened. No generated file changed and
 local node boot was skipped as instructed. M35 remains PARTIAL for its
 previously documented final-source binding, partial-charge and remaining
 real-caller proof requirements.
+
+## Griffin Shield three-claim real-caller qualification
+
+Crystal 201189f8 `chest.lua:1872-1893` binds UID6165 at(32498,31721,15)
+with carrier4240, UID6166 at(32500,31721,15) with carrier4024 and UID6167
+at(32503,31724,15) with carrier4024. Their independent rewards are Griffin
+Shield3433 x1, Obsidian Lance3313 x1 and Dwarven Axe3323 x1. The mounted case
+preserves all positions and carrier appearances through the existing source
+world helper and drives literal wire USE in ascending and descending source
+order. Completion stays false after the first and second claims and becomes
+true only after the third. Exact durable roots/quantities, receipts, consumed
+obligations, replay, fresh-repeat refusal and quest state reloads are checked.
+No production reward, declaration or generated content changes.
+
+Fresh validation passed: formatting; dispatch all-features/all-target clippy
+with `-D warnings`; live PostgreSQL case in133.60 seconds, printing
+`M35_GRIFFIN_SHIELD_POSTGRES_CASE_COMPLETED`. Self-review covered all
+handwritten changes and donor positions/carriers/quantities; no significant
+finding. No existing assertion was removed or loosened, and no generated file
+changed. Node boot was skipped as instructed. M35 remains PARTIAL for the
+previously documented final-source binding, partial-charge and remaining
+real-caller proof requirements.

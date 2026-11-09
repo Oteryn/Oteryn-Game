@@ -75,6 +75,7 @@ enum Case {
     DoubleHero,
     Katana,
     Longsword,
+    GriffinShield,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -94,6 +95,25 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua: UID6165..6167 are independent corpse rewards.
+#[test]
+fn m35_griffin_shield_dispatch_requires_all_three_rewards_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::GriffinShield).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Griffin Shield scenario panicked")??;
+    println!("M35_GRIFFIN_SHIELD_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua: UID6146..6148 are three independent rewards.
@@ -356,6 +376,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
         ),
+        Case::GriffinShield => (
+            (32498, 31721, -15),
+            4240,
+            "oteryn:quest.griffin_shield_quest",
+            &[(32498, 6165), (32500, 6166), (32503, 6167)],
+        ),
         Case::Longsword => (
             (32649, 31969, -9),
             2472,
@@ -488,6 +514,15 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     (32599, 31923, -6, 5005, 2472),
                 ],
             )?
+        } else if matches!(case, Case::GriffinShield) {
+            source_world_objects(
+                chest,
+                &[
+                    (32498, 31721, 6165, 4240),
+                    (32500, 31721, 6166, 4024),
+                    (32503, 31724, 6167, 4024),
+                ],
+            )?
         } else if matches!(case, Case::Katana) {
             source_world_objects(
                 chest,
@@ -516,7 +551,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(case, Case::Longsword) {
+            if matches!(case, Case::Longsword | Case::GriffinShield) {
                 3
             } else if matches!(
                 case,
@@ -650,6 +685,8 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 if position_index == 0 { 31905 } else { 31923 }
             } else if matches!(case, Case::FireAxeAll) {
                 if position_index == 0 { 31656 } else { 31650 }
+            } else if matches!(case, Case::GriffinShield) && position_index == 2 {
+                31724
             } else if matches!(case, Case::Koshei | Case::Katana) {
                 chest.1 + 4 * u16::try_from(position_index)?
             } else {
@@ -772,7 +809,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     state.completed,
                     matches!(case, Case::Fanfare)
-                        || matches!(case, Case::Longsword) && index == 2
+                        || matches!(case, Case::Longsword | Case::GriffinShield) && index == 2
                         || matches!(
                             case,
                             Case::Alawar
@@ -789,6 +826,28 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                                 | Case::Katana
                         ) && index == 1
                 );
+            }
+            if matches!(case, Case::GriffinShield) {
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 4")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    let key = match pos {
+                        0 => "oteryn:item.tibia.i3433",
+                        1 => "oteryn:item.tibia.i3313",
+                        _ => "oteryn:item.tibia.i3323",
+                    };
+                    expected.push((key.to_owned(), 1));
+                }
+                expected.sort();
+                assert_eq!(roots, expected);
             }
             if matches!(case, Case::Longsword) {
                 let roots: Vec<(String, i64)> = sqlx::query_as(
