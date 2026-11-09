@@ -29,34 +29,36 @@ impl View {
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
         let Some(status) = &self.status else {
-            text.push_str("\nPremium status unavailable. Refresh to try again.");
+            text.push_str(tr!("\nPremium status unavailable. Refresh to try again."));
             return text;
         };
         let elapsed = self.requested_at.map_or(0, |t| t.elapsed().as_secs());
         let now = status.generated_at_unix.saturating_add(elapsed);
         let active =
             status.state == PremiumState::Active && status.expires_at_unix.is_some_and(|t| t > now);
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "\nLast server Premium status: {:?}{}",
             status.state,
             if self.fresh() {
                 ""
             } else {
-                " (stale — refresh required)"
+                tr!(" (stale — refresh required)")
             }
         ));
         if let Some(until) = status.expires_at_unix {
             let remaining = until.saturating_sub(now);
-            text.push_str(&format!("\nExpiry: {until} UTC Unix seconds. Time remaining: {} days, {} hours, {} minutes.",remaining/86400,remaining/3600%24,remaining/60%60));
+            text.push_str(&lfmt!("\nExpiry: {until} UTC Unix seconds. Time remaining: {} days, {} hours, {} minutes.",remaining/86400,remaining/3600%24,remaining/60%60,until=until));
             if status.state == PremiumState::Active && !active {
-                text.push_str("\nThe displayed Premium period has ended; refresh status.");
+                text.push_str(tr!(
+                    "\nThe displayed Premium period has ended; refresh status."
+                ));
             }
         } else {
-            text.push_str("\nNo Premium expiry is recorded.");
+            text.push_str(tr!("\nNo Premium expiry is recorded."));
         }
-        text.push_str("\n\nPremium features (reported by Oteryn):");
+        text.push_str(tr!("\n\nPremium features (reported by Oteryn):"));
         if status.features.is_empty() {
-            text.push_str("\nNo feature information supplied.");
+            text.push_str(tr!("\nNo feature information supplied."));
         }
         for f in &status.features {
             let available = self.fresh() && active && f.enabled;
@@ -66,14 +68,14 @@ impl View {
                 if available {
                     "available"
                 } else {
-                    "not confirmed available"
+                    tr!("not confirmed available")
                 },
                 f.description
             ));
         }
-        text.push_str(
-            "\n\nThis overview grants no access. Game checks current eligibility for every action.",
-        );
+        text.push_str(tr!(
+            "\n\nThis overview grants no access. Game checks current eligibility for every action."
+        ));
         text
     }
 }
@@ -111,21 +113,21 @@ async fn refresh(
             });
             if inconsistent {
                 view.fresh_until = None;
-                view.feedback = "Inconsistent Premium status refused. Refresh again.".into();
+                view.feedback = tr!("Inconsistent Premium status refused. Refresh again.").into();
                 return;
             }
             view.fresh_until = Some(at + Duration::from_secs(u64::from(status.valid_for_seconds)));
             view.requested_at = Some(at);
             view.status = Some(status);
-            view.feedback = "Premium status refreshed from Oteryn.".into();
+            view.feedback = tr!("Premium status refreshed from Oteryn.").into();
         }
         Err(error) => {
             view.fresh_until = None;
             view.feedback = match error {
                 oteryn_platform_client::native_login::NativeLoginError::Platform(
                     oteryn_platform_client::PlatformClientError::HttpStatus(404 | 501),
-                ) => "Premium details are not available on this service yet. Game access is checked separately.".into(),
-                _ => format!("Premium service unavailable ({:?}).", error.public_class()),
+                ) => tr!("Premium details are not available on this service yet. Game access is checked separately.").into(),
+                _ => lfmt!("Premium service unavailable ({:?}).", error.public_class()),
             };
         }
     }

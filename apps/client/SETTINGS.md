@@ -167,3 +167,27 @@ repository. The sanitized field-name inventory is committed as
 [REFERENCE-PREFERENCE-KEYS.json](REFERENCE-PREFERENCE-KEYS.json); neither is a
 bundled game asset.
 Oteryn uses its own branding, textures and implementation.
+
+The Sound / Mixer page controls music, item, event and UI gains independently;
+master volume and mute apply to every channel. The pinned audio manifest can
+assign an existing cue with `"sound_channels": {"41": "music"}`. Supported
+routes are `battle`, `music`, `items`, `events` and `ui`; omitted cues use battle
+mixing. Channel entries must name a cue in `sound_cues`. Ambient loops retain
+their separate ambient gain, and local notification tones use the UI gain.
+
+Sound / Battle filters controls attack, healing and support cues independently
+for own actions, other players and creatures. The pinned manifest assigns cue
+classes with `"battle_classes": {"41": "healing"}`; accepted classes are
+`attack`, `healing`, and `support`. Class entries must identify existing battle
+cues. Unclassified legacy cues retain their existing source-volume behaviour;
+no class is guessed from a cue number or file name. Live battle voices apply
+filter changes on the next audio update.
+
+Graphics / Effects has independent own, other-player, creature and boss-area
+opacity controls. A pinned world asset manifest declares the effect category
+with `"boss_area_effects": [41]` (using the pack's actual effect IDs). The same
+catalog is carried through offline and live map loading. These categories refer
+to effect appearances, not the actor that emitted them: ordinary boss effects
+keep their source opacity. Unlisted effects retain their existing source group;
+legacy packs without category metadata remain compatible. IDs must be unique
+and in 1–65535; modifying the categories invalidates the manifest pin.

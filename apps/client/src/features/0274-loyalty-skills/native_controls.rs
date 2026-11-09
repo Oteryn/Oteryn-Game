@@ -87,7 +87,7 @@ impl PanelControls {
                 [16, 590, 330, 28],
                 BS_AUTOCHECKBOX as u32,
             );
-            let refresh = control(hwnd, "BUTTON", "Refresh", 1, [740, 590, 140, 30], 0);
+            let refresh = control(hwnd, "BUTTON", tr!("Refresh"), 1, [740, 590, 140, 30], 0);
             let help = control(
                 hwnd,
                 "STATIC",

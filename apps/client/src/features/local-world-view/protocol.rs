@@ -41,6 +41,7 @@ pub(in crate::play) fn world_map_snapshot(
 impl crate::play::mailbox::Mailbox {
     /// Retain the current window across polls, while reducing replacements in wire order.
     pub(in crate::play) fn coalesce_events(&mut self, events: Vec<oteryn_session::SessionEvent>) {
+        crate::play::feature_0023_presentation::state::ui_sound::observe(self, &events);
         use oteryn_session::SessionEvent;
         let has_map = events.iter().any(|event| {
             matches!(

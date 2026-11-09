@@ -89,7 +89,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         );
         let add = control(hwnd, "BUTTON", "Copy as new", 503, [510, 75, 115, 28], 0);
         let rename = control(hwnd, "BUTTON", "Rename", 504, [640, 75, 110, 28], 0);
-        let remove = control(hwnd, "BUTTON", "Delete", 505, [765, 75, 115, 28], 0);
+        let remove = control(hwnd, "BUTTON", tr!("Delete"), 505, [765, 75, 115, 28], 0);
         let context = control(
             hwnd,
             "COMBOBOX",

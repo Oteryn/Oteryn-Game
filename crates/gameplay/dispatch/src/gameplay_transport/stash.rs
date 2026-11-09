@@ -1,5 +1,6 @@
 //! Reachable native locker -> existing Character item fence -> stash conversion.
 use super::ComposedFreshAdmission;
+pub(super) mod browse;
 use super::connection::UseCommand;
 use super::equipment_move::native_for_move;
 use super::item_ref_admission::NativeItemWeights;
@@ -13,6 +14,7 @@ pub(super) async fn execute(
     actor: ExactActorRef,
     command: UseCommand,
     intent: StashIntent,
+    filter: Option<StashFilter>,
     selected: Option<ItemKey>,
     row_open: bool,
 ) -> Option<StashReply> {
@@ -155,11 +157,27 @@ pub(super) async fn execute(
         };
     }
     if reachable && live_allowed {
-        (reply.rows, reply.has_more) = admission
-            .root
-            .read_stash_page(admission.character, fence.character_id, intent.page, native)
-            .await
-            .ok()?;
+        (reply.rows, reply.has_more) = if let Some(filter) = filter {
+            let catalogue = browse::catalogue(native, admission.states.chat.npc_talk(), &filter);
+            admission
+                .root
+                .read_stash_filtered_page(
+                    admission.character,
+                    fence.character_id,
+                    intent.page,
+                    native,
+                    &filter,
+                    &catalogue,
+                )
+                .await
+                .ok()?
+        } else {
+            admission
+                .root
+                .read_stash_page(admission.character, fence.character_id, intent.page, native)
+                .await
+                .ok()?
+        };
     }
     Some(reply)
 }

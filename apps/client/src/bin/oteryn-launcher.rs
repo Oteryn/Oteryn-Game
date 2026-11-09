@@ -3,6 +3,8 @@
 //! guesses another release. `--after-setup` first waits until the install that started it has
 //! released the transaction mutex.
 #![windows_subsystem = "windows"]
+#[macro_use]
+extern crate oteryn_client_ui;
 
 use std::fmt::{self, Display, Formatter};
 use std::io;
@@ -24,19 +26,28 @@ enum LaunchError {
 impl Display for LaunchError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MissingPointer => formatter.write_str("current.txt is missing"),
+            Self::MissingPointer => formatter.write_str(tr!("current.txt is missing")),
             Self::UnreadablePointer(error) => {
-                write!(formatter, "current.txt is unreadable: {error}")
-            }
-            Self::MalformedPointer => formatter.write_str("current.txt does not name a release"),
-            Self::DanglingPointer(release) => {
-                write!(
+                lwrite!(
                     formatter,
-                    "release {release} named by current.txt is not installed"
+                    "current.txt is unreadable: {error}",
+                    error = error
                 )
             }
-            Self::SetupStillRunning => formatter.write_str("the installer did not finish in time"),
-            Self::Os(error) => write!(formatter, "cannot start Oteryn: {error}"),
+            Self::MalformedPointer => {
+                formatter.write_str(tr!("current.txt does not name a release"))
+            }
+            Self::DanglingPointer(release) => {
+                lwrite!(
+                    formatter,
+                    "release {release} named by current.txt is not installed",
+                    release = release
+                )
+            }
+            Self::SetupStillRunning => {
+                formatter.write_str(tr!("the installer did not finish in time"))
+            }
+            Self::Os(error) => lwrite!(formatter, "cannot start Oteryn: {error}", error = error),
         }
     }
 }
@@ -102,11 +113,12 @@ fn installation_report(install_dir: &Path) -> String {
             client.display(),
             package_checks::status(&client)
         ),
-        Err(error) => format!("Installation check failed: {error}"),
+        Err(error) => lfmt!("Installation check failed: {error}", error = error),
     };
-    format!(
+    lfmt!(
         "Oteryn installation check\r\nLauncher: {}\r\n{status}\r\nRepair: run the Oteryn installer and choose the same installation directory. Keep the client closed until setup finishes. Updates must come from your operator's trusted release channel.",
-        oteryn_client::RELEASE_ID
+        oteryn_client::RELEASE_ID,
+        status = status
     )
 }
 
@@ -158,11 +170,16 @@ fn launch() -> Result<(), LaunchError> {
 
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    if let Some(path) = oteryn_client::play::PreferenceStore::path()
+        && let Ok(store) = oteryn_client::play::PreferenceStore::load(path)
+    {
+        oteryn_client_ui::localization::set_default(store.preferences().language());
+    }
     match launch() {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
-            let message = format!("{error}. Reinstall Oteryn to repair it.");
-            eprintln!("Oteryn: {message}");
+            let message = lfmt!("{error}. Reinstall Oteryn to repair it.", error = error);
+            leprintln!("Oteryn: {message}", message = message);
             // The launcher has no console, so the user sees the error only in a dialog. A
             // `--smoke` run is unattended and must not block on one.
             if !std::env::args_os().any(|argument| argument == "--smoke") {
@@ -178,14 +195,14 @@ fn main() {
     if let Ok(directory) = std::env::current_dir()
         && let Err(error) = active_client(&directory)
     {
-        eprintln!("Oteryn: {error}");
+        leprintln!("Oteryn: {error}", error = error);
     }
     if std::env::args_os().any(|argument| argument == "--check-install")
         && let Ok(directory) = std::env::current_dir()
     {
         println!("{}", installation_report(&directory));
     }
-    println!("Oteryn launcher: Windows desktop target only");
+    lprintln!("Oteryn launcher: Windows desktop target only");
 }
 
 #[cfg(test)]

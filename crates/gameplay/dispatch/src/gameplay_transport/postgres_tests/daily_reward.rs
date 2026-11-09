@@ -573,6 +573,18 @@ fn scenario(premium: bool) -> TestResult {
         assert_eq!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
         let fallback: (i16,i32) = sqlx::query_as("SELECT lane_day,streak FROM game_character_daily_rewards").fetch_one(&harness.pool).await?;
         assert_eq!(fallback, (2,1));
+        let (_, output)=serve(&restarted,&mut resumed,&[(wire::details::COMMAND_TYPE,&[])]).await?;
+        let rows=results(&output)?;
+        assert_eq!(rows[0].1,crate::foundation::CommandStatus::Accepted);
+        let details=wire::details::Details::decode(&rows[0].2).map_err(debug)?;
+        assert_eq!(details.epoch,37);
+        assert_eq!(details.history.iter().flatten().count(),30);
+        assert_eq!(details.history[0].ok_or("missing durable history")?.epoch,37);
+        assert!(details.history.iter().flatten().all(|r|r.own_character));
+        assert_eq!(details.days[0].free.cosmetic_tokens,2);
+        assert_eq!(details.days[0].premium.cosmetic_tokens,4);
+        let (_, output)=serve(&restarted,&mut resumed,&[(wire::details::COMMAND_TYPE,b"invalid")]).await?;
+        assert_eq!(results(&output)?[0].1,crate::foundation::CommandStatus::Rejected);
         for table in ["game_character_cosmetic_token_entries", "game_character_bounty_reroll_token_entries"] {
             let privileges: (bool,bool,bool) = sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime',$1,'SELECT,INSERT'),has_table_privilege('oteryn_game_runtime',$1,'UPDATE,DELETE'),has_table_privilege('oteryn_game_control',$1,'SELECT')")
                 .bind(table).fetch_one(&harness.pool).await?;

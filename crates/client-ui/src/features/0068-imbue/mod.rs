@@ -45,7 +45,7 @@ impl ImbuePanel {
             open: self.open,
             tracker_open: self.tracker_open,
             tracker_minutes: self.tracker_minutes.clone(),
-            feedback: Some("Select an item in the current activity and refresh it"),
+            feedback: Some(tr!("Select an item in the current activity and refresh it")),
             ..Self::default()
         };
     }
@@ -63,7 +63,7 @@ impl ImbuePanel {
         self.refresh_required = false;
         self.slot = 0;
         self.offer = 0;
-        self.feedback = Some("Refresh the selected item at the shrine");
+        self.feedback = Some(tr!("Refresh the selected item at the shrine"));
     }
     pub fn select_slot(&mut self, slot: u8) -> bool {
         if !self.selected
@@ -135,7 +135,7 @@ pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
     let item = match panel.item {
         Some(item) => item,
         None => {
-            panel.feedback = Some("Select an item to imbue");
+            panel.feedback = Some(tr!("Select an item to imbue"));
             return None;
         }
     };
@@ -146,9 +146,9 @@ pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
         }
         Intent::Apply => {
             if !panel.can_apply() {
-                panel.feedback = Some(
-                    "Select an empty slot and an available offer; refresh missing material details",
-                );
+                panel.feedback = Some(tr!(
+                    "Select an empty slot and an available offer; refresh missing material details"
+                ));
                 return None;
             }
             let window = panel.window.as_ref()?;
@@ -162,7 +162,7 @@ pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
         }
         Intent::Clear => {
             if !panel.can_clear() {
-                panel.feedback = Some("Select an occupied slot to clear");
+                panel.feedback = Some(tr!("Select an occupied slot to clear"));
                 return None;
             }
             (panel.slot < panel.window.as_ref()?.slot_count).then_some(())?;
@@ -177,17 +177,17 @@ pub fn request(panel: &mut ImbuePanel, intent: Intent) -> Option<ImbueCommand> {
 pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse) {
     panel.pending = false;
     let Some(reply) = &response.reply else {
-        panel.feedback = Some("The server refused the imbuement request");
+        panel.feedback = Some(tr!("The server refused the imbuement request"));
         return;
     };
     panel.feedback = match reply.result {
         imbuement::ImbuementResult::Ok => None,
-        imbuement::ImbuementResult::RequirementNotMet => Some("Requirements are not met"),
-        imbuement::ImbuementResult::MaterialsMissing => Some("Required materials are missing"),
-        imbuement::ImbuementResult::InsufficientFunds => Some("Insufficient funds"),
-        imbuement::ImbuementResult::SlotOccupied => Some("That slot is occupied"),
-        imbuement::ImbuementResult::NotAllowed => Some("This imbuement is not allowed"),
-        imbuement::ImbuementResult::RevisionChanged => Some("The item changed; refresh it"),
+        imbuement::ImbuementResult::RequirementNotMet => Some(tr!("Requirements are not met")),
+        imbuement::ImbuementResult::MaterialsMissing => Some(tr!("Required materials are missing")),
+        imbuement::ImbuementResult::InsufficientFunds => Some(tr!("Insufficient funds")),
+        imbuement::ImbuementResult::SlotOccupied => Some(tr!("That slot is occupied")),
+        imbuement::ImbuementResult::NotAllowed => Some(tr!("This imbuement is not allowed")),
+        imbuement::ImbuementResult::RevisionChanged => Some(tr!("The item changed; refresh it")),
     };
     if let Some(window) = &reply.window {
         panel.window = Some(window.clone());

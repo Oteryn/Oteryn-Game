@@ -37,7 +37,7 @@ fn run(weak: WeakMailbox) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Compendium — Guide, updates and help").as_ptr(),
+            wide(tr!("Compendium — Guide, updates and help")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -54,12 +54,12 @@ fn run(weak: WeakMailbox) {
         }
         let mut tabs = Vec::new();
         for (index, label) in [
-            "Notices",
-            "Guide",
-            "Recommendations",
-            "Updates",
-            "Features",
-            "Help",
+            tr!("Notices"),
+            tr!("Guide"),
+            tr!("Recommendations"),
+            tr!("Updates"),
+            tr!("Features"),
+            tr!("Help"),
         ]
         .iter()
         .enumerate()

@@ -10,7 +10,7 @@ use std::{
 };
 pub(super) fn import(panel: &mut Panel, path: &Path) -> io::Result<()> {
     if !panel.selected {
-        return Err(io::Error::other("No active analyser session"));
+        return Err(io::Error::other(tr!("No active analyser session")));
     }
     let mut text = String::new();
     std::fs::File::open(path)?
@@ -24,15 +24,15 @@ pub(super) fn import(panel: &mut Panel, path: &Path) -> io::Result<()> {
 }
 pub(super) fn export(panel: &Panel, path: &Path) -> io::Result<()> {
     if !panel.selected {
-        return Err(io::Error::other("No active analyser session"));
+        return Err(io::Error::other(tr!("No active analyser session")));
     }
     let text = if let Some(imported) = &panel.party_import {
         imported.export()
     } else {
         if panel.party_pending || panel.party_feedback.is_some() {
-            return Err(io::Error::other(
-                "Refresh complete party measurements before export",
-            ));
+            return Err(io::Error::other(tr!(
+                "Refresh complete party measurements before export"
+            )));
         }
         party_import::export_rows(&panel.party)
     }
@@ -46,7 +46,7 @@ pub(super) fn submit(
     path: Option<&str>,
 ) {
     let Some(path) = path.filter(|path| !path.trim().is_empty()) else {
-        mailbox.analyser.feedback = Some("Choose a party summary file path");
+        mailbox.analyser.feedback = Some(tr!("Choose a party summary file path"));
         return;
     };
     mailbox.analyser.export_path = path.to_owned();
@@ -56,11 +56,11 @@ pub(super) fn submit(
         export(&mailbox.analyser, Path::new(path))
     };
     mailbox.analyser.feedback = Some(match (importing, result.is_ok()) {
-        (true, true) => "Party summary imported; supplied values are advisory",
-        (false, true) => "Party summary exported",
-        (true, false) => "Import failed; choose a valid Oteryn party summary of at most 8 KiB",
+        (true, true) => tr!("Party summary imported; supplied values are advisory"),
+        (false, true) => tr!("Party summary exported"),
+        (true, false) => tr!("Import failed; choose a valid Oteryn party summary of at most 8 KiB"),
         (false, false) => {
-            "Export failed; refresh complete priced measurements and choose a writable path"
+            tr!("Export failed; refresh complete priced measurements and choose a writable path")
         }
     });
 }

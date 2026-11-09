@@ -26,6 +26,7 @@ pub enum ComposerMode {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Console {
+    pub presentation: super::Presentation,
     pub communication: CommunicationLists,
     pub tab: ConsoleTab,
     pub mode: ComposerMode,
@@ -35,6 +36,7 @@ pub struct Console {
 impl Default for Console {
     fn default() -> Self {
         Self {
+            presentation: Default::default(),
             communication: Default::default(),
             tab: ConsoleTab::All,
             mode: ComposerMode::On,

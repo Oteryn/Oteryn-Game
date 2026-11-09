@@ -10,7 +10,7 @@ pub fn project(panel: &mut ContainerPanel, views: Option<ContainerViews>) -> boo
                 && (usize::from(view.capacity) > limit || view.entries.len() > limit)
         })
     }) {
-        panel.feedback = Some("Cannot display this container");
+        panel.feedback = Some(tr!("Cannot display this container"));
         return false;
     }
     panel.apply(views);

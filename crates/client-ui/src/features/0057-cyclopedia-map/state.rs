@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Query,
+    Atlas,
     Start,
     Shuffle,
     Find,
@@ -8,7 +9,12 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
-    pub atlas: super::atlas::Atlas,
+    pub geometry: super::geometry::Atlas,
+    pub atlas: Option<oteryn_client_runtime::cyclopedia_map::atlas::Atlas>,
+    pub atlas_query: oteryn_client_runtime::cyclopedia_map::atlas::Query,
+    pub atlas_open: bool,
+    pub atlas_layers: u8,
+    pub atlas_cell: usize,
     pub section: Section,
     pub map: Option<oteryn_client_runtime::cyclopedia_map::MapResult>,
     pub floor: i8,
@@ -24,11 +30,11 @@ pub struct Panel {
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {
         if !self.selected {
-            self.feedback = "Unavailable in this session".into();
+            self.feedback = tr!("Unavailable in this session").into();
             return false;
         }
         if self.pending {
-            self.feedback = "Waiting for the server".into();
+            self.feedback = tr!("Waiting for the server").into();
             return false;
         }
         self.pending = true;
@@ -66,16 +72,16 @@ impl Section {
         Self::Houses,
         Self::Analytics,
     ];
-    pub const fn title(self) -> &'static str {
+    pub fn title(self) -> &'static str {
         match self {
-            Self::Character => "Character",
-            Self::Items => "Items",
-            Self::Map => "Map",
-            Self::Bestiary => "Bestiary",
-            Self::Charms => "Charms",
-            Self::Bosses => "Bosses",
-            Self::Houses => "Houses",
-            Self::Analytics => "Analytics",
+            Self::Character => tr!("Character"),
+            Self::Items => tr!("Items"),
+            Self::Map => tr!("Map"),
+            Self::Bestiary => tr!("Bestiary"),
+            Self::Charms => tr!("Charms"),
+            Self::Bosses => tr!("Bosses"),
+            Self::Houses => tr!("Houses"),
+            Self::Analytics => tr!("Analytics"),
         }
     }
 }
@@ -115,7 +121,7 @@ impl Panel {
 
 impl Panel {
     pub fn invalidate_atlas(&mut self) {
-        self.atlas = Default::default();
+        self.geometry = Default::default();
         self.map = None;
         self.summary.clear();
     }

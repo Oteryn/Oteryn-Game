@@ -13,7 +13,7 @@ pub(super) async fn execute(
     #[cfg(windows)]
     let _progress = crate::account_services::window::Progress::open(cancel.clone());
     if let Err(error) = apply(view, action, client, token, browser, cancel).await {
-        view.feedback = format!(
+        view.feedback = lfmt!(
             "Coin service unavailable ({:?}). Pending requests keep their identity; check status or retry. No browser result credits coins.",
             error.public_class()
         );
@@ -30,18 +30,18 @@ async fn apply(
     match action {
         Action::Refresh => {
             refresh(view, client, token, cancel).await?;
-            view.feedback = "Server packages and wallet balance refreshed.".into();
+            view.feedback = tr!("Server packages and wallet balance refreshed.").into();
         }
         Action::Purchase {
             package_id,
             confirmed,
         } => {
             if !confirmed {
-                view.feedback = "Purchase cancelled.".into();
+                view.feedback = tr!("Purchase cancelled.").into();
                 return Ok(());
             }
             if !view.can_purchase(&package_id) {
-                view.feedback="Refresh the package quote, resolve your pending request and check account review status before buying.".into();
+                view.feedback=tr!("Refresh the package quote, resolve your pending request and check account review status before buying.").into();
                 return Ok(());
             }
             let Some(package) = view
@@ -82,13 +82,14 @@ async fn apply(
             };
             if view.pending.as_ref().is_some_and(|p| p.request_id != id) {
                 view.feedback =
-                    "Resolve the pending order request before inspecting another order.".into();
+                    tr!("Resolve the pending order request before inspecting another order.")
+                        .into();
                 return Ok(());
             }
             let order = client.coin_order_status(token, &id, cancel.clone()).await?;
             accept(view, order)?;
             refresh(view, client, token, cancel).await?;
-            view.feedback = "Purchase status and wallet balance refreshed from Oteryn.".into();
+            view.feedback = tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
         }
         Action::OpenCheckout => open_checkout(view, client, browser),
         Action::Back => {}
@@ -208,20 +209,22 @@ fn open_checkout(view: &mut View, client: &NativeLoginClient, browser: &Browser)
         .as_ref()
         .filter(|o| o.state == PurchaseState::AwaitingPayment)
     else {
-        view.feedback = "No checkout is available for this purchase state.".into();
+        view.feedback = tr!("No checkout is available for this purchase state.").into();
         return;
     };
     let Some(url) = &order.checkout_url else {
         return;
     };
     if !client.valid_coin_checkout(url, &order.order_id) {
-        view.feedback = "Checkout address refused.".into();
+        view.feedback = tr!("Checkout address refused.").into();
         return;
     }
     view.feedback = if browser(url.as_str()) {
-        "Sandbox checkout opened. Return here and check purchase status after completing it."
+        tr!("Sandbox checkout opened. Return here and check purchase status after completing it.")
     } else {
-        "Could not open the browser. Use Open checkout to retry without creating another order."
+        tr!(
+            "Could not open the browser. Use Open checkout to retry without creating another order."
+        )
     }
     .into();
 }

@@ -20,7 +20,7 @@ impl Outbox {
         if result.status != oteryn_session::CommandStatus::Accepted
             || oteryn_client_ui::cast_consent::protocol::apply(panel, &result.payload).is_err()
         {
-            panel.feedback = "Character consent unavailable; refresh and try again".into();
+            panel.feedback = tr!("Character consent unavailable; refresh and try again").into();
         }
     }
     pub(in crate::play) fn cast_control_result(
@@ -45,7 +45,8 @@ impl Outbox {
                 .and_then(|v| panel.apply(v).ok())
                 .is_none()
         {
-            panel.feedback = "Cast unavailable; refresh consent or saved account settings".into();
+            panel.feedback =
+                tr!("Cast unavailable; refresh consent or saved account settings").into();
         }
         if stopped && result.status == oteryn_session::CommandStatus::Accepted {
             shared.cast_chat.lines.clear();

@@ -38,7 +38,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 {
                     panel.choice = value.clone();
                 } else if action == 3 {
-                    panel.feedback = "Choose a furniture number from the list".into();
+                    panel.feedback = tr!("Choose a furniture number from the list").into();
                     return;
                 }
                 let intent = match action {

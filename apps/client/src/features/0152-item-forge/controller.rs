@@ -63,7 +63,7 @@ pub(in crate::play) fn activate(
                 && commands.send(PlayCommand::ServerMechanic(command)).is_err()
             {
                 panel.pending = false;
-                panel.feedback = Some("The session has ended".into());
+                panel.feedback = Some(tr!("The session has ended").into());
             }
         }
         Action::Legacy(operation) => {
@@ -140,7 +140,7 @@ pub(in crate::play) fn activate(
                 return;
             };
             if commands.send(PlayCommand::DepotContainer(handle)).is_err() {
-                panel.feedback = Some("The session has ended".into());
+                panel.feedback = Some(tr!("The session has ended").into());
                 return;
             }
             panel.preview.navigation = Some(handle.get());
@@ -180,7 +180,7 @@ pub(in crate::play) fn activate(
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 panel.preview.pending = None;
-                panel.preview.feedback = Some("The session has ended".into());
+                panel.preview.feedback = Some(tr!("The session has ended").into());
             }
         }
         Action::Forge | Action::Retry => {

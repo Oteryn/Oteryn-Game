@@ -5,6 +5,31 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "gameplay_controls.rs"]
+mod gameplay_controls;
+use gameplay_controls::GameplayControls;
+#[path = "help_controls.rs"]
+mod help_controls;
+pub(super) use help_controls::{HelpControls, page_hint};
+#[path = "screenshot_controls.rs"]
+mod screenshot_controls;
+use screenshot_controls::ScreenshotControls;
+#[path = "minimap_controls.rs"]
+mod minimap_controls;
+use minimap_controls::MinimapControls;
+#[path = "presentation_controls.rs"]
+mod presentation_controls;
+use presentation_controls::PresentationControls;
+#[path = "localization_controls.rs"]
+mod localization_controls;
+use localization_controls::LanguageControls;
+
+#[path = "shortcut_controls.rs"]
+mod shortcut_controls;
+use shortcut_controls::ShortcutControls;
+#[path = "graphics_controls.rs"]
+mod graphics_controls;
+use graphics_controls::GraphicsControls;
 #[path = "layout_controls.rs"]
 mod layout_controls;
 use layout_controls::LayoutControls;
@@ -14,13 +39,40 @@ use console_controls::ConsoleControls;
 #[path = "hud_controls.rs"]
 mod hud_controls;
 use hud_controls::HudControls;
+#[path = "frame_controls.rs"]
+mod frame_controls;
+use frame_controls::FrameControls;
+#[path = "battle_sound_controls.rs"]
+mod battle_sound_controls;
+use battle_sound_controls::BattleSoundControls;
 
+#[path = "mixer_controls.rs"]
+mod mixer_controls;
+use mixer_controls::MixerControls;
+
+#[path = "battle_filter_controls.rs"]
+mod battle_filter_controls;
+use battle_filter_controls::BattleFilterControls;
 pub(super) struct Controls {
+    pub(super) language: LanguageControls,
+    pub(super) presentation: PresentationControls,
+    pub(super) minimap: MinimapControls,
+    pub(super) guide: HelpControls,
+    pub(super) screenshots: ScreenshotControls,
+    pub(super) gameplay: GameplayControls,
+    pub(super) graphics: GraphicsControls,
+    pub(super) shortcuts: ShortcutControls,
+    pub(super) battle_filters: BattleFilterControls,
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,
+    pub(super) mixer: MixerControls,
+    pub(super) stability: HWND,
+    pub(super) battle_sounds: BattleSoundControls,
+    pub(super) frames: FrameControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
+    pub(super) custom_editor: HWND,
     pub(super) profile_name: HWND,
     pub(super) profile_save: HWND,
     pub(super) profile_load: HWND,
@@ -54,323 +106,39 @@ pub(super) struct Controls {
     pub(super) feedback: HWND,
 }
 
+#[path = "dialog_construction.rs"]
+mod dialog_construction;
+
+pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState, page_help: &str) {
+    let hint = if state.page == SettingsPage::CustomHotkeys {
+        super::super::navigation_controls::page_help(state.page)
+    } else {
+        page_hint(state.page)
+    };
+    unsafe {
+        SetWindowTextW(
+            handle,
+            wide(&format!("{page_help}\r\n{hint}\r\n{}", state.feedback)).as_ptr(),
+        );
+    }
+}
 impl Controls {
-    pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
+    pub(super) unsafe fn read_page(
+        mixer: &MixerControls,
+        frames: &FrameControls,
+        battle: &BattleSoundControls,
+        battle_filters: &BattleFilterControls,
+        page: SettingsPage,
+        preferences: &mut oteryn_client::play::ReferencePreferences,
+    ) -> Result<(), String> {
         unsafe {
-            let actor_hud = HudControls::new(hwnd)?;
-            let console = ConsoleControls::new(hwnd)?;
-            let layout = LayoutControls::new(hwnd)?;
-            let arcs = ArcControls::new(hwnd)?;
-            let interface = InterfaceControls::new(hwnd)?;
-            let profile_name = control(
-                hwnd,
-                "EDIT",
-                "default",
-                230,
-                [10, 185, 300, 26],
-                WS_BORDER | ES_AUTOHSCROLL as u32,
-            );
-            let profile_save = control(hwnd, "BUTTON", "Save profile", 231, [330, 185, 120, 26], 0);
-            let profile_load = control(hwnd, "BUTTON", "Load profile", 232, [460, 185, 120, 26], 0);
-            let profile_delete = control(
-                hwnd,
-                "BUTTON",
-                "Delete profile",
-                233,
-                [590, 185, 120, 26],
-                0,
-            );
-            let pages = control(
-                hwnd,
-                "COMBOBOX",
-                "",
-                220,
-                [10, 10, 720, 240],
-                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-            );
-            for page in SettingsPage::ALL {
-                SendMessageW(pages, CB_ADDSTRING, 0, wide(page.label()).as_ptr() as isize);
+            match page {
+                SettingsPage::Battle => battle_filters.read(preferences),
+                SettingsPage::Mixer => mixer.read(preferences),
+                SettingsPage::Effects => frames.read(preferences),
+                SettingsPage::Sound => battle.read(preferences),
+                _ => Ok(()),
             }
-            SendMessageW(pages, CB_SETCURSEL, 0, 0);
-            let help = control(
-                hwnd,
-                "STATIC",
-                "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse buttons follow the selected preset. Conflicts include all registered actions.",
-                0,
-                [10, 50, 720, 45],
-                0,
-            );
-            let list = control(
-                hwnd,
-                "COMBOBOX",
-                "",
-                101,
-                [10, 100, 440, 280],
-                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-            );
-            let chord = control(
-                hwnd,
-                "EDIT",
-                "",
-                102,
-                [460, 100, 140, 26],
-                WS_BORDER | ES_AUTOHSCROLL as u32,
-            );
-            let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
-            let manual = control(
-                hwnd,
-                "BUTTON",
-                "Manual hotkeys (no automatic chat presets)",
-                227,
-                [10, 190, 630, 30],
-                0,
-            );
-            let chat_on = control(
-                hwnd,
-                "BUTTON",
-                "Chat-on preset (arrows)",
-                225,
-                [10, 150, 300, 30],
-                0,
-            );
-            let chat_off = control(
-                hwnd,
-                "BUTTON",
-                "Chat-off preset (WASD)",
-                226,
-                [330, 150, 300, 30],
-                0,
-            );
-            let mouse_preset = control(
-                hwnd,
-                "COMBOBOX",
-                "",
-                221,
-                [10, 150, 360, 150],
-                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-            );
-            for label in oteryn_client::play::ReferencePreferences::MOUSE_PRESETS {
-                SendMessageW(mouse_preset, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-            }
-            let delay_label = control(
-                hwnd,
-                "STATIC",
-                "Keyboard repeat delay ms (0–1000)",
-                0,
-                [10, 185, 360, 26],
-                0,
-            );
-            let delay = control(
-                hwnd,
-                "EDIT",
-                "",
-                222,
-                [380, 185, 100, 26],
-                WS_BORDER | ES_NUMBER as u32,
-            );
-            let controls_apply = control(
-                hwnd,
-                "BUTTON",
-                "Apply controls",
-                223,
-                [500, 185, 180, 26],
-                0,
-            );
-            let rotation_label = control(
-                hwnd,
-                "STATIC",
-                "Turn modifier (CTRL / ALT / SHIFT)",
-                0,
-                [10, 225, 360, 26],
-                0,
-            );
-            let rotation = control(
-                hwnd,
-                "EDIT",
-                "",
-                224,
-                [380, 225, 100, 26],
-                WS_BORDER | ES_AUTOHSCROLL as u32,
-            );
-            let label = control(
-                hwnd,
-                "STATIC",
-                "World zoom % (80–180, fitted to window)",
-                0,
-                [10, 110, 700, 25],
-                0,
-            );
-            let scale = control(
-                hwnd,
-                "EDIT",
-                "",
-                104,
-                [10, 145, 100, 26],
-                WS_BORDER | ES_NUMBER as u32,
-            );
-            let volume = control(
-                hwnd,
-                "EDIT",
-                "",
-                105,
-                [130, 145, 100, 26],
-                WS_BORDER | ES_NUMBER as u32,
-            );
-            let mute = control(
-                hwnd,
-                "BUTTON",
-                "Mute",
-                107,
-                [250, 145, 100, 26],
-                BS_AUTOCHECKBOX as u32,
-            );
-            let apply = control(hwnd, "BUTTON", "Apply", 106, [380, 145, 110, 26], 0);
-            let transfer_label = control(
-                hwnd,
-                "STATIC",
-                "Settings transfer file (JSON). Import/defaults save a recoverable backup.",
-                0,
-                [10, 195, 720, 25],
-                0,
-            );
-            let transfer_path = control(
-                hwnd,
-                "EDIT",
-                "",
-                114,
-                [10, 225, 710, 26],
-                WS_BORDER | ES_AUTOHSCROLL as u32,
-            );
-            SendMessageW(transfer_path, EM_SETLIMITTEXT, 240, 0);
-            let import = control(hwnd, "BUTTON", "Import...", 110, [10, 265, 150, 30], 0);
-            let export = control(
-                hwnd,
-                "BUTTON",
-                "Export new file",
-                111,
-                [175, 265, 160, 30],
-                0,
-            );
-            let backup = control(
-                hwnd,
-                "BUTTON",
-                "Restore backup...",
-                112,
-                [350, 265, 170, 30],
-                0,
-            );
-            let defaults = control(
-                hwnd,
-                "BUTTON",
-                "Restore defaults...",
-                113,
-                [535, 265, 185, 30],
-                0,
-            );
-            let hud_checks = [
-                "HP / MP bars",
-                "Harmony",
-                "Serene",
-                "Light effects",
-                "Combat effects",
-                "Creature health / icons",
-                "HP / MP circle",
-            ]
-            .into_iter()
-            .enumerate()
-            .map(|(index, label)| {
-                control(
-                    hwnd,
-                    "BUTTON",
-                    label,
-                    120 + index,
-                    [
-                        10 + (index % 4) as i32 * 175,
-                        310 + (index / 4) as i32 * 30,
-                        170,
-                        26,
-                    ],
-                    BS_AUTOCHECKBOX as u32,
-                )
-            })
-            .collect::<Vec<_>>();
-            let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
-            if [
-                manual,
-                profile_name,
-                profile_save,
-                profile_load,
-                profile_delete,
-                chat_on,
-                chat_off,
-                rotation_label,
-                rotation,
-                mouse_preset,
-                delay_label,
-                delay,
-                controls_apply,
-                pages,
-                help,
-                list,
-                chord,
-                rebind,
-                label,
-                scale,
-                volume,
-                mute,
-                apply,
-                feedback,
-                transfer_label,
-                transfer_path,
-                import,
-                export,
-                backup,
-                defaults,
-            ]
-            .iter()
-            .chain(hud_checks.iter())
-            .any(|h| h.is_null())
-            {
-                return None;
-            }
-            Some(Self {
-                actor_hud,
-                manual,
-                console,
-                layout,
-                arcs,
-                interface,
-                profile_name,
-                profile_save,
-                profile_load,
-                profile_delete,
-                pages,
-                help,
-                list,
-                chord,
-                rebind,
-                chat_on,
-                chat_off,
-                mouse_preset,
-                delay_label,
-                delay,
-                controls_apply,
-                rotation_label,
-                rotation,
-                label,
-                scale,
-                volume,
-                mute,
-                apply,
-                transfer_label,
-                transfer_path,
-                import,
-                export,
-                backup,
-                defaults,
-                hud_checks,
-                feedback,
-            })
         }
     }
 }

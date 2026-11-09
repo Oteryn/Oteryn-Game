@@ -8,7 +8,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.world_event.pending = false;
-            mailbox.world_event.feedback = Some("The session has ended");
+            mailbox.world_event.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn world_event_input(&self, events: &[NormalizedInputEvent]) -> bool {

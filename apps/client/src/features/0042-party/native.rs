@@ -71,7 +71,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Party").as_ptr(),
+            wide(tr!("Party")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -97,12 +97,12 @@ fn run(
         let members = control(hwnd, "LISTBOX", "", MEMBERS, [10, 10, 300, 220], list);
         let invitations = control(hwnd, "LISTBOX", "", INVITATIONS, [330, 10, 300, 220], list);
         for (id, label, x) in [
-            (JOIN, "Accept", 10),
-            (LEAVE, "Leave", 210),
-            (PASS, "Pass leadership", 310),
-            (KICK, "Kick", 460),
-            (SHARED, "Toggle shared XP", 120),
-            (REFRESH, "Refresh", 10),
+            (JOIN, tr!("Accept"), 10),
+            (LEAVE, tr!("Leave"), 210),
+            (PASS, tr!("Pass leadership"), 310),
+            (KICK, tr!("Kick"), 460),
+            (SHARED, tr!("Toggle shared XP"), 120),
+            (REFRESH, tr!("Refresh"), 10),
         ] {
             control(
                 hwnd,
@@ -174,7 +174,7 @@ fn run(
                     && commands.send(PlayCommand::Party(command)).is_err()
                 {
                     mailbox.party.pending = None;
-                    mailbox.party.feedback = Some("The session has ended");
+                    mailbox.party.feedback = Some(tr!("The session has ended"));
                 }
             }
             if std::time::Instant::now() >= next_refresh && mailbox.party.pending.is_none() {
@@ -182,7 +182,7 @@ fn run(
                     && commands.send(PlayCommand::Party(command)).is_err()
                 {
                     mailbox.party.pending = None;
-                    mailbox.party.feedback = Some("The session has ended");
+                    mailbox.party.feedback = Some(tr!("The session has ended"));
                 }
                 next_refresh = std::time::Instant::now() + std::time::Duration::from_secs(1);
             }
@@ -275,8 +275,13 @@ pub(in crate::play) fn context_menu(link: &PlayLink, target: oteryn_session::Ent
         if menu.is_null() {
             return;
         }
-        AppendMenuW(menu, MF_STRING, 1, wide("Invite to party").as_ptr());
-        AppendMenuW(menu, MF_STRING, 2, wide("Party (Ctrl+Shift+G)").as_ptr());
+        AppendMenuW(menu, MF_STRING, 1, wide(tr!("Invite to party")).as_ptr());
+        AppendMenuW(
+            menu,
+            MF_STRING,
+            2,
+            wide(tr!("Party (Ctrl+Shift+G)")).as_ptr(),
+        );
         let mut point = std::mem::zeroed();
         windows_sys::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut point);
         let chosen = TrackPopupMenu(

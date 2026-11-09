@@ -8,7 +8,6 @@ mod input;
 mod native_login_shell;
 #[path = "features/local-reference-preferences/native.rs"]
 mod settings;
-
 use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
 use oteryn_client::native_login::{LoginWindow, error_text};
@@ -28,7 +27,6 @@ use winit::dpi::LogicalSize;
 use winit::event::{DeviceEvent, DeviceId, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShellError {
     EventLoopCreation,
@@ -42,31 +40,33 @@ pub enum ShellError {
     RendererResize,
     RendererRender,
     RendererClose,
+    RendererConfiguration,
 }
-
 impl Display for ShellError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
-            Self::EventLoopCreation => "client event loop creation failed",
-            Self::EventLoopRun => "client event loop failed",
-            Self::WindowCreation => "client window creation failed",
-            Self::LoginInitialization => "native login window creation failed",
-            Self::InputInitialization => "client input initialization failed",
-            Self::RendererInitialization => "client renderer initialization failed",
-            Self::RendererResume => "client renderer resume failed",
-            Self::RendererSuspend => "client renderer suspend failed",
-            Self::RendererResize => "client renderer resize failed",
-            Self::RendererRender => "client renderer render failed",
-            Self::RendererClose => "client renderer close failed",
+            Self::EventLoopCreation => tr!("client event loop creation failed"),
+            Self::EventLoopRun => tr!("client event loop failed"),
+            Self::WindowCreation => tr!("client window creation failed"),
+            Self::LoginInitialization => tr!("native login window creation failed"),
+            Self::InputInitialization => tr!("client input initialization failed"),
+            Self::RendererInitialization => tr!("client renderer initialization failed"),
+            Self::RendererResume => tr!("client renderer resume failed"),
+            Self::RendererSuspend => tr!("client renderer suspend failed"),
+            Self::RendererResize => tr!("client renderer resize failed"),
+            Self::RendererRender => tr!("client renderer render failed"),
+            Self::RendererConfiguration => "client renderer configuration failed",
+            Self::RendererClose => tr!("client renderer close failed"),
         })
     }
 }
-
 impl std::error::Error for ShellError {}
 
+mod graphics;
+
 struct Application {
+    applied_graphics: Option<oteryn_client::play::GraphicsPreferences>,
     frame_timing: frame_native::FrameTiming,
-    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -89,7 +89,6 @@ struct Application {
     hotkeys: SpellHotkeys,
     fatal_error: Option<ShellError>,
 }
-
 /// The view of an admitted session and the link to its task on the client runtime.
 struct Play {
     view: PlayView,
@@ -97,7 +96,6 @@ struct Play {
     /// The spell bar and combat line last shown in the title.
     status: String,
 }
-
 impl Application {
     fn new(smoke: bool, client: Option<ClientBootstrap>) -> Result<Self, ShellError> {
         let entry = client.map(Reentry::new);
@@ -107,8 +105,8 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            applied_graphics: None,
             frame_timing: frame_native::FrameTiming::default(),
-            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -130,7 +128,6 @@ impl Application {
             fatal_error: None,
         })
     }
-
     /// The offline scene around `offline_own`, over the loaded world.
     fn rebuild_offline(&mut self) -> Result<(), oteryn_renderer::BatchError> {
         if let Some(world) = &self.world {
@@ -172,6 +169,11 @@ const fn redraw_eligible(phase: Option<SurfacePhase>) -> bool {
 mod application_handler;
 
 pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
+    if let Some(path) = oteryn_client::play::PreferenceStore::path()
+        && let Ok(store) = oteryn_client::play::PreferenceStore::load(path)
+    {
+        oteryn_client_ui::localization::set_default(store.preferences().language());
+    }
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
     let mut application = Application::new(smoke, client)?;
@@ -189,4 +191,5 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
+#[path = "windows_shell/tests.rs"]
 mod tests;

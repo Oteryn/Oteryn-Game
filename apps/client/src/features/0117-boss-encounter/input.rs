@@ -55,7 +55,7 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.boss_encounter.pending = false;
-        mailbox.boss_encounter.feedback = Some("The session has ended");
+        mailbox.boss_encounter.feedback = Some(tr!("The session has ended"));
     }
 }
 

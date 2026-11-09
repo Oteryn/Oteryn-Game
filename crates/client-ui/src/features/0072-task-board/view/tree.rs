@@ -31,7 +31,7 @@ pub fn tree_nodes(panel: &TaskBoardPanel) -> Vec<TreeNode> {
         );
         return rows;
     };
-    let rewards = node(&mut rows, None, None, "Rewards".into());
+    let rewards = node(&mut rows, None, None, tr!("Rewards").into());
     node(
         &mut rows,
         Some(rewards),
@@ -51,9 +51,9 @@ pub fn tree_nodes(panel: &TaskBoardPanel) -> Vec<TreeNode> {
                 reply.bounty.current,
                 active.required,
                 if reply.bounty.state == 3 {
-                    "ready to claim"
+                    tr!("ready to claim")
                 } else {
-                    "in progress"
+                    tr!("in progress")
                 }
             ),
         );
@@ -88,9 +88,14 @@ pub fn tree_nodes(panel: &TaskBoardPanel) -> Vec<TreeNode> {
         None,
         "Upgrade buys the next level of the selected path".into(),
     );
-    for (index, name) in ["Damage", "Life leech", "Loot", "Double Bestiary chance"]
-        .iter()
-        .enumerate()
+    for (index, name) in [
+        tr!("Damage"),
+        tr!("Life leech"),
+        tr!("Loot"),
+        "Double Bestiary chance",
+    ]
+    .iter()
+    .enumerate()
     {
         let value = &reply.talisman[index];
         let path = u8::try_from(index).ok();
@@ -155,6 +160,6 @@ pub(super) fn refusal_message(code: u8) -> Option<&'static str> {
         15 => "The server refused: item or decoration-kit delivery unavailable",
         16 => "The server refused: insufficient inventory capacity",
         17 => "The server refused: cosmetic reward mapping unavailable",
-        _ => "The server refused the Task Board action",
+        _ => tr!("The server refused the Task Board action"),
     })
 }

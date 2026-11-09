@@ -15,7 +15,9 @@ impl MechanicsStatusPanel {
             self.error = None;
             return true;
         }
-        self.error = Some("Character effects could not be refreshed. Try Refresh.");
+        self.error = Some(tr!(
+            "Character effects could not be refreshed. Try Refresh."
+        ));
         false
     }
 }

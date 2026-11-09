@@ -39,13 +39,13 @@ impl DismissedNotices {
     }
     pub fn decode(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         if bytes.len() > 65536 {
-            return Err("Notice preferences exceed 64 KiB".into());
+            return Err(tr!("Notice preferences exceed 64 KiB").into());
         }
         let keys: Vec<String> = serde_json::from_slice(bytes)?;
         let mut value = Self::default();
         for key in keys {
             if !value.dismiss(&key) {
-                return Err("Invalid dismissed notice key".into());
+                return Err(tr!("Invalid dismissed notice key").into());
             }
         }
         Ok(value)
@@ -177,7 +177,7 @@ impl ServerDialog {
             text.push_str(&format!("{id}: {choice}\r\n"));
         }
         if let Some(image) = &self.image {
-            text.push_str(&format!("Image: {image}\r\n"));
+            text.push_str(&lfmt!("Image: {image}\r\n", image = image));
         }
         text
     }

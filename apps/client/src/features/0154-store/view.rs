@@ -41,11 +41,11 @@ fn open_gift(link: &PlayLink) {
                     p.gift_open,
                     p.pending,
                     p.gift_fields.to_vec(),
-                    format!(
+                    lfmt!(
                         "Coin transfers are unavailable in this session.\r\n{}",
-                        p.feedback.as_deref().unwrap_or(
+                        p.feedback.as_deref().unwrap_or(tr!(
                             "Review a recipient and amount. No coins are moved by a preview."
-                        )
+                        ))
                     ),
                 )
             },

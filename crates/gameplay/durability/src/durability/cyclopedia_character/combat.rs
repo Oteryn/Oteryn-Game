@@ -108,8 +108,28 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        mut snapshot: CombatSnapshot,
+        snapshot: CombatSnapshot,
     ) -> Result<CombatSnapshotReceipt, CharacterAuthorityError> {
+        self.record_cyclopedia_combat_with_augments(authority, node, fence, snapshot, None)
+            .await
+    }
+
+    /// The named modifiers and scalar statistics share the same fenced equipment sample.
+    pub async fn record_cyclopedia_combat_with_augments(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        mut snapshot: CombatSnapshot,
+        augments: Option<oteryn_protocol_oteryn::cyclopedia_character::offence::Snapshot>,
+    ) -> Result<CombatSnapshotReceipt, CharacterAuthorityError> {
+        let augments = augments
+            .map(|value| {
+                value
+                    .encode()
+                    .map_err(|_| CharacterAuthorityError::Rejected)
+            })
+            .transpose()?;
         if snapshot.equipment.character != *fence.character_id.as_bytes() {
             return Err(CharacterAuthorityError::Rejected);
         }
@@ -144,6 +164,11 @@ impl DurabilityRoot {
             }
         }
         for bytes in &encoded {
+            fingerprint.update(bytes);
+        }
+        if let Some(bytes) = &augments {
+            fingerprint.update(b"OTERYN_CYCLOPEDIA_SPELL_AUGMENTS/v1");
+            fingerprint.update((bytes.len() as u64).to_le_bytes());
             fingerprint.update(bytes);
         }
         let fingerprint: [u8; 32] = fingerprint.finalize().into();
@@ -205,11 +230,11 @@ impl DurabilityRoot {
                 Err(error) => return Ok(Err(error)),
             };
             sqlx::query(
-                "INSERT INTO game_character_cyclopedia_combat(character_id,game_session_id,character_lease_generation,connection_generation,observed_owner_micros,observed_at_unix_ms,character_revision,equipment_revision,content_digest,input_sha256,sample_revision,offence,defence,misc) \
-                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,$5::text::numeric,$6,$7::text::numeric,$8::text::numeric,$9,$10,$11,$12,$13,$14) \
+                "INSERT INTO game_character_cyclopedia_combat(character_id,game_session_id,character_lease_generation,connection_generation,observed_owner_micros,observed_at_unix_ms,character_revision,equipment_revision,content_digest,input_sha256,sample_revision,offence,defence,misc,offence_augments,offence_augments_revision) \
+                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,$5::text::numeric,$6,$7::text::numeric,$8::text::numeric,$9,$10,$11,$12,$13,$14,$15,CASE WHEN $15::bytea IS NULL THEN NULL ELSE $11 END) \
                  ON CONFLICT(character_id) DO UPDATE SET game_session_id=EXCLUDED.game_session_id,character_lease_generation=EXCLUDED.character_lease_generation,connection_generation=EXCLUDED.connection_generation, \
                  observed_owner_micros=EXCLUDED.observed_owner_micros,observed_at_unix_ms=EXCLUDED.observed_at_unix_ms,character_revision=EXCLUDED.character_revision,equipment_revision=EXCLUDED.equipment_revision, \
-                 content_digest=EXCLUDED.content_digest,input_sha256=EXCLUDED.input_sha256,sample_revision=EXCLUDED.sample_revision,offence=EXCLUDED.offence,defence=EXCLUDED.defence,misc=EXCLUDED.misc",
+                 content_digest=EXCLUDED.content_digest,input_sha256=EXCLUDED.input_sha256,sample_revision=EXCLUDED.sample_revision,offence=EXCLUDED.offence,defence=EXCLUDED.defence,misc=EXCLUDED.misc,offence_augments=EXCLUDED.offence_augments,offence_augments_revision=EXCLUDED.offence_augments_revision",
             )
             .bind(fence.character_id.as_bytes().as_slice())
             .bind(fence.game_session_id.as_bytes().as_slice()).bind(lease)
@@ -218,7 +243,7 @@ impl DurabilityRoot {
             .bind(snapshot.equipment.character_revision.to_string())
             .bind(snapshot.equipment.revision.to_string())
             .bind(snapshot.equipment.content_digest.as_slice()).bind(fingerprint.as_slice())
-            .bind(sample_revision).bind(&encoded[0]).bind(&encoded[1]).bind(&encoded[2])
+            .bind(sample_revision).bind(&encoded[0]).bind(&encoded[1]).bind(&encoded[2]).bind(augments.as_deref())
             .execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(CombatSnapshotReceipt {

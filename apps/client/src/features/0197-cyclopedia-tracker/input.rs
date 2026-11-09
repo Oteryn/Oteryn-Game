@@ -30,6 +30,6 @@ pub(super) fn enqueue(
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
         mailbox.cyclopedia_tracker.pending = false;
-        mailbox.cyclopedia_tracker.feedback = Some("The session has ended");
+        mailbox.cyclopedia_tracker.feedback = Some(tr!("The session has ended"));
     }
 }

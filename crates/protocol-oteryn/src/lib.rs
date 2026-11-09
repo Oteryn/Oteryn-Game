@@ -29,6 +29,7 @@ pub mod arena;
 pub mod atelier;
 pub mod attack;
 pub mod battle_instinct_status;
+pub mod battle_metadata;
 pub mod bed;
 pub mod bestiary;
 pub mod boss_difficulty;

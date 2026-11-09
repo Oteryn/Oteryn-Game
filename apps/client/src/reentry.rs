@@ -152,7 +152,7 @@ impl Reentry {
             .as_ref()
             .is_some_and(CancellationToken::is_cancelled)
         {
-            "Cancelling sign-in…".to_owned()
+            tr!("Cancelling sign-in…").to_owned()
         } else {
             let wait = (*self.progress.as_mut()?.borrow_and_update())?;
             if self
@@ -169,7 +169,7 @@ impl Reentry {
             if wait.code == 1115 {
                 queue.text(now)
             } else {
-                format!(
+                lfmt!(
                     "Admission not ready. Retrying in {}s.",
                     queue.remaining_seconds(now)
                 )

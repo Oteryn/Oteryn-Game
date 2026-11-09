@@ -39,6 +39,7 @@ mod activity_handoff;
 pub use oteryn_protocol_oteryn::activity_scope;
 pub use oteryn_protocol_oteryn::analyser_catalogue;
 pub use oteryn_protocol_oteryn::analyser_party;
+pub use oteryn_protocol_oteryn::battle_metadata;
 pub mod analyser_transport;
 mod appearance_state;
 pub use oteryn_protocol_oteryn::presentation::{

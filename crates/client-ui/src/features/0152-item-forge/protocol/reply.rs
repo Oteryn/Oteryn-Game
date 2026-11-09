@@ -160,16 +160,16 @@ pub fn render(receipt: &Receipt) -> String {
         }
     );
     s.push_str(if receipt.applied {
-        "; attempt applied"
+        tr!("; attempt applied")
     } else {
-        "; no changes applied"
+        tr!("; no changes applied")
     });
     if let Some(reason) = &receipt.reason {
         s.push_str(&format!(" ({reason})"));
     }
-    s.push_str(&format!("\nBonus: {}", receipt.bonus));
+    s.push_str(&lfmt!("\nBonus: {}", receipt.bonus));
     if let Some(r) = &receipt.resources {
-        s.push_str(&format!("\nTiers: {:?} / {:?}\nDust: {} / {}\nSpent: {} gold, {} cores, {} slivers\nCreated: {} slivers, {} cores",r.first_tier,r.second_tier,r.dust,r.dust_limit,r.gold_spent,r.cores_spent,r.slivers_spent,r.slivers_created,r.cores_created));
+        s.push_str(&lfmt!("\nTiers: {:?} / {:?}\nDust: {} / {}\nSpent: {} gold, {} cores, {} slivers\nCreated: {} slivers, {} cores",r.first_tier,r.second_tier,r.dust,r.dust_limit,r.gold_spent,r.cores_spent,r.slivers_spent,r.slivers_created,r.cores_created));
     }
     s
 }

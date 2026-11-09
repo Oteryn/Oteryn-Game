@@ -14,7 +14,10 @@ pub const MAX_ADVANCEMENT_LOG_LINES: usize = 100;
 
 #[must_use]
 pub fn advancement_text(name: &str) -> String {
-    format!("Congratulations! You earned the achievement \"{name}\".")
+    lfmt!(
+        "Congratulations! You earned the achievement \"{name}\".",
+        name = name
+    )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

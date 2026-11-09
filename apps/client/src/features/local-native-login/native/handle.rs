@@ -14,10 +14,10 @@ impl LoginWindow {
                     let _ = ready.send(Err(error));
                 }
             })
-            .map_err(|_| "Cannot start the login window.".to_owned())?;
+            .map_err(|_| tr!("Cannot start the login window.").to_owned())?;
         initialized
             .recv()
-            .map_err(|_| "Login window stopped.".to_owned())??;
+            .map_err(|_| tr!("Login window stopped.").to_owned())??;
         Ok(Self {
             updates: Some(updates),
             requests: outgoing,

@@ -1,0 +1,36 @@
+use oteryn_client::play::ReferencePreferences;
+
+#[test]
+fn frame_limits_select_focus_and_reject_zero() -> Result<(), Box<dyn std::error::Error>> {
+    let mut preferences = ReferencePreferences::default();
+    assert_eq!(
+        preferences.frame_interval(true).as_nanos(),
+        1_000_000_000 / 60
+    );
+    assert_eq!(
+        preferences.frame_interval(false).as_nanos(),
+        1_000_000_000 / 15
+    );
+    preferences.foreground_fps = 144;
+    preferences.background_fps = 5;
+    assert_eq!(
+        preferences.frame_interval(true).as_nanos(),
+        1_000_000_000 / 144
+    );
+    assert_eq!(preferences.frame_interval(false).as_nanos(), 200_000_000);
+    let path = std::env::temp_dir().join(format!("frame-limit-{}.json", std::process::id()));
+    preferences.foreground_fps = 0;
+    assert!(oteryn_client::play::PreferenceStore::export_to(&preferences, &path).is_err());
+    Ok(())
+}
+
+#[test]
+fn merged_frame_pacer_preserves_existing_500_fps_limit() {
+    let preferences = oteryn_client::play::FramePreferences {
+        foreground: 500,
+        ..Default::default()
+    };
+    let mut pacer = oteryn_client::play::FramePacer::default();
+    assert!(preferences.valid());
+    assert_eq!(pacer.request(0, preferences, true), (true, 2_000_000));
+}

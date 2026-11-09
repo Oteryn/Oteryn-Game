@@ -67,7 +67,7 @@ fn run(
         let hwnd = CreateWindowExW(
             WS_EX_CONTROLPARENT,
             wide("STATIC").as_ptr(),
-            wide("Oteryn — Connection and sign-in").as_ptr(),
+            wide(tr!("Oteryn — Connection and sign-in")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -79,11 +79,12 @@ fn run(
             null(),
         );
         if hwnd.is_null() {
-            return Err("Cannot create the login window.".into());
+            return Err(tr!("Cannot create the login window.").into());
         }
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, procedure as *const () as isize);
         let mut controls = Vec::new();
         for (index, (label, _)) in FIELDS.iter().enumerate() {
+            let label = oteryn_client_ui::localization::tr(label);
             let y = 15 + index as i32 * 48;
             controls.push(control(hwnd, "STATIC", label, 0, [15, y, 630, 20], 0));
             controls.push(control(
@@ -98,12 +99,16 @@ fn run(
         let button = control(
             hwnd,
             "BUTTON",
-            "Save and sign in",
+            tr!("Save and sign in"),
             SUBMIT,
             [15, 315, 200, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
         );
-        for (id, label, x) in [(6, "About", 235), (7, "Survey", 395), (8, "Cancel", 555)] {
+        for (id, label, x) in [
+            (6, tr!("About"), 235),
+            (7, tr!("Survey"), 395),
+            (8, tr!("Cancel"), 555),
+        ] {
             controls.push(control(
                 hwnd,
                 "BUTTON",
@@ -114,10 +119,10 @@ fn run(
             ));
         }
         for (id, label, x) in [
-            (2, "News", 15),
-            (3, "Previous month", 155),
-            (4, "Calendar", 315),
-            (5, "Next month", 475),
+            (2, tr!("News"), 15),
+            (3, tr!("Previous month"), 155),
+            (4, tr!("Calendar"), 315),
+            (5, tr!("Next month"), 475),
         ] {
             controls.push(control(
                 hwnd,
@@ -149,7 +154,7 @@ fn run(
             .any(|control| control.is_null())
         {
             DestroyWindow(hwnd);
-            return Err("Cannot create login fields.".into());
+            return Err(tr!("Cannot create login fields.").into());
         }
         SetFocus(controls[1]);
         let _ = ready.send(Ok(()));
@@ -194,7 +199,7 @@ fn run(
                 if action == 8 {
                     if form.pending() {
                         let _ = cancel.try_send(());
-                        form.feedback("Cancelling sign-in…".into());
+                        form.feedback(tr!("Cancelling sign-in…").into());
                     }
                 } else if action == 6 {
                     crate::about::show_information(&crate::about::about_text());

@@ -17,7 +17,7 @@ impl WindowLayout {
         let mut bytes = Vec::new();
         file.take((1 << 20) + 1).read_to_end(&mut bytes)?;
         if bytes.len() > 1 << 20 {
-            return Err(io::Error::other("Window layout exceeds 1 MiB"));
+            return Err(io::Error::other(tr!("Window layout exceeds 1 MiB")));
         }
         let layout: Self = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         let mut checked = Self::default();
@@ -42,7 +42,7 @@ impl WindowLayout {
             || !(100..=4096).contains(&height)
             || (self.0.len() >= 128 && !self.0.contains_key(id))
         {
-            return Err(io::Error::other("Invalid window geometry"));
+            return Err(io::Error::other(tr!("Invalid window geometry")));
         }
         self.0.insert(id.to_owned(), [x, y, width, height]);
         Ok(())
@@ -88,7 +88,7 @@ pub(crate) fn remember(id: &str, bounds: [i32; 4]) {
             layout.save(&path)
         });
         if let Err(error) = result {
-            eprintln!("Could not save window layout: {error}");
+            leprintln!("Could not save window layout: {error}", error = error);
         }
     }
 }

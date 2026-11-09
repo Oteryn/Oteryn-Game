@@ -22,9 +22,9 @@ impl Overlay {
     }
     pub fn hint(&self) -> &'static str {
         if self.interaction {
-            "right click: object actions"
+            tr!("right click: object actions")
         } else {
-            "left click: walk; arrows: move"
+            tr!("left click: walk; arrows: move")
         }
     }
 }

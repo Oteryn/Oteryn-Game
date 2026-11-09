@@ -8,12 +8,19 @@ impl PlayView {
         if !self.preferences().show_lights {
             self.scene.set_ambient([255; 3])?;
             self.scene.set_lights(Vec::new());
+            self.scene.set_floor_separator(0)?;
             return Ok(());
         }
+        let graphics = self.preferences().graphics;
         self.scene.set_ambient(
-            self.world_clock
-                .map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb),
+            graphics.ambient_rgb(
+                self.world_clock
+                    .map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb),
+                self.floor < -7 || self.scene.has_roof(),
+                self.world_weather,
+            ).map(|channel| channel.max((u16::from(self.preferences().ambient_brightness) * 255 / 100) as u8)),
         )?;
+        self.scene.set_floor_separator(graphics.separator)?;
         let view = self.scene.view();
         let tile_px = view.tile_px() as f32;
         let sources = self

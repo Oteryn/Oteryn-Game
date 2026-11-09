@@ -15,17 +15,17 @@ pub struct ReturnerRewardPanel {
 impl ReturnerRewardPanel {
     pub fn notification(&self) -> String {
         self.offer.as_ref().map_or_else(
-            || "No returner reward announced".into(),
+            || tr!("No returner reward announced").into(),
             |offer| {
-                format!(
+                lfmt!(
                     "Welcome back!\n{}\n{}",
                     offer.description,
                     if self.claimed_offer == Some(offer.id) {
-                        "Claimed"
+                        tr!("Claimed")
                     } else if self.pending {
-                        "Waiting for the server"
+                        tr!("Waiting for the server")
                     } else {
-                        "Returner reward available"
+                        tr!("Returner reward available")
                     }
                 )
             },

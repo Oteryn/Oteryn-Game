@@ -146,7 +146,7 @@ pub fn tracker_lines(panel: &QuestPanel) -> Vec<&QuestLine> {
             TrackerFilter::Completed => line.completed,
         })
         .filter(|line| {
-            format!("Quest {}", line.quest_index)
+            lfmt!("Quest {}", line.quest_index)
                 .to_lowercase()
                 .contains(&search)
                 || line.missions.iter().any(|m| {

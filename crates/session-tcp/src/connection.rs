@@ -1,5 +1,5 @@
 //! Routed endpoint resolution, address fallback and one session admission.
-use crate::{TcpConnect, TcpTlsStream, connect};
+use crate::{TcpConnect, TcpTlsStream, connect_with_nodelay};
 use oteryn_session::{Admission, AdmissionQueue, Session, SessionError};
 use rustls::pki_types::CertificateDer;
 use std::net::{IpAddr, SocketAddr};
@@ -17,7 +17,19 @@ pub async fn admit(
     admission: Admission<'_>,
     root: &CertificateDer<'static>,
 ) -> Result<Session<TcpTlsStream>, Option<u32>> {
-    admit_detailed(host, port, server_name, admission, root)
+    admit_optimized(host, port, server_name, admission, root, false).await
+}
+
+/// Admission with optional low-latency TCP delivery; authorization and retry rules are unchanged.
+pub async fn admit_optimized(
+    host: &str,
+    port: u16,
+    server_name: &str,
+    admission: Admission<'_>,
+    root: &CertificateDer<'static>,
+    optimized: bool,
+) -> Result<Session<TcpTlsStream>, Option<u32>> {
+    admit_detailed_optimized(host, port, server_name, admission, root, optimized)
         .await
         .map_err(|refusal| refusal.map(|refusal| refusal.code))
 }
@@ -37,8 +49,20 @@ pub async fn admit_detailed(
     admission: Admission<'_>,
     root: &CertificateDer<'static>,
 ) -> Result<Session<TcpTlsStream>, Option<AdmissionRefusalInfo>> {
+    admit_detailed_optimized(host, port, server_name, admission, root, false).await
+}
+
+/// Preserves both authenticated queue metadata and the caller's TCP delivery preference.
+pub async fn admit_detailed_optimized(
+    host: &str,
+    port: u16,
+    server_name: &str,
+    admission: Admission<'_>,
+    root: &CertificateDer<'static>,
+    optimized: bool,
+) -> Result<Session<TcpTlsStream>, Option<AdmissionRefusalInfo>> {
     let addresses = resolve(host, port).await;
-    let stream = connect_any(&addresses, server_name, root)
+    let stream = connect_any_optimized(&addresses, server_name, root, optimized)
         .await
         .ok_or(None)?;
     Session::admit(stream, admission)
@@ -73,13 +97,25 @@ pub async fn connect_any(
     server_name: &str,
     root: &CertificateDer<'static>,
 ) -> Option<TcpTlsStream> {
+    connect_any_optimized(addresses, server_name, root, false).await
+}
+
+async fn connect_any_optimized(
+    addresses: &[SocketAddr],
+    server_name: &str,
+    root: &CertificateDer<'static>,
+    optimized: bool,
+) -> Option<TcpTlsStream> {
     for &address in addresses {
-        if let Ok(stream) = connect(TcpConnect {
-            address,
-            server_name,
-            root_certificate: root,
-            deadline: CONNECT_DEADLINE,
-        })
+        if let Ok(stream) = connect_with_nodelay(
+            TcpConnect {
+                address,
+                server_name,
+                root_certificate: root,
+                deadline: CONNECT_DEADLINE,
+            },
+            optimized,
+        )
         .await
         {
             return Some(stream);

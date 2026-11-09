@@ -22,7 +22,7 @@ pub enum Intent {
 }
 pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("Boss encounter status is unavailable in this session");
+        panel.feedback = Some(tr!("Boss encounter status is unavailable in this session"));
         return None;
     }
     if panel.pending {
@@ -30,7 +30,7 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
     }
     if matches!(intent, Intent::Enter | Intent::Defeated | Intent::Timeout) {
         let Ok(payload) = boss_encounter::encode_boss_key(&panel.fields[0]) else {
-            panel.feedback = Some("Enter a valid boss key");
+            panel.feedback = Some(tr!("Enter a valid boss key"));
             return None;
         };
         let kind = match intent {
@@ -50,7 +50,7 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
     }
     if !matches!(intent, Intent::Refresh | Intent::Next) {
         let Some(command) = super::auxiliary::command(panel, intent) else {
-            panel.feedback = Some("Enter valid boss, slot (1-2), or hazard level (1-12)");
+            panel.feedback = Some(tr!("Enter valid boss, slot (1-2), or hazard level (1-12)"));
             return None;
         };
         panel.pending = true;
@@ -89,15 +89,15 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
         );
         if !accepted && result.status != CommandStatus::Rejected {
-            panel.feedback = Some("The server refused the boss request");
+            panel.feedback = Some(tr!("The server refused the boss request"));
             return false;
         }
         if !accepted && result.payload.is_empty() {
-            panel.feedback = Some("The server refused the boss request");
+            panel.feedback = Some(tr!("The server refused the boss request"));
             return false;
         }
         let Ok(reply) = boss_encounter::decode_boss_activity_reply(&result.payload) else {
-            panel.feedback = Some("The server returned invalid boss activity data");
+            panel.feedback = Some(tr!("The server returned invalid boss activity data"));
             return false;
         };
         match reply {
@@ -105,17 +105,20 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 deadline_unix_ms, ..
             } if accepted => {
                 panel.summary = match deadline_unix_ms {
-                    Some(deadline) => format!("Boss entry accepted. Deadline: {deadline}"),
-                    None => "Boss return accepted".into(),
+                    Some(deadline) => lfmt!(
+                        "Boss entry accepted. Deadline: {deadline}",
+                        deadline = deadline
+                    ),
+                    None => tr!("Boss return accepted").into(),
                 };
                 panel.feedback = None;
             }
             boss_encounter::BossActivityReply::Refused(reason) => {
-                panel.summary = format!("Boss request refused: {reason:?}");
-                panel.feedback = Some("The server refused the boss request");
+                panel.summary = lfmt!("Boss request refused: {reason:?}", reason = reason);
+                panel.feedback = Some(tr!("The server refused the boss request"));
             }
             _ => {
-                panel.feedback = Some("The server refused the boss request");
+                panel.feedback = Some(tr!("The server refused the boss request"));
                 return false;
             }
         }
@@ -125,12 +128,12 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the boss status query");
+        panel.feedback = Some(tr!("The server refused the boss status query"));
         return false;
     }
     if panel.pending_kind != boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS {
         let Some(summary) = super::auxiliary::summary(panel, &result.payload) else {
-            panel.feedback = Some("The server returned invalid boss data");
+            panel.feedback = Some(tr!("The server returned invalid boss data"));
             return false;
         };
         panel.summary = summary;
@@ -138,7 +141,7 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
         return true;
     }
     let Some(snapshot) = boss_encounter::decode(&result.payload) else {
-        panel.feedback = Some("The server returned invalid boss status");
+        panel.feedback = Some(tr!("The server returned invalid boss status"));
         return false;
     };
     panel.snapshot = Some(snapshot);

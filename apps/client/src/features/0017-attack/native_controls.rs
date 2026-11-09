@@ -31,20 +31,41 @@ impl PanelControls {
                     )
                 })
                 .collect();
-            let stop = control(hwnd, "BUTTON", "Stop attack", 101, (10, 320, 130, 30), 0);
+            let stop = control(
+                hwnd,
+                "BUTTON",
+                tr!("Stop attack"),
+                101,
+                (10, 320, 130, 30),
+                0,
+            );
             for &list in &lists {
                 SendMessageW(list, LB_SETHORIZONTALEXTENT, 2048, 0);
             }
-            let offensive = control(hwnd, "BUTTON", "Offensive", 102, (150, 320, 110, 30), 0);
-            let balanced = control(hwnd, "BUTTON", "Balanced", 103, (270, 320, 110, 30), 0);
-            let defensive = control(hwnd, "BUTTON", "Defensive", 104, (390, 320, 110, 30), 0);
-            let stand = control(hwnd, "BUTTON", "Stand", 107, (510, 320, 100, 30), 0);
-            let chase = control(hwnd, "BUTTON", "Chase", 108, (620, 320, 100, 30), 0);
+            let offensive = control(
+                hwnd,
+                "BUTTON",
+                tr!("Offensive"),
+                102,
+                (150, 320, 110, 30),
+                0,
+            );
+            let balanced = control(hwnd, "BUTTON", tr!("Balanced"), 103, (270, 320, 110, 30), 0);
+            let defensive = control(
+                hwnd,
+                "BUTTON",
+                tr!("Defensive"),
+                104,
+                (390, 320, 110, 30),
+                0,
+            );
+            let stand = control(hwnd, "BUTTON", tr!("Stand"), 107, (510, 320, 100, 30), 0);
+            let chase = control(hwnd, "BUTTON", tr!("Chase"), 108, (620, 320, 100, 30), 0);
             let text = control(hwnd, "STATIC", "", 109, (10, 360, 720, 60), 0);
             let editor_label = control(
                 hwnd,
                 "STATIC",
-                "List / name / name filter / maximum HP %",
+                tr!("List / name / name filter / maximum HP %"),
                 0,
                 (10, 425, 720, 25),
                 0,
@@ -70,7 +91,7 @@ impl PanelControls {
             let players = control(
                 hwnd,
                 "BUTTON",
-                "Players",
+                tr!("Players"),
                 303,
                 (10, 495, 160, 26),
                 BS_AUTOCHECKBOX as u32,
@@ -78,7 +99,7 @@ impl PanelControls {
             let creatures = control(
                 hwnd,
                 "BUTTON",
-                "Creatures",
+                tr!("Creatures"),
                 304,
                 (190, 495, 160, 26),
                 BS_AUTOCHECKBOX as u32,
@@ -92,16 +113,23 @@ impl PanelControls {
                 CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
             );
             for label in [
-                "Name",
-                "Health: low first",
-                "Health: high first",
-                "Identity",
+                tr!("Name"),
+                tr!("Health: low first"),
+                tr!("Health: high first"),
+                tr!("Identity"),
             ] {
                 SendMessageW(sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
             }
-            let apply = control(hwnd, "BUTTON", "Save list", 307, (10, 540, 220, 30), 0);
-            let add = control(hwnd, "BUTTON", "Add list", 308, (250, 540, 220, 30), 0);
-            let remove = control(hwnd, "BUTTON", "Remove list", 309, (490, 540, 230, 30), 0);
+            let apply = control(hwnd, "BUTTON", tr!("Save list"), 307, (10, 540, 220, 30), 0);
+            let add = control(hwnd, "BUTTON", tr!("Add list"), 308, (250, 540, 220, 30), 0);
+            let remove = control(
+                hwnd,
+                "BUTTON",
+                tr!("Remove list"),
+                309,
+                (490, 540, 230, 30),
+                0,
+            );
             let controls: Vec<_> = lists
                 .iter()
                 .copied()

@@ -42,8 +42,14 @@ pub enum ArchiveSlot {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ArchiveBindings {
-    #[serde(deserialize_with = "read_slots")]
+    #[serde(deserialize_with = "read_slots", serialize_with = "write_slots")]
     pub slots: [ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+}
+fn write_slots<S: serde::Serializer>(
+    slots: &[ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    slots.as_slice().serialize(serializer)
 }
 fn read_slots<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
@@ -113,6 +119,7 @@ pub(super) fn assign(mailbox: &SharedMailbox, row: usize, slot: usize) -> bool {
         entry.spell.name,
         slot + 1
     );
+    crate::play::feature_local_spell_action_bar::view::clear_extra(&mut mailbox, slot);
     true
 }
 pub(super) fn clear(mailbox: &SharedMailbox, slot: usize) -> bool {
@@ -124,6 +131,7 @@ pub(super) fn clear(mailbox: &SharedMailbox, slot: usize) -> bool {
     *target = ArchiveSlot::Empty;
     state.archive_edit = crate::play::feature_0017_attack::view::next_edit();
     state.feedback = format!("Cleared slot {}", slot + 1);
+    crate::play::feature_local_spell_action_bar::view::clear_extra(&mut mailbox, slot);
     true
 }
 impl PlayLink {
@@ -220,6 +228,7 @@ pub(in crate::play) fn assign_cast_index(
     };
     *target = binding;
     mailbox.spellbook_details.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+    crate::play::feature_local_spell_action_bar::view::clear_extra(mailbox, slot);
     resolve(mailbox);
     true
 }

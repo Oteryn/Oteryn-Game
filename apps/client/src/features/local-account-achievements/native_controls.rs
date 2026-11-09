@@ -31,7 +31,7 @@ impl PanelControls {
                 [350, 10, 180, 150],
                 CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
             );
-            for label in ["All achievements", "Regular", "Secret"] {
+            for label in [tr!("All achievements"), tr!("Regular"), tr!("Secret")] {
                 SendMessageW(filter, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
             }
             SendMessageW(filter, CB_SETCURSEL, 0, 0);
@@ -43,7 +43,12 @@ impl PanelControls {
                 [540, 10, 230, 150],
                 CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
             );
-            for label in ["Name", "Points", "Grade", "Recently earned"] {
+            for label in [
+                tr!("Name"),
+                tr!("Points"),
+                tr!("Grade"),
+                tr!("Recently earned"),
+            ] {
                 SendMessageW(sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
             }
             SendMessageW(sort, CB_SETCURSEL, 0, 0);
@@ -67,13 +72,13 @@ impl PanelControls {
             let refresh = ctl(
                 h,
                 "BUTTON",
-                "Load / refresh account",
+                tr!("Load / refresh account"),
                 2,
                 [10, 540, 240, 32],
                 0,
             );
-            let previous = ctl(h, "BUTTON", "Previous page", 3, [270, 540, 240, 32], 0);
-            let next = ctl(h, "BUTTON", "Next page", 4, [530, 540, 240, 32], 0);
+            let previous = ctl(h, "BUTTON", tr!("Previous page"), 3, [270, 540, 240, 32], 0);
+            let next = ctl(h, "BUTTON", tr!("Next page"), 4, [530, 540, 240, 32], 0);
             if [
                 search, filter, sort, header, list, detail, refresh, previous, next,
             ]
