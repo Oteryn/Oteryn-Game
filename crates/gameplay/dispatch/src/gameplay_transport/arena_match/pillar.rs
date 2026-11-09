@@ -21,26 +21,6 @@ pub(super) fn project(
         return false;
     };
     let pos = crate::map::overlay::TilePos { x, y, floor };
-    let Some(tile) = map.overlay.base().tile(x, y, floor) else {
-        return false;
-    };
-    let mut pillars = tile
-        .ids()
-        .iter()
-        .zip(tile.depths())
-        .filter(|(_, depth)| **depth == 0)
-        .enumerate()
-        .filter_map(|(ordinal, (&id, _))| {
-            let ordinal = u8::try_from(ordinal).ok()?;
-            (map.facts.quest_callback_base_appearance(pos, ordinal, id) == Some(1841))
-                .then_some((ordinal, id))
-        });
-    let Some((ordinal, id)) = pillars.next() else {
-        return false;
-    };
-    if pillars.next().is_some() {
-        return false;
-    }
     map.facts
-        .set_svargrond_pillar(map.overlay.base(), pos, ordinal, id, state.run, projection)
+        .project_svargrond_pillar(map.overlay.base(), pos, state.run, projection)
 }

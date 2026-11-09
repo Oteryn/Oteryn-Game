@@ -2450,3 +2450,23 @@ cases PASS22.527s (237 passed, one pre-existing ignored case). World clippy
 artifacts were removed and the same tests rerun. Engine-only pin identity matches.
 M51 remains PARTIAL: server composition of recreation and physical top-Item reset.
 Fmt corrected one array wrap; cargo fmt --all --check PASS15.293s.
+
+### M51 production missing-pillar reset composition
+Dispatch now uses the World-owned pillar projection after its existing native
+runtime and durable pit-custody checks. This composes Crystal 201189f
+lib/quests/svargrond_arena.lua:235-245 with the real kill/portal chain rather than
+requiring a pre-existing pillar placement in the base map. A new floor-only
+fixture contains no pillar/portal palette entries. Its real PostgreSQL story
+runs all ten normal fights, automatic death settlement, native STEP portals,
+rank completion and personal reward using recreated pillars.
+RED: the new story failed after the first kill at the unchanged native portal
+progression assertion (PG53.49s). GREEN: five native arena PG cases passed,
+including recreated pillars61.118s, base pillars61.124s, departure53.148s,
+monster reset53.695s and timeout56.535s (total209.246s including compilation).
+Failed pre-test links exhausted disk; inactive own incremental artifacts,
+failed linker temporary binaries and own old test databases were removed before
+rerunning the same commands. No new migration or numeric allocation. Engine-only
+bundle identity verification matches the committed pin. M51 remains PARTIAL:
+physical top-Item reset is not yet composed with its durable Item owner.
+Dispatch clippy --all-targets -D warnings PASS233.799s; direct rustfmt covers the
+mounted PostgreSQL source files as well as workspace cargo fmt verification.

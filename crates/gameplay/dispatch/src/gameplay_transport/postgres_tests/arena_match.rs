@@ -62,6 +62,27 @@ fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult 
     Ok(())
 }
 
+#[test]
+fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_route(true, Some(NativeScenario::RecreatedPillars)).map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "M51 recreated pillar worker panicked")??;
+    eprintln!(
+        "M51 REAL POSTGRES recreated pillars duration={:?}",
+        started.elapsed()
+    );
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
+}
+
 fn scenario(funded: bool) -> TestResult {
     scenario_path(funded, false)
 }
@@ -88,6 +109,7 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 #[derive(Clone, Copy)]
 enum NativeScenario {
     Portals,
+    RecreatedPillars,
     Departure,
     Timeout,
     ResetMonsters,
@@ -158,7 +180,9 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
         )?;
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
-        let (bytes, pins) = if native_portals {
+        let (bytes, pins) = if matches!(route, Some(NativeScenario::RecreatedPillars)) {
+            fixture::bundle_with_pillar_floors(native)?
+        } else if native_portals {
             fixture::bundle_with_pillars(native)?
         } else {
             fixture::bundle(native)?

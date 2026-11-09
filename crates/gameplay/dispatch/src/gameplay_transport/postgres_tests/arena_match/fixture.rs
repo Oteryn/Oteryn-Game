@@ -9,18 +9,25 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, false)
+    bundle_layout(native, false, false)
 }
 
 pub(in super::super) fn bundle_with_pillars(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
-    bundle_layout(native, true)
+    bundle_layout(native, true, false)
+}
+
+pub(in super::super) fn bundle_with_pillar_floors(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, false, true)
 }
 
 fn bundle_layout(
     native: &crate::content::native_gameplay::NativeGameplayState,
     with_pillars: bool,
+    pillar_floors_only: bool,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
@@ -101,6 +108,21 @@ fn bundle_layout(
                 depth: 0,
                 attrs: Default::default(),
             });
+        }
+    }
+    // Crystal svargrond_arena.lua:235-244 recreates absent pillars on real floors.
+    // No pillar or portal palette entries are present in this fixture.
+    if pillar_floors_only {
+        for number in 1..=10 {
+            let [x, y, floor] = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+                .ok_or("source pit")?
+                .layout()
+                .pillar;
+            let at = (u16::try_from(x)?, u16::try_from(y)?, i8::try_from(floor)?);
+            let mut tile = bundle.sectors[0].tiles[0].clone();
+            tile.x = at.0;
+            tile.y = at.1;
+            tiles.insert(at, tile);
         }
     }
     let mut sectors = std::collections::BTreeMap::<(i8, u16, u16), Sector>::new();
