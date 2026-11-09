@@ -37,7 +37,7 @@ pub(super) async fn commit_keys(
         }
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let outcome = slot
-            .commit_quest_transition(
+            .commit_quest_transition_with_admission(
                 owner.root,
                 owner.character,
                 owner.holder,
@@ -47,6 +47,7 @@ pub(super) async fn commit_keys(
                     cause: QuestCause::Command(CommandRef::new(command.game_session_id, ordinal)),
                 },
                 Arc::clone(catalogue),
+                &owner.premium_coordinator,
             )
             .await;
         drop(slot);
