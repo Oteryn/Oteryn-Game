@@ -145,6 +145,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(constants) = AttackConstants::checked_in() else {
             return;
         };
+        // A genuine Cloak hit has a synchronous source Item callback. Prepare
+        // its existing map owner before retaining the physical lane for the hit.
+        let cloak_target = {
+            let runtime = self.runtime.lock().await;
+            let attack = self.states.attack.lock().await;
+            attack
+                .entries
+                .iter()
+                .filter_map(|entry| entry.state.target())
+                .any(|target| {
+                    runtime
+                        .matches_live_creature_identity(target, b"oteryn:creature.cloak_of_terror")
+                })
+        };
+        if cloak_target && !self.ensure_source_map_initialized().await {
+            return;
+        }
         let Some(mut pvp_permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -1355,6 +1372,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
             }
+            // Complete this swing (including cleave) before its health callback;
+            // leave later attackers' untouched clocks for the next coalesced turn.
+            if runtime
+                .pending_cloak_blood_events(1)
+                .is_ok_and(|events| !events.is_empty())
+            {
+                states.owner_wake.notify_one();
+                break;
+            }
         }
         for hit in pvp_hits {
             self.land_pvp_swing(
@@ -1375,6 +1401,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(objects);
         drop(states);
         drop(runtime);
+        // No later Item command can overtake the normal hit's source callback.
+        let _ = self.drain_cloak_blood_with_permit(&pvp_permit).await;
         drop(pvp_permit);
         self.save_trained_levels(trained).await;
     }

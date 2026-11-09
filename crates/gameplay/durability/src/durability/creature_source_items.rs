@@ -4,6 +4,8 @@
     dead_code,
     reason = "Source-qualified SQL and native owner component is locally tested; Channel shipping activation remains the explicit #162 single-scheduler integration gate"
 )]
+mod cloak_blood;
+pub use cloak_blood::CloakBloodCallback;
 mod primal_pod;
 mod scoped_global;
 mod spite_global;

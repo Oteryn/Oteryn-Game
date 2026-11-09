@@ -185,6 +185,7 @@ mod serving;
 pub mod session_ingress;
 mod soul_kill_live;
 mod soul_war_callbacks;
+mod soul_war_cloak_blood;
 mod soul_war_entry;
 mod soul_war_malice;
 mod soul_war_scene;

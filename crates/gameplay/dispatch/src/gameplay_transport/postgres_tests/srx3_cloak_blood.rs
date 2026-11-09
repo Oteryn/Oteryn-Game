@@ -60,7 +60,11 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
             )?;
             super::boss_activity::issue_content_and_reset(&h, pin).await?;
             let mut admitted = deps.admitted;
-            super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 500)
+            // The literal Cloak has defense 107 and armor 107. The previous
+            // level-500 unarmed setup completed sixteen swings with zero HP
+            // loss, never reaching this health-event/MINT contract. Use the real
+            // XP writer to prepare a penetrating attack; retain all target stats.
+            super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 2000)
                 .await?;
             let player = admitted.runtime_actor.ok_or("actual admitted player")?;
             let (image, target) = {
@@ -123,6 +127,10 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
                     .await,
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
+            // Reject the first physical callback at its real SQL boundary. The
+            // HP event must remain pending, with no partial Item, until retry.
+            sqlx::raw_sql("CREATE FUNCTION boss2_cloak_mint_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.cause_kind=2 AND NEW.creature_definition_key='oteryn:creature.cloak_of_terror' THEN RAISE EXCEPTION 'boss2 retained Cloak callback fault'; END IF; RETURN NEW; END $$; CREATE TRIGGER boss2_cloak_mint_fault BEFORE INSERT ON game_spell_item_receipts FOR EACH ROW EXECUTE FUNCTION boss2_cloak_mint_fault();")
+                .execute(&h.pool).await?;
             owner
                 .refresh_attack_weapon(player, admitted.game_session_id)
                 .await;
@@ -160,7 +168,23 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
                     "Q6a real Player hit must retain its genuine canonical HP-event before testing the physical MINT consumer"
                 );
             }
+            let before_retry: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2 AND creature_definition_key='oteryn:creature.cloak_of_terror'").fetch_one(&h.pool).await?;
+            assert_eq!(
+                before_retry, 0,
+                "failed physical callback commits no receipt"
+            );
+            sqlx::raw_sql("DROP TRIGGER boss2_cloak_mint_fault ON game_spell_item_receipts; DROP FUNCTION boss2_cloak_mint_fault();").execute(&h.pool).await?;
             owner.drain_monster_melee().await;
+            assert!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .pending_cloak_blood_events(32)
+                    .map_err(debug)?
+                    .is_empty(),
+                "known physical COMMIT acknowledges the retained HP callback"
+            );
             let blood:i64=sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_lines l USING(transaction_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.cause_kind=2 AND r.spell_family='Encounter' AND r.spell_production_key='oteryn:encounter.soul_war_taint_zones' AND r.runtime_scope_kind=1 AND r.channel_id=encode($1,'hex')::uuid AND l.operation_kind=1 AND l.definition_production_key='oteryn:item.tibia.i33854' AND g.scope_kind=1 AND g.channel_id=r.channel_id").bind(owner.channel_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
                 blood, 1,
