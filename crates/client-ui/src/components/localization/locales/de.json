@@ -330,5 +330,11 @@
  "Enter a difficulty from 0 to 28": "Gib einen Schwierigkeitsgrad von 0 bis 28 ein",
  "Phosphorus Record": "Phosphorus-Rekord",
  "Weapon proficiency XP: {}% chance to gain double XP\n": "Waffenfertigkeits-EP: {}% Chance auf doppelte EP\n",
- "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Jede berechtigte Vergabe von Waffenfertigkeits-EP kann verdoppelt werden. Die Chance folgt der zuletzt aktualisierten Serie: 1% pro Serientag bis 7%; 8% ab 14, 9% ab 21, 10% ab 28 (Maximum). Nach dem Abholen aktualisieren, um den Bonus zu erneuern.\n"
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Jede berechtigte Vergabe von Waffenfertigkeits-EP kann verdoppelt werden. Die Chance folgt der zuletzt aktualisierten Serie: 1% pro Serientag bis 7%; 8% ab 14, 9% ab 21, 10% ab 28 (Maximum). Nach dem Abholen aktualisieren, um den Bonus zu erneuern.\n",
+ "Elite": "Elite",
+ "Ordinary": "Gewöhnlich",
+ "Silver": "Silber",
+ "Platinum": "Platin",
+ "Dust (Premium)": "Staub (Premium)",
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Eliteaufgaben: Monster verursachen +100% Schaden und erleiden -50% Schaden.\n"
 }

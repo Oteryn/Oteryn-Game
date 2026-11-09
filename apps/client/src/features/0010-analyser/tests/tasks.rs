@@ -30,6 +30,7 @@ fn reply() -> Reply {
             }],
         },
         bounty: Bounty {
+            elite: false,
             state: 2,
             difficulty: 0,
             selected: 1,
@@ -38,6 +39,8 @@ fn reply() -> Reply {
             daily_reroll_at: 0,
             offers: vec![],
             active: Some(BountyOffer {
+                elite: false,
+                dust: 0,
                 race: "oteryn:creature.tracker_wolf".into(),
                 required: 9,
                 experience: 0,

@@ -330,5 +330,11 @@
  "Enter a difficulty from 0 to 28": "Introduce una dificultad de 0 a 28",
  "Phosphorus Record": "Récord de Phosphorus",
  "Weapon proficiency XP: {}% chance to gain double XP\n": "XP de dominio de armas: {}% de probabilidad de obtener el doble de XP\n",
- "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Cada recompensa válida de XP de dominio de armas puede duplicarse. La probabilidad depende de la última racha actualizada: 1% por día hasta el 7%; 8% a los 14, 9% a los 21, 10% a los 28 (máximo). Actualiza después de reclamar para ver el nuevo bono.\n"
+ "Each eligible weapon proficiency XP award can be doubled. Chance follows the last refreshed streak: 1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28 (maximum). Refresh after claiming to update the bonus.\n": "Cada recompensa válida de XP de dominio de armas puede duplicarse. La probabilidad depende de la última racha actualizada: 1% por día hasta el 7%; 8% a los 14, 9% a los 21, 10% a los 28 (máximo). Actualiza después de reclamar para ver el nuevo bono.\n",
+ "Elite": "Élite",
+ "Ordinary": "Ordinaria",
+ "Silver": "Plata",
+ "Platinum": "Platino",
+ "Dust (Premium)": "Polvo (Premium)",
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Tareas de élite: los monstruos infligen +100% de daño y reciben -50% de daño.\n"
 }

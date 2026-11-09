@@ -128,9 +128,10 @@ Kill credit uses the memoized death occurrence per eligible Character.
 The old five-task rule is retired; its command 1/2 operations are explicitly
 refused rather than maintaining a second gameplay state. Existing quest tracks
 remain the balance/talisman truth during migration. The full durable owner serves
-both codecs. Native-client feature registration remains explicitly unsupported;
-this change adds the complete server command contract and production consumers,
-not a native Task Board view.
+both codecs. The native Task Board uses the same authoritative state and command
+queue for weekly tasks, bounty offers, and the Elite checkbox. Original capability-72
+clients omit the capability-474 Elite fields and display Platinum as their highest
+supported Gold grade; the frozen reward amounts remain unchanged.
 
 ## Resource limits
 
@@ -165,3 +166,36 @@ reports a special Monday reward window displaying rewards and choosing the next
 difficulty. News 8998 (same fetch date and source class) retires the daily-token
 claim from the Bounty Board; Daily Reward supplies it instead. Bounty offer
 rerolls and earned completed-bounty tokens retain their existing rules.
+
+## Elite bounty tasks (T201)
+
+Owner decision 2026-11-09, news 9004: command **6174** belongs to capability
+474 and accepts full action 4 (query) or 19 (selection 0/1 disables/enables Elite).
+The checkbox affects newly generated offers; it never changes a selected task or
+already displayed offers. Each generated task freezes its Elite flag and reward.
+Elite task creatures deal twice the damage to their task owner and receive half
+that owner's damage. The generated bounty XP reward doubles. Silver, Gold and
+Platinum multiply the usual task rewards by 2, 4 and 8, respectively.
+
+The single bounded content table `content/combat/bounty_elite_v1.json` is
+`PARITY_PENDING`: its numeric values are owner-approved provisional values, not
+assertions of measured Global probabilities. Dust by difficulty is 1/2/3/4.
+Silver/Gold/Platinum base weights are 500/100/0 basis points, each unchosen offer
+adds 100/50/10, and caps are 2500/1000/200. A single 1..10000 draw partitions
+Platinum, Gold, Silver, then ordinary outcomes. Selecting an improved offer resets
+that race's history; selecting an ordinary task retains its history. Other offers
+advance once on selection, or all offers advance once when rerolled. Counters
+saturate when all content-defined caps have been reached. The existing Character
+board and immutable receipts retain at most 4096 race counters, bounded by 1 MiB
+JSON; migration 2724 widens the existing storage checks and records the completion
+dust selection key in the existing kill receipt. No probability is
+accepted from the client. The runtime parses the content table with no fallback.
+
+Elite dust is paid once on the completing kill, with the existing kill XP/dust
+transaction and its death receipt, only for a Premium recipient. A monotonic
+selection serial binds the dust ledger occurrence; a distinct death arriving
+before task credit drains cannot award dust again. Each kill receipt retains
+that key for replay even after another task is selected. Task reward XP
+and Bounty Points retain the existing claim owner. Dust uses the frozen difficulty
+and grade of the selected offer; account state is resolved by the existing Premium
+kill owner. Dust overflow keeps the existing dust limit/lost-amount ledger rules.

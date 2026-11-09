@@ -7,7 +7,8 @@
   ],
   "acceptance_requires": false,
   "commands": [
-    6172
+    6172,
+    6174
   ],
   "domains": [],
   "supersedes": [],

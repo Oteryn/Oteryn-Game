@@ -7,7 +7,8 @@
     72
   ],
   "command_types": [
-    6172
+    6172,
+    6174
   ],
   "state_domains": [],
   "offered": false,

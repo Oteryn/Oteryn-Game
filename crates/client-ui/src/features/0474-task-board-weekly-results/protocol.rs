@@ -11,3 +11,8 @@ pub fn request(panel: &mut TaskBoardPanel) -> Option<FeatureCommand> {
     request.kind = task_board::full::COMMAND_WEEKLY_RESULTS;
     Some(request)
 }
+
+/// Queue the explicit Elite preference; existing offers and the active task stay frozen.
+pub fn set_elite(panel: &mut TaskBoardPanel, enabled: bool) -> Option<FeatureCommand> {
+    full_request(panel, FullIntent::Elite(enabled))
+}

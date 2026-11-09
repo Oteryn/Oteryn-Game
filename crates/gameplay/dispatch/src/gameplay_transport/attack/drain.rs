@@ -700,6 +700,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         talisman_damage,
                     )
                 };
+                let landed = if talisman.elite(&race_key) {
+                    landed / 2
+                } else {
+                    landed
+                };
                 if landed <= 0 {
                     train_swing(
                         &mut states,
@@ -782,6 +787,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     talisman_damage,
                                 )
                             });
+                            let primary = if talisman.elite(&race_key) {
+                                primary / 2
+                            } else {
+                                primary
+                            };
                             let element = match ranged.damage {
                                 ranged::RangedDamage::Magic { element, .. }
                                 | ranged::RangedDamage::Distance { element, .. } => element,
@@ -976,6 +986,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .filter(|n| *n > 0) else {
                             continue;
                         };
+                        let amount = if talisman.elite(&race_key) {
+                            amount / 2
+                        } else {
+                            amount
+                        };
+                        if amount == 0 {
+                            continue;
+                        }
                         let stream = format!(
                             "charm-attack:{}:{}",
                             swing.lineage.command_id().get(),
@@ -1067,6 +1085,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .filter(|amount| *amount > 0) else {
                                 continue;
                             };
+                            let amount =
+                                if runtime
+                                    .companion_snapshot(neighbour)
+                                    .is_ok_and(|candidate| {
+                                        talisman.elite(&candidate.state.policy.definition_key)
+                                    })
+                                {
+                                    amount / 2
+                                } else {
+                                    amount
+                                };
+                            if amount == 0 {
+                                continue;
+                            }
                             let stream = format!(
                                 "charm-carnage:{}:{}:{}",
                                 swing.lineage.command_id().get(),

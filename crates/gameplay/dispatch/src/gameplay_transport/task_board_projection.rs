@@ -51,13 +51,19 @@ fn refusal(value: Option<&TaskBoardRefusal>) -> u8 {
     }
 }
 
-fn offer(task: &rules::BountyTask) -> full_wire::BountyOffer {
+fn offer(task: &rules::BountyTask, extended: bool) -> full_wire::BountyOffer {
     full_wire::BountyOffer {
+        elite: extended && task.elite,
+        dust: if extended { task.dust } else { 0 },
         race: task.race.clone(),
         required: task.required,
         experience: task.experience,
         points: task.points,
-        grade: task.grade,
+        grade: if extended {
+            task.grade
+        } else {
+            task.grade.min(2)
+        },
     }
 }
 
@@ -189,6 +195,7 @@ pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<fu
         soulseals: u64::try_from(balances.soulseals).ok()?,
         weekly,
         bounty: full_wire::Bounty {
+            elite: include_results && bounty.elite,
             state: match bounty.state {
                 rules::BountyStatus::None => 0,
                 rules::BountyStatus::Selection => 1,
@@ -200,8 +207,12 @@ pub(super) fn full(commit: &TaskBoardCommit, include_results: bool) -> Option<fu
             current: active.map_or(0, |task| task.current),
             rerolls: view.reroll_tokens,
             daily_reroll_at: u64::try_from(bounty.next_free_reroll_unix).ok()?,
-            offers: bounty.offers.iter().map(offer).collect(),
-            active: active.map(offer),
+            offers: bounty
+                .offers
+                .iter()
+                .map(|task| offer(task, include_results))
+                .collect(),
+            active: active.map(|task| offer(task, include_results)),
             lists: bounty
                 .lists
                 .iter()
