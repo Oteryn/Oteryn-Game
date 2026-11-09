@@ -3,7 +3,7 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 
 pub(crate) struct InterfaceControls {
-    game_window: [HWND; 8],
+    game_window: [HWND; 12],
     label: HWND,
     scale: HWND,
     cursor: HWND,
@@ -40,6 +40,10 @@ impl InterfaceControls {
                 "PvP frames",
                 "Loot highlights",
                 "Server notice banner",
+                "Action bar labels",
+                "Action bar cooldowns",
+                "Three action-bar rows",
+                "Insert newly learned spells",
             ]
             .map(|label| {
                 control(
@@ -152,6 +156,10 @@ impl InterfaceControls {
                 pvp_frame,
                 loot_highlight,
                 banner,
+                bar_labels,
+                bar_cooldowns,
+                three_rows,
+                auto_insert,
             ] = self
                 .game_window
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -163,6 +171,10 @@ impl InterfaceControls {
             preferences.game_window.pvp_frame = pvp_frame;
             preferences.game_window.loot_highlight = loot_highlight;
             preferences.game_window.banner = banner;
+            preferences.action_bar.labels = bar_labels;
+            preferences.action_bar.cooldowns = bar_cooldowns;
+            preferences.action_bar.three_rows = three_rows;
+            preferences.action_bar.auto_insert = auto_insert;
             preferences.hud_names = self
                 .names
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -196,6 +208,10 @@ impl InterfaceControls {
                 options.pvp_frame,
                 options.loot_highlight,
                 options.banner,
+                preferences.action_bar.labels,
+                preferences.action_bar.cooldowns,
+                preferences.action_bar.three_rows,
+                preferences.action_bar.auto_insert,
             ]) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
             }

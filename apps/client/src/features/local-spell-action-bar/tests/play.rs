@@ -243,6 +243,44 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
 }
 
 #[test]
+fn t058_bar_labels_and_cooldowns_are_independent() {
+    let (link, _, _) = crate::play::play_channel();
+    assert!(link.spell_slot_labels()[0].contains('\n'));
+    {
+        let mut mailbox=crate::play::mailbox::lock(&link.mailbox);
+        mailbox.local_preferences.action_bar.cooldowns=false;
+    }
+    assert!(!link.spell_slot_labels()[0].contains('\n'));
+    assert!(link.spell_slot_labels()[0].starts_with("1:"));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.labels=false;
+    assert!(link.spell_slot_labels().iter().all(String::is_empty));
+}
+
+#[test]
+fn t058_row_layout_preserves_all_twelve_slots() {
+    let (link, _, _) = crate::play::play_channel();
+    assert_eq!(link.action_bar_grid(), (12, 1));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.three_rows = true;
+    assert_eq!(link.action_bar_grid(), (4, 3));
+}
+
+#[test]
+fn t058_auto_insert_uses_learned_server_catalog_once() {
+    use oteryn_client_runtime::spell_catalog::{SpellCatalog, SpellCatalogEntry};
+    let (link, _, _) = crate::play::play_channel();
+    {
+        let mut mailbox=crate::play::mailbox::lock(&link.mailbox);
+        mailbox.local_preferences.action_bar.auto_insert=true;
+        mailbox.spell_catalog.catalog.replace(SpellCatalog { revision:1, entries: vec![SpellCatalogEntry {
+            cast_index:77,name:"Oteryn test spell".into(),words:String::new(),level:1,mana:1,mana_percent:false,soul:0,learned:true,available:true,cooldown_groups:vec![],rune_item:None,
+        }] });
+    }
+    assert!(link.spell_slot_labels()[4].contains("Oteryn test spell"));
+    crate::play::mailbox::lock(&link.mailbox).spell_bar.bar.bind(4,None);
+    assert!(!link.spell_slot_labels()[4].contains("Oteryn test spell"));
+}
+
+#[test]
 fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::feature_local_spell_action_bar::view::{BarAction, PassiveAbility};

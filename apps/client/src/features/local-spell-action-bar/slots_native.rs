@@ -70,6 +70,7 @@ impl SpellRow {
         &mut self,
         labels: Option<&[String]>,
         layout: &BarLayout,
+        grid: (usize, usize),
     ) -> Vec<BarGesture> {
         let mut gestures = Vec::new();
         let mut visible = [false; ROWS * ROW_SLOTS];
@@ -83,9 +84,17 @@ impl SpellRow {
                 } else {
                     ((rect.bottom - 180) / 54).clamp(1, 12)
                 } as usize;
+                let compact = horizontal && grid.1 > 1;
+                let count = if compact { ROW_SLOTS } else { count };
+                let columns = if compact {
+                    grid.0.clamp(1, ROW_SLOTS)
+                } else {
+                    count
+                };
+                let height_rows = count.div_ceil(columns);
                 let offset = usize::from(row.offset).min(ROW_SLOTS - count);
                 let width = if horizontal {
-                    (rect.right - 180).max(62) / count as i32
+                    (rect.right - 180).max(62) / columns as i32
                 } else {
                     78
                 };
@@ -100,8 +109,12 @@ impl SpellRow {
                     let display = local.saturating_sub(offset) as i32;
                     let (x, y) = match row.dock {
                         BarDock::Bottom => (
-                            8 + display * width,
-                            (rect.bottom - 88 - bar as i32 * 56).max(0),
+                            8 + (display % columns as i32) * width,
+                            (rect.bottom
+                                - 88
+                                - bar as i32 * height_rows as i32 * 56
+                                - (height_rows as i32 - 1 - display / columns as i32) * 56)
+                                .max(0),
                         ),
                         BarDock::Left => (8 + bar as i32 * 80, 94 + display * 54),
                         BarDock::Right => (
