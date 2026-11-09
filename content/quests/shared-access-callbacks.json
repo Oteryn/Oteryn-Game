@@ -477,6 +477,59 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/bewitched/s1/entry",
+      "quest": "oteryn:quest.authored.bewitched",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32733,
+          "y": 31935,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 7272,
+        "native": {
+          "position": {
+            "x": 32733,
+            "y": 31935,
+            "floor": -12
+          },
+          "ordinal": 0,
+          "appearance": 7272
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/bewitched/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/bewitched/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50859&oldid=1190948",
+        "content/world/placements/region-z12-x127-y124.b3",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/deeplings-worldchange/s1/entry",
       "quest": "oteryn:quest.deeplings_worldchange",
       "trigger": "step_in",

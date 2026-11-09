@@ -28,6 +28,10 @@ east of that corner. Test arrival starts at (32734,31935,-12), also ground7272,
 and uses the native STEP West caller. The source tile footprint, house status and
 approach ground are checked against the retained B3 bytes, not an invented room.
 
-The resolver is initially prepared but inactive; native dispatch proof is required
-before reporting this route as PG-qualified. Daily re-entry, ingredients, brewing,
-attack and completion remain separate later-stage obligations.
+The first survey is active. Real native dispatch PostgreSQL case
+`m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew` passed
+in71.68814649s (0ignored): exact cauldron stack preserved; STEP West without
+a Premium provider; one credit across replay/revisit; zero later-stage track rows,
+zero whole-quest completions and zero global Bewitched event rows.
+Daily re-entry, ingredients, brewing, attack and completion remain separate
+later-stage obligations. This is a first-survey proof, not a whole-quest proof.

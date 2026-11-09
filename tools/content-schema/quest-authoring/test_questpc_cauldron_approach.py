@@ -20,6 +20,9 @@ def definition():
 
 
 class CauldronApproachTests(unittest.TestCase):
+    def test_personal_cauldron_survey_is_live(self):
+        self.assertEqual(sum(c['quest'] == QUEST for c in explore.callbacks(ROOT)), 1)
+
     def test_personal_survey_can_reach_the_retained_cauldron(self):
         binding = ((QUEST, 's1', REFERENCE, 'authored/bewitched'),)
         with mock.patch.object(explore, 'BINDINGS', binding):

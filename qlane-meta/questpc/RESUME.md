@@ -222,3 +222,7 @@ Native-anchor publication gates PASS:120authoringmodules1222tests,0failingmodule
 Bewitched s1cauldronresolver PREPARED INACTIVE. Exactchosenpersonal-dailyadaptation/objective/spoilerhash+actualhugecauldroncorner32732,31935,z12[7272,12023]required. Clearapproach32733,31935,-12ground7272,startEast32734,31935.2focusedtestsRED->GREEN0.588s;121modules1224authoringtests0failures,workspacealltargets8m35s/fmt/checksPASS;treepending. NoWorldeventflag/ingredient/combat/rewardcredit. NoBINDINGSactivationyet;nativecasepreparedin.lane/cauldron_entry.rs.36routes39stages53anchorsPG-provenunchanged.
 
 Bewitched preparation finalgates ALLGREEN:121modules1224tests,checks/tree/callbackcheck/equipment5795pin/dupmigrations/workspacealltargets8m35s/fmt. PublishinactivehelperthenactivateandprovePG;no routecountincreaseyet.
+
+Bewitched s1 nativePG GREEN71.68814649s:realSTEPWest,FACC/noPremiumprovider,once/replay/revisit,laterstagetracks0,wholecompletion0,globalbewitchedeventrows0.37routes40stages54anchorsPG-proven;9routes16stagesunwired. Authoring121modules1225testsGREEN;Clippy/workspace/checks/tree in progress. M01b PARTIAL.
+
+Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9routes16stagesunwired.121modules1225authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS. Strictquests+dispatchClippy5m11s andworkspacealltargets4m49sPASS. Additionaldispatchall-featureClippy running at owner-requested publication. First survey only;M01b PARTIAL.

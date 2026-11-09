@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b17/56wired,20anchors,13PG-proven. FrostGREEN61.803s;4newentries31Python/5Rust/strictClippy4m27sGREEN,nativePGbuilding.29routes/39stages remain;PARTIAL.",
+  "batch_state": "Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9routes16stagesunwired.121modules1225authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS. Strictquests+dispatchClippy5m11s andworkspacealltargets4m49sPASS. Additionaldispatchall-featureClippy running at owner-requested publication. First survey only;M01b PARTIAL.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1114,8 +1114,8 @@
     "world_pin_refresh": "PASS, unchanged b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e",
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
-  "m01b_latest_batch": "Deeplings PG GREEN64.396295735s. WIP FireEarth survey:strictClippy5m15s,6profile0.06s,115modules/1206authoringtests/checks/tree/fmt/pins PASS. OwnnativePG building;NOTqualified.34wiredroutes35stages,33PG-provenroutes34stages;M01b PARTIAL.",
-  "m01b_latest_slice": "HorseStation s1QUALIFIED nativePG70.018382489s;globalWorldHELDunchanged.36routes39stages53anchorsPG-proven;10routes17stagesunwired.381questunits/119modules1218authoringtests,workspace8m16s/Clippy/fmt/pinsPASS. M01bPARTIAL.",
+  "m01b_latest_batch": "Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9routes16stagesunwired.121modules1225authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS. Strictquests+dispatchClippy5m11s andworkspacealltargets4m49sPASS. Additionaldispatchall-featureClippy running at owner-requested publication. First survey only;M01b PARTIAL.",
+  "m01b_latest_slice": "Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9routes16stagesunwired.121modules1225authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS. Strictquests+dispatchClippy5m11s andworkspacealltargets4m49sPASS. Additionaldispatchall-featureClippy running at owner-requested publication. First survey only;M01b PARTIAL.",
   "native_anchor_generation": {
     "state": "SLICE_GREEN",
     "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
@@ -1126,10 +1126,12 @@
     "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
   },
   "bewitched_cauldron_survey": {
-    "state": "PREPARED_INACTIVE",
+    "state": "FIRST_SURVEY_NATIVE_PG_QUALIFIED",
     "scope": "Bewitched s1 only: exact authored personal-daily adaptation, first objective, pinned spoiler and retained huge cauldron corner required; global event and later stages are untouched.",
     "native_landmark": "32732,31935,z12 source stack[7272,12023];clear entry32733,31935,-12ground7272;startEast32734,31935,-12.",
-    "red_green": "2focusedtests RED(missing resolver/currentWorldowner)->GREEN0.588s;121authoringmodules1224tests0failingmodules;workspacealltargetsGREEN8m35s;fmt andauthoringchecksGREEN.",
-    "pending": "Prepared slice gates all GREEN:content-tree/equipment5795pin/dupmigrations/callbackcheck PASS. Callback is NOT live; native server PG case not yet run; no additional route qualification."
+    "red_green": "Liveactivation RED0vs1->GREEN3focusedtests1.275s;full121modules1225tests0failingmodules.",
+    "pending": "Dailyreentry,ingredients,brewing,combat,reward/completion remain separate later-stage obligations. Additionaldispatchall-featureClippy running atowner-requestedpublication;standardstrictClippy andworkspacealltargets alreadyPASS.",
+    "native_postgres": "m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew GREEN71.68814649s,0ignored;exactnativecauldron[7272,12023]preserved;realSTEPonce/replay/revisit,no laterstage/completion/globaleventcredit.",
+    "publication_gates": "PASS121modules1225authoringtests;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt;strictquests+dispatchalltargetsClippy5m11s;workspacealltargets4m49s."
   }
 }

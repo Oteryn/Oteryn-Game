@@ -6,6 +6,9 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 #[path = "m01b_explore/area_entries.rs"]
 mod area_entries;
 
+#[path = "m01b_explore/cauldron_entry.rs"]
+mod cauldron_entry;
+
 #[path = "m01b_explore/claim_entries.rs"]
 mod claim_entries;
 
@@ -375,6 +378,9 @@ pub(super) fn world(
     if name == "m01b/katana/s1/id4603" {
         return key_entries::world(native);
     }
+    if name == "m01b/bewitched/s1/entry" {
+        return cauldron_entry::world(native);
+    }
     if name == "m01b/horse-station-world-change/s1/entry" {
         return station_entry::world(native);
     }
@@ -610,6 +616,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key == "oteryn:quest-callback/m01b/bewitched/s1/entry" {
+        return cauldron_entry::exercise(owner, admitted, h).await;
+    }
     if callback.key == "oteryn:quest-callback/m01b/horse-station-world-change/s1/entry" {
         return station_entry::exercise(owner, admitted, h).await;
     }

@@ -43,9 +43,10 @@
       "Deeplings World Change",
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change",
-      "Horse Station World Change"
+      "Horse Station World Change",
+      "Bewitched"
     ],
-    "wired_explore_stages": 39,
+    "wired_explore_stages": 40,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -82,10 +83,11 @@
       "Deeplings World Change",
       "Fire from the Earth Mini World Change",
       "Fury Gates Mini World Change",
-      "Horse Station World Change"
+      "Horse Station World Change",
+      "Bewitched"
     ],
-    "wired_native_visit_anchors": 53,
-    "pg_proven_explore_stages": 39
+    "wired_native_visit_anchors": 54,
+    "pg_proven_explore_stages": 40
   },
   "validation": {
     "quest_unit_tests": "GREEN381passed,0failed,0ignored,185.02s withstationbinding",
@@ -259,7 +261,7 @@
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "34wiredroutes/35stages,33PG-proven routes/34stages,49anchors;12routes/21stages unwired. FireEarth nativePG pending. M01b PARTIAL.",
+  "continuation": "Bewitched s1 nativePG GREEN71.68814649s;37routes40stages54anchorsPG-proven;9routes16stagesunwired.121modules1225authoringtests/checks/tree/regeneration/pins/dupmigrations/fmt PASS. Strictquests+dispatchClippy5m11s andworkspacealltargets4m49sPASS. Additionaldispatchall-featureClippy running at owner-requested publication. First survey only;M01b PARTIAL.",
   "native_anchor_generation": {
     "state": "SLICE_GREEN",
     "behavior": "M01b callback generation rejects missing native regions/tiles, changed ground appearance and house-owned tiles before emitting any selector; retained B3 sectors are read without mutation.",
@@ -270,10 +272,12 @@
     "final_gates": "PASS120authoringmodules1222tests,0failingmodules;authoringchecks;content-tree;callbackregeneration/check;equipment5795pin;dupmigrations;workspacealltargets7m15s;fmt;diff-check. Python-only production change;no changed Rust crate or SQL."
   },
   "bewitched_cauldron_survey": {
-    "state": "PREPARED_INACTIVE",
+    "state": "FIRST_SURVEY_NATIVE_PG_QUALIFIED",
     "scope": "Bewitched s1 only: exact authored personal-daily adaptation, first objective, pinned spoiler and retained huge cauldron corner required; global event and later stages are untouched.",
     "native_landmark": "32732,31935,z12 source stack[7272,12023];clear entry32733,31935,-12ground7272;startEast32734,31935,-12.",
-    "red_green": "2focusedtests RED(missing resolver/currentWorldowner)->GREEN0.588s;121authoringmodules1224tests0failingmodules;workspacealltargetsGREEN8m35s;fmt andauthoringchecksGREEN.",
-    "pending": "Prepared slice gates all GREEN:content-tree/equipment5795pin/dupmigrations/callbackcheck PASS. Callback is NOT live; native server PG case not yet run; no additional route qualification."
+    "red_green": "Liveactivation RED0vs1->GREEN3focusedtests1.275s;full121modules1225tests0failingmodules.",
+    "pending": "Dailyreentry,ingredients,brewing,combat,reward/completion remain separate later-stage obligations. Additionaldispatchall-featureClippy running atowner-requestedpublication;standardstrictClippy andworkspacealltargets alreadyPASS.",
+    "native_postgres": "m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew GREEN71.68814649s,0ignored;exactnativecauldron[7272,12023]preserved;realSTEPonce/replay/revisit,no laterstage/completion/globaleventcredit.",
+    "publication_gates": "PASS121modules1225authoringtests;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt;strictquests+dispatchalltargetsClippy5m11s;workspacealltargets4m49s."
   }
 }
