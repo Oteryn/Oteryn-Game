@@ -31,7 +31,13 @@ impl Settings {
                         .map_or_else(String::new, |p| p.display().to_string())
                 )
             }
-            Err(error) => state.feedback = lfmt!("Screenshot failed: {error}", error = error),
+            Err(error) => {
+                state.cancel_screenshot();
+                state.feedback = lfmt!("Screenshot failed: {error}", error = error);
+                oteryn_client::win_mutex::show_error(&format!(
+                    "Screenshot was not saved: {error}. Press Print Screen to retry."
+                ));
+            }
             Ok(_) => {}
         }
     }
@@ -63,7 +69,12 @@ unsafe fn window_pixels(hwnd: HWND) -> io::Result<Pixels> {
             return Err(io::Error::last_os_error());
         }
         let (width, height) = (rect.right - rect.left, rect.bottom - rect.top);
-        if width <= 0 || height <= 0 || width > 4096 || height > 4096 {
+        if width <= 0
+            || height <= 0
+            || width > 16384
+            || height > 16384
+            || i64::from(width) * i64::from(height) > 32 * 1024 * 1024
+        {
             return Err(io::Error::other(tr!("Window is too large to capture")));
         }
         let dc = GetWindowDC(hwnd);

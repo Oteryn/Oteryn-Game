@@ -67,7 +67,6 @@ mod graphics;
 struct Application {
     applied_graphics: Option<oteryn_client::play::GraphicsPreferences>,
     frame_timing: frame_native::FrameTiming,
-    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -108,7 +107,6 @@ impl Application {
         Ok(Self {
             applied_graphics: None,
             frame_timing: frame_native::FrameTiming::default(),
-            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -166,7 +164,7 @@ impl Application {
         if let Some(renderer) = &mut self.renderer {
             renderer.cancel_capture();
         }
-        self.captures = Default::default();
+        self.settings.reset_screenshots();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {

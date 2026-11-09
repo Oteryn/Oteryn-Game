@@ -111,12 +111,13 @@ impl super::Application {
             let movement = play.link.item_movement_status();
             let custom = play.link.custom_hotkey_status();
             let status = lfmt!(
-                "{custom} — {movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
+                "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
                 play.view.hud_status(),
                 play.link.movement_feedback().unwrap_or(""),
                 audio = audio,
                 movement = movement
             );
+            let status = format!("{custom} — {status}");
             if let Some(hud) = &self.hud {
                 hud.update(
                     play.view
@@ -130,7 +131,11 @@ impl super::Application {
                 hud.arcs.update(play.view.hud_arc_layout());
                 let labels = play.link.spell_slot_labels();
                 for gesture in hud.spells.update(
-                    Some(&labels),
+                    play.view
+                        .preferences()
+                        .action_bar
+                        .visible
+                        .then_some(&labels),
                     &play.link.bar_layout(),
                     &play.link.spell_slot_tooltips(),
                 ) {

@@ -485,7 +485,7 @@
   "status": "DONE",
   "gap": "Natywna strona Screenshots zapisuje folder i zakres game-only/full render; Print Screen pobiera klatkę z renderera i zapisuje BMP bez nadpisywania istniejących plików.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller and rendered-frame save at :106; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller; apps/client/src/features/local-reference-preferences/screenshot_native.rs:12 + native GPU/full-window capture; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
  },
  {
   "id": "T071",
@@ -495,7 +495,7 @@
   "status": "DONE",
   "gap": "Trwałe przełączniki level/death/achievement i opcjonalny backlog 0–10 s; renderowane klatki są próbkowane raz na sekundę, ograniczone do 64 MiB i zapisywane przy rzeczywistym zdarzeniu lub ręcznym capture.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native backlog and event settings; apps/client/src/features/local-reference-preferences/capture_backlog.rs:53 + bounded sampling and :94 + capture writer; apps/client/src/windows_shell/capture.rs:50 + confirmed event observations and :121 + actual renderer readback caller; apps/client/src/screenshots_live_tests.rs:165 + screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_policy; apps/client/src/features/local-reference-preferences/capture_backlog.rs:126 + backlog_evicts_oldest_frames_before_exceeding_memory_budget"
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native backlog and event settings; apps/client/src/features/local-reference-preferences/capture_backlog.rs:53 + bounded sampling and :94 + capture writer; apps/client/src/features/local-reference-preferences/screenshot_backlog.rs:44 + unified confirmed-event and bounded-backlog runner; apps/client/src/features/local-reference-preferences/screenshot_native.rs:12 + actual renderer/full-window capture caller; apps/client/src/screenshots_live_tests.rs:165 + screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_policy; apps/client/src/features/local-reference-preferences/capture_backlog.rs:126 + backlog_evicts_oldest_frames_before_exceeding_memory_budget"
  },
  {
   "id": "T072",

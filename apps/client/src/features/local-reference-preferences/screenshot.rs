@@ -21,8 +21,9 @@ impl Pixels {
     pub fn new(width: u32, height: u32, rgba: Vec<u8>) -> io::Result<Self> {
         if width == 0
             || height == 0
-            || width > 4096
-            || height > 4096
+            || width > 16384
+            || height > 16384
+            || u64::from(width) * u64::from(height) > 32 * 1024 * 1024
             || rgba.len() != width as usize * height as usize * 4
         {
             return Err(io::Error::other(tr!("Invalid screenshot dimensions")));
@@ -35,8 +36,17 @@ impl Pixels {
     }
 
     pub fn save(&self, folder: &str) -> io::Result<PathBuf> {
-        let default_folder = std::env::var_os("LOCALAPPDATA").map(PathBuf::from).unwrap_or_else(std::env::temp_dir).join("Oteryn/screenshots");
-        let folder = if folder.is_empty() { default_folder.to_str().ok_or_else(|| io::Error::other("Invalid screenshot folder"))? } else { folder };
+        let default_folder = std::env::var_os("LOCALAPPDATA")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir)
+            .join("Oteryn/screenshots");
+        let folder = if folder.is_empty() {
+            default_folder
+                .to_str()
+                .ok_or_else(|| io::Error::other("Invalid screenshot folder"))?
+        } else {
+            folder
+        };
 
         if folder.trim().is_empty() {
             return Err(io::Error::other(tr!("Choose a screenshot folder")));

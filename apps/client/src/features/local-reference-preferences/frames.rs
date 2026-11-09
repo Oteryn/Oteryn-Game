@@ -100,6 +100,17 @@ impl crate::play::PlayLink {
     }
 }
 
+impl super::ReferencePreferences {
+    pub fn frame_interval(&self, focused: bool) -> std::time::Duration {
+        let fps = if focused {
+            self.foreground_fps
+        } else {
+            self.background_fps
+        };
+        std::time::Duration::from_nanos(1_000_000_000 / u64::from(fps.clamp(1, 500)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -163,12 +174,5 @@ mod tests {
         assert_eq!(settings.preferences.frames, prefs);
         std::fs::remove_file(path)?;
         Ok(())
-    }
-}
-
-impl super::ReferencePreferences {
-    pub fn frame_interval(&self, focused: bool) -> std::time::Duration {
-        let fps = if focused { self.foreground_fps } else { self.background_fps };
-        std::time::Duration::from_nanos(1_000_000_000 / u64::from(fps.clamp(1,500)))
     }
 }

@@ -71,7 +71,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let game = control(
             hwnd,
             "BUTTON",
-            "Game map only (otherwise the entire client render surface)",
+            "Game map only (otherwise the entire client window)",
             1803,
             [16, 90, 660, 28],
             BS_AUTOCHECKBOX as u32,
@@ -165,6 +165,8 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                 match text(backlog).parse::<u8>() {
                     Ok(seconds) => {
                         prefs.screenshots.backlog_seconds = seconds;
+                        prefs.screenshots =
+                            prefs.screenshots.reconciled(&state.preferences.screenshots);
                         if prefs.screenshots.valid() {
                             state.apply(prefs);
                         } else {
@@ -178,7 +180,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             }
             let snapshot = (
                 state.character_scope(),
-                state.preferences.screenshots.clone(),
+                state.preferences.screenshots.effective(),
             );
             if held.as_ref() != Some(&snapshot) {
                 SetWindowTextW(folder, wide(&snapshot.1.directory).as_ptr());

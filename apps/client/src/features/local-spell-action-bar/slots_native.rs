@@ -105,7 +105,10 @@ impl SpellRow {
                     ShowWindow(handle, if label.is_some() { SW_SHOWNA } else { SW_HIDE });
                     let display = local.saturating_sub(offset) as i32;
                     let (x, y) = match row.dock {
-                        BarDock::Bottom => (8 + display * width, (rect.bottom - 88 - bar as i32 * 56).max(0)),
+                        BarDock::Bottom => (
+                            8 + display * width,
+                            (rect.bottom - 88 - bar as i32 * 56).max(0),
+                        ),
                         BarDock::Left => (8 + bar as i32 * 80, 94 + display * 54),
                         BarDock::Right => (
                             (rect.right - 260 - bar as i32 * 80).max(0),

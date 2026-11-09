@@ -128,3 +128,40 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn rebound_spell_releases_after_modifier_and_preference_changes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceInput, ReferencePreferences};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut preferences = ReferencePreferences::default();
+    preferences.rebind("local-spell-action-bar-spell-1", "ALT+H")?;
+    let code = KeyCode::new(11)?;
+    let key = |state, modifiers| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers,
+        repeat: false,
+    };
+    let mut input = PreferenceInput::default();
+    let mut spells = crate::spell::SpellHotkeys::new()?;
+    let press = input.route(
+        &preferences,
+        &[key(ButtonState::Pressed, Modifiers::one(Modifier::Alt))],
+    )?;
+    assert_eq!(spells.route(&press).len(), 1);
+    preferences.rebind("local-spell-action-bar-spell-1", "ALT+J")?;
+    let release = input.route(&preferences, &[key(ButtonState::Released, Modifiers::NONE)])?;
+    spells.route(&release);
+    let press = input.route(
+        &preferences,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::new(13)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Alt),
+            repeat: false,
+        }],
+    )?;
+    assert_eq!(spells.route(&press).len(), 1);
+    Ok(())
+}

@@ -6,7 +6,6 @@ mod resource_checks;
 use controls::Controls;
 #[path = "custom_editor.rs"]
 mod custom_editor;
-
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
         let hwnd = localization_window::create();
@@ -377,43 +376,14 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 navigation_controls::refresh_bindings(list, &bindings, selected, &state);
-                SetWindowTextW(
-                    scale,
-                    wide(&state.preferences.ui_scale.to_string()).as_ptr(),
-                );
-                SetWindowTextW(
-                    volume,
-                    wide(&state.preferences.audio.master_volume.to_string()).as_ptr(),
-                );
-                SendMessageW(
-                    mute,
-                    BM_SETCHECK,
-                    usize::from(state.preferences.audio.muted),
-                    0,
-                );
+                refresh_scale_volume(scale, volume, &state.preferences);
+                set_checked(mute, state.preferences.audio.muted);
                 refresh_hud_checks(&hud_checks, &state.preferences);
-                SendMessageW(
-                    mouse_preset,
-                    CB_SETCURSEL,
-                    usize::from(state.preferences.swap_mouse_buttons),
-                    0,
-                );
-                SetWindowTextW(
-                    delay,
-                    wide(&state.preferences.keyboard_delay_ms.to_string()).as_ptr(),
-                );
-                SetWindowTextW(
-                    rotation,
-                    wide(&state.preferences.rotation_modifier).as_ptr(),
-                );
+                refresh_input_controls(mouse_preset, delay, rotation, &state.preferences);
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            controls::update_feedback(feedback, &state);
-            SetWindowTextW(
-                feedback,
-                wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
-            );
+            controls::update_feedback(feedback, &state, navigation_controls::page_help(state.page));
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }

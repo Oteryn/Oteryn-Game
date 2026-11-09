@@ -13,7 +13,8 @@ impl SettingsState {
             return;
         }
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
-        if mailbox.local_preferences.action_bar.three_rows != self.preferences.action_bar.three_rows {
+        if mailbox.local_preferences.action_bar.three_rows != self.preferences.action_bar.three_rows
+        {
             for (index, row) in mailbox.bar_actions.layout.rows.iter_mut().enumerate() {
                 row.enabled = index == 0 || self.preferences.action_bar.three_rows;
             }
@@ -34,13 +35,19 @@ impl SettingsState {
     }
 
     pub fn refresh_custom_choices(&mut self, link: &crate::play::PlayLink) {
-        if self.open && self.page == SettingsPage::CustomHotkeys
-            && self.custom_choices_refreshed.is_none_or(|time| time.elapsed() >= std::time::Duration::from_millis(250)) {
+        if self.open
+            && self.page == SettingsPage::CustomHotkeys
+            && self
+                .custom_choices_refreshed
+                .is_none_or(|time| time.elapsed() >= std::time::Duration::from_millis(250))
+        {
             self.custom_choices = link.custom_hotkey_choices();
             self.custom_choices_refreshed = Some(std::time::Instant::now());
         }
     }
-    pub fn take_custom_actions(&mut self) -> Vec<super::super::CustomAction> { self.input.take_custom_actions() }
+    pub fn take_custom_actions(&mut self) -> Vec<super::super::CustomAction> {
+        self.input.take_custom_actions()
+    }
 
     pub fn queue_window(&mut self, id: &str) -> bool {
         let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
@@ -246,8 +253,7 @@ impl SettingsState {
         }
     }
 
-    pub fn apply(&mut self, mut preferences: ReferencePreferences) {
-        preferences.screenshots.harmonize(&self.preferences.screenshots);
+    pub fn apply(&mut self, preferences: ReferencePreferences) {
         if let Err(error) = preferences.validate() {
             self.feedback = error.to_string();
             return;
@@ -273,7 +279,9 @@ impl SettingsState {
         if self.preferences.skills_layout != preferences.skills_layout {
             self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
         }
-        if self.preferences.battle_lists != preferences.battle_lists || self.preferences.active_battle_list != preferences.active_battle_list {
+        if self.preferences.battle_lists != preferences.battle_lists
+            || self.preferences.active_battle_list != preferences.active_battle_list
+        {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if !preferences.chat_context_hotkeys {

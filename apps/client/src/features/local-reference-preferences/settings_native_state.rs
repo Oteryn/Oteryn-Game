@@ -213,10 +213,16 @@ impl Settings {
             .borrow_mut()
             .refresh(self.parent, view, enabled, delay, font);
     }
+    pub(in super::super) fn request_screenshot(&self) {
+        lock(&self.shared).request_screenshot();
+    }
+    pub(in super::super) fn reset_screenshots(&self) {
+        lock(&self.shared).reset_screenshot_session();
+    }
     pub(in super::super) fn screenshot_preferences(
         &self,
     ) -> oteryn_client::play::ScreenshotPreferences {
-        lock(&self.shared).preferences.screenshots.clone()
+        lock(&self.shared).preferences.screenshots.effective()
     }
     pub(in super::super) fn set_screenshot_preferences(
         &self,
@@ -224,6 +230,8 @@ impl Settings {
     ) {
         let mut state = lock(&self.shared);
         let mut prefs = state.preferences.clone();
+        let mut preferences = preferences;
+        preferences = preferences.reconciled(&prefs.screenshots);
         prefs.screenshots = preferences;
         state.apply(prefs);
     }

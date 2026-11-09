@@ -101,6 +101,9 @@ impl ScreenshotControls {
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
+            let mut effective = preferences.clone();
+            effective.screenshots = preferences.screenshots.effective();
+            let preferences = &effective;
             SetWindowTextW(
                 self.0[6],
                 wide(&preferences.screenshots.backlog_frames.to_string()).as_ptr(),
@@ -141,6 +144,9 @@ impl ScreenshotControls {
             preferences.screenshots.on_skill = SendMessageW(self.0[9], BM_GETCHECK, 0, 0) == 1;
             preferences.screenshots.folder = text(self.0[1]);
             preferences.screenshots.game_only = SendMessageW(self.0[2], BM_GETCHECK, 0, 0) == 1;
+            preferences.screenshots = preferences
+                .screenshots
+                .reconciled(&state.preferences.screenshots);
             state.apply(preferences);
             if action == 251 {
                 state.request_screenshot();

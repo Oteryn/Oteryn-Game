@@ -22,14 +22,37 @@ pub struct ScreenshotPreferences {
     pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
+    pub fn reconciled(mut self, previous: &Self) -> Self {
+        self.harmonize(previous);
+        self
+    }
+    pub fn effective(&self) -> Self {
+        let mut result = self.clone();
+        if !result.directory.is_empty() {
+            result.folder.clone_from(&result.directory);
+        } else {
+            result.directory.clone_from(&result.folder);
+        }
+        if result.backlog_frames == 0 {
+            result.backlog_frames = result.backlog_seconds;
+        }
+        result
+    }
     pub(super) fn harmonize(&mut self, previous: &Self) {
-        if self.directory != previous.directory { self.folder.clone_from(&self.directory); }
-        else if self.folder != previous.folder { self.directory.clone_from(&self.folder); }
-        if self.backlog_seconds != previous.backlog_seconds { self.backlog_frames = self.backlog_seconds; }
-        else if self.backlog_frames != previous.backlog_frames { self.backlog_seconds = self.backlog_frames; }
+        if self.directory != previous.directory {
+            self.folder.clone_from(&self.directory);
+        } else if self.folder != previous.folder {
+            self.directory.clone_from(&self.folder);
+        }
+        if self.backlog_seconds != previous.backlog_seconds {
+            self.backlog_frames = 0;
+        } else if self.backlog_frames != previous.backlog_frames {
+            self.backlog_seconds = 0;
+        }
     }
     pub fn valid(&self) -> bool {
-        self.backlog_seconds <= 10 && self.backlog_frames <= 10
+        self.backlog_seconds <= 10
+            && self.backlog_frames <= 10
             && self.directory.len() <= 1024
             && !self.directory.chars().any(char::is_control)
             && self.folder.len() <= 1024
@@ -53,10 +76,11 @@ impl ScreenshotPreferences {
                 "Choose an absolute screenshot folder",
             ));
         }
-        let directory = if self.directory.is_empty() {
+        let effective = self.effective();
+        let directory = if effective.directory.is_empty() {
             fallback
         } else {
-            Path::new(&self.directory)
+            Path::new(&effective.directory)
         };
         std::fs::create_dir_all(directory)?;
         static NEXT: AtomicU64 = AtomicU64::new(0);

@@ -42,31 +42,3 @@ pub(super) fn read_text(hwnd: HWND) -> String {
         String::from_utf16_lossy(&buffer[..read as usize])
     }
 }
-
-/// Table handles share one initialization for history, statistics and profile rows.
-pub(super) fn tables(hwnd: HWND) -> [HWND; 4] {
-    unsafe {
-        let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
-        let history = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            402,
-            [10, 380, 690, 155],
-            WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP | LBS_USETABSTOPS as u32,
-        );
-        let detail = control(
-            hwnd,
-            "EDIT",
-            "",
-            403,
-            [10, 545, 690, 50],
-            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
-        );
-        let tabs: [i32; 2] = [100, 180];
-        SendMessageW(history, LB_SETTABSTOPS, tabs.len(), tabs.as_ptr() as isize);
-        SendMessageW(history, LB_SETHORIZONTALEXTENT, 1800, 0);
-        let status_label = control(hwnd, "STATIC", "", 472, [10, 192, 690, 34], 0);
-        [heading, history, detail, status_label]
-    }
-}

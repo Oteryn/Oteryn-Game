@@ -56,3 +56,24 @@ pub(super) unsafe fn refresh_scale_volume(
         );
     }
 }
+
+pub(super) unsafe fn refresh_input_controls(
+    mouse: HWND,
+    delay: HWND,
+    rotation: HWND,
+    preferences: &oteryn_client::play::ReferencePreferences,
+) {
+    unsafe {
+        SendMessageW(
+            mouse,
+            CB_SETCURSEL,
+            usize::from(preferences.swap_mouse_buttons),
+            0,
+        );
+        SetWindowTextW(
+            delay,
+            wide(&preferences.keyboard_delay_ms.to_string()).as_ptr(),
+        );
+        SetWindowTextW(rotation, wide(&preferences.rotation_modifier).as_ptr());
+    }
+}

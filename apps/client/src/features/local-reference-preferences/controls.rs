@@ -109,7 +109,7 @@ pub(super) struct Controls {
 #[path = "dialog_construction.rs"]
 mod dialog_construction;
 
-pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState) {
+pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState, page_help: &str) {
     let hint = if state.page == SettingsPage::CustomHotkeys {
         super::super::navigation_controls::page_help(state.page)
     } else {
@@ -118,7 +118,7 @@ pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState) {
     unsafe {
         SetWindowTextW(
             handle,
-            wide(&format!("{hint}\r\n{}", state.feedback)).as_ptr(),
+            wide(&format!("{page_help}\r\n{hint}\r\n{}", state.feedback)).as_ptr(),
         );
     }
 }

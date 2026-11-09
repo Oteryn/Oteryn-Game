@@ -171,6 +171,14 @@ fn screenshot_backlog_and_death_trigger_follow_server_vitals()
             .process_screenshots(now + Duration::from_millis(2600), Some(&link), &mut source)?
             .is_empty()
     );
+    // A death followed by a respawn in one mailbox batch still produces one capture.
+    outbox.push(vec![vitals(100), vitals(0), vitals(100)]);
+    assert_eq!(
+        state
+            .process_screenshots(now + Duration::from_millis(2700), Some(&link), &mut source)?
+            .len(),
+        1
+    );
     state.process_screenshots(now + Duration::from_secs(3), None, &mut source)?;
     state.request_screenshot();
     assert_eq!(
@@ -181,4 +189,33 @@ fn screenshot_backlog_and_death_trigger_follow_server_vitals()
     );
     std::fs::remove_dir_all(folder)?;
     Ok(())
+}
+
+#[test]
+fn screenshot_editors_reconcile_destinations_and_independent_backlog_modes() {
+    use crate::play::ScreenshotPreferences;
+    let original = ScreenshotPreferences {
+        directory: std::env::temp_dir().to_string_lossy().into_owned(),
+        backlog_seconds: 3,
+        ..Default::default()
+    };
+    let effective = original.effective();
+    assert_eq!(effective.folder, original.directory);
+    assert_eq!(effective.backlog_frames, 3);
+    let mut edited = effective;
+    edited.folder = std::env::temp_dir()
+        .join("captures")
+        .to_string_lossy()
+        .into_owned();
+    edited.backlog_frames = 2;
+    let edited = edited.reconciled(&original.effective());
+    assert_eq!(edited.directory, edited.folder);
+    assert_eq!(edited.backlog_seconds, 0);
+    assert_eq!(edited.effective().backlog_frames, 2);
+    let mut disabled = edited.effective();
+    disabled.backlog_frames = 0;
+    let disabled = disabled.reconciled(&edited.effective());
+    assert_eq!(disabled.effective().backlog_frames, 0);
+    assert_eq!(disabled.backlog_seconds, 0);
+    assert_eq!(original.backlog_seconds, 3);
 }
