@@ -1408,3 +1408,174 @@ async fn exercise_direct_rune_hit(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!(phase, 5);
     Ok(())
 }
+
+#[test]
+fn engenc_child_of_destiny_training_hits_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create(admin, "engenc_child_training", true).await?;
+                    let result = exercise_child_training(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_CHILD_TRAINING_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC child training worker panicked")?
+        .map_err(Into::into)
+}
+
+async fn exercise_child_training(h: &fixture::Harness) -> fixture::TestResult {
+    use durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use durability::quest_state::native_hits::NativeQuestHit;
+    const CHILD: &str = "oteryn:quest.authored.child_of_destiny_quest";
+    const CHILD_PHASE: &str = "oteryn:quest-progress/engenc/child/phase";
+    let bytes = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/quests/authored-bindings/engenc-child-of-destiny.json"),
+    )?;
+    let mut bindings = Bindings::parse(&bytes)?;
+    bindings.verify_embedded_recipe_evidence()?;
+    // Focused fixture begins at the training phase; production binding starts at zero.
+    bindings.quests[0]
+        .tracks
+        .iter_mut()
+        .find(|track| track.key == CHILD_PHASE)
+        .ok_or("child phase")?
+        .initial = 2;
+    let catalogue =
+        Arc::new(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("base")?)?);
+    let hash = catalogue.definition_hash(CHILD).ok_or("child definition")?;
+    let fence = fixture::fence(1)?;
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let mut slot = sequencer.acquire(fence.character_id).await;
+    let (mut runtime, player, target, _) = native_hit_runtime(1)?;
+    for (index, item, spell) in [
+        (0_u64, "oteryn:item.tibia.i17110", None),
+        (
+            1_u64,
+            "oteryn:item.tibia.i17512",
+            Some("candidate:spell/rune/lightest_magic_missile_rune"),
+        ),
+    ] {
+        let command = foundation::CommandRef::new(
+            fence.game_session_id,
+            foundation::CommandId::new(index + 1).map_err(fixture::debug)?,
+        );
+        let witness = {
+            let mut owner = runtime.borrow_exact_actor_commit();
+            owner
+                .commit_damage_for_bound_attacker(
+                    target,
+                    player,
+                    command,
+                    0,
+                    foundation::OwnerDamageCommand {
+                        target: b"engenc:training",
+                        occurrence: &[],
+                        binding: b"engenc:child-training",
+                        damage: 5,
+                    },
+                )
+                .map_err(fixture::debug)?;
+            owner
+                .committed_hit_for_bound_attacker(target, player, command, 0)
+                .map_err(fixture::debug)?
+                .ok_or("successful native hit")?
+        };
+        let wrong_source = NativeQuestHit::from_committed(
+            format!(
+                "oteryn:quest-transition/native-hits/engenc-child-s{}",
+                index + 3
+            ),
+            "oteryn:creature.party_skeleton".into(),
+            "oteryn:item.tibia.i2382".into(),
+            spell.map(str::to_owned),
+            index + 1,
+            hash,
+            witness,
+        );
+        assert!(
+            slot.commit_native_quest_hit(
+                &h.root,
+                &authority,
+                &h.node,
+                fence,
+                &wrong_source,
+                Arc::clone(&catalogue)
+            )
+            .await
+            .is_err()
+        );
+        let hit = NativeQuestHit::from_committed(
+            format!(
+                "oteryn:quest-transition/native-hits/engenc-child-s{}",
+                index + 3
+            ),
+            "oteryn:creature.party_skeleton".into(),
+            item.into(),
+            spell.map(str::to_owned),
+            index + 1,
+            hash,
+            witness,
+        );
+        let committed = slot
+            .commit_native_quest_hit(
+                &h.root,
+                &authority,
+                &h.node,
+                fence,
+                &hit,
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(fixture::debug)?;
+        assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+        let replay = slot
+            .commit_native_quest_hit(
+                &h.root,
+                &authority,
+                &h.node,
+                fence,
+                &hit,
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(fixture::debug)?;
+        assert!(matches!(
+            replay,
+            QuestTransitionOutcome::AlreadyCommitted(_)
+        ));
+        let phase: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(CHILD_PHASE)
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(phase, i64::try_from(index)? + 3);
+    }
+    assert_eq!(h.root_revision().await?, "3");
+    let counts: Vec<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key IN ('oteryn:quest-progress/engenc/child/spear','oteryn:quest-progress/engenc/child/rune') ORDER BY track_key")
+        .bind(CHILD).fetch_all(&h.pool).await?;
+    assert_eq!(counts, [1, 1]);
+    Ok(())
+}

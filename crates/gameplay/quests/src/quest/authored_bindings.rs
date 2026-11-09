@@ -455,3 +455,6 @@ impl Trigger {
 
 #[cfg(test)]
 mod hit_tests;
+
+#[cfg(test)]
+mod child_of_destiny_tests;
