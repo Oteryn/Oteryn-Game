@@ -767,7 +767,7 @@ pub fn destination(key: &str, actor: Position) -> Option<Position> {
     Some(target)
 }
 pub fn callbacks() -> Vec<Callback> {
-    GATES.iter().enumerate().map(|(index,gate)|Callback { admission: None,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+    GATES.iter().enumerate().map(|(index,gate)|Callback { track_initials: Default::default(), admission: None,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
         key:gate_key(index),quest:super::shared_world_progress::HIVE_QUEST.into(),trigger:Trigger::Use,
         selector:Selector {native: None,position:Some(gate.position),unique:None,action:None,appearance:Some(gate.appearance)},
         lever:None,reversible:false,passages:vec![],teleport:Some(gate.position),storage:vec![],minimum_level:None,

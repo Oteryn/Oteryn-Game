@@ -71,6 +71,15 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    # Reuse the reviewed M03 source generator from qmech 856a420d6. The
+    # existing authored time-machine bindings retain their separate owner.
+    import qm03_world_admission
+    for entrance in qm03_world_admission.callbacks(ROOT):
+        if entrance['quest'] == 'oteryn:quest.the_pits_of_inferno_quest':
+            # The chosen counter is declared 0..1, not the legacy storage -1.
+            entrance['storage'][0]['minimum'] = 0
+            entrance['track_initials'] = {entrance['storage'][0]['track']: 0}
+            rows.append(entrance)
     import questpc_explore_bindings
     rows.extend(questpc_explore_bindings.callbacks(ROOT))
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))

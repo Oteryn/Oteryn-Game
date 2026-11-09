@@ -417,6 +417,7 @@ fn scenario_in_world(
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
+                track_initials: Default::default(),
                 admission: None,
                 world_change: None,
                 actor_kind: Default::default(),

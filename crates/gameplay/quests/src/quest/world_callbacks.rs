@@ -4,7 +4,7 @@ use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Static quest batches and the code-built source callbacks share this bound.
@@ -30,6 +30,9 @@ pub enum Trigger {
 #[cfg(test)]
 mod admission_tests;
 mod clock;
+mod counter_initials;
+#[cfg(test)]
+mod counter_initials_tests;
 mod counterparts;
 mod effects;
 mod ground_stack;
@@ -208,6 +211,9 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "CallbackEffectSet::is_empty")]
     pub effects: CallbackEffectSet,
     pub storage: Vec<Storage>,
+    /// Explicit defaults for newly declared, writable progress tracks. Legacy callbacks omit this.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub track_initials: BTreeMap<String, i64>,
     /// Evaluated with SET_NOW against the fenced writer transaction clock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<super::reward_callbacks::StateOperation>,
@@ -503,6 +509,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.success_message.is_some()
                 })
             })
+            || !counter_initials::valid(callback)
             || callback.storage.len() > MAX_EFFECTS
             || callback
                 .minimum_level
@@ -632,6 +639,7 @@ fn extend_callbacks(
                 storage.set.max(storage.maximum)
             };
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
+                counter_initials::check_existing(callback, track)?;
                 if callback.native_rule.is_none() && !storage.preserve {
                     track.max = track.max.max(maximum);
                 }
@@ -642,7 +650,11 @@ fn extend_callbacks(
                         callback.key, storage.track
                     ));
                 }
-                let initial = imported_explore::initial(callback, storage);
+                let initial = callback
+                    .track_initials
+                    .get(&storage.track)
+                    .copied()
+                    .unwrap_or_else(|| imported_explore::initial(callback, storage));
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),

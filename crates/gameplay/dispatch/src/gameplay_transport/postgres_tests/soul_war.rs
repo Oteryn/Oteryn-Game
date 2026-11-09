@@ -670,6 +670,7 @@ fn scenario() -> TestResult {
         };
         let world = super::quest_world_callbacks::world(
             &Callback {
+                track_initials: Default::default(),
                 admission: None,
                 world_change: None,
                 actor_kind: Default::default(),
