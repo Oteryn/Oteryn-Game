@@ -191,7 +191,7 @@
     "duplicate_migrations": "PASS"
   },
   "minzy_contact_slice": {
-    "state": "GREEN_FOCUSED_BROAD_CHECKS_RUNNING",
+    "state": "GREEN_LITERAL_API_LIVE_PG_RECHECK_PENDING",
     "scope": "Published source-informed basic contact; favour exchanges and source-accurate off-event presence remain unqualified",
     "source_cell": [
       32743,
@@ -213,14 +213,33 @@
       "native_regeneration": "PASS",
       "world_pin_refresh": "PASS",
       "content_tree": "PASS",
-      "duplicate_migrations": "PASS"
+      "duplicate_migrations": "PASS",
+      "quest_authoring_checks": "PASS exit 0",
+      "quest_authoring_unit_modules": 114,
+      "quest_authoring_unit_exit": 0,
+      "workspace_all_targets": "PASS 15m30s"
     },
     "pending": [
-      "quest-authoring checks completion",
-      "114-module quest-authoring unit runner completion",
-      "workspace all-target compile completion",
-      "live basic-contact PG story"
+      "live basic-contact PG story rerun",
+      "dialogue engine workspace check"
     ],
-    "migrations": []
+    "migrations": [],
+    "dialogue_admission": {
+      "source": "crates/gameplay/npc/src/npc_talk/literal_contacts.rs",
+      "scope": [
+        "name",
+        "job",
+        "story"
+      ],
+      "red_unit": "Minzy literal contact is not admitted",
+      "red_pg": "name returned [] instead of I am known as Minzy.",
+      "red_pg_seconds": 117.09,
+      "green_cases": 3,
+      "green_seconds": 52.11,
+      "clippy": "PASS npc all-targets -D warnings",
+      "fmt": "PASS",
+      "pin_check": "PASS",
+      "policy_revision_bound": true
+    }
   }
 }
