@@ -45,3 +45,12 @@ impl PlayLink {
         lock(&self.mailbox).vitals
     }
 }
+
+impl Outbox {
+    pub(in crate::play) fn hotkey_own_actor(
+        &self,
+        actor: Option<oteryn_session::WorldSpatialEntity>,
+    ) {
+        lock(&self.0).bar_actions.own_actor = actor;
+    }
+}

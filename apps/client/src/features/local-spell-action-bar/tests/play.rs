@@ -241,3 +241,85 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
     );
     Ok(())
 }
+
+#[test]
+fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_spell_action_bar::view::{BarAction, PassiveAbility};
+    use std::num::NonZeroU32;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256]);
+    assert!(link.assign_bar_action(
+        10,
+        BarAction::Equip {
+            definition: NonZeroU32::new(256).ok_or("item")?
+        }
+    ));
+    crate::play::feature_local_spell_action_bar::input::submit(
+        &mut crate::play::mailbox::lock(&link.mailbox),
+        &link.commands,
+        11,
+        &[],
+    );
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("equip command".into());
+    };
+    assert_eq!(
+        (command.capability, command.command_type, command.payload),
+        (179, 348, vec![0, 0, 1, 0])
+    );
+    assert!(link.assign_bar_action(
+        9,
+        BarAction::Text {
+            text: "Hello travellers".into()
+        }
+    ));
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.chat.selected = true;
+        mailbox.chat.text = "Draft stays here".into();
+    }
+    link.cast_spell_slot(NonZeroU32::new(10).ok_or("slot")?);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ChatPublic(oteryn_client_runtime::chat::ChatIntent::Say { text, .. }) if text=="Hello travellers")
+    );
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.text,
+        "Draft stays here"
+    );
+    assert!(link.assign_bar_action(
+        8,
+        BarAction::Passive {
+            ability: PassiveAbility::BattleInstinct
+        }
+    ));
+    link.cast_spell_slot(NonZeroU32::new(9).ok_or("slot")?);
+    assert!(
+        commands.try_recv().is_err(),
+        "passive assignments must never cast"
+    );
+    let path = std::env::temp_dir().join(format!("mixed-bars-{}.json", std::process::id()));
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.sync_bar_actions(&link);
+    let saved = crate::play::SettingsState::new(Some(path.clone()));
+    assert_eq!(
+        saved.preferences.bar_actions,
+        settings.preferences.bar_actions
+    );
+    assert!(!link.assign_bar_action(
+        36,
+        BarAction::Text {
+            text: "out of bounds".into()
+        }
+    ));
+    assert!(!link.assign_bar_action(0, BarAction::Text { text: "\0".into() }));
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[path = "layout.rs"]
+mod layout;
+
+#[path = "hotkeys.rs"]
+mod hotkeys;

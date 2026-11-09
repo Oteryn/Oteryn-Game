@@ -1,6 +1,6 @@
 //! Local spell row; server cast indices are never display row numbers.
 use std::num::NonZeroU32;
-pub const ACTION_BAR_SLOTS: usize = 12;
+pub const ACTION_BAR_SLOTS: usize = 36;
 #[derive(Debug, Clone)]
 pub struct ActionBar {
     slots: [Option<NonZeroU32>; ACTION_BAR_SLOTS],
@@ -36,6 +36,13 @@ impl ActionBar {
             return false;
         };
         *value = spell;
+        true
+    }
+    pub fn swap(&mut self, from: usize, to: usize) -> bool {
+        if from >= self.slots.len() || to >= self.slots.len() {
+            return false;
+        }
+        self.slots.swap(from, to);
         true
     }
     #[must_use]
