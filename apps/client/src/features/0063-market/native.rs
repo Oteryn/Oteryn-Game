@@ -174,7 +174,7 @@ fn run(
         control(hwnd, "BUTTON", "Wares", 12, [330, 415, 150, 28], WS_TABSTOP);
         let status = control(hwnd, "STATIC", "", 9, [10, 455, 680, 110], 0);
         control(hwnd, "BUTTON", "Side: all / buy / sell", 13, [490, 415, 190, 28], WS_TABSTOP);
-        let mut displayed_rows = Vec::new();
+        let mut displayed_rows: Vec<usize> = Vec::new();
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
