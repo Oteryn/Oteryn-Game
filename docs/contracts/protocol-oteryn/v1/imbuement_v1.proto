@@ -12,12 +12,12 @@ message ImbuementRequestV1 {
 }
 message AppliedImbuementV1 {
   uint32 slot = 1; // < slot_count, ascending
-  uint32 family = 2; // 1..20
+  uint32 family = 2; // 1..26; families >20 require IMBUEMENT_SCROLL_CATALOGUE_V1
   uint32 tier = 3; // 1 basic, 2 intricate, 3 powerful
   uint32 remaining_ms = 4; // <= 72000000
 }
 message ImbuementOfferV1 {
-  uint32 family = 1; // 1..20, offers ascending by (family, tier)
+  uint32 family = 1; // 1..26; families >20 require IMBUEMENT_SCROLL_CATALOGUE_V1, offers ascending by (family, tier)
   uint32 tier = 2;
   uint32 gold = 3;
   bool requires_premium = 4;
