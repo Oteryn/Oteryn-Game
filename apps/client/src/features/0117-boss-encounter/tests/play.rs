@@ -171,3 +171,6 @@ fn cooldown_shortcut_opens_only_the_tracker_and_queries_real_command() -> Result
 
 #[path = "catalogue.rs"]
 mod catalogue;
+
+#[path = "slots.rs"]
+mod slots;

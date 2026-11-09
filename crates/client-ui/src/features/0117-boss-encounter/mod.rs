@@ -30,3 +30,7 @@ pub use catalogue_view::catalogue_cards;
 #[cfg(test)]
 #[path = "tests/catalogue.rs"]
 mod catalogue_tests;
+
+#[path = "input/slots.rs"]
+mod slots;
+pub use slots::{slot_candidates, slot_text};

@@ -55,6 +55,7 @@ fn boss_slot_selector_uses_server_unlocks_and_preserves_confirmed_bonus() -> Res
         ..Default::default()
     };
     let reply = BossSlotReply {
+        details: None,
         status: 0,
         unlocked: 2,
         bonus: 25,

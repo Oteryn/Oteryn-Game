@@ -12,6 +12,9 @@ impl Mailbox {
         self.boss_encounter.pending_catalogue = None;
         self.boss_encounter.catalogue_query = None;
         self.boss_encounter.catalogue = None;
+        self.boss_encounter.boss_names.clear();
+        self.boss_encounter.slots = None;
+        self.boss_encounter.pending_kind = 0;
         self.chat_public.pending = Default::default();
         self.daily_reward.pending = Default::default();
         self.containers.pending = Default::default();

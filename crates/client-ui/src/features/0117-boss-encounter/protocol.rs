@@ -16,6 +16,9 @@ pub enum Intent {
     HazardSelect,
     HazardLower,
     HazardRaise,
+    SlotsDetailed,
+    SlotEquipSelected,
+    SlotRemoveSelected,
     SlotsQuery,
     SlotEquip,
     SlotRemove,
@@ -29,6 +32,28 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
     }
     if panel.pending {
         return None;
+    }
+    if matches!(
+        intent,
+        Intent::SlotsDetailed | Intent::SlotEquipSelected | Intent::SlotRemoveSelected
+    ) {
+        let request = match super::slots::request(panel, intent) {
+            Ok(r) => r,
+            Err(message) => {
+                panel.feedback = Some(message);
+                return None;
+            }
+        };
+        let payload = request.encode()?;
+        panel.pending = true;
+        panel.pending_kind = boss_encounter::bosstiary_slots::COMMAND_TYPE_BOSSTIARY_SLOTS;
+        panel.pending_catalogue = None;
+        panel.feedback = None;
+        return Some(FeatureCommand {
+            capability: 117,
+            kind: panel.pending_kind,
+            payload,
+        });
     }
     if matches!(intent, Intent::Catalogue | Intent::CatalogueNext) {
         let query = if intent == Intent::CatalogueNext {
@@ -133,6 +158,14 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 .entries
                 .first()
                 .map_or_else(String::new, |e| e.key.clone());
+        }
+        for entry in &page.entries {
+            if panel.boss_names.len() >= 1024 && !panel.boss_names.contains_key(&entry.key) {
+                panel.boss_names.clear();
+            }
+            panel
+                .boss_names
+                .insert(entry.key.clone(), entry.name.clone());
         }
         panel.catalogue = Some(page);
         panel.catalogue_query = Some(query);

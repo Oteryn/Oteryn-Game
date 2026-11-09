@@ -7,6 +7,15 @@ use oteryn_client_ui::boss_encounter::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn boss_slot_select_boss(&self, previous: bool) {
+        lock(&self.mailbox)
+            .boss_encounter
+            .select_slot_boss(previous);
+    }
+    pub fn boss_slot_select_slot(&self) {
+        lock(&self.mailbox).boss_encounter.select_slot();
+    }
+
     pub fn boss_encounter_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).boss_encounter, field, value);
     }
@@ -19,7 +28,9 @@ impl PlayLink {
             #[cfg(windows)]
             super::view::cooldown_window(self);
             #[cfg(not(windows))]
-            { lock(&self.mailbox).boss_encounter.cooldowns_open = true; }
+            {
+                lock(&self.mailbox).boss_encounter.cooldowns_open = true;
+            }
             return true;
         }
         if !oteryn_client_ui::boss_encounter::open_key(events) {

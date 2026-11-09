@@ -142,3 +142,11 @@ fn bosstiary_catalogue_keeps_the_existing_gated_boss_status_route() {
     );
     assert!(gated_routes().any(|(cap, commands, _)| cap == 117 && commands.contains(&133)));
 }
+
+#[test]
+fn detailed_boss_slots_keep_the_existing_gated_route() {
+    use oteryn_protocol_oteryn::bosstiary_slots::BossSlotRequest;
+    let request = BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query));
+    assert_eq!(request.encode(), Some(vec![3, 0]));
+    assert!(gated_routes().any(|(cap, commands, _)| cap == 117 && commands.contains(&491)));
+}

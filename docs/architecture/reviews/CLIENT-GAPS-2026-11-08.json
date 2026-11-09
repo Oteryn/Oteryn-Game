@@ -557,9 +557,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Boss Slots: equip/remove/bonus",
-  "status": "PARTIAL",
-  "gap": "Komendy są; brak pełnego selektora bossów i prezentacji bonusów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/tests/slots.rs:118 + boss_slots_real_caller_selects_named_eligible_bosses_and_confirms_equipment_bonuses; crates/gameplay/durability/src/durability/bosstiary/slots/details.rs:40 + detailed_slot_bonuses_use_actual_mastery_and_exclude_empty_and_daily_boosted_bosses; crates/protocol-oteryn/src/bosstiary_slots/details_tests.rs:3 + detailed_boss_slots_are_opt_in_and_preserve_legacy_receipts; detailed_boss_slots_keep_the_existing_gated_route"
  },
  {
   "id": "T084",
