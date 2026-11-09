@@ -112,6 +112,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Exhausted;
         }
+        // The held runtime and timer lock make reservation and source CAS one turn.
+        // A stale source still owns its reservation until its cleanup is drained.
+        if pending.iter().any(|memo| {
+            memo.content == runtime.content_pin().server_artifact_digest()
+                && memo.map == map.overlay.base().digest()
+                && memo.scope == runtime.encounter_owner_scope()
+                && memo
+                    .callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .is_some_and(|other| {
+                        (timing.exclusive_room || other.timing.is_some_and(|t| t.exclusive_room))
+                            && encounter.room_min.floor == other.room_min.floor
+                            && encounter.room_min.x <= other.room_max.x
+                            && other.room_min.x <= encounter.room_max.x
+                            && encounter.room_min.y <= other.room_max.y
+                            && other.room_min.y <= encounter.room_max.y
+                    })
+        }) {
+            return UseDisposition::Rejected;
+        }
         if !map
             .facts
             .apply_quest_callback(key, revision, after, &[], &[], false, None)

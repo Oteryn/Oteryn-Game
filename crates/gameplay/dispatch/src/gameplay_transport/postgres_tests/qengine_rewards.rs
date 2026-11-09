@@ -761,6 +761,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-engenc-corpse" {
         return super::engenc_corpse_use::exercise(owner, admitted, h).await;
     }
+    if name == super::engenc_room_reservation::CASE {
+        return super::engenc_room_reservation::exercise(owner, admitted, h).await;
+    }
     if name == super::engenc_timed_cleanup::CASE {
         return super::engenc_timed_cleanup::exercise(owner, admitted, h).await;
     }

@@ -192,6 +192,9 @@ pub struct EncounterTiming {
     /// Retire only this occurrence's exact spawns, including actors that left the room.
     #[serde(default, skip_serializing_if = "super::is_false")]
     pub cleanup_spawned_only: bool,
+    /// Keep overlapping timed sources out until this occurrence has been cleaned up.
+    #[serde(default, skip_serializing_if = "super::is_false")]
+    pub exclusive_room: bool,
 }
 
 pub(super) fn valid(callback: &Callback) -> bool {

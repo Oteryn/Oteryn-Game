@@ -11,6 +11,23 @@ fn author(callback: serde_json::Value) -> Result<Vec<Callback>, String> {
     parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())
 }
 #[test]
+fn exclusive_room_is_explicit_and_preserves_legacy_receipts() -> Result<(), String> {
+    let legacy = source()?;
+    let mut exclusive = legacy.clone();
+    exclusive["effects"]["encounter"]["timing"]["exclusive_room"] = true.into();
+    let callbacks = author(exclusive)?;
+    assert_eq!(
+        serde_json::to_value(&callbacks[0]).map_err(|e| e.to_string())?["effects"]["encounter"]["timing"]
+            ["exclusive_room"],
+        true
+    );
+    assert_eq!(
+        serde_json::to_value(&author(legacy.clone())?[0]).map_err(|e| e.to_string())?,
+        legacy
+    );
+    Ok(())
+}
+#[test]
 fn spawned_only_cleanup_is_explicit_and_preserves_legacy_receipts() -> Result<(), String> {
     let legacy = source()?;
     let mut owned = legacy.clone();
