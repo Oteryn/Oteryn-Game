@@ -134,7 +134,8 @@ pub(super) fn entry_admitted(callback: &super::Callback) -> bool {
         && callback.native_rule.is_none()
         && (callback.effects.is_empty()
             || (route == "25_years_of_tibia_quest"
-                && callback.effects
+                && callback.effects.iter().next().is_none()
+                && *callback.effects
                     == super::CallbackEffects {
                         scripted_teleport: true,
                         ..Default::default()
