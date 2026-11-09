@@ -1,15 +1,19 @@
 //! M26 current native think -> source wave -> native spawn/cleanup/AI registration.
 use super::*;
 use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, CreatureAiTable, ThinkReport};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::{
+    ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeScopeRefV1,
+    ScopeOwnershipGeneration,
+};
 use crate::movement::monster_map::{CurrentMonsterMap, MonsterMap};
 use oteryn_gameplay_encounters::bosses::rotten_blood::{
     RoomPosition,
-    elder_bloodjaw_think::ELDER_BLOODJAW_KEY,
+    elder_bloodjaw_think::{ELDER_BLOODJAW_KEY, is_rotten_blood_boss},
     mushroom_think::MUSHROOM_KEY,
     native_bloodjaw::remove_orphan as remove_orphan_bloodjaw,
     native_mushroom::remove_orphan,
     native_wave_spawn::{NativeWaveSpawnMap, NativeWaveSpawnOwner},
+    pillar_of_dark_energy_think::PILLAR_KEY,
     summon_wave::{
         SummonNeighbour, SummonPlacement, SummonWaveEffect, SummonWaveFacts, SummonWaveOwner,
     },
@@ -18,12 +22,57 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, deterministic_decision
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+mod pillars;
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct RoomWaveStates {
     owners: BTreeMap<[u8; 16], RoomWave>,
+    source_attempt: Option<SourceRoomBinding>,
+    pillars: pillars::PillarStates,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct SourceRoomBinding {
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    content: [u8; 32],
 }
 impl RoomWaveStates {
-    pub(super) fn has_attempts(&self) -> bool {
+    /// Observe source bosses and minions independently of the two wave planners.
+    /// Keep minion callbacks alive after departure, only for this exact runtime binding.
+    pub(super) fn observe_source_attempt(&mut self, runtime: &ChannelRuntimeV1) -> bool {
+        if runtime.owner_fence().is_err() {
+            return false;
+        }
+        let binding = runtime.binding();
+        let current = SourceRoomBinding {
+            scope: binding.runtime_scope(),
+            generation: binding.scope_generation(),
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        if self.source_attempt != Some(current) {
+            self.source_attempt = None;
+            self.pillars = Default::default();
+        }
+        if !matches!(current.scope, RuntimeScopeRefV1::Instance { .. }) {
+            return false;
+        }
+        if runtime.positioned_melee_census().is_ok_and(|rows| {
+            rows.iter().any(|(actor, _, _)| {
+                runtime.companion_snapshot(*actor).is_ok_and(|row| {
+                    let key = row.state.policy.definition_key.as_str();
+                    is_rotten_blood_boss(key)
+                        || matches!(key, ELDER_BLOODJAW_KEY | MUSHROOM_KEY | PILLAR_KEY)
+                })
+            })
+        }) {
+            self.source_attempt = Some(current);
+        }
+        self.source_attempt == Some(current)
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn has_attempts(&self) -> bool {
         !self.owners.is_empty()
     }
 }
@@ -31,6 +80,7 @@ impl std::fmt::Debug for RoomWaveStates {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RoomWaveStates")
             .field("attempts", &self.owners.len())
+            .field("source_attempt", &self.source_attempt.is_some())
             .finish()
     }
 }
@@ -44,7 +94,13 @@ struct RoomWave {
 }
 
 pub(super) fn supports(key: &str) -> bool {
-    matches!(key, "oteryn:creature.ichgahal" | "oteryn:creature.murcion")
+    matches!(
+        key,
+        "oteryn:creature.ichgahal"
+            | "oteryn:creature.murcion"
+            | "oteryn:creature.vemiath"
+            | "oteryn:creature.bakragore"
+    )
 }
 
 pub(super) fn has_boss(runtime: &ChannelRuntimeV1) -> bool {
@@ -70,8 +126,15 @@ pub(super) async fn warm(runtime: &ChannelRuntimeV1, map: &mut CurrentMonsterMap
             continue;
         }
         let centre = position.position();
-        for dy in -2..=2 {
-            for dx in -2..=2 {
+        let offset = if runtime.matches_live_creature_identity(actor, b"oteryn:creature.vemiath")
+            || runtime.matches_live_creature_identity(actor, b"oteryn:creature.bakragore")
+        {
+            1
+        } else {
+            2
+        };
+        for dy in -offset..=offset {
+            for dx in -offset..=offset {
                 let (Some(x), Some(y)) = (centre.x.checked_add(dx), centre.y.checked_add(dy))
                 else {
                     continue;
@@ -211,6 +274,15 @@ impl RoomWaveStates {
         }
         // An attack-schedule refusal does not cancel a committed source onThink.
         // The map and spawn owners independently prove this callback's current work.
+        if key == PILLAR_KEY && !report.over_budget {
+            return self.pillars.consume(
+                runtime,
+                table,
+                actor,
+                native.source_digest(),
+                report.sequence,
+            );
+        }
         if matches!(key, MUSHROOM_KEY | ELDER_BLOODJAW_KEY) && !report.over_budget {
             let removed = if key == MUSHROOM_KEY {
                 remove_orphan(runtime, actor, native.source_digest())
@@ -259,10 +331,12 @@ impl RoomWaveStates {
         let mut monsters = Vec::new();
         let mut maximum = 0;
         // Source fixed centres use the captured source frame, not the moving boss.
-        let source_centre = if key == "oteryn:creature.ichgahal" {
-            [33008, 32334, 15]
-        } else {
-            [33008, 32367, 15]
+        let source_centre = match key {
+            "oteryn:creature.ichgahal" => [33008, 32334, 15],
+            "oteryn:creature.murcion" => [33008, 32367, 15],
+            "oteryn:creature.vemiath" => [33043, 32335, 15],
+            "oteryn:creature.bakragore" => [33043, 32397, 15],
+            _ => return Err(()),
         };
         if room.source_world().is_none() {
             return Err(());

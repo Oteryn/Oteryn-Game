@@ -171,7 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && room.source_world().is_some();
                 let wave_boss_present = source_instance && rotten_waves::has_boss(runtime);
                 let wave_enabled = source_instance
-                    && (wave_boss_present || states.rotten_waves.has_attempts());
+                    && states.rotten_waves.observe_source_attempt(runtime);
                 let wave_taints = if wave_enabled && wave_boss_present {
                     let sessions = runtime.positioned_actor_census()
                         .map_err(|_| crate::durability::DurabilityError::Unavailable)?
