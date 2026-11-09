@@ -2432,6 +2432,37 @@ mod tests {
     }
 
     #[test]
+    fn m07_too_hot_tools_survive_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for item in [36543, 36544, 36545] {
+            let key = format!("oteryn:item.tibia.i{item}");
+            let record = decoded
+                .state
+                .item_policy(&key, "definition-r1")
+                .expect("qualified Too Hot tool")
+                .record();
+            assert!(record.admission.materializable);
+            assert_eq!(
+                record.admission.legal_destinations,
+                [
+                    NativeItemDestination::CharacterInventory,
+                    NativeItemDestination::Ground
+                ]
+            );
+            assert!(matches!(&record.semantics.physical, F::Known(physical)
+                if physical.movable == F::Known(true) && physical.weight == F::Known(850)));
+        }
+    }
+
+    #[test]
     fn m07_fire_bug_profile_survives_native_artifact_with_portable_custody() {
         use super::super::ReferenceItemField as F;
         let world = test_source(1).unwrap().world_id;

@@ -69,6 +69,17 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 3050)
 
+    def test_m07_too_hot_tools_have_exact_portable_source_custody(self):
+        records = {r['production_definition']['production_key']: r for r in q.capture()['records']}
+        for item in (36543, 36544, 36545):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(key in records, f'Too Hot native interactions require exact tool {key}')
+            record = records[key]
+            self.assertEqual(record['production_binding']['external_id'], str(item))
+            self.assertTrue(record['admission']['materializable'])
+            self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 850)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)

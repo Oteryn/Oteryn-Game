@@ -11377,5 +11377,32 @@
     },
     "decision": "Reuse the native-level and retained-tool engine already pushed; PG helper now resolves actual callback selectors and bundle-palette appearance facts. Rerun both level49/50 stories for both machine families. No new SQL/migration.",
     "pending": "Remaining M07 repair/tower-wheel, Dreamer puzzle and Too Hot bindings; full M07 still PARTIAL"
+  },
+  "m07_too_hot_tool_inputs": {
+    "status": "INPUT_SLICE_DONE",
+    "scope": "Physical prerequisite only:36543 chisel,36544 brush,36545 marble-floor tool",
+    "red": "Exact tool36543 missing from independent source profile capture; all3 absent from runtime profile union",
+    "green": {
+      "importer_tests": "9/9 25.688s",
+      "native_artifact_tests": "3/3 40.052s",
+      "too_hot_native_artifact_seconds": 15.238,
+      "firebug_native_regression_seconds": 12.419,
+      "lion_flower_native_regression_seconds": 12.391,
+      "independent_equipment_profile_count": 5803,
+      "shared_engine_profile_count": 71,
+      "profile_review": "only36543/36544/36545 added; no removed/modified existing records; source-update records unchanged",
+      "clippy_content_dispatch_seconds": 397.754,
+      "authoring_checks_seconds": 503.637,
+      "authoring_unit_modules": 119,
+      "authoring_unit_seconds": 814.682,
+      "content_tree_seconds": 268.065,
+      "workspace_all_targets_seconds": 450.038,
+      "fmt_seconds": 24.39,
+      "pin_check_seconds": 38.036,
+      "duplicate_migrations": "PASS"
+    },
+    "source": "imports/canary/items-xml/items.xml:67140-67151; same pinned SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2;weight850each",
+    "pending": "Native Too Hot target bindings follow; fullM07 remainsPARTIAL",
+    "resource_recovery": "Pin process exit-9 during workspace build; succeeded serially after build completion"
   }
 }

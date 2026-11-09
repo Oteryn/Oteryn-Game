@@ -29,6 +29,8 @@ IDS |= {21466, 21389}
 IDS |= {14682, 7785}
 # M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
 IDS |= {5467}
+# M07 Too Hot cleaning, column and floor-repair tools from the same pinned source.
+IDS |= {36543, 36544, 36545}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
