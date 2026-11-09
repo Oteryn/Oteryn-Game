@@ -1,5 +1,6 @@
 //! Exercise the real ambient owner against the retained Elemental Spheres fire map.
 use super::{ComposedFreshAdmission, TestResult};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
@@ -86,5 +87,50 @@ pub(super) async fn exercise(
             .await
             .map_err(|_| "elemental World pass refused native pin")?
     );
+    // This metadata is a projector fixture, not a durable lease. The real Root
+    // claim/retirement cases separately prove the clock and receipt boundary.
+    let mut runtime = owner.runtime.lock().await;
+    // Channel boot installs these same artifact-qualified creature policies.
+    native
+        .install_companion_policies(&mut runtime)
+        .map_err(super::fixture::debug)?;
+    let binding = runtime.binding();
+    let recipe = &oteryn_gameplay_quests::quest::elemental_arrival::RECIPES[1];
+    let clock = crate::durability::item_loop_move::ElementalSummonClock {
+        intent: crate::durability::item_loop_move::ElementalSummonIntent {
+            transaction_id: [9; 16],
+            altar: recipe.altar,
+            creature_key: recipe.creature.into(),
+            position: recipe.summon,
+        },
+        spawn_key: format!("qn1.elemental:{}", "09".repeat(16)),
+        cycle: 0,
+        owner_generation: binding.scope_generation(),
+    };
+    let cells = owner.movement_cells();
+    crate::gameplay_transport::world_respawns::elemental::project(
+        &mut runtime,
+        binding,
+        &pin,
+        &[clock],
+        |at| {
+            cells.index().lookup(
+                cells.scope(),
+                crate::content::LogicalCell {
+                    x: at.x,
+                    y: at.y,
+                    z: i32::from(at.floor),
+                },
+            ) == Ok(crate::content::CollisionClass::Walkable)
+        },
+    )
+    .map_err(super::fixture::debug)?;
+    let spawn = runtime
+        .boss_spawns()
+        .first()
+        .ok_or("fire overlord must project on the native floor")?;
+    assert_eq!(spawn.position.floor, 13);
+    let actor = spawn.actor.ok_or("fire overlord native actor")?;
+    assert!(runtime.contains_live_creature(actor));
     Ok(())
 }
