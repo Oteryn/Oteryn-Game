@@ -23,7 +23,7 @@ fn arena_match_real_connection_status_and_full_match() -> TestResult {
         })?
         .join()
         .map_err(|_| "arena match scenario panicked")??;
-    eprintln!("SV15 POSTGRES_CASE_COMPLETED: 10 real opponents, fee, reward, replay, exit, reload");
+    eprintln!("M51 POSTGRES_CASE_COMPLETED: 30 real opponents, fee, reward, replay, exit, reload");
     Ok(())
 }
 #[test]
@@ -111,6 +111,9 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
+        let catalogue = std::sync::Arc::new(oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?.catalogue().clone());
+        owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
         {
             let runtime = deps.runtime.lock().await;
             owner
@@ -256,6 +259,13 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             .await
             .ok_or("entry replay")?;
         assert_eq!(wire::decode_match_result(&replay).map_err(debug)?, entered);
+        for rank in 1..=3 {
+            if rank > 1 {
+                assert_eq!(command(&owner, &mut admitted, A::Leave).await?.disposition, D::Applied);
+                let next = command(&owner, &mut admitted, A::Enter).await?;
+                assert_eq!(next.disposition, D::Applied);
+                assert_eq!(next.state.active_rank, rank);
+            }
         for pit in 1..=10 {
             assert_eq!(
                 command(&owner, &mut admitted, A::Advance)
@@ -279,11 +289,15 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 let mut runtime = deps.runtime.lock().await;
                 crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
             }
+            // Exercise the production cadence, including its spell-lane and runtime fencing.
+            // A direct arena tick would miss a disconnected scheduler registration.
+            owner.drain_monster_melee().await;
             assert!(
                 crate::gameplay_transport::arena_match::pit_exit_open(&owner, admitted.game_session_id),
                 "credited death opens the source pit without another client command"
             );
             let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit - 1)];
+            owner.clock_origin -= std::time::Duration::from_secs(3);
             let map = owner.bundle_map().ok_or("arena map")?;
             let pos = crate::map::overlay::TilePos { x: (x - 6) as u16, y: y as u16, floor: -7 };
             let mut projected = Vec::new();
@@ -295,6 +309,9 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 {
                     let mut runtime = deps.runtime.lock().await;
                     crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
+                owner.drain_monster_melee().await;
+                {
+                    let runtime = deps.runtime.lock().await;
                     let at = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
                     assert_eq!((at.x, at.y, at.floor), crate::durability::arena_match::donor::KICK);
                     assert!(runtime.companion_snapshot_including_dead(target).is_err());
@@ -307,6 +324,16 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 return Ok(());
             }
             let advanced = command(&owner, &mut admitted, A::Advance).await?;
+            let start = {
+                let mut runtime = deps.runtime.lock().await;
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime.relocate_arena_player(deps.actor, admitted.game_session_id, before,
+                    crate::foundation::MovementLocalPosition { x: x - 5, y, floor: 7 }).map_err(debug)?;
+                runtime.read_actor_position(deps.actor).map_err(debug)?
+            };
+            let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
+            let advanced = command(&owner, &mut admitted, A::Status).await?;
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
             projected.clear();
@@ -315,14 +342,18 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
 
         }
+        }
         let victories: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_victories")
             .fetch_one(&harness.pool)
             .await?;
-        assert_eq!(victories, 10);
+        assert_eq!(victories, 30);
+        let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE command_id > 18446744073709551615")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(steps, 30, "native steps have their own durable receipt namespace");
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;
         assert_eq!(achievements, 1);
         let status = command(&owner, &mut admitted, A::Status).await?;
-        assert_eq!(status.state.completed_rank, 1);
+        assert_eq!(status.state.completed_rank, 3);
         assert_eq!(status.state.phase, 3);
         let reward_id = admitted.continuity.next_command_id;
         let claim = A::ClaimReward {
@@ -360,6 +391,39 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
         assert_eq!(rewards, 1);
         let items:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i7392' AND lifecycle=1").fetch_one(&harness.pool).await?;
         assert_eq!(items, 1);
+        use crate::gameplay_transport::spell_premium_coordinator::{SpellPremiumCoordinator, purchase_fixture};
+        let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+        harness.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us,
+            activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+        let premium = SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(harness.root.clone()));
+        owner.premium_coordinator = Some(&premium);
+        owner.admit_premium(id(40), admitted.game_session_id);
+        for rank in 1..=3 {
+            assert_eq!(command(&owner, &mut admitted, A::ClaimReward { rank, category: 4, choice: 1 }).await?.disposition, D::Applied);
+            let completed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completed_character_revision IS NOT NULL")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(completed, 0, "three trophies and the prerequisite are mandatory");
+        }
+        owner.premium_coordinator = None;
+        finish_barbarian_test(&owner, admitted.game_session_id).await?;
+        assert_eq!(command(&owner, &mut admitted, A::Status).await?.disposition, D::Applied);
+        let missing_premium: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completed_character_revision IS NOT NULL")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(missing_premium, 0, "missing native Premium authority fails closed");
+        owner.premium_coordinator = Some(&premium);
+        assert_eq!(command(&owner, &mut admitted, A::Status).await?.disposition, D::Applied);
+        let completed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completed_character_revision IS NOT NULL")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(completed, 1, "all native goals complete the canonical quest through the real caller");
+        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completes")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(receipts, 1);
+        assert_eq!(command(&owner, &mut admitted, A::Status).await?.disposition, D::Applied);
+        let replay_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.barbarian_arena_quest' AND completes")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(replay_count, 1, "canonical completion is idempotent");
+        eprintln!("M51 CANONICAL_POSTGRES_PROOF: rank=3 victories=30 trophies=3 completions={completed} receipts={receipts}");
+
         assert_eq!(
             command(&owner, &mut admitted, A::Leave).await?.state.phase,
             0
@@ -382,8 +446,8 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             .await
             .ok_or("reload")?;
         let reloaded = wire::decode_match_result(&result).map_err(debug)?;
-        assert_eq!(reloaded.state.completed_rank, 1);
-        assert_eq!(reloaded.state.claimed_masks[0], 4);
+        assert_eq!(reloaded.state.completed_rank, 3);
+        assert_eq!(reloaded.state.claimed_masks[0], 12);
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&harness.pool)
             .await?;
@@ -392,9 +456,30 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
         );
         eprintln!(
-            "SV15 POSTGRES_PROOF: server_version_num={version}, fee=1000, completed=1, weapon_claims={rewards}, reward_items={items}"
+            "SV15 POSTGRES_PROOF: server_version_num={version}, entry_fee=1000, completed=3, weapon_claims={rewards}, reward_items={items}"
         );
         let _ = native;
         Ok(())
     })
+}
+
+
+// Positive setup uses the same fenced quest writer, never a raw state insert.
+async fn finish_barbarian_test(owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId) -> TestResult {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, QuestTransition, QuestEffect, QuestComparison, QuestEffectKind};
+    use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, QuestTransitionOutcome};
+    let quest = "oteryn:quest.barbarian_test";
+    let track = "oteryn:quest-progress/fixture/barbarian-test";
+    let key = "oteryn:quest-transition/fixture/barbarian-test";
+    let catalogue = std::sync::Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
+        key: track.into(), quest: quest.into(), initial: 0, min: 0, max: 1,
+    }], vec![QuestTransition { key: key.into(), quest: quest.into(), completes: true, experience: None, world_change: None,
+        effects: vec![QuestEffect { track: track.into(), from: QuestComparison::Eq(0), effect: QuestEffectKind::Set(1) }] }]).map_err(debug)?);
+    let fence = owner.current_quest_fence(session).await.map_err(|_| "fence")?.ok_or("session")?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let cause = QuestCause::Command(crate::foundation::CommandRef::new(session, crate::foundation::CommandId::new(900051).map_err(debug)?));
+    let result = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
+        QuestTransitionRequest { transition_key: key.into(), cause }, catalogue).await.map_err(debug)?;
+    assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+    Ok(())
 }

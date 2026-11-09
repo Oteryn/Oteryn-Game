@@ -77,8 +77,56 @@ pub struct MatchRead {
     pub dead: bool,
 }
 
+/// Native movement and client commands occupy disjoint durable cause domains.
+#[derive(Clone, Copy, Debug)]
+pub enum MatchCause {
+    Command(CommandRef),
+    Step {
+        command: CommandRef,
+        actor: [u8; 16],
+        revision: u64,
+        epoch: u64,
+    },
+}
+impl From<CommandRef> for MatchCause {
+    fn from(command: CommandRef) -> Self {
+        Self::Command(command)
+    }
+}
+impl MatchCause {
+    pub fn command(self) -> CommandRef {
+        match self {
+            Self::Command(command) | Self::Step { command, .. } => command,
+        }
+    }
+    fn ordinal(self) -> String {
+        let raw = u128::from(self.command().command_id().get());
+        (raw + if matches!(self, Self::Step { .. }) {
+            u128::from(u64::MAX)
+        } else {
+            0
+        })
+        .to_string()
+    }
+    fn bind(self, payload: &[u8]) -> Vec<u8> {
+        let mut bytes = payload.to_vec();
+        if let Self::Step {
+            actor,
+            revision,
+            epoch,
+            ..
+        } = self
+        {
+            bytes.extend_from_slice(&actor);
+            bytes.extend_from_slice(&revision.to_be_bytes());
+            bytes.extend_from_slice(&epoch.to_be_bytes());
+        }
+        bytes
+    }
+}
+
 pub struct MatchTransition {
-    pub command: CommandRef,
+    pub cause: MatchCause,
     pub payload: Vec<u8>,
     pub before: MatchState,
     pub after: MatchState,
@@ -94,9 +142,10 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
-        command: CommandRef,
+        cause: impl Into<MatchCause>,
         payload: &[u8],
     ) -> Result<MatchRead, CharacterProgressionError> {
+        let cause = cause.into();
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -114,7 +163,7 @@ impl DurabilityRoot {
                     let state = load_state(&mut tx, fence).await?;
                     let masks = claimed_masks(&mut tx, fence).await?;
                     let now_ms = now(&mut tx).await?;
-                    let replay = replay(&mut tx, fence, command, &payload).await?;
+                    let replay = replay(&mut tx, fence, cause, &payload).await?;
                     let dead: bool = matches!(state.phase,1|2) && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_character_revision>$2::text::numeric)")
                         .bind(fence.character_id.as_bytes().as_slice()).bind(state.entry_revision.to_string()).fetch_one(&mut *tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -137,7 +186,12 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: MatchTransition,
     ) -> Result<Vec<u8>, CharacterProgressionError> {
-        if request.command.game_session_id() != fence.game_session_id {
+        let command = request.cause.command();
+        if command.game_session_id() != fence.game_session_id
+            || (matches!(request.cause, MatchCause::Step { .. })
+                && oteryn_protocol_oteryn::arena::decode_match_request(&request.payload).ok()
+                    != Some(oteryn_protocol_oteryn::arena::ArenaAction::Advance))
+        {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let recovery = authority
@@ -149,7 +203,7 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_admission_relations(&mut tx).await?;
             let root=match assert_gameplay_fence(&mut tx,&fence,&node).await? {Ok(root)=>root,Err(error)=>return Ok(Err(error))};
-            if let Some(bytes)=replay(&mut tx,fence,request.command,&request.payload).await? {
+            if let Some(bytes)=replay(&mut tx,fence,request.cause,&request.payload).await? {
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
             }
             let prior=load_state(&mut tx,fence).await?;
@@ -163,7 +217,7 @@ impl DurabilityRoot {
                     .bind(fence.character_id.as_bytes().as_slice()).bind(prior.run.as_slice()).bind(i16::from(prior.rank)).bind(i16::from(prior.pit)).bind(death_key).execute(&mut **tx).await?;
                 ready.phase=2;
             }
-            if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,request.command,now_ms) {return Err(DurabilityError::InvalidStoredState);}
+            if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,command,now_ms) {return Err(DurabilityError::InvalidStoredState);}
             let mut after=request.after;
             let mut disposition=request.disposition;
             let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0;
@@ -171,10 +225,10 @@ impl DurabilityRoot {
             if entering {
                 if after.rank!=prior.completed+1 || after.pit!=1 || after.rank>3 {return Err(DurabilityError::InvalidStoredState);}
                 let Some(change)=request.change else {return Err(DurabilityError::InvalidStoredState);};
-                let occurrence=identity(request.command,b"fee");
+                let occurrence=identity(command,b"fee");
                 let fee=FeeBurnRequest{cause:FeeBurnCause::ArenaEntry{occurrence},
                     fee_gold_units:donor::FEES[usize::from(after.rank-1)],
-                    transaction_id:identity(request.command,b"fee-tx"),event_id:identity(request.command,b"fee-event"),
+                    transaction_id:identity(command,b"fee-tx"),event_id:identity(command,b"fee-event"),
                     occurred_at_unix_ms:now_ms,server_build_id:super::character_authority::SERVER_BUILD_ID.into(),change};
                 match burn_fee_in_transaction(&mut tx,&fence,&fee).await {
                     Ok(_)=>{fee_occurrence=Some(occurrence);}
@@ -204,12 +258,12 @@ impl DurabilityRoot {
             if let Some(occurrence)=fee_occurrence {
                 let next=root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
                 sqlx::query("INSERT INTO game_arena_entry_receipts(character_id,game_session_id,command_id,fee_occurrence,rank,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) SELECT character_id,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,$5,character_revision,$6::text::numeric,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(occurrence.as_slice()).bind(i16::from(after.rank)).bind(next.to_string()).execute(&mut **tx).await?;
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(occurrence.as_slice()).bind(i16::from(after.rank)).bind(next.to_string()).execute(&mut **tx).await?;
                 for query in ["UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric", "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric"] {
                     if sqlx::query(query).bind(fence.character_id.as_bytes().as_slice()).bind(next.to_string()).bind(root.revision.to_string()).execute(&mut **tx).await?.rows_affected()!=1 {return Err(DurabilityError::InvalidStoredState);}
                 }
             }
-            save(&mut tx,fence,request.command,&request.payload,&prior,&after,&bytes).await?;
+            save(&mut tx,fence,request.cause,&request.payload,&prior,&after,&bytes).await?;
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?
     }
@@ -256,11 +310,14 @@ pub(super) async fn claimed_masks(
 pub(super) async fn replay(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
-    command: CommandRef,
+    cause: impl Into<MatchCause>,
     payload: &[u8],
 ) -> Result<Option<Vec<u8>>, DurabilityError> {
+    let cause = cause.into();
+    let command = cause.command();
+    let payload = cause.bind(payload);
     let row=sqlx::query("SELECT payload,reply FROM game_arena_match_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid")
-        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     if let Some(row) = row {
         if row.try_get::<Vec<u8>, _>("payload")? != payload {
             return Err(DurabilityError::InvalidStoredState);
@@ -272,18 +329,21 @@ pub(super) async fn replay(
 pub(super) async fn save(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
-    command: CommandRef,
+    cause: impl Into<MatchCause>,
     payload: &[u8],
     before: &MatchState,
     after: &MatchState,
     reply: &[u8],
 ) -> Result<(), DurabilityError> {
+    let cause = cause.into();
+    let command = cause.command();
+    let payload = cause.bind(payload);
     let before = serde_json::to_value(before).map_err(|_| DurabilityError::InvalidStoredState)?;
     let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(payload).bind(before).bind(&after).bind(reply).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(&payload).bind(before).bind(&after).bind(reply).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).execute(&mut **tx).await?;
     Ok(())
 }
 
@@ -351,4 +411,41 @@ fn valid_transition(
         && (after.phase != 1
             || (now_ms < after.deadline_ms
                 && after.deadline_ms <= now_ms + i64::from(donor::PIT_SECONDS) * 1000))
+}
+
+impl DurabilityRoot {
+    /// The native arena uses the existing Quest writer and its current Premium authority.
+    pub async fn commit_arena_quest_completion<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<super::quest_state::QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_quest_inner::<G, 0>(
+            authority,
+            node,
+            fence,
+            super::quest_state::QuestTransitionRequest {
+                transition_key: oteryn_gameplay_quests::quest::arena_completion::COMPLETE.into(),
+                cause: super::quest_state::QuestCause::Command(command),
+            },
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+    }
 }

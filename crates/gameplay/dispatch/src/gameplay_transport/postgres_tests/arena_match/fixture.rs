@@ -26,6 +26,16 @@ pub(in super::super) fn bundle(
     bundle.manifest.palette[0].id = reference.get() - 1;
     for source in [1841, 5022] {
         let key = format!("oteryn:item.tibia.i{source}");
+        let reference = native.item_index()
+            .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
+            .ok_or("arena item reference")?;
+        bundle.manifest.palette.push(oteryn_world_bundle::writer::PaletteEntry {
+            key, family: oteryn_world_bundle::bundle::Family::Item,
+            id: reference.get() - 1, terrain: None,
+        });
+    }
+    for source in [1841, 5022] {
+        let key = format!("oteryn:item.tibia.i{source}");
         let reference = native
             .item_index()
             .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
@@ -62,6 +72,13 @@ pub(in super::super) fn bundle(
                 tiles.insert(at, tile);
             }
         }
+    }
+    for &(x, y) in &donor::CENTERS {
+        let tile = tiles.get_mut(&((x - 6) as u16, y as u16, -7))
+            .ok_or("pillar tile")?;
+        tile.items.push(oteryn_world_bundle::sector::Item {
+            palette: 3, depth: 0, attrs: Default::default(),
+        });
     }
     for &(x, y) in &donor::CENTERS {
         let tile = tiles

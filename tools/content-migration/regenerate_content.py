@@ -93,6 +93,7 @@ AUTHORING_TOOLS = (
 CHECKS = (
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
@@ -615,6 +616,7 @@ def main() -> int:
         run(["python3", "tools/contracts/update_capability_golden.py", args.capability_golden, "--client-registrations"])
         return 0
     if args.native_only:
+        run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
@@ -635,6 +637,7 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.

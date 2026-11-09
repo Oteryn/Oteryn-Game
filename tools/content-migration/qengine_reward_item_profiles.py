@@ -16,6 +16,8 @@ import grizzly_shop_profiles as accepted
 
 IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
+# M51 arena trophy custody is qualified from the same pinned physical sources.
+CUSTODY_PROMOTIONS = {5805, 5806}
 # M12 selected daily harvest: existing Juicy Roots identity, exact portable facts.
 IDS |= {21291}
 # Retain questpc4's qualified native offerings and source tool through this owner.
@@ -34,6 +36,8 @@ CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 def capture(root=ROOT, ids=None):
     selected_ids = IDS if ids is None else frozenset(ids)
+def capture(root=ROOT):
+    selected = IDS | CUSTODY_PROMOTIONS
     xml_raw=(root/XML).read_bytes()
     client_raw=(root/CLIENT).read_bytes()
     if hashlib.sha256(xml_raw).hexdigest()!=XML_SHA or hashlib.sha256(client_raw).hexdigest()!=CLIENT_SHA:
@@ -43,6 +47,9 @@ def capture(root=ROOT, ids=None):
     physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,selected_ids)}
     bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
     keys={f'oteryn:item.tibia.i{i}' for i in selected_ids}
+    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,selected)}
+    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
+    keys={f'oteryn:item.tibia.i{i}' for i in selected}
     definitions={r['definition']['identity']['key']:r['definition']
         for path in sorted((root/'content/items/definitions').glob('items-*.json'))
         for r in json.loads(path.read_bytes())['records']
@@ -51,6 +58,7 @@ def capture(root=ROOT, ids=None):
         raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_SET')
     records=[]
     for item_id in sorted(selected_ids):
+    for item_id in sorted(selected):
         node=xml[item_id]
         if {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
@@ -69,16 +77,26 @@ def capture(root=ROOT, ids=None):
         record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected_ids)['records']
+    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
         'producer':'tools/content-migration/qengine_reward_item_profiles.py',
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
         'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
-        'records':records}
+        'records':[r for r in records if int(r['production_binding']['external_id']) in IDS],
+        'custody_promotions':[r for r in records if int(r['production_binding']['external_id']) in CUSTODY_PROMOTIONS]}
 
 
 def reconcile(existing, observed):
     """Join pinned physical facts without replacing an established owner's identity."""
+    # Only these two formerly Ground-only trophies are promoted, and only to
+    # the exact portable facts captured above. No identity, use or text owner changes.
+    key = existing.get('production_definition', {}).get('production_key')
+    old_custody = dict(materializable=False, stack_class='NonStackable', legal_destinations=['Ground'])
+    portable = dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground'])
+    if (key in {'oteryn:item.tibia.i5805', 'oteryn:item.tibia.i5806'}
+            and existing.get('admission') == old_custody and observed.get('admission') == portable):
+        existing = dict(existing, admission=portable)
     for field in ('production_definition', 'production_binding', 'admission'):
         if existing.get(field) != observed.get(field):
             raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:' + field)
@@ -107,7 +125,7 @@ def reconcile(existing, observed):
 def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
-    admit_records(root,generated,profile_path,manifest_path,order,canonical,packet['records'])
+    admit_records(root,generated,profile_path,manifest_path,order,canonical,packet['records'] + packet['custody_promotions'])
 
 
 def admit_records(root,generated,profile_path,manifest_path,order,canonical,records):

@@ -77,6 +77,7 @@ fn registry() -> Result<&'static Registry, String> {
             for rule in super::source_deaths::rules().map_err(str::to_owned)? {
                 add(rule.transition()?, false, false)?;
             }
+            add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
@@ -89,6 +90,12 @@ fn registry() -> Result<&'static Registry, String> {
 /// Bound owners must use their exact canonical operation. Removing the binding
 /// does not release ownership of a protected track to the weaker generic writer.
 pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(), String> {
+    if transition.quest == super::arena_completion::QUEST
+        && transition.completes
+        && transition != &super::arena_completion::transition()?
+    {
+        return Err("arena completion requires its native owner".into());
+    }
     let registry = registry()?;
     if let Some(owner) = registry.owners.get(&transition.key) {
         if transition != &owner.transition || (owner.world && !world_context) {

@@ -27,6 +27,27 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['production_binding']['external_id'], '9106')
         self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 50)
+    def test_arena_goblets_promote_only_pinned_portable_custody(self):
+        import json
+        existing = {r['production_definition']['production_key']: r
+                    for r in json.loads((q.ROOT / q.PROFILE).read_text())['records']}
+        packet = q.capture()
+        observed = {r['production_definition']['production_key']: r for r in packet['custody_promotions']}
+        self.assertEqual(len(observed), 2)
+        for item in (5805, 5806):
+            key = f'oteryn:item.tibia.i{item}'
+            self.assertTrue(key in observed, 'native arena trophies need pinned portable profiles')
+            old = copy.deepcopy(existing[key])
+            old['admission'] = dict(materializable=False, stack_class='NonStackable', legal_destinations=['Ground'])
+            joined = q.reconcile(old, observed[key])
+            self.assertTrue(joined['admission']['materializable'])
+            self.assertEqual(joined['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
+            self.assertEqual(joined['production_binding'], old['production_binding'])
+            self.assertFalse(old['admission']['materializable'])
+            wrong = copy.deepcopy(observed[key])
+            wrong['admission']['legal_destinations'].append('Equipment')
+            with self.assertRaises(ValueError):
+                q.reconcile(old, wrong)
 
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
