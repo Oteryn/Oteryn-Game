@@ -58,9 +58,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                let wave_boss_present = rotten_waves::has_boss(runtime);
-                let wave_enabled = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
-                    && room.source_world().is_some()
+                let source_instance = matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+                    && room.source_world().is_some();
+                let wave_boss_present = source_instance && rotten_waves::has_boss(runtime);
+                let wave_enabled = source_instance
                     && (wave_boss_present || states.rotten_waves.has_attempts());
                 let wave_taints = if wave_enabled && wave_boss_present {
                     let sessions = runtime.positioned_actor_census()
