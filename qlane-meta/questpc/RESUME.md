@@ -172,3 +172,7 @@ Deeplings PG GREEN64.396295735s on pushed0be5e5924:realWorldcounterday,currentre
 FireEarth WIP cadence gates GREEN:strict quests+dispatch all-targetsClippy5m15s,6profile0.06s,115modules/1206authoringtests;checks/tree/fmt/generator/dupmigrationsPASS. OwnnativePG stillbuilding;do notclaimqualified. Source-owned distance2 exception regressionincluded;Worlddays selectedusingrealproducer. Deeplings published0be5 nativePG64.396295735s nowrecordedGREEN.
 
 FireEarth nativePG GREEN71.863157833s on22f06bc007d1:actualselectederuptiondays,currentreset/Premium/replay/freshonce,completion0.34PG-proven routes/35stages. Next exact Fury city admission uses already compiled physical entry layers, rejecting retained exit-only and epoch0;Fury content wiring still pending. No merges.
+
+Fury resolver/factory nextslice:REDmissingmodule thenREDheldcatalogue ->GREEN4tests0.454s;exactCrystal201189f Thaislayerblob andportal action9710 checked;adjacent32264,32165,z7ground7066,startEast32265ground7063 confirmedinretainedB3. Factory preservesminimum60/Premium/exactselectedcity;noheldFuryosa promotion. BindingnotyetinBINDINGS:nextactivatewithnativePG. NoSQL/mapchanges;34routes/35stagesPG-provenunchanged.
+
+Fury resolver/factory publication gates GREEN:authoringchecks,1210tests/116modules0failures,content-tree,equipmentpins,dupmigrations,unchangedqenginegeneratedverify,fmt;workspacealltargets11m11s. NoRust/SQLchangeinthisslice. Preparednativefixture .lane/fury_entry.rs remainsprivate/unmounted;nextactivateFurybinding+moduleandownnativePG.

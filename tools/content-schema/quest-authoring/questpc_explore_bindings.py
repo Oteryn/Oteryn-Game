@@ -120,7 +120,13 @@ def callbacks(root):
         if len(definitions) != 1:
             raise ValueError('Explore binding needs one canonical quest: ' + quest)
         definition = definitions[0]
-        world_change = questpc_world_requirements.requirement(quest, world_owners)
+        fury_approach = None
+        if area.startswith('fury-approach:'):
+            import questpc_fury_approaches
+            fury_approach = questpc_fury_approaches.resolve(root, quest, area)
+            world_change = fury_approach[3]
+        else:
+            world_change = questpc_world_requirements.requirement(quest, world_owners)
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
@@ -136,7 +142,9 @@ def callbacks(root):
         requirements = recipe['requirements']
         completed_quests = questpc_completed_quests.resolve(quest, requirements['prerequisites'],
             [d for group in by_quest.values() for d in group])
-        if area.startswith('door-approach:'):
+        if fury_approach is not None:
+            at, appearance, sources = fury_approach[:3]
+        elif area.startswith('door-approach:'):
             import questpc_door_approaches
             at, appearance, sources = questpc_door_approaches.resolve(root, quest, area, definition=definition)
         elif area.startswith('npc-approach:'):
