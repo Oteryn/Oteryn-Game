@@ -7,6 +7,46 @@ use crate::gameplay_transport::{
     connection::{AdmittedSession, ControllerBinding, FreshAdmissionAuthority, SessionContinuity},
 };
 
+#[test]
+fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("m25-push-peer-fresh", || {
+        super::fixture::run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "m25_push_peer", false, false)
+                .await?;
+            let _source = super::house_transfer::RecoverySource::start(&h).await?;
+            super::house_transfer::prepare_owned_session(&h)
+                .await
+                .map_err(|error| format!("M25 first Fresh admission: {error}"))?;
+            let now = sqlx::query_scalar::<_, i64>(
+                "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            crate::world_party_runtime_postgres_cases::committed_fresh_player_from_source_owned(
+                &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+                    root: h.root.clone(),
+                    node: h.node.clone(),
+                    recovery: &h.recovery,
+                },
+                60,
+                63,
+                171,
+                now,
+                Some("platform-test"),
+            )
+            .await
+            .map_err(|error| format!("M25 second Fresh admission: {error}"))?;
+            h.cleanup().await
+        })
+    })?;
+    eprintln!("M25_PUSH_PEER_FRESH_COMPLETED duration={:?}", started.elapsed());
+    Ok(())
+}
+
 pub(super) async fn prepare_peer_and_party(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -29,7 +69,8 @@ pub(super) async fn prepare_peer_and_party(
             now,
             Some("platform-test"),
         )
-        .await?;
+        .await
+        .map_err(|error| format!("M25 peer Fresh admission: {error}"))?;
     let fence = crate::gameplay_transport::item_fence_of(current).ok_or("actual peer fence")?;
     let actor = {
         let _permit = owner
@@ -68,7 +109,8 @@ pub(super) async fn prepare_peer_and_party(
     super::srx3_activity_source_fixture::prepare_player_with_operation(
         h, owner, &mut peer, 1999, "knight", &operation,
     )
-    .await?;
+    .await
+    .map_err(|error| format!("M25 peer progression preparation: {error}"))?;
     // The second genuine waiting pad, reached through the same physical movement owner.
     let (step, _) = owner
         .paced_step(

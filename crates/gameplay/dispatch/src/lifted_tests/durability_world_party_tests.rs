@@ -540,6 +540,12 @@ mod fresh_source {
             if account_id != self.current.account_id {
                 return Err(Fnd04EvidenceError::ExplicitlyDenied);
             }
+            if let Some(security) = self.rows.iter().find_map(|row| match &row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, .. } => Some(security),
+                _ => None,
+            }) {
+                return Ok(security.clone());
+            }
             Ok(FreshAccountSecurityObservationV1 {
                 account_id: account_id.into(),
                 minimum_generation: 1,
@@ -950,7 +956,9 @@ async fn bootstrap_owned_character_from_source(
         "contract_version": 3, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
         "issuer_decision_id": fresh_source::uuid_text(&id(character + 20)),
-        "source_revision": revision.to_string(),
+        // Character bootstrap has a global issuer floor, separate from the
+        // new Account's first security observation above.
+        "source_revision": u64::from(character).to_string(),
         "operation_id": fresh_source::uuid_text(&id(character)),
         "operation": "INITIAL_CHARACTER_BOOTSTRAP", "account_id": account_text,
         "target_world_id": fresh_source::uuid_text(&id(WORLD)),
@@ -1084,7 +1092,9 @@ pub(crate) async fn committed_fresh_player_from_source_owned(
     }
     let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
     guards.publish(&publication).await.map_err(debug)?;
-    let request = source.request()?;
+    let request = source
+        .request()
+        .map_err(|error| format!("Party Fresh request from published guards: {error}"))?;
     let store = FreshAdmissionStore::from_root(h.root.clone());
     let outcome = store.commit(&request).await.map_err(debug)?;
     let FreshAdmissionDurableOutcomeV1::Committed(receipt) = outcome else {
