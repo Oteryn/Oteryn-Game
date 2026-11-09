@@ -219,3 +219,31 @@ The earlier unrelated `quest::reward_callbacks::tests::published_ungated_quest_h
 failure for Ice Islands remains recorded above; its assertion is unchanged.
 The final exact production equipment/source-profile check also passed (1 test,
 71.76 seconds) against the preserved profile and 5802-item native union.
+
+## Koshei physical caller proof
+
+Crystal 201189f8 `chest.lua:2459-2472` independently grants blue legs at
+UID6240, (33261,32444,12), appearance2472, and 100 platinum coins at UID6241,
+(33261,32448,12), appearance2480. The mounted source-map fixture now preserves
+each chest's individual appearance and row. Existing callers retain their
+single-appearance wrapper and original placement data.
+
+The literal dispatch PostgreSQL case exercises both orders, reconstructs the
+caller and reloads durable tracks between chests, requires incomplete state
+after either first claim and completed state only after both, and verifies
+exactly one blue-legs item and 100 platinum coins through MINT receipts.
+Duplicate command replay and a fresh repeated USE grant no additional value.
+
+Fresh local checks: dispatch all-features/all-target clippy with `-D warnings`
+passed; formatting passed; live Koshei case passed in 134.91 seconds with
+`M35_KOSHEI_POSTGRES_CASE_COMPLETED`; the unchanged Alawar case passed against
+the generalized fixture in 138.11 seconds with its database-execution marker.
+No production content, pins, migration or protocol number changed in this slice.
+
+Additional source check: both pinned Crystal maps were scanned for unique ID
+1035 under any item carrier. Neither contained it. The global map SHA256 is
+`c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85`;
+the Crystal custom map SHA256 is
+`3021fa0cd15a0a34cb805571f783da0f852441a6bbe98fed99ad277787710817`.
+The final Ferumbras action remains source evidence, but these maps do not yet
+supply its physical reward-chest binding; no coordinate is fabricated.

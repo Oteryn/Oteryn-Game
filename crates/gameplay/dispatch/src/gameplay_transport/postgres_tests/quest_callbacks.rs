@@ -45,23 +45,43 @@ pub(super) fn source_world_positions(
     choices: &[(u16, u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_objects(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, y, uid)| (*x, *y, *uid, appearance))
+            .collect::<Vec<_>>(),
+    )
+}
+
+/// Preserve each source chest's position, UID and individual appearance.
+pub(super) fn source_world_objects(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     // A terrain carrier is legal for a placed chest (the binder also validates
     // Item carriers). Its appearance and unique id must both match the shard.
     data.manifest.palette.truncate(1);
-    data.manifest.palette.push(bundle::PaletteEntry {
-        key: format!("oteryn:terrain.tibia.i{appearance}"),
-        family: bundle::Family::Terrain,
-        id: 1,
-        terrain: Some(bundle::Terrain {
-            kind: bundle::TerrainKind::Common,
-            walkable: None,
-            ground_speed: None,
-            blocks_projectile: None,
-        }),
-    });
+    let appearances: std::collections::BTreeSet<_> = choices.iter().map(|c| c.3).collect();
+    let mut palettes = std::collections::BTreeMap::new();
+    for appearance in appearances {
+        let id = u32::try_from(data.manifest.palette.len())?;
+        palettes.insert(appearance, id);
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+    }
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -69,24 +89,24 @@ pub(super) fn source_world_positions(
     };
     let min_x = choices
         .iter()
-        .map(|(x, _, _)| x.saturating_sub(2))
+        .map(|(x, _, _, _)| x.saturating_sub(2))
         .min()
         .ok_or("source choices")?
         .min(chest.0 - 2);
     let max_x = choices
         .iter()
-        .map(|(x, _, _)| *x)
+        .map(|(x, _, _, _)| *x)
         .max()
         .ok_or("source choices")?
         .max(chest.0);
     let min_y = choices
         .iter()
-        .map(|(_, y, _)| *y)
+        .map(|(_, y, _, _)| *y)
         .min()
         .ok_or("source choices")?;
     let max_y = choices
         .iter()
-        .map(|(_, y, _)| *y)
+        .map(|(_, y, _, _)| *y)
         .max()
         .ok_or("source choices")?;
     data.manifest.world = bundle::Extent {
@@ -104,13 +124,13 @@ pub(super) fn source_world_positions(
             flags: 0,
             house: 0,
             zones: Vec::new(),
-            items: if let Some((_, _, unique)) =
-                choices.iter().find(|(px, py, _)| (*px, *py) == (x, y))
+            items: if let Some((_, _, unique, appearance)) =
+                choices.iter().find(|(px, py, _, _)| (*px, *py) == (x, y))
             {
                 vec![
                     ground(),
                     sector::Item {
-                        palette: 1,
+                        palette: palettes[appearance],
                         depth: 0,
                         attrs: sector::Attrs {
                             unique: Some(*unique),

@@ -1,6 +1,8 @@
 //! Crystal 201189f8 chest.lua:917-931: both independent Alawar claims, in either order.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world_choices, wire_use_targets_retained};
+use super::quest_callbacks::{
+    source_world_choices, source_world_objects, wire_use_targets_retained,
+};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -60,6 +62,7 @@ enum Case {
     Wine,
     Fanfare,
     Key3520,
+    Koshei,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -79,6 +82,25 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:2459-2472: the two final reward storage groups.
+#[test]
+fn m35_koshei_dispatch_requires_legs_and_platinum_in_either_order() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, Case::Koshei).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 Koshei dispatch scenario panicked")??;
+    println!("M35_KOSHEI_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 fn scenario(reverse: bool, case: Case) -> TestResult {
@@ -102,6 +124,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             2472,
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
+        ),
+        Case::Koshei => (
+            (33261, 32444, -12),
+            2472,
+            "oteryn:quest.koshei_the_deathless_quest",
+            &[(33261, 6240), (33261, 6241)],
         ),
         Case::Key3520 => (
             (32376, 31802, -7),
@@ -141,7 +169,14 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 );
             }
         }
-        let world = source_world_choices(chest, choices, appearance)?;
+        let world = if matches!(case, Case::Koshei) {
+            source_world_objects(
+                chest,
+                &[(33261, 32444, 6240, 2472), (33261, 32448, 6241, 2480)],
+            )?
+        } else {
+            source_world_choices(chest, choices, appearance)?
+        };
         let bound = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
             &|_| true,
@@ -157,7 +192,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         }
         assert_eq!(
             bound.served.len(),
-            if matches!(case, Case::Alawar) { 2 } else { 1 },
+            if matches!(case, Case::Alawar | Case::Koshei) {
+                2
+            } else {
+                1
+            },
             "left out: {:?}; unbound: {:?}",
             bound.left_out,
             bound.unbound
@@ -259,6 +298,11 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 index
             };
             let x = choices[position_index].0;
+            let y = if matches!(case, Case::Koshei) {
+                chest.1 + 4 * u16::try_from(position_index)?
+            } else {
+                chest.1
+            };
             // Rebuild the caller while retaining the Channel's command-stream truth.
             // Drop its quest cache so admission must reload the durable claim tracks.
             let mut owner = deps.owner(&h, &authority);
@@ -283,12 +327,13 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 &mut position,
                 MovementLocalPosition {
                     x: i32::from(x) - 1,
+                    y: i32::from(y),
                     ..at
                 },
             )
             .await?;
-            let key = oteryn_world_bundle::bundle::placement_key(chest.2, x, chest.1, 1)
-                .ok_or("placement")?;
+            let key =
+                oteryn_world_bundle::bundle::placement_key(chest.2, x, y, 1).ok_or("placement")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             let target = WorldObjectTarget {
@@ -358,8 +403,30 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 let state = snapshot.states().get(quest).ok_or("quest state")?;
                 assert_eq!(
                     state.completed,
-                    matches!(case, Case::Fanfare) || matches!(case, Case::Alawar) && index == 1
+                    matches!(case, Case::Fanfare)
+                        || matches!(case, Case::Alawar | Case::Koshei) && index == 1
                 );
+            }
+            if matches!(case, Case::Koshei) {
+                let rewards: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 3")
+                    .fetch_all(&h.pool).await?;
+                let mut expected = Vec::new();
+                for selected in 0..=index {
+                    let pos = if reverse {
+                        choices.len() - selected - 1
+                    } else {
+                        selected
+                    };
+                    expected.push(if pos == 0 {
+                        ("oteryn:item.tibia.i645".to_owned(), 1)
+                    } else {
+                        ("oteryn:item.tibia.i3035".to_owned(), 100)
+                    });
+                }
+                expected.sort();
+                assert_eq!(rewards, expected);
             }
             if wine {
                 let fluids: Vec<(i64, i16, bool, bool)> = sqlx::query_as(
