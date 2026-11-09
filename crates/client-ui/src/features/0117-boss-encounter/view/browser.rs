@@ -5,13 +5,27 @@ use std::{collections::BTreeSet, fmt::Write};
 pub enum BossCategory {
     #[default]
     All,
+    Bane,
+    Archfoe,
+    Nemesis,
     Progress,
     Cooldown,
 }
 impl BossCategory {
+    pub fn server_filter(self) -> u8 {
+        match self {
+            Self::Bane => 1,
+            Self::Archfoe => 2,
+            Self::Nemesis => 3,
+            _ => 0,
+        }
+    }
     pub fn next(self) -> Self {
         match self {
-            Self::All => Self::Progress,
+            Self::All => Self::Bane,
+            Self::Bane => Self::Archfoe,
+            Self::Archfoe => Self::Nemesis,
+            Self::Nemesis => Self::Progress,
             Self::Progress => Self::Cooldown,
             Self::Cooldown => Self::All,
         }
@@ -20,6 +34,9 @@ impl BossCategory {
 
 /// Browse only identities on the confirmed server page, never inferred catalogue entries.
 pub fn boss_records(panel: &BossEncounterPanel) -> Vec<&str> {
+    if panel.catalogue.is_some() {
+        return super::catalogue_view::records(panel);
+    }
     let Some(snapshot) = &panel.snapshot else {
         return vec![];
     };
@@ -63,6 +80,9 @@ pub fn select_boss(panel: &mut BossEncounterPanel, forward: bool) -> bool {
 }
 
 pub fn browser_text(panel: &BossEncounterPanel) -> String {
+    if panel.catalogue.is_some() {
+        return super::catalogue_view::text(panel);
+    }
     let mut text = format!("\nBosstiary browser — {:?}\n", panel.browser_category);
     let rows = boss_records(panel);
     for key in &rows {

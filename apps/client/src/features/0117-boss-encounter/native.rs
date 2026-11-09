@@ -2,6 +2,7 @@ use crate::play::PlayLink;
 use oteryn_client_ui::boss_encounter::Intent;
 pub(in crate::play) fn open_window(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
+    super::gallery::open(link);
     open(
         link,
         Form {
@@ -34,6 +35,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Rotten Blood boss",
                 "Apply search",
                 "Next unlocked slot",
+                "Browse boss gallery",
+                "Next gallery page",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
@@ -69,11 +72,27 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     );
                     return;
                 }
+                if action == 21 || action == 22 || action == 19 {
+                    super::super::input::enqueue(
+                        mailbox,
+                        commands,
+                        if action == 22 {
+                            Intent::CatalogueNext
+                        } else {
+                            Intent::Catalogue
+                        },
+                    );
+                    return;
+                }
                 if action >= 14 {
                     if action <= 15 {
                         mailbox.boss_encounter.select_boss(action == 14);
                     }
-                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
+                    if action == 16 {
+                        mailbox.boss_encounter.browser_category =
+                            mailbox.boss_encounter.browser_category.next();
+                        super::super::input::enqueue(mailbox, commands, Intent::Catalogue);
+                    }
                     if action == 20 {
                         mailbox.boss_encounter.select_slot();
                     }

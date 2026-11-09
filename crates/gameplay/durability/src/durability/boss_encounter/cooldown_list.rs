@@ -62,6 +62,34 @@ impl super::super::DurabilityRoot {
         };
         let after = after.to_owned();
         let include_taints = query.ends_with(&[16, 1]);
+        self.read_boss_status(authority, node, fence, after, include_taints, None)
+            .await
+    }
+
+    /// Same retained admission and Character fences as cooldown reads; only the requested,
+    /// bounded catalogue keys are joined to private progress in this transaction.
+    pub async fn read_boss_catalogue_page(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        page: oteryn_protocol_oteryn::boss_encounter::catalogue::Page,
+    ) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
+        if page.encode().is_none() {
+            return Ok(None);
+        }
+        self.read_boss_status(authority, node, fence, String::new(), false, Some(page))
+            .await
+    }
+    async fn read_boss_status(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        after: String,
+        include_taints: bool,
+        catalogue: Option<oteryn_protocol_oteryn::boss_encounter::catalogue::Page>,
+    ) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -124,6 +152,19 @@ impl super::super::DurabilityRoot {
                         .is_err()
                     {
                         return Ok(None);
+                    }
+                    if let Some(mut page)=catalogue {
+                        let keys:Vec<_>=page.entries.iter().map(|e|e.key.clone()).collect();
+                        let rows:Vec<(String,i64)>=sqlx::query_as("SELECT boss_key,kill_count FROM game_character_bosstiary_progress WHERE character_id=encode($1,'hex')::uuid AND boss_key=ANY($2::text[]) LIMIT 16")
+                            .bind(fence.character_id.as_bytes().as_slice()).bind(&keys).fetch_all(&mut *tx).await?;
+                        let points:i64=sqlx::query_scalar("SELECT COALESCE(sum(boss_points),0)::bigint FROM game_character_bosstiary_progress WHERE character_id=encode($1,'hex')::uuid")
+                            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        page.points=u64::try_from(points).map_err(|_|DurabilityError::InvalidStoredState)?;
+                        for entry in &mut page.entries {
+                            entry.kills=rows.iter().find(|(key,_)|key==&entry.key).map_or(Ok(0),|(_,kills)|u64::try_from(*kills).map_err(|_|DurabilityError::InvalidStoredState))?;
+                        }
+                        let bytes=page.encode().ok_or(DurabilityError::InvalidStoredState)?;
+                        commit_semantic_transaction(tx,deadline).await?;return Ok(Some(bytes));
                     }
                     // C collation is also the primary-key collation, matching Rust key ordering.
                     // One extra row establishes continuation without a count or an unbounded scan.

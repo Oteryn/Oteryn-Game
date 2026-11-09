@@ -5,6 +5,8 @@ use oteryn_client_runtime::{
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Catalogue,
+    CatalogueNext,
     Refresh,
     Next,
     Enter,
@@ -28,6 +30,33 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
     if panel.pending {
         return None;
     }
+    if matches!(intent, Intent::Catalogue | Intent::CatalogueNext) {
+        let query = if intent == Intent::CatalogueNext {
+            let mut query = panel.catalogue_query.clone()?;
+            query.after = panel.catalogue.as_ref()?.next?;
+            query
+        } else {
+            boss_encounter::catalogue::Query {
+                after: 0,
+                category: panel.browser_category.server_filter(),
+                search: panel.browser_search.trim().into(),
+            }
+        };
+        let Some(payload) = query.encode() else {
+            panel.feedback = Some("Search must fit 48 UTF-8 bytes");
+            return None;
+        };
+        panel.pending = true;
+        panel.pending_kind = boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS;
+        panel.pending_catalogue = Some(query);
+        panel.feedback = None;
+        return Some(FeatureCommand {
+            capability: 117,
+            kind: 133,
+            payload,
+        });
+    }
+    panel.pending_catalogue = None;
     if matches!(intent, Intent::Enter | Intent::Defeated | Intent::Timeout) {
         let Ok(payload) = boss_encounter::encode_boss_key(&panel.fields[0]) else {
             panel.feedback = Some("Enter a valid boss key");
@@ -78,6 +107,38 @@ pub fn request(panel: &mut BossEncounterPanel, intent: Intent) -> Option<Feature
 }
 pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult) -> bool {
     panel.pending = false;
+    if let Some(query) = panel.pending_catalogue.take() {
+        if !matches!(
+            result.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        ) {
+            panel.feedback = Some("The server refused the boss catalogue query");
+            return false;
+        }
+        let Some(page) = boss_encounter::catalogue::Page::decode(&result.payload) else {
+            panel.feedback = Some("Invalid boss catalogue reply");
+            return false;
+        };
+        if page.next.is_some_and(|next| next <= query.after)
+            || page.entries.iter().any(|e| {
+                query.category != 0 && e.category != query.category
+                    || !e.name.to_lowercase().contains(&query.search.to_lowercase())
+            })
+        {
+            panel.feedback = Some("Mismatched boss catalogue reply");
+            return false;
+        }
+        if !page.entries.iter().any(|e| e.key == panel.fields[0]) {
+            panel.fields[0] = page
+                .entries
+                .first()
+                .map_or_else(String::new, |e| e.key.clone());
+        }
+        panel.catalogue = Some(page);
+        panel.catalogue_query = Some(query);
+        panel.feedback = None;
+        return true;
+    }
     if matches!(
         panel.pending_kind,
         boss_encounter::COMMAND_TYPE_BOSS_LEVER

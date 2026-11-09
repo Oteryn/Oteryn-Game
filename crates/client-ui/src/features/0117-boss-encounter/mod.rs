@@ -22,3 +22,11 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/browser.rs"]
 mod browser_tests;
+
+#[path = "view/catalogue.rs"]
+mod catalogue_view;
+pub use catalogue_view::catalogue_cards;
+
+#[cfg(test)]
+#[path = "tests/catalogue.rs"]
+mod catalogue_tests;

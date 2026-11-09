@@ -547,9 +547,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bosstiary: kategorie/points/progress",
-  "status": "PARTIAL",
-  "gap": "Jest postęp i boss key; brak galerii, filtrów kategorii i pełnej prezentacji etapów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0117-boss-encounter/tests/catalogue.rs:4 + boss_gallery_real_caller_carries_filters_portraits_and_all_stages; crates/gameplay/dispatch/src/gameplay_transport/boss_encounter/catalogue.rs:4 + boss_catalogue_filters_canonical_categories_and_advances_over_unqualified_records; apps/client/src/features/0117-boss-encounter/view/portraits.rs:125 + boss_portrait_composes_actual_cell_offsets_layers_and_alpha_in_bgra; bosstiary_catalogue_keeps_the_existing_gated_boss_status_route"
  },
  {
   "id": "T083",
