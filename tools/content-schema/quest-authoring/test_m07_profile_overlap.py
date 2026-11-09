@@ -27,5 +27,14 @@ class RepairIntegrationProfiles(unittest.TestCase):
             self.assertFalse(row['admission']['materializable'], key)
             self.assertEqual(row, rafzane[key], key)
 
+    def test_crafting_overlap_preserves_accepted_canonical_presentation(self):
+        base = ROOT / 'tools/content-schema/native-gameplay'
+        def records(name):
+            return {r['production_definition']['production_key']: r for r in json.loads((base / name).read_text())['records']}
+        reward = records('qengine-reward-item-profiles.json')
+        crafting = records('qready1-craft-item-profiles.json')
+        for key in ('oteryn:item.tibia.i21506', 'oteryn:item.tibia.i21507'):
+            self.assertEqual(reward[key], crafting[key], key)
+
 if __name__ == '__main__':
     unittest.main()

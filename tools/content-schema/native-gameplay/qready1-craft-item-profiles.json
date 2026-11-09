@@ -306,7 +306,7 @@
             },
             "description": {
               "state": "KNOWN",
-              "value": "Not simple fish flakes, but magical fish flakes supporting linguistic development"
+              "value": "Not simple fish flakes, but magical fish flakes supporting linguistic development."
             }
           }
         },
@@ -384,7 +384,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -449,7 +467,7 @@
             },
             "description": {
               "state": "KNOWN",
-              "value": "This fluid may be able to unpetrify a petrified object"
+              "value": "This fluid may be able to unpetrify a petrified object."
             }
           }
         },
@@ -593,7 +611,7 @@
             },
             "description": {
               "state": "KNOWN",
-              "value": "It shimmers greenly and sparkles softly"
+              "value": "It shimmers greenly and sparkles softly."
             }
           }
         },
@@ -671,7 +689,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"

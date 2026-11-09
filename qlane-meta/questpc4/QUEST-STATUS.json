@@ -11531,5 +11531,11 @@
     "red": "capture(ids={2833}) returned zero records after filtering with global IDS; test3.411s failed",
     "green": "Exact requested parchment profile returned; regression3.242s PASS",
     "scope": "Use selected_ids for explicit capture result filtering; default cohort and custody promotions unchanged"
+  },
+  "crafting_accepted_fact_overlap": {
+    "status": "QUALIFIED_SLICE",
+    "red": "Crafting and reward captures disagreed on accepted description punctuation and known trade facts",
+    "green": "3 profile overlap tests PASS; 7 crafting unit tests1.373s PASS; source builder --check PASS",
+    "scope": "Reuse accepted-first policy with physical/stack/container/temporal conflict guards; source capture regenerated; no operative/custody fact changes"
   }
 }
