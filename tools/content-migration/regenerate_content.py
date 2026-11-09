@@ -83,6 +83,7 @@ SPELLS_MANIFEST = "content/spells.manifest.json"
 AUTHORING_TOOLS = (
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
+    "tools/content-schema/quest-authoring/questpc3_collectors.py",
     "tools/content-schema/quest-authoring/questpc3_native_entries.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
     "tools/content-schema/charm-authoring/charm_authoring.py",
@@ -618,6 +619,7 @@ def main() -> int:
     if args.native_only:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-schema/quest-authoring/questpc3_collectors.py", "content"])
         run(["python3", "tools/content-schema/quest-authoring/questpc3_native_entries.py", "content"])
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])

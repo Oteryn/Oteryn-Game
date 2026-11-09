@@ -467,3 +467,6 @@ mod terrain_use_tests;
 
 #[cfg(test)]
 mod door_use_tests;
+
+#[cfg(test)]
+mod collector_delivery_tests;
