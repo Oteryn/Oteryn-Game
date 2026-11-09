@@ -11349,5 +11349,33 @@
     "source": "content/world/placements/region-z07-x128-y123.b3 sha256865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
     "decision": "Level50/free eligibility retained. Deterministic reusable Fire Bug; front shows2113 for60s. One personal credit per machine survives shared restoration. Chosen visual timing/positions, no recovered AID or source-schedule claim. Commission/report/finale not certified by this slice.",
     "pending": "Remaining M07: Machinery repair/catapults/tower wheels, Dreamer remaining puzzle, Too Hot tool bindings; no whole-quest completion claim"
+  },
+  "m07_machinery_catapults": {
+    "status": "CATAPULT_SLICE_DONE",
+    "scope": "8 native four-part catapults with separate once-only flags/counter; retained5467; same chosen60s fire lifecycle",
+    "red": "New data sidecar absent; geometry test then caught decorated root32909,31736 needing ordinal2 rather than1",
+    "green": {
+      "machine_data_modules": "4/4 tests 0.353s;32 catapult parts plus24ballista parts and exact source ordinals",
+      "model_tests": "13/13 3.712s",
+      "workspace_all_targets_seconds": 362.188,
+      "authoring_checks_seconds": 425.977,
+      "authoring_unit_modules": 119,
+      "authoring_unit_seconds": 621.265,
+      "content_tree_seconds": 170.526,
+      "postgres": {
+        "version": "18.6",
+        "ballista_level49_seconds": 70.870134547,
+        "ballista_level50_seconds": 69.293728831,
+        "catapult_level49_seconds": 70.096262391,
+        "catapult_level50_seconds": 71.42717194,
+        "total_tests": "6/6 282.186s including source-witness coverage and sorted module registration"
+      },
+      "clippy_quests_dispatch_seconds": 299.499,
+      "fmt_seconds": 20.366,
+      "pin_check_seconds": 42.189,
+      "duplicate_migrations": "PASS"
+    },
+    "decision": "Reuse the native-level and retained-tool engine already pushed; PG helper now resolves actual callback selectors and bundle-palette appearance facts. Rerun both level49/50 stories for both machine families. No new SQL/migration.",
+    "pending": "Remaining M07 repair/tower-wheel, Dreamer puzzle and Too Hot bindings; full M07 still PARTIAL"
   }
 }

@@ -1,6 +1,7 @@
 # M07 Machinery: native ballista burn sites
 
-This implements the selected Machinery of War programme's eight-ballista stage,
+This implements the selected Machinery of War programme's eight-ballista and
+eight-catapult burn occurrences,
 not certification of the whole quest or its original dynamic war schedule.
 `tools/content-schema/quest-authoring/samples/completion242/recipes.json`, record109,
 selects level50, free-account eligibility and deterministic Fire Bug interactions.
@@ -33,5 +34,15 @@ compose with these world predicates only for exact native, irreversible player
 USE trials with personal writes. Legacy unbound combinations remain rejected.
 Level enforcement remains in
 `crates/gameplay/durability/src/durability/quest_world_callback.rs:214`.
-Repair sites, catapults, tower wheels, commission/report and finale wiring remain
-outside this ballista slice. No completion or achievement is granted here.
+Catapults have four parts:5608 front,5606 north,5607 west and5605 northwest.
+The same pinned B3 contains exactly the eight declared sites; the separate
+catapult authoring test verifies all32 parts and native ordinals. Some fronts
+are ordinal2 because a grass decoration precedes the machine in the source
+stack. These sites have separate personal flags and a separate eight-site
+counter, using the same chosen retained-tool/fire/reset behavior.
+
+The PG driver resolves appearance facts through the bundle palette and uses
+the actual callback selector and declared rear part. Both machine families run
+the same complete assertions with their own captured native crops.
+Repair sites, tower wheels, commission/report and finale wiring remain outside
+these burn slices. No completion or achievement is granted here.

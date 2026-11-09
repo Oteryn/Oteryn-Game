@@ -63,7 +63,7 @@ fn scenario_case(
         || native_story
         || native_upper;
     let start = if m07_machinery {
-        super::super::m07_machinery_burn::start()
+        super::super::m07_machinery_burn::start(name)
     } else if m07_realm {
         super::super::m07_realm_trials::start()
     } else if m07_lion {
@@ -448,7 +448,7 @@ fn scenario_case(
                     .ok_or("native Spirit policies")?,
             )?
         } else if m07_machinery {
-            super::super::m07_machinery_burn::world(generation.native_gameplay().ok_or("Machinery policies")?)?
+            super::super::m07_machinery_burn::world(generation.native_gameplay().ok_or("Machinery policies")?,name)?
         } else if m07_realm {
             super::super::m07_realm_trials::world(generation.native_gameplay().ok_or("Realm policies")?)?
         } else if m07_lion {
