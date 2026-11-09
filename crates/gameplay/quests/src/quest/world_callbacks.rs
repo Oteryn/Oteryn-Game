@@ -36,6 +36,7 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+mod native_trials;
 mod per_use_reward;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
@@ -330,6 +331,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m07-lion-offerings.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-burn.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m07-realm-trial.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -490,7 +494,8 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || ((!callback.offerings.is_empty() || callback.item_on_target.is_some())
                         && !callback.requires_world_admission)
-                    || callback.minimum_level.is_some()
+                    || (callback.minimum_level.is_some()
+                        && !native_trials::level_guard_admitted(callback))
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()

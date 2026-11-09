@@ -11308,5 +11308,46 @@
     },
     "pending": "Native Machinery repair/burn callbacks and their PG stories; M07 remains PARTIAL",
     "sql_changed": false
+  },
+  "m07_machinery_ballistae": {
+    "status": "BALLISTA_SLICE_DONE",
+    "scope": "8 source-bound distinct ballista burn occurrences; shared60s fire overlay and retained5467; no whole-quest completion",
+    "red": {
+      "model": "minimum level with exact native world predicates rejected; focused RED0.027s",
+      "data": "new binding tests failed: sidecar absent",
+      "native_pg_fixture": {
+        "seconds": 58.868980485,
+        "postgres": "18.6",
+        "error": "Character progression permits only one typed XP, death or stance successor",
+        "cause": "test tried a direct successor UPDATE; changed to separate historical49/50 creation fixtures without bypassing the owner guard"
+      }
+    },
+    "green": {
+      "native_level_composition_seconds": 0.026,
+      "model_tests": "13/13 3.508s",
+      "data_tests": "2/2 0.153s; all24 native parts and8ordinals checked",
+      "workspace_all_targets_seconds": 294.098,
+      "authoring_checks_seconds": 340.786,
+      "authoring_unit_modules": 118,
+      "authoring_unit_seconds": 506.804,
+      "content_tree_seconds": 142.661,
+      "source_witness_coverage_seconds": 0.243,
+      "module_registration_seconds": 0.011,
+      "postgres": {
+        "version": "18.6",
+        "level49_seconds": 59.516960557,
+        "level50_story_seconds": 65.257049011,
+        "level49_case": "m07_machinery_postgres_ballista_refuses_level49_without_credit_or_tool_charge",
+        "level50_case": "m07_machinery_postgres_ballista_retains_tool_checks_level_and_resets"
+      },
+      "clippy_quests_dispatch_seconds": 217.678,
+      "workspace_final_all_targets_seconds": 137.755,
+      "fmt_seconds": 15.473,
+      "pin_check_seconds": 27.981,
+      "duplicate_migrations": "PASS"
+    },
+    "source": "content/world/placements/region-z07-x128-y123.b3 sha256865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+    "decision": "Level50/free eligibility retained. Deterministic reusable Fire Bug; front shows2113 for60s. One personal credit per machine survives shared restoration. Chosen visual timing/positions, no recovered AID or source-schedule claim. Commission/report/finale not certified by this slice.",
+    "pending": "Remaining M07: Machinery repair/catapults/tower wheels, Dreamer remaining puzzle, Too Hot tool bindings; no whole-quest completion claim"
   }
 }

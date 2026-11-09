@@ -22,6 +22,8 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m07_machinery = name.starts_with("m07/machinery-");
+    let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
     let m07_realm = name.starts_with("m07/realm-");
     let m07_lion = name.starts_with("m07/lion-");
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
@@ -44,7 +46,7 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = m07_realm || m07_lion || m07_dreamer || qm48
+    let native_crop = m07_machinery || m07_realm || m07_lion || m07_dreamer || qm48
         || m01b_explore
         || small_ruby
         || mead
@@ -60,7 +62,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m07_realm {
+    let start = if m07_machinery {
+        super::super::m07_machinery_burn::start()
+    } else if m07_realm {
         super::super::m07_realm_trials::start()
     } else if m07_lion {
         super::super::m07_lion_offerings::start(name)
@@ -167,6 +171,8 @@ fn scenario_case(
             "rotten-blood/sacrifice"
         } else if monk {
             "monk-guidance"
+        } else if m07_machinery {
+            name.strip_suffix("-level49").unwrap_or(name)
         } else if target_swap
             || reusable_tool
             || floor_profiles
@@ -313,9 +319,17 @@ fn scenario_case(
             )
             .await
         } else {
-            Harness::create_with_admission_seed(admin, "quest_world_callbacks", m07_realm, false).await
+            Harness::create_with_admission_seed(admin, "quest_world_callbacks", m07_realm || (m07_machinery && !m07_machinery_level49), false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
+        if m07_machinery_level49 {
+            // Seed a separate historical character, as the shared harness does;
+            // never bypass the progression owner's typed successor guard.
+            sqlx::query("INSERT INTO game_character_progression_state VALUES \
+                (encode($1,'hex')::uuid,1,49,999,'profile-1','ruleset-1','content-1',\
+                 'simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
+                .bind(id(41).as_slice()).execute(&h.pool).await?;
+        }
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
@@ -433,6 +447,8 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Spirit policies")?,
             )?
+        } else if m07_machinery {
+            super::super::m07_machinery_burn::world(generation.native_gameplay().ok_or("Machinery policies")?)?
         } else if m07_realm {
             super::super::m07_realm_trials::world(generation.native_gameplay().ok_or("Realm policies")?)?
         } else if m07_lion {
@@ -668,6 +684,8 @@ fn scenario_case(
             super::super::qm47_mead::exercise(&mut owner, &admitted, &h, fence, &callback).await?;
         } else if m01b_explore {
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if m07_machinery {
+            Box::pin(super::super::m07_machinery_burn::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_realm {
             Box::pin(super::super::m07_realm_trials::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_lion {

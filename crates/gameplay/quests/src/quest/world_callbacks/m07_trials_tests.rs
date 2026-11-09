@@ -21,6 +21,30 @@ fn encode(c: &Callback) -> String {
 }
 
 #[test]
+fn m07_native_trial_level_guard_composes_with_exact_world_requirements() -> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/m07/realm-trial")
+        .ok_or("native trial")?;
+    callback.minimum_level = Some(50);
+    parse(&encode(&callback))?;
+    for invalid in 0..4 {
+        let mut bad = callback.clone();
+        match invalid {
+            0 => bad.selector.native = None,
+            1 => bad.requires_world_admission = false,
+            2 => bad.reversible = true,
+            _ => bad.trigger = Trigger::StepIn,
+        }
+        assert!(
+            parse(&encode(&bad)).is_err(),
+            "unbound level/world composition {invalid}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn m07_native_world_trial_can_guard_and_commit_a_personal_stage() -> Result<(), String> {
     let c = trial()?;
     parse(&encode(&c))?;
