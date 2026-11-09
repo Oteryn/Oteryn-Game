@@ -8,11 +8,15 @@ import copy
 import hashlib
 import json
 import re
+
+from native_container_fluids import project_fluid_child
 from pathlib import Path
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
 SOURCE_SHA256 = 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
+# Closed publication scope: other lanes retain their source claim ownership.
+FLUID_QUEST_CLAIMS = {'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine'}
 MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor capacity.
 # Existing selected owner rulings, reaffirmed by PR2770 ANSWER 6542716086/Q4.
 # Their source total remains 200; this deliberately preserves the accepted
@@ -276,11 +280,16 @@ def derive(definition, items, stack_problem):
             child_capacity = fact(item, 'container', 'capacity')
             if child_capacity is not None and (type(child_capacity) is not int or not 1 <= child_capacity <= 65535 or count != 1):
                 return None
-            # A source fluid argument is a subtype, never a stack count. The
-            # immutable source compiler records those separately; do not erase it.
+            # A qualified source fluid argument is initial state, not a stack.
+            # Retain the original holds and closed quest publication scope.
             if known(item.get('semantics', {}).get('fluid')) is not None:
-                return None
-            child = copy.deepcopy(quantity)
+                if definition['provenance']['pilot_key'] not in FLUID_QUEST_CLAIMS:
+                    return None
+                child = project_fluid_child(quantity, raw_count, item)
+                if child is None:
+                    return None
+            else:
+                child = copy.deepcopy(quantity)
             if source_id in key_ids and key_number is not None:
                 if count != 1:
                     return None

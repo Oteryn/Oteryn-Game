@@ -18,6 +18,10 @@ use std::fmt;
 
 #[path = "native_reward_claims.rs"]
 mod native_authored;
+#[path = "native_container_fluids.rs"]
+mod native_container_fluids;
+const CONTAINER_NATIVE_SOURCE_SHA256: &str =
+    "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757";
 
 /// The `unique` attribute of a top-level entry and the appearance id of its palette key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -455,8 +459,7 @@ fn native_container_placements(definition: &serde_json::Map<String, Value>) -> O
         &["schema", "revision", "source_sha256", "placements"],
     ) || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
         || projection.get("revision")?.as_str()? != "201189f871d23597b82caf88fd611454a2ddefb8"
-        || projection.get("source_sha256")?.as_str()?
-            != "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+        || projection.get("source_sha256")?.as_str()? != CONTAINER_NATIVE_SOURCE_SHA256
     {
         return None;
     }
@@ -621,9 +624,11 @@ fn candidate_container_placement(
         return Ok(None);
     }
     result.achievement = achievement;
-    for (row, source) in rows.iter().zip(source_rows) {
-        if !only(row, &["item", "count", "key_number", "text"])
-            || !only(source, &["item", "count"])
+    for (ordinal, (row, source)) in rows.iter().zip(source_rows).enumerate() {
+        if !only(
+            row,
+            &["item", "count", "key_number", "text", "fluid_subtype"],
+        ) || !only(source, &["item", "count"])
             || row.get("item") != source.get("item")
             || row.get("count") != source.get("count")
         {
@@ -682,8 +687,13 @@ fn candidate_container_placement(
                 Some(body.to_owned())
             }
         };
+        let Some(fluid_subtype) =
+            native_container_fluids::source_subtype(row, result.crystal_unique_id, ordinal)
+        else {
+            return Ok(None);
+        };
         result.contents.push(RewardContainerItem {
-            fluid_subtype: None,
+            fluid_subtype,
             item: child.item,
             count: child.count,
             key_number: number,
