@@ -385,5 +385,22 @@
     ],
     "sql": "No SQL write path or schema changed; this slice adds no PG execution claim.",
     "scope": "Admission capability only. Actual ticket-sale data/arrival and last-port return remain unfinished; no whole M38 completion claim."
+  },
+  "preserved_display_name_consumer": {
+    "state": "GREEN",
+    "names": [
+      "Ferryman Kamil",
+      "Harlow",
+      "Junkar",
+      "Maris"
+    ],
+    "red": "service model ignored authored display names",
+    "tests": "344 passed, 0 failed, 1 pre-existing ignored; 566.52s",
+    "workspace_check": "PASS 6m29s",
+    "clippy": "PASS strict content all-targets/all-features 44.14s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged inputs",
+    "migration": "none",
+    "remaining": "Authored four-name data repairs and other M38 bindings remain unfinished; node boot delegated to CI by owner."
   }
 }
