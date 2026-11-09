@@ -1,4 +1,4 @@
-"""Fire-path qualification preserves nonportable bodies and exact source bindings."""
+"""All altar families preserve nonportable bodies and exact source bindings."""
 import copy
 import hashlib
 import json
@@ -19,11 +19,19 @@ class ElementalSpheresProfiles(unittest.TestCase):
     def generated(self):
         return {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
 
-    def test_fire_path_has_exact_source_facts_and_only_soil_is_portable(self):
+    def test_all_altars_have_exact_source_facts_and_only_soils_are_portable(self):
         records = {r['production_definition']['production_key']: r for r in self.overlay()['records']}
-        self.assertEqual(set(records), {f'oteryn:item.tibia.i{i}' for i in (941, 7739, 7743, 7745, 8141)})
+        self.assertEqual(set(records), {f'oteryn:item.tibia.i{i}' for i in (940, 941, 944, 945, 7737, 7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748, 8106, 8139, 8140, 8141)})
         for key, record in records.items():
-            self.assertEqual(record['admission']['materializable'], key.endswith('.i941'))
+            self.assertEqual(record['admission']['materializable'], key in {f'oteryn:item.tibia.i{i}' for i in (940, 941, 944, 945)})
+        for item, weight, capacity in ((8106, 40000, 15), (8139, 10000, 14), (8140, 10000, 14), (8141, 10000, 11)):
+            body = records[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(body['admission']['legal_destinations'], ['Ground'])
+            self.assertEqual(body['semantics']['physical']['value'], {
+                'weight': {'state': 'KNOWN', 'value': weight},
+                'movable': {'state': 'KNOWN', 'value': True},
+                'pickupable': {'state': 'KNOWN', 'value': False}})
+            self.assertEqual(body['semantics']['container']['value']['capacity'], {'state': 'KNOWN', 'value': capacity})
         corpse = records['oteryn:item.tibia.i8141']
         self.assertEqual(corpse['admission']['legal_destinations'], ['Ground'])
         self.assertEqual(corpse['semantics']['container']['value']['capacity'], {'state': 'KNOWN', 'value': 11})
@@ -36,8 +44,8 @@ class ElementalSpheresProfiles(unittest.TestCase):
         generated = self.generated()
         elemental.admit(ROOT, generated, 'profiles', 'manifest', registry.provider_order, registry.spell_import.canonical_bytes)
         records = json.loads(generated['profiles'])['records']
-        self.assertEqual(len(records), 5)
-        self.assertEqual(len({r['production_definition']['production_key'] for r in records}), 5)
+        self.assertEqual(len(records), 19)
+        self.assertEqual(len({r['production_definition']['production_key'] for r in records}), 19)
         self.assertEqual(json.loads(generated['manifest'])['item_profiles']['sha256'], hashlib.sha256(generated['profiles']).hexdigest())
 
     def test_existing_profile_cannot_be_rebound(self):

@@ -1,4 +1,4 @@
-"""Pinned Elemental Spheres fire-soil, altar and corpse native counterparts."""
+"""Pinned Elemental Spheres soils, altars and corpse native counterparts."""
 from __future__ import annotations
 
 import argparse
@@ -10,7 +10,9 @@ import rafzane_elevator_profiles as pinned
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/elemental-spheres-item-profiles.json'
-IDS = {941, 7739, 7743, 7745, 8141}
+SOILS = {940, 941, 944, 945}
+# The existing ordinary-field cohort already owns energy field 2126.
+IDS = SOILS | {7737, 7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748, 8106, 8139, 8140, 8141}
 SCHEMA = 'OTERYN_NATIVE_ELEMENTAL_SPHERES_PROFILES/v1'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
 
@@ -30,7 +32,7 @@ def capture(xml_path):
         row = native.profile(item, xml[item], objects[item], physical[item], bindings, None)
         # These definitions remain nonportable. A corpse's own receipt admits
         # Ground movement; its container capacity is never inventory admission.
-        if item != 941:
+        if item not in SOILS:
             if row['admission'] != {'materializable': True, 'stack_class': 'NonStackable', 'legal_destinations': ['Ground']}:
                 raise ValueError('ELEMENTAL_SPHERES_GROUND_ONLY')
             row['admission']['materializable'] = False
@@ -51,7 +53,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or set(overlay['source_lines']) != {str(i) for i in IDS}):
         raise ValueError('ELEMENTAL_SPHERES_PROFILE_SET')
     for record in records:
-        soil = record['production_definition']['production_key'] == 'oteryn:item.tibia.i941'
+        soil = record['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in SOILS}
         expected = {'materializable': soil, 'stack_class': 'StackCapable' if soil else 'NonStackable',
                     'legal_destinations': ['CharacterInventory', 'Ground'] if soil else ['Ground']}
         if record['admission'] != expected:
