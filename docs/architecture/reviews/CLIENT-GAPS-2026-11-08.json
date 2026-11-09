@@ -1329,9 +1329,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Górne menu i przyciski okien",
-  "status": "PARTIAL",
-  "gap": "Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Wspólny pasek przycisków otwiera istniejące okna przez normalne wejścia klienta, respektuje zmienione skróty i zarządza widocznością paneli.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/native.rs:115 + shared native window buttons and click routing at :298; apps/client/src/features/local-reference-preferences/sync.rs:115 + queue_window and take_window_events; apps/client/src/windows_shell/application_handler.rs:145 + live menu event dispatch; apps/client/src/features/local-reference-preferences/tests/presentation.rs:110 + o010_menu_uses_live_window_inputs_after_rebinding; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:130 + shortcut_order_persists_and_buttons_open_real_panels"
  },
  {
   "id": "O011",
