@@ -491,10 +491,15 @@ signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
 events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
-          'pass_dropped'}
+          'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
+          'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
+          'step_rejected_stale_position', 'step_rejected_pending_spell',
+          'step_rejected_drome', 'step_rejected_movement'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
+    'kind': {'Actor', 'SnapshotMismatch', 'ContextMismatch', 'ScopeMismatch',
+             'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
                'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',

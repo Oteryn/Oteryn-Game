@@ -202,6 +202,15 @@ fn near_locker(world: &BundleWorld, at: TilePos) -> bool {
     })
 }
 
+fn town_route_retry_delay(
+    disposition: StepDisposition,
+    stationary: bool,
+    attempt: u8,
+) -> Option<Duration> {
+    (disposition == StepDisposition::Rejected && stationary && attempt <= 5)
+        .then_some(Duration::from_millis(500))
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -209,9 +218,35 @@ async fn walk(
 ) -> TestResult {
     for &direction in path {
         let before = client.world_spatial().actor_position;
-        let outcome = client.step_retrying(direction).await?;
+        let mut outcome = client.step_retrying(direction).await?;
+        for attempt in 1..=6 {
+            if outcome.disposition != StepDisposition::Rejected
+                || client.world_spatial().actor_position != before
+            {
+                break;
+            }
+            evidence(&format!(
+                "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
+                destination(world, tile(before)?, direction),
+                client.world_spatial().actor_position,
+            ));
+            let Some(delay) = town_route_retry_delay(
+                outcome.disposition,
+                client.world_spatial().actor_position == before,
+                attempt,
+            ) else {
+                break;
+            };
+            tokio::time::sleep(delay).await;
+            outcome = client.step_retrying(direction).await?;
+        }
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
-            return Err(format!("town route step {direction:?}: {outcome:?}").into());
+            return Err(format!(
+                "town route step {direction:?} from={before:?} expected={:?} actual={:?}: {outcome:?}",
+                destination(world, tile(before)?, direction),
+                client.world_spatial().actor_position,
+            )
+            .into());
         }
         let after = client.world_spatial().actor_position;
         if Some(tile(after)?) != destination(world, tile(before)?, direction) {
@@ -753,4 +788,25 @@ fn qualification_nbfix_fresh_grants_for_reconnects_and_colliding_tags() -> TestR
         assert_eq!(attempt[8] >> 6, 2);
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
+    for attempt in 1..=6 {
+        assert_eq!(
+            town_route_retry_delay(StepDisposition::Rejected, true, attempt),
+            (attempt <= 5).then_some(Duration::from_millis(500)),
+        );
+        for disposition in [StepDisposition::Moved, StepDisposition::Blocked] {
+            assert_eq!(town_route_retry_delay(disposition, true, attempt), None);
+        }
+        for disposition in [
+            StepDisposition::Moved,
+            StepDisposition::Blocked,
+            StepDisposition::Rejected,
+        ] {
+            assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
+        }
+    }
 }

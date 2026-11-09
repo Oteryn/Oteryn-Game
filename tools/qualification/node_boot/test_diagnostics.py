@@ -25,6 +25,24 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_step_rejections_keep_only_closed_schema_fields(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        events = [f'step_rejected_{branch}' for branch in (
+            'dawnport', 'source_map', 'dead', 'lane', 'pvp_locks',
+            'stale_position', 'pending_spell', 'drome', 'movement',
+        )]
+        lines = [f'oteryn-game-server event={event} kind=Actor character=secret '
+                 'position=secret database_url=secret' for event in events]
+        lines.append('oteryn-game-server event=step_rejected_movement kind=secret')
+        script = prefix + '\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        for event in events:
+            self.assertIn(f'event={event} ', result.stdout)
+        self.assertIn('kind=Actor', result.stdout)
+        self.assertNotIn('secret', result.stdout)
+
     def exercise(self, signum):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
