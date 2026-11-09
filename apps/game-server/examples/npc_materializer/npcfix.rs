@@ -93,11 +93,11 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
     if draft.core.project_revision != "e06-market-crystal-parity-20261031-r1" {
         return Err("NPCFIX predecessor revision drifted".into());
     }
-    if hex_sha256(PACKET) != "f8d865969346ed72c67513346ba2ba78c28bb58e68159bcb3286461d32b9d3f4" {
+    if hex_sha256(PACKET) != "6c6c39561bf687850a50e09459461b47da4bf667803fdbc3e1779b3feb440d25" {
         return Err("NPCFIX repair packet digest drifted".into());
     }
     let packet: Packet = serde_json::from_slice(PACKET)?;
-    if packet.schema != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" || packet.repairs.len() != 68 {
+    if packet.schema != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" || packet.repairs.len() != 69 {
         return Err("NPCFIX repair schema or count drifted".into());
     }
     let mut replacements = Vec::new();
