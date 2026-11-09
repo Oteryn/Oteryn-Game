@@ -19,10 +19,79 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         expected_revision: u64,
         after: EntryFacts,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
+    ) -> UseDisposition {
+        self.quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected_revision,
+            after,
+            false,
+            reservation,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn preflight_personal_quest_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected_revision: u64,
+        after: EntryFacts,
+    ) -> UseDisposition {
+        self.quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected_revision,
+            after,
+            true,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn quest_encounter(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected_revision: u64,
+        after: EntryFacts,
+        preflight: bool,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if preflight
+            && (!callback.has_personal_state()
+                || !callback.requires_world_admission
+                || encounter.timing.is_some())
+        {
+            return UseDisposition::Rejected;
+        }
+        if callback.has_personal_state() && !preflight && reservation.is_none() {
+            return UseDisposition::Rejected;
+        }
         if encounter.timing.is_some() {
             return self.schedule_timed_quest_encounter(
                 runtime,
@@ -46,10 +115,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
                     .contains(&at.y)
         };
-        if census
-            .iter()
-            .any(|(_, pos, session)| session.is_some() && in_room(pos.position()))
-        {
+        let personal_entry = callback.personal_room_entry().map(local);
+        if census.iter().any(|(who, pos, occupant_session)| {
+            occupant_session.is_some()
+                && in_room(pos.position())
+                && !(Some(pos.position()) == personal_entry
+                    && *who == actor
+                    && *occupant_session == Some(session))
+        }) {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
@@ -76,7 +149,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
                 || runtime.bound_attacker_lease(who, member_session).is_err()
                 || !self.states.player_trades.physical(member_session, None)
-                || self.has_pending_quest_callback(member_session)
+                || (self.has_pending_quest_callback(member_session)
+                    && !(callback.has_personal_state()
+                        && who == actor
+                        && member_session == session))
             {
                 return UseDisposition::Rejected;
             }
@@ -179,6 +255,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             phases.push(phase);
         }
         drop(phases);
+        if preflight {
+            return if runtime
+                .preflight_quest_encounter_entry(proofs, &monsters)
+                .is_ok()
+            {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Occupied
+            };
+        }
+        let Ok((snapshots, actors)) =
+            runtime.commit_quest_encounter_entry_with_roster(proofs, &monsters, || {
+                map.facts
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+            })
+        else {
+            return UseDisposition::Rejected;
+        };
+        if let Some(reservation) = reservation
+            && let Err(disposition) = reservation.publish(runtime, actors)
+        {
+            return disposition;
+        }
         for ((who, member_session, expected), snapshot) in players.into_iter().zip(snapshots) {
             states.stage_special_movement_step(
                 runtime,

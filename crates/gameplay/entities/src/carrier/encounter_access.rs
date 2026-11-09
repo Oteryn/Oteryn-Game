@@ -163,8 +163,18 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
-        self.commit_quest_encounter_entry_with_roster(players, monsters, project)
-            .map(|(positions, _)| positions)
+        self.quest_encounter_entry(players, monsters, project, true)
+    }
+
+    /// Validate the complete encounter admission while retaining the exclusive owner borrow.
+    /// No actor, movement revision, slot generation or projection escapes this preview.
+    pub fn preflight_quest_encounter_entry<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<(), CarrierError> {
+        self.quest_encounter_entry(players, monsters, || true, false)
+            .map(|_| ())
     }
 
     /// Return the exact admitted actors in the same atomic publication as entry.
@@ -173,6 +183,27 @@ impl ChannelRuntimeV1 {
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
+        self.quest_encounter_entry_with_roster(players, monsters, project, true)
+    }
+
+    fn quest_encounter_entry<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.quest_encounter_entry_with_roster(players, monsters, project, publish)
+            .map(|(positions, _)| positions)
+    }
+
+    fn quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+        publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
         if players.is_empty() || players.len() > 8 || monsters.is_empty() || monsters.len() > 8 {
         self.commit_quest_encounter_with_phase(players, monsters, |_, _| Ok(()), project)
@@ -225,7 +256,7 @@ impl ChannelRuntimeV1 {
             Ok((snapshots, actors))
             Ok((snapshots, phase))
         })();
-        if result.is_err() {
+        if !publish || result.is_err() {
             self.carrier = before;
         }
         result

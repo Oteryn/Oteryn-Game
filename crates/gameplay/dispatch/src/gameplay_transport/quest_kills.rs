@@ -82,8 +82,26 @@ pub(super) async fn settle(
         drop(slot);
         match outcome {
             Ok(
-                QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_),
+                QuestTransitionOutcome::Committed(receipt)
+                | QuestTransitionOutcome::AlreadyCommitted(receipt),
             ) => {
+                if receipt.completes {
+                    let mut runtime = owner.runtime.lock().await;
+                    if owner
+                        .states
+                        .quest_callbacks
+                        .complete_native_quest(
+                            &mut runtime,
+                            &receipt,
+                            recipient.session,
+                            recipient.death.observed_revision,
+                        )
+                        .is_err()
+                    {
+                        runtime.retire_owner_cycle();
+                        return false;
+                    }
+                }
                 owner.refresh_quest_session(recipient.session, false).await;
             }
             Ok(QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed) => {}

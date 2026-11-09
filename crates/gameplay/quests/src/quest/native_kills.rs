@@ -91,6 +91,19 @@ impl Counter {
             quest: self.quest.into(),
             effects,
             completes: self.completion_track().is_some(),
+            effects: vec![
+                QuestEffect {
+                    track: self.gate.into(),
+                    from: QuestComparison::Eq(1),
+                    effect: QuestEffectKind::Add(0),
+                },
+                QuestEffect {
+                    track: self.track.into(),
+                    from: QuestComparison::Between(0, self.maximum - 1),
+                    effect: QuestEffectKind::Add(1),
+                },
+            ],
+            completes: super::world_change_journals::completes(self.transition),
             experience: None,
         }
     }
@@ -202,11 +215,19 @@ fn counters() -> impl Iterator<Item = &'static Counter> {
         .iter()
         .chain(qworld::counters().unwrap_or_default())
         .chain(fugue::COUNTERS)
+        .chain(
+            super::world_change_journals::counters()
+                .into_iter()
+                .flatten(),
+        )
 }
 
 /// Fail closed when a file-authored counter registry cannot be loaded.
 pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Counter>, String> {
-    Ok(COUNTERS.iter().chain(qworld::counters()?))
+    Ok(COUNTERS
+        .iter()
+        .chain(qworld::counters()?)
+        .chain(super::world_change_journals::counters()?))
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
@@ -245,6 +266,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     qworld::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
     for counter in counters().chain(phase_settlements::COUNTERS) {
+    for counter in registered_counters()? {
         transitions.push(counter.transition());
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)

@@ -215,6 +215,10 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
             let actor_capacity = if native_deaths.is_some() { 14 } else { 3 };
             planned_world_reset::reset_fixture::set_runtime_with_capacity(
                 &mut deps, world, channel, &pin, epochs + 1, actor_capacity,
+            // Native death cases retain whole cohorts before draining them; include the player.
+            let capacity = if native_deaths.is_some() { 16 } else { 3 };
+            planned_world_reset::reset_fixture::set_runtime_with_capacity(
+                &mut deps, world, channel, &pin, epochs + 1, capacity,
             )?;
         } else {
             set_seasonal_runtime(&mut deps, world, channel, &pin, epochs + 1)?;

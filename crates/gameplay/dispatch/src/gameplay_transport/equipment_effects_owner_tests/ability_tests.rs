@@ -322,8 +322,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
     // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
     ("SV16-ECHO-CATALYSTS", 3),
-    // WORLDCHG: 41 source-captured definitions; 12369 is already in ITEMHOLD-Q.
-    ("WORLDCHG", 40),
+    // WORLDCHG: 42 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 41),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
     // M19: four exact Items in qready1-quest-item-profiles.json.
@@ -376,6 +376,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // QENGINE2 captures the closed shared, QUESTPC4, M12 and QN4 Item cohorts.
     // QENGINE2 adds exactly the 62 independently captured physical quest Items.
     // QENGINE2: generated witness of the producer's explicit IDS set.
+    // QENGINE2 captures 53 shared Items, seven portable QUESTPC4 Items,
+    // Oramond root 21291 and QN4 recipe ingredients 21504/21505.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -529,7 +531,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let world_change_records = world_change_proof["records"]
         .as_array()
         .ok_or("world-change profiles")?;
-    assert_eq!(world_change_records.len(), 41);
+    assert_eq!(world_change_records.len(), 42);
     for source in world_change_records {
         let key = source["production_definition"]["production_key"]
             .as_str()

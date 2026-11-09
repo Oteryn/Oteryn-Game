@@ -50,6 +50,7 @@ map_revision = "551e04b6fe7f470fee0f3280b9127834706f81e73503114ec417549b1e32aa1e
 map_revision = "deb1b2473129cf81c94e6ffa25b5451bab3179003c49c500b6aa9ce2a63d947f"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 map_revision = "9f8a9374b011581412cc94d7e02a79d518bb02b9481edb942b7f750c8f55dc6b"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 map_revision = "da5de3020aae27f0ee6db47fbfb7cfa08c14538219af1df0a15c3e00c96fd34d"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "6f6ec12c52b45f38d81fc9b436f12c19addd589ce090729c34ecd882a52a9598"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -68,6 +69,7 @@ digest = "551e04b6fe7f470fee0f3280b9127834706f81e73503114ec417549b1e32aa1e"
 digest = "deb1b2473129cf81c94e6ffa25b5451bab3179003c49c500b6aa9ce2a63d947f"
 digest = "9f8a9374b011581412cc94d7e02a79d518bb02b9481edb942b7f750c8f55dc6b"
 digest = "da5de3020aae27f0ee6db47fbfb7cfa08c14538219af1df0a15c3e00c96fd34d"
+digest = "6f6ec12c52b45f38d81fc9b436f12c19addd589ce090729c34ecd882a52a9598"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "seasonal-cake-creature-20261107-r1"

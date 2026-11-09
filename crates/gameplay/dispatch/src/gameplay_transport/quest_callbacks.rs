@@ -17,6 +17,7 @@ mod execute;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod personal_encounter;
 mod phase;
 mod rewards;
 mod shared_gate;
@@ -71,6 +72,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:
@@ -81,6 +83,34 @@ pub(super) struct PendingCallbacks {
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
+}
+
+impl PendingCallbacks {
+    pub(super) fn complete_native_quest(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        receipt: &crate::durability::quest_state::CommittedQuestTransition,
+        session: GameSessionId,
+        observed_revision: u64,
+    ) -> Result<(), UseDisposition> {
+        if !receipt.completes {
+            return Ok(());
+        }
+        if !matches!(receipt.cause, QuestCause::CreatureDeath(_))
+            || observed_revision > receipt.original_character_revision.get()
+        {
+            return Err(UseDisposition::Rejected);
+        }
+        self.personal
+            .complete(
+                runtime,
+                receipt.character_id.as_bytes(),
+                session,
+                &receipt.quest_key,
+                observed_revision,
+            )
+            .map(|_| ())
+    }
 }
 
 impl PendingCallbacks {
@@ -392,7 +422,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         fee_payment: None,
                     }
                 });
-            let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
+            let disposition = match slot.commit_world_callback_with_requirements(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
                 self.active_generation.and_then(|generation| generation.native_gameplay()),

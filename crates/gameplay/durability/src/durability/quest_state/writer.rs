@@ -249,6 +249,41 @@ impl DurabilityRoot {
         .await
     }
 
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_requirements<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, native)),
+            None,
+            None,
+            None,
+            premium,
+            None,
+            None,
+            admission,
+            None,
+            None,
+        )
+        .await
+    }
+
     /// Bloodshade's fixed access purchase uses the existing fee owner and then
     /// this same Quest writer in one physical transaction.
     pub async fn commit_rotten_blood_access_purchase(
@@ -579,6 +614,8 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let journal_achievement = super::world_change_journal_rewards::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let mount_achievement = super::super::quest_mount_rewards::prepare(callback.as_ref())
@@ -678,6 +715,7 @@ impl DurabilityRoot {
         if let Some(death) = &native {
             death.bind(&mut binding)?;
         }
+        super::world_change_journal_rewards::bind(&mut binding, journal_achievement.as_ref())?;
         if let Some(source) = &grizzly_party {
             grizzly::bind_party(&mut binding, source)?;
         }
@@ -801,7 +839,8 @@ impl DurabilityRoot {
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
+                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium)
+                        || callback.as_ref().is_some_and(|c| oteryn_gameplay_quests::quest::world_change_journals::requires_premium(&c.key)) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -1499,6 +1538,8 @@ impl DurabilityRoot {
                         }
                     }
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
+                    super::world_change_journal_rewards::earn(&mut tx, fence, &request, &catalogue,
+                        &changes, native.is_some(), journal_achievement.as_ref()).await?;
                     super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;
                     super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;
                     if let Some(plan) = &grizzly_plan {

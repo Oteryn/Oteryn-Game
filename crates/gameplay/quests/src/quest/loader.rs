@@ -251,6 +251,8 @@ pub(super) fn lower_embedded_quest_state(
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
     lowered.catalogue =
+        super::world_change_journals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;

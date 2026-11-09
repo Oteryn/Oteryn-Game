@@ -483,10 +483,24 @@ pub(super) fn valid(callback: &Callback) -> bool {
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
         + usize::from(effects.encounter.is_some());
+    let personal_encounter = effects.encounter.as_ref().is_some_and(|encounter| {
+        callback.has_personal_state()
+            && callback.requires_world_admission
+            && callback.actor_kind == ActorKind::Player
+            && matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+            && callback.lever.is_none()
+            && !callback.opening_only
+            && !callback.reversible
+            && callback.offerings.is_empty()
+            && callback.item_on_target.is_none()
+            && encounter.players.len() == 1
+            && encounter.timing.is_none()
+            && effects.item_reward.is_none()
+            && effects.outfit_reward.is_none()
+    });
     if operations > 1
         || (operations > 0
-            && (!lever
-                || callback.has_personal_state()
+            && ((!personal_encounter && (!lever || callback.has_personal_state()))
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {
@@ -555,10 +569,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || encounter.room_min.floor != encounter.room_max.floor
             || encounter.room_min.x > encounter.room_max.x
             || encounter.room_min.y > encounter.room_max.y
-            || encounter
-                .players
-                .iter()
-                .any(|p| !pos(p.from) || !pos(p.to) || !in_room(p.to) || in_room(p.from))
+            || encounter.players.iter().any(|p| {
+                !pos(p.from)
+                    || !pos(p.to)
+                    || !in_room(p.to)
+                    || (in_room(p.from) && callback.personal_room_entry() != Some(p.from))
+            })
             || encounter.monsters.iter().any(|m| {
                 !pos(m.position)
                     || !in_room(m.position)

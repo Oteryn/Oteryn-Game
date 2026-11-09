@@ -149,6 +149,7 @@ def main():
         ['authored_quest_authoring.py', '--check'],
         ['quest_completion_authoring.py', '--check'],
         ['quest_rollout_authoring.py', '--check'],
+        ['engworldchg_m31.py', '--check'],
         ['quest_binding_authoring.py', '--check'],
         ['quest_v2_export.py', '--check'],
         ['quest_state_lowering.py', '--check'],

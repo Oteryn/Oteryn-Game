@@ -9,6 +9,9 @@ pub enum NativeDeathSource {
         party: Arc<crate::foundation::PartySnapshot>,
         death: crate::foundation::CreatureDeathOccurrenceKey,
         died_at_unix_ms: u64,
+    PositionedParty {
+        source: Arc<crate::foundation::PartySnapshot>,
+        position: (u16, u16, i8),
     },
     Source(super::source_deaths::SourceDeathContext),
 }
@@ -35,6 +38,15 @@ impl NativeQuestDeath {
             && match &self.source {
                 NativeDeathSource::Party(_) | NativeDeathSource::InstanceBoss { .. } => {
                     oteryn_gameplay_quests::quest::native_kills::counter_for(
+                NativeDeathSource::Party(_) | NativeDeathSource::PositionedParty { .. } => {
+                    let position = match &self.source {
+                        NativeDeathSource::PositionedParty { position, .. } => Some(*position),
+                        _ => None,
+                    };
+                    oteryn_gameplay_quests::quest::world_change_journals::admits_position(
+                        &self.transition,
+                        position,
+                    ) && oteryn_gameplay_quests::quest::native_kills::counter_for(
                         catalogue,
                         &self.transition,
                     )
@@ -79,6 +91,7 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
+            | NativeDeathSource::PositionedParty { source, .. } => Some(source.as_ref()),
             NativeDeathSource::Source(_) => None,
         }
     }
@@ -97,6 +110,17 @@ impl NativeQuestDeath {
                     .chain_update(b"native-instance-boss-v1")
                     .chain_update(death.native_bytes())
                     .chain_update(died_at_unix_ms.to_be_bytes())
+            NativeDeathSource::PositionedParty {
+                source,
+                position: (x, y, floor),
+            } => {
+                super::grizzly::bind_party(binding, source)?;
+                let digest = Sha256::new()
+                    .chain_update(*binding)
+                    .chain_update(b"native-death-origin-v1")
+                    .chain_update(x.to_be_bytes())
+                    .chain_update(y.to_be_bytes())
+                    .chain_update(floor.to_be_bytes())
                     .finalize();
                 binding[1..].copy_from_slice(&digest);
             }

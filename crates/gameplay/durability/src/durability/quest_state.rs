@@ -562,6 +562,7 @@ pub mod rotten_blood_access;
 pub mod soul_war;
 pub mod source_deaths;
 mod storage;
+mod world_change_journal_rewards;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
