@@ -44,19 +44,19 @@ impl SpellRow {
         }
         Some(row)
     }
-    pub(super) fn update(&mut self, labels: Option<&[String]>) -> Vec<usize> {
+    pub(super) fn update(&mut self, labels: Option<&[String]>, grid: (usize, usize)) -> Vec<usize> {
         let mut clicked = Vec::new();
         unsafe {
             let mut rect: RECT = std::mem::zeroed();
             GetClientRect(self.parent, &mut rect);
-            let width = (rect.right - 180).max(120) / self.buttons.len() as i32;
+            let width = (rect.right - 180).max(120) / grid.0 as i32;
             for (slot, button) in self.buttons.iter().enumerate() {
                 let label = labels.and_then(|labels| labels.get(slot));
                 ShowWindow(*button, if label.is_some() { SW_SHOWNA } else { SW_HIDE });
                 MoveWindow(
                     *button,
-                    8 + slot as i32 * width,
-                    (rect.bottom - 62).max(0),
+                    8 + (slot % grid.0) as i32 * width,
+                    (rect.bottom - 8 - (grid.1 - slot / grid.0) as i32 * 54).max(0),
                     width - 2,
                     54,
                     1,

@@ -255,3 +255,11 @@ fn t058_bar_labels_and_cooldowns_are_independent() {
     crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.labels=false;
     assert!(link.spell_slot_labels().iter().all(String::is_empty));
 }
+
+#[test]
+fn t058_row_layout_preserves_all_twelve_slots() {
+    let (link, _, _) = crate::play::play_channel();
+    assert_eq!(link.action_bar_grid(), (12, 1));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.three_rows = true;
+    assert_eq!(link.action_bar_grid(), (4, 3));
+}

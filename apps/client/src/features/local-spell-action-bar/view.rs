@@ -106,6 +106,9 @@ impl crate::play::PlayLink {
             cast_index,
         )
     }
+    pub fn action_bar_grid(&self) -> (usize, usize) {
+        crate::play::mailbox::lock(&self.mailbox).local_preferences.action_bar.grid()
+    }
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);

@@ -126,7 +126,10 @@ impl super::Application {
             if let Some(hud) = &mut self.hud {
                 hud.arcs.update(play.view.hud_arc_layout());
                 let labels = play.link.spell_slot_labels();
-                for slot in hud.spells.update(Some(&labels)) {
+                for slot in hud
+                    .spells
+                    .update(Some(&labels), play.link.action_bar_grid())
+                {
                     if let Some(slot) = u32::try_from(slot).ok().and_then(std::num::NonZeroU32::new)
                     {
                         play.link.cast_spell_slot(slot);
