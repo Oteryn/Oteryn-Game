@@ -37,3 +37,27 @@ fn scripted_teleport_is_explicit_native_player_content_and_legacy_defaults_are_i
     );
     Ok(())
 }
+
+#[test]
+fn every_machine_counterpart_keeps_one_catalogue_scoped_admission_owner() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let mut checked = 0;
+    for callback in load_for(catalogue)?
+        .iter()
+        .filter(|c| c.quest == "oteryn:quest.25_years_of_tibia_quest")
+    {
+        let transition = catalogue
+            .transition(&callback.key)
+            .ok_or("machine transition")?;
+        crate::quest::admission_binding::validate_for_catalogue(catalogue, transition, true)?;
+        assert!(
+            crate::quest::admission_binding::validate_for_catalogue(catalogue, transition, false)
+                .is_err()
+        );
+        checked += 1;
+    }
+    assert_eq!(checked, 18);
+    Ok(())
+}

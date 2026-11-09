@@ -71,12 +71,10 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
-    # Reuse the reviewed M03 source generator from qmech 856a420d6. The
-    # existing authored time-machine bindings retain their separate owner.
+    # All anniversary counterparts share one immutable authored owner.
     import qm03_world_admission
     for entrance in qm03_world_admission.callbacks(ROOT):
         if entrance['quest'] == 'oteryn:quest.the_pits_of_inferno_quest':
-            # The chosen counter is declared 0..1, not the legacy storage -1.
             entrance['storage'][0]['minimum'] = 0
             entrance['track_initials'] = {entrance['storage'][0]['track']: 0}
             rows.append(entrance)
@@ -89,6 +87,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    import qm03_world_admission
+    machine = ROOT / 'content/quests/authored-bindings/m03-25-years-time-machine.json'
+    machine_text = json.dumps(qm03_world_admission.machine_document(ROOT), ensure_ascii=False, indent=2) + '\n'
+    if args.check:
+        if machine.read_text() != machine_text:
+            raise ValueError('stale authored time-machine counterparts')
+    else:
+        machine.write_text(machine_text)
     text = json.dumps(document(), ensure_ascii=False, indent=2) + '\n'
     if args.check:
         if OUTPUT.read_text() != text:

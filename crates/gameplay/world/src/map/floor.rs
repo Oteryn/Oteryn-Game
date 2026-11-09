@@ -16,8 +16,9 @@
 //! acts on the tile the step finally lands on and moves the player to its destination. The
 //! destination is landed as it is, one hop: it is not followed through a further floor change or
 //! teleport. A destination the bundle lacks or that cannot be entered leaves the player on the
-//! teleport tile, as Canary leaves it for a missing destination tile; the runtime never places a
-//! player on a cell it cannot enter. A teleport adds no gate of its own: the step onto it is
+//! teleport tile, as Canary leaves it for a missing destination tile; an ordinary teleport never places a
+//! player on a cell it cannot enter. Explicit scripted callbacks use their separate
+//! present-tile landing proof. A teleport adds no gate of its own: the step onto it is
 //! qualified exactly like any other step. The landing rule of WORLD-INTERACTION-0 §6.6 applies to
 //! the destination: an actor under a PZ block (PARTY-PVP-0 §8.1) does not land on a
 //! protection-zone tile, nor on a tile whose zone facts are unknown, and stays on the teleport.
@@ -31,6 +32,7 @@ use super::floor_catalogue::{OBJECT, TERRAIN};
 mod house;
 mod quest_callback;
 mod rope;
+mod scripted_teleport;
 use super::overlay::TilePos;
 use super::palette_appearance;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
@@ -42,6 +44,7 @@ pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
 pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
+pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
 use std::collections::{BTreeMap, BTreeSet};
 use {
     crate::foundation::{

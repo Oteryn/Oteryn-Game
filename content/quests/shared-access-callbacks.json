@@ -281,6 +281,7 @@
         "premium": true
       },
       "minimum_level": 80,
+      "effects": [],
       "lever": null,
       "reversible": false,
       "passages": [],
