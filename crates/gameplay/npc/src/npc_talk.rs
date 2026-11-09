@@ -10,6 +10,7 @@ use std::collections::HashMap;
 mod dark_trails;
 mod isle_of_evil;
 mod literal_contacts;
+mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -314,6 +315,15 @@ impl NpcTalkBook {
 
     /// Admit source greetings for NPCs whose stateful rules have a native executor.
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+        Self::from_model_with_journal_source(model, native_npcs, world_change_journals::SOURCE)
+    }
+
+    fn from_model_with_journal_source(
+        model: &NpcServiceModel,
+        native_npcs: &[&str],
+        source: &str,
+    ) -> Self {
+        let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
                 "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
@@ -329,7 +339,7 @@ impl NpcTalkBook {
                     OROCKLE_TRADE
                 ),
                 isle_of_evil::revision_material(),
-                REWARD_CALLBACKS.join("\0"),
+                format_args!("{}\0{}", REWARD_CALLBACKS.join("\0"), source),
                 REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
                 crate::content::npc_catalogue::travel::revision_material(),
@@ -363,6 +373,7 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let mut journal_fallback = false;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if reference.key
                 == "oteryn:npc.grizzly_adams"
             {
@@ -566,6 +577,16 @@ impl NpcTalkBook {
                     .cloned()
                     .unwrap_or_else(|| "Farewell.".into());
                 (greeting, farewell, None, Vec::new())
+            } else if journal_npcs.contains(&reference.key) {
+                // The authored personal programme owns subsequent choices. Use the
+                // pinned default handler's focus text, never a generic value-bearing topic.
+                journal_fallback = true;
+                (
+                    YASIR_GREET.into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
@@ -573,7 +594,8 @@ impl NpcTalkBook {
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
-                    admitted_dialogue: !matches!(reference.key.as_str(), YASIR | OROCKLE)
+                    admitted_dialogue: !journal_fallback
+                        && !matches!(reference.key.as_str(), YASIR | OROCKLE)
                         && npc.dialogue.is_some()
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
@@ -594,7 +616,8 @@ impl NpcTalkBook {
                         || dark_messages.is_some()
                         || isle_messages.is_some()
                         || reward_callback_npc(&reference.key)
-                        || native_npcs.contains(&reference.key.as_str()),
+                        || native_npcs.contains(&reference.key.as_str())
+                        || journal_fallback,
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
