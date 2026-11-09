@@ -241,3 +241,17 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
     );
     Ok(())
 }
+
+#[test]
+fn t058_bar_labels_and_cooldowns_are_independent() {
+    let (link, _, _) = crate::play::play_channel();
+    assert!(link.spell_slot_labels()[0].contains('\n'));
+    {
+        let mut mailbox=crate::play::mailbox::lock(&link.mailbox);
+        mailbox.local_preferences.action_bar.cooldowns=false;
+    }
+    assert!(!link.spell_slot_labels()[0].contains('\n'));
+    assert!(link.spell_slot_labels()[0].starts_with("1:"));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.action_bar.labels=false;
+    assert!(link.spell_slot_labels().iter().all(String::is_empty));
+}

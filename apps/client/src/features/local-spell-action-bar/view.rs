@@ -109,10 +109,11 @@ impl crate::play::PlayLink {
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
-        oteryn_client_ui::spell_action_bar::slot_labels(
-            &mailbox.spell_bar,
-            &mailbox.spell_catalog.catalog,
-        )
+        let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(
+            &mailbox.spell_bar, &mailbox.spell_catalog.catalog,
+        );
+        mailbox.local_preferences.action_bar.project(&mut labels);
+        labels
     }
     pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {
         super::input::send_cast(self, slot);

@@ -4,6 +4,9 @@
 #[path = "game_window.rs"]
 mod game_window;
 pub use game_window::GameWindowPreferences;
+#[path = "action_bar.rs"]
+mod action_bar;
+pub use action_bar::ActionBarPreferences;
 use crate::map::World;
 use crate::play::PlayView;
 use serde::{Deserialize, Serialize};
@@ -79,6 +82,8 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub action_bar: ActionBarPreferences,
     #[serde(default)]
     pub graphics: GraphicsPreferences,
     #[serde(default)]
@@ -218,6 +223,7 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            action_bar: Default::default(),
             game_window: Default::default(),
             show_effects: true,
             show_lights: true,
