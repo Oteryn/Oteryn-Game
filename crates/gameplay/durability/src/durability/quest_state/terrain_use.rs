@@ -19,6 +19,9 @@ pub(super) async fn admit(
         return Ok(false);
     };
     let world = fence.runtime_scope.world_id();
+    let Some(placement) = usage.placement_bytes() else {
+        return Ok(false);
+    };
     // Definition alternatives are exact pairs, never a cross product of key/revision lists.
     // A native action can advance at most one stage in this quest. Exact replay of the
     // same stage has already returned its immutable quest receipt before this predicate.
@@ -28,7 +31,7 @@ pub(super) async fn admit(
          WHERE r.character_id=encode($1,'hex')::uuid \
            AND r.game_session_id=encode($2,'hex')::uuid AND r.command_id=$3::text::numeric \
            AND r.world_id=encode($4,'hex')::uuid AND r.channel_id=encode($5,'hex')::uuid \
-           AND r.placement=$6 AND r.transformed_item_id=$7 \
+           AND ((octet_length($6)=40 AND r.placement=$6) OR (octet_length($6)=8 AND substring(r.placement FROM 33 FOR 8)=$6)) AND r.transformed_item_id=$7 \
            AND r.tool_definition_family='Item' \
            AND EXISTS(SELECT 1 FROM jsonb_to_recordset($8) AS tool(key TEXT,revision TEXT) \
                       WHERE tool.key=r.tool_definition_production_key \
@@ -45,7 +48,7 @@ pub(super) async fn admit(
     .bind(command.command_id().get().to_string())
     .bind(world.as_bytes().as_slice())
     .bind(channel.as_bytes().as_slice())
-    .bind(&usage.placement)
+    .bind(placement)
     .bind(i64::from(usage.result))
     .bind(serde_json::to_value(&usage.tools).map_err(|_| DurabilityError::InvalidStoredState)?)
     .bind(quest)

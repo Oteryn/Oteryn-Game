@@ -62,6 +62,8 @@ struct Recipe {
     digest: Option<String>,
     complete: bool,
     data_holds: bool,
+    claim_only_pending: bool,
+    admission_free: bool,
 }
 
 impl RecipeEvidence {
@@ -134,6 +136,29 @@ impl RecipeEvidence {
                 ) && !(selected.original_source_gaps
                     && entry["code"].as_str() == Some("reported_source_gap"))
             });
+            // A missing legacy delivery owner must not prevent a safe first step.
+            // Every other data hold remains authoritative, as do nontrivial actor gates.
+            let claim_only_pending = missing
+                .iter()
+                .any(|entry| entry["code"] == "claim_native_lowering_missing")
+                && missing.iter().all(|entry| {
+                    matches!(
+                        entry["code"].as_str(),
+                        Some(
+                            "claim_native_lowering_missing"
+                                | "quest_native_lowering_missing"
+                                | "authored_trigger_and_delivery_bindings_missing"
+                        )
+                    ) || (selected.original_source_gaps && entry["code"] == "reported_source_gap")
+                });
+            let admission_free = selected.recipe.is_some_and(|recipe| {
+                let requirements = &recipe["requirements"];
+                requirements["min_level"] == 0
+                    && requirements["premium"] == false
+                    && requirements["prerequisites"]
+                        .as_array()
+                        .is_some_and(Vec::is_empty)
+            });
             let digest = selected
                 .recipe
                 .map(|recipe| {
@@ -152,6 +177,8 @@ impl RecipeEvidence {
                     digest,
                     complete: selected.complete,
                     data_holds,
+                    claim_only_pending,
+                    admission_free,
                 },
             );
         }
@@ -173,7 +200,18 @@ impl RecipeEvidence {
                     quest.quest
                 ));
             }
-            if recipe.data_holds {
+            let pure_progress = quest.stages.iter().all(|stage| {
+                !stage.completes
+                    && matches!(
+                        stage.trigger,
+                        super::Trigger::TerrainUse { .. }
+                            | super::Trigger::Collect { .. }
+                            | super::Trigger::Kill { .. }
+                    )
+            });
+            if recipe.data_holds
+                && !(recipe.claim_only_pending && recipe.admission_free && pure_progress)
+            {
                 return Err(format!(
                     "authored Quest has unresolved data holds: {}",
                     quest.quest

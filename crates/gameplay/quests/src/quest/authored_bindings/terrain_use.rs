@@ -20,19 +20,46 @@ pub struct ToolDefinition {
 pub struct TerrainUse {
     pub key: String,
     pub tools: Vec<ToolDefinition>,
-    pub placement: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub placement: Option<Vec<u8>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub placement_key: Option<u64>,
     pub result: u32,
     pub storage: Vec<Storage>,
     pub sources: Vec<String>,
 }
 
 impl TerrainUse {
+    /// An exact map digest plus key, or a stable tile/ordinal key in the fenced World.
+    pub fn placement_bytes(&self) -> Option<Vec<u8>> {
+        match (&self.placement, self.placement_key) {
+            (Some(bytes), None) if bytes.len() == 40 => Some(bytes.clone()),
+            (None, Some(key))
+                if key >> 48 == 0 && ((key >> 8) & 255) <= 15 && (key & 255) <= 63 =>
+            {
+                Some(key.to_be_bytes().to_vec())
+            }
+            _ => None,
+        }
+    }
+
+    pub fn matches_placement(&self, observed: &[u8]) -> bool {
+        if observed.len() != 40 {
+            return false;
+        }
+        match (&self.placement, self.placement_key) {
+            (Some(bytes), None) => bytes == observed,
+            (None, Some(key)) => observed[32..] == key.to_be_bytes(),
+            _ => false,
+        }
+    }
+
     pub(super) fn validate(&self, quest: &BoundQuest) -> Result<(), String> {
         if !crate::quest::valid_quest_key(&self.key)
             || !self.key.starts_with(PREFIX)
             || self.tools.is_empty()
             || self.tools.len() > 8
-            || self.placement.len() != 40
+            || self.placement_bytes().is_none()
             || self.result == 0
             || self.storage.is_empty()
             || self.storage.len() > crate::quest::QUESTSTATE0_RL_02
@@ -127,7 +154,7 @@ impl super::Bindings {
                     return None;
                 };
                 let active = usage.tools.contains(tool)
-                    && usage.placement == placement
+                    && usage.matches_placement(placement)
                     && usage.result == result
                     && usage.storage.iter().all(|guard| {
                         catalogue.track(&guard.track).is_some_and(|track| {

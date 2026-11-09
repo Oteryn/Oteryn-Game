@@ -261,6 +261,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         error.message(),
         "terrain tool definition snapshot is immutable"
     );
+    production_dead_archer_entry(h, &authority, native, tool).await?;
     Ok(())
 }
 
@@ -301,4 +302,127 @@ fn terrain_catalogue() -> f::TestResult<Arc<QuestStateCatalogue>> {
     let bindings = Bindings::parse(&serde_json::to_vec(&value)?).map_err(f::debug)?;
     let base = QuestStateCatalogue::empty("content-1").ok_or("catalogue revision")?;
     Ok(Arc::new(bindings.attach(&base).map_err(f::debug)?))
+}
+
+async fn production_dead_archer_entry(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    tool: [u8; 16],
+) -> f::TestResult {
+    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(f::debug)?;
+    let catalogue = Arc::new(loaded.catalogue().clone());
+    let transition = "oteryn:quest-terrain-use/m01c-dead-archer-607";
+    assert!(
+        catalogue.transition(transition).is_some(),
+        "production boot binding is absent"
+    );
+    let scope = durability::terrain_tool::TerrainScope {
+        map_revision: "map-1".into(),
+        content_generation: native.source_digest(),
+        reset_epoch: 0,
+    };
+    let permit = durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
+        f::item_fence()?.runtime_scope,
+    )
+    .await
+    .map_err(f::debug)?;
+    for (x, ordinal, expected) in [(32494_u64, 9599_u64, false), (32493, 9600, true)] {
+        let key = (x << 32) | (32259_u64 << 16) | (7_u64 << 8);
+        let mut placement = vec![0x42; 32];
+        placement.extend_from_slice(&key.to_be_bytes());
+        let command = reward_fixture::command(ordinal)?;
+        let mutation = durability::terrain_tool::TerrainMutation {
+            tool,
+            tool_key: "oteryn:item.tibia.i3457".into(),
+            tool_revision: "definition-r1".into(),
+            placement,
+            expected_revision: 0,
+            before: 606,
+            after: 607,
+            decay: vec![],
+        };
+        let result = h
+            .root
+            .apply_terrain_tool(
+                &permit,
+                authority,
+                &h.node,
+                f::item_fence()?,
+                command,
+                ordinal.to_be_bytes().to_vec(),
+                scope.clone(),
+                Some(mutation),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert_eq!(result, Some(UseDisposition::Committed));
+        let observed = h
+            .root
+            .read_quest_terrain_use(authority, &h.node, f::item_fence()?, command)
+            .await
+            .map_err(f::debug)?
+            .ok_or("production native receipt")?;
+        let keys = catalogue
+            .authored_bindings()
+            .ok_or("production bindings")?
+            .terrain_use_candidates(
+                &catalogue,
+                &std::collections::BTreeMap::new(),
+                &observed.tool,
+                &observed.placement,
+                observed.result,
+            );
+        assert_eq!(keys.contains(&transition.to_owned()), expected);
+        let request = QuestTransitionRequest {
+            transition_key: transition.into(),
+            cause: QuestCause::Command(command),
+        };
+        let result = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(2)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        if expected {
+            assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+            let replay = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(2)?,
+                    request,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+        } else {
+            assert!(matches!(
+                result,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            ));
+        }
+    }
+    let value:i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-dead-archer-route'").bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(value, 1);
+    let not_completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.dead_archer_quest'").bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert!(
+        not_completed,
+        "entry dig must not complete or grant the quest"
+    );
+    eprintln!(
+        "M01C_DEAD_ARCHER production_entry wrong_tile_refused exact_tile_committed replay_safe completion_held"
+    );
+    Ok(())
 }
