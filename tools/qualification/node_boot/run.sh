@@ -452,10 +452,10 @@ stage() { # name prerequisite... -- function
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
     echo "--- session close events"
     grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
-    echo "--- last node events"; tail -n 40 "$node_log" 2>/dev/null || true
+    echo "--- last node events"; grep -v 'DURABILITY_' "$node_log" 2>/dev/null | tail -n 40 || true
     # Repeated background-pass retries hide the event that took the root down.
     echo "--- node events without background retries"
-    grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused' "$node_log" 2>/dev/null | tail -n 150 || true
+    grep -vE 'statistics_retention|audit_collector|corpse_decay_read_deferred|server_save_countdown_read_deferred|_world_pass state=retry|admission_refused|DURABILITY_' "$node_log" 2>/dev/null | tail -n 150 || true
     echo "--- first root-not-ready"
     grep -n -m 1 -B 40 'root is not ready' "$node_log" 2>/dev/null | tail -n 41 || true
     # Which node events dominate, and what admission reported, beyond the tail above.
@@ -478,7 +478,13 @@ stage() { # name prerequisite... -- function
     echo "--- node message kinds"
     sed -E 's/ts=[0-9]+ //; s/trace=[0-9a-f-]+ //; s/[0-9]+/N/g' "$node_log" 2>/dev/null | cut -c1-140 | sort | uniq -c | sort -rn | head -n 40 || true
     echo "--- node admission and session events"
-    grep -iE 'admission|admit|refus|serve_|session_' "$node_log" 2>/dev/null | grep -v quest_log_excluded | tail -n 60 || true
+    grep -iE 'admission|admit|refus|serve_|session_' "$node_log" 2>/dev/null | grep -vE 'quest_log_excluded|DURABILITY_' | tail -n 60 || true
+    # How each gameplay connection entered and ended, and whether the shared listener task
+    # was kept by one poll (NBDIAG-6).
+    echo "--- connection entry and admission outcomes"
+    grep -oE 'event=(connection_[a-z_]+|listener_[a-z_]+)( [a-z_]+=[a-z_]+)*' "$node_log" 2>/dev/null | sort | uniq -c | sort -rn | head -n 30 || true
+    echo "--- connection and listener events"
+    grep -E 'event=(connection_|listener_)' "$node_log" 2>/dev/null | sed -E 's/^.*(event=)/\1/' | head -n 80 || true
     echo "--- postgres sessions"
     echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND pid <> pg_backend_pid() ORDER BY backend_start" \
       | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
