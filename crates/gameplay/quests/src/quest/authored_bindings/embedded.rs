@@ -65,7 +65,7 @@ struct Recipe {
     claim_only_pending: bool,
     minimum_level: Option<u32>,
     requires_premium: Option<bool>,
-    prerequisite_free: bool,
+    prerequisites: Option<Vec<String>>,
 }
 
 impl RecipeEvidence {
@@ -160,11 +160,15 @@ impl RecipeEvidence {
             let requires_premium = selected
                 .recipe
                 .and_then(|recipe| recipe["requirements"]["premium"].as_bool());
-            let prerequisite_free = selected.recipe.is_some_and(|recipe| {
-                recipe["requirements"]["prerequisites"]
-                    .as_array()
-                    .is_some_and(Vec::is_empty)
-            });
+            let prerequisites = selected
+                .recipe
+                .and_then(|recipe| recipe["requirements"]["prerequisites"].as_array())
+                .and_then(|values| {
+                    values
+                        .iter()
+                        .map(|value| value.as_str().map(str::to_owned))
+                        .collect::<Option<Vec<_>>>()
+                });
             let digest = selected
                 .recipe
                 .map(|recipe| {
@@ -186,7 +190,7 @@ impl RecipeEvidence {
                     claim_only_pending,
                     minimum_level,
                     requires_premium,
-                    prerequisite_free,
+                    prerequisites,
                 },
             );
         }
@@ -216,7 +220,14 @@ impl RecipeEvidence {
                         | super::Trigger::Kill { .. }
                 )
             });
-            let admission_matches = recipe.prerequisite_free
+            let declared_prerequisites: Vec<_> = quest
+                .admission
+                .as_ref()
+                .into_iter()
+                .flat_map(|gate| &gate.prerequisites)
+                .map(|required| required.requirement.clone())
+                .collect();
+            let admission_matches = recipe.prerequisites.as_ref() == Some(&declared_prerequisites)
                 && recipe.requires_premium
                     == Some(quest.admission.as_ref().is_some_and(|gate| gate.premium))
                 && recipe.minimum_level

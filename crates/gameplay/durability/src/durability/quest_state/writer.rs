@@ -806,6 +806,10 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
+                    if !super::authored_admission::prerequisites_hold(&mut tx, id, &catalogue, &transition.quest).await? {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
                         && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)
                     {

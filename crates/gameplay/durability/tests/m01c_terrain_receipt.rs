@@ -722,6 +722,7 @@ async fn level_admission_fixture(
         quest.admission = Some(ActorAdmission {
             minimum_level: minimum,
             premium: false,
+            prerequisites: Vec::new(),
         });
         let bindings = Bindings {
             schema: 1,
@@ -1154,8 +1155,164 @@ async fn production_grimvale_collection(
     let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.grimvale_quest'")
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     assert!(incomplete);
+    prerequisite_admission_fixture(h, authority, &catalogue).await?;
     eprintln!(
         "M01C_GRIMVALE production_catalogue count4_refused count5_committed missing_premium_refused live_custody5 replay_safe completion_held"
+    );
+    Ok(())
+}
+
+async fn prerequisite_admission_fixture(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    source: &QuestStateCatalogue,
+) -> f::TestResult {
+    use oteryn_gameplay_quests::quest::authored_bindings::{
+        Bindings, Trigger, actor_admission::QuestPrerequisite,
+    };
+    let template = source
+        .authored_bindings()
+        .and_then(|b| {
+            b.quests
+                .iter()
+                .find(|q| q.quest == "oteryn:quest.black_knight_quest")
+        })
+        .ok_or("prerequisite template")?;
+    let mut parent = template.clone();
+    parent.quest = "oteryn:quest.m01c_dependency".into();
+    parent.sources = vec!["M01c prerequisite engine fixture, not a production quest".into()];
+    parent.tracks[0].key = "oteryn:quest-progress/m01c-dependency".into();
+    parent.tracks[0].maximum = 2;
+    let Trigger::Collect { collection } = &mut parent.stages[0].trigger else {
+        return Err("parent collection".into());
+    };
+    collection.key = "oteryn:quest-collection/m01c-dependency-start".into();
+    collection.storage[0].track = parent.tracks[0].key.clone();
+    let mut finish = parent.stages[0].clone();
+    finish.key = "complete".into();
+    finish.completes = true;
+    let Trigger::Collect { collection } = &mut finish.trigger else {
+        return Err("finish collection".into());
+    };
+    collection.key = "oteryn:quest-collection/m01c-dependency-complete".into();
+    collection.storage[0].minimum = 1;
+    collection.storage[0].maximum = 1;
+    collection.storage[0].set = 2;
+    parent.stages.push(finish);
+    let mut child = template.clone();
+    child.quest = "oteryn:quest.m01c_prerequisite_child".into();
+    child.sources = vec!["M01c prerequisite engine fixture, not a production quest".into()];
+    child.tracks[0].key = "oteryn:quest-progress/m01c-prerequisite-child".into();
+    child.tracks[0].maximum = 1;
+    child
+        .admission
+        .as_mut()
+        .ok_or("child admission")?
+        .prerequisites = vec![QuestPrerequisite {
+        requirement: "M01c dependency".into(),
+        quest: parent.quest.clone(),
+    }];
+    let Trigger::Collect { collection } = &mut child.stages[0].trigger else {
+        return Err("child collection".into());
+    };
+    collection.key = "oteryn:quest-collection/m01c-prerequisite-child".into();
+    collection.storage[0].track = child.tracks[0].key.clone();
+    let bindings = Bindings {
+        schema: 1,
+        quests: vec![parent, child],
+    };
+    let catalogue = Arc::new(
+        bindings
+            .attach(&QuestStateCatalogue::empty("content-1").ok_or("revision")?)
+            .map_err(f::debug)?,
+    );
+    let request = |key: &str, command: u64| -> f::TestResult<QuestTransitionRequest> {
+        Ok(QuestTransitionRequest {
+            transition_key: key.into(),
+            cause: QuestCause::Command(reward_fixture::command(command)?),
+        })
+    };
+    for (revision, parent_step) in [(10_u64, None), (11, Some("start"))] {
+        if let Some(step) = parent_step {
+            let outcome = h
+                .root
+                .commit_character_quest_transition(
+                    authority,
+                    &h.node,
+                    f::fence(10)?,
+                    request(
+                        &format!("oteryn:quest-collection/m01c-dependency-{step}"),
+                        9891,
+                    )?,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+        }
+        let outcome = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(revision)?,
+                request("oteryn:quest-collection/m01c-prerequisite-child", 9891)?,
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        if !matches!(
+            outcome,
+            QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+        ) {
+            return Err(format!(
+                "incomplete prerequisite must refuse child at revision {revision}: {outcome:?}"
+            )
+            .into());
+        }
+    }
+    let finished = h
+        .root
+        .commit_character_quest_transition(
+            authority,
+            &h.node,
+            f::fence(11)?,
+            request("oteryn:quest-collection/m01c-dependency-complete", 9421)?,
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(finished, QuestTransitionOutcome::Committed(_)));
+    let child_request = request("oteryn:quest-collection/m01c-prerequisite-child", 9891)?;
+    let outcome = h
+        .root
+        .commit_character_quest_transition(
+            authority,
+            &h.node,
+            f::fence(12)?,
+            child_request.clone(),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    let replay = h
+        .root
+        .commit_character_quest_transition(
+            authority,
+            &h.node,
+            f::fence(12)?,
+            child_request,
+            catalogue,
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        replay,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    eprintln!(
+        "M01C_PREREQUISITE missing_refused started_refused completed_accepted owner_writes_only replay_stable"
     );
     Ok(())
 }

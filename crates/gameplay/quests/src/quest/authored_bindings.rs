@@ -147,6 +147,9 @@ impl Bindings {
             {
                 return Err("authored quest identity/source/bounds".into());
             }
+            if let Some(admission) = &quest.admission {
+                admission.validate(&quest.quest)?;
+            }
             let mut tracks = BTreeSet::new();
             for track in &quest.tracks {
                 if !super::valid_quest_key(&track.key)
