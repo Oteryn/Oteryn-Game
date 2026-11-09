@@ -116,6 +116,7 @@ def main():
         ['verify_quest_schema.py'],
         ['questpc2_live_eligibility.py', '--check'],
         ['srvwld_first_dragon.py', '--check'],
+        ['m41_npc_sources.py', '--check'],
         ['soul_war_reconstruction.py', '--check'],
         ['../encounter-authoring/soul_war_crystal_reconstruction.py', '--check'],
         ['../encounter-authoring/test_soul_war_crystal_reconstruction.py'],

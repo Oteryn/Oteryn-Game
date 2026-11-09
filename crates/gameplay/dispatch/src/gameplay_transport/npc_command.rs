@@ -62,6 +62,7 @@ mod reward_callbacks;
 mod seasonal;
 mod service_context;
 mod session_transfer;
+mod stag_beaks;
 mod threatened_dreams;
 mod wrath_sleeping_dragon;
 #[path = "yeo.rs"]
@@ -684,6 +685,10 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    let stag_beaks = match stag_beaks::preview(admission, actor, command, &intent).await {
+        Ok(proof) => proof,
+        Err(()) => return unknown(),
+    };
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -855,8 +860,15 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
+    if let Some(step) = catalogue::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        &ordinary,
+        stag_beaks.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;

@@ -481,9 +481,10 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
-                let supplemental = Self::from_json_documents(&[include_str!(
-                    "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                )])?;
+                let supplemental = Self::from_json_documents(&[
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
+                ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
@@ -492,6 +493,8 @@ impl NpcRuleCatalog {
                             == Some("oteryn:quest-npc-program.first-dragon-calendar")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.citizen-source-sagas")
                         || matches!(

@@ -667,6 +667,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
+        "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.outfit_and_addon_quests",
         "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.the_dream_courts_quest",
