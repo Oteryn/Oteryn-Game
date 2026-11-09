@@ -49,9 +49,12 @@ fn registry() -> Result<&'static Registry, String> {
                 let protect = reward_callbacks::gated_binding(&callback)?.is_some();
                 add(
                     reward_callbacks::primary_transition(&callback)?,
-                    false,
+                    callback.world_claim.is_some(),
                     protect,
                 )?;
+            }
+            for transition in super::completion_sets::mint_transitions()? {
+                add(transition, false, true)?;
             }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {

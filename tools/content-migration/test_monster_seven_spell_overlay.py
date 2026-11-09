@@ -56,6 +56,8 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(set(keys)),63)
         self.assertEqual(len(keys),64)
         self.assertEqual(len(set(keys)),64)
+        self.assertEqual(len(keys),63)
+        self.assertEqual(len(set(keys)),63)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         self.assertTrue({'oteryn:item.tibia.i21291', 'oteryn:item.tibia.i21504',
                          'oteryn:item.tibia.i21505'}.issubset(keys))

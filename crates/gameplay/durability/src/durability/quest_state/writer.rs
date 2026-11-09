@@ -402,6 +402,13 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
+        let required_mint = oteryn_gameplay_quests::quest::completion_sets::required_mint_claim(
+            &request.transition_key,
+        )
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        if required_mint.is_some() && !matches!(request.cause, QuestCause::ClaimObligation(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
@@ -532,7 +539,13 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let callback = if context.is_some() {
+        let native_claim = reward_callback
+            .as_ref()
+            .is_some_and(|callback| callback.world_claim.is_some());
+        if native_claim && (context.is_none() || !matches!(request.cause, QuestCause::Use(_))) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let callback = if context.is_some() && !native_claim {
             Some(
                 world_callbacks
                     .iter()
@@ -550,6 +563,10 @@ impl DurabilityRoot {
         if (reward_callback.is_some() || world_reward.is_some() || world_disguise.is_some()) != reward_admission.is_some()
             || (world_disguise.is_some() && !matches!(request.cause, QuestCause::Step(_)))
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+        if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
+            || (reward_callback.is_some()
+                && !matches!(request.cause, QuestCause::Command(_))
+                && !native_claim)
             || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -722,7 +739,7 @@ impl DurabilityRoot {
                     lock_receipt_key(&mut tx, character, &request).await?;
                     // The MINT cause precedes the Character root, matching the item owner.
                     if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
-                        && let QuestCause::Command(command)=request.cause {
+                        && let QuestCause::Command(command) | QuestCause::Use(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {
@@ -866,6 +883,17 @@ impl DurabilityRoot {
                         if row.try_get::<String, _>("state")? != "PENDING" {
                             return Ok(Ok(QuestTransitionOutcome::ObligationClosed));
                         }
+                        if let Some(required) = required_mint {
+                            // A group's bound flag is written only for this exact durable MINT.
+                            // The existing Character root lock serializes all group observations.
+                            let proven: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_reward_claim_mint_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0) AND character_id=encode($3,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=$4)")
+                                .bind(claim.game_session_id().as_bytes().as_slice())
+                                .bind(claim.command_id().get().to_string())
+                                .bind(character.as_bytes().as_slice()).bind(required)
+                                .fetch_one(&mut *tx).await?;
+                            if !proven { return Ok(Err(CharacterProgressionError::InvalidInput)); }
+                        }
+
                     }
 
                     let quest = transition.quest.as_str();
@@ -1168,6 +1196,13 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if native_claim {
+                        let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
+                        if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
@@ -1191,7 +1226,8 @@ impl DurabilityRoot {
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
-                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission).await?.is_none()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission,None).await?.is_none()
+
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
                     if let Some(world) = &callback

@@ -48,7 +48,7 @@ pub trait RewardClaimTile {
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
     ),
@@ -64,6 +64,7 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
     ),
+    include_str!("../../../../../content/interactions/reward_claims/engclaim-native.json"),
 ];
 
 /// Why a placement is not bound (§1.4). Each is exactly one reason.
@@ -116,6 +117,8 @@ pub struct BoundPlacement {
     pub contents: Vec<RewardContainerItem>,
     /// Source-authored text on a leaf reward; this is not player writing.
     pub root_text: Option<String>,
+    /// Optional typed quest reward owner for native inventory exchanges/allocations.
+    pub reward_callback: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,6 +134,7 @@ pub struct RewardContainerItem {
 pub struct ServedClaim {
     pub key: ProductionKey,
     pub revision: DefinitionRevisionRef,
+    pub authority_digest: [u8; 32],
     pub placements: Vec<BoundPlacement>,
 }
 
@@ -224,7 +228,14 @@ pub fn bind_reward_claims(
             }
             match candidate(definition, admitted)? {
                 Err(left_out) => report.left_out.push((key.to_owned(), left_out)),
-                Ok(candidate) => bind_candidate(base, key, &candidate, &mut report)?,
+                Ok(candidate) => {
+                    let terms = serde_json::json!({"identity": definition.get("identity"), "claim": definition.get("claim"), "placements": definition.get("placements")});
+                    let digest = Sha256::digest(
+                        serde_json::to_vec(&terms).map_err(|_| ClaimsError("authority terms"))?,
+                    )
+                    .into();
+                    bind_candidate(base, key, &candidate, digest, &mut report)?;
+                }
             }
         }
     }
@@ -276,6 +287,8 @@ struct CandidatePlacement {
     cell: Option<BoundCell>,
     crystal_unique_id: Option<u64>,
     native_ordinal: Option<u8>,
+    extra_items: Vec<RewardClaimItem>,
+    reward_callback: Option<String>,
     item: TypedDefinitionRef,
     count: u32,
     quest_transition: Option<String>,
@@ -874,6 +887,8 @@ fn candidate_placement(
         cell: native_cell(position),
         crystal_unique_id,
         native_ordinal: None,
+        extra_items: Vec::new(),
+        reward_callback: None,
         item,
         count,
         quest_transition,
@@ -900,6 +915,7 @@ fn bind_candidate(
     base: &impl RewardClaimBase,
     key: &str,
     candidate: &Candidate,
+    authority_digest: [u8; 32],
     report: &mut BindingReport,
 ) -> Result<(), ClaimsError> {
     let local = key
@@ -912,10 +928,12 @@ fn bind_candidate(
             Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
                 placement: RewardClaimPlacement {
                     placement: PlacementKey::new(&format!("oteryn:placement/{local}/{index}"))?,
-                    items: vec![RewardClaimItem {
+                    items: std::iter::once(RewardClaimItem {
                         item: placement.item.clone(),
                         count: placement.count,
-                    }],
+                    })
+                    .chain(placement.extra_items.iter().cloned())
+                    .collect(),
                     achievement: placement.achievement.clone(),
                     quest_transition: placement.quest_transition.clone(),
                     key_number: placement.key_number,
@@ -924,6 +942,7 @@ fn bind_candidate(
                 bundle_placement_key,
                 contents: placement.contents.clone(),
                 root_text: placement.root_text.clone(),
+                reward_callback: placement.reward_callback.clone(),
             }),
             Err(reason) => unbound.push(UnboundPlacement {
                 claim: key.to_owned(),
@@ -936,6 +955,7 @@ fn bind_candidate(
         report.served.push(ServedClaim {
             key: ProductionKey::new(key)?,
             revision: DefinitionRevisionRef::new(&candidate.revision)?,
+            authority_digest,
             placements: bound,
         });
     } else {

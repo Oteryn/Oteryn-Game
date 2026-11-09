@@ -109,8 +109,10 @@ pub(crate) async fn apply(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     reserve_primary_state: bool,
 ) -> std::result::Result<bool, DurabilityError> {
-    let super::super::quest_state::QuestCause::Command(command) = request.cause else {
-        return Ok(false);
+    let command = match request.cause {
+        super::super::quest_state::QuestCause::Command(command) if callback.world_claim.is_none() => command,
+        super::super::quest_state::QuestCause::Use(command) if callback.world_claim.is_some() => command,
+        _ => return Ok(false),
     };
     if callback.carried_target.is_some()
         != admission
@@ -389,6 +391,7 @@ pub(crate) async fn apply(
             },
             reward,
             admission,
+            callback.world_claim.as_ref(),
         )
         .await?
         else {
@@ -460,6 +463,7 @@ pub(crate) async fn mint(
     claim: QuestMintClaim<'_>,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
+    native_claim: Option<&oteryn_gameplay_quests::quest::reward_callbacks::NativeClaimBinding>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
     if !reward.valid_literal_text() {
         return Err(DurabilityError::InvalidStoredState);
@@ -508,8 +512,13 @@ pub(crate) async fn mint(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
-    // Every occurrence still uses the existing MINT once ledger and reservations.
-    let claim_key = claim::key(fence.character_id, command, callback_key, claim)?;
+    if native_claim.is_some() && !matches!(claim, QuestMintClaim::Once) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let claim_key = if let Some(binding) = native_claim {
+        binding.key.clone()
+    } else { claim::key(fence.character_id, command, callback_key, claim)? };
+
     let request = RewardClaimMintRequest {
         additional_items: reward
             .additional
@@ -531,7 +540,7 @@ pub(crate) async fn mint(
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
             production_key: claim_key,
-            revision_ref: content_revision.clone(),
+            revision_ref: native_claim.map_or_else(|| content_revision.clone(), |binding| binding.revision.clone()),
         },
         source_placement: callback_key.into(),
         item: resolve(&reward.item)?,

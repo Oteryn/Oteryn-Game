@@ -312,12 +312,11 @@
         },
         "npc": {
           "type": "string",
-          "maxLength": 128,
-          "pattern": "^oteryn:npc\\.[a-z0-9_]+$"
+          "maxLength": 128
         },
         "keywords": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "maxItems": 8,
           "uniqueItems": true,
           "items": {
@@ -684,8 +683,83 @@
         },
         "repeatable": {
           "type": "boolean"
+        "world_claim": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "key",
+            "revision",
+            "authority_sha256"
+          ],
+          "properties": {
+            "key": {
+              "type": "string",
+              "pattern": "^oteryn:reward-claim[.][a-z0-9._/:-]+$"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "authority_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "world_claim"
+            ]
+          },
+          "then": {
+            "properties": {
+              "npc": {
+                "const": ""
+              },
+              "keywords": {
+                "maxItems": 0
+              },
+              "topic": {
+                "const": 0
+              },
+              "next_topic": {
+                "const": 0
+              },
+              "storage": {
+                "minItems": 1
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "carried_item"
+                  ]
+                },
+                {
+                  "required": [
+                    "fee"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "properties": {
+              "npc": {
+                "pattern": "^oteryn:npc\\.[a-z0-9_]+$"
+              },
+              "keywords": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
     },
     "input": {
       "type": "object",

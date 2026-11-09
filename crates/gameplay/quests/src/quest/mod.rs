@@ -16,6 +16,9 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+#[cfg(test)]
+mod aggregate_completion_tests;
+
 pub mod admission_binding;
 
 // Source qualification only: the coordinator retained new NPC execution in

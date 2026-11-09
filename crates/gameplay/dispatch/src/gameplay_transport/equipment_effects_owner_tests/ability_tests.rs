@@ -84,6 +84,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("CRAFT-2", 2),
     // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
     ("ENERGY-RING-1", 2),
+    // M34 admits Demon Legs3389 and Wiki quest Items50335..=50338.
+    // Brass Armor3359 and Hatchet3276 already belong to the existing union.
+    // Exact physical facts: tools/content-migration/engclaim_item_profiles.py.
+    ("ENGCLAIM-M34", 5),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
     ("FORGECREATURE", 1),
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).

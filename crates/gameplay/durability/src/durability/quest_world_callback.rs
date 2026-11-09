@@ -76,6 +76,12 @@ pub(super) async fn consume_reward_inputs(
         return Ok(false);
     };
     let mut keys: Vec<_> = callback
+    match request.cause {
+        super::quest_state::QuestCause::Command(_) if callback.world_claim.is_none() => {}
+        super::quest_state::QuestCause::Use(_) if callback.world_claim.is_some() => {}
+        _ => return Ok(false),
+    }
+    let keys: Vec<_> = callback
         .take
         .iter()
         .chain(&callback.present)

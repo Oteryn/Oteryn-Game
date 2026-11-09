@@ -129,6 +129,7 @@ mod monster_quest_death;
 mod mount_taming;
 mod native_activity;
 mod native_activity_return;
+mod native_claim_reward;
 mod newhaven_arrival;
 mod newhaven_travel;
 mod novelty_item_use;

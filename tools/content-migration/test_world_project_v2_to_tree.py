@@ -110,6 +110,9 @@ def test_closed_weapon_metadata_admission():
             raise AssertionError("forged weapon packet accepted")
     print("ok test_closed_weapon_metadata_admission")
 source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
+import engclaim_native
+source_claim_count += len(engclaim_native.CASES)
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))
