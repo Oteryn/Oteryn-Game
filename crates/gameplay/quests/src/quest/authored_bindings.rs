@@ -4,6 +4,7 @@
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
 pub mod collection;
 pub(crate) mod embedded;
+pub mod hits;
 mod imported_recipe;
 pub mod kills;
 mod state_operations;
@@ -48,6 +49,9 @@ pub enum Trigger {
     },
     Kill {
         counter: Box<KillCounter>,
+    },
+    Hit {
+        objective: Box<hits::HitObjective>,
     },
     Collect {
         collection: Box<collection::Collection>,
@@ -191,6 +195,13 @@ impl Bindings {
                     }
                     continue;
                 }
+                if let Trigger::Hit { objective } = &stage.trigger {
+                    objective.validate(quest)?;
+                    if !transitions.insert(&objective.key) {
+                        return Err("authored hit binding collision".into());
+                    }
+                    continue;
+                }
                 if let Trigger::Collect { collection } = &stage.trigger {
                     collection.validate(quest)?;
                     if !transitions.insert(&collection.key) {
@@ -211,7 +222,9 @@ impl Bindings {
                     continue;
                 }
                 let (key, owner, storage) = match &stage.trigger {
-                    Trigger::Kill { .. } | Trigger::Collect { .. } => continue,
+                    Trigger::Kill { .. } | Trigger::Collect { .. } | Trigger::Hit { .. } => {
+                        continue;
+                    }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
                         super::reward_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
@@ -402,6 +415,7 @@ impl Stage {
                 experience: None,
                 world_change: None,
             },
+            Trigger::Hit { objective } => objective.transition(quest, self.completes),
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
@@ -438,3 +452,6 @@ impl Trigger {
         first.into_iter().chain(others.iter())
     }
 }
+
+#[cfg(test)]
+mod hit_tests;

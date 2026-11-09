@@ -325,3 +325,89 @@ async fn threshold_exercise(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!(h.root_revision().await?, "3");
     Ok(())
 }
+
+#[test]
+fn engenc_hit_objective_rejects_unproven_use_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h = fixture::Harness::create(admin, "engenc_hit_unproven", true).await?;
+                    let result = exercise_unproven_hit(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_HIT_ADMISSION_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC hit PG worker panicked")?
+        .map_err(Into::into)
+}
+
+async fn exercise_unproven_hit(h: &fixture::Harness) -> fixture::TestResult {
+    let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../quests/src/quest/authored_bindings/fixtures/kill.json"
+    ))?;
+    let quest = &mut value["quests"][0];
+    quest["tracks"][0]["initial"] = json!(4);
+    quest["stages"].as_array_mut().ok_or("stages")?.remove(0);
+    quest["stages"][0]["completes"] = json!(false);
+    quest["stages"][0]["trigger"] = json!({"kind":"hit","objective":{
+        "key":"oteryn:quest-transition/native-hits/training",
+        "creature":"oteryn:creature.rat","source":{"kind":"weapon","item":"oteryn:item.spear"},
+        "track":COUNT,"gate":PHASE,"gate_value":4,"advance_gate_to":5
+    }});
+    let bindings = Bindings::parse(&serde_json::to_vec(&value)?)?;
+    let base = QuestStateCatalogue::empty("content-1").ok_or("base")?;
+    let catalogue = Arc::new(bindings.attach(&base)?);
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let fence = fixture::fence(1)?;
+    let command = foundation::CommandRef::new(
+        fence.game_session_id,
+        foundation::CommandId::new(1).map_err(fixture::debug)?,
+    );
+    let outcome = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            fence,
+            durability::quest_state::QuestTransitionRequest {
+                transition_key: "oteryn:quest-transition/native-hits/training".into(),
+                cause: QuestCause::Use(command),
+            },
+            catalogue,
+        )
+        .await;
+    assert!(
+        outcome.is_err(),
+        "USE without committed native damage must never mint hit credit: {outcome:?}"
+    );
+    assert_eq!(h.root_revision().await?, "1");
+    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(receipts, 0);
+    let tracks: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(tracks, 0);
+    Ok(())
+}
