@@ -11491,7 +11491,7 @@
     "sql_changed": false
   },
   "m07_machinery_repairs": {
-    "status": "PARTIAL",
+    "status": "WIP_COMPILES_PG_MIGRATION_BLOCKED",
     "scope": "6 native sites/44 segments; exact7/8 kit budgets from separate plain instances; solid collision andpre-consumption occupancy guards",
     "red": "m07_solid_repairs_admit_exact_fenced_native_consuming_trials rejected unknown replacement_passable;0.012s",
     "green": {
@@ -11502,11 +11502,22 @@
       "authoring_checks_seconds": 585.923,
       "authoring_unit_modules": 122,
       "authoring_unit_seconds": 845.515,
-      "content_tree_seconds": 224.136
+      "content_tree_seconds": 224.136,
+      "changed_crate_clippy_seconds": 317.657,
+      "fmt_seconds": 19.984
     },
-    "pending": "NativePG/selected mint audit/clippy/fmt/pins",
+    "pending": "Real repair PG fails before gameplay in foreign migration2020; workspace all-target check still running. Publishing compiling WIP per owner push-now rule; not QUALIFIED or DONE.",
     "sql_changed": true,
-    "new_migrations": []
+    "new_migrations": [],
+    "postmerge_pg_red": {
+      "command": "bash /tmp/questpc4-run-focused-dispatch.sh 'test(m07_machinery_postgres_repair_)' /tmp/questpc4-repairs-postmerge-pg.log",
+      "error": "callback harness: while executing migration 2020: error returned from database: quest reward quantity variable requires exact guard anchor: actual BIGINT; at line 3909",
+      "case_seconds": 6.705731223,
+      "build_seconds": 819.135,
+      "migration": "apps/game-server/migrations/2020_quest_reward_quantity_variable.sql",
+      "introduced_by": "5e04fba53",
+      "own_range": "2060-2069"
+    }
   },
   "qm50_stationary_overlap_fix": {
     "status": "QUALIFIED_SLICE",

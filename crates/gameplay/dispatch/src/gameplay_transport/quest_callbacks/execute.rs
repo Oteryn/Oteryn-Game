@@ -216,12 +216,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+        let closes_source = callback
+            .passages
+            .iter()
+            .any(|p| p.replacement_passable == Some(false));
+        let closing_position = if closes_source {
+            Some(pos)
+        } else if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
             position,
             create: Some(_),
             ..
         }) = &projection
         {
+            Some(*position)
+        } else {
+            None
+        };
+        if let Some(position) = closing_position {
             let Some(at) = runtime
                 .read_actor_position(actor)
                 .ok()
@@ -229,7 +240,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return UseDisposition::Rejected;
             };
-            if super::super::map_door::doorway_occupied(runtime, actor, at, *position) {
+            if super::super::map_door::doorway_occupied(runtime, actor, at, position) {
                 return UseDisposition::Occupied;
             }
         }
@@ -238,7 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for passage_definition in &callback.passages {
             let passage = passage_definition;
             let p = tile(passage.position);
-            if close
+            if (close || passage_definition.replacement_passable == Some(false))
                 && super::super::map_door::doorway_occupied(
                     runtime,
                     actor,
@@ -329,7 +340,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return UseDisposition::Rejected;
                 };
-                replacements.push((*passage, facts, !close));
+                replacements.push((
+                    *passage,
+                    facts,
+                    passage_definition.replacement_passable.unwrap_or(!close),
+                ));
             } else {
                 passages.push(*passage);
             }

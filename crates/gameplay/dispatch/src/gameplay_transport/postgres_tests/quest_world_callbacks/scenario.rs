@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
+    let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
     let m07_realm = name.starts_with("m07/realm-");
@@ -68,6 +69,8 @@ fn scenario_case(
         || native_upper;
     let start = if m07_too_hot {
         super::super::m07_too_hot_columns::start()
+    } else if m07_repair {
+        super::super::m07_machinery_repairs::start()
     } else if m07_machinery {
         super::super::m07_machinery_burn::start(name)
     } else if m07_realm {
@@ -506,6 +509,8 @@ fn scenario_case(
             )?
         } else if m07_too_hot {
             super::super::m07_too_hot_columns::world(generation.native_gameplay().ok_or("Too Hot policies")?)?
+        } else if m07_repair {
+            super::super::m07_machinery_repairs::world(generation.native_gameplay().ok_or("Machinery repair policies")?)?
         } else if m07_machinery {
             super::super::m07_machinery_burn::world(generation.native_gameplay().ok_or("Machinery policies")?,name)?
         } else if m07_realm {
@@ -779,6 +784,8 @@ fn scenario_case(
             super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if m07_too_hot {
             Box::pin(super::super::m07_too_hot_columns::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
+        } else if m07_repair {
+            Box::pin(super::super::m07_machinery_repairs::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_machinery {
             Box::pin(super::super::m07_machinery_burn::exercise(&mut owner,&mut admitted,&h,fence,&callback)).await?;
         } else if m07_realm {

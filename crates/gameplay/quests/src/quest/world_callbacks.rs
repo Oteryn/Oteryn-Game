@@ -54,6 +54,9 @@ pub mod personal_trial;
 pub mod phase;
 #[cfg(test)]
 mod selected_tool_tests;
+#[cfg(test)]
+mod solid_repair_tests;
+mod solid_repairs;
 mod treasure_source;
 #[cfg(test)]
 mod treasure_source_tests;
@@ -96,6 +99,9 @@ pub struct Passage {
     pub if_present: bool,
     #[serde(default)]
     pub replacement: Option<u16>,
+    /// Explicit solid projection, admitted only for exact native consuming repairs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replacement_passable: Option<bool>,
     /// Source-asymmetric lever: remove `appearance`, then create this different wall.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub create_on_close: Option<u16>,
@@ -448,6 +454,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/m07-machinery-catapults.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m07-machinery-repairs.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m07-machinery-wheels.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -608,6 +617,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .any(|r| r.ground.is_some())
                 && !callback.has_personal_state())
             || !effects::valid(callback)
+            || !solid_repairs::valid(callback)
             || callback
                 .effects
                 .teleport_effect
