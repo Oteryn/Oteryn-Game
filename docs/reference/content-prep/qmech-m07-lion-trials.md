@@ -72,3 +72,9 @@ and 3636 at (32857,32231..32233,z11), ordinal 1 at each tile. These imported
 objects carry no UID attributes. These are native footprint observations,
 not recovered UID2243/9234 bindings or permission to infer the UID2244 drop tile.
 The actual offering and reset callers still need explicit qualification.
+
+The Channel's existing pre-projection readiness check now recognizes the named
+Dreamer fire-bug entry: only appearance1949 is ready; reset appearance3134 and
+unrelated appearances refuse. Three focused source-world-object tests and quest
+Clippy pass. This rule does not register a Dreamer callback or qualify its item
+use/step PostgreSQL path; those remain required before claiming the entrance.

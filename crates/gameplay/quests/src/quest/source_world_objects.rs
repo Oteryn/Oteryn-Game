@@ -63,12 +63,26 @@ pub(crate) fn uneasy_crystal() -> Callback {
 
 /// Source readiness is re-proven by the Channel owner immediately before projection.
 pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
-    callback.key != UNEASY_CRYSTAL || appearance == 10186
+    match callback.key.as_str() {
+        UNEASY_CRYSTAL => appearance == 10186,
+        // Crystal 201189f movement_fire_bug_teleport.lua:9-14.
+        "oteryn:quest-callback/dreamers-challenge-fire-bug-entry" => appearance == 1949,
+        _ => true,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn dreamer_fire_bug_entry_requires_the_shared_lit_glyph() {
+        let mut callback = uneasy_crystal();
+        callback.key = "oteryn:quest-callback/dreamers-challenge-fire-bug-entry".into();
+        assert!(source_is_ready(&callback, 1949));
+        assert!(!source_is_ready(&callback, 3134));
+        assert!(!source_is_ready(&callback, 1948));
+    }
+
     #[test]
     fn uneasy_native_counterpart_matches_the_retained_bare_map_object() -> Result<(), String> {
         let callback = uneasy_crystal();
