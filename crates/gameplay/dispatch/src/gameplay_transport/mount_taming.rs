@@ -50,10 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        if matches!(
-            intent.use_with_map_item,
-            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
-        ) {
+        if intent.use_with_map_item.is_some() {
             let corpse = match item_target {
                 Some(ItemKey::Instance(id)) => Some(id),
                 _ => None,
@@ -144,7 +141,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !selected {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         }
-        Ok(self.use_quest_callback(actor, command, map, target).await)
+        let intent =
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        Ok(self
+            .use_quest_callback_with_tool(actor, command, map, target, Some((source, intent)))
+            .await)
     }
 
     async fn tame(

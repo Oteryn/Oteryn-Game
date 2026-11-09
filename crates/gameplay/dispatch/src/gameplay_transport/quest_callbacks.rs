@@ -626,6 +626,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Some(&mut slot),
                         observation.as_ref(),
                         optional_pvp,
+                        None,
                     )
                     .await
                 }
@@ -700,6 +701,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         map: &BundleMap,
         target: &WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_quest_callback_with_tool(actor, command, map, target, None)
+            .await
+    }
+
+    pub(super) async fn use_quest_callback_with_tool(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &BundleMap,
+        target: &WorldObjectTarget,
+        selected_tool: Option<([u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
@@ -826,6 +839,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 slot.as_mut(),
                 observation.as_ref(),
                 optional_pvp,
+                selected_tool.as_ref(),
             )
             .await;
             drop(states);
@@ -986,6 +1000,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         slot.as_mut(),
                         observation.as_ref(),
                         optional_pvp,
+                        None,
                     )
                     .await
                 }

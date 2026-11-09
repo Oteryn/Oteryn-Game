@@ -11,6 +11,9 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == "engitem-targuna-selected-tool" {
+        return oteryn_gameplay_quests::quest::targuna_ram::callback().map_err(Into::into);
+    }
     if name == "triangle-tower-lever" {
         // This source-equivalent adapter is deliberately absent from production:
         // the established Triangle callback owns the physical lever selector.

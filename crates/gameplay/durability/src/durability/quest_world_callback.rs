@@ -4,6 +4,8 @@ pub(super) mod completion;
 pub(crate) mod ground_stack;
 #[cfg(any(test, feature = "test-support"))]
 pub use ground_stack::matches as fixture_ground_stack_matches;
+mod selected_tool;
+pub use selected_tool::QuestWorldToolContext;
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
@@ -175,7 +177,7 @@ pub(super) async fn consume(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
-    context: &QuestWorldContext,
+    context: &QuestWorldToolContext,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
         &super::runtime_scope_assignment::NodeIncarnationProof,
@@ -193,6 +195,19 @@ pub(super) async fn consume(
     else {
         return Ok(false);
     };
+    let exact = callback
+        .item_on_target
+        .as_ref()
+        .is_some_and(|item| item.selected_instance);
+    if exact != context.selected_tool.is_some()
+        || (exact
+            && callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|item| item.reusable))
+    {
+        return Ok(false);
+    }
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
@@ -336,7 +351,7 @@ async fn consume_inputs(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
-    context: &QuestWorldContext,
+    context: &QuestWorldToolContext,
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
     channel_id: crate::foundation::ChannelId,
@@ -354,12 +369,13 @@ async fn consume_inputs(
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) \
-             AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+             AND i.quantity >= $4 AND ($5::bytea IS NULL OR i.item_instance_id=encode($5,'hex')::uuid) ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(&accepted)
         .bind(i64::from(required.count))
+        .bind(context.selected_tool.as_ref().map(|tool| tool.source.to_vec()))
         .fetch_optional(&mut **tx)
         .await?;
         let Some(row) = row else { return Ok(false) };

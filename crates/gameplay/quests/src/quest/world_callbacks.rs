@@ -34,6 +34,8 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+#[cfg(test)]
+mod selected_tool_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -122,6 +124,9 @@ pub struct ItemOnTarget {
     pub target_replacement: Option<u16>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub reusable: bool,
+    /// Require the exact carried source selected by the fenced USE gesture.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub selected_instance: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -561,6 +566,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || (item.replacement.is_some() && item.count != 1)
                     || !callback.has_personal_state()
                     || callback.trigger != Trigger::Use
+                    || (item.selected_instance && !callback.requires_world_admission)
                     || item.count == 0
                     || item.count > 100
                     || (item.reusable && (item.count != 1 || item.replacement.is_some()))

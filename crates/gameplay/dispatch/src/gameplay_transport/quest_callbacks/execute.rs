@@ -20,6 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         slot: Option<&mut RevisionSlot>,
         observed_world: Option<&ObservedWorldCallback>,
         optional_pvp: Option<bool>,
+        selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -603,6 +604,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
+            let context = if let Some((source, intent)) = selected_tool {
+                let Some(context) = context.with_selected_tool(*source, intent.clone()) else {
+                    return UseDisposition::Rejected;
+                };
+                context
+            } else {
+                context.into()
+            };
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())
@@ -630,7 +639,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
             let outcome = slot
-                .commit_world_callback_with_items(
+                .commit_world_callback_with_items_selected(
                     self.root,
                     self.character,
                     self.holder,
