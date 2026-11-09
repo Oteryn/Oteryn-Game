@@ -508,6 +508,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             generation,
             ordinal: 0,
         };
+        if key.as_str() == "raid:edron.feroxa" {
+            self.apply_feroxa_map_clock(firing, now_ms).await?;
+        }
         if let Some(terminal) = progress.terminal(firing) {
             self.apply_current_raid_step(&terminal, &selected, progress, seed, now_ms)
                 .await?;
