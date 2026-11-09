@@ -1,4 +1,6 @@
 //! MOUNTTAME: existing USE -> carried item -> current creature -> fenced durable attempt.
+mod quest_objects;
+
 use super::{
     ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
@@ -66,7 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// M14 uses the existing world receipt, not an unguarded chance-based grant.
+    /// Registered carried World tools reuse the fenced World receipt owner.
     async fn tame_quest_object(
         &self,
         actor: ExactActorRef,
@@ -101,7 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
-            callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY
+            quest_objects::accepts(callback)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
             return Ok(None);
