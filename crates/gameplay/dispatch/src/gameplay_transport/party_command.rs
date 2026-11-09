@@ -5,6 +5,7 @@ use crate::foundation::{CommandId, CommandRef, PartyAction};
 use oteryn_protocol_oteryn::party::*;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+mod list;
 
 /// Bounded connection-local opaque handles. Never use a cached handle as membership authority.
 #[derive(Default)]
@@ -49,11 +50,13 @@ impl SessionPartyView {
         admitted: AdmittedSession,
         view: world_party::ingress::PartyIngressView,
         effects: &BTreeMap<[u8; 16], [u32; 5]>,
+        lists: &mut BTreeMap<[u8; 16], Vec<PartyListEntity>>,
     ) -> Option<PartyResult> {
         let mut result = PartyResult::refused(PartyDisposition::Ok);
         result.shared_xp_enabled = view.source.shared_xp_enabled;
         for (id, name) in view.members {
             result.members.push(PartyEntry {
+                list: lists.remove(&id).unwrap_or_default(),
                 handle: self.handle(admitted, 1, id)?,
                 name,
                 leader: view.source.leader == Some(id),
@@ -63,6 +66,7 @@ impl SessionPartyView {
         }
         for (id, name, expires_at) in view.invitations {
             result.invitations.push(PartyEntry {
+                list: Vec::new(),
                 handle: self.handle(admitted, 2, id)?,
                 name,
                 leader: false,
@@ -277,12 +281,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         effects.insert(member_id, member_party_spell_durations(state, now));
                     }
                 }
+                let list_selected = command_type == COMMAND_TYPE_PARTY_QUERY
+                    && admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(CAPABILITY_PARTY_LIST_V1);
+                let mut lists = if list_selected {
+                    list::project(&runtime, &states, actor, &source)
+                } else {
+                    BTreeMap::new()
+                };
                 let hunt_members = if hunt {
                     source.members.clone()
                 } else {
                     Vec::new()
                 };
-                let Some(projected) = view.project(admitted, source, &effects) else {
+                let Some(mut projected) = view.project(admitted, source, &effects, &mut lists)
+                else {
                     return bytes(PartyDisposition::Unavailable);
                 };
                 if hunt
@@ -297,6 +312,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         index,
                         &view.hunt_prices,
                     );
+                }
+                drop(attack);
+                drop(states);
+                drop(runtime);
+                drop(permit);
+                if list_selected {
+                    // Enrichment uses existing owners after releasing the runtime/spell guards.
+                    let entities = projected
+                        .members
+                        .iter()
+                        .flat_map(|m| &m.list)
+                        .map(|row| row.entity)
+                        .collect();
+                    let appearance = super::appearance_change::observation::observe(
+                        self,
+                        actor,
+                        admitted.game_session_id,
+                        true,
+                        entities,
+                    )
+                    .await;
+                    let icons = self.observe_party_skull(admitted).await;
+                    for row in projected.members.iter_mut().flat_map(|m| &mut m.list) {
+                        if row.distance <= 30 {
+                            row.skull = icons
+                                .as_ref()
+                                .and_then(|icons| {
+                                    icons.iter().find(|icon| icon.entity == row.entity)
+                                })
+                                .map(|icon| icon.skull);
+                        }
+                        if let Some(observation) = &appearance
+                            && let Some(binding) = observation
+                                .bindings
+                                .iter()
+                                .find(|binding| binding.entity == row.entity)
+                        {
+                            if let oteryn_protocol_oteryn::appearance::Look::Outfit {
+                                colours,
+                                ..
+                            } = binding.look
+                            {
+                                let rgb = colours.map(|index| {
+                                    observation
+                                        .catalogue
+                                        .palette
+                                        .get(usize::from(index))
+                                        .copied()
+                                });
+                                if let [Some(head), Some(body), Some(legs), Some(feet)] = rgb {
+                                    row.portrait_colours = [head, body, legs, feet];
+                                    row.portrait = Some(binding.clone());
+                                }
+                            } else {
+                                row.portrait = Some(binding.clone());
+                            }
+                        }
+                    }
+                    let runtime = self.runtime.lock().await;
+                    if !runtime
+                        .bound_attacker_lease(actor, admitted.game_session_id)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
+                    {
+                        return bytes(PartyDisposition::Rejected);
+                    }
                 }
                 encode_party_result(&projected)
                     .ok()

@@ -309,6 +309,8 @@ pub mod death_protection;
 pub mod mechanics_status;
 #[path = "features/0280-party-effects/mod.rs"]
 pub mod party_effects;
+#[path = "features/0461-party-list/mod.rs"]
+pub mod party_list;
 #[path = "features/0383-party-member-effects/mod.rs"]
 pub mod party_member_effects;
 #[path = "features/0381-potion-durations/mod.rs"]

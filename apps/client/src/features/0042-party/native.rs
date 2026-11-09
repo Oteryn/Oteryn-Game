@@ -2,8 +2,14 @@
 #![allow(unsafe_code)]
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::party::{Intent, PartyPanel, request};
-use oteryn_client_ui::party_member_effects::panel_text;
+use oteryn_client_ui::party::{Intent, ListAction, ListSort, PartyPanel, request};
+use windows_sys::Win32::Graphics::Gdi::*;
+use windows_sys::Win32::UI::Controls::{DRAWITEMSTRUCT, ODS_SELECTED};
+#[path = "list_draw.rs"]
+mod list_draw;
+#[path = "portraits.rs"]
+mod portraits;
+use oteryn_client_ui::party_list::panel_text;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
@@ -18,15 +24,36 @@ const KICK: usize = 106;
 const SHARED: usize = 107;
 const REFRESH: usize = 108;
 
-#[derive(Default)]
-struct Actions(Vec<(usize, usize)>);
+struct Actions {
+    commands: Vec<(usize, usize)>,
+    rows: Vec<(u64, oteryn_client_ui::party::party::PartyListEntity)>,
+    portraits: std::cell::RefCell<Option<portraits::PreviewAssets>>,
+    legacy: Vec<(u64, String)>,
+}
+impl Default for Actions {
+    fn default() -> Self {
+        Self {
+            commands: Vec::new(),
+            rows: Vec::new(),
+            legacy: Vec::new(),
+            portraits: std::cell::RefCell::new(portraits::PreviewAssets::load()),
+        }
+    }
+}
 unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: userdata points to the live Actions box owned by this window thread.
     unsafe {
+        if msg == WM_DRAWITEM && l != 0 {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            if !actions.is_null() {
+                list_draw::draw(&*actions, &*(l as *const DRAWITEMSTRUCT));
+            }
+            return 1;
+        }
         if msg == WM_COMMAND {
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            if !actions.is_null() && (*actions).0.len() < 16 {
-                (*actions).0.push((w & 0xffff, (w >> 16) & 0xffff));
+            if !actions.is_null() && (*actions).commands.len() < 16 {
+                (*actions).commands.push((w & 0xffff, (w >> 16) & 0xffff));
             }
             return 0;
         }
@@ -76,7 +103,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             650,
-            500,
+            720,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -94,7 +121,15 @@ fn run(
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
         let list = LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP;
-        let members = control(hwnd, "LISTBOX", "", MEMBERS, [10, 10, 300, 220], list);
+        let members = control(
+            hwnd,
+            "LISTBOX",
+            "",
+            MEMBERS,
+            [10, 10, 300, 220],
+            list | LBS_OWNERDRAWFIXED as u32 | LBS_HASSTRINGS as u32,
+        );
+        SendMessageW(members, LB_SETITEMHEIGHT, 0, 48);
         let invitations = control(hwnd, "LISTBOX", "", INVITATIONS, [330, 10, 300, 220], list);
         for (id, label, x) in [
             (JOIN, tr!("Accept"), 10),
@@ -127,8 +162,61 @@ fn run(
             "EDIT",
             "",
             109,
-            [10, 320, 620, 140],
+            [10, 520, 620, 140],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL,
+        );
+        for (group, label) in [
+            "Players",
+            "Knights",
+            "Paladins",
+            "Druids",
+            "Sorcerers",
+            "Monks",
+            "Summons",
+        ]
+        .iter()
+        .enumerate()
+        {
+            let check = control(
+                hwnd,
+                "BUTTON",
+                label,
+                200 + group,
+                [
+                    10 + (group % 4) as i32 * 150,
+                    330 + (group / 4) as i32 * 32,
+                    145,
+                    28,
+                ],
+                BS_AUTOCHECKBOX as u32,
+            );
+            SendMessageW(check, BM_SETCHECK, 1, 0);
+        }
+        for (index, label) in ["Time", "Distance", "HP", "Name"].iter().enumerate() {
+            control(
+                hwnd,
+                "BUTTON",
+                label,
+                210 + index,
+                [10 + index as i32 * 150, 405, 140, 28],
+                WS_TABSTOP,
+            );
+        }
+        let title = control(
+            hwnd,
+            "EDIT",
+            "Party List",
+            220,
+            [10, 450, 440, 28],
+            WS_BORDER | WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            "Rename",
+            221,
+            [460, 450, 140, 28],
+            WS_TABSTOP,
         );
         let mut held: Option<PartyPanel> = None;
         let mut next_refresh = std::time::Instant::now();
@@ -145,12 +233,23 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
-            for (id, notification) in std::mem::take(&mut actions.0) {
+            for (id, notification) in std::mem::take(&mut actions.commands) {
                 if id == MEMBERS && notification == LBN_SELCHANGE as usize {
                     let row = usize::try_from(SendMessageW(members, LB_GETCURSEL, 0, 0)).ok();
-                    mailbox.party.selected_member = row
-                        .and_then(|row| mailbox.party.state.as_ref()?.members.get(row))
-                        .map(|entry| entry.handle);
+                    mailbox.party.selected_member = row.and_then(|row| {
+                        if row < actions.rows.len() {
+                            actions
+                                .rows
+                                .get(row)
+                                .filter(|(_, entry)| !entry.summon)
+                                .map(|(handle, _)| *handle)
+                        } else {
+                            actions
+                                .legacy
+                                .get(row - actions.rows.len())
+                                .map(|(handle, _)| *handle)
+                        }
+                    });
                     continue;
                 }
                 if id == INVITATIONS && notification == LBN_SELCHANGE as usize {
@@ -158,6 +257,31 @@ fn run(
                     mailbox.party.selected_invitation = row
                         .and_then(|row| mailbox.party.state.as_ref()?.invitations.get(row))
                         .map(|entry| entry.handle);
+                    continue;
+                }
+                if (200..207).contains(&id) {
+                    mailbox.party.list_action(ListAction::ToggleGroup(id - 200));
+                    continue;
+                }
+                if (210..214).contains(&id) {
+                    mailbox.party.list_action(ListAction::Sort(
+                        [
+                            ListSort::Time,
+                            ListSort::Distance,
+                            ListSort::Health,
+                            ListSort::Name,
+                        ][id - 210],
+                    ));
+                    continue;
+                }
+                if id == 221 {
+                    let mut buffer = [0u16; 65];
+                    let count = GetWindowTextW(title, buffer.as_mut_ptr(), buffer.len() as i32);
+                    mailbox
+                        .party
+                        .list_action(ListAction::Rename(String::from_utf16_lossy(
+                            &buffer[..count.max(0) as usize],
+                        )));
                     continue;
                 }
                 let intent = match id {
@@ -198,16 +322,38 @@ fn run(
                 );
                 SendMessageW(members, LB_RESETCONTENT, 0, 0);
                 SendMessageW(invitations, LB_RESETCONTENT, 0, 0);
+                actions.rows.clear();
+                actions.legacy.clear();
                 if let Some(state) = &mailbox.party.state {
-                    for (row, entry) in state.members.iter().enumerate() {
+                    actions.rows = mailbox
+                        .party
+                        .list_rows()
+                        .into_iter()
+                        .map(|(handle, entry)| (handle, entry.clone()))
+                        .collect();
+                    for (row, (handle, entry)) in actions.rows.iter().enumerate() {
                         SendMessageW(
                             members,
                             LB_ADDSTRING,
                             0,
                             wide(&entry.name).as_ptr() as isize,
                         );
-                        if mailbox.party.selected_member == Some(entry.handle) {
+                        if mailbox.party.selected_member == Some(*handle) && !entry.summon {
                             SendMessageW(members, LB_SETCURSEL, row, 0);
+                        }
+                    }
+                    if !mailbox.party.list_hidden[0] {
+                        actions.legacy = state
+                            .members
+                            .iter()
+                            .filter(|member| member.list.is_empty())
+                            .map(|member| (member.handle, member.name.clone()))
+                            .collect();
+                        for (offset, (handle, name)) in actions.legacy.iter().enumerate() {
+                            SendMessageW(members, LB_ADDSTRING, 0, wide(name).as_ptr() as isize);
+                            if mailbox.party.selected_member == Some(*handle) {
+                                SendMessageW(members, LB_SETCURSEL, actions.rows.len() + offset, 0);
+                            }
                         }
                     }
                     for (row, entry) in state.invitations.iter().enumerate() {
@@ -222,6 +368,13 @@ fn run(
                         }
                     }
                 }
+                let caption = if mailbox.party.list_title.is_empty() {
+                    "Party List"
+                } else {
+                    &mailbox.party.list_title
+                };
+                SetWindowTextW(hwnd, wide(caption).as_ptr());
+                InvalidateRect(members, null(), 0);
                 held = Some(mailbox.party.clone());
             }
             SetWindowTextW(status, wide(&panel_text(&mailbox.party)).as_ptr());

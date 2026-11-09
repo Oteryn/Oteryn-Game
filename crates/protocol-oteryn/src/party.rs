@@ -4,12 +4,16 @@ use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_
 use crate::world_spatial_entities::EntityRef;
 type Result<T> = std::result::Result<T, PartyWireError>;
 pub const CAPABILITY_PARTY_V1: u32 = 42;
+pub const CAPABILITY_PARTY_LIST_V1: u32 = 461;
+#[path = "party_list.rs"]
+mod list;
+pub use list::PartyListEntity;
 /// Negotiates member effect durations on the existing party query.
 pub const CAPABILITY_PARTY_MEMBER_EFFECTS_V1: u32 = 383;
 pub const COMMAND_TYPE_PARTY_INTENT: u32 = 45;
 pub const COMMAND_TYPE_PARTY_QUERY: u32 = 46;
 pub const MAX_PARTY_INTENT_BYTES: usize = 48;
-pub const MAX_PARTY_RESULT_BYTES: usize = 8192;
+pub const MAX_PARTY_RESULT_BYTES: usize = 65536;
 pub const MAX_PARTY_MEMBERS: usize = 50;
 pub const MAX_PARTY_INVITATIONS: usize = 20;
 pub const MAX_PARTY_NAME_BYTES: usize = 64;
@@ -36,6 +40,8 @@ pub enum PartyDisposition {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartyEntry {
+    /// Negotiated member followed by its current summons; absent for legacy peers.
+    pub list: Vec<PartyListEntity>,
     pub handle: u64,
     pub name: String,
     pub leader: bool,
@@ -148,7 +154,8 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
                 || (field == 4
                     && (entry.expires_at == 0
                         || entry.leader
-                        || entry.party_spell_remaining_ms.is_some()))
+                        || entry.party_spell_remaining_ms.is_some()
+                        || !entry.list.is_empty()))
             {
                 return bad();
             }
@@ -164,6 +171,18 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
                     chunk.copy_from_slice(&duration.to_be_bytes());
                 }
                 push_message_field(&mut inner, 5, &durations);
+            }
+            if entry.list.len() > 3 {
+                return Err(PartyWireError::LimitExceeded);
+            }
+            let mut entities = std::collections::BTreeSet::new();
+            for (index, entity) in entry.list.iter().enumerate() {
+                if entity.summon != (index != 0)
+                    || !entities.insert((entity.entity.identity, entity.entity.generation))
+                {
+                    return bad();
+                }
+                push_message_field(&mut inner, 6, &entity.encode()?);
             }
             push_message_field(&mut out, field, &inner);
         }
@@ -231,9 +250,10 @@ fn boolean(n: u64) -> Result<bool> {
     }
 }
 fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
-    bounded(input, 128)?;
+    bounded(input, 1536)?;
     let (mut handle, mut name, mut leader, mut expires) = (None, None, None, None);
     let mut remaining = None;
+    let mut list = Vec::new();
     let mut cursor = 0;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
@@ -257,10 +277,17 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
                 }
                 set_once(&mut remaining, durations)?;
             }
+            50 => {
+                if list.len() >= 3 {
+                    return Err(PartyWireError::LimitExceeded);
+                }
+                list.push(PartyListEntity::decode(read_bytes(input, &mut cursor)?)?);
+            }
             _ => return bad(),
         }
     }
     Ok(PartyEntry {
+        list,
         handle: handle.ok_or(PartyWireError::Malformed)?,
         name: name.ok_or(PartyWireError::Malformed)?,
         leader: leader.ok_or(PartyWireError::Malformed)?,
