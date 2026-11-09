@@ -101,7 +101,7 @@ where
             outcome.second_logout = session
                 .held
                 .iter()
-                .any(|(frame, _)| is_logout_command(frame, session.generation));
+                .any(|(frame, _, _)| is_logout_command(frame, session.generation));
             let mut logout =
                 std::pin::pin!(authority.logout_command(session.admitted, command.command_id));
             let reply = loop {
@@ -122,7 +122,9 @@ where
                     Ok(reply) => break reply,
                     Err(Ok(frame)) => {
                         outcome.second_logout |= is_logout_command(&frame, session.generation);
-                        session.held.push_back((frame, false));
+                        session
+                            .held
+                            .push_back((frame, false, tokio::time::Instant::now()));
                     }
                     Err(Err(_)) => outcome.lost_while_logging_out = true,
                 }

@@ -23,6 +23,7 @@ where
         frame,
         arrived_while_buffered,
         buffered_original,
+        received_at,
     } = input;
     let command = match decode_wire_envelope(&frame) {
         Err(error) => return Err(close(stream, session.admitted, error).await),
@@ -121,7 +122,14 @@ where
         .await;
     }
     // Read/coalesce only before the input permit and before any equipment writer starts.
-    let replaced = super::hotkey_equip::replaced(stream, authority, session, command).await?;
+    let replaced = super::hotkey_equip::replaced(
+        stream,
+        authority,
+        session,
+        command,
+        tokio::time::Instant::now().saturating_duration_since(received_at),
+    )
+    .await?;
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
