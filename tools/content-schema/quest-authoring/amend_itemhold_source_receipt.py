@@ -9,7 +9,7 @@ import quest_tree_authoring as tree
 import source_fix_guard as guard
 
 COMPILER = 'tools/content-schema/quest-authoring/quest_tree_authoring.py'
-PREVIOUS = 'b52c35e3c8cfc0de2ee6d385dfe092d7ebd2839196d6e21c3036ff5773d82f44'
+PREVIOUS = '308a919e9e03235aa7f97d3049854a0c7d9bd4e62008397be860d64b089b345f'
 
 
 def verify_source_view(root):
