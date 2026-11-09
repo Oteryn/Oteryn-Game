@@ -540,5 +540,27 @@
       "pins": "PASS unchanged inputs",
       "duplicate_migrations": "PASS HEAD"
     }
+  },
+  "m38_ticket_clock_binding": {
+    "state": "GREEN_READY_TO_PUSH",
+    "scope": "Bind timestamp-only paid callback payment terms into its primary quest hash. New bound SetNow effect uses the unchanged evaluator transaction time; no native purchase/data activation.",
+    "reused_from": "qengine2 790996f8e52fef43fe728ec3af4309078f319cd4 (inspected at 6c0bf0ccb)",
+    "encoding_integration_note": "Qengine2 currently encodes both SetNowWithBinding and SetWhenAtLeast with tag11. Preserve published SetWhenAtLeast=11 and SetNow=3; new bound-clock tag=12 on this branch. Coordinator must retain unique tags during integration.",
+    "red": "Fee1000->1001 left primary quest definition hash unchanged: 1 failed executed unit regression",
+    "green": {
+      "focused_units": 5,
+      "focused_seconds": 0.06,
+      "crate_units": 402,
+      "crate_unit_seconds": 238.86,
+      "registry_integration": 1,
+      "registry_seconds": 0.68,
+      "clippy": "PASS quests --all-targets -D warnings 1m49s",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD",
+      "fmt": "PASS cargo fmt --all --check"
+    },
+    "sql_changes": false,
+    "pg": "No new SQL/storage mutation path; pure effect encoding/lowering/evaluation change. No new PG claim.",
+    "workspace_all_targets": "PENDING following owner-directed immediate publication"
   }
 }

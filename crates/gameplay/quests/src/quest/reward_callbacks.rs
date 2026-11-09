@@ -12,6 +12,7 @@ mod peer_tests;
 #[cfg(test)]
 mod recipe_tests;
 mod state_ops;
+mod temporal_binding;
 mod temporal_payment;
 #[cfg(test)]
 mod temporal_payment_tests;
@@ -661,6 +662,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
         && callback.carried_target.is_none()
+        && !temporal_payment::guarded(callback)
     {
         return Ok(None);
     }
@@ -814,6 +816,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
     let bound_effect = callback.storage.iter().position(|state| !state.preserve);
+    let stamp_binding = binding.filter(|_| temporal_payment::guarded(callback));
     Ok(QuestTransition {
         world_change: None,
         key: callback.key.clone(),
@@ -845,7 +848,12 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                     }
                 },
             })
-            .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
+            .chain(
+                callback
+                    .state_ops
+                    .iter()
+                    .map(|operation| temporal_binding::stamp(operation, stamp_binding)),
+            )
             .collect(),
         completes: callback.completes,
         experience: None,
