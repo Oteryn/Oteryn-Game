@@ -66,6 +66,8 @@ REGISTRY = (
 EXTRA_DERIVED = (
     "content/interactions/index.json",
     "content/quests/grizzly-boss-rooms.json",
+    "content/quests/last-creep-native.json",
+    "tools/content-schema/world-authoring/samples/world-base-capture-v1.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
 )
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
@@ -91,6 +93,8 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/arena_completion.py", "--check"],
@@ -644,11 +648,13 @@ def main() -> int:
     # Without local donor checkouts the committed, pinned source catalogue is retained.
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
+    run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
     materialize_world()
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
+    run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])

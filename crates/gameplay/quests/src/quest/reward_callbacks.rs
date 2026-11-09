@@ -330,6 +330,8 @@ struct TrackDeclaration {
 struct Document {
     schema: u32,
     #[serde(default)]
+    item_disguises: Vec<super::item_disguises::Rule>,
+    #[serde(default)]
     tracks: Vec<TrackDeclaration>,
     callbacks: Vec<RewardCallback>,
 }
@@ -368,9 +370,14 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
     parse_documents(DOCUMENTS).map(|document| document.callbacks)
 }
 
+pub(super) fn item_disguises() -> Result<Vec<super::item_disguises::Rule>, String> {
+    parse_documents(DOCUMENTS).map(|document| document.item_disguises)
+}
+
 fn parse_documents(sources: &[&str]) -> Result<Document, String> {
     let mut combined = Document {
         schema: 1,
+        item_disguises: Vec::new(),
         tracks: Vec::new(),
         callbacks: Vec::new(),
     };
@@ -379,6 +386,7 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         if document.schema != 1 {
             return Err("reward callback schema".into());
         }
+        combined.item_disguises.extend(document.item_disguises);
         combined.tracks.extend(document.tracks);
         combined.callbacks.extend(document.callbacks);
     }
@@ -395,6 +403,9 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
 }
 
 fn validate_document(document: Document) -> Result<Document, String> {
+    if !super::item_disguises::valid(&document.item_disguises) {
+        return Err("invalid quest item disguises".into());
+    }
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
         value.len() <= maximum

@@ -17,6 +17,7 @@ pub const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.j
 /// compares it with the repository.
 pub const PLACEMENT_INDEX_SHA256: &str =
     "2529d97ab2e1e7f6700b603df9942f27a456a8deac4f5db5520566144d1e462f";
+    "f8062f45aede94e1027d49cc89cf5981007e2eeff541991fe5fee7272d4ef5af";
 pub const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
 pub const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;

@@ -525,7 +525,9 @@ impl DurabilityRoot {
         let world_reward = callback
             .as_ref()
             .and_then(|c| c.effects.item_reward.as_ref());
-        if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
+        let world_disguise = callback.as_ref().and_then(|c| c.effects.requires_item_disguise.as_ref());
+        if (reward_callback.is_some() || world_reward.is_some() || world_disguise.is_some()) != reward_admission.is_some()
+            || (world_disguise.is_some() && !matches!(request.cause, QuestCause::Step(_)))
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
             || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
         {
@@ -569,7 +571,9 @@ impl DurabilityRoot {
                             || c.experience.is_some()
                             || c.monk_reward.is_some()
                             || c.native_rule.is_some()
-                            || c.effects.item_reward.is_some())
+                            || c.effects.item_reward.is_some()
+                            || c.effects.requires_item_disguise.is_some()
+                            || c.effects.restore_disguise)
                 }))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -1109,6 +1113,18 @@ impl DurabilityRoot {
                     {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    // Historical receipts already returned. A fresh journal change must
+                    // carry the live condition owner's exact STEP/item-look proof.
+                    if let Some(required) = callback.as_ref().and_then(|world| world.effects.requires_item_disguise.as_ref()) {
+                        let valid = reward_admission.as_ref().is_some_and(|admission| {
+                            admission.actor_conditions.is_some_and(|proof| proof.permits_world(fence, &request, admission.native.source_digest(), required))
+                                && admission.weights.generation_digest() == admission.native.source_digest()
+                        });
+                        if !valid {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context, (&recovery, &node)).await?

@@ -292,6 +292,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The pinned dispenser-item-profiles.json adds 22 source-qualified dispenser
     // definitions (25879..=25914, its exact source subset), all with speed_bonus=0.
     ("SRVGAP-DISPENSERS", 22),
+    // Source crate disguise adds one qualified retained portable Item (11328).
+    // Derived from the corpus-backed shared quest disguise descriptor, speed 0.
+    ("SRVGAP-QUEST-DISGUISE", 1),
+    // Crystal201189f XML: retained Shapechanger12251 and the exact eight dummy
+    // IDs12047..=12053,12056. All nine are new zero-speed source profiles.
+    ("M23-LAST-CREEP", 9),
     // srx1-potion-profiles.json adds 53162..=53164, each with speed_bonus=0.
     // These remain the same original SRX-1 cohorts. SEASON coalesces identical
     // dispenser facts into the base, so the supplement now carries only the
@@ -332,6 +338,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("SEASON-W05D", 35),
 ];
 
+// qengine_reward_item_profiles.py: 53 shared identities, seven QUESTPC4 tools,
+// Juicy Roots 21291 (M12), and Cursed Crystal ingredients 21504/21505 (QN4).
+const QENGINE_SOURCE_PROFILES: usize = 53 + 7 + 1 + 2;
+
 #[test]
 fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() -> TestResult {
     let input = input()?;
@@ -339,6 +349,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
     // QENGINE2 independently captures shared engine and portable quest Items.
     // QENGINE2 captures 63 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures the closed shared, QUESTPC4, M12 and QN4 Item cohorts.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -366,6 +377,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
     assert_eq!(added_keys.len(), 63);
+    assert_eq!(added_keys.len(), QENGINE_SOURCE_PROFILES);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -432,6 +444,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
         ("qengine-reward-item-profiles.json", 63),
+        ("qengine-reward-item-profiles.json", QENGINE_SOURCE_PROFILES),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

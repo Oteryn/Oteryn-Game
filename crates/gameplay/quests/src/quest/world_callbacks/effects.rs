@@ -25,6 +25,13 @@ impl MountReward {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ItemDisguiseRequirement {
+    pub item: String,
+    pub condition: String,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
@@ -34,6 +41,10 @@ pub struct CallbackEffects {
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_item_disguise: Option<ItemDisguiseRequirement>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub restore_disguise: bool,
     /// Complete a separately owned child quest with this native once-only reward.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quest_completion: Option<String>,
@@ -228,6 +239,26 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .requires_item_disguise
+        .as_ref()
+        .is_some_and(|required| {
+            !required.item.starts_with("oteryn:item.tibia.i")
+                || required.item.len() > 128
+                || !required.condition.starts_with("quest.")
+                || required.condition.len() > 128
+                || callback.trigger != Trigger::StepIn
+                || callback.actor_kind != ActorKind::Player
+                || callback.teleport.is_none()
+                || !callback.has_personal_state()
+        })
+        || (effects.restore_disguise
+            && (callback.trigger != Trigger::StepIn
+                || callback.actor_kind != ActorKind::Player
+                || callback.teleport.is_none()))
+    {
+        return false;
+    }
     if effects.player_speech.as_ref().is_some_and(|text| {
         callback.actor_kind != ActorKind::Player
             || text.is_empty()

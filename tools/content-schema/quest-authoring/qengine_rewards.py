@@ -916,7 +916,8 @@ def build():
             callbacks[-1]['sources'].append(provenance)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
-    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
+    item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
+    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -925,7 +926,7 @@ def build():
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'

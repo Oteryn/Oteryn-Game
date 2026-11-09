@@ -43,6 +43,8 @@ fn scenario_case(
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let native_crop = qm48
         || m01b_explore
+    let last_creep = name == "qengine-rewards-m23-last-creep";
+    let native_crop = last_creep || m01b_explore
         || small_ruby
         || mead
         || spirit
@@ -66,6 +68,8 @@ fn scenario_case(
             y: trigger.y - 1,
             ..trigger
         }
+    let start = if last_creep {
+        super::super::m23_last_creep::start()
     } else if m01b_explore {
         Position {
             x: trigger.x + 1,
@@ -144,7 +148,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_signs || diprath_room {
+    let mut callback = if last_creep {
+        callback("last-creep-native-start")?
+    } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
         callback("ancient-tombs-morguthis-seven-flame-gate")?
@@ -347,6 +353,8 @@ fn scenario_case(
             super::super::qm48_mammoth::world(
                 generation.native_gameplay().ok_or("mammoth policies")?,
             )?
+        let world = if last_creep {
+            super::super::m23_last_creep::world(generation.native_gameplay().ok_or("Last Creep native")?)?
         } else if m01b_explore {
             super::super::m01b_explore::world(
                 generation

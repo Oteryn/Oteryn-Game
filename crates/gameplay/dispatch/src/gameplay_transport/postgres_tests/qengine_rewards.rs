@@ -781,6 +781,12 @@ pub(super) async fn exercise(
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }
+    if name == "qengine-rewards-m23-last-creep" {
+        return super::m23_last_creep::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-srvgap-disguise" {
+        return super::srvgap_quest_disguise::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-qworld-phase-") {
         return super::qworld_phase_steps::exercise(owner, admitted, h, authority, name).await;
     }

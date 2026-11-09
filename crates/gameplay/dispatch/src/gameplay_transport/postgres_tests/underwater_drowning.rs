@@ -421,6 +421,8 @@ fn scenario_in_world(
                 requires_premium: false,
                 world_change: None,
 admission: None, world_change: None,
+admission: None,
+world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
                 requires_world_admission: false,
