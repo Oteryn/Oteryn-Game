@@ -161,6 +161,9 @@ pub struct RewardCallback {
     /// Exact native live creature selected by a carried quest tool.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    /// Sample the exact original fresh Ground corpse instead of a live creature.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub fresh_corpse: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -208,6 +211,9 @@ pub struct RewardCallback {
     pub reply: Vec<String>,
     pub sources: Vec<String>,
 }
+
+#[cfg(test)]
+mod fresh_corpse_tests;
 
 impl OutfitReward {
     pub fn grant_key(&self, addon: u8) -> String {
@@ -462,6 +468,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || (c.fresh_corpse && c.creature_target.is_none())
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -1249,9 +1256,10 @@ mod tests {
                 "oteryn:quest.outfit_and_addon_quests",
                 "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
             ),
+            // Includes the source seal callbacks and their owned packed counter.
             (
                 "oteryn:quest.the_ice_islands_quest",
-                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+                "93443bade8f92947bb3efc2b7f0e2fa4b2ca5d4233feae2835fddd6d0dc5531e",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

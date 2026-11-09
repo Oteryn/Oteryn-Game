@@ -813,6 +813,7 @@ async fn wardrobe(
         carried_item: None,
         peer_requires: None,
         creature_target: None,
+        fresh_corpse: false,
         minimum_level: None,
         requires_addons: vec![],
         forbids_outfits: vec![],

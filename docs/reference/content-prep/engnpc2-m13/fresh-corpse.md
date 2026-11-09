@@ -47,3 +47,31 @@ After implementation the expanded case passed in 7.404706899 s, including
 adjacent diagonal use, distant/other-floor refusal, a foreign player actor,
 another runtime generation and Character/session/connection/lease mismatches.
 The tool transformation and personal-progress participant remain to be wired.
+
+## Atomic quest participant
+
+Reward callbacks can now explicitly declare `fresh_corpse: true` with an exact
+`creature_target` and one carried input. The live constructor refuses that mode;
+the corpse constructor requires an existing lane permit and a lifetime-bound
+runtime actor snapshot. The ordinary Root quest reward transaction rereads the
+selected top corpse using its current Character authority and the active native
+Creature revision before consuming the tool or creating a reward. First-form
+state and native expiry supply freshness; no quest-specific timeout is guessed.
+The snapshot retains its runtime borrow through the asynchronous commit without
+passing an unrelated detached position or a runtime reference to another owner.
+
+`engnpc2_corpse_sample_postgres_atomic_burn_mint_progress_and_replay` executed on
+2026-11-09 in 53.552703872 s. A genuine corpse MINT precedes the tested command;
+changed tool intent refuses without a quest receipt/revision. Correct intent
+burns the selected carried fixture input, mints one qualified native output and
+advances private progress in the same transaction. Releasing the runtime then
+replaying returns the existing receipt without another MINT. This is an engine
+recipe fixture, not the canonical Slug stage. Client map-handle routing and the
+canonical perfume input/output data still need wiring.
+
+The callback mode/binding test was red before the field existed. All 27 reward
+callback tests pass after the addition. This check also caught the stale Ice
+Islands golden from the earlier seal/counter wiring: HEAD and the working code
+produced the same current catalogue hash, which was used to refresh that golden.
+The native Rotworm exchange and actor-bound corpse-reader regressions also ran
+against the new binary (50.33251178 s and the duration in the execution log).

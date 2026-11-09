@@ -97,6 +97,7 @@ pub struct QuestRewardAdmission<'a> {
 pub(crate) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
+    owner: (&super::super::DurabilityRoot, &crate::character_recovery_fence::CharacterRecoveryFenceV1),
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
@@ -118,7 +119,12 @@ pub(crate) async fn apply(
     }
     match (&callback.creature_target, admission.creature_use, admission.carried_use) {
         (None, None, _) => {}
-        (Some(key), Some(proof), Some(carried)) if proof.permits(fence, request, key, carried) => {}
+        (Some(_), Some(proof), Some(carried)) if callback.fresh_corpse => {
+            if !proof.permits_corpse(tx,owner,node,fence,request,callback,carried,admission.native).await? {
+                return Ok(false);
+            }
+        }
+        (Some(key), Some(proof), Some(carried)) if !callback.fresh_corpse && proof.permits(fence, request, key, carried) => {}
         _ => return Ok(false),
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {

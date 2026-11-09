@@ -588,6 +588,7 @@ impl DurabilityRoot {
                 .finalize();
             binding[1..].copy_from_slice(&digest);
         }
+        let reward_root = self.clone();
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -1018,7 +1019,7 @@ impl DurabilityRoot {
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
-                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
+                        && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,(&reward_root,&recovery),&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let Some(world) = &callback
                         && let Some(reward) = &world.effects.item_reward

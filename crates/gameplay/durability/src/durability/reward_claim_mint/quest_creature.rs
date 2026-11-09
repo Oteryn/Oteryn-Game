@@ -4,6 +4,9 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::UseIntent;
 
+mod corpse;
+pub use corpse::QuestCorpseOperand;
+
 /// A live target proof binds the complete decoded tool intent and borrows its
 /// runtime owner until the quest commit ends.
 /// Mutating or releasing that owner while retaining the proof is forbidden.
@@ -24,6 +27,7 @@ pub struct QuestCreatureUseProof<'runtime> {
     callback: String,
     key: String,
     intent: UseIntent,
+    corpse: Option<corpse::CorpseUse<'runtime>>,
     _runtime: std::marker::PhantomData<&'runtime ()>,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
@@ -35,6 +39,9 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
         intent: &UseIntent,
     ) -> Option<Self> {
+        if callback.fresh_corpse {
+            return None;
+        }
         let key = callback.creature_target.as_ref()?;
         let target = intent.use_with?;
         let lease = runtime
@@ -67,6 +74,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             callback: callback.key.clone(),
             key: key.clone(),
             intent: intent.clone(),
+            corpse: None,
             _runtime: std::marker::PhantomData,
         })
     }
@@ -77,7 +85,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         key: &str,
         carried: &super::QuestCarriedUse,
     ) -> bool {
-        self.fence.item_fence() == fence.item_fence()
+        self.corpse.is_none()
+            && self.fence.item_fence() == fence.item_fence()
             && request.cause == QuestCause::Command(self.command)
             && request.transition_key == self.callback
             && self.key == key

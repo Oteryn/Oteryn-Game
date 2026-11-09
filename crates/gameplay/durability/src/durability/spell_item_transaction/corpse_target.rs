@@ -4,6 +4,7 @@ use super::*;
 use std::num::NonZeroU32;
 
 mod actor;
+pub(crate) use actor::CorpseActorSnapshot;
 pub use actor::{FreshCorpseTarget, read_for_actor};
 
 /// Select the exact top Ground corpse, using its original race provenance and
