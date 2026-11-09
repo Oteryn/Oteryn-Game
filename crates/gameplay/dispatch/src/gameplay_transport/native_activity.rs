@@ -23,6 +23,23 @@ use crate::foundation::{
 };
 use std::sync::Arc;
 
+pub(super) async fn refresh_activity_accounts(
+    source: &super::fresh_evidence::FreshEvidenceSource,
+    root: &crate::durability::DurabilityRoot,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    accounts: &[[u8; 16]],
+) -> Result<(), ()> {
+    for account in accounts {
+        source
+            .refresh_account(root, node, &super::canonical_uuid(account))
+            .await
+            .map_err(|error| {
+                super::operator_event(&format!("activity_account_evidence_unavailable {error}"))
+            })?;
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) struct ActivityAttemptKey {
     pub(super) session: GameSessionId,
@@ -880,9 +897,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             );
         }
         if attempt.receipt.is_none() {
-            // Each participant has an independently authenticated account. Keep
-            // current producer evidence held through the durable group claim;
-            // one initiator's evidence cannot authorize the other occupants.
+            // Refresh each independent account and finish its publication cleanup
+            // before requesting another: the publication lane is exclusive.
+            // Clearing checkpoints retains accepted S2 facts; the group writer
+            // still locks and verifies every participant's current guards.
             let mut accounts: Vec<_> = attempt
                 .sources
                 .iter()
@@ -895,20 +913,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .collect::<Result<_, _>>()?;
             accounts.sort_unstable();
             accounts.dedup();
-            let mut evidence = Vec::new();
-            evidence.try_reserve_exact(accounts.len()).map_err(|_| ())?;
-            for account in accounts {
-                evidence.push(
-                    self.evidence
-                        .refresh_account_held(
-                            self.root,
-                            self.holder,
-                            &super::canonical_uuid(&account),
-                        )
-                        .await
-                        .map_err(|_| ())?,
-                );
-            }
+            refresh_activity_accounts(self.evidence, self.root, self.holder, &accounts).await?;
             #[cfg(test)]
             if attempt.soulpit.is_some() {
                 eprintln!("SRX3_SOULPIT HANDOFF_STAGE evidence_held_durable_enter");
@@ -946,9 +951,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             #[cfg(test)]
             if attempt.soulpit.is_some() {
                 eprintln!("SRX3_SOULPIT HANDOFF_DURABLE_RESULT {result:?}");
-            }
-            for held in evidence {
-                held.release().await.map_err(|_| ())?;
             }
             let result = result.map_err(|_| ())?;
             match result {

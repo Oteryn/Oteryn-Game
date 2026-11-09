@@ -17,7 +17,7 @@ fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
         super::fixture::run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "m25_push_peer", false, false)
                 .await?;
-            let _source = super::house_transfer::RecoverySource::start(&h).await?;
+            let source = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h)
                 .await
                 .map_err(|error| format!("M25 first Fresh admission: {error}"))?;
@@ -40,6 +40,29 @@ fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
             )
             .await
             .map_err(|error| format!("M25 second Fresh admission: {error}"))?;
+            crate::gameplay_transport::native_activity::refresh_activity_accounts(
+                &source.evidence,
+                &h.root,
+                &h.node,
+                &[id(40), id(63)],
+            )
+            .await
+            .map_err(|error| format!("M25 independent group account evidence: {error:?}"))?;
+            assert!(h.root.pending_native_source_publications(&h.node).await?.is_empty());
+            let refreshed: i64 = sqlx::query_scalar(
+                "SELECT count(DISTINCT convert_from(semantic_facts,'UTF8')::jsonb->>'account_id') \
+                 FROM game_durability_native_source_floors \
+                 WHERE source_authority='platform-test' AND operation='ReadAccountSecurityV1' \
+                   AND source_revision>1 AND convert_from(semantic_facts,'UTF8')::jsonb->>'allowed'='true' \
+                   AND convert_from(semantic_facts,'UTF8')::jsonb->>'account_id'=ANY($1::text[])",
+            )
+            .bind(vec![
+                crate::gameplay_transport::canonical_uuid(&id(40)),
+                crate::gameplay_transport::canonical_uuid(&id(63)),
+            ])
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(refreshed, 2, "both independent account decisions are current");
             h.cleanup().await
         })
     })?;
@@ -153,56 +176,16 @@ pub(super) async fn prepare_peer_and_party(
             generation: entry.generation,
         }
     };
-    let mut leader_view = crate::gameplay_transport::party_command::SessionPartyView::default();
-    let invite = encode_party_intent(PartyIntent::Invite(target)).map_err(debug)?;
-    let result = owner
-        .party_wire_command(
-            *leader,
-            leader.continuity.next_command_id,
-            COMMAND_TYPE_PARTY_INTENT,
-            &invite,
-            &mut leader_view,
-        )
-        .await
-        .ok_or("actual Party invite reply")?;
-    assert_eq!(
-        decode_party_result(&result).map_err(debug)?.disposition,
-        PartyDisposition::Ok
-    );
-    leader.continuity.next_command_id += 1;
-    let mut peer_view = crate::gameplay_transport::party_command::SessionPartyView::default();
-    let query = owner
-        .party_wire_command(
-            peer,
-            peer.continuity.next_command_id,
-            COMMAND_TYPE_PARTY_QUERY,
-            &[],
-            &mut peer_view,
-        )
-        .await
-        .ok_or("actual Party invitation query")?;
-    let query = decode_party_result(&query).map_err(debug)?;
-    assert_eq!(query.disposition, PartyDisposition::Ok);
-    let [invitation] = query.invitations.as_slice() else {
-        return Err("one actual Party invitation".into());
-    };
-    peer.continuity.next_command_id += 1;
-    let accept = encode_party_intent(PartyIntent::Accept(invitation.handle)).map_err(debug)?;
-    let result = owner
-        .party_wire_command(
-            peer,
-            peer.continuity.next_command_id,
-            COMMAND_TYPE_PARTY_INTENT,
-            &accept,
-            &mut peer_view,
-        )
-        .await
-        .ok_or("actual Party accept reply")?;
-    assert_eq!(
-        decode_party_result(&result).map_err(debug)?.disposition,
-        PartyDisposition::Ok
-    );
-    peer.continuity.next_command_id += 1;
+    use super::party_membership::{Step, roundtrip};
+    let invited = roundtrip(owner, leader, &[Step::Invite(target)]).await?;
+    assert_eq!(invited.len(), 1);
+    assert_eq!(invited[0].disposition, PartyDisposition::Ok);
+    let joined = roundtrip(owner, &mut peer, &[Step::Query, Step::Accept]).await?;
+    assert_eq!(joined.len(), 2);
+    assert_eq!(joined[0].invitations.len(), 1, "one actual Party invitation");
+    for result in joined {
+        assert_eq!(result.disposition, PartyDisposition::Ok);
+    }
     owner
         .activity_runtimes
         .remember(*leader)
@@ -279,13 +262,19 @@ pub(super) async fn exercise(
             loss,
         )
     };
+    let destination = {
+        let runtime = view.runtime.lock().await;
+        view.wire_observation(
+            &runtime,
+            MovementLocalPosition { x: 34002, y: 31706, floor: 10 },
+        )
+        .ok_or("actual native PUSH destination projection")?
+        .actor_position
+    };
+    assert_eq!(destination.floor, -10);
     let intent = oteryn_protocol_oteryn::creature_push::CreaturePushIntent {
         target: entity,
-        destination: oteryn_protocol_oteryn::world_spatial::ActorPosition {
-            x: 34002,
-            y: 31706,
-            floor: 10,
-        },
+        destination,
     };
     let disposition = tokio::time::timeout(
         std::time::Duration::from_secs(10),
