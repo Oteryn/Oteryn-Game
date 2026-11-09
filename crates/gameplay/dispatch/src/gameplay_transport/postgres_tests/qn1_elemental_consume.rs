@@ -1,7 +1,8 @@
 //! Physical M49 successor: real MINT, carried custody, drop, retirement and replay.
 mod fixture {
     pub(super) use crate::bestiary_postgres_harness::{
-        CHANNEL, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id, runtime, scope,
+        CHANNEL, CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, id,
+        runtime, scope,
     };
     pub const BACKPACK: &str = "fixture:b3.backpack";
     pub fn fence() -> TestResult<crate::durability::item_transfer::CurrentCharacterItemFence> {
@@ -429,6 +430,21 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     assert_eq!(pending[0].altar, recipe.altar);
     assert_eq!(pending[0].creature_key, recipe.creature);
     assert_eq!(pending[0].position, position);
+    let spawn: String = sqlx::query_scalar("SELECT 'qn1.elemental:'||encode($1,'hex')")
+        .bind(pending[0].transaction_id.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+    let clock: Option<(i16, String)> = sqlx::query_as(
+        "SELECT state,owner_generation::text FROM game_boss_spawn_clocks WHERE spawn_key=$1",
+    )
+    .bind(&spawn)
+    .fetch_optional(&h.pool)
+    .await?;
+    assert_eq!(
+        clock,
+        Some((2, "1".into())),
+        "arrival must persist its native boss clock"
+    );
     for mismatched in [
         crate::durability::item_loop_move::ElementalSummonScope {
             map: [8; 32],
@@ -465,6 +481,90 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 .is_empty()
         );
     }
+    let refused = sqlx::query("DELETE FROM game_elemental_boss_leases")
+        .execute(&h.pool)
+        .await;
+    assert!(
+        matches!(refused, Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("23514"))
+    );
+    let mut unproven = h.pool.begin().await?;
+    sqlx::query("UPDATE game_boss_spawn_clocks SET state=3,cycle=cycle+1,owner_generation=NULL WHERE spawn_key=$1")
+        .bind(&spawn).execute(&mut *unproven).await?;
+    let refused = unproven.commit().await;
+    assert!(
+        matches!(refused, Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("23514"))
+    );
+    let mut death = h
+        .root
+        .freeze_item_mint(
+            &authority,
+            &h.node,
+            mint_request(
+                3,
+                "oteryn:item.tibia.i8139",
+                crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY,
+            )?,
+        )
+        .await
+        .map_err(f::debug)?;
+    let policy = oteryn_gameplay_content::content::BossPolicy::AtReset {
+        chance: oteryn_gameplay_content::content::BossChance {
+            numerator: 0,
+            denominator: 1,
+        },
+    };
+    let outcome = h
+        .root
+        .commit_boss_corpse_mint(
+            &permit,
+            &authority,
+            &h.node,
+            &mut death,
+            f::id(f::CHARACTER),
+            (spawn.clone(), 0, policy),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        outcome,
+        crate::durability::item_mint::ItemMintOutcome::Committed(_)
+    ));
+    assert!(
+        h.root
+            .read_elemental_summons(
+                &permit,
+                &authority,
+                &h.node,
+                f::fence()?,
+                &Content,
+                projection,
+            )
+            .await
+            .map_err(f::debug)?
+            .is_empty()
+    );
+    let terminal: (i16, String) =
+        sqlx::query_as("SELECT state,cycle::text FROM game_boss_spawn_clocks WHERE spawn_key=$1")
+            .bind(&spawn)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(terminal, (3, "1".into()));
+    let outcome = h
+        .root
+        .commit_boss_corpse_mint(
+            &permit,
+            &authority,
+            &h.node,
+            &mut death,
+            f::id(f::CHARACTER),
+            (spawn.clone(), 0, policy),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        outcome,
+        crate::durability::item_mint::ItemMintOutcome::AlreadyCommitted(_)
+    ));
     Ok(())
 }
 
@@ -474,39 +574,13 @@ async fn mint(
     n: u64,
     key: &str,
 ) -> f::TestResult<[u8; 16]> {
-    use crate::durability::item_mint::{
-        GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest,
-    };
-    use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+    use crate::durability::item_mint::ItemMintOutcome;
     let mut candidate = h
         .root
         .freeze_item_mint(
             authority,
             &h.node,
-            ItemMintRequest {
-                cause: ItemMintCause::for_test(
-                    WorldId::decode(&f::id(f::WORLD)).map_err(f::debug)?,
-                    ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?,
-                    ScopeOwnershipGeneration::new(1).map_err(f::debug)?,
-                    u32::try_from(n)?,
-                    1,
-                    f::definition("LootTable", "fixture:elemental"),
-                    "fixture:elemental".into(),
-                    0,
-                ),
-                item: f::definition("Item", key),
-                quantity: 1,
-                ground: GroundPlacement {
-                    spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
-                    corpse_ref: f::id(3).to_vec(),
-                    map_revision: "map-1".into(),
-                    content_revision: "content-1".into(),
-                    native_room_placement_context: f::id(6).to_vec(),
-                },
-                content_revision: "content-1".into(),
-                ruleset_revision: "ruleset-1".into(),
-                sim_revision: "sim-1".into(),
-            },
+            mint_request(n, key, "fixture:elemental")?,
         )
         .await
         .map_err(f::debug)?;
@@ -520,4 +594,37 @@ async fn mint(
         ItemMintOutcome::Committed(committed) => Ok(committed.item_instance_id),
         other => Err(format!("corpse fixture MINT {other:?}").into()),
     }
+}
+
+fn mint_request(
+    n: u64,
+    key: &str,
+    purpose: &str,
+) -> f::TestResult<crate::durability::item_mint::ItemMintRequest> {
+    use crate::durability::item_mint::{GroundPlacement, ItemMintCause, ItemMintRequest};
+    use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+    Ok(ItemMintRequest {
+        cause: ItemMintCause::for_test(
+            WorldId::decode(&f::id(f::WORLD)).map_err(f::debug)?,
+            ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?,
+            ScopeOwnershipGeneration::new(1).map_err(f::debug)?,
+            u32::try_from(n)?,
+            1,
+            f::definition("LootTable", "fixture:elemental"),
+            purpose.into(),
+            0,
+        ),
+        item: f::definition("Item", key),
+        quantity: 1,
+        ground: GroundPlacement {
+            spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
+            corpse_ref: f::id(3).to_vec(),
+            map_revision: "map-1".into(),
+            content_revision: "content-1".into(),
+            native_room_placement_context: f::id(6).to_vec(),
+        },
+        content_revision: "content-1".into(),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "sim-1".into(),
+    })
 }
