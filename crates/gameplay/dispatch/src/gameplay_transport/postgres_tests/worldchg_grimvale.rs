@@ -925,6 +925,28 @@ async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: b
                 owner.world_id, owner.channel_id, NodeId::decode(&id(1)).map_err(debug)?,
                 1, 2, 2, "runtime-scope-assignment:2", 8, pin).map_err(debug)?;
             owner.apply_feroxa_map_clock(firing, 1_799_999).await.map_err(|_| "successor authority before timer")?;
+            let corpse = clear_corpses.first().ok_or("handoff corpse")?.0;
+            // Change only historical placement generation; current authority stays2.
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_item_ground_locations SET runtime_scope_ownership_generation=3 WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(corpse.as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            assert!(owner.apply_feroxa_map_clock(firing, 1_800_000).await.is_err(),
+                "a successor must not consume future-generation custody");
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(receipts,0,"foreign-generation refusal must commit no partial clear");
+            for item in std::iter::once(&corpse).chain(clear_corpses[0].1.iter()) {
+                let live: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(live,1);
+            }
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_item_ground_locations SET runtime_scope_ownership_generation=1 WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(corpse.as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
             owner.apply_feroxa_map_clock(firing, 1_800_000).await.map_err(|_| "successor corpse clear")?;
             for (corpse, loot) in &clear_corpses {
                 for item in std::iter::once(corpse).chain(loot.iter()) {
