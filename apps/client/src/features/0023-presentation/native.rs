@@ -4,16 +4,16 @@ use super::{
 };
 use oteryn_session::PresentationSource;
 use rodio::cpal::traits::{DeviceTrait, HostTrait};
-use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Player, Source};
+use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
 use std::io::Cursor;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub struct AudioOutput {
-    stream: MixerDeviceSink,
+    stream: OutputStream,
     catalog: SoundCatalog,
-    voices: Vec<(PresentationSource, SoundChannel, Option<BattleClass>, Player)>,
-    ambient: Option<(u32, Player)>,
+    voices: Vec<(PresentationSource, SoundChannel, Option<BattleClass>, Sink)>,
+    ambient: Option<(u32, Sink)>,
     error: Option<String>,
 }
 
@@ -36,11 +36,11 @@ impl AudioOutput {
             .collect();
         let names = devices
             .iter()
-            .map(|device| device.description().map(|d| d.name().to_owned()).map_err(|e| e.to_string()))
+            .map(|device| device.name().map_err(|e| e.to_string()))
             .collect::<Result<Vec<_>, _>>()?;
         let stream = match select_audio_device(requested, &names)? {
-            None => DeviceSinkBuilder::open_default_sink(),
-            Some(index) => DeviceSinkBuilder::from_device(devices[index].clone())
+            None => OutputStreamBuilder::open_default_stream(),
+            Some(index) => OutputStreamBuilder::from_device(devices[index].clone())
                 .and_then(|builder| builder.open_stream()),
         }
         .map_err(|e| e.to_string())?;
@@ -116,7 +116,7 @@ impl AudioOutput {
                 return Ok(());
             };
             let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
-            let voice = Player::connect_new(self.stream.mixer());
+            let voice = Sink::connect_new(self.stream.mixer());
             voice.set_volume(gain);
             voice.append(source.repeat_infinite());
             self.ambient = Some((cue.id, voice));
@@ -132,7 +132,7 @@ impl AudioOutput {
         if self.voices.len() == 32 {
             self.voices.remove(0).3.stop();
         }
-        let voice = Player::connect_new(self.stream.mixer());
+        let voice = Sink::connect_new(self.stream.mixer());
         voice.set_volume(gain);
         // Numeric cues are one-shots. Bound voice lifetime even for malformed/stream assets.
         voice.append(source.take_duration(Duration::from_secs(30)));
@@ -205,7 +205,7 @@ impl NativeAudio {
             Ok(audio) => {
                 audio.update(self.settings, cues);
                 for cue in ui {
-                    let voice = Player::connect_new(audio.stream.mixer());
+                    let voice = Sink::connect_new(audio.stream.mixer());
                     voice.set_volume(
                         self.settings
                             .channel_gain(PresentationSource::Global, SoundChannel::Ui)
@@ -236,6 +236,6 @@ impl NativeAudio {
 pub fn audio_device_names() -> Vec<String> {
     rodio::cpal::default_host()
         .output_devices()
-        .map(|devices| devices.filter_map(|device| device.description().ok().map(|d| d.name().to_owned())).collect())
+        .map(|devices| devices.filter_map(|device| device.name().ok()).collect())
         .unwrap_or_default()
 }
