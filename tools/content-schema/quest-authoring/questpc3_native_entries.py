@@ -214,7 +214,7 @@ def build_illuminator(root=ROOT):
         'sources':evidence}]}
 
 def content(check=False):
-    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender())]
+    documents = [(OUTPUT, build()), (Path('content/quests/authored-bindings/qmech-m01c-fanfare.json'), build_fanfare()), (Path('content/quests/authored-bindings/qmech-m01c-black-knight.json'), build_black_knight()), (Path('content/quests/authored-bindings/qmech-m01c-grimvale.json'), build_grimvale()), (Path('content/quests/authored-bindings/qmech-m01c-decaying-defender.json'), build_decaying_defender()), (Path('content/quests/authored-bindings/qmech-m01c-illuminator.json'), build_illuminator())]
     for output, value in documents:
         path = ROOT / output
         if check:
