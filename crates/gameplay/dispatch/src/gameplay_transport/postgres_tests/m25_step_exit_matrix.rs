@@ -12,7 +12,12 @@ pub(super) async fn assert_native_step_exit_matrix(
     let original:Value=sqlx::query_scalar("SELECT to_jsonb(r) FROM game_activity_runtime_returns r WHERE source_game_session_id=encode($1,'hex')::uuid")
         .bind(source.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     let mut tx = h.pool.begin().await?;
+    // LIKE preserves the columns and checks, but PostgreSQL gives the clone
+    // a distinct composite type. Adapt only that type to the canonical hash
+    // function; the installed proof trigger still checks every original field.
     sqlx::raw_sql("CREATE TEMP TABLE native_step_return_controls(LIKE game_activity_runtime_returns INCLUDING ALL) ON COMMIT DROP;
+        CREATE FUNCTION game_activity_native_step_request_binding(r pg_temp.native_step_return_controls) RETURNS BYTEA
+        LANGUAGE SQL IMMUTABLE STRICT AS 'SELECT game_activity_native_step_request_binding(jsonb_populate_record(NULL::game_activity_runtime_returns,to_jsonb(r)))';
         CREATE CONSTRAINT TRIGGER native_step_exit_matrix_proven AFTER INSERT ON native_step_return_controls
         DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_activity_native_step_exit_proven();")
         .execute(&mut *tx).await?;
