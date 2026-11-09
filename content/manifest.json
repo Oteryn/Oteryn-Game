@@ -854,6 +854,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc5-parchment-profile.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1010,7 +1013,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5790,
+          "record_count": 5779,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1018,7 +1021,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "f9758df5e11b64e94447d72bb42d2e3dc83676ce7ff49365fcc4204c67a6a5e0"
+          "sha256": "955a41410ff49a921b6244508aca3417d0a11504ad21d80603c65b3d9e74847d"
         },
         {
           "creates_canonical_identities": false,

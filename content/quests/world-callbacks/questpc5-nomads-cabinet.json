@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/nomads-land-sacred-casket-cabinet",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33220,
+          "y": 32858,
+          "floor": -9
+        },
+        "appearance": 2434,
+        "unique": null,
+        "action": null
+      },
+      "admission": {
+        "premium": true
+      },
+      "requires_world_admission": true,
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "premium": true,
+          "item": "oteryn:item.tibia.i2853",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i7527",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i2833",
+              "count": 1
+            }
+          ],
+          "text": {
+            "contents": [
+              {
+                "index": 1,
+                "text": "We are not far from revealing the greatest secret in the lands of Darama that was kept by a nomad tribe so far. They call themselves \"true sons of the desert\" and we managed to obtain their sacred casket by accident. What a great day for us. The right people will pay huge amounts of gold for it.\n\nSo far I found out that the strange substance in the casket has something to do with the rotworm species. It is strongly advisable to keep the substance in the casket. I opened it once and minutes later it swarmed with rotworms and carrion worms. Many of my people died in this accident. We presume that we deal with an attractant of a rotworm queen. No one has ever seen one but we are pretty sure that this species is organised by a queen. Maybe it would be possible to lure a queen with this substance but we don't dare to use it again. We need more time to figure out how this all matches and how to use the substance without being overrun by rotworms."
+              }
+            ]
+          }
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/container_misc.lua:803-822:sha256:da146858a7bfbef47f601e02fc2b621c5e639ec2d096a6831446800277129bca",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/container_misc.lua#L803-L822",
+        "content/quests/definitions/quests-00300-00351.json#oteryn:quest.authored.nomads_land_quest/s5"
+      ]
+    }
+  ]
+}

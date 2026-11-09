@@ -331,3 +331,6 @@ mod minimap;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+
+#[path = "features/0449-personal-map-marks/scene.rs"]
+mod personal_map_marks;

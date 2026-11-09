@@ -325,3 +325,5 @@ pub mod cui3 {
         item_view, store,
     };
 }
+
+pub use oteryn_session::personal_map_marks;

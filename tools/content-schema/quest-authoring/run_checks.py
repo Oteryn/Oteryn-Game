@@ -116,6 +116,8 @@ def main():
         ['verify_quest_schema.py'],
         ['questpc2_live_eligibility.py', '--check'],
         ['last_creep_native.py', '--check'],
+        ['questpc5_targuna_map.py', '--check'],
+        ['qm15_nomads_cabinet.py', '--check'],
         ['srvwld_first_dragon.py', '--check'],
         ['m41_npc_sources.py', '--check'],
         ['soul_war_reconstruction.py', '--check'],

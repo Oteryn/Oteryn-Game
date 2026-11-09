@@ -126,7 +126,7 @@ fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -797,6 +797,9 @@ pub(super) async fn exercise(
     }
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name == "qengine-rewards-questpc5-personal-map-query" {
+        return super::questpc5_personal_map_marks::exercise(owner, admitted, h).await;
     }
     if name == "qengine-rewards-m23-last-creep" {
         return super::m23_last_creep::exercise(owner, admitted, h).await;

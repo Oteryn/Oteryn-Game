@@ -95,18 +95,21 @@ impl PlayView {
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.weather_scene();
-        self.scene
-            .set_minimap(
-                self.live_map && self.preferences().panel_visible("minimap"),
-                self.minimap.clone(),
-                self.floor,
-            )?;
+        self.scene.set_minimap(
+            self.live_map && self.preferences().panel_visible("minimap"),
+            self.minimap.clone(),
+            self.floor,
+        )?;
         self.project_presentation(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         if pushed.scope_changed {
+            self.minimap
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .quest_marks = Default::default();
             self.inputs.clear();
             self.cursor_spell = None;
             self.in_flight = false;
@@ -122,6 +125,15 @@ impl PlayView {
         }
         if let Some(channel) = pushed.served_channel {
             oteryn_client_ui::channel_list::protocol::apply(&mut self.served_channel, channel);
+        }
+        if let Some(marks) = &pushed.personal_map_marks
+            && !self
+                .minimap
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .replace_quest_marks(marks.clone())
+        {
+            return Err(BatchError::InvalidView);
         }
         self.world_clock = pushed.world_clock.or(self.world_clock);
         self.world_weather = pushed.world_weather.or(self.world_weather);

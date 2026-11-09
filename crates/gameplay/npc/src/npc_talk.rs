@@ -28,12 +28,14 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
 ];
 

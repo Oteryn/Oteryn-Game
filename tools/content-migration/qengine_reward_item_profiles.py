@@ -54,6 +54,7 @@ def capture(root=ROOT):
 def capture(root=ROOT, *, ids=None):
     ids = IDS if ids is None else frozenset(ids)
 def capture(root=ROOT, *, item_ids=IDS):
+def capture(root=ROOT, *, ids=IDS):
     xml_raw=(root/XML).read_bytes()
     client_raw=(root/CLIENT).read_bytes()
     if hashlib.sha256(xml_raw).hexdigest()!=XML_SHA or hashlib.sha256(client_raw).hexdigest()!=CLIENT_SHA:
@@ -72,6 +73,9 @@ def capture(root=ROOT, *, item_ids=IDS):
     physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,item_ids)}
     bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
     keys={f'oteryn:item.tibia.i{i}' for i in item_ids}
+    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,ids)}
+    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
+    keys={f'oteryn:item.tibia.i{i}' for i in ids}
     definitions={r['definition']['identity']['key']:r['definition']
         for path in sorted((root/'content/items/definitions').glob('items-*.json'))
         for r in json.loads(path.read_bytes())['records']
@@ -83,6 +87,7 @@ def capture(root=ROOT, *, item_ids=IDS):
     for item_id in sorted(selected):
     for item_id in sorted(ids):
     for item_id in sorted(item_ids):
+    for item_id in sorted(ids):
         node=xml[item_id]
         if item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
@@ -106,6 +111,7 @@ def capture(root=ROOT, *, item_ids=IDS):
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected)['records']
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ids)['records']
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,item_ids)['records']
+    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ids)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
         'producer':'tools/content-migration/qengine_reward_item_profiles.py',
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
