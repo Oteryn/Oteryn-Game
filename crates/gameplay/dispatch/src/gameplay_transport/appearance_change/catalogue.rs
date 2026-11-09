@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain::appearance::{AccountUnlocks, EarnedCosmetics, UnlockFact};
 
-pub(super) fn catalogue(
+pub(in crate::gameplay_transport) fn catalogue(
     content: &NativeCosmeticsView,
     state: &CurrentCharacterAppearance,
     root_revision: u64,

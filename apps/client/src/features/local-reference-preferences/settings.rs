@@ -29,12 +29,16 @@ mod profile_contexts;
 mod profiles;
 #[path = "status_order.rs"]
 mod status_order;
-#[path = "shortcuts.rs"]
-mod shortcuts;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
 mod sync;
+#[path = "shortcuts.rs"]
+mod shortcuts;
+#[path = "graphics.rs"]
+mod graphics;
+pub use graphics::GraphicsPreferences;
+pub use shortcuts::ShortcutEdit;
 #[path = "tooltips.rs"]
 mod tooltips;
 #[path = "ui_geometry.rs"]
@@ -77,6 +81,8 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub graphics: GraphicsPreferences,
     #[serde(default = "enabled")]
     pub tooltips_enabled: bool,
     #[serde(default = "default_tooltip_delay")]
@@ -187,6 +193,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            graphics: GraphicsPreferences::default(),
             tooltips_enabled: true,
             tooltip_delay_ms: 500,
             hud_health: true,
@@ -353,17 +360,6 @@ impl PlayView {
     /// Installed only after native admission has accepted the selected character.
     pub(crate) fn set_preference_character(&mut self, character: [u8; 16]) {
         self.local.character = Some(character);
-    }
-
-    pub(in crate::play) fn apply_preference_scale(
-        &mut self,
-    ) -> Result<(), oteryn_renderer::BatchError> {
-        let pixels = crate::scene::SCENE_TILE_PX * u32::from(self.preferences().ui_scale) / 100;
-        let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
-            .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
-            .max(1);
-        self.scene.set_label_scale(self.preferences().interface_scale);
-        self.scene.set_tile_px(pixels.min(fit))
     }
 
     pub fn set_world_viewport(&mut self, viewport: [u32; 2]) -> Result<(), PreferenceError> {

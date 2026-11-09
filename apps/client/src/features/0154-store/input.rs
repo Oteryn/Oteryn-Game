@@ -70,3 +70,18 @@ impl PlayLink {
         true
     }
 }
+
+impl crate::play::PlayLink {
+    pub fn coin_history(&self, next: bool) -> bool {
+        let command = oteryn_client_ui::store::coin_history(&mut lock(&self.mailbox).store, next);
+        command.is_some_and(|command| self.discovery_send(command))
+    }
+    pub fn coin_history_filter(&self, kind: &str, from: &str, until: &str) -> bool {
+        oteryn_client_ui::store::coin_history_filter(
+            &mut lock(&self.mailbox).store,
+            kind,
+            from,
+            until,
+        )
+    }
+}

@@ -32,10 +32,12 @@ pub(super) unsafe fn window(
         );
         let (buttons, fields) = specs(panel);
         let mut inputs = Vec::new();
+        let mut labels = Vec::new();
         for (i, (label, initial)) in fields.iter().enumerate() {
-            let x = 10 + (i % 3) as i32 * 270;
-            let y = 360 + (i / 3) as i32 * 60;
-            control(hwnd, "STATIC", label, 200 + i, (x, y, 260, 25), 0);
+            let position = if panel == 232 && i >= 10 { i - 10 } else { i };
+            let x = 10 + (position % 3) as i32 * 270;
+            let y = 360 + (position / 3) as i32 * 60;
+            labels.push(control(hwnd, "STATIC", label, 200 + i, (x, y, 260, 25), 0));
             let input = control(
                 hwnd,
                 "EDIT",
@@ -138,7 +140,13 @@ pub(super) unsafe fn window(
                     }
                 } else if panel == 285 && action == 5 {
                     if let [offer, from, until] = values.as_slice() {
-                        link.purchase_history_filter(offer, from, until);
+                        if link.store_panel().page
+                            == oteryn_client_ui::store::StorePage::CoinHistory
+                        {
+                            link.coin_history_filter(offer, from, until);
+                        } else {
+                            link.purchase_history_filter(offer, from, until);
+                        }
                     }
                 } else if panel == 285 && action == 4 {
                     lock(&link.mailbox).store.page = oteryn_client_ui::store::StorePage::History;
@@ -149,71 +157,18 @@ pub(super) unsafe fn window(
             }
             let state = link.discovery_panel();
             let store = link.store_panel();
-            let (display, names, available) = match panel {
-                98 => (
-                    oteryn_client_ui::quick_loot::panel_text(&state.loot),
-                    if state.loot.managed {
-                        state
-                            .loot
-                            .destinations
-                            .iter()
-                            .map(|action| format!("{action:?}"))
-                            .collect()
+            if panel == 232 {
+                for (i, (label, input)) in labels.iter().zip(&inputs).enumerate() {
+                    let show = if (i < 10) == state.teams.applicants {
+                        SW_SHOW
                     } else {
-                        state
-                            .loot
-                            .skipped
-                            .iter()
-                            .map(|id| format!("Skip item {id}"))
-                            .chain(
-                                state
-                                    .loot
-                                    .accepted
-                                    .iter()
-                                    .map(|id| format!("Accept item {id}")),
-                            )
-                            .collect()
-                    },
-                    state.loot.selected && state.loot.pending.is_none(),
-                ),
-                132 => (
-                    oteryn_client_ui::inspection::panel_text(&state.inspection),
-                    state
-                        .inspection
-                        .reply
-                        .as_ref()
-                        .map(|r| {
-                            r.requests
-                                .iter()
-                                .enumerate()
-                                .map(|(i, _)| format!("Permission request {}", i + 1))
-                                .collect()
-                        })
-                        .unwrap_or_default(),
-                    state.inspection.selected && !state.inspection.pending,
-                ),
-                232 => {
-                    let names = state.teams.visible_names();
-                    (
-                        format!(
-                            "{}\r\n{}",
-                            oteryn_client_ui::team_finder::panel_text(&state.teams),
-                            oteryn_client_ui::team_finder_leader::view::panel_text(&state.leader)
-                        ),
-                        names,
-                        state.teams.selected && state.teams.pending.is_none(),
-                    )
+                        SW_HIDE
+                    };
+                    ShowWindow(*label, show);
+                    ShowWindow(*input, show);
                 }
-                _ => (
-                    if store.page == oteryn_client_ui::store::StorePage::Catalogue {
-                        oteryn_client_ui::store::panel_text(&store)
-                    } else {
-                        oteryn_client_ui::purchase_history::panel_text(&state.history)
-                    },
-                    Vec::new(),
-                    state.history.selected && !state.history.pending,
-                ),
-            };
+            }
+            let (display, names, available) = projection::project(panel, &state, &store);
             if display != held {
                 SetWindowTextW(text, wide(&display).as_ptr());
                 held = display;
@@ -231,10 +186,16 @@ pub(super) unsafe fn window(
             for (i, button) in controls.iter().enumerate() {
                 let enable = if panel == 98 && (1..5).contains(&i) {
                     available && !state.loot.managed
-                } else if panel == 98 && i == 7 {
+                } else if panel == 98 && (7..=8).contains(&i) {
                     available && state.loot.managed
                 } else if panel == 232 && (8..10).contains(&i) {
-                    state.leader.selected && !state.leader.pending
+                    state.teams.applicants && state.leader.selected && !state.leader.pending
+                } else if panel == 232 && (3..8).contains(&i) {
+                    available && (i >= 5) == state.teams.applicants
+                } else if panel == 232 && i >= 10 {
+                    available && !state.teams.applicants
+                } else if panel == 232 && i == 2 {
+                    available && state.teams.next().is_some()
                 } else if panel == 285 && i >= 2 {
                     store.selected || state.history.selected
                 } else if panel == 285
@@ -244,6 +205,15 @@ pub(super) unsafe fn window(
                     store.selected && !store.pending
                 } else if panel == 285 && i == 1 {
                     match store.page {
+                        oteryn_client_ui::store::StorePage::CoinHistory => {
+                            store.selected
+                                && !store.pending
+                                && store
+                                    .coin_history
+                                    .page
+                                    .as_ref()
+                                    .is_some_and(|page| !page.next_page_cursor.is_empty())
+                        }
                         oteryn_client_ui::store::StorePage::Catalogue => {
                             store.selected
                                 && !store.pending

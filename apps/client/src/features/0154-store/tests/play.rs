@@ -230,6 +230,8 @@ fn coin_gift_reviews_exact_recipient_amount_and_remains_disabled()
     Ok(())
 }
 
+include!("ledger.rs");
+
 #[test]
 fn store_category_navigation_sends_server_key_with_fresh_cursor() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::cui3::store::*;

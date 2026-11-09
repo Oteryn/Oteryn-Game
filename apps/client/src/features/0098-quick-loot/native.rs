@@ -19,6 +19,8 @@ use windows_sys::Win32::{
 };
 #[derive(Default)]
 struct Actions(Vec<usize>);
+#[path = "native/projection.rs"]
+mod projection;
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
@@ -85,7 +87,7 @@ fn run(
         let title = match panel {
             98 => "Quick loot — Ctrl+Alt+Q",
             132 => "Inspection — Ctrl+Alt+I",
-            232 => "Team Finder — Ctrl+Alt+T",
+            232 => "Social — Team Finder — Ctrl+Alt+T",
             _ => "Store — Ctrl+Alt+H",
         };
         let hwnd = CreateWindowExW(
@@ -156,6 +158,7 @@ fn specs(
                 "Set destination",
                 "Lists / Managed containers",
                 "Reset selected to main",
+                "Open selected inventory container",
             ],
             &[
                 ("Item type", ""),
@@ -189,8 +192,8 @@ fn specs(
         ),
         232 => (
             &[
-                "Browse teams",
-                "Your applicants",
+                "Join team — Browse",
+                "Assemble team — Applicants",
                 "Next page",
                 "Request to join",
                 "Cancel request",
@@ -226,16 +229,18 @@ fn specs(
                 "Next page in current tab",
                 "Catalogue",
                 "Purchase history",
-                "Apply purchase history filters",
+                "Apply history filters",
+                "Coin ledger",
             ],
             &[
-                ("Offer text (this page)", ""),
+                ("Offer / ledger kind (this page)", ""),
                 ("From Unix milliseconds", ""),
                 ("Through Unix milliseconds", ""),
             ],
         ),
     }
 }
+
 #[path = "native/paint.rs"]
 mod paint;
 use paint::window;
