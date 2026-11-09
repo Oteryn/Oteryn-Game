@@ -120,6 +120,8 @@ pub struct BoundPlacement {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardContainerItem {
+    /// Initial fluid in one freshly minted variable-fluid vessel.
+    pub fluid_subtype: Option<u8>,
     pub item: TypedDefinitionRef,
     pub count: u32,
     pub key_number: Option<u16>,
@@ -681,6 +683,7 @@ fn candidate_container_placement(
             }
         };
         result.contents.push(RewardContainerItem {
+            fluid_subtype: None,
             item: child.item,
             count: child.count,
             key_number: number,
