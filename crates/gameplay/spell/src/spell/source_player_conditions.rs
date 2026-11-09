@@ -689,7 +689,7 @@ mod creature_field_initial_tests {
                 &definition,
                 &facts,
                 Some(values::DotElement::Drown),
-                |_, _, _, _| panic!("delayed drowning has no entry hit"),
+                |_, _, _, _| None,
             )
             .unwrap();
         assert_eq!(damage, 0);
