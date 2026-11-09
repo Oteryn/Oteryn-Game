@@ -4,7 +4,8 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, reward_callbacks};
 use oteryn_protocol_oteryn::{
-    npc_service::NpcIntentDisposition, personal_map_marks::PersonalMapMarks,
+    npc_service::NpcIntentDisposition,
+    personal_map_marks::{CAPABILITY_PERSONAL_MAP_MARKS_V1, PersonalMapMarks},
 };
 use std::sync::Arc;
 const KEY: &str = "oteryn:quest-reward/targuna/sterling-mark-treasure";
@@ -86,24 +87,29 @@ pub(super) async fn exercise(
         .selected_capabilities
         .as_slice()
         .to_vec();
-    selected.retain(|id| *id != 450);
+    selected.retain(|id| *id != CAPABILITY_PERSONAL_MAP_MARKS_V1);
     let offered = owner.offered_capabilities();
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("initial selection")?;
     assert!(owner.personal_map_marks_query(*admitted).await.is_none());
-    selected.extend([3, 4, 6, 18, 450]);
+    selected.extend([3, 4, 6, 18, CAPABILITY_PERSONAL_MAP_MARKS_V1]);
     selected.sort_unstable();
     selected.dedup();
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("selection")?;
     assert!(
-        offered.iter().any(|entry| entry.id == 450),
+        offered
+            .iter()
+            .any(|entry| entry.id == CAPABILITY_PERSONAL_MAP_MARKS_V1),
         "World offers personal marks"
     );
     assert!(
-        admitted.continuity.selected_capabilities.contains(450),
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_PERSONAL_MAP_MARKS_V1),
         "the full World map dependency closure was negotiated"
     );
     assert!(

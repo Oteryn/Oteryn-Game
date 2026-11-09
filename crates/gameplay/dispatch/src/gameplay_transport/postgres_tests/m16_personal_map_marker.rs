@@ -4,6 +4,9 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::quest_log::QuestLogLines;
+use oteryn_protocol_oteryn::personal_map_marks::{
+    CAPABILITY_PERSONAL_MAP_MARKS_V1, COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY, PersonalMapMarks,
+};
 use oteryn_protocol_oteryn::quest_log::{QuestLog, QuestMapMark, decode_quest_log};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
@@ -41,10 +44,18 @@ pub(super) async fn exercise(
         )
         .ok_or("log bounds")?,
     );
-    admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[3, 16])
-            .ok_or("capabilities")?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[3, 4, 6, 16, 18, CAPABILITY_PERSONAL_MAP_MARKS_V1],
+    )
+    .ok_or("capabilities")?;
     assert!(admitted.continuity.selected_capabilities.contains(16));
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_PERSONAL_MAP_MARKS_V1)
+    );
     let [npc] = super::classic_quests::install(owner, admitted, ["oteryn:npc.sterling"]).await?;
     // No predecessor progress: confirmation cannot create a personal marker.
     let (snapshot, _) =
@@ -122,12 +133,39 @@ pub(super) async fn exercise(
         coupled,
         "marker, progress, native source and receipt commit together"
     );
+    // The canonical capability 451 query uses the same committed personal fact.
+    let payload = super::quest_world_callbacks::wire(
+        owner,
+        admitted,
+        7,
+        COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY,
+        Vec::new(),
+    )
+    .await?;
+    let personal = PersonalMapMarks::decode(&payload).ok_or("capability 451 wire payload")?;
+    assert_eq!(personal.0.len(), 1);
+    assert_eq!(
+        (
+            personal.0[0].key.as_str(),
+            personal.0[0].x,
+            personal.0[0].y,
+            personal.0[0].floor,
+            personal.0[0].text.as_str()
+        ),
+        (
+            "oteryn:quest-reward/targuna/sterling-mark-treasure",
+            31948,
+            31924,
+            -7,
+            "Treasure"
+        )
+    );
     // A new connection restores the marker without a query; replaying the exact
     // confirmation and then repeating it with a fresh command creates no second fact.
     let (restored, _) = conversation(owner, admitted, npc, 6, &["yes"], false).await?;
     assert_eq!(restored.map_marks, expected);
     let (repeated, _) =
-        conversation(owner, admitted, npc, 7, &["hi", "mission", "yes"], false).await?;
+        conversation(owner, admitted, npc, 8, &["hi", "mission", "yes"], false).await?;
     assert_eq!(repeated.map_marks, expected);
     assert_eq!(counts(h).await?, (1, 1));
     eprintln!("M16_STERLING_DISPATCH_PG_EXECUTED marker_delta_reconnect_replay");
