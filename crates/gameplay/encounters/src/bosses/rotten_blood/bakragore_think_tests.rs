@@ -12,6 +12,7 @@ fn position(x: i32, y: i32, floor: i16) -> RoomPosition {
 fn fixture<'a>(players: &'a [EchoPlayer]) -> BakragoreThinkFacts<'a> {
     BakragoreThinkFacts {
         now_ms: 0,
+        interval_ms: 1_000,
         teleport_paused: false,
         teleport_bloodjaw_present: true,
         boss: BAKRAGORE_ROOM_CENTRE,
@@ -394,4 +395,57 @@ fn bakragore_teleport_timer_is_independent_of_summon_mechanics_disable() {
     let effects = owner.think(&facts);
     assert_eq!(effects.len(), 1);
     assert!(is_teleport(&effects[0]));
+}
+
+#[test]
+fn bakragore_agony_waits_for_the_accumulated_source_second() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 250;
+    for tick in 1..=3 {
+        facts.now_ms = tick * 250;
+        assert!(!owner.think(&facts).iter().any(is_agony_check));
+    }
+    facts.now_ms = 1_000;
+    let effects = owner.think(&facts);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| is_agony_check(effect))
+            .count(),
+        1
+    );
+    facts.interval_ms = 0;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+}
+
+fn is_agony_check(effect: &BakragoreEffect) -> bool {
+    matches!(effect, BakragoreEffect::RunAgonyCheck { .. })
+}
+
+#[test]
+fn bakragore_disabled_mechanics_freeze_the_agony_accumulator() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 600;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.mechanics_disabled = true;
+    facts.interval_ms = 10_000;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.mechanics_disabled = false;
+    facts.interval_ms = 399;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.interval_ms = 1;
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+}
+
+#[test]
+fn bakragore_agony_discards_overshoot_as_the_source_check_time_reset_does() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 1_500;
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+    facts.interval_ms = 500;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    assert!(owner.think(&facts).iter().any(is_agony_check));
 }

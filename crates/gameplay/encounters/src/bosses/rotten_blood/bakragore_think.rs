@@ -21,6 +21,7 @@ pub const AGONY_ROOM_CENTRE: RoomPosition = RoomPosition {
     floor: 15,
 };
 pub const AGONY_ROOM_RANGE_TILES: u16 = 20;
+pub const AGONY_CHECK_INTERVAL_MS: u64 = 1_000;
 pub const SUMMON_COUNT_RANGE_TILES: u16 = 20;
 pub const SUMMON_OFFSET_TILES: u8 = 1;
 pub const SUMMON_FLOOR: u8 = 4;
@@ -179,6 +180,8 @@ pub struct EchoPlayer {
 #[derive(Clone, Copy, Debug)]
 pub struct BakragoreThinkFacts<'a> {
     pub now_ms: u64,
+    /// Elapsed source onThink interval; independent of absolute timer time.
+    pub interval_ms: u64,
     pub teleport_paused: bool,
     /// Elder Bloodjaw in the source centre spectator box (15 tiles, same floor).
     pub teleport_bloodjaw_present: bool,
@@ -208,6 +211,7 @@ pub fn in_agony_room(position: RoomPosition) -> bool {
 pub struct BakragoreThinkOwner {
     initialized: bool,
     echoes_checked: bool,
+    agony_elapsed_ms: u64,
     teleport: TeleportCycle,
 }
 
@@ -216,6 +220,7 @@ impl Default for BakragoreThinkOwner {
         Self {
             initialized: false,
             echoes_checked: false,
+            agony_elapsed_ms: 0,
             teleport: TeleportCycle::new(BAKRAGORE_ROOM_CENTRE),
         }
     }
@@ -262,14 +267,19 @@ impl BakragoreThinkOwner {
                 SUMMON_FLOOR.saturating_sub(facts.nearby_pillars),
                 facts.boss,
             );
-            effects.push(BakragoreEffect::RunAgonyCheck {
-                room_players: facts
-                    .players
-                    .iter()
-                    .filter(|player| in_agony_room(player.position))
-                    .map(|player| player.actor)
-                    .collect(),
-            });
+            self.agony_elapsed_ms = self.agony_elapsed_ms.saturating_add(facts.interval_ms);
+            if self.agony_elapsed_ms >= AGONY_CHECK_INTERVAL_MS {
+                // Source checkTime resets to zero; it does not carry overshoot.
+                self.agony_elapsed_ms = 0;
+                effects.push(BakragoreEffect::RunAgonyCheck {
+                    room_players: facts
+                        .players
+                        .iter()
+                        .filter(|player| in_agony_room(player.position))
+                        .map(|player| player.actor)
+                        .collect(),
+                });
+            }
         }
 
         if !self.echoes_checked {
