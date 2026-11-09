@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/m09-rookie-mission11",
+      "quest": "oteryn:quest.the_rookie_guard_quest",
+      "npc": "oteryn:npc.vascalir",
+      "topic": 91,
+      "next_topic": 0,
+      "keywords": [
+        "yes"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission11",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3054",
+        "count": 1,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i12785",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Alright. Here is the empty flask to use on a dead wasp. Be careful and wear your silver amulet for poison protection!"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/vascalir.lua",
+        "docs/reference/content-prep/qmech-m09/reward-sources.md"
+      ]
+    }
+  ]
+}

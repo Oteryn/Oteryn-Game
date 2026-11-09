@@ -23,6 +23,7 @@ Deduplication and status decisions:
 | M02 | Exact mutable Ground stack/custody/quantity/order prerequisites | 1 — Nomads Land Quest | [qengine2](MISSING-qengine2.md), [questpc5](MISSING-questpc5.md) | engenc2 | CLAIMED |
 | M03 | Fenced live blessing/promotion/Premium world callback/STEP admission predicates | 2 — 25 Years of Tibia Quest; The Pits of Inferno Quest | [qengine2](MISSING-qengine2.md) | none | OPEN |
 | M03 | Fenced live blessing/promotion/Premium world callback/STEP admission predicates | 2 — 25 Years of Tibia Quest; The Pits of Inferno Quest | [qengine2](MISSING-qengine2.md) | questpc2 | CLAIMED |
+| M03 | Fenced live blessing/promotion/Premium world callback/STEP admission predicates | 2 — 25 Years of Tibia Quest; The Pits of Inferno Quest | [qengine2](MISSING-qengine2.md) | qm03 | CLAIMED |
 | M04 | Canonical terminal completion in the native source-NPC receipt | 5 — A Father's Burden Quest; Djinn War Efreet Quest; Djinn War Marid Quest; Marlin Trophy Quest; White Raven Monastery Quest | [questpc-pc2](MISSING-questpc-pc2.md), [WPKG](MISSING-WPKG.md) | engnpc | CLAIMED |
 | M05 | One source-NPC item/points/StorageTime/SetNowPlus receipt | 1 — Dangerous Depths Quest | [ENGNPC2](MISSING-ENGNPC2.md), [questpc2](MISSING-questpc2.md) | none | OPEN |
 | M06 | Atomic child-quest completion participant on parent World reward receipt; preserve parent completion | 1 — Waterskin of Mead Quest | [questpc4](MISSING-questpc4.md) | questpc4 | CLAIMED |

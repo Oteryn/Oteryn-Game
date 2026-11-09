@@ -713,6 +713,7 @@ fn scenario() -> TestResult {
             Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
         let world = super::quest_world_callbacks::world(&Callback {
+            admission: Default::default(),
 admission: None, world_change: None,
 admission: None,
 world_change: None,

@@ -31,6 +31,8 @@ IDS |= CORPSE_IDS
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 # M36: exact Rock Steady collection hand-ins from the pinned NPC source.
 IDS |= {14021, 14022, 14023}
+# Vascalir's source-authored mission 11 grants this ordinary flask with 3054.
+IDS |= {12785}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
 IDS |= {21504, 21505}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
@@ -189,3 +191,17 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
     manifest['cosmetics']={'path':cosmetics,
         'sha256':hashlib.sha256(cosmetics_raw).hexdigest()}
     generated[manifest_path]=canonical(manifest)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args()
+    expected = json.dumps(capture(), ensure_ascii=False, indent=2)+'\n'
+    path = ROOT/PROOF
+    if args.check:
+        if path.read_text() != expected:
+            raise SystemExit('QENGINE reward source capture is stale')
+    else:
+        path.write_text(expected)

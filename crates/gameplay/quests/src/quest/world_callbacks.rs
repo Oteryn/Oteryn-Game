@@ -40,6 +40,9 @@ mod effects;
 mod ground_stack;
 mod guarded_routes;
 mod imported_explore;
+mod treasure_source;
+#[cfg(test)]
+mod treasure_source_tests;
 mod live_admission;
 pub mod phase;
 #[cfg(test)]
@@ -358,6 +361,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/m09-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);
     callbacks.extend(parse(
@@ -667,6 +673,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && !imported_explore::admitted(callback))
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
+                || treasure_source::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     phase::authored_source(callback, source)
