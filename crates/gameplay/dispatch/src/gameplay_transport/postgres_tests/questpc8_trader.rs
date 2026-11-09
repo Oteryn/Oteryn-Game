@@ -655,28 +655,29 @@ pub(super) async fn exercise(
     assert_eq!(fee_count(h).await?, 0);
     assert_eq!(stage(h).await?, 5);
     drop_goldfish(owner, admitted, h, &mut next).await?;
-    say(
+    // Command replay belongs to ingress, before NPC topic selection. Exercise
+    // the paid purchase and its duplicate on that production wire path.
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[3],
+        )
+        .ok_or("NPC capability")?;
+    admitted.continuity.next_command_id = next;
+    super::grizzly_npc::wire::talk(
         owner,
         admitted,
         miraia,
-        &mut next,
-        &["hi", "scarab cheese", "yes"],
+        &[(next, "hi"), (next + 1, "scarab cheese"), (next + 2, "yes")],
     )
     .await?;
+    next += 3;
     assert_eq!(gold(h).await?, 1900);
     assert_eq!(stage(h).await?, 6);
     assert_eq!(quantity(h, 169).await?, 1);
     assert_eq!(fee_count(h).await?, 1);
     let replay = next - 1;
-    talk(
-        owner,
-        admitted,
-        miraia,
-        replay,
-        "yes",
-        NpcIntentDisposition::Ok,
-    )
-    .await?;
+    super::grizzly_npc::wire::talk(owner, admitted, miraia, &[(replay, "yes")]).await?;
     assert_eq!(gold(h).await?, 1900);
     assert_eq!(fee_count(h).await?, 1);
     // Canonical recipe adaptation explicitly omits cheese decay. No deadline or paid refresh is part of this programme.

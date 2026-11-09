@@ -180,6 +180,99 @@ fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusa
 }
 
 #[test]
+fn quest_catalogue_chests_dragahs_spellbook_use_replay_and_refusal() -> TestResult {
+    let cases: Vec<_> = cases()?
+        .into_iter()
+        .filter(|chest| {
+            chest.claim == "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook"
+        })
+        .collect();
+    assert_eq!(cases.len(), 1);
+    assert!(cases.iter().all(|chest| chest.servable));
+    execute(cases)
+}
+
+#[test]
+fn quest_catalogue_chests_mixed_source_namespaces_use_replay_and_refusal() -> TestResult {
+    let cases: Vec<_> = cases()?
+        .into_iter()
+        .filter(|chest| {
+            chest.claim == "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items"
+        })
+        .collect();
+    assert_eq!(cases.len(), 5);
+    assert_eq!(cases.iter().filter(|chest| chest.servable).count(), 4);
+    execute(cases)
+}
+
+#[test]
+fn quest_catalogue_chests_mixed_binding_requires_all_crystal_sources() -> TestResult {
+    let claim = "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items";
+    let cases: Vec<_> = cases()?
+        .into_iter()
+        .filter(|chest| chest.claim == claim)
+        .collect();
+    let native = cases
+        .iter()
+        .find(|chest| chest.servable)
+        .ok_or("Crystal source")?;
+    let world = catalogue_source_world(native)?;
+    let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        world.base().as_ref(),
+        &|_| true,
+    )?;
+    let served = report
+        .served
+        .iter()
+        .find(|row| row.key.as_str() == claim)
+        .ok_or("Crystal claim")?;
+    assert_eq!(served.placements.len(), 4);
+    let unbound: Vec<_> = report.unbound.iter().filter(|row| row.claim == claim).collect();
+    assert_eq!(unbound.len(), 1);
+    assert_eq!(unbound[0].index, 0);
+    assert_eq!(
+        unbound[0].reason,
+        crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId
+    );
+    let incomplete = super::quest_callbacks::source_world(
+        native.position,
+        native.unique,
+        native.appearance,
+        0,
+    )?;
+    let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        incomplete.base().as_ref(),
+        &|_| true,
+    )?;
+    assert!(!report.served.iter().any(|row| row.key.as_str() == claim));
+    assert_eq!(
+        report
+            .unbound
+            .iter()
+            .filter(|row| {
+                row.claim == claim
+                    && row.reason == crate::content::world_reward_claims::UnboundReason::NoEntry
+            })
+            .count(),
+        3,
+        "one present Crystal source cannot substitute for the other three"
+    );
+    let foreign = cases
+        .iter()
+        .find(|chest| !chest.servable)
+        .ok_or("Canary-only source")?;
+    let world = catalogue_source_world(foreign)?;
+    let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        world.base().as_ref(),
+        &|_| true,
+    )?;
+    assert!(!report.served.iter().any(|row| row.key.as_str() == claim));
+    assert!(report.unbound.iter().any(|row| row.claim == claim
+        && row.reason == crate::content::world_reward_claims::UnboundReason::NoEntry));
+    Ok(())
+}
+
+#[test]
 fn quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal() -> TestResult {
     // Frozen run-8 claims remain exercised after qualification promotes their
     // coverage status. New claims join a later batch with their own PG evidence.
@@ -981,17 +1074,30 @@ pub(super) fn catalogue_source_worlds(
                 .ok_or("claim placements")?
             {
                 let binding = &source["source_binding"];
-                let unique = binding["legacy_unique_ids"]
-                    .as_array()
-                    .ok_or("source ids")?
-                    .iter()
-                    .find(|id| id["server"] == "crystalserver")
-                    .ok_or("native source")?;
                 let position = &binding["project_position"];
-                placements.push((
+                let position = (
                     u16::try_from(position["x"].as_u64().ok_or("source x")?)?,
                     u16::try_from(position["y"].as_u64().ok_or("source y")?)?,
                     -i8::try_from(position["z"].as_u64().ok_or("source z")?)?,
+                );
+                if !chests.iter().any(|chest| {
+                    definition["identity"]["key"] == chest.claim
+                        && (chest.servable || chest.position == position)
+                }) {
+                    continue;
+                }
+                let ids = binding["legacy_unique_ids"].as_array().ok_or("source ids")?;
+                // Preserve a Canary-only selector as a negative source-alias
+                // fixture. The production binder must still refuse to serve it.
+                let unique = ids
+                    .iter()
+                    .find(|id| id["server"] == "crystalserver")
+                    .or_else(|| ids.first())
+                    .ok_or("source selector")?;
+                placements.push((
+                    position.0,
+                    position.1,
+                    position.2,
                     u16::try_from(unique["unique_id"].as_u64().ok_or("source uid")?)?,
                     u16::try_from(
                         source["appearance_tibia_id"]
@@ -1006,6 +1112,16 @@ pub(super) fn catalogue_source_worlds(
         !placements.is_empty(),
         "every catalogue claim has placed sources"
     );
+    for chest in chests {
+        assert_eq!(
+            placements
+                .iter()
+                .filter(|p| (p.0, p.1, p.2) == chest.position)
+                .count(),
+            1,
+            "every requested source placement must be present exactly once"
+        );
+    }
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
