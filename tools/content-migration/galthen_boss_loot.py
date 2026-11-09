@@ -20,6 +20,30 @@ SOURCES = {**m25_corpse_items.SOURCE_HASHES['canary'],
            '9236c2dd65d960e81efc5ed8e9fe251967147856d3fe2e2322013d83ced0d3d8'}
 
 
+def complete_source_abilities(row, attributes):
+    """Reuse the equipment owner's typed, signed modifier/resistance decoder."""
+    from lower_equip_abilities_packet import canary_modifiers, canary_resistances
+    import lower_mantra_bond_modifier_packet as mantra
+    _, modifiers = canary_modifiers({key: value for key, value in attributes.items()
+                                    if key != 'mantra'})
+    _, resistances = canary_resistances(attributes)
+    if any(value is not None and not isinstance(value, list)
+           for value in (modifiers, resistances)):
+        raise ValueError('M25_LOOT_EQUIPMENT_SOURCE')
+    if 'mantra' in attributes:
+        typed = mantra.whole_vector({'mantra': [attributes['mantra']]}, mantra.shared.native_order())
+        if typed is None:
+            raise ValueError('M25_LOOT_EQUIPMENT_SOURCE')
+        modifiers = sorted((modifiers or []) + typed['value'], key=lambda entry: entry['kind'])
+    # Validate both groups before publishing either one.
+    if modifiers is not None:
+        row['semantics']['skill_modifiers'] = base.source.K({
+            'modifiers': base.source.K(modifiers)})
+    if resistances is not None:
+        row['semantics']['protection'] = base.source.K({
+            'resistances': base.source.K(resistances)})
+
+
 def table_proofs(root):
     selected = []
     used = set()
@@ -72,6 +96,7 @@ def capture(canary, crystal, root=ROOT):
             raise ValueError('M25_LOOT_EXISTING_IDENTITY')
         row = source.profile(item, xml.get(item), objects[item], physics[item], bindings, None)
         base.complete_source_top_order(row, objects[item])
+        complete_source_abilities(row, source.attrs(xml[item]) if item in xml else {})
         if item in slots:
             fact = slots[item]
             row['semantics']['imbuement'] = source.K({

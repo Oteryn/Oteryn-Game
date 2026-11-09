@@ -121,6 +121,25 @@ that assertion. Quest-authoring checks still report the two reward-claim
 variant failures; content-tree validation reaches `LOCK_COUNTS`. Those checks
 are not reported as green.
 
+The Galthen capture now lowers skill modifiers and resistances with the existing
+equipment decoder, and Mantra with its existing whole-vector decoder. The
+Canary 47dfd51f source has speed 15 on `data/items/items.xml:76897` (stoic iks
+boots), ice resistance 6 at line 76918 (sandals), and Mantra 16 plus fist skill
+4 at line 84001 (robe). Source URL:
+https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml
+Both groups are validated before publishing either, including refusal of
+unknown modifier keys, malformed points, out-of-range resistance, or Mantra.
+The new captured-ability regression was red against the original packet;
+the raw speed assertion is retained unchanged.
+
+After regeneration all seven Galthen capture/registration tests pass (0.494s),
+as do capture `--check`, equipment-pin `--check`, formatting and the duplicate
+migration check. Dispatch Clippy with all features/targets and `-D warnings`
+passed in 8m07s. The post-fix Rust test compiled but its linker hit a full disk
+(`ld terminated with signal 7 [Bus error]`); stale lane-owned artifacts were
+removed and the same test is being rerun. This resource failure is not treated
+as a mechanic qualification pass.
+
 The post-fix native PG rerun reached real database migrations, but neither
 mechanic body ran: `srx3_cloak_` cases took 74.825 and 75.355 seconds and both
 failed with `while executing migration 2020: error returned from database:
