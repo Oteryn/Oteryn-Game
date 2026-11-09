@@ -144,9 +144,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Umiejętności, progress, loyalty",
-  "status": "PARTIAL",
-  "gap": "Dane/progress są; brak pełnego Skills widget z belkami i konfiguracją statystyk.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Skills widget z rzeczywistym postępem i paskami, poziomami trained/loyalty/current oraz trwałą konfiguracją widocznych statystyk i kolejności.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0274-loyalty-skills/native.rs:185 + native refresh and configurable skill rows; apps/client/src/features/0274-loyalty-skills/layout.rs:54 + server-backed widget projection; apps/client/src/features/0274-loyalty-skills/tests/play.rs:18 + skills_widget_uses_server_progress_and_saves_visible_order; apps/client/src/features/local-status-flows/tests/play.rs:298 + nx7_complete_skills_native_play_queue_decode_and_display; apps/client/src/features/local-reference-preferences/tests/status_order.rs:4 + status_order_settings_reach_confirmed_panels_and_survive_restart"
  },
  {
   "id": "T032",
