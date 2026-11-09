@@ -583,7 +583,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item: Option<item_view::ItemKey>,
         row_open: bool,
     ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
-        stash::execute(self, actor, command, intent, item, row_open).await
+        stash::execute(self, actor, command, intent, None, item, row_open).await
+    }
+
+    async fn stash_filtered(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        filter: Option<oteryn_protocol_oteryn::stash::StashFilter>,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, filter, item, row_open).await
     }
 
     async fn depot(

@@ -869,6 +869,23 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn stash_filtered(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        filter: Option<oteryn_protocol_oteryn::stash::StashFilter>,
+        item: Option<ItemKey>,
+        row_open: bool,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::stash::StashReply>> {
+        async move {
+            if filter.is_some() {
+                return None;
+            }
+            self.stash(actor, command, intent, item, row_open).await
+        }
+    }
+
     /// Depot requests are resolved by the live Channel and fenced native item owner.
     fn depot(
         &self,

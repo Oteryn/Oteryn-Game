@@ -931,9 +931,9 @@
   "src": "TIBAUD-1",
   "area": "Stash",
   "feature": "Stow/withdraw/paging i search/filter/sort",
-  "status": "PARTIAL",
-  "gap": "Search strony i sort name/stock działają w oknie z zachowaniem handle withdrawal; brak global search i filtrów trader/category (brak metadanych w wire).",
-  "evidence": "apps/client/src/features/0062-stash/native.rs:238 + filtered_sorted_stash_withdraws_the_displayed_server_handle; left: Search strony i sort name/stock działają w oknie z zachowaniem handle withdrawal; brak global search i filtrów trader/category (brak metadanych w wire).",
+  "status": "DONE",
+  "gap": "—",
+  "evidence": "apps/client/src/features/0062-stash/input.rs:33 + stash_panel_request_uses_codec_and_applies_encoded_reply; crates/gameplay/durability/src/durability/character_stash/browse.rs:13 + stash_global_filter_precedes_pagination_and_stock_order_is_stable; stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays",
   "lane": "cg_ui"
  },
  {
