@@ -284,9 +284,11 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
             .await
             .is_err()
     );
-    let result = h
-        .root
-        .commit_character_npc_teleport(
+    let sequencer = crate::durability::character_revision_sequencer::CharacterRevisionSequencer::default();
+    let mut slot = sequencer.acquire(fence.character_id).await;
+    let result = slot
+        .commit_npc_teleport(
+            &h.root,
             &authority,
             &h.node,
             &permit,
@@ -309,9 +311,9 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
     assert_eq!(pending, Some(arrival));
     let runtime_frame: bool = sqlx::query_scalar("SELECT runtime_coordinates FROM game_quest_npc_teleport_receipts WHERE character_id=encode($1,'hex')::uuid AND command_id=9702").bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     assert!(runtime_frame, "new commands persist movement coordinates");
-    let replay = h
-        .root
-        .commit_character_npc_teleport(
+    let replay = slot
+        .commit_npc_teleport(
+            &h.root,
             &authority,
             &h.node,
             &permit,
