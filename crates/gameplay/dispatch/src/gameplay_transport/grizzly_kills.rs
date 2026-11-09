@@ -349,6 +349,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
         let runtime = self.runtime.lock().await;
+        let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(&runtime, session);
+        let attack = self.states.attack.lock().await;
+        let Ok(mut cache) = attack.kills().1.lock() else {
+            return;
+        };
+        if !cache.hits.install(&runtime, session, hit_snapshot) {
+            super::operator_event("quest_hit_snapshot_capacity_refused");
+        }
+        cache.sessions.retain(|snapshot| {
+            snapshot.session != session
+                && runtime
+                    .player_control_facts(snapshot.actor, snapshot.session)
+                    .is_ok()
+        });
+        if let Some(snapshot) = snapshot {
+            cache.sessions.push(snapshot);
+        }
+    }
+
+    fn grizzly_kill_snapshots_in_turn(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) -> (
+        Option<TaskSnapshot>,
+        Option<super::quest_hits::queue::Snapshot>,
+    ) {
         let snapshot = {
             let sessions = self.states.quest_sessions.lock().ok();
             sessions
@@ -403,22 +430,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some((snapshot, hit_snapshot)) => (Some(snapshot), hit_snapshot),
             None => (None, None),
         };
-        let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().1.lock() else {
-            return;
+        (snapshot, hit_snapshot)
+    }
+
+    /// The quest callback already holds the Channel turn; never reacquire runtime here.
+    pub(super) fn refresh_grizzly_kill_snapshot_in_turn(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) -> bool {
+        let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(runtime, session);
+        let Some(snapshot) = snapshot else {
+            return false;
         };
-        if !cache.hits.install(&runtime, session, hit_snapshot) {
-            super::operator_event("quest_hit_snapshot_capacity_refused");
+        let Ok(attack) = self.states.attack.try_lock() else {
+            return false;
+        };
+        let Ok(mut cache) = attack.kills().1.lock() else {
+            return false;
+        };
+        if !cache.hits.install(runtime, session, hit_snapshot) {
+            return false;
         }
-        cache.sessions.retain(|snapshot| {
-            snapshot.session != session
-                && runtime
-                    .player_control_facts(snapshot.actor, snapshot.session)
-                    .is_ok()
+        cache.sessions.retain(|old| {
+            old.session != session && runtime.player_control_facts(old.actor, old.session).is_ok()
         });
-        if let Some(snapshot) = snapshot {
-            cache.sessions.push(snapshot);
-        }
+        cache.sessions.push(snapshot);
+        true
     }
 
     async fn credit_grizzly_death(&self, entry: &PendingKillSettlement) -> bool {

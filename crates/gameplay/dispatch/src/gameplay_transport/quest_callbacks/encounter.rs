@@ -19,6 +19,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         key: u64,
         expected_revision: u64,
         after: EntryFacts,
+        preflight: bool,
+        cause: QuestCause,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -70,7 +72,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_none_or(|state| state.character_facts().level < encounter.minimum_level)
                 || runtime.bound_attacker_lease(who, member_session).is_err()
                 || !self.states.player_trades.physical(member_session, None)
-                || self.has_pending_quest_callback(member_session)
+                || (self.has_pending_quest_callback(member_session)
+                    && !(who == actor
+                        && member_session == session
+                        && !self.states.grizzly_boss.has_pending(session)
+                        && self
+                            .states
+                            .quest_callbacks
+                            .soul_rewards
+                            .lock()
+                            .is_ok_and(|pending| !pending.contains_key(&session))
+                        && self
+                            .states
+                            .quest_callbacks
+                            .records
+                            .lock()
+                            .is_ok_and(|pending| {
+                                pending.get(&session).is_some_and(|record| {
+                                    pending_encounter_matches(
+                                        record,
+                                        actor,
+                                        member_session,
+                                        expected,
+                                        &callback.key,
+                                        key,
+                                        expected_revision,
+                                        cause,
+                                    )
+                                })
+                            })))
             {
                 return UseDisposition::Rejected;
             }
@@ -121,6 +151,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+        }
+        if preflight {
+            return UseDisposition::Committed;
         }
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
             let bindings = catalogue.authored_bindings()?;
@@ -199,3 +232,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         UseDisposition::Committed
     }
 }
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "compare the original actor, movement, object and command fences"
+)]
+fn pending_encounter_matches(
+    pending: &Pending,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    callback: &str,
+    key: u64,
+    revision: u64,
+    cause: QuestCause,
+) -> bool {
+    pending.actor == actor
+        && pending.session == session
+        && pending.expected == expected
+        && pending.callback == callback
+        && pending.key == key
+        && pending.revision == revision
+        && pending.cause == cause
+}
+
+#[cfg(test)]
+#[path = "encounter_tests.rs"]
+mod tests;

@@ -1,6 +1,6 @@
 # M30b Asura Palace: native entry and chamber evidence
 
-The shipped binding covers recipe s1 only. It observes entry at the canonical
+The native palace entry observes recipe s1 at the canonical
 Asura Palace Area point `(32953,32685,z7)`, whose base-map tile is exactly one
 ground placement, source appearance 923, ordinal 0. The existing chosen EXPLORE
 profile supplies native STEP admission, two one-shot counters and the live
@@ -37,7 +37,7 @@ appearance 5736, ordinal 1. The pitfall above is `(32959,32675,3)`, appearance
 21973, ordinal 1. The map alone does not identify whether either or both exits
 are the quest-owned door, nor a source admission of the existing static actors.
 
-## Exact remaining data gap
+## Donor source gaps and authored resolution
 
 The Flaming Orchid's BR encyclopedia Document
 (`content/documents/documents-01000-01499.json`,
@@ -46,12 +46,11 @@ Elementals unlock its boss room. The held Flaming Orchid spawn at
 `(32955,32679,2)` is inside the central enclosure. This resolves the s3 boss-door
 candidate to `(32959,32679,2)`, but does not locate or admit the elemental pair.
 
-No checked-in admitted binding associates recipe s2/s3/s4 with an entry trigger,
+The checked donor evidence does not associate recipe s2/s3/s4 with an entry trigger,
 two exact defender placements and the door(s) their deaths unlock. The finite
 canonical spawn shards contain neither Greater Fire Elemental nor Greater Energy
 Elemental placements. Their names occur in the chosen recipe and reference facts,
-not in a native chamber roster or executable source interaction. Thus the missing
-datum is the s2/s3/s4 **entry → admitted defender pair → unlocked door** association:
+not in a native chamber roster or executable source interaction. The source-data gap is the s2/s3/s4 **entry → admitted defender pair → unlocked door** association:
 s2's selection between its two exits, s3's elemental pair and entry, and s4's
 elemental pair, entry and target door. Both elemental pairs' coordinates are
 absent from the canonical spawn population. The palace location, floor-2 doors
@@ -158,3 +157,17 @@ s2 door and s3 entry beforehand, then checking s2 replay, entered=1, exactly two
 total receipts including s1, and no quest completion. This qualifies the durable
 server-writer route. It does not qualify physical encounter publication or
 ordinary-combat defender deaths; those still require the dispatch scenario.
+
+
+Personal encounter dispatch now preflights staging, room occupancy, teleport
+proofs and defender policies before the durable entry write. It applies the
+committed quest copy and refreshes native counter capture while retaining the
+Channel turn, so the source roster captures the admission's committed revision.
+The current pending callback can resume only with matching actor, session,
+movement snapshot, callback, object identity/revision and original command cause.
+A coherent copy already at the receipt revision is preserved on replay.
+
+The focused pending-fence regression and ten existing capture tests cover this
+slice. Both real framed Child of Destiny hit-credit PostgreSQL callers passed
+again after the shared snapshot refactor. Full physical Asura encounter/death/door
+qualification remains pending, along with the two elemental native policies.

@@ -615,6 +615,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if durable && callback.effects.encounter.is_some() {
+            let preflight = self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+                true,
+                cause,
+            );
+            if preflight != UseDisposition::Committed {
+                return preflight;
+            }
+        }
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -711,16 +729,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.states.loop_ground.invalidate();
                     // Shrine bonuses must see the committed flag before the next swing;
                     // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
+                    if (callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
+                        || callback.effects.encounter.is_some())
                         && let Ok(mut sessions) = self.states.quest_sessions.lock()
                         && let Some(entry) = sessions.get_mut(&session)
                     {
                         entry.copy = entry.copy.take().and_then(|mut copy| {
                             let next = entry.version.checked_add(1)?;
-                            if !copy.apply(committed) { return None; }
+                            let current_encounter_replay = callback.effects.encounter.is_some()
+                                && copy.character_revision() == Some(committed.committed_character_revision);
+                            if !current_encounter_replay && !copy.apply(committed) { return None; }
                             entry.version = next;
                             Some(copy)
                         });
+                    }
+                    if callback.effects.encounter.is_some()
+                        && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
+                    {
+                        self.schedule_quest_refresh(session);
+                        return UseDisposition::Rejected;
                     }
                     self.schedule_quest_refresh(session);
                 }
@@ -754,6 +781,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 key,
                 expected_revision,
                 after,
+                false,
+                cause,
             );
         }
         if !map.facts.apply_quest_callback(
