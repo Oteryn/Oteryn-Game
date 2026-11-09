@@ -3,6 +3,9 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct StashPanel {
     pub query: String,
+    pub server_filtered: bool,
+    pub category: String,
+    pub trader: String,
     pub sort: Sort,
     pub selected: bool,
     pub open: bool,

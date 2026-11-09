@@ -229,3 +229,5 @@ fn coin_gift_reviews_exact_recipient_amount_and_remains_disabled()
     assert!(!action(0, "Alice", "1"));
     Ok(())
 }
+
+include!("ledger.rs");

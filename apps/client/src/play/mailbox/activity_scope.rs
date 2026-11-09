@@ -14,6 +14,7 @@ impl Mailbox {
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
+        self.cyclopedia_character.augments = Default::default();
         self.cyclopedia_tracker.pending = Default::default();
         self.world_event.pending = Default::default();
         self.daily_boost.pending = Default::default();
@@ -67,6 +68,7 @@ impl Mailbox {
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();
+        self.properties.house.invalidate();
         self.properties.house_move_out.pending = Default::default();
         self.properties.house_transfer.pending = Default::default();
         self.properties.staff.pending = Default::default();

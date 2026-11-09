@@ -169,7 +169,14 @@ fn run(
                             inputs.0[2] = row.to_string();
                             SetWindowTextW(handles[2], wide(&inputs.0[2]).as_ptr());
                         }
-                        activate_shared(&shared, &commands, &inputs, id - 100);
+                        activate_displayed(
+                            &shared,
+                            &commands,
+                            &inputs,
+                            id - 100,
+                            held.as_ref()
+                                .and_then(|p: &DepotSearchPanel| p.reply.as_ref()),
+                        );
                     }
                     let panel = lock(&shared).depot_search.clone();
                     if held.as_ref() != Some(&panel) {

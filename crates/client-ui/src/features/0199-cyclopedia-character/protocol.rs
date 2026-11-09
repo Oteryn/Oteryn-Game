@@ -14,8 +14,18 @@ use oteryn_client_runtime::{
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Protection,
+    Items,
+    ItemsNext,
+    ItemsPrevious,
+    Appearances,
+    GalleryNext,
+    GalleryPrevious,
     Achievements,
     Badges,
+    ProfileBadges,
+    ProfileInspection,
+    SpellAugments(super::AugmentIntent),
     MiscResources,
     Tab,
     SelectTab(cyclopedia_character::CharacterTab),
@@ -31,10 +41,48 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Waiting for the server");
         return None;
     }
-    if matches!(intent, Intent::Achievements) {
+    if let Intent::SpellAugments(intent) = intent {
+        return super::augment_request(p, intent);
+    }
+    p.augments.open = false;
+    p.augments.requested = None;
+    p.profile_pending = false;
+    if matches!(intent, Intent::Protection) {
+        return super::protection::request(p);
+    }
+    if matches!(
+        intent,
+        Intent::Items | Intent::ItemsNext | Intent::ItemsPrevious
+    ) {
+        return super::items::request(p, intent);
+    }
+    if matches!(
+        intent,
+        Intent::Appearances | Intent::GalleryNext | Intent::GalleryPrevious
+    ) {
+        return super::gallery::request(p, intent);
+    }
+    if matches!(
+        intent,
+        Intent::Achievements | Intent::SelectTab(cyclopedia_character::CharacterTab::Achievements)
+    ) {
         p.tab = cyclopedia_character::CharacterTab::Achievements;
         return super::achievements::request(p, crate::account_achievements::Intent::Refresh);
     }
+    if matches!(intent, Intent::ProfileBadges | Intent::ProfileInspection) {
+        p.badges_open = matches!(intent, Intent::ProfileBadges);
+        p.tab = cyclopedia_character::CharacterTab::Inspection;
+        p.profile_pending = true;
+        p.pending = true;
+        p.command_kind = 388;
+        p.feedback = None;
+        return Some(FeatureCommand {
+            capability: 199,
+            kind: 388,
+            payload: cyclopedia_character::profile::request(p.target),
+        });
+    }
+    p.badges_open = false;
     let auxiliary = matches!(intent, Intent::MiscResources);
     if auxiliary && (p.tab != cyclopedia_character::CharacterTab::Misc || !p.misc_resources_due) {
         return None;
@@ -55,7 +103,17 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
-        Intent::Achievements => return None,
+        Intent::ProfileBadges
+        | Intent::ProfileInspection
+        | Intent::SpellAugments(_)
+        | Intent::Protection
+        | Intent::Items
+        | Intent::ItemsNext
+        | Intent::ItemsPrevious
+        | Intent::Appearances
+        | Intent::GalleryNext
+        | Intent::GalleryPrevious
+        | Intent::Achievements => return None,
         Intent::Badges => (387, Vec::new()),
         Intent::Tab
         | Intent::SelectTab(_)
@@ -107,11 +165,50 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.protection.awaiting {
+        return super::protection::apply(p, r);
+    }
+    if p.items.pending_offset.is_some() {
+        return super::items::apply(p, r);
+    }
+    if p.gallery.pending_offset.is_some() {
+        return super::gallery::apply(p, r);
+    }
+    if p.augments.requested.is_some() {
+        return super::augments::apply(p, r);
+    }
     if p.blessings.pending {
         return blessings::apply(&mut p.blessings, r);
     }
     if p.achievement_pending {
         return super::achievements::apply(p, r);
+    }
+    if p.profile_pending {
+        p.profile_pending = false;
+        p.pending = false;
+        p.profile = None;
+        p.badges = None;
+        p.result = None;
+        if !matches!(
+            r.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        ) {
+            p.feedback = Some("The server refused the profile query");
+            return false;
+        }
+        let Ok(profile) = cyclopedia_character::profile::Profile::decode(&r.payload) else {
+            p.feedback = Some("The server returned an invalid profile");
+            return false;
+        };
+        if p.target.is_some_and(|target| target != profile.character) {
+            p.feedback = Some("The server returned a different profile");
+            return false;
+        }
+        p.result = Some(format!("{} — confirmed profile", profile.name));
+        p.badges = Some(profile.badges.iter().map(|badge| badge.id()).collect());
+        p.profile = Some(profile);
+        p.feedback = None;
+        return true;
     }
     let pending = p.pending;
     p.pending = false;
@@ -159,7 +256,8 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             p.combat = if matches!(
                 tab,
                 Some(
-                    cyclopedia_character::CharacterTab::Defence
+                    cyclopedia_character::CharacterTab::Offence
+                        | cyclopedia_character::CharacterTab::Defence
                         | cyclopedia_character::CharacterTab::Misc
                 )
             ) {
