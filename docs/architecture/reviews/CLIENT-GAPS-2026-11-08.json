@@ -163,8 +163,9 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Magical Archive i przypisanie czaru",
-  "status": "PARTIAL",
-  "gap": "Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania.",
+  "status": "DONE",
+  "gap": "Magical Archive z filtrowaną listą serwera, kartą czaru i graficznym przypisaniem do slotów; zapisane przypisania rozwiązują bieżące indeksy serwera.",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:252 + magical_archive_assignments_persist_and_resolve_current_server_indices; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices",
   "lane": "cg_options"
  },
  {
