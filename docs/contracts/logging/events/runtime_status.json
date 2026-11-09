@@ -1,0 +1,14 @@
+{
+  "module": "runtime_status",
+  "owner": "crates/gameplay/native-admission-source",
+  "events": [
+    {
+      "event": "runtime_status",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Runtime status publication result; delivery failures use warning level and their error code."
+    }
+  ]
+}

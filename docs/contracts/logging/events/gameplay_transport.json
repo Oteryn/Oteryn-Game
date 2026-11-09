@@ -1,0 +1,54 @@
+{
+  "module": "gameplay_transport",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "attack_target_condition_gated",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "command_integrity",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "join_prepare_failed",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "serve_command_end",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "serve_end",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "spell_cast_condition_gated",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

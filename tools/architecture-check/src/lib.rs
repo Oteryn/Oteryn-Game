@@ -4,6 +4,7 @@ mod client_fragments;
 pub mod client_layering;
 pub mod client_structure;
 mod gameplay;
+pub mod logging;
 mod sources;
 
 use gameplay::GameplayPolicy;
@@ -64,6 +65,9 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     gameplay::validate(root, &policy, &metadata)?;
     validate_restricted_calls(root)?;
     client_layering::validate(root, &metadata)?;
+    if root.join("docs/contracts/logging/events").is_dir() {
+        logging::validate(root, false)?;
+    }
     if root.join("crates/client-ui").is_dir() {
         client_structure::validate(root)?;
     }

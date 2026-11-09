@@ -1,0 +1,27 @@
+{
+  "module": "flight",
+  "owner": "crates/error-codes",
+  "events": [
+    {
+      "event": "flight",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "seq"
+      ],
+      "codes": [],
+      "note": "Retained diagnostic entry emitted during a flight-recorder dump."
+    },
+    {
+      "event": "flight_dump",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "entries"
+      ],
+      "codes": [],
+      "note": "Flight-recorder dump summary."
+    }
+  ]
+}
