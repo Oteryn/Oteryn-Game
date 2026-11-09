@@ -56,7 +56,7 @@ mod tests {
     -> Result<(), String> {
         let all = callbacks()?;
         assert_eq!(all.len(), 9);
-        for group in all.chunks_exact(3) {
+        for group in all.as_chunks::<3>().0 {
             assert_eq!(group[0].storage[2].minimum, -1);
             for (phase, c) in group.iter().enumerate() {
                 assert_eq!(c.effects.reset_after_ms, Some(30000));

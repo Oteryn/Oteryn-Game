@@ -29,7 +29,8 @@ fn m51_postgres_timeout_uses_commit_clock_and_replays_without_new_mutation() -> 
             assert!(pit_lease::claim(&mut tx,fence,&state,clock).await?);
             tx.commit().await?;
             let origin=NativeArenaOrigin::Timeout(NativeArenaTimeout::new(actor,fence.game_session_id,1,&state).ok_or("timeout")?);
-            let request=|| MatchTransition {native_origin:Some(origin.clone()),command:origin.command(),payload:payload.clone(),
+            let request=|| MatchTransition {native_origin:Some(origin.clone()),
+ cause: (origin.command()).into(),payload:payload.clone(),
                 before:state.clone(),after:state.idle(),disposition:ArenaDisposition::TimedOut,victory:None,change:None,achievement:None};
             assert!(fixture.root.commit_arena_match(&authority,&fixture.node,fence,request()).await.is_err(),"native timeout cannot cancel a run before the deciding clock reaches its deadline");
             let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts").fetch_one(&fixture.pool).await?;

@@ -21,23 +21,6 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
-    def test_qm55_chakoya_entry_preserves_premium_and_once_only_progress(self):
-        callback = next(c for c in explore.callbacks(ROOT)
-                        if c['quest'] == 'oteryn:quest.authored.chakoya_iceberg_mini_world_change')
-        self.assertEqual(callback['admission'], {'premium': True})
-        self.assertEqual(callback['selector']['native'], {
-            'position': {'x': 32623, 'y': 32584, 'floor': -7},
-            'ordinal': 0, 'appearance': 799})
-        self.assertTrue(callback['requires_world_admission'])
-        visit, counter = callback['storage']
-        track = 'oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1'
-        self.assertEqual(visit['track'], track + '/visited/entry')
-        self.assertEqual((visit['minimum'], visit['maximum'], visit['set']), (0, 0, 1))
-        self.assertEqual(counter['track'], track)
-        self.assertEqual((counter['minimum'], counter['maximum'], counter['set']), (0, 0, 1))
-        self.assertTrue(counter['increment'])
-        self.assertEqual(callback['offerings'], [])
-        self.assertIsNone(callback['teleport'])
     def test_volcano_spawn_distance_exception_stays_bounded(self):
         import questpc_spawn_approaches as spawns
         key = 'oteryn:spawn.x32072_y32603_z2#0'
@@ -680,13 +663,6 @@ class ExploreBindingsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'counter owner'):
                 explore.callbacks(ROOT)
 
-    def test_unimplemented_required_guard_is_not_silently_dropped(self):
-        guarded = (('oteryn:quest.fury_gates_mini_world_change', 's1',
-                    'oteryn:area.hunting_place.fury_gate', 'chosen-source/fury_gates_mini_world_change'),)
-        with mock.patch.object(explore, 'BINDINGS', guarded):
-            with self.assertRaisesRegex(ValueError, 'additional authoritative guards'):
-                explore.callbacks(ROOT)
-
     def test_completed_ice_islands_guard_is_not_silently_dropped(self):
         guarded = (('oteryn:quest.lion_trophy_quest', 's1',
                     'oteryn:area.hunting_place.formorgar_mines', 'chosen-source/lion_trophy_quest'),)
@@ -723,12 +699,6 @@ class ExploreBindingsTests(unittest.TestCase):
                             self.assertEqual(house, 0)
                             found = [index['palette'][palette]['source_item_id']
                                      for palette, depth, _ in items if depth == 0]
-                # The retained Chakoya tile has a ground root plus its ice overlay.
-                expected = ([799, 7152] if callback['quest'] ==
-                            'oteryn:quest.authored.chakoya_iceberg_mini_world_change'
-                            else [native['appearance']])
-                self.assertEqual(found, expected)
-                self.assertEqual(found[native['ordinal']], native['appearance'])
                 self.assertEqual(found, [native['appearance']])
 
     def test_geomancer_uses_its_exact_canonical_area_and_counter(self):
@@ -744,7 +714,6 @@ class ExploreBindingsTests(unittest.TestCase):
                          'oteryn:quest-progress/chosen-source/geomancer_quest/s1')
 
     def test_native_anchor_has_no_value_or_movement_effect(self):
-        callback = explore.callbacks(ROOT)[0]
         callback = next(c for c in explore.callbacks(ROOT)
                         if c['quest'] == 'oteryn:quest.longsword_quest')
         self.assertEqual(callback['quest'], 'oteryn:quest.longsword_quest')
@@ -761,3 +730,29 @@ class ExploreBindingsTests(unittest.TestCase):
                          'oteryn:quest-progress/chosen-source/longsword_quest/s1')
         self.assertEqual((counter['minimum'], counter['maximum'], counter['set']), (0, 0, 1))
         self.assertTrue(counter['increment'])
+
+    def test_qm55_chakoya_entry_preserves_premium_and_once_only_progress(self):
+        callback = next(c for c in explore.callbacks(ROOT)
+                        if c['quest'] == 'oteryn:quest.authored.chakoya_iceberg_mini_world_change')
+        self.assertEqual(callback['admission'], {'premium': True})
+        self.assertEqual(callback['selector']['native'], {
+            'position': {'x': 32623, 'y': 32584, 'floor': -7},
+            'ordinal': 0, 'appearance': 799})
+        self.assertTrue(callback['requires_world_admission'])
+        visit, counter = callback['storage']
+        track = 'oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1'
+        self.assertEqual(visit['track'], track + '/visited/entry')
+        self.assertEqual((visit['minimum'], visit['maximum'], visit['set']), (0, 0, 1))
+        self.assertEqual(counter['track'], track)
+        self.assertEqual((counter['minimum'], counter['maximum'], counter['set']), (0, 0, 1))
+        self.assertTrue(counter['increment'])
+        self.assertEqual(callback['offerings'], [])
+        self.assertIsNone(callback['teleport'])
+
+
+    def test_unimplemented_required_guard_is_not_silently_dropped(self):
+        guarded = (('oteryn:quest.fury_gates_mini_world_change', 's1',
+                    'oteryn:area.hunting_place.fury_gate', 'chosen-source/fury_gates_mini_world_change'),)
+        with mock.patch.object(explore, 'BINDINGS', guarded):
+            with self.assertRaisesRegex(ValueError, 'additional authoritative guards'):
+                explore.callbacks(ROOT)

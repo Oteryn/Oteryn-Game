@@ -10,6 +10,7 @@ use crate::content::{
 use serde::{Deserialize, Serialize};
 
 mod first_dragon;
+
 #[path = "activity_template/galthen.rs"]
 mod galthen;
 pub use galthen::{BossCallbackSourceClosure, QualifiedBossExitTeleporter};
@@ -437,6 +438,7 @@ impl ActiveGeneration {
             }
         }
         Ok(QualifiedActivityRoomTemplate {
+            spite_source_setup: None,
             boss_key: "oteryn:boss.the_primal_menace".into(),
             template_key: "oteryn:room.primal-source".into(),
             template_revision: "crystal-201189f".into(),
@@ -712,26 +714,26 @@ impl ContentActivationController {
             .then(|| super::primal_closure::qualify(native))
             .flatten();
         let selected = first_dragon::qualify(native, candidate);
-        if !candidate.blockers.is_empty()
+        // Only this exact captured source world proves the entry cleanup empty.
+        // A bundle map cannot borrow that proof from a different map capture.
+        let spite = source.and_then(|_| super::spite_closure::qualify(native, candidate));
         if (matches!(
             creature,
             "oteryn:creature.ahau" | "oteryn:creature.mitmah_vanguard"
         ) && !galthen)
-            || !candidate.blockers.is_empty()
+            || candidate.blockers.iter().any(|hook| {
+                spite
+                    .as_ref()
+                    .is_none_or(|closure| !closure.implements_setup(hook))
+            })
             || !candidate.callbacks_known
-        // Only this exact captured source world proves the entry cleanup empty.
-        // A bundle map cannot borrow that proof from a different map capture.
-        let spite = source.and_then(|_| super::spite_closure::qualify(native, candidate));
-        if candidate.blockers.iter().any(|hook| {
-            spite
-                .as_ref()
-                .is_none_or(|closure| !closure.implements_setup(hook))
-        }) || !candidate.callbacks_known
             || unavailable_source_hooks(candidate).any(|hook| {
                 primal
                     .as_ref()
                     .is_none_or(|closure| !closure.implements(hook))
                     && selected
+                        .as_ref()
+                        .is_none_or(|closure| !closure.implements(hook))
                     && spite
                         .as_ref()
                         .is_none_or(|closure| !closure.implements(hook))

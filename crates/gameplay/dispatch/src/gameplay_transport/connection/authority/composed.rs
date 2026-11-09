@@ -857,11 +857,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 MovementFacing::East
             }
             StepDirection::South => MovementFacing::South,
-            StepDirection::West => MovementFacing::West,
-            StepDirection::NorthEast => MovementFacing::North,
-            StepDirection::SouthEast => MovementFacing::South,
-            StepDirection::SouthWest => MovementFacing::South,
-            StepDirection::NorthWest => MovementFacing::North,
             StepDirection::West | StepDirection::NorthWest | StepDirection::SouthWest => {
                 MovementFacing::West
             }
@@ -1078,7 +1073,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.use_carried_quest_item(actor, command, &intent, source, target)
+        let corpse = match target {
+            Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
+                Some(id)
+            }
+            _ => None,
+        };
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source, corpse)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
             .await
     }
 

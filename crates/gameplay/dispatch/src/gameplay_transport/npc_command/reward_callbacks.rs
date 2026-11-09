@@ -69,61 +69,6 @@ pub(super) fn prepare(
         .fixture_callback_rows
         .get()
         .unwrap_or(&callbacks);
-    let mut offers: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/shared-reward-offers.json"
-    ))
-    .ok()?;
-    let authored: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/npc-offers/l6-stories.json"
-    ))
-    .ok()?;
-    if authored.schema != 1 {
-        return None;
-    }
-    offers.offers.extend(authored.offers);
-    let m09: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/npc-offers/m09-rookie.json"
-    ))
-    .ok()?;
-    if m09.schema != 1 {
-        return None;
-    }
-    offers.offers.extend(m09.offers);
-    let markers: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/npc-offers/m16-targuna-marker.json"
-    ))
-    .ok()?;
-    if markers.schema != 1 {
-        return None;
-    }
-    offers.offers.extend(markers.offers);
-    #[cfg(test)]
-    if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
-        offers.offers.extend(rows.iter().cloned());
-    }
-    let koshei: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"
-    ))
-    .ok()?;
-    if koshei.schema != 1 {
-        return None;
-    }
-    offers.offers.extend(koshei.offers);
-    let m10: Offers = serde_json::from_str(include_str!(
-        "../../../../../../content/quests/npc-offers/qnpcfx-m10.json"
-    ))
-    .ok()?;
-    if m10.schema != 1 {
-        return None;
-    }
-    offers.offers.extend(m10.offers);
-    if offers.schema != 1
-        || offers.offers.len() > 512
-        || offers.offers.iter().any(|o| o.requires.len() > 8)
-    {
-        return None;
-    }
-    quest_dialogue::prepare(
     let offers = offers::load(admission)?;
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();

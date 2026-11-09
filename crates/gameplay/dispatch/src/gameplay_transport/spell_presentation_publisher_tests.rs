@@ -762,7 +762,7 @@ fn qm46_quest_speech_is_public_player_monster_say_and_session_fenced() {
 }
 
 #[test]
-fn qm46_quest_speech_is_public_player_monster_say_and_session_fenced() {
+fn qm46_quest_speech_is_public_player_monster_say_and_session_fenced_lane_1() {
     let (runtime, actor, other, session) = runtime();
     let other_session = runtime
         .positioned_actor_census()

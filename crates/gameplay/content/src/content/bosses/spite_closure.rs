@@ -69,6 +69,7 @@ pub(super) fn qualify(
             .row(SPITE_KEY)
             .ok()?
             .corpse_item
+            .as_ref()?
             .production_key
             != "oteryn:item.tibia.i33867"
     {

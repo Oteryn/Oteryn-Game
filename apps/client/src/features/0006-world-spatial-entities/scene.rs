@@ -101,16 +101,6 @@ impl Scene {
                 TileCoord::new(entity.position.x, entity.position.y)
             };
             let direction = if is_own {
-                match self.facing {
-                    StepDir::North => 0,
-                    StepDir::East => 1,
-                    StepDir::South => 2,
-                    StepDir::West => 3,
-                    StepDir::NorthEast => 0,
-                    StepDir::SouthEast => 2,
-                    StepDir::SouthWest => 2,
-                    StepDir::NorthWest => 0,
-                }
                 oteryn_client_ui::diagonal_movement::facing(self.facing)
             } else {
                 match entity.detail {

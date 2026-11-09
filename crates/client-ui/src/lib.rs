@@ -311,5 +311,5 @@ pub mod skill_progress;
 #[path = "features/0371-native-creature-icons/mod.rs"]
 pub mod native_creature_icons;
 
-#[path = "features/0449-personal-map-marks/mod.rs"]
+#[path = "features/0451-personal-map-marks/mod.rs"]
 pub mod personal_map_marks;

@@ -990,26 +990,19 @@ impl BundleCollisionData {
             BundleMap {
                 entry_start,
                 overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
-                facts: self.map.facts.activity_region(bounds),
-                floors: self.map.floors.activity_region(bounds),
+                facts: match exit {
+                    Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
+                    None => self.map.facts.activity_region(bounds),
+                },
+                floors: match exit {
+                    Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
+                    None => self.map.floors.activity_region(bounds),
+                },
                 spell_tiles,
             }
             .bind_phase_owner()
             .ok()?,
         );
-        let map = Arc::new(BundleMap {
-            entry_start,
-            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
-            facts: match exit {
-                Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
-                None => self.map.facts.activity_region(bounds),
-            },
-            floors: match exit {
-                Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
-                None => self.map.floors.activity_region(bounds),
-            },
-            spell_tiles,
-        });
         let view = Self {
             // The region retains the same source bases qualified from the
             // complete compiled Bundle bytes; clipping never invents geometry.

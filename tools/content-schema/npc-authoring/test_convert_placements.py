@@ -59,6 +59,7 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual(rows[0]['cell'], {'x': 32311, 'y': 32172, 'floor': 6})
         self.assertEqual(rows[0]['direction'], 'north')
         self.assertEqual({p['origin'] for p in rows[0]['provenance']}, {'canary', 'crystal'})
+
     def test_m38_mistrock_keeps_the_native_beregar_contact_anchor(self):
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] == 'oteryn:npc.maris_mistrock']

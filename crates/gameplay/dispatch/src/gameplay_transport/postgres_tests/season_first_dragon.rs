@@ -128,7 +128,7 @@ fn scenario(victory: bool) -> TestResult {
         assert_eq!(policy.reward_boss, Some(true));
         let rewards = native.reward_table().row(CREATURE).map_err(debug)?;
         assert_eq!(
-            rewards.corpse_item.production_key,
+            rewards.corpse_item.as_ref().ok_or("corpse profile")?.production_key,
             "oteryn:item.tibia.i25065"
         );
 

@@ -215,7 +215,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     let apply = |revision, id| -> f::TestResult<_> {
-        Ok(h.root.commit_character_world_callback_with_items(
+        Ok(h.root.commit_character_world_callback_with_items_and_premium(
             &authority,
             &h.node,
             f::fence(revision)?,

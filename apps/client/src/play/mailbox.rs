@@ -12,8 +12,8 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 mod activity_scope;
-mod own_identity;
 mod diagonal;
+mod own_identity;
 
 /// What the session task reports to the shell.
 #[derive(Debug)]

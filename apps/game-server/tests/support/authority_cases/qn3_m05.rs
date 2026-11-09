@@ -279,7 +279,7 @@ async fn exercise(h: &fixture::Harness, terminal: bool) -> fixture::TestResult {
                     fence,
                     request(9502)?,
                     catalog.clone(),
-                    &Content(true),
+                    &Content(true, native),
                     &source
                 )
                 .await

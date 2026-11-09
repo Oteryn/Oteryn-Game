@@ -10,26 +10,8 @@ impl ChannelRuntimeV1 {
         at: MovementLocalPosition,
         map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
     ) -> Result<ExactActorRef, EncounterSpawnError> {
-        if !self
-            .owner_fence()
-            .map_err(EncounterSpawnError::Native)?
-            .accepts_stamp(stamp)
-        {
-            return Err(EncounterSpawnError::StaleOwner);
-        }
-        if spec.content != self.content_pin().server_artifact_digest()
-            || !self.matches_live_creature_identity(parent, spec.parent.as_bytes())
-        {
-            return Err(EncounterSpawnError::Native(
-                CarrierError::CreatureTargetMismatch,
-            ));
-        }
-        self.admit_native_masterless_at(
-            &spec.child,
-            &spec.child_revision,
-            spec.content,
-            at,
-            map_admits,
+        self.admit_native_encounter_masterless_bound(
+            None, stamp, parent, spec, at, map_admits, None,
         )
     }
 

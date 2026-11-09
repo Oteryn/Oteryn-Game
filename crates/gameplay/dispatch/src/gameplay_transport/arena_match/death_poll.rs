@@ -133,7 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 MatchTransition {
                     native_origin: Some(origin),
-                    command,
+ cause: (command).into(),
                     payload,
                     before,
                     after: after.clone(),

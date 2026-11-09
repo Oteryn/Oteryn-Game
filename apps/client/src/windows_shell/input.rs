@@ -115,7 +115,7 @@ impl Application {
             if let Some(direction) = play
                 .link
                 .diagonal_input(events)
-                .or_else(|| arrow_step(events))
+                .or_else(|| arrow_step(events).filter(|direction| !direction.is_diagonal()))
             {
                 play.view.arrow(direction);
             }

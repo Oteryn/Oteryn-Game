@@ -240,6 +240,8 @@ fn admit_native_bindings(
         }
     }
     lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -286,8 +288,6 @@ pub(super) fn lower_embedded_quest_state(
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
-        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::source_deaths::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;

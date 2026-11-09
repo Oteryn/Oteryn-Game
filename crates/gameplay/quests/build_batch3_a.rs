@@ -31,6 +31,9 @@ pub fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error
                 return Err("Hot Cuisine source harness requires its own recipe data".into());
             }
             println!("cargo:rerun-if-changed={}", recipes.display());
+            // Hot Cuisine also has a production mount; share it to keep one test module.
+            writeln!(mounts, "pub use crate::quest::hot_cuisine;")?;
+            continue;
         }
         let module = module.to_str().ok_or("source harness path is not UTF-8")?;
         writeln!(mounts, "#[path = {module:?}]\npub mod {quest};")?;

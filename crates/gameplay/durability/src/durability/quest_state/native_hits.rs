@@ -153,7 +153,7 @@ impl DurabilityRoot {
             None,
             Some(super::native_events::NativeQuestEvent::Hit(hit)),
             None,
-        )
+        None, None, None,)
         .await
     }
 }

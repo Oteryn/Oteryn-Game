@@ -153,50 +153,9 @@ mod tests {
         Ok(())
     }
 }
-//! Bounded current-world trial predicates; no counter or command grants clearance.
-use super::*;
-
-pub(super) fn area_is_clear(runtime: &ChannelRuntimeV1, callback: &Callback) -> bool {
-    let Some(area) = &callback.effects.clear_area else {
-        return true;
-    };
-    clear(runtime, area, 4096)
-}
-
-fn clear(runtime: &ChannelRuntimeV1, area: &world_callbacks::ClearArea, limit: usize) -> bool {
-    if area.creatures.iter().any(|key| {
-        !runtime
-            .companion_policy(key)
-            .is_ok_and(|policy| policy.definition_key == *key)
-    }) {
-        return false;
-    }
-    let Ok(actors) = runtime.current_live_creature_candidates(limit) else {
-        return false;
-    };
-    actors.into_iter().all(|actor| {
-        let Ok(identity) = runtime.creature_spell_target_atom(actor) else {
-            return false;
-        };
-        if !area.creatures.contains(&identity) {
-            return true;
-        }
-        runtime
-            .read_actor_position(actor)
-            .ok()
-            .and_then(|snapshot| native(snapshot.position()))
-            .is_some_and(|position| {
-                !area.contains(world_callbacks::Position {
-                    x: position.x,
-                    y: position.y,
-                    floor: position.floor,
-                })
-            })
-    })
-}
 
 #[cfg(test)]
-mod tests {
+mod additional_tests {
     use super::*;
 
     #[test]
@@ -219,6 +178,7 @@ mod tests {
             .install_companion_policies(policies)
             .map_err(|e| format!("{e:?}"))?;
         let area = world_callbacks::ClearArea {
+            additional_floors: Vec::new(),
             minimum: Position {
                 x: 100,
                 y: 100,

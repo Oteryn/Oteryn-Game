@@ -87,6 +87,7 @@ pub struct BoundQuest {
     pub recipe_sha256: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub occurrence: Option<Occurrence>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub admission: Option<actor_admission::ActorAdmission>,
     pub tracks: Vec<Track>,
     pub stages: Vec<Stage>,
@@ -170,6 +171,7 @@ impl Bindings {
                 if !transitions.insert(&occurrence.restart().key) {
                     return Err("authored save restart binding collision".into());
                 }
+            }
             if let Some(admission) = &quest.admission {
                 admission.validate(&quest.quest)?;
             }
@@ -229,6 +231,9 @@ impl Bindings {
                     objective.validate(quest)?;
                     if !transitions.insert(&objective.key) {
                         return Err("authored hit binding collision".into());
+                    }
+                    continue;
+                }
                 if let Trigger::DoorUse { usage } = &stage.trigger {
                     usage.validate(quest)?;
                     if !transitions.insert(&usage.key) {
@@ -263,11 +268,11 @@ impl Bindings {
                     continue;
                 }
                 let (key, owner, storage) = match &stage.trigger {
-                    Trigger::Kill { .. } | Trigger::Collect { .. } | Trigger::Hit { .. } => {
                     Trigger::Kill { .. }
                     | Trigger::Collect { .. }
                     | Trigger::TerrainUse { .. }
-                    | Trigger::DoorUse { .. } => {
+                    | Trigger::DoorUse { .. }
+                    | Trigger::Hit { .. } => {
                         continue;
                     }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
@@ -344,9 +349,6 @@ impl Bindings {
         self.validate()?;
         if self.quests.is_empty() {
             // An empty addition must retain the existing immutable binding witnesses.
-        // Preserve an already-admitted immutable binding set on an empty attachment.
-        if self.quests.is_empty() {
-            // The neutral set must retain already registered consumers and hashes.
             return Ok(base.clone());
         }
         if let Some(evidence) = &base.native_recipe_evidence {
@@ -371,23 +373,12 @@ impl Bindings {
                 if stage.is_native_encounter() {
                     continue;
                 }
-                transitions.push(stage.transition(&quest.quest)?);
-                let mut transition = stage.transition(&quest.quest)?;
-                if let Some(occurrence) = &quest.occurrence {
-                    occurrence.qualify(&mut transition);
-                }
-                transitions.push(transition);
-                if let Trigger::NpcDialogue { alternatives, .. } = &stage.trigger {
-                    for callback in alternatives {
-                        let mut transition = super::reward_callbacks::primary_transition(callback)?;
-                        transition.completes = stage.completes;
-                        if let Some(occurrence) = &quest.occurrence {
-                            occurrence.qualify(&mut transition);
-                        }
-                        transitions.push(transition);
+                for mut transition in stage.transitions(&quest.quest)? {
+                    if let Some(occurrence) = &quest.occurrence {
+                        occurrence.qualify(&mut transition);
                     }
+                    transitions.push(transition);
                 }
-                transitions.extend(stage.transitions(&quest.quest)?);
             }
         }
         let mut catalogue =
@@ -517,6 +508,8 @@ fn digest(value: &str) -> bool {
 
 #[cfg(test)]
 mod asura_palace_tests;
+
+#[cfg(test)]
 mod actor_admission_tests;
 
 #[cfg(test)]
@@ -527,6 +520,7 @@ mod composition_tests;
 
 #[cfg(test)]
 mod encounter_source_tests;
+#[cfg(test)]
 mod occurrence_tests;
 
 impl Trigger {
@@ -548,6 +542,8 @@ mod hit_tests;
 
 #[cfg(test)]
 mod child_of_destiny_tests;
+
+#[cfg(test)]
 mod terrain_use_tests;
 
 #[cfg(test)]

@@ -92,7 +92,8 @@ fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress() -> 
 }
 
 #[test]
-fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress() -> Result<(), String> {
+fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress_lane_1()
+-> Result<(), String> {
     let callbacks = load()?;
     for (name, quest, trigger, level, promotion, blessings) in [
         (

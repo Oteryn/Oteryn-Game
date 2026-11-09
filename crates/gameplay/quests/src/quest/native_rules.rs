@@ -1,12 +1,10 @@
 //! Closed adapters for source-specific rules inside the fenced quest writer.
 //!
 //! A rule consumes exactly its declared locked tracks and returns their complete
-//! A rule consumes exactly its closed set of locked tracks and returns their complete
 //! next snapshot. It never obtains values from a session cache or writes state.
 
 use super::{
-    QuestEffect, QuestEffectKind, QuestRefusal, barbarian_mead, cults_of_tibia, unnatural_selection,
-    QuestEffect, QuestEffectKind, QuestRefusal, cults_of_tibia, ice_islands_seals,
+    QuestEffect, QuestEffectKind, QuestRefusal, barbarian_mead, cults_of_tibia, ice_islands_seals,
     unnatural_selection,
 };
 use serde::{Deserialize, Serialize};
@@ -30,31 +28,22 @@ impl NativeRule {
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
             Self::IceSealPaint { .. } => ice_islands_seals::QUEST,
-        }
-    }
-
-    pub const fn tracks(self) -> &'static [&'static str] {
-        match self {
-            Self::BarbarianMead => &barbarian_mead::TRACKS,
-            Self::BarbarianMead => &barbarian_mead::NATIVE_TRACKS,
-            Self::CultsSymbol { .. } => &[
             Self::SoulWarRemorse | Self::SoulWarEnergy => super::soul_war::source_items::QUEST,
         }
     }
 
     pub fn tracks(self) -> Vec<&'static str> {
         match self {
+            Self::BarbarianMead => barbarian_mead::NATIVE_TRACKS.to_vec(),
             Self::CultsSymbol { .. } => vec![
                 cults_of_tibia::MISSION,
                 cults_of_tibia::TEMP,
                 cults_of_tibia::OBJECTS,
             ],
-            Self::UnnaturalDance { .. } => &unnatural_selection::TRACKS,
-            Self::UnnaturalDance { .. } => unnatural_selection::TRACKS,
-            Self::IceSealPaint { .. } => ice_islands_seals::TRACKS,
             Self::UnnaturalDance { .. } => unnatural_selection::TRACKS.to_vec(),
             Self::SoulWarRemorse => vec![super::soul_war::source_items::REMORSE],
             Self::SoulWarEnergy => super::soul_war::source_items::ENERGY_TRACKS.to_vec(),
+            Self::IceSealPaint { .. } => ice_islands_seals::TRACKS.to_vec(),
         }
     }
 
@@ -65,10 +54,10 @@ impl NativeRule {
             Self::CultsSymbol { symbol } => out.extend_from_slice(&[1, symbol]),
             Self::UnnaturalDance { tile } => out.extend_from_slice(&[2, tile]),
             Self::IceSealPaint { seal } => {
-                out.push(3);
+                out.push(5);
                 out.extend_from_slice(&seal.to_be_bytes());
             }
-            Self::SoulWarRemorse => out.push(3),
+            Self::SoulWarRemorse => out.push(6),
             Self::SoulWarEnergy => out.push(4),
         }
     }
@@ -79,15 +68,11 @@ impl NativeRule {
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
             Self::IceSealPaint { seal } => seal < ice_islands_seals::targets::TARGET_COUNT,
-        }
-    }
-
-    /// Only one closed rule may own all declared effects of this transition.
             Self::SoulWarRemorse | Self::SoulWarEnergy => true,
         }
     }
 
-    /// Only one closed rule may own the complete effects of this transition.
+    /// Only one closed rule may own all declared effects of this transition.
     pub fn valid_effects(self, quest: &str, effects: &[QuestEffect]) -> bool {
         self.valid_id()
             && quest == self.quest()
@@ -124,18 +109,12 @@ impl NativeRule {
         }
         let read = |key: &str| values.get(key).copied().ok_or(QuestRefusal::NotSupported);
         let next = match self {
-            Self::BarbarianMead => barbarian_mead::apply(
-                [
             Self::BarbarianMead => {
                 let before = [
                     read(barbarian_mead::TRACKS[0])?,
                     read(barbarian_mead::TRACKS[1])?,
                     read(barbarian_mead::TRACKS[2])?,
                     read(barbarian_mead::TRACKS[3])?,
-                ],
-                roll.ok_or(QuestRefusal::NotSupported)?,
-            )?
-            .to_vec(),
                 ];
                 let random = barbarian_mead::needs_draw(before[0], before[3]);
                 let roll = if random {
@@ -167,7 +146,7 @@ impl NativeRule {
                         mission04: read(ice_islands_seals::MISSION04)?,
                     },
                 )?;
-                [snapshot.questline, snapshot.targets, snapshot.mission04]
+                vec![snapshot.questline, snapshot.targets, snapshot.mission04]
             }
             Self::UnnaturalDance { tile } => {
                 let snapshot = unnatural_selection::apply_dance(

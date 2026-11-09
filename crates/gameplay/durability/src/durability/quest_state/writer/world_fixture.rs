@@ -16,10 +16,25 @@ impl DurabilityRoot {
         callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
         premium: &G,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner_resolved::<_, 0>(
-            authority, node, fence, request, catalogue, Some((permit, context, None)),
-            None, None, None, premium, None, None, None, None, None,
-            Vec::new(), vec![callback],
-        ).await
+        self.commit_quest_inner_resolved::<_, 0>(authority,
+node,
+fence,
+request,
+catalogue,
+Some((permit, context.into(), None)),
+None,
+None,
+None,
+premium,
+None,
+None,
+None,
+None,
+None,
+None,
+None,
+None,
+Vec::new(),
+vec![callback],).await
     }
 }

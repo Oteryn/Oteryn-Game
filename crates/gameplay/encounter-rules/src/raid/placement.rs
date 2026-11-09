@@ -83,12 +83,6 @@ impl RaidRandom {
         .map_err(|_| RaidError::Exhausted)
     }
 
-    /// Crystal grimvale.lua replaces a failed stored chance with random(1,10).
-    pub fn feroxa_chance(&self, check_ordinal: u64) -> Result<u8, RaidError> {
-        u8::try_from(self.below("feroxa-chance", check_ordinal, 10)? + 1)
-            .map_err(|_| RaidError::Exhausted)
-    }
-
     /// Feroxa2's source think chooses uniformly between physical forms 3 and 4.
     pub fn feroxa_form(&self) -> Result<u8, RaidError> {
         u8::try_from(self.below("feroxa-form", 0, 2)? + 3).map_err(|_| RaidError::Exhausted)

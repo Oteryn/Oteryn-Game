@@ -800,7 +800,6 @@ def main() -> int:
     apply_tainted_talisman(legacy_items, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(legacy_items, ROOT)
-    require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
     require(migrated_items == legacy_items and expected_start == expected_item_count, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

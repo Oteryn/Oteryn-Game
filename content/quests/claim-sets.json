@@ -36,15 +36,6 @@
       [
         "kv/circleroom2"
       ]
-    ]
-  "oteryn:quest.circle_room_quest": {
-    "groups": [
-      [
-        "kv/circleroom1"
-      ],
-      [
-        "kv/circleroom2"
-      ]
     ],
     "mint_only": true
   },

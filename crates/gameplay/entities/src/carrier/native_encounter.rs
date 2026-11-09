@@ -93,18 +93,7 @@ impl ChannelRuntimeV1 {
             None,
         )
     }
-    pub fn admit_current_native_encounter_masterless(
-        &mut self,
-        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
-        parent: ExactActorRef,
-        spec: &NativeEncounterSpawnSpec,
-        at: MovementLocalPosition,
-        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
-    ) -> Result<ExactActorRef, EncounterSpawnError> {
-        self.admit_native_encounter_masterless_bound(
-            None, stamp, parent, spec, at, map_admits, None,
-        )
-    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn admit_current_native_callback_masterless(
         &mut self,
@@ -340,24 +329,8 @@ impl ChannelRuntimeV1 {
         self.remove_native_masterless_subject(actor, expected_key, expected_content)
     }
 
-    pub(super) fn preflight_native_masterless_removal(
     pub(super) fn native_masterless_subject_index(
         &self,
-    pub fn remove_current_native_encounter_subject(
-        &mut self,
-        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
-        actor: ExactActorRef,
-        expected_key: &str,
-        expected_content: [u8; 32],
-    ) -> Result<(), CarrierError> {
-        if !self.owner_fence()?.accepts_stamp(stamp) {
-            return Err(CarrierError::WrongScope);
-        }
-        self.remove_native_masterless_subject(actor, expected_key, expected_content)
-    }
-
-    pub(super) fn remove_native_masterless_subject(
-        &mut self,
         actor: ExactActorRef,
         expected_key: &str,
         expected_content: [u8; 32],

@@ -342,7 +342,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Ordinary carried quest tools borrow the same fenced quest/value owner as
     /// NPC exchanges. The selected instance and ingress remain in its input proof.
-    pub(super) async fn use_carried_quest_item(
+    pub(super) async fn use_carried_quest_item_with_target(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -350,7 +350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.use_carried_quest_item_targeted(actor, command, intent, source, None)
+        self.use_carried_quest_item_targeted(actor, command, intent, source, target)
             .await
     }
 
@@ -412,8 +412,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
         let source = match (&intent.target, source) {
             (
                 oteryn_protocol_oteryn::world_object::UseTarget::Item(_),
@@ -454,22 +452,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let recipe_target = match target {
-            Some(ItemKey::Instance(id)) if id != source => Some(id),
-            Some(_) => return Ok(None),
-            None => None,
-        };
-        let target_item = recipe_target.and_then(|selected| {
-            inventory
-                .backpack
-                .iter()
-                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
-                .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
-                .find(|item| item.item_instance_id == selected)
-        });
-        if recipe_target.is_some() && target_item.is_none() {
-            return Ok(None);
-        }
+        let source = item.item_instance_id;
         if let Some(rules) =
             oteryn_gameplay_quests::quest::item_disguises::rules().filter(|rules| {
                 rules
@@ -677,13 +660,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     speaker: actor,
                     position,
                     talk_type: rule.speech_type,
-                    text: &rule.use_text,
+                    text: rule.use_text.to_owned(),
+                    captured_name: None,
                 });
             map.facts.emit_movement_effect(position, rule.use_effect);
             states.owner_wake.notify_one();
             return Ok(Some(outcome(UseDisposition::Committed)));
         }
-        let source = item.item_instance_id;
+        let recipe_target = match target {
+            Some(ItemKey::Instance(id))
+                if id != source
+                    && inventory
+                        .backpack
+                        .iter()
+                        .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                        .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                        .any(|item| item.item_instance_id == id) =>
+            {
+                Some(id)
+            }
+            Some(ItemKey::Instance(_)) if intent.use_with_map_item.is_some() => None,
+            Some(_) => return Ok(None),
+            None => None,
+        };
+        let target_item = recipe_target.and_then(|selected| {
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                .find(|item| item.item_instance_id == selected)
+        });
+        if recipe_target.is_some() && target_item.is_none() {
+            return Ok(None);
+        }
         let Some(catalogue) = self.quest_catalogue.as_deref() else {
             return Ok(None);
         };
@@ -712,12 +722,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .player_trades
                     .physical(command.game_session_id, Some(id))
             })
-        if intent.use_with_map_item.is_some() && !bound.iter().any(|c| c.fresh_corpse) {
-            // A legacy carried callback does not take ownership of unrelated
-            // map-item actions such as crafting or taming.
-            return Ok(None);
-        }
-        if intent.use_with_position.is_some()
             || !self
                 .states
                 .player_trades
@@ -754,10 +758,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 };
             let mut selected = bound.into_iter().filter(|c| {
-                ((c.peer_requires.is_some()
-                    || c.creature_target.is_some()
-                    || c.self_target.is_some())
-                    == intent.use_with.is_some())
                 quest_targets::accepts(c, intent)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
@@ -790,17 +790,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let creature = if callback.creature_target.is_some() || callback.self_target.is_some() {
-            let runtime = self.runtime.lock().await;
-            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
-                &runtime, actor, fence, command_ref, &callback, intent);
-            let Some(proof) = proof else {
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            };
-            Some(proof)
-        } else {
-            None
-        };
         let peer = if callback.peer_requires.is_some() {
             match self.quest_peer_use(actor, command, intent).await {
                 Ok(peer) => peer,
@@ -828,14 +817,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lane -> Character sequence -> runtime is retained through COMMIT.
         // The proof's borrow prevents detaching a live target snapshot.
         let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
-        let creature_runtime = if callback.creature_target.is_some() {
-            Some(self.runtime.lock().await)
-        } else {
-            None
-        };
+        let creature_runtime =
+            if callback.creature_target.is_some() || callback.self_target.is_some() {
+                Some(self.runtime.lock().await)
+            } else {
+                None
+            };
         let creature = if let Some(runtime) = creature_runtime.as_ref() {
             use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
-            let proof = if let Some(operand) = corpse_operand {
+            let proof = if callback.corpse_target.is_some() {
+                let Some(ItemKey::Instance(corpse)) = target else {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                };
+                QuestCreatureUseProof::read_current_corpse(
+                    runtime,
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    corpse,
+                )
+            } else if let Some(operand) = corpse_operand {
                 QuestCreatureUseProof::read_corpse(
                     runtime,
                     actor,

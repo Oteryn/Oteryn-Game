@@ -448,6 +448,14 @@ pub(super) async fn drive(
             callback_now / 1000,
             boss.paused,
             active_essences,
+            census.iter().any(|(a, p, session)| {
+                session.is_none()
+                    && runtime.contains_live_creature(*a)
+                    && near(center(&key), pos(p.position()), 15)
+                    && super::super::soul_war_callbacks::source_actor(runtime, native, *a)
+                        .as_deref()
+                        == Some(bak::ELDER_BLOODJAW_KEY)
+            }),
         )?;
         if states.rotten_blood_callbacks.advanced.pending.len() + planned.len() > 128 {
             return Err(());

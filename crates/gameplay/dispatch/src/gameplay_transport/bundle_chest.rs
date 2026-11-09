@@ -164,7 +164,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .use_native_claim_reward(actor, command, map, claim, bound, &permit)
                         .await;
                 }
-                let (Some(fence), Ok(command_id), [reward]) = (
                 let (Some(fence), Ok(command_id), Some((reward, additional))) = (
                     command.item_fence,
                     CommandId::new(command.command_id),

@@ -133,10 +133,6 @@ pub(super) fn install_route(
                         | crate::movement::CardinalStep::SouthEast
                         | crate::movement::CardinalStep::SouthWest
                         | crate::movement::CardinalStep::NorthWest => return None,
-                        crate::movement::CardinalStep::NorthEast => 0,
-                        crate::movement::CardinalStep::SouthEast => 2,
-                        crate::movement::CardinalStep::SouthWest => 2,
-                        crate::movement::CardinalStep::NorthWest => 0,
                     };
                     Some(RouteStep::new(node, 1))
                 })

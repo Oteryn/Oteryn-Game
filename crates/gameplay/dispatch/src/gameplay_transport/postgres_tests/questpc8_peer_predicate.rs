@@ -88,7 +88,6 @@ async fn exercise(h: &Harness) -> TestResult {
     };
     let carried = QuestCarriedUse {
         source: id(90),
-            recipe_target: None,
         recipe_target: None,
         intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(

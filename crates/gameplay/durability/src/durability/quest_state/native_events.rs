@@ -6,6 +6,13 @@ pub(crate) enum NativeQuestEvent {
     Hit(native_hits::NativeQuestHit),
 }
 impl NativeQuestEvent {
+    pub(super) fn permits_scope(&self, fence: &CurrentCharacterGameplayFence) -> bool {
+        match self {
+            Self::Death(death) => death.permits_scope(fence),
+            Self::Hit(_) => matches!(fence.runtime_scope, crate::foundation::RuntimeScopeRefV1::Channel { .. }),
+        }
+    }
+
     pub(super) fn valid(
         &self,
         request: &QuestTransitionRequest,

@@ -247,10 +247,11 @@ async fn mint_body(
         .reward_table()
         .row("oteryn:creature.slug")
         .map_err(f::debug)?;
+    let corpse = row.corpse_item.as_ref().ok_or("corpse profile")?;
     let definition = TypedDefinitionRef {
-        family: row.corpse_item.family.clone(),
-        production_key: row.corpse_item.production_key.clone(),
-        revision_ref: row.corpse_item.revision_ref.clone(),
+        family: corpse.family.clone(),
+        production_key: corpse.production_key.clone(),
+        revision_ref: corpse.revision_ref.clone(),
     };
     assert_eq!(definition.production_key, "oteryn:item.tibia.i12526");
     let cause = ItemMintCause::from_creature_death(

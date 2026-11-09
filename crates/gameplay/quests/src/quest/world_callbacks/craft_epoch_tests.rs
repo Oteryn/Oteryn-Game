@@ -29,6 +29,8 @@ fn spent_material_counter_can_own_repeatable_crafting_rewards() -> Result<(), St
         increment: true,
     }];
     callback.item_on_target = Some(ItemOnTarget {
+        target_remove: false,
+        selected_instance: false,
         ingredients: Vec::new(),
         item: "oteryn:item.tibia.i16122".into(),
         alternatives: vec![],

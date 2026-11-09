@@ -54,6 +54,7 @@ fn map_mint_owner_consumes_the_exact_crate_scope_and_preserves_legacy_refusal() 
             .map_err(|e| format!("{e:?}"))?;
     let mut request = MapItemMintRequest {
         flat_crate: Some(proof),
+        key_number: None,
         command: CommandRef::new(session, CommandId::new(7).map_err(|e| format!("{e:?}"))?),
         base_bundle_digest: [1; 32],
         placement_key: key,

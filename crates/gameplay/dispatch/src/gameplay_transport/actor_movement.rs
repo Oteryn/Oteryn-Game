@@ -120,8 +120,6 @@ fn duration_onto(
     direction: CardinalStep,
 ) -> Result<Duration, MovementError> {
     speed
-        .and_then(|speed| player_step_duration(source, cell(onto), speed))
-        .and_then(|duration| duration.checked_mul(if direction.is_diagonal() { 3 } else { 1 }))
         .and_then(|speed| {
             crate::movement::speed::player_directional_step_duration(
                 source,

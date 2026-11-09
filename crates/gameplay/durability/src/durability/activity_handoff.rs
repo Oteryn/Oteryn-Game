@@ -34,7 +34,6 @@ mod entry;
 mod quest_encounter;
 #[cfg(any(test, feature = "test-support"))]
 pub use quest_encounter::{fixture_first_dragon_trials_permit, fixture_first_dragon_entry_permit};
-pub use quest_encounter::fixture_first_dragon_trials_permit;
 mod outburst;
 mod primal;
 mod rotten_blood;
@@ -311,10 +310,6 @@ impl ActivityHandoffOwner {
         self.root
             .try_issue_semantic_pass()?
             .run_with_context(&mut premium, move |holder, deadline, premium| {
-        let mut context = ();
-        self.root
-            .try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, _context| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;

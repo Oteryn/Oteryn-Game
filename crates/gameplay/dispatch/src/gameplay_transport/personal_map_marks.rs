@@ -126,15 +126,15 @@ mod tests {
             BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
         };
         let incomplete =
-            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 6, 18, 449])
+            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 6, 18, 450])
                 .ok_or("bounded selection")?;
         assert!(!incomplete.contains(18));
-        assert!(!incomplete.contains(449));
+        assert!(!incomplete.contains(450));
         let complete =
-            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 4, 6, 18, 449])
+            SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[3, 4, 6, 18, 450])
                 .ok_or("bounded selection")?;
         assert!(complete.contains(18));
-        assert!(complete.contains(449));
+        assert!(complete.contains(450));
         Ok(())
     }
     #[test]

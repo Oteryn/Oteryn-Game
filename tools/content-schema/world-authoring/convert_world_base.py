@@ -1197,6 +1197,7 @@ def build(
     import npcfix2_shared_sources
 
     npcfix2_shared_sources.overlay_outputs(out)
+    if quest_access_bindings.CAPTURE not in blobs:
         import last_creep_arena
 
         last_creep_arena.overlay_outputs(out, ROOT)

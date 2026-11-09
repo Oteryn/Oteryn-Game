@@ -98,7 +98,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 MatchTransition {
                     native_origin: Some(origin),
-                    command,
+ cause: (command).into(),
                     payload: wire::encode_match_request(A::Status).ok()?,
                     before: read.state,
                     after: after.clone(),

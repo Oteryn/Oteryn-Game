@@ -36,7 +36,12 @@ async fn qualifies(
         placement: &[3],
     };
     for requirement in &callback.world_requirements {
-        let WorldRequirement::Ground { position, ground } = requirement else {
+        let WorldRequirement {
+            position,
+            ground: Some(ground),
+            ..
+        } = requirement
+        else {
             return Err("Nomads recipe lost mutable Ground evidence".into());
         };
         if !ground_read::matches(tx, &context, *position, ground).await? {
@@ -60,7 +65,12 @@ CREATE TEMP TABLE game_item_ground_locations (item_instance_id uuid,world_id uui
         .execute(&mut *tx).await?;
     let mut instance = 0_u8;
     for requirement in &callback.world_requirements {
-        let WorldRequirement::Ground { position, ground } = requirement else {
+        let WorldRequirement {
+            position,
+            ground: Some(ground),
+            ..
+        } = requirement
+        else {
             return Err("Ground recipe".into());
         };
         for item in &ground.stacks {

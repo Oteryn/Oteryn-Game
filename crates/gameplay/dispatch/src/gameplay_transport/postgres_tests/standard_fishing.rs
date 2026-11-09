@@ -560,13 +560,12 @@ fn gathering_scenario(
             )
             .ok_or("ice definition")?;
             let request = crate::durability::map_item_mint::MapItemMintRequest {
+                flat_crate: None,
                 key_number: None,
                 command: crate::foundation::CommandRef::new(
                     admitted.game_session_id,
                     crate::foundation::CommandId::new(999).map_err(debug)?,
                 ),
-                flat_crate: None,
-                command: crate::foundation::CommandRef::new(admitted.game_session_id, crate::foundation::CommandId::new(999).map_err(debug)?),
                 base_bundle_digest: map.base().digest(),
                 placement_key: crate::map::view::placement_key(target_pos, 1).ok_or("placement")?,
                 reset_epoch: 0,

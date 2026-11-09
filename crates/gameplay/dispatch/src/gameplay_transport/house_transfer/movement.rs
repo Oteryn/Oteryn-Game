@@ -357,10 +357,6 @@ fn cardinal(direction: StepDirection) -> (CardinalStep, MovementFacing) {
         StepDirection::SouthEast => (CardinalStep::SouthEast, MovementFacing::East),
         StepDirection::SouthWest => (CardinalStep::SouthWest, MovementFacing::West),
         StepDirection::NorthWest => (CardinalStep::NorthWest, MovementFacing::West),
-        StepDirection::NorthEast => (CardinalStep::NorthEast, MovementFacing::North),
-        StepDirection::SouthEast => (CardinalStep::SouthEast, MovementFacing::South),
-        StepDirection::SouthWest => (CardinalStep::SouthWest, MovementFacing::South),
-        StepDirection::NorthWest => (CardinalStep::NorthWest, MovementFacing::North),
     }
 }
 

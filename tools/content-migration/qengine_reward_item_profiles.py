@@ -35,13 +35,13 @@ IDS |= {14021, 14022, 14023}
 # Vascalir's source-authored mission 11 grants this ordinary flask with 3054.
 IDS |= {12785}
 # QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
-IDS |= {21504, 21505}
+IDS |= {21504, 21505, 21506, 21507, 9106}
 # M56: exact carried Molten Wax consumption through the existing quest input owner.
 IDS |= {9106}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
-IDS |= {21504, 21505, 21506, 21507, 9106}
 IDS |= qmech_m39.ITEMS
+IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified inactive flower duration.
 IDS |= {21466, 21389}
 # M07 retained Realm key and source bricklayers kit for the assigned repair stages.
@@ -70,35 +70,22 @@ CLIENT_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
 
 
-def capture(root=ROOT, ids=None):
+def capture(root=ROOT, ids=None, *, item_ids=None):
+    if item_ids is not None:
+        if ids is not None:
+            raise ValueError("choose ids or item_ids")
+        ids = item_ids
     selected_ids = IDS if ids is None else frozenset(ids)
-def capture(root=ROOT):
-    selected = IDS | CUSTODY_PROMOTIONS
-def capture(root=ROOT, *, ids=None):
-    ids = IDS if ids is None else frozenset(ids)
-def capture(root=ROOT, *, item_ids=IDS):
-def capture(root=ROOT, *, ids=IDS):
+    selected = selected_ids | CUSTODY_PROMOTIONS
     xml_raw=(root/XML).read_bytes()
     client_raw=(root/CLIENT).read_bytes()
     if hashlib.sha256(xml_raw).hexdigest()!=XML_SHA or hashlib.sha256(client_raw).hexdigest()!=CLIENT_SHA:
         raise ValueError('QENGINE_REWARD_ITEM_SOURCE_PIN')
     xml=source.xml_index(xml_raw)
     objects=source.engine_items.load_appearance_objects(client_raw)
-    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,selected_ids)}
-    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
-    keys={f'oteryn:item.tibia.i{i}' for i in selected_ids}
     physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,selected)}
     bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
     keys={f'oteryn:item.tibia.i{i}' for i in selected}
-    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,ids)}
-    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
-    keys={f'oteryn:item.tibia.i{i}' for i in ids}
-    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,item_ids)}
-    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
-    keys={f'oteryn:item.tibia.i{i}' for i in item_ids}
-    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,ids)}
-    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
-    keys={f'oteryn:item.tibia.i{i}' for i in ids}
     definitions={r['definition']['identity']['key']:r['definition']
         for path in sorted((root/'content/items/definitions').glob('items-*.json'))
         for r in json.loads(path.read_bytes())['records']
@@ -106,28 +93,21 @@ def capture(root=ROOT, *, ids=IDS):
     if definitions.keys()!=keys:
         raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_SET')
     records=[]
-    for item_id in sorted(selected_ids):
     for item_id in sorted(selected):
-    for item_id in sorted(ids):
-    for item_id in sorted(item_ids):
-    for item_id in sorted(ids):
         node=xml[item_id]
-        if item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
         flower = lion_flower.admitted(item_id, source.attrs(node))
-        if not flower and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
+        if not flower and item_id not in CORPSE_IDS and {'charges','duration','decayto','stopduration'} & source.attrs(node).keys():
             raise ValueError('QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED')
         flags=objects[item_id]['flags']
         if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        if flower:
+            record=lion_flower.temporal(record, definition, accepted.known_conflict)
         semantics = definition.get('semantics', {})
         for group in ('physical','stack','container','temporal'):
             if accepted.known_conflict(semantics.get(group, source.U),record['semantics'][group]):
-        if flower:
-            record=lion_flower.temporal(record, definition, accepted.known_conflict)
-        for group in ('physical','stack','container'):
-            if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
                 raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
@@ -136,11 +116,7 @@ def capture(root=ROOT, *, ids=IDS):
             raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
         record['semantics']=accepted.accepted_first(semantics,record['semantics'])
         records.append(record)
-    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected_ids)['records']
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,selected)['records']
-    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ids)['records']
-    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,item_ids)['records']
-    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ids)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
         'producer':'tools/content-migration/qengine_reward_item_profiles.py',
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},

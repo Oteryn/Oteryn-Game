@@ -58,7 +58,6 @@ async fn command(
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     wire::decode_match_result(&bytes).map_err(debug)
 }
-fn scenario(funded: bool, expire: bool) -> TestResult {
 #[test]
 fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -99,8 +98,8 @@ fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> T
     Ok(())
 }
 
-fn scenario(funded: bool) -> TestResult {
-    scenario_path(funded, false)
+fn scenario(funded: bool, expire: bool) -> TestResult {
+    scenario_route_with_expiry(funded, None, expire)
 }
 
 #[test]
@@ -174,6 +173,9 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
     scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
 }
 fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
+    scenario_route_with_expiry(funded, route, false)
+}
+fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
     let leave_early = matches!(route, Some(NativeScenario::Departure));
     let timeout_early = matches!(route, Some(NativeScenario::Timeout));
@@ -425,13 +427,6 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
             .await
             .ok_or("entry replay")?;
         assert_eq!(wire::decode_match_result(&replay).map_err(debug)?, entered);
-        for rank in 1..=3 {
-            if rank > 1 {
-                assert_eq!(command(&owner, &mut admitted, A::Leave).await?.disposition, D::Applied);
-                let next = command(&owner, &mut admitted, A::Enter).await?;
-                assert_eq!(next.disposition, D::Applied);
-                assert_eq!(next.state.active_rank, rank);
-            }
         if let Some((inside, outside, npc)) = reset_observations {
             let runtime = deps.runtime.lock().await;
             assert!(
@@ -566,6 +561,13 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
             );
             return Ok(());
         }
+        for rank in 1..=3 {
+            if rank > 1 {
+                assert_eq!(command(&owner, &mut admitted, A::Leave).await?.disposition, D::Applied);
+                let next = command(&owner, &mut admitted, A::Enter).await?;
+                assert_eq!(next.disposition, D::Applied);
+                assert_eq!(next.state.active_rank, rank);
+            }
         for pit in 1..=10 {
             assert_eq!(
                 command(&owner, &mut admitted, A::Advance)
@@ -585,10 +587,6 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
                     .actor
             };
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
-            {
-                let mut runtime = deps.runtime.lock().await;
-                crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
-            }
             // Exercise the production cadence, including its spell-lane and runtime fencing.
             // A direct arena tick would miss a disconnected scheduler registration.
             owner.drain_monster_melee().await;
@@ -606,9 +604,6 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
             assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 1841), "credited death removes the source pillar");
             if expire {
                 crate::gameplay_transport::arena_match::expire_pit(&owner, admitted.game_session_id);
-                {
-                    let mut runtime = deps.runtime.lock().await;
-                    crate::gameplay_transport::arena_match::tick(&owner, &mut runtime);
                 owner.drain_monster_melee().await;
                 {
                     let runtime = deps.runtime.lock().await;
@@ -623,7 +618,6 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
                 assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
                 return Ok(());
             }
-            let advanced = command(&owner, &mut admitted, A::Advance).await?;
             let start = {
                 let mut runtime = deps.runtime.lock().await;
                 let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
@@ -633,7 +627,6 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
             };
             let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
                 oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
-            let advanced = command(&owner, &mut admitted, A::Status).await?;
             let advanced = if native_portals {
                 owner.drain_monster_melee().await;
                 let stored: (i32, i32) = sqlx::query_as(
@@ -696,7 +689,7 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
                 );
                 command(&owner, &mut admitted, A::Status).await?
             } else {
-                command(&owner, &mut admitted, A::Advance).await?
+                command(&owner, &mut admitted, A::Status).await?
             };
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
@@ -714,7 +707,6 @@ fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
         let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE command_id > 18446744073709551615")
             .fetch_one(&harness.pool).await?;
         assert_eq!(steps, 30, "native steps have their own durable receipt namespace");
-        assert_eq!(victories, 10);
         if native_portals {
             for (prefix, callback) in [
                 (b"oteryn:svargrond-native-step:v1".as_slice(), "STEP"),

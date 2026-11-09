@@ -59,7 +59,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             fence,
             command,
             callback: callback.key.clone(),
-            key: callback.creature_target.clone()?,
+            key: Some(callback.creature_target.clone()?),
+            self_target: None, target: Target::FreshCorpse,
             intent: intent.clone(),
             corpse: Some(CorpseUse {
                 actor: CorpseActorSnapshot::read_current(runtime, actor, fence)?,
@@ -95,7 +96,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             || self.fence.item_fence() != fence.item_fence()
             || request.cause != QuestCause::Command(self.command)
             || request.transition_key != self.callback
-            || callback.creature_target.as_deref() != Some(self.key.as_str())
+            || callback.creature_target.as_deref() != self.key.as_deref()
             || decode_use_intent_target(&[4, 11, 15], &carried.intent)
                 .ok()
                 .as_ref()
@@ -107,7 +108,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             .creature_profiles()
             .records
             .iter()
-            .filter(|r| r.profile.target.key == self.key);
+            .filter(|r| Some(r.profile.target.key.as_str()) == self.key.as_deref());
         let Some(profile) = profiles.next() else {
             return Ok(false);
         };
@@ -139,7 +140,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 FreshCorpseTarget {
                     ground: &corpse.operand.ground,
                     item: corpse.operand.item,
-                    race: &self.key,
+                    race: &profile.profile.target.key,
                     race_revision: &profile.profile.target.revision,
                     // First-form/native expiry remains authoritative; no guessed quest age.
                     maximum_age_ms: std::num::NonZeroU32::MAX,

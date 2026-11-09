@@ -40,9 +40,9 @@ mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
+mod world_access;
 mod rotten_area;
 mod rotten_flame;
-mod world_access;
 #[cfg(test)]
 mod writer_registration_tests;
 
@@ -791,7 +791,7 @@ impl RevisionSlot {
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.commit_world_callback_with_items_and_premium(
             root, authority, node, fence, request, catalogue, permit, context, native,
-            admission, &super::quest_state::grizzly::NoGrizzlyPremium,
+            admission, premium,
         ).await
     }
 
@@ -817,7 +817,6 @@ impl RevisionSlot {
             Expect::Cursor(OnMismatch::RetryOnce),
             |fence| {
                 root.commit_character_world_callback_with_requirements(
-                root.commit_character_world_callback_with_items_and_premium(
                     authority,
                     node,
                     fence,

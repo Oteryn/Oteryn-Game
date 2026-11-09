@@ -105,6 +105,9 @@ fn callback(
     destination: Position,
 ) -> Callback {
     Callback {
+        character_requirements: None,
+        required_completed_quests: Vec::new(),
+        requires_premium: false,
         admission: None,
         key: callback_key(suffix),
         quest: QUEST.into(),
@@ -159,6 +162,9 @@ pub fn callbacks() -> Result<Vec<Callback>, String> {
     );
     start.storage = vec![state(stage(1), 1, 1, 0, true)];
     start.item_on_target = Some(super::world_callbacks::ItemOnTarget {
+        target_remove: false,
+        selected_instance: false,
+        ingredients: Vec::new(),
         item: "oteryn:item.tibia.i12251".into(),
         count: 1,
         reusable: true,

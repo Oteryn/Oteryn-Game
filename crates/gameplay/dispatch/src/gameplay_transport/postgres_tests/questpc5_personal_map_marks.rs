@@ -86,24 +86,24 @@ pub(super) async fn exercise(
         .selected_capabilities
         .as_slice()
         .to_vec();
-    selected.retain(|id| *id != 449);
+    selected.retain(|id| *id != 450);
     let offered = owner.offered_capabilities();
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("initial selection")?;
     assert!(owner.personal_map_marks_query(*admitted).await.is_none());
-    selected.extend([3, 4, 6, 18, 449]);
+    selected.extend([3, 4, 6, 18, 450]);
     selected.sort_unstable();
     selected.dedup();
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("selection")?;
     assert!(
-        offered.iter().any(|entry| entry.id == 449),
+        offered.iter().any(|entry| entry.id == 450),
         "World offers personal marks"
     );
     assert!(
-        admitted.continuity.selected_capabilities.contains(449),
+        admitted.continuity.selected_capabilities.contains(450),
         "the full World map dependency closure was negotiated"
     );
     assert!(

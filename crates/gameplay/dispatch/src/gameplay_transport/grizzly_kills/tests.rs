@@ -184,6 +184,7 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
             snapshot(3, &[1], 12),
         ],
         deaths: Vec::new(),
+        hits: Default::default(),
         encounters: Vec::new(),
     };
     let original_party = party(1, &[1, 2], true);
@@ -226,6 +227,7 @@ fn grizzly_death_preserves_original_run_revision_across_cancel_and_restart() {
     let mut cache = GrizzlyCaptureCache {
         sessions: vec![snapshot(1, &[1], 10)],
         deaths: Vec::new(),
+        hits: Default::default(),
         encounters: Vec::new(),
     };
     let original = cache.remember(actor(70), id(71), |snapshots, _| {

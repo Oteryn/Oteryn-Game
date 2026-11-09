@@ -10,10 +10,10 @@ use std::collections::{BTreeMap, BTreeSet};
 mod capture_tests;
 mod colours_peer;
 mod corpse;
+mod inventory;
 pub use corpse::CorpseTarget;
 #[cfg(test)]
 mod corpse_tests;
-mod inventory;
 #[cfg(test)]
 mod peer_tests;
 #[cfg(test)]
@@ -221,15 +221,15 @@ pub struct RewardCallback {
     /// Exact native species; live unless a source corpse predicate is provided.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    /// Exact current self entity, inside the source-authored native area.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub self_target: Option<SelfTarget>,
     /// Read-only source corpse sampling retains its native decay and contents.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub corpse_target: Option<CorpseTarget>,
     /// Remove the exact living target only after its tool/progress receipt commits.
     #[serde(default, skip_serializing_if = "is_false")]
     pub capture_creature: bool,
-    /// Exact current self entity, inside the source-authored native area.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub self_target: Option<SelfTarget>,
     /// Sample the exact original fresh Ground corpse instead of a live creature.
     #[serde(default, skip_serializing_if = "is_false")]
     pub fresh_corpse: bool,
@@ -315,6 +315,7 @@ impl RewardCallback {
         pure.is_ok_and(|callback| callback == *self)
     }
 }
+
 #[cfg(test)]
 mod fresh_corpse_tests;
 #[cfg(test)]
@@ -373,10 +374,10 @@ impl RewardCallback {
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        (self.repeatable
-            && (!self.take.is_empty() || self.fee.is_some())
-            && (self.give.is_some() || self.experience.is_some()))
         temporal_payment::guarded(self)
+            || (self.repeatable
+                && (!self.take.is_empty() || self.fee.is_some())
+                && (self.give.is_some() || self.experience.is_some()))
             || (!self.take.is_empty() && self.give.is_some())
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
@@ -426,14 +427,14 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
-    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -464,7 +465,7 @@ fn embedded_document() -> Result<Document, String> {
     document
         .callbacks
         .extend(super::world_change_journals::npc_callbacks()?);
-    validate_document(document)
+    validate_document_with_capacity(document, 256 * DOCUMENTS.len())
 }
 
 pub(super) fn item_disguises() -> Result<Vec<super::item_disguises::Rule>, String> {
@@ -478,8 +479,14 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         tracks: Vec::new(),
         callbacks: Vec::new(),
     };
+    if sources.is_empty() || sources.len() > DOCUMENTS.len() {
+        return Err("reward callback source bounds".into());
+    }
     for source in sources {
         let document: Document = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        if document.callbacks.len() > 256 || document.tracks.len() > 256 {
+            return Err("reward callback bounds".into());
+        }
         if document.schema != 1 {
             return Err("reward callback schema".into());
         }
@@ -488,7 +495,11 @@ fn parse_documents(sources: &[&str]) -> Result<Document, String> {
         combined.callbacks.extend(document.callbacks);
     }
     colours_peer::append_after_opening(&mut combined)?;
-    validate_document(combined)
+    if sources.len() == 1 {
+        validate_document(combined)
+    } else {
+        validate_document_with_capacity(combined, 256 * sources.len())
+    }
 }
 
 pub(crate) fn validate_callbacks(callbacks: &[RewardCallback]) -> Result<(), String> {
@@ -500,6 +511,13 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
 }
 
 fn validate_document(document: Document) -> Result<Document, String> {
+    validate_document_with_capacity(document, 256)
+}
+
+fn validate_document_with_capacity(
+    document: Document,
+    capacity: usize,
+) -> Result<Document, String> {
     if !super::item_disguises::valid(&document.item_disguises) {
         return Err("invalid quest item disguises".into());
     }
@@ -515,7 +533,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
     };
     let item =
         |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
-    if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
+    if document.schema != 1
+        || document.callbacks.len() > capacity
+        || document.tracks.len() > capacity
+    {
         return Err("reward callback bounds".into());
     }
     let mut declarations = BTreeSet::new();
@@ -628,19 +649,6 @@ fn validate_document(document: Document) -> Result<Document, String> {
         if c.map_mark
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
-            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
-            || c.corpse_target
-                .as_ref()
-                .is_some_and(|target| !target.valid(c))
-            || (c.capture_creature && c.creature_target.is_none())
-            || c.self_target.as_ref().is_some_and(|area| {
-                !area.valid()
-                    || c.carried_item.is_none()
-                    || c.carried_target.is_some()
-                    || c.peer_requires.is_some()
-                    || c.creature_target.is_some()
-                    || c.storage.iter().all(|s| s.preserve)
-            })
             || !(slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
                 || (c.is_save_restart_only()
                     && slug(
@@ -649,6 +657,18 @@ fn validate_document(document: Document) -> Result<Document, String> {
                         b"._/-",
                         128,
                     )))
+            || c.self_target.as_ref().is_some_and(|area| {
+                !area.valid()
+                    || c.carried_item.is_none()
+                    || c.carried_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.creature_target.is_some()
+                    || c.storage.iter().all(|s| s.preserve)
+            })
+            || c.corpse_target
+                .as_ref()
+                .is_some_and(|target| !target.valid(c))
+            || (c.capture_creature && c.creature_target.is_none())
             || (c.fresh_corpse && c.creature_target.is_none())
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
@@ -859,17 +879,16 @@ fn validate_document(document: Document) -> Result<Document, String> {
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
     if callback.minimum_level.is_none()
+        && callback.inventory.is_empty()
         && callback.world_claim.is_none()
         && callback.peer_requires.is_none()
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
         && callback.carried_target.is_none()
+        && callback.self_target.is_none()
         && !callback
             .key
             .starts_with("oteryn:quest-reward/worldchg-m31/")
-        && callback.self_target.is_none()
-        && callback.inventory.is_empty()
-        && callback.peer_requires.is_none()
     {
         return Ok(None);
     }
@@ -1510,11 +1529,8 @@ mod tests {
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
-                // M47 adds the canonical four-track native mead transition.
-                "ce91fb477a2477dfa81674b40bb86149ee17e775b0d1ee623bfac428ae3e7fe4",
                 // M47 binds four source counters plus the durable roll; absence stays -1.
                 "a23884420cacf0330e359241e5fb30715e768051cd3ffd4b11985cb19ed3b3af",
-                "9782c7b0b02cbac847e7630db5ca2846a0888592611c35d4070840b1123bc018",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

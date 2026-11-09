@@ -102,7 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
             // Selected two-input recipes retain their own M20 admission owner.
-            .filter(|c| c.carried_target.is_none())
+            .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
             .filter(|c| c.corpse_target.is_some() == corpse.is_some())
             .collect::<Vec<_>>();
         if bound.is_empty() {
@@ -154,7 +154,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (if c.corpse_target.is_some() {
                     corpse.is_some()
                 } else {
-                    (c.peer_requires.is_some() || c.creature_target.is_some())
+                    (c.peer_requires.is_some()
+                        || c.creature_target.is_some()
+                        || c.self_target.is_some())
                         == intent.use_with.is_some()
                 }) && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
@@ -218,15 +220,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Revision serialization precedes the runtime turn, matching the other
         // physical action owners. Keep the live target current through COMMIT.
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
-        let mut creature_runtime = if callback.creature_target.is_some() {
-            Some(CreatureTurn {
-                runtime: self.runtime.lock().await,
-                uncertain: AtomicBool::new(false),
-            })
-        } else {
-            None
-        };
-        let creature = if callback.creature_target.is_some() {
+        let mut creature_runtime =
+            if callback.creature_target.is_some() || callback.self_target.is_some() {
+                Some(CreatureTurn {
+                    runtime: self.runtime.lock().await,
+                    uncertain: AtomicBool::new(false),
+                })
+            } else {
+                None
+            };
+        let creature = if callback.creature_target.is_some() || callback.self_target.is_some() {
             let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
             let proof = if let Some(corpse) = corpse {
                 crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(

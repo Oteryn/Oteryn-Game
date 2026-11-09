@@ -386,6 +386,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     )
                 };
                 let request = MapItemMintRequest {
+            key_number: None,
                     flat_crate: proof,
                     command: crate::foundation::CommandRef::new(
                         admitted.game_session_id,
@@ -622,10 +623,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     .collect::<String>()
             );
             for requirement in &callback.world_requirements {
-                let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Ground {
-                    position,
-                    ground,
-                } = requirement
+                let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement { position, ground: Some(ground), .. } = requirement
                 else {
                     return Err("Ground pattern".into());
                 };

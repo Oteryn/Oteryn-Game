@@ -179,6 +179,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Both lifecycle deadlines belong to this operation, even when preparing
         // its remote object read set takes time.
         let lifecycle_now = self.owner_now().get();
+        if !close && let Some(delay) = callback.effects.reset_after_ms {
+            let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
+                return UseDisposition::Exhausted;
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                due,
+                restore: before,
+            });
+        }
+        projection = match super::conditional_cells::prepare(map, callback, projection) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
         if callback
             .item_on_target
             .as_ref()
@@ -193,19 +206,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 create: None,
             });
         }
-        if !close && let Some(delay) = callback.effects.reset_after_ms {
-            let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
-                return UseDisposition::Exhausted;
-            };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
-        }
-        projection = match super::conditional_cells::prepare(map, callback, projection) {
-            Ok(projection) => projection,
-            Err(result) => return result,
-        };
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -822,11 +822,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            let outcome = slot
-                .commit_world_callback_with_items_selected(
-                .commit_world_callback_with_requirements(
-                .commit_world_callback_with_items_and_premium(
-                .commit_world_callback_with_access(
             let flame =
                 if oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
                     .is_some()
@@ -843,7 +838,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             runtime,
                             actor,
                             cause,
-                            context.clone(),
+                            (*context).clone(),
                             map,
                             key,
                             expected_revision,
@@ -868,7 +863,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             } else {
-                slot.commit_world_callback_with_items(
+                slot.commit_world_callback_with_items_selected(
                     self.root,
                     self.character,
                     self.holder,
@@ -940,8 +935,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if callback.effects.encounter.is_some() && !close {
-            return self.execute_quest_encounter(
-        if callback.effects.encounter.is_some() {
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,

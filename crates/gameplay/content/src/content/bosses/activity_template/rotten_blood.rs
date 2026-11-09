@@ -190,6 +190,7 @@ impl ActiveGeneration {
             }
         }
         Ok(QualifiedActivityRoomTemplate {
+            spite_source_setup: None,
             boss_key: format!("oteryn:boss.{slug}"),
             template_key: format!("oteryn:room.{}-source", source.name()),
             template_revision: "crystal-201189f".into(),

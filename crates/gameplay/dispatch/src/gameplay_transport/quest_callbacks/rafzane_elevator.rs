@@ -169,7 +169,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ..plan.from
                     },
                     talk_type: 36,
-                    text: plan.sound,
+                    text: plan.sound.to_owned(),
+                    captured_name: None,
                 });
             UseDisposition::Committed
         })

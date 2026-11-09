@@ -3,11 +3,11 @@
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use std::collections::BTreeMap;
 
-mod fugue;
-mod phase_settlements;
-
 mod registry;
 pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
+
+mod fugue;
+mod phase_settlements;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
@@ -32,25 +32,10 @@ impl Counter {
         if fugue::matches(&self) {
             (2, 2)
         } else {
-            phase_settlements::gate_bounds(&self).unwrap_or((1, 1))
+            phase_settlements::gate_bounds(&self).unwrap_or((self.gate_value(), self.gate_value()))
         }
     }
 
-    pub(crate) fn transition(self) -> QuestTransition {
-        let settlement = if fugue::matches(&self) {
-            Some(fugue::effects())
-        } else {
-            phase_settlements::effects(&self)
-        };
-        if let Some(effects) = settlement {
-            return QuestTransition {
-                world_change: None,
-                key: self.transition.into(),
-                quest: self.quest.into(),
-                effects,
-                completes: false,
-                experience: None,
-            };
     /// The selected First Dragon recipe requires both s4 exploration occurrences.
     #[must_use]
     pub fn gate_value(&self) -> i64 {
@@ -69,15 +54,38 @@ impl Counter {
     }
 
     pub(crate) fn transition(self) -> QuestTransition {
+        let settlement = if fugue::matches(&self) {
+            Some(fugue::effects())
+        } else {
+            phase_settlements::effects(&self)
+        };
+        if let Some(effects) = settlement {
+            return QuestTransition {
+                world_change: None,
+                key: self.transition.into(),
+                quest: self.quest.into(),
+                effects,
+                completes: false,
+                experience: None,
+            };
+        }
         let mut effects = vec![
             QuestEffect {
                 track: self.gate.into(),
                 from: QuestComparison::Eq(self.gate_value()),
-                effect: QuestEffectKind::Add(0),
+                effect: if self.authored_stage {
+                    QuestEffectKind::Set(1)
+                } else {
+                    QuestEffectKind::Add(0)
+                },
             },
             QuestEffect {
                 track: self.track.into(),
-                from: QuestComparison::Between(0, self.maximum - 1),
+                from: if self.authored_stage {
+                    QuestComparison::Lt(self.maximum)
+                } else {
+                    QuestComparison::Between(0, self.maximum - 1)
+                },
                 effect: QuestEffectKind::Add(1),
             },
         ];
@@ -93,28 +101,8 @@ impl Counter {
             key: self.transition.into(),
             quest: self.quest.into(),
             effects,
-            completes: self.completion_track().is_some(),
-            effects: vec![
-                QuestEffect {
-                    track: self.gate.into(),
-                    from: QuestComparison::Eq(1),
-                    effect: if self.authored_stage {
-                        QuestEffectKind::Set(1)
-                    } else {
-                        QuestEffectKind::Add(0)
-                    },
-                },
-                QuestEffect {
-                    track: self.track.into(),
-                    from: if self.authored_stage {
-                        QuestComparison::Lt(self.maximum)
-                    } else {
-                        QuestComparison::Between(0, self.maximum - 1)
-                    },
-                    effect: QuestEffectKind::Add(1),
-                },
-            ],
-            completes: super::world_change_journals::completes(self.transition),
+            completes: self.completion_track().is_some()
+                || super::world_change_journals::completes(self.transition),
             experience: None,
         }
     }
@@ -192,6 +180,7 @@ pub const COUNTERS: &[Counter] = &[
     // the full source phases. Crystal201189f creaturescripts_death_first_dragon.lua:21-30
     // establishes the authoritative death; selected access completion joins that receipt.
     Counter {
+        authored_stage: false,
         transition: "oteryn:quest-transition/native-kills/first-dragon-selected",
         creature: "oteryn:creature.the_first_dragon",
         quest: "oteryn:quest.the_first_dragon_quest",
@@ -222,7 +211,6 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
         .filter(|counter| {
             let (minimum, maximum) = counter.gate_bounds();
             (minimum..=maximum).contains(&tracks.get(counter.gate).copied().unwrap_or(0))
-            tracks.get(counter.gate) == Some(&counter.gate_value())
                 && counter
                     .completion_track()
                     .is_none_or(|track| tracks.get(track).copied().unwrap_or(0) == 0)
@@ -245,7 +233,6 @@ pub fn active_encounter(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
         .collect()
 }
 
-fn counters() -> impl Iterator<Item = &'static Counter> {
 pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
@@ -301,10 +288,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     let mut tracks: Vec<_> = tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
-    for counter in counters().chain(phase_settlements::COUNTERS) {
     for counter in registered_counters()? {
-        transitions.push(counter.transition());
-    for counter in counters() {
         let exact = counter.transition();
         if let Some(existing) = transitions
             .iter()
@@ -385,6 +369,9 @@ mod tests {
         );
         assert!(!active(&stored).contains(&counter.transition));
         assert!(catalogue.evaluate(transition, &stored, 0).is_err());
+        Ok(())
+    }
+    #[test]
     fn selected_galthen_deaths_require_their_authored_predecessor_and_never_complete_report()
     -> Result<(), String> {
         for (stage, prerequisite, creature) in [

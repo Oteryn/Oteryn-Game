@@ -509,11 +509,6 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
             or known_native(stack['stackable']) is not False or not isinstance(container, dict)):
         return None
     capacity = known_native(container.get('capacity', {}))
-    # Reward-boss loot stays in personal entitlements; the physical corpse retains
-    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 30-entry cap,
-    # matching CreatureRewardTable's existing per-creature admission rule.
-    maximum = 0xffffffff if reward_boss else 30
-    return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
     # Physical capacity and the existing 30-entry MINT work bound are distinct.
     # Crystal201189f items.xml declares48 for these exact Soul War corpses.
     # Ground-only physical capacity does not raise the30-item MINT work bound.
@@ -523,8 +518,11 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
     if (type(capacity) is int and capacity == 48 and ref['key'] in source_48
             and profile['admission']['legal_destinations'] == ['Ground']):
         return capacity
-    # GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX, domain/loot_data.rs:6.
-    return capacity if type(capacity) is int and 1 <= capacity <= 30 else None
+    # Reward-boss loot stays in personal entitlements; the physical corpse retains
+    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 30-entry cap,
+    # matching CreatureRewardTable's existing per-creature admission rule.
+    maximum = 0xffffffff if reward_boss else 30
+    return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
 
 def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:

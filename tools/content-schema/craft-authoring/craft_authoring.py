@@ -197,7 +197,6 @@ def build():
     append_rows(row, snapshot, items_xml_lines(), item, operand, fixed)
     import tainted_souls
     recipes.append(tainted_souls.row(item, operand, fixed, MESSAGES))
-    recipes.append(tainted_souls_row(item, operand, fixed, MESSAGES))
     return sorted(recipes, key=lambda r: r["identity"]["key"])
 
 

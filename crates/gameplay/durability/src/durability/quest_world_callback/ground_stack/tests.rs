@@ -77,6 +77,7 @@ async fn exercise(harness: &h::Harness) -> h::TestResult {
     mint(harness, 1002, CRATE, 1).await?;
     mint(harness, 1003, URN, 2).await?;
     let requirement = WorldRequirement {
+        ground: None,
         position: position(),
         appearance: 0,
         ground_stack: Some(vec![

@@ -4,6 +4,7 @@ use super::{Counter, QuestComparison, QuestEffect, QuestEffectKind};
 // Crystal 201189f, creaturescripts_bosses_mission_cults.lua:4,48-52:
 // https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua
 pub(super) const COUNTERS: &[Counter] = &[Counter {
+    authored_stage: false,
     transition: "oteryn:quest-transition/native-kills/cults-essence",
     creature: "oteryn:creature.essence_of_malice",
     quest: "oteryn:quest.cults_of_tibia_quest",

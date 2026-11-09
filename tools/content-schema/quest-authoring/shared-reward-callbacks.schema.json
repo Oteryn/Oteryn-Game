@@ -683,6 +683,7 @@
         },
         "repeatable": {
           "type": "boolean"
+        },
         "world_claim": {
           "type": "object",
           "additionalProperties": false,

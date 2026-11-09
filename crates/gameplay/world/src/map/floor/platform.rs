@@ -49,7 +49,14 @@ pub fn prepare_quest_platform_rider<'a>(
 
 impl PlatformRider<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            None,
+        )?;
         let NativeMovementCollisionIndex::Bundle(collision) = self.cells.index() else {
             return Err(MovementError::NotQualified);
         };

@@ -1,17 +1,5 @@
 """Chosen live entrance guards; source anchors are verified against the retained map."""
 
-
-def callbacks():
-    source = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/'
-    rows = []
-    for name, quest, trigger, at, ordinal, appearance, level, admission, destination, citation in (
-        ('anniversary', '25_years_of_tibia_quest', 'use', (32431, 32165, -8), 1, 25096,
-         20, dict(regular_blessings=True, promotion=True, premium=True),
-         (33453, 31030, -8), '25_years_of _tibia_quest/actions_time_machine.lua:1-49'),
-        ('pits', 'the_pits_of_inferno_quest', 'step_in', (32791, 32331, -10), 0, 354,
-         80, dict(premium=True), None,
-         'the_pits_of_inferno_quest/movements_holy_tible_tile.lua:1-4'),
-    ):
 import json
 from pathlib import Path
 

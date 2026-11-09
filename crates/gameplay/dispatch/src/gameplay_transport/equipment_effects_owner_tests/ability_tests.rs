@@ -68,12 +68,12 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
-    ("ENGNPC-M05", 1),
-    // Eight fixed elevator scenery profiles; qm50_elevator_profiles.py.
-    ("QM50-ELEVATOR", 8),
     // M41 source operands: sculpture 31574, beak 52632 and corpse stages 52677..=52680.
     // Regenerated from m41_quest_item_profiles.IDS, independently of the profile union.
     ("M41", 6),
+    // Eight fixed elevator scenery profiles; qm50_elevator_profiles.py.
+    ("QM50-ELEVATOR", 8),
+    ("ENGNPC-M05", 1),
     // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
     ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
@@ -170,6 +170,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // objects from Crystal 201189f items.xml (floor-assembly-item-profiles.json).
     // The existing energy-field owner retains 2126; all twenty new keys have speed 0.
     ("QM49-ELEMENTAL-SPHERES", 20),
+    // QNPCFX: generated from qnpcfx_item_profiles.py KEYS and pinned source proofs.
+    // Koshei pieces/amulet, Hallowed Axe and tender venison; existing equipment owner.
+    ("QNPCFX", 7),
     // M49 soils, four altars, inactive/charged states and corpses from pinned
     // Crystal 201189f XML/client, qualified by elemental_spheres_profiles.py.
     ("QMECH-M49", 19),
@@ -177,12 +180,6 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 201189f items.xml and the pinned client bank by rafzane_elevator_profiles.py.
     // None has a speed override or portable admission.
     ("QMECH-M50", 9),
-    // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
-    // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
-    ("QNPCFX", 1),
-    // QNPCFX: generated from qnpcfx_item_profiles.py KEYS and pinned source proofs.
-    // Koshei pieces/amulet, Hallowed Axe and tender venison; existing equipment owner.
-    ("QNPCFX", 7),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     ("QUESTPC4-TREASURE-REWARDS", 5),
@@ -333,22 +330,20 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
     // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
     ("SV16-ECHO-CATALYSTS", 3),
-    // WORLDCHG: 42 source-captured definitions; 12369 is already in ITEMHOLD-Q.
-    ("WORLDCHG", 41),
-    // WORLDCHG: 43 source-captured definitions; 12369 is already in ITEMHOLD-Q.
-    ("WORLDCHG", 42),
+    // WORLDCHG: 44 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 43),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
-    // BEGIN GENERATED NPCFIX2 M22 PROFILE ADDITIONS
-    // Source-qualified antler talisman 22008; qmech_npcfix2_item_profiles.py
-    ("NPCFIX2-M22", 1),
-    // END GENERATED NPCFIX2 M22 PROFILE ADDITIONS
     // M19: four exact Items in qready1-quest-item-profiles.json.
     ("QREADY1-CLOCKS", 4),
     // M20: two exact Items in qready1-craft-item-profiles.json.
     ("QREADY1-CRAFT", 6),
     // M20: four Wiki/official Items in qready1-cradle-item-profiles.json.
     ("QREADY1-CRADLE", 4),
+    // BEGIN GENERATED NPCFIX2 M22 PROFILE ADDITIONS
+    // Source-qualified antler talisman 22008; qmech_npcfix2_item_profiles.py
+    ("NPCFIX2-M22", 1),
+    // END GENERATED NPCFIX2 M22 PROFILE ADDITIONS
     // BEGIN GENERATED QREADY PROFILE ADDITIONS
     // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
     // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
@@ -374,32 +369,17 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
     // Cake and Halloween donor locators/hashes); all have qualified speed0.
     ("SEASON-W05D", 35),
-    ("M18-FIRST-DRAGON", 4),
     // Finite cookbook operands and exact corpse stages, refreshed by m42_hot_profile_inventory.py.
     ("M42-HOT-CUISINE", 45),
+    ("M18-FIRST-DRAGON", 4),
 ];
-
-// qengine_reward_item_profiles.py: 53 shared identities, seven QUESTPC4 tools,
-// Juicy Roots 21291 (M12), and Cursed Crystal ingredients 21504/21505 (QN4).
-const QENGINE_SOURCE_PROFILES: usize = 53 + 7 + 1 + 2;
 
 #[test]
 fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() -> TestResult {
-    const QENGINE_SOURCE_PROFILES: usize = 53 + 1 + 7 + 2;
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 independently captures shared engine and portable quest Items.
-    // QENGINE2 captures 63 source-qualified Items (qengine_reward_item_profiles.IDS).
-    // QENGINE2 captures the closed shared, QUESTPC4, M12 and QN4 Item cohorts.
-    // QENGINE2 adds exactly the 62 independently captured physical quest Items.
     // QENGINE2: generated witness of the producer's explicit IDS set.
-    // QENGINE2 captures 53 shared Items, seven portable QUESTPC4 Items,
-    // Oramond root 21291 and QN4 recipe ingredients 21504/21505.
-    // QENGINE2 captures 53 shared Items, seven QUESTPC4 Items, Juicy Roots,
-    // and two QN4 Medusa Oil ingredients.
-    // QENGINE2 captures 53 shared Items, M12's Juicy Roots, seven portable
-    // QUESTPC4 Items and QN4's two Cursed Crystal ingredients (21504/21505).
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -426,9 +406,6 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 63);
-    assert_eq!(added_keys.len(), QENGINE_SOURCE_PROFILES);
-    assert_eq!(added_keys.len(), 62);
     // QENGINE2 identities: generated begin
     assert_eq!(added_keys.len(), 63);
     assert_eq!(
@@ -500,8 +477,6 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ])
     );
     // QENGINE2 identities: generated end
-    assert_eq!(added_keys.len(), 71);
-    assert_eq!(added_keys.len(), QENGINE_SOURCE_PROFILES);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -555,8 +530,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let world_change_records = world_change_proof["records"]
         .as_array()
         .ok_or("world-change profiles")?;
-    assert_eq!(world_change_records.len(), 42);
-    assert_eq!(world_change_records.len(), 43);
+    assert_eq!(world_change_records.len(), 44);
     for source in world_change_records {
         let key = source["production_definition"]["production_key"]
             .as_str()
@@ -609,10 +583,6 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
         ("qengine-reward-item-profiles.json", 63),
-        ("qengine-reward-item-profiles.json", QENGINE_SOURCE_PROFILES),
-        ("qengine-reward-item-profiles.json", 62),
-        ("qengine-reward-item-profiles.json", 71),
-        ("qengine-reward-item-profiles.json", QENGINE_SOURCE_PROFILES),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))

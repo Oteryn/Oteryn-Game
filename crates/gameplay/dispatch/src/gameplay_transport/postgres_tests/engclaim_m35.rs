@@ -253,7 +253,7 @@ fn claim_case(quest: &'static str) -> TestResult {
                     .await?;
             assert_eq!(
                 results.iter().map(|(_, d)| *d).collect::<Vec<_>>(),
-                vec![UseDisposition::Committed, UseDisposition::NothingToUse].repeat(step + 1)
+                [UseDisposition::Committed, UseDisposition::NothingToUse].repeat(step + 1)
             );
             let done:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_states WHERE quest_key=$1 AND completed_character_revision IS NOT NULL),(SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes)").bind(quest).fetch_one(&harness.pool).await?;
             assert_eq!(

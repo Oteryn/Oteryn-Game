@@ -420,7 +420,8 @@ impl ChannelSpellStates {
                     speaker: actor,
                     position,
                     talk_type: rule.speech_type,
-                    text: &rule.restore_text,
+                    text: rule.restore_text.to_owned(),
+                    captured_name: None,
                 });
         }
         let from_bath = origin_entries.as_ref().is_some_and(|tile| {

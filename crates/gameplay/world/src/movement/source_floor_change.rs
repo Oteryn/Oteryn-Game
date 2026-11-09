@@ -75,16 +75,6 @@ impl SourceStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-            CardinalStep::NorthEast => MovementFacing::North,
-            CardinalStep::SouthEast => MovementFacing::South,
-            CardinalStep::SouthWest => MovementFacing::South,
-            CardinalStep::NorthWest => MovementFacing::North,
-        };
         let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
@@ -272,16 +262,6 @@ fn destination_with_lookup<'a>(
     direction: CardinalStep,
     mut lookup: impl FnMut(MovementLocalPosition) -> Result<Option<TileView<'a>>, MovementError>,
 ) -> Result<MovementLocalPosition, MovementError> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-        CardinalStep::NorthEast => (1, -1),
-        CardinalStep::SouthEast => (1, 1),
-        CardinalStep::SouthWest => (-1, 1),
-        CardinalStep::NorthWest => (-1, -1),
-    };
     let (dx, dy) = direction.delta();
     let mut next = shifted(origin, dx, dy, 0)?;
     // Canary 99902524 game.cpp2045..2079 excludes diagonals from implicit
@@ -541,19 +521,6 @@ mod tests {
             let after = runtime.commit_source_step(proof).unwrap();
             assert_eq!(after.revision(), before.revision() + 1);
             floors.insert(after.position().floor);
-            assert_eq!(
-                after.facing(),
-                Some(match dir {
-                    CardinalStep::North => MovementFacing::North,
-                    CardinalStep::East => MovementFacing::East,
-                    CardinalStep::South => MovementFacing::South,
-                    CardinalStep::West => MovementFacing::West,
-                    CardinalStep::NorthEast => MovementFacing::North,
-                    CardinalStep::SouthEast => MovementFacing::South,
-                    CardinalStep::SouthWest => MovementFacing::South,
-                    CardinalStep::NorthWest => MovementFacing::North,
-                })
-            );
             assert_eq!(after.facing(), Some(dir.facing()));
         }
         assert_eq!(runtime.read_actor_position(actor).unwrap().position(), goal);

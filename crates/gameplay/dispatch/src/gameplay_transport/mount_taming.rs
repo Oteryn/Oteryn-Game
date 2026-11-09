@@ -64,6 +64,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(result));
             }
         }
+        if intent.use_with_map_item.is_some()
+            && let Some(result) = self
+                .use_carried_quest_item_with_target(actor, command, &intent, source, item_target)
+                .await?
+        {
+            return Ok(Some(result));
+        }
         if let Some(result) = self
             .use_quest_tool_object(actor, command, &intent, source)
             .await?
@@ -82,8 +89,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Carried quest tools use the registered World receipt and exact selected custody.
     async fn use_quest_tool_object(
-    /// Registered carried World tools reuse the fenced World receipt owner.
-    async fn tame_quest_object(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -119,11 +124,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let callbacks = self.callback_content();
         let Some(callback) = callbacks.iter().find(|callback| {
-            callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use
-                && callback
-                    .item_on_target
-                    .as_ref()
-                    .is_some_and(|item| item.selected_instance)
             quest_objects::accepts(callback)
                 && super::quest_callbacks::matches(map, callback, resolved.placement_key)
         }) else {
@@ -169,7 +169,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let intent =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
         Ok(self
-            .use_quest_callback_with_tool(actor, command, map, target, Some((source, intent)))
+            .use_quest_callback_with_tool(
+                actor,
+                command,
+                map,
+                target,
+                source.map(|source| (source, intent)),
+            )
             .await)
     }
 

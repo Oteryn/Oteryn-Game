@@ -162,6 +162,8 @@ fn m01b_explore_real_native_steps_credit_exact_anchor_once_and_replay() -> TestR
     result
 }
 
+
+
 #[test]
 fn m01b_geomancer_real_native_entry_credits_once_and_replays() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -578,9 +580,6 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
-    let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
-    assert!(geomancer || callback.key.ends_with(ENTRY));
-    let counter = if geomancer {
     if callback.key == "oteryn:quest-callback/m01b/fire-from-the-earth-mini-world-change/s1/entry" {
         return fire_earth_entry::exercise(owner, admitted, h).await;
     }
@@ -700,7 +699,6 @@ pub(super) async fn exercise(
         StepDirection::East,
         StepDirection::West,
     ];
-    let moves: &[StepDirection] = if geomancer {
     let dragon_moves = [
         StepDirection::East,
         StepDirection::West,
@@ -720,7 +718,6 @@ pub(super) async fn exercise(
     } else {
         &longsword_moves
     };
-    let first_entry = if geomancer { 0 } else { 2 };
     let first_entry =
         if additional_counter.is_some() || dragon_tower || elvenbane || alawar || geomancer {
             0

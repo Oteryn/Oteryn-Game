@@ -121,7 +121,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         )),
     };
     let attempt = |revision| -> f::TestResult<_> {
-        Ok(h.root.commit_character_world_callback_with_items(
+        Ok(h.root.commit_character_world_callback_with_items_and_premium(
             &authority,
             &h.node,
             f::fence(revision)?,
@@ -151,7 +151,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     stale.character_lease_generation += 1;
     assert!(matches!(
         h.root
-            .commit_character_world_callback_with_items(
+            .commit_character_world_callback_with_items_and_premium(
                 &authority,
                 &h.node,
                 stale,

@@ -454,7 +454,6 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(
-        entries, 1,
         entries, 3,
         "replay and refused actions do not add occurrence progress"
     );
@@ -478,7 +477,6 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         sqlx::query_scalar("SELECT count(*) FROM game_character_event_quest_progress")
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(history, 1);
     assert_eq!(history, 3);
     let stale = sqlx::query("INSERT INTO game_character_event_quest_progress SELECT character_id,world_id,2,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after FROM game_character_event_quest_progress").execute(&h.pool).await.err().ok_or("historical receipt accepted in a new occurrence")?;
     assert_eq!(

@@ -611,6 +611,8 @@ async fn item_snapshot(h: &fixture::Harness) -> fixture::TestResult<serde_json::
     Ok(sqlx::query_scalar("SELECT jsonb_build_array((SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid),(SELECT jsonb_agg(to_jsonb(i) ORDER BY i.item_instance_id) FROM game_item_instances i),(SELECT count(*) FROM game_reward_claim_mint_reservations),(SELECT count(*) FROM game_reward_claim_mint_receipts),(SELECT count(*) FROM game_item_audit_outbox),(SELECT count(*) FROM game_character_quest_xp_obligations),(SELECT count(*) FROM game_character_quest_receipts),(SELECT count(*) FROM game_quest_npc_program_receipts),(SELECT completed_character_revision::text FROM game_character_quest_states WHERE quest_key='oteryn:quest.a_father_s_burden_quest'))")
         .bind(fixture::id(fixture::CHARACTER).as_slice()).fetch_one(&h.pool).await?)
 }
+
+mod retained_lane_case {
 //! Canonical NPC completion on the real authority owner, without a World boot fixture.
 use crate::bestiary_postgres_harness as fixture;
 use crate::durability::item_loop_move::ItemLoopContent;
@@ -860,4 +862,6 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         assert_eq!(snapshot(h, &quest).await?, after);
     }
     Ok(())
+}
+
 }

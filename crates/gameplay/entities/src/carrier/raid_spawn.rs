@@ -77,7 +77,6 @@ pub(super) struct RaidSpawnLedger {
     receipts: BTreeMap<RaidSpawnIdentity, RaidSpawnReceipt>,
     // Keys are a subset of receipts: one current body per admitted identity,
     // regardless of form count. Original placement receipts remain immutable.
-    bodies: BTreeMap<RaidSpawnIdentity, (ExactActorRef, NativeRaidSpawnSpec)>,
     bodies: BTreeMap<RaidSpawnIdentity, CurrentRaidBody>,
     shared_attempts: BTreeMap<([u8; 16], u16), u8>,
     // A closing marker is reserved before the first actor admission. Closing
@@ -152,7 +151,6 @@ impl ChannelRuntimeV1 {
             .get(&identity)
             .ok_or(E::Native(CarrierError::InvalidSpawnDefinition))?;
         let (actor, current) = if let Some(body) = self.raid_spawns.bodies.get(&identity) {
-            body.clone()
             (body.actor, body.spec.clone())
         } else {
             let RaidSpawnOutcome::Placed(actor) = receipt.outcome else {
@@ -161,7 +159,6 @@ impl ChannelRuntimeV1 {
             (actor, receipt.spec.clone())
         };
         if actor != expected.actor
-            || expected.health <= 0
             || if death {
                 expected.health != 0
             } else {
@@ -179,8 +176,6 @@ impl ChannelRuntimeV1 {
         self.validate_companion_snapshot(expected)
             .map_err(E::Native)?;
         let index = self
-            .preflight_native_masterless_removal(actor, &current.creature, current.content)
-            .map_err(E::Native)?;
             .native_masterless_subject_index(actor, &current.creature, current.content, death)
             .map_err(E::Native)?;
         let new_body = !self.raid_spawns.bodies.contains_key(&identity);
@@ -209,12 +204,6 @@ impl ChannelRuntimeV1 {
             return Err(E::Native(CarrierError::CreatureTargetMismatch));
         }
         let replacement = next.clone();
-        let new_body = !self.raid_spawns.bodies.contains_key(&identity);
-        // Reserve the bounded identity entry before either physical body changes.
-        self.raid_spawns
-            .bodies
-            .entry(identity)
-            .or_insert((actor, current.clone()));
         self.raid_spawns
             .bodies
             .entry(identity)
@@ -243,7 +232,6 @@ impl ChannelRuntimeV1 {
         let successor = match result {
             Ok(successor) => successor,
             Err(error) => {
-                if new_body {
                 if new_body && !death {
                     self.raid_spawns.bodies.remove(&identity);
                 }
@@ -251,10 +239,6 @@ impl ChannelRuntimeV1 {
             }
         };
         if let Err(error) =
-            self.remove_native_masterless_subject(actor, &current.creature, current.content)
-        {
-            let _ = self.remove_native_masterless_subject(successor, &next.creature, next.content);
-            if new_body {
             self.remove_native_raid_body_subject(actor, &current.creature, current.content, death)
         {
             let _ = self.remove_native_masterless_subject(successor, &next.creature, next.content);
@@ -263,9 +247,6 @@ impl ChannelRuntimeV1 {
             }
             return Err(E::Native(error));
         }
-        self.raid_spawns
-            .bodies
-            .insert(identity, (successor, replacement));
         self.raid_spawns.bodies.insert(
             identity,
             CurrentRaidBody {
@@ -436,7 +417,6 @@ impl ChannelRuntimeV1 {
                     .raid_spawns
                     .bodies
                     .get(identity)
-                    .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.0));
                     .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.actor));
                 (current == RaidSpawnOutcome::Placed(actor)).then_some(*identity)
             });
@@ -466,7 +446,6 @@ impl ChannelRuntimeV1 {
         };
         Ok(self.raid_spawns.receipts.range(first..=last).map(|(_, receipt)| {
             let outcome = self.raid_spawns.bodies.get(&receipt.identity)
-                .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.0));
                 .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.actor));
             RaidCreatureStatus {
                 identity: receipt.identity,
@@ -535,10 +514,6 @@ impl ChannelRuntimeV1 {
                 .raid_spawns
                 .bodies
                 .get(&status.identity)
-                .map_or(&receipt.spec, |body| &body.1)
-                .clone();
-            let result =
-                self.remove_native_masterless_subject(actor, &current.creature, current.content);
                 .map_or(&receipt.spec, |body| &body.spec)
                 .clone();
             let result = self.remove_native_raid_body_subject(

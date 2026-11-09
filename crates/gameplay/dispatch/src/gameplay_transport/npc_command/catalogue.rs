@@ -125,8 +125,8 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
-    appearance: Option<&(std::collections::BTreeMap<u16, u8>, u8)>,
     stag_beaks: Option<&crate::durability::stag_beaks::StagBeakPreview>,
+    appearance: Option<&(std::collections::BTreeMap<u16, u8>, u8)>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -271,15 +271,6 @@ pub(super) fn prepare(
     let Some(appearance) = appearance else {
         return Some(Step::Refused);
     };
-    let plan = match npc_program::preview_with_appearance(
-        &request,
-        &tracks,
-        catalogue,
-        now,
-        &eligibility,
-        player_name.as_deref(),
-        (&appearance.0, appearance.1),
-    ) {
     let teleport =
         npc_program::teleport::preview_teleport(&request, &tracks, catalogue, now, &eligibility)
             .ok()
@@ -296,13 +287,14 @@ pub(super) fn prepare(
         .as_ref()
         .map(|p| Ok(Some(p.source.clone())))
         .unwrap_or_else(|| {
-            npc_program::preview_with_player_name(
+            npc_program::preview_with_appearance(
                 &request,
                 &tracks,
                 catalogue,
                 now,
                 &eligibility,
                 player_name.as_deref(),
+                (&appearance.0, appearance.1),
             )
         }) {
         Ok(Some(plan)) => plan,

@@ -7,6 +7,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 #[derive(Clone, Copy, Debug)]
 enum Target {
+    FreshCorpse,
     Live {
         entity: EntityRef,
         actor: ExactActorRef,
@@ -34,19 +35,6 @@ enum Target {
 ///         .expect("current target")
 /// }
 /// ```
-#[derive(Debug)]
-pub struct QuestCreatureUseProof<'runtime> {
-    _runtime: std::marker::PhantomData<&'runtime ChannelRuntimeV1>,
-    fence: CurrentCharacterGameplayFence,
-    command: CommandRef,
-    callback: String,
-    key: Option<String>,
-    self_target: Option<oteryn_gameplay_quests::quest::reward_callbacks::SelfTarget>,
-    target: EntityRef,
-    key: String,
-    target: Target,
-use oteryn_protocol_oteryn::world_object::UseIntent;
-
 mod corpse;
 pub use corpse::QuestCorpseOperand;
 
@@ -65,13 +53,15 @@ pub use corpse::QuestCorpseOperand;
 /// ```
 #[derive(Debug)]
 pub struct QuestCreatureUseProof<'runtime> {
+    _runtime: std::marker::PhantomData<&'runtime ChannelRuntimeV1>,
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     callback: String,
-    key: String,
+    key: Option<String>,
+    self_target: Option<oteryn_gameplay_quests::quest::reward_callbacks::SelfTarget>,
+    target: Target,
     intent: UseIntent,
     corpse: Option<corpse::CorpseUse<'runtime>>,
-    _runtime: std::marker::PhantomData<&'runtime ()>,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
     pub fn read_current(
@@ -82,12 +72,10 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
         intent: &UseIntent,
     ) -> Option<Self> {
-        let key = callback.creature_target.as_ref();
-        if callback.corpse_target.is_some() {
-        if callback.fresh_corpse {
+        if callback.corpse_target.is_some() || callback.fresh_corpse {
             return None;
         }
-        let key = callback.creature_target.as_ref()?;
+        let key = callback.creature_target.as_ref();
         let target = intent.use_with?;
         let lease = runtime
             .bound_attacker_lease(actor, fence.game_session_id)
@@ -111,29 +99,10 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 return None;
             }
             return Some(Self {
+                _runtime: std::marker::PhantomData,
                 fence, command, callback: callback.key.clone(), key: None,
-                self_target: Some(area.clone()), target,
-            });
-        }
-        let key = key?;
-        let own = runtime.read_actor_position(actor).ok()?.position();
-        if let Some(area) = &callback.self_target {
-            let visible = runtime.visible_entities();
-            let player = visible.players.iter().find(|p| p.actor == actor)?;
-            if player.actor.placement_identity() != target.identity
-                || player.generation != target.generation
-                || !area.contains(own.x, own.y, own.floor)
-                || key.is_some()
-            {
-                return None;
-            }
-            return Some(Self {
-                fence,
-                command,
-                callback: callback.key.clone(),
-                key: None,
-                self_target: Some(area.clone()),
-                target,
+                self_target: Some(area.clone()), target: Target::Live { entity: target, actor },
+                intent: intent.clone(), corpse: None,
             });
         }
         let key = key?;
@@ -157,30 +126,25 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             callback: callback.key.clone(),
             key: Some(key.clone()),
             self_target: None,
-            target,
-            key: key.clone(),
+            intent: intent.clone(), corpse: None,
             target: Target::Live {
                 entity: target,
                 actor: creature,
             },
-            key: key.clone(),
-            intent: intent.clone(),
-            corpse: None,
-            _runtime: std::marker::PhantomData,
         })
     }
     /// Exact handle observed in the retained runtime turn; used after a committed capture.
     pub fn target_actor(&self) -> Option<ExactActorRef> {
         match self.target {
             Target::Live { actor, .. } => Some(actor),
-            Target::Corpse { .. } => None,
+            Target::Corpse { .. } | Target::FreshCorpse => None,
         }
     }
 
     pub(super) fn corpse(&self) -> Option<([u8; 16], [i32; 3])> {
         match self.target {
             Target::Corpse { item, position } => Some((item, position)),
-            Target::Live { .. } => None,
+            Target::Live { .. } | Target::FreshCorpse => None,
         }
     }
 
@@ -219,7 +183,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             fence,
             command,
             callback: callback.key.clone(),
-            key: key.clone(),
+            key: Some(key.clone()), self_target: None,
+            intent: intent.clone(), corpse: None,
             target: Target::Corpse {
                 item: corpse,
                 position,
@@ -275,8 +240,10 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 &carried.intent,
             )
             .is_ok_and(|intent| {
+                intent == self.intent &&
                 intent.use_with_position.is_none()
                     && match self.target {
+                        Target::FreshCorpse => false,
                         Target::Live { entity, .. } => {
                             intent.use_with == Some(entity) && intent.use_with_map_item.is_none()
                         }
@@ -285,9 +252,6 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                                 && matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
                         }
                     }
-                intent == self.intent
-                    && intent.use_with_map_item.is_none()
-                    && intent.use_with_position.is_none()
             })
     }
 }

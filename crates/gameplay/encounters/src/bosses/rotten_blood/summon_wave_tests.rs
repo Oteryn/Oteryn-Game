@@ -7,7 +7,7 @@ const BOSS: RoomPosition = RoomPosition {
     y: 32_334,
     floor: 15,
 };
-const BOSSES: [&str; 2] = [ichgahal_think::Ichgahal_KEY, murcion_think::Murcion_KEY];
+const BOSSES: [&str; 2] = [ichgahal_think::ICHGAHAL_KEY, murcion_think::MURCION_KEY];
 
 fn facts<'a>(neighbours: &'a [SummonNeighbour<'a>]) -> SummonWaveFacts<'a> {
     SummonWaveFacts {

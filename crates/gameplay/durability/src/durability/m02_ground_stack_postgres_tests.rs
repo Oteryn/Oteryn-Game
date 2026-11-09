@@ -1,6 +1,6 @@
 mod m02_ground_stacks {
     use super::*;
-    use crate::durability::quest_world_callback::matches_ground_stack_for_test as matches;
+    use crate::durability::quest_world_callback::fixture_ground_stack_matches as matches;
     use oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry;
 
     #[test]
@@ -59,11 +59,9 @@ mod m02_ground_stacks {
         })?.join().map_err(|_|"M02 PostgreSQL worker panicked")?.map_err(Into::into)
     }
 }
-mod m02_ground_stacks {
+mod additional_ground_stacks {
     use super::*;
-    use crate::durability::quest_world_callback::fixture_ground_stack_matches as matches;
-    use crate::durability::quest_world_callback::ground_stack::fixture_matches as matches;
-    use crate::durability::quest_world_callback::fixture_ground_stack_matches as matches;
+    use crate::durability::quest_world_callback::matches_ground_stack_for_test as matches;
     use oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry;
 
     #[test]

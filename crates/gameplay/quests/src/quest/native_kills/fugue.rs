@@ -7,6 +7,7 @@ pub(super) const MISSION: &str =
 pub(super) const SPAWNED: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/fugue_spawned";
 pub(super) const COUNTERS: &[Counter] = &[Counter {
+    authored_stage: false,
     transition: "oteryn:quest-transition/native-kills/fugue",
     creature: "oteryn:creature.fugue",
     quest: "oteryn:quest.the_order_of_the_lion_quest",

@@ -65,17 +65,19 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
         self.assertEqual(79, len(talks))
         self.assertTrue(all(stage["NPC_dialogue_candidates"] is not None for stage in talks))
 
-    def test_only_two_selected_native_kills_are_bound_and_rewards_remain_held(self):
+    def test_selected_native_kills_and_registered_talk_keep_rewards_held(self):
         bound = {(row["quest"], stage["stage_key"])
                  for row in self.plan["records"] for stage in row["stages"]
                  if stage["native_dispatch_binding"] is not None}
         self.assertEqual(bound, {
             ("oteryn:quest.adventures_of_galthen_quest", "s5"),
             ("oteryn:quest.adventures_of_galthen_quest", "s8"),
+            ("oteryn:quest.authored.a_pirate_s_death_to_me", "s1"),
         })
+
     def test_only_registered_native_talk_stage_is_enabled(self):
         bound = [(row["quest"], stage) for row in self.plan["records"]
-                 for stage in row["stages"] if stage["native_dispatch_binding"] is not None]
+                 for stage in row["stages"] if stage["native_dispatch_binding"] is not None and stage["event_identity_associations"]["kind"] == "talk"]
         self.assertEqual(1, len(bound))
         quest, stage = bound[0]
         self.assertEqual("oteryn:quest.authored.a_pirate_s_death_to_me", quest)

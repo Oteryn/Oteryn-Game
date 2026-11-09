@@ -716,8 +716,6 @@ impl ChannelActorCarrier {
                 (true, Some(-1), Some(-1..=1)) => MovementFacing::West,
                 (true, Some(0), Some(1)) => MovementFacing::South,
                 (true, Some(0), Some(-1)) => MovementFacing::North,
-                (true, Some(-1 | 1), Some(-1)) => MovementFacing::North,
-                (true, Some(-1 | 1), Some(1)) => MovementFacing::South,
                 _ => return Err(CarrierError::MovementNonCardinal),
             };
             let order = self.next_tile_entry_order()?;

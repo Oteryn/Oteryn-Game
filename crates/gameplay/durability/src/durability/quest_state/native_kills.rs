@@ -9,6 +9,7 @@ pub enum NativeDeathSource {
         party: Arc<crate::foundation::PartySnapshot>,
         death: crate::foundation::CreatureDeathOccurrenceKey,
         died_at_unix_ms: u64,
+    },
     PositionedParty {
         source: Arc<crate::foundation::PartySnapshot>,
         position: (u16, u16, i8),
@@ -37,9 +38,7 @@ impl NativeQuestDeath {
             && self.observed_revision > 0
             && matches!(request.cause, QuestCause::CreatureDeath(_))
             && match &self.source {
-                NativeDeathSource::Party(_) | NativeDeathSource::InstanceBoss { .. } => {
-                    oteryn_gameplay_quests::quest::native_kills::counter_for(
-                NativeDeathSource::Party(_) | NativeDeathSource::PositionedParty { .. } => {
+                NativeDeathSource::InstanceBoss { .. } | NativeDeathSource::Party(_) | NativeDeathSource::PositionedParty { .. } => {
                     let position = match &self.source {
                         NativeDeathSource::PositionedParty { position, .. } => Some(*position),
                         _ => None,
@@ -103,11 +102,8 @@ impl NativeQuestDeath {
 
     pub(super) fn party(&self) -> Option<&crate::foundation::PartySnapshot> {
         match &self.source {
-            NativeDeathSource::Party(source)
+            NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
-            | NativeDeathSource::PositionedParty { source, .. } => Some(source.as_ref()),
-            NativeDeathSource::Source(_) => None,
-            NativeDeathSource::Party(source) => Some(source.as_ref()),
             NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
         }
     }
@@ -126,6 +122,9 @@ impl NativeQuestDeath {
                     .chain_update(b"native-instance-boss-v1")
                     .chain_update(death.native_bytes())
                     .chain_update(died_at_unix_ms.to_be_bytes())
+                    .finalize();
+                binding[1..].copy_from_slice(&digest);
+            }
             NativeDeathSource::PositionedParty {
                 source,
                 position: (x, y, floor),
@@ -198,6 +197,7 @@ impl NativeQuestDeath {
             if !permitted {
                 return Ok(false);
             }
+        }
         if let NativeDeathSource::Encounter(source) = &self.source
             && !source.matches(fence)
         {
@@ -213,13 +213,10 @@ impl NativeQuestDeath {
             .initial;
         // Character root and the track rows are already locked. A queued death
         // cannot enter a mission started or reset after its captured snapshot.
-        Ok(sqlx::query_scalar("SELECT coalesce((SELECT value=$4 AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),$5)")
+        let (minimum, maximum) = oteryn_gameplay_quests::quest::native_kills::counter(counter.transition).map_or((counter.gate_value, counter.gate_value), |counter| counter.gate_bounds());
+        Ok(sqlx::query_scalar("SELECT COALESCE((SELECT value BETWEEN $4::bigint AND $5::bigint AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2), $6::bigint BETWEEN $4::bigint AND $5::bigint)")
             .bind(character.as_bytes().as_slice()).bind(counter.gate)
-            .bind(self.observed_revision.to_string()).bind(counter.gate_value).bind(initial_gate==counter.gate_value).fetch_one(&mut **tx).await?)
-        let (minimum, maximum) = counter.gate_bounds();
-        Ok(sqlx::query_scalar("SELECT COALESCE((SELECT value BETWEEN $4::bigint AND $5::bigint AND committed_character_revision <= $3::text::numeric FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2), $4::bigint <= 0 AND $5::bigint >= 0)")
-            .bind(character.as_bytes().as_slice()).bind(counter.gate)
-            .bind(self.observed_revision.to_string()).bind(minimum).bind(maximum).fetch_one(&mut **tx).await?)
+            .bind(self.observed_revision.to_string()).bind(minimum).bind(maximum).bind(initial_gate).fetch_one(&mut **tx).await?)
     }
 }
 
@@ -253,7 +250,7 @@ impl DurabilityRoot {
             None,
             Some(super::native_events::NativeQuestEvent::Death(death)),
             None,
-        )
+        None, None, None,)
         .await
     }
     #[allow(
@@ -290,7 +287,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            Some(death),
+            Some(super::native_events::NativeQuestEvent::Death(death)),
             None,
             None,
             None,

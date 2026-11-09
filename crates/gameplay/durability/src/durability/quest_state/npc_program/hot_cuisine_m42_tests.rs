@@ -46,12 +46,12 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
         ] {
             assert!(
                 evaluate_source(
-                    &source,
+                    source,
                     &request,
                     &tracks,
                     &catalogue,
                     1_785_542_400,
-                    NpcEvaluationFacts {
+                    NpcEvaluationFacts { appearance: (&BTreeMap::new(), 0),
                         eligibility: &eligibility,
                         player_name: None
                     },
@@ -62,12 +62,12 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
             );
         }
         let plan = evaluate_source(
-            &source,
+            source,
             &request,
             &tracks,
             &catalogue,
             1_785_542_400,
-            NpcEvaluationFacts {
+            NpcEvaluationFacts { appearance: (&BTreeMap::new(), 0),
                 eligibility: &NpcEligibility {
                     level: 35,
                     premium_current: true,
@@ -79,7 +79,10 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
         )
         .map_err(|e| format!("recipe {index}: {e:?}"))?
         .ok_or_else(|| format!("recipe {index} has no dispatched plan"))?;
-        assert_eq!(plan.selected_rule_keys, [request.transition_key.clone()]);
+        assert_eq!(
+            plan.selected_rule_keys.as_slice(),
+            std::slice::from_ref(&request.transition_key)
+        );
         assert!(
             plan.effects
                 .iter()
@@ -97,12 +100,12 @@ fn m42_locked_source_selects_all_fifteen_utc_recipes() -> std::result::Result<()
             format!("oteryn:quest-npc/hot_cuisine_quest/jean_pierre/native-cook-{next}");
         assert!(
             evaluate_source(
-                &source,
+                source,
                 &mismatched,
                 &tracks,
                 &catalogue,
                 1_785_542_400,
-                NpcEvaluationFacts {
+                NpcEvaluationFacts { appearance: (&BTreeMap::new(), 0),
                     eligibility: &NpcEligibility {
                         level: 35,
                         premium_current: true,

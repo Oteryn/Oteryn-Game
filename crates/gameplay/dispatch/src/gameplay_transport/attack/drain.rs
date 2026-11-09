@@ -985,7 +985,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         continue;
                     };
                     let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                        &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
+                        &mut runtime.borrow_exact_actor_commit_at_us(now.get()),
                         &resolved,
                         &plan,
                         entry.actor,
@@ -1009,14 +1009,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     committed
                 };
-                let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                    &mut runtime.borrow_exact_actor_commit_at_us(now.get()),
-                    &resolved,
-                    &plan,
-                    entry.actor,
-                    swing.lineage,
-                    ordinal,
-                );
                 let Ok(result) = committed else {
                     if !extension {
                         entry.clear_target();

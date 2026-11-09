@@ -39,19 +39,11 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
             summary["source_lowered_consumer_lanes"],
         )
 
-    def test_every_stage_has_real_owner_and_only_two_selected_kills_are_bound(self):
+    def test_every_stage_has_real_owner_and_three_selected_bindings(self):
         summary = self.report["summary"]
         self.assertEqual(1887, summary["plan_stages"])
-        self.assertEqual(1885, summary["unbound_dispatch_stages"])
-        self.assertEqual(2, summary["native_dispatch_bindings"])
-    def test_every_stage_has_real_owner_and_only_registered_talk_is_bound(self):
-        summary = self.report["summary"]
-        self.assertEqual(1887, summary["plan_stages"])
-        self.assertEqual(1886, summary["unbound_dispatch_stages"])
-        self.assertEqual(1, summary["native_dispatch_bindings"])
-        bound = [row for row in self.report["records"] if row["native_dispatch_binding_count"]]
-        self.assertEqual(["oteryn:quest.authored.a_pirate_s_death_to_me"], [row["quest"] for row in bound])
-        self.assertEqual(1, bound[0]["native_dispatch_binding_count"])
+        self.assertEqual(1884, summary["unbound_dispatch_stages"])
+        self.assertEqual(3, summary["native_dispatch_bindings"])
         self.assertEqual(0, summary["native_reward_delivery_bindings"])
         self.assertEqual(
             {

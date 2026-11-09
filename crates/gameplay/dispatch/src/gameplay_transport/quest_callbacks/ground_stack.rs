@@ -162,6 +162,7 @@ fn matches(
         overlay,
         facts,
         &[WorldRequirement {
+            ground: None,
             position: Position {
                 x: pos.x,
                 y: pos.y,

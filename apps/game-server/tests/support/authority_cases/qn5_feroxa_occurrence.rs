@@ -321,6 +321,8 @@ async fn exercise_clock(
     }
     Ok(())
 }
+
+mod retained_lane_case {
 //! Crystal 9f5a72c grimvale.lua checks stored Chance before drawing its replacement.
 use crate::bestiary_postgres_harness as fixture;
 use crate::durability::raid_schedule::{RaidScheduleCandidate, RaidSchedulerCheck};
@@ -498,4 +500,6 @@ async fn exercise(h: &fixture::Harness, initial_chance: Option<i16>) -> fixture:
         .bind(world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(upgraded, (1, Some(selected_at)));
     Ok(())
+}
+
 }

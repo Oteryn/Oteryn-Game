@@ -1,0 +1,7 @@
+{
+  "mechanic": "0451-personal-map-marks",
+  "kind": "panels",
+  "id": "0451-personal-map-marks-caption",
+  "status": "supported",
+  "entry": "view.rs::caption"
+}

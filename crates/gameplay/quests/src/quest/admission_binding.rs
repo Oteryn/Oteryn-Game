@@ -148,8 +148,6 @@ pub fn validate_for_catalogue(
                 if stage.is_native_encounter() {
                     continue;
                 }
-                let expected = stage.transition(&quest.quest)?;
-                if expected.key == transition.key {
                 if let Some(expected) = stage
                     .transitions(&quest.quest)?
                     .into_iter()

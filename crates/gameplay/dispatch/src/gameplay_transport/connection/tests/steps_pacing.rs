@@ -552,11 +552,6 @@ impl FreshAdmissionAuthority for DromeDrunkMovementAuthority {
             StepDirection::SouthEast => CardinalStep::SouthEast,
             StepDirection::SouthWest => CardinalStep::SouthWest,
             StepDirection::NorthWest => CardinalStep::NorthWest,
-
-            StepDirection::NorthEast => CardinalStep::NorthEast,
-            StepDirection::SouthEast => CardinalStep::SouthEast,
-            StepDirection::SouthWest => CardinalStep::SouthWest,
-            StepDirection::NorthWest => CardinalStep::NorthWest,
         };
         let mut owned = self.owner.borrow_mut();
         let (runtime, states) = &mut *owned;

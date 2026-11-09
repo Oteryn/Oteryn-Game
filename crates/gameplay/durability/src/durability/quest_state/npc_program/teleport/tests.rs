@@ -335,9 +335,6 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
     let replay = slot
         .commit_npc_teleport(
             &h.root,
-    let replay = h
-        .root
-        .commit_character_npc_teleport(
             &authority,
             &h.node,
             &permit,

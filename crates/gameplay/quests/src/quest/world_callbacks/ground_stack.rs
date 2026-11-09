@@ -132,6 +132,7 @@ mod tests {
         callback.opening_only = false;
         callback.reversible = false;
         callback.world_requirements = vec![super::super::WorldRequirement {
+            ground: None,
             position: Position {
                 x: 1,
                 y: 2,

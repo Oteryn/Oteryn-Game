@@ -190,9 +190,6 @@
                     "REPLACE_INSTANCE"
                   ]
                 },
-                "capture_target_stack": {
-                  "type": "boolean"
-                },
                 "consume_on": {
                   "enum": [
                     "ALWAYS",
@@ -206,9 +203,6 @@
               "allOf": [
                 {
                   "if": {
-                    "required": [
-                      "capture_target_stack"
-                    ],
                     "properties": {
                       "capture_target_stack": {
                         "const": true
@@ -217,7 +211,6 @@
                     "required": [
                       "capture_target_stack"
                     ]
-                    }
                   },
                   "then": {
                     "properties": {
@@ -237,6 +230,37 @@
                     "not": {
                       "required": [
                         "sub_type"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "required": [
+                      "capture_target_stack"
+                    ],
+                    "properties": {
+                      "capture_target_stack": {
+                        "const": true
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "role": {
+                        "const": "TARGET"
+                      },
+                      "count": {
+                        "const": 1
+                      },
+                      "effect": {
+                        "enum": [
+                          "CONSUME",
+                          "TRANSFORM_TO"
+                        ]
+                      }
+                    },
+                    "not": {
                       "anyOf": [
                         {
                           "required": [

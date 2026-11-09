@@ -54,16 +54,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.reconcile_tutorial_position(fence, here).await.is_err() {
             return (StepOutcome::rejected(), None);
         }
-        let (dx, dy) = match direction {
-            StepDirection::North => (0, -1),
-            StepDirection::East => (1, 0),
-            StepDirection::South => (0, 1),
-            StepDirection::West => (-1, 0),
-            StepDirection::NorthEast => (1, -1),
-            StepDirection::SouthEast => (1, 1),
-            StepDirection::SouthWest => (-1, 1),
-            StepDirection::NorthWest => (-1, -1),
-        };
         let (dx, dy) = direction.delta();
         if (here.x + dx, here.y + dy, here.floor) == ISLET_HOLE
             && super::tutorial_session::tutorial_cell(here)

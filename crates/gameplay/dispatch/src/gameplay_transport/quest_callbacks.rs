@@ -4,11 +4,11 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
-mod committed_copy;
 mod admission;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
+mod committed_copy;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod effects;
@@ -17,8 +17,8 @@ mod execute;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
-mod personal_trial;
 mod personal_encounter;
+mod personal_trial;
 mod phase;
 mod rafzane_elevator;
 mod rewards;
@@ -430,22 +430,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         fee_payment: None,
                     }
                 });
-            let disposition = match slot.commit_world_callback_with_requirements(self.root, self.character, self.holder, fence,
-                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context,
-                self.active_generation.and_then(|generation| generation.native_gameplay()),
-                admission,
-                &self.premium_coordinator,
-            let disposition = match slot.commit_world_callback_with_items_and_premium(self.root, self.character, self.holder, fence,
-                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context,
-                self.active_generation.and_then(|generation| generation.native_gameplay()),
-            let disposition = match slot.commit_world_callback_with_access(self.root, self.character, self.holder, fence,
-                QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context,
-                self.active_generation.and_then(|generation| generation.native_gameplay()),
-                admission, &self.premium_coordinator,
-            ).await {
             let flame = pending.flame.clone();
             let outcome = if let Some(input) = pending.flame {
                 slot.commit_rotten_flame_use(
@@ -459,7 +443,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             } else {
-                slot.commit_world_callback_with_items(
+                slot.commit_world_callback_with_requirements(
                     self.root,
                     self.character,
                     self.holder,
@@ -1062,7 +1046,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         let cause = QuestCause::Step(command);
-        let mut selected = (0..base.depths().iter().filter(|d| **d == 0).count())
+        let selected = (0..base.depths().iter().filter(|d| **d == 0).count())
             .filter_map(|o| {
                 let key = placement_key(at, u8::try_from(o).ok()?)?;
                 if map.facts.base_hidden(key) {
@@ -1081,7 +1065,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
-        let selected = if selected.len() > 1 {
+        let mut selected = if selected.len() > 1 {
             // Release all Channel guards before the current Character read. The
             // existing native CAS and fenced Quest commit still recheck actor,
             // object and phase after this preview; stale phases fail closed.
@@ -1378,16 +1362,8 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
         // owner and fenced SQL read-set prove their portable roots separately.
         if requirement.appearance == 0 {
             let position = tile(requirement.position);
-            return requirement.ground_stack.is_some()
-        // Ground contents are proved by the fenced quest transaction, never
-        // by static map appearances. Here admit only an existing non-house tile.
-        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Map {
-            position,
-            appearance,
-        } = requirement
-        else {
-            let position = tile(requirement.position());
-            return callback.has_personal_state()
+            return (requirement.ground_stack.is_some()
+                || (requirement.ground.is_some() && callback.has_personal_state()))
                 && !map.facts.house_tile(position)
                 && map
                     .overlay
@@ -1396,8 +1372,6 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                     .is_some();
         }
         let position = tile(requirement.position);
-        };
-        let position = tile(*position);
         !map.facts.house_tile(position)
             && map
                 .overlay
@@ -1418,11 +1392,24 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                             };
                             !map.facts.base_hidden(key)
                                 && map.facts.base_entry(position, ordinal, *id).is_some_and(
-                                    |entry| !entry.pickupable && entry.appearance_id == *appearance,
+                                    |entry| {
+                                        !entry.pickupable
+                                            && entry.appearance_id == requirement.appearance
+                                    },
                                 )
                         })
                 })
     })
+}
+
+/// Literal fixed external reset under the retained origin scope owner. This is
+/// source-event composition, not an invented USE command or a Character grant.
+pub(in crate::gameplay_transport) fn prepare_bak_public_reset(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    map: &crate::map::boot::BundleMap,
+    prepared: crate::durability::quest_state::rotten_flame::PreparedBakEssences,
+) -> Option<crate::durability::quest_state::rotten_flame::phase::BakPhasePublication> {
+    rotten_flame::prepare_public_reset(runtime, map, prepared)
 }
 
 #[cfg(test)]
@@ -1546,12 +1533,4 @@ mod native_selector_tests {
         );
         Ok(())
     }
-/// Literal fixed external reset under the retained origin scope owner. This is
-/// source-event composition, not an invented USE command or a Character grant.
-pub(in crate::gameplay_transport) fn prepare_bak_public_reset(
-    runtime: &crate::foundation::ChannelRuntimeV1,
-    map: &crate::map::boot::BundleMap,
-    prepared: crate::durability::quest_state::rotten_flame::PreparedBakEssences,
-) -> Option<crate::durability::quest_state::rotten_flame::phase::BakPhasePublication> {
-    rotten_flame::prepare_public_reset(runtime, map, prepared)
 }

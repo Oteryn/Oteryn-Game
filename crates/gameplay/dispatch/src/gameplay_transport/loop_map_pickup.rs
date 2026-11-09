@@ -122,9 +122,6 @@ pub(super) async fn move_map_item(
         else {
             return stale;
         };
-        let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
-            return stale;
-        };
         let Some(EntryFacts {
             definition: MapDefinition::Item(reference),
             ..
@@ -132,49 +129,38 @@ pub(super) async fn move_map_item(
         else {
             return stale;
         };
+        let Some(definition) =
+            crate::gameplay_transport::item_look::typed_definition(index, reference)
+        else {
+            return stale;
+        };
+        let entry = at
+            .map
+            .facts
+            .pickup_entry(pos, ordinal, id)
+            .or_else(|reason| {
+                if matches!(destination, LoopDestination::Ground(_)) {
+                    at.map.facts.empty_amphora_push_entry(
+                        pos,
+                        ordinal,
+                        id,
+                        tile.depths(),
+                        &definition.production_key,
+                    )
+                } else {
+                    Err(reason)
+                }
+            });
+        let Ok(entry) = entry else {
+            return stale;
+        };
         (reference, entry.quantity, None)
-    let Some(id) = tile
-        .ids()
-        .iter()
-        .zip(tile.depths())
-        .filter(|(_, depth)| **depth == 0)
-        .nth(usize::from(ordinal))
-        .map(|(id, _)| *id)
-    else {
-        return stale;
-    };
-    let Some(EntryFacts {
-        definition: MapDefinition::Item(reference),
-        ..
-    }) = at.map.facts.base_entry(pos, ordinal, id)
-    else {
-        return stale;
     };
     let Some(definition) = crate::gameplay_transport::item_look::typed_definition(index, reference)
     else {
         return stale;
     };
     let ground_push = matches!(destination, LoopDestination::Ground(_));
-    let entry = at
-        .map
-        .facts
-        .pickup_entry(pos, ordinal, id)
-        .or_else(|reason| {
-            if ground_push {
-                at.map.facts.empty_amphora_push_entry(
-                    pos,
-                    ordinal,
-                    id,
-                    tile.depths(),
-                    &definition.production_key,
-                )
-            } else {
-                Err(reason)
-            }
-        });
-    let Ok(entry) = entry else {
-        return stale;
-    };
     if key_number.is_some()
         && !matches!(
             definition.production_key.as_str(),
@@ -188,9 +174,7 @@ pub(super) async fn move_map_item(
     {
         return stale;
     }
-    if plan_map_item_mint(&item, quantity, false).is_err() {
-        return stale;
-    if !oteryn_gameplay_items::map_pickup::whole_quantity_requested(entry.quantity, request.count) {
+    if !oteryn_gameplay_items::map_pickup::whole_quantity_requested(quantity, request.count) {
         return refused(LoopMoveRefusal::NotSupported);
     }
     let item = if ground_push {
@@ -214,6 +198,12 @@ pub(super) async fn move_map_item(
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
+    if plan_map_item_mint_request(&mint, false).is_err() {
+        return stale;
+    }
+    let Some(ground) = loop_ground(admission, base, Some(index)).await else {
+        return LoopMoveResult::Unknown;
+    };
     if let Some(node) = &nested {
         let mut ancestor = node.parent;
         loop {
@@ -231,16 +221,6 @@ pub(super) async fn move_map_item(
             .overlay()
             .tile(pos)
             .is_some_and(|tile| tile.is_hidden(ordinal));
-    if plan_map_item_mint_request(&mint, false).is_err() {
-        return stale;
-    }
-    let Some(ground) = loop_ground(admission, base, Some(index)).await else {
-        return LoopMoveResult::Unknown;
-    };
-    let hidden = ground
-        .overlay()
-        .tile(pos)
-        .is_some_and(|tile| tile.is_hidden(ordinal));
     // A crash-retry is the sole exception to the hidden-origin gate. This probe writes nothing.
     if hidden {
         match admission

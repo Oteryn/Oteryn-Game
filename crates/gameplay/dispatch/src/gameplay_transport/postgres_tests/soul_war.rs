@@ -669,9 +669,7 @@ fn scenario() -> TestResult {
             floor: -10,
         };
         let world = super::quest_world_callbacks::world(
-            &Callback {
-                admission: None,
-                requires_premium: false,
+            &Callback { character_requirements: None, required_completed_quests: Vec::new(),
                 admission: None, requires_premium: false,
                 world_change: None,
                 actor_kind: Default::default(),
@@ -711,26 +709,6 @@ fn scenario() -> TestResult {
         )?;
         let h =
             Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
-        let trigger = Position { x: 33620, y: 31400, floor: -10 };
-        let world = super::quest_world_callbacks::world(&Callback {
-            admission: Default::default(),
-admission: None, world_change: None,
-admission: None,
-world_change: None,
-admission: None,
-                admission: None,
-        let world = super::quest_world_callbacks::world(&Callback { required_completed_quests: Vec::new(),
-world_change: None,
-            admission: None,
-            actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
-            key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
-            trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
-            lever: None, reversible: false, passages: vec![], teleport: None, facing: None, effects: Default::default(), state_ops: Vec::new(), world_requirements: vec![], storage: vec![],
-            minimum_level: None, character_requirements: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
-            return_on_failure: false, failure_message: None, success_message: None,
-            native_rule: None, sources: vec![],
-        }, trigger)?;
-        let h = Harness::create_with_admission_seed(admin, "soul_war_durable", false, false).await?;
         prepare_current_session(&h).await?;
         let mut deps = Dependencies::new()?;
         let seal = h.recovery.seal_current().map_err(debug)?;

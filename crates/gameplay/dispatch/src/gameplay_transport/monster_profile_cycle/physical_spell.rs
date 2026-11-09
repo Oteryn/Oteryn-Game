@@ -717,27 +717,6 @@ async fn prepare_source_reader<'native>(
     ) else {
         return None;
     };
-    let from = from.position();
-    let to = to.position();
-    let facing = states
-        .monster_melee
-        .creature_ai
-        .state(proposal.issuer)
-        .map(|state| match state.attack_facing() {
-            crate::movement::CardinalStep::North => Facing::North,
-            crate::movement::CardinalStep::East
-            | crate::movement::CardinalStep::NorthEast
-            | crate::movement::CardinalStep::SouthEast => Facing::East,
-            crate::movement::CardinalStep::South => Facing::South,
-            crate::movement::CardinalStep::West => Facing::West,
-            crate::movement::CardinalStep::NorthEast => Facing::North,
-            crate::movement::CardinalStep::SouthEast => Facing::South,
-            crate::movement::CardinalStep::SouthWest => Facing::South,
-            crate::movement::CardinalStep::NorthWest => Facing::North,
-            crate::movement::CardinalStep::West
-            | crate::movement::CardinalStep::NorthWest
-            | crate::movement::CardinalStep::SouthWest => Facing::West,
-        })?;
     let anchor = match callback {
         Some(plan) => plan.anchor_position(runtime).ok()?,
         None => None,
@@ -752,13 +731,13 @@ async fn prepare_source_reader<'native>(
             .state(proposal.issuer)
             .map(|state| match state.attack_facing() {
                 crate::movement::CardinalStep::North => Facing::North,
-                crate::movement::CardinalStep::East => Facing::East,
+                crate::movement::CardinalStep::East
+                | crate::movement::CardinalStep::NorthEast
+                | crate::movement::CardinalStep::SouthEast => Facing::East,
                 crate::movement::CardinalStep::South => Facing::South,
-                crate::movement::CardinalStep::West => Facing::West,
-                crate::movement::CardinalStep::NorthEast
-                | crate::movement::CardinalStep::NorthWest => Facing::North,
-                crate::movement::CardinalStep::SouthEast
-                | crate::movement::CardinalStep::SouthWest => Facing::South,
+                crate::movement::CardinalStep::West
+                | crate::movement::CardinalStep::NorthWest
+                | crate::movement::CardinalStep::SouthWest => Facing::West,
             })
     };
     let canonical_facing = physical_facing.map(|facing| match facing {

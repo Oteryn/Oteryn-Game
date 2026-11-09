@@ -39,7 +39,7 @@ pub fn prepare_creature_tile_read<O: NativeWorldObjectRead + ?Sized>(
         client: runtime.content_pin().client_artifact_digest(),
         position,
         target,
-        tile: tile::<O::Error>(room, position)?.cloned(),
+        tile: tile::<O::Error>(room, position)?.map(std::borrow::Cow::into_owned),
     })
 }
 impl PreparedCreatureTileRead {

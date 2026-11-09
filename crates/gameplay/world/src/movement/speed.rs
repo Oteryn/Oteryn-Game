@@ -394,16 +394,6 @@ impl CreatureMovementCadence {
             return Err(E::MissingMap);
         }
         let at = snapshot.position();
-        let (dx, dy) = match direction {
-            crate::movement::CardinalStep::North => (0, -1),
-            crate::movement::CardinalStep::East => (1, 0),
-            crate::movement::CardinalStep::South => (0, 1),
-            crate::movement::CardinalStep::West => (-1, 0),
-            crate::movement::CardinalStep::NorthEast => (1, -1),
-            crate::movement::CardinalStep::SouthEast => (1, 1),
-            crate::movement::CardinalStep::SouthWest => (-1, 1),
-            crate::movement::CardinalStep::NorthWest => (-1, -1),
-        };
         let (dx, dy) = direction.delta();
         let next = crate::foundation::MovementLocalPosition {
             x: at.x.checked_add(dx).ok_or(E::MissingMap)?,

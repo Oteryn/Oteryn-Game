@@ -285,18 +285,13 @@ pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
         let hive=index<6;
         let key=if hive {format!("{HIVE_OBJECTIVE_PREFIX}{index}")}else{binding.key.to_owned()};
         let tool=tools.get(index).copied().filter(|tool|*tool!=0);
-        Callback { admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
-        Callback { required_completed_quests: Vec::new(), admission: None,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
+        Callback { required_completed_quests: Vec::new(), admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
             key,quest:if hive {HIVE_QUEST}else{DEEPLING_QUEST}.into(),trigger:Trigger::Use,
             selector:Selector{native: None,position:Some(Position{x:binding.position.0,y:binding.position.1,floor:binding.position.2}),unique:None,action:None,appearance:Some(binding.appearance)},
             lever:None,reversible:false,passages:vec![],teleport:None,
             storage:{let mut storage=vec![Storage{increment: false, at_least: false,track:binding.track.into(),minimum:0,maximum:if hive {binding.required-1}else{0},set:if hive {1}else{0},preserve:false}];if hive {storage.push(Storage{increment: false, at_least: false,track:ACTIVE_TRACKS[index].into(),minimum:1,maximum:1,set:1,preserve:true})}storage},
-            minimum_level:None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
-            item_on_target:tool.map(|tool|ItemOnTarget{ target_remove: false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
-            item_on_target:tool.map(|tool|ItemOnTarget{selected_instance:false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
-            item_on_target:tool.map(|tool|ItemOnTarget{ ingredients: Vec::new(),alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             minimum_level:None, character_requirements: None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
-            item_on_target:tool.map(|tool|ItemOnTarget{alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
+            item_on_target:tool.map(|tool|ItemOnTarget{ ingredients: Vec::new(), target_remove: false,selected_instance:false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{tool}"),count:1,replacement:Some(format!("oteryn:item.tibia.i{tool}")),target_replacement:None}),
             return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
             sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/orockle.lua:explicit-native-geometry-and-execution-adaptation; wiki56916@1184992; NOT_DONOR_POSITION".into()],
         }

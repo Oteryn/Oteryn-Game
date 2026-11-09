@@ -164,14 +164,13 @@ fn binding(
     hash.finalize().into()
 }
 
-pub(super) async fn enter_in_transaction<
-    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
->(
 #[allow(
     clippy::too_many_arguments,
     reason = "shared entry consumes the recovery fence and optional atomic Soulpit debit"
 )]
-pub(super) async fn enter_in_transaction(
+pub(super) async fn enter_in_transaction<
+    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+>(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,

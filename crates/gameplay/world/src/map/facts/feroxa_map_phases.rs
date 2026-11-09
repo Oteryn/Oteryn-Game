@@ -285,6 +285,7 @@ impl CallbackStates {
                         ordinal,
                         placement_key: key,
                         movable: false,
+                        openable_source: false,
                     },
                     facts,
                 })

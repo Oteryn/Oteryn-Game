@@ -608,7 +608,7 @@ async fn scenario(admin: String) -> TestResult {
     };
     assert_eq!(sqlx::query_scalar::<_,i64>(
         "SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.instance_id=encode($1,'hex')::uuid AND g.channel_id IS NULL AND i.definition_production_key=$2")
-        .bind(instance_id.as_slice()).bind(&rewards.corpse_item.production_key).fetch_one(&h.pool).await?,1,
+        .bind(instance_id.as_slice()).bind(&rewards.corpse_item.as_ref().ok_or("corpse profile")?.production_key).fetch_one(&h.pool).await?,1,
         "the source corpse is durably placed in this exact Instance");
     // Wait for the real durable source deadline; never shorten the captured policy.
     tokio::time::timeout(Duration::from_secs(90), async {

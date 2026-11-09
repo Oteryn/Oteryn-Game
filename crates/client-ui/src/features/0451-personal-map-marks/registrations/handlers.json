@@ -1,13 +1,13 @@
 {
-  "mechanic": "0449-personal-map-marks",
+  "mechanic": "0451-personal-map-marks",
   "kind": "handlers",
-  "id": "0449-personal-map-marks-query",
+  "id": "0451-personal-map-marks-query",
   "status": "supported",
   "commands": [
     733
   ],
   "direction": "client_to_server",
-  "capability": 449,
+  "capability": 451,
   "entry": "protocol.rs::request",
   "not_applicable": {
     "input": "Automatic bounded read-only refresh; no marker mutation command.",

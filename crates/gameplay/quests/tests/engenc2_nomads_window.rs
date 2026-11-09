@@ -39,7 +39,12 @@ fn nomads_window_native_binding_requires_the_source_crates_and_amphora() -> Resu
     );
     assert_eq!(callback.world_requirements.len(), 3);
     for (index, requirement) in callback.world_requirements.iter().enumerate() {
-        let WorldRequirement::Ground { position, ground } = requirement else {
+        let WorldRequirement {
+            position,
+            ground: Some(ground),
+            ..
+        } = requirement
+        else {
             return Err("static map appearance cannot prove mutable crates".into());
         };
         assert_eq!(

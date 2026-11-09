@@ -254,6 +254,27 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
+        return false;
+    }
+    if effects.player_speech.as_ref().is_some_and(|text| {
+        callback.actor_kind != ActorKind::Player
+            || text.is_empty()
+            // CHAT0-RL-01: 255 Unicode scalars, each at most four UTF-8 bytes.
+            || text.len() > 1_020
+            || text.chars().count() > 255
+            || text.trim() != text.as_str()
+            || text.chars().any(char::is_control)
+    }) {
+        return false;
+    }
+    if effects
+        .clear_area
+        .as_ref()
+        .is_some_and(|area| !area.valid(callback))
+    {
+        return false;
+    }
     if effects
         .requires_item_disguise
         .as_ref()
@@ -271,34 +292,6 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && (callback.trigger != Trigger::StepIn
                 || callback.actor_kind != ActorKind::Player
                 || callback.teleport.is_none()))
-    {
-        return false;
-    }
-    if effects.player_speech.as_ref().is_some_and(|text| {
-        callback.actor_kind != ActorKind::Player
-            || text.is_empty()
-            // CHAT0-RL-01: 255 Unicode scalars, each at most four UTF-8 bytes.
-            || text.len() > 1_020
-            || text.chars().count() > 255
-            || text.trim() != text.as_str()
-            || text.chars().any(char::is_control)
-    }) {
-    if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
-        return false;
-    }
-    if effects.player_speech.as_ref().is_some_and(|text| {
-        callback.actor_kind != ActorKind::Player
-            || text.is_empty()
-            || text.len() > 255
-            || text.trim() != text.as_str()
-            || text.chars().any(char::is_control)
-    }) {
-        return false;
-    }
-    if effects
-        .clear_area
-        .as_ref()
-        .is_some_and(|area| !area.valid(callback))
     {
         return false;
     }
@@ -355,27 +348,25 @@ pub(super) fn valid(callback: &Callback) -> bool {
         };
         callback.trigger != Trigger::Use
             || !callback.has_personal_state()
-            || (callback
-                .storage
-                .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
-                && !callback.state_ops.iter().any(|operation| {
-                    matches!(
-                        operation.effect,
-                        crate::quest::reward_callbacks::StateMutation::SetNow
-                            | crate::quest::reward_callbacks::StateMutation::Add { value: 1.. }
-                            | crate::quest::reward_callbacks::StateMutation::Add { value: ..=-1 }
-                    )
-                })
-                && !effects
-                    .item_reward_cycle
-                    .as_deref()
-                    .is_some_and(|track| callback.craft_reward_epoch(track)))
             || (!effects.item_reward_per_use
-                && callback
+                && (callback
                     .storage
                     .iter()
-                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                    && !callback.state_ops.iter().any(|operation| {
+                        matches!(
+                            operation.effect,
+                            crate::quest::reward_callbacks::StateMutation::SetNow
+                                | crate::quest::reward_callbacks::StateMutation::Add { value: 1.. }
+                                | crate::quest::reward_callbacks::StateMutation::Add {
+                                    value: ..=-1
+                                }
+                        )
+                    })
+                    && !effects
+                        .item_reward_cycle
+                        .as_deref()
+                        .is_some_and(|track| callback.craft_reward_epoch(track))))
             || !item(&reward.item, reward.count)
             || !reward.valid_literal_text()
             || reward.additional.len() > 19
@@ -527,9 +518,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     });
     if operations > 1
         || (operations > 0
-            && ((!personal_encounter && (!lever || callback.has_personal_state()))
-            && (((!lever || callback.has_personal_state())
-                && !super::personal_trial::admitted(callback))
+            && ((!personal_encounter
+                && !super::personal_trial::admitted(callback)
+                && (!lever || callback.has_personal_state()))
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
     {
@@ -617,47 +608,37 @@ pub(super) fn valid(callback: &Callback) -> bool {
 }
 
 #[cfg(test)]
-mod phase_tests {
-    #[test]
-    fn production_cults_callback_is_source_qualified() -> Result<(), String> {
-        let callbacks = super::super::load()?;
-        let callback = callbacks
-            .iter()
-            .find(|c| c.key == "oteryn:quest-callback/engenc2/cults-essence")
-            .ok_or("Cults callback is not registered")?;
-        let encounter = callback
-            .effects
-            .encounter
-            .as_ref()
-            .ok_or("Cults encounter missing")?;
-        assert_eq!(encounter.phase, Some(super::EncounterPhase::Cults));
-        assert_eq!(encounter.players.len(), 5);
-        assert_eq!(encounter.monsters.len(), 10);
-        assert!(
-            encounter
-                .players
-                .iter()
-                .all(|p| p.to == encounter.players[0].to)
-        );
-        Ok(())
-    }
+mod speech_tests {
+    use super::*;
 
     #[test]
-    fn cults_phase_is_an_authored_encounter_input() -> Result<(), serde_json::Error> {
-        let encounter: super::Encounter = serde_json::from_value(serde_json::json!({
-            "minimum_level": 0, "players": [], "monsters": [],
-            "room_min": {"x":33084,"y":31907,"floor":-15},
-            "room_max": {"x":33114,"y":31933,"floor":-15},
-            "phase": "cults_boss_phase_closures"
-        }))?;
-        let encoded = serde_json::to_value(encounter)?;
-        assert_eq!(encoded["phase"], "cults_boss_phase_closures");
+    fn qm46_public_speech_is_bounded_and_player_only() -> Result<(), String> {
+        let original = super::super::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/children-grease")
+            .ok_or("grease callback")?;
+        assert!(valid(&original));
+        for text in [
+            String::new(),
+            "x".repeat(256),
+            " whitespace ".into(),
+            "tab\t".into(),
+            "line\nbreak".into(),
+            "nul\0".into(),
+        ] {
+            let mut callback = original.clone();
+            callback.effects.player_speech = Some(text);
+            assert!(!valid(&callback));
+        }
+        let mut monster = original;
+        monster.actor_kind = ActorKind::Monster;
+        assert!(!valid(&monster));
         Ok(())
     }
 }
 
 #[cfg(test)]
-mod speech_tests {
+mod unicode_speech_tests {
     use super::*;
 
     #[test]
@@ -704,31 +685,41 @@ mod speech_tests {
 }
 
 #[cfg(test)]
-mod speech_tests {
-    use super::*;
+mod phase_tests {
+    #[test]
+    fn production_cults_callback_is_source_qualified() -> Result<(), String> {
+        let callbacks = super::super::load()?;
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/engenc2/cults-essence")
+            .ok_or("Cults callback is not registered")?;
+        let encounter = callback
+            .effects
+            .encounter
+            .as_ref()
+            .ok_or("Cults encounter missing")?;
+        assert_eq!(encounter.phase, Some(super::EncounterPhase::Cults));
+        assert_eq!(encounter.players.len(), 5);
+        assert_eq!(encounter.monsters.len(), 10);
+        assert!(
+            encounter
+                .players
+                .iter()
+                .all(|p| p.to == encounter.players[0].to)
+        );
+        Ok(())
+    }
 
     #[test]
-    fn qm46_public_speech_is_bounded_and_player_only() -> Result<(), String> {
-        let original = super::super::load()?
-            .into_iter()
-            .find(|c| c.key == "oteryn:quest-callback/children-grease")
-            .ok_or("grease callback")?;
-        assert!(valid(&original));
-        for text in [
-            String::new(),
-            "x".repeat(256),
-            " whitespace ".into(),
-            "tab\t".into(),
-            "line\nbreak".into(),
-            "nul\0".into(),
-        ] {
-            let mut callback = original.clone();
-            callback.effects.player_speech = Some(text);
-            assert!(!valid(&callback));
-        }
-        let mut monster = original;
-        monster.actor_kind = ActorKind::Monster;
-        assert!(!valid(&monster));
+    fn cults_phase_is_an_authored_encounter_input() -> Result<(), serde_json::Error> {
+        let encounter: super::Encounter = serde_json::from_value(serde_json::json!({
+            "minimum_level": 0, "players": [], "monsters": [],
+            "room_min": {"x":33084,"y":31907,"floor":-15},
+            "room_max": {"x":33114,"y":31933,"floor":-15},
+            "phase": "cults_boss_phase_closures"
+        }))?;
+        let encoded = serde_json::to_value(encounter)?;
+        assert_eq!(encoded["phase"], "cults_boss_phase_closures");
         Ok(())
     }
 }

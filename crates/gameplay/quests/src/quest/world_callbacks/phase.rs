@@ -58,9 +58,7 @@ pub fn select_storage_phase<'a>(
     }
     Ok(selected)
 }
-//! STEP alternatives share geometry only when preserved personal phases are disjoint.
-use super::{ActorKind, Callback, Trigger};
-use std::collections::BTreeMap;
+// STEP alternatives share geometry only when preserved personal phases are disjoint.
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
     left.actor_kind == ActorKind::Player

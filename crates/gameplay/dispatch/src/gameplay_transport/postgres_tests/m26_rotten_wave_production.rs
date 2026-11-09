@@ -169,6 +169,9 @@ pub(super) async fn check(
             },
             tick_now,
         );
+        let prepared_names = owner.capture_native_health_names(&runtime).map_err(|_| "capture names")?;
+        let read_names = owner.read_prepared_native_health_names(&permit, prepared_names).await;
+        let names = owner.seal_native_health_names(&runtime, read_names).map_err(|_| "seal names")?;
         let (_, reported) = owner
             .drive_monster_profiles(
                 &mut runtime,
@@ -180,6 +183,7 @@ pub(super) async fn check(
                 &revisions,
                 &[],
                 tick_now,
+                &names,
             )
             .await
             .map_err(|_| "production profile drive")?;

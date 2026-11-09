@@ -1,43 +1,10 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
-mod completed_quests;
 pub(crate) mod character_requirements;
+mod completed_quests;
 pub(super) mod completion;
-#[cfg(feature = "test-support")]
-pub mod ground_stack;
-#[cfg(not(feature = "test-support"))]
-#[cfg(any(test, feature = "test-support"))]
-pub mod ground_stack;
-#[cfg(not(any(test, feature = "test-support")))]
-#[cfg(feature = "test-support")]
-#[doc(hidden)]
-pub mod ground_stack;
-#[cfg(not(feature = "test-support"))]
 mod ground_read;
-#[cfg(any(test, feature = "test-support"))]
-pub mod ground_stack;
-#[cfg(not(any(test, feature = "test-support")))]
 pub(crate) mod ground_stack;
-/// Shared PostgreSQL fixture entrypoint; production keeps the Ground owner private.
-#[cfg(any(test, feature = "test-support"))]
-pub async fn fixture_ground_stack_matches(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
-    target: &crate::durability::spell_items_abi::SpellGroundTarget,
-    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
-) -> Result<bool, crate::durability::DurabilityError> {
-    ground_stack::matches(tx, authority, target, expected).await
-}
-#[cfg(feature = "test-support")]
-pub mod ground_stack;
-#[cfg(not(feature = "test-support"))]
-pub(crate) mod ground_stack;
-#[cfg(any(test, feature = "test-support"))]
-#[doc(hidden)]
-pub use ground_stack::matches as fixture_ground_stack_matches;
-#[cfg(any(test, feature = "test-support"))]
-#[doc(hidden)]
-pub use ground_stack::matches as fixture_ground_stack_matches;
 mod selected_tool;
 mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
@@ -74,17 +41,6 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
-/// Lifted PostgreSQL fixtures retain the production predicate and transaction-bound scope.
-#[cfg(any(test, feature = "test-support"))]
-pub async fn fixture_ground_stack_matches(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
-    target: &super::spell_items_abi::SpellGroundTarget,
-    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
-) -> Result<bool, DurabilityError> {
-    ground_stack::matches(tx, authority, target, expected).await
-}
-
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
 #[path = "quest_world_callback/reward_inventory.rs"]
@@ -109,16 +65,12 @@ pub(super) async fn consume_reward_inputs(
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
 ) -> Result<bool, DurabilityError> {
-    let super::quest_state::QuestCause::Command(_) = request.cause else {
-        return Ok(false);
-    };
-    let mut keys: Vec<_> = callback
     match request.cause {
         super::quest_state::QuestCause::Command(_) if callback.world_claim.is_none() => {}
         super::quest_state::QuestCause::Use(_) if callback.world_claim.is_some() => {}
         _ => return Ok(false),
     }
-    let keys: Vec<_> = callback
+    let mut keys: Vec<_> = callback
         .take
         .iter()
         .chain(&callback.present)
@@ -142,9 +94,6 @@ pub(super) async fn consume_reward_inputs(
     if rows.len() > 500 {
         return Ok(false);
     }
-    if !reward_inventory::holds(&rows, &callback.inventory)? {
-        return Ok(false);
-    }
     if let Some(target_key) = &callback.carried_target {
         let Some(use_) = carried_use else {
             return Ok(false);
@@ -163,6 +112,9 @@ pub(super) async fn consume_reward_inputs(
         }) {
             return Ok(false);
         }
+    }
+    if !reward_inventory::holds(&rows, &callback.inventory)? {
+        return Ok(false);
     }
     if callback.exact_take {
         for input in &callback.take {
@@ -246,7 +198,6 @@ pub(super) async fn consume_reward_inputs(
 
 #[allow(
     clippy::too_many_arguments,
-    reason = "retains source, scope and live eligibility owners in one transaction"
     reason = "the existing fenced participant also receives the exact locked quest plan"
 )]
 pub(super) async fn consume(
@@ -255,9 +206,8 @@ pub(super) async fn consume(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
-    context: &QuestWorldToolContext,
     changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
-    context: &QuestWorldContext,
+    context: &QuestWorldToolContext,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
         &super::runtime_scope_assignment::NodeIncarnationProof,
@@ -322,55 +272,6 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
-    if let Some(requirements) = &callback.character_requirements
-        && !character_requirements::satisfied(tx, fence.character_id, requirements).await?
-    {
-        return Ok(false);
-    }
-    for requirement in &callback.world_requirements {
-        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Ground {
-            position,
-            ground,
-        } = requirement
-        else {
-            continue;
-        };
-        if !callback.has_personal_state()
-            || !ground_read::matches(
-                tx,
-                &ground_read::Context {
-                    world: world_id.as_bytes(),
-                    channel: channel_id.as_bytes(),
-                    generation: fence.scope_ownership_generation.get(),
-                    map: &context.map_revision,
-                    content: &context.content_revision,
-                    placement: &context.placement_context,
-                },
-                *position,
-                ground,
-            )
-            .await?
-        {
-            return Ok(false);
-        }
-    }
-    if !ground_stack::require(
-        tx,
-        permit,
-        scope_guard,
-        fence,
-        context,
-        &callback.world_requirements,
-    )
-    .await?
-    {
-        return Ok(false);
-    }
-    if !ground_stack::matches_requirements(tx, permit, fence, context, &callback.world_requirements)
-        .await?
-    {
-        return Ok(false);
-    }
     if !ground_stack::require(
         tx,
         permit,
@@ -397,13 +298,45 @@ pub(super) async fn consume(
                 oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
             if !catalogue
-                .regular_blessings()
                 .regular()
                 .all(|blessing| held.contains(&blessing.storage_key))
             {
                 return Ok(false);
             }
         }
+    }
+    for requirement in &callback.world_requirements {
+        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement {
+            position,
+            ground: Some(ground),
+            ..
+        } = requirement
+        else {
+            continue;
+        };
+        if !callback.has_personal_state()
+            || !ground_read::matches(
+                tx,
+                &ground_read::Context {
+                    world: world_id.as_bytes(),
+                    channel: channel_id.as_bytes(),
+                    generation: fence.scope_ownership_generation.get(),
+                    map: &context.map_revision,
+                    content: &context.content_revision,
+                    placement: &context.placement_context,
+                },
+                *position,
+                ground,
+            )
+            .await?
+        {
+            return Ok(false);
+        }
+    }
+    if let Some(requirements) = &callback.character_requirements
+        && !character_requirements::satisfied(tx, fence.character_id, requirements).await?
+    {
+        return Ok(false);
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
@@ -478,9 +411,8 @@ async fn consume_inputs(
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
-    context: &QuestWorldToolContext,
     changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
-    context: &QuestWorldContext,
+    context: &QuestWorldToolContext,
     command: crate::foundation::CommandRef,
     world_id: crate::foundation::WorldId,
     channel_id: crate::foundation::ChannelId,
@@ -947,10 +879,6 @@ pub(super) async fn consume_npc_inputs(
     Ok(true)
 }
 
-#[cfg(test)]
-#[path = "quest_world_callback/entry_postgres_tests.rs"]
-mod entry_postgres_tests;
-
 /// Exercise the exact durable predicate from auto-mounted PostgreSQL cases.
 #[cfg(any(test, feature = "test-support"))]
 pub async fn matches_ground_stack_for_test(
@@ -961,3 +889,10 @@ pub async fn matches_ground_stack_for_test(
 ) -> Result<bool, DurabilityError> {
     ground_stack::matches(tx, authority, target, expected).await
 }
+
+#[cfg(test)]
+#[path = "quest_world_callback/entry_postgres_tests.rs"]
+mod entry_postgres_tests;
+
+#[cfg(any(test, feature = "test-support"))]
+pub use ground_stack::fixture_matches as fixture_ground_stack_matches;

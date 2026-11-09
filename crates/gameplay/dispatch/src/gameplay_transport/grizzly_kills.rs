@@ -298,7 +298,7 @@ pub(super) fn capture(
         .filter(|source| source.world == *runtime.binding().world_id().as_bytes())
         .cloned();
     entry.grizzly = Some(
-        cache.remember(entry.target, entry.facts.occurrence, |snapshots| {
+        cache.remember(entry.target, entry.facts.occurrence, |snapshots, runs| {
             let live: Vec<_> = snapshots
                 .iter()
                 .filter(|snapshot| {
@@ -318,6 +318,16 @@ pub(super) fn capture(
                 &entry.creature,
                 &live,
             );
+            if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+                for recipient in &mut frozen.native {
+                    if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
+                    let crate::durability::quest_state::native_kills::NativeDeathSource::Party(party) = &recipient.death.source else { continue; };
+                    recipient.death.source = crate::durability::quest_state::native_kills::NativeDeathSource::InstanceBoss {
+                        party: Arc::clone(party), death: entry.facts.death,
+                        died_at_unix_ms: entry.facts.died_at_unix_ms,
+                    };
+                }
+            }
             let origin = runtime
                 .read_actor_position(entry.target)
                 .ok()
@@ -355,16 +365,6 @@ pub(super) fn capture(
                 };
                 true
             });
-            if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
-                for recipient in &mut frozen.native {
-                    if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
-                    let crate::durability::quest_state::native_kills::NativeDeathSource::Party(party) = &recipient.death.source else { continue; };
-                    recipient.death.source = crate::durability::quest_state::native_kills::NativeDeathSource::InstanceBoss {
-                        party: Arc::clone(party), death: entry.facts.death,
-                        died_at_unix_ms: entry.facts.died_at_unix_ms,
-                    };
-                }
-            }
             frozen.native.extend(super::quest_batch3_c::capture(
                 runtime,
                 entry,
@@ -377,31 +377,6 @@ pub(super) fn capture(
                     objectives: snapshot.source_objectives.clone(),
                 }),
             ));
-            frozen
-        }),
-    );
-    entry.grizzly =
-        Some(
-            cache.remember(entry.target, entry.facts.occurrence, |snapshots, runs| {
-                let live: Vec<_> = snapshots
-                    .iter()
-                    .filter(|snapshot| {
-                        runtime
-                            .bound_attacker_lease(snapshot.actor, snapshot.session)
-                            .is_ok_and(|lease| {
-                                lease.character_id().as_bytes() == &snapshot.character
-                                    && lease.generation() == snapshot.lease_generation
-                            })
-                    })
-                    .cloned()
-                    .collect();
-                let mut frozen = freeze(
-                    source,
-                    *principal.character.as_bytes(),
-                    principal_present,
-                    &entry.creature,
-                    &live,
-                );
                 frozen.native.extend(encounters::capture(
                     runtime,
                     entry,
@@ -421,9 +396,9 @@ pub(super) fn capture(
                         objectives: snapshot.source_objectives.clone(),
                     }),
                 ));
-                frozen
-            }),
-        );
+            frozen
+        }),
+    );
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -723,6 +698,7 @@ pub(super) fn freeze_encounter_credit(
                 lease_generation: participant.lease_generation,
                 death: crate::durability::quest_state::native_kills::NativeQuestDeath {
                     transition: counter.transition.into(),
+                    definition_hash: None,
                     creature: creature.into(),
                     observed_revision: participant.observed_revision,
                     source: crate::durability::quest_state::native_kills::NativeDeathSource::Party(

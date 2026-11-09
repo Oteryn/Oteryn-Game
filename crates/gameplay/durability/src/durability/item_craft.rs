@@ -352,11 +352,6 @@ async fn write_with_skinning<C: ItemLoopContent>(
                         if row.try_get::<Vec<u8>, _>("parent").ok()?
                             != source.try_get::<Vec<u8>, _>("parent").ok()?
                         {
-                    let ingredient = sqlx::query("SELECT i.quantity,uuid_send(e.parent_item_instance_id) AS parent,i.definition_family,i.definition_production_key,i.definition_revision_ref,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id FOR UPDATE) AS fluid_subtype FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
-                        .bind(ingredient_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-                    ingredient.and_then(|row| {
-                        if row.try_get::<Vec<u8>, _>("parent").ok()?
-                            != source.try_get::<Vec<u8>, _>("parent").ok()? {
                             return None;
                         }
                         let target = TypedDefinitionRef {
@@ -379,14 +374,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
                         ingredient_count = i64::from(resolved.target_debit);
                         ingredient_weight = u64::from(weight) * u64::from(resolved.target_debit);
                         retires_ingredient = quantity == resolved.target_debit;
-                        let quantity = u32::try_from(row.try_get::<i64, _>("quantity").ok()?).ok()?;
-                        let resolved = carried_cooking_conversion_with_quantity(
-                            native, &definition, &target,
-                            ingredient_fluid_subtype(row.try_get::<Option<i16>, _>("fluid_subtype").ok()?),
-                            quantity,
-                        )?;
                         ingredient_debit = resolved.target_debit;
-                        ingredient_consumed = Some((target, quantity == ingredient_debit));
+                        ingredient_consumed = Some((target.clone(), quantity == ingredient_debit));
                         Some(resolved.conversion)
                     })
                 } else {
@@ -595,10 +584,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if let Some(prepared) = &skinning {
         skinning::record(tx, fence, prepared, &transaction).await?;
     }
-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location,ingredient_count) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19,$20)")
-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).bind(i32::try_from(ingredient_count).map_err(|_| DurabilityError::InvalidStoredState)?).execute(&mut ***tx).await?;
-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location,ingredient_consumed_quantity) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19,$20)")
-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).bind(i64::from(ingredient_debit)).execute(&mut ***tx).await?;
+    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,ingredient_item_instance_id,ingredient_before_item,event_source_location,ingredient_count,ingredient_consumed_quantity) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,$18,$19,$20,$21)")
+        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).bind(request.ingredient.map(|id| id.to_vec())).bind(ingredient_before).bind(&nested_source).bind(i32::try_from(ingredient_count).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::from(ingredient_debit)).execute(&mut ***tx).await?;
     if let Some(prepared) = &skinning {
         skinning::transform(tx, prepared, &transaction).await?;
     }
@@ -609,7 +596,6 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if let Some(ingredient) = request.ingredient {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(ingredient.as_slice()).bind(&transaction).bind(ingredient_count).execute(&mut ***tx).await?;
-            .bind(ingredient.as_slice()).bind(&transaction).bind(i64::from(ingredient_debit)).execute(&mut ***tx).await?;
         sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND (SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
             .bind(ingredient.as_slice()).execute(&mut ***tx).await?;
     }

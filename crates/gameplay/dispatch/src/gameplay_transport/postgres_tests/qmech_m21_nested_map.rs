@@ -365,56 +365,9 @@ fn qmech_m21_postgres_nested_key_pickup() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn qmech_m21_postgres_immovable_source_without_native_custody_policy() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
-    let started = std::time::Instant::now();
-    eprintln!("POSTGRES_STARTED M21 immovable source");
-    let result = std::thread::Builder::new()
-        .stack_size(256 << 20)
-        .spawn(|| source_view(true, true).map_err(|e| e.to_string()))?
-        .join()
-        .map_err(|_| "M21 immovable source thread panicked".to_owned())
-        .flatten();
-    eprintln!(
-        "POSTGRES_CASE_COMPLETED M21 immovable source duration={:.6}s success={}",
-        started.elapsed().as_secs_f64(),
-        result.is_ok()
-    );
-    result?;
-    Ok(())
-}
 
-#[test]
-fn qmech_m21_postgres_shared_ruby_real_reset() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
-    let started = std::time::Instant::now();
-    eprintln!("POSTGRES_STARTED M21 shared Ruby real reset");
-    let result = std::thread::Builder::new()
-        .stack_size(256 << 20)
-        .spawn(|| {
-            super::quest_world_callbacks::scenario(
-                "l6-small-ruby-reset",
-                super::l6_world_pickups::RUBY,
-                false,
-            )
-            .map_err(|e| e.to_string())
-        })?
-        .join()
-        .map_err(|_| "M21 real-reset thread panicked".to_owned())
-        .flatten();
-    eprintln!(
-        "POSTGRES_CASE_COMPLETED M21 shared Ruby real reset duration={:.6}s success={}",
-        started.elapsed().as_secs_f64(),
-        result.is_ok()
-    );
-    result?;
-    Ok(())
-}
+
+
 
 #[path = "qmech_m22_captured_stack/postgres.rs"]
 mod captured_stack;

@@ -7,13 +7,15 @@ pub(super) fn accepts(callback: &RewardCallback, intent: &UseIntent) -> bool {
     if intent.use_with_position.is_some() {
         return false;
     }
-    if callback.fresh_corpse {
+    if callback.fresh_corpse || callback.corpse_target.is_some() {
         callback.creature_target.is_some()
             && intent.use_with.is_none()
             && matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_)))
     } else {
         intent.use_with_map_item.is_none()
-            && (callback.peer_requires.is_some() || callback.creature_target.is_some())
+            && (callback.peer_requires.is_some()
+                || callback.creature_target.is_some()
+                || callback.self_target.is_some())
                 == intent.use_with.is_some()
     }
 }

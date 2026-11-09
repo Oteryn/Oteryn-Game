@@ -36,9 +36,11 @@ impl CloakBloodCallback {
         };
         let cells = room.movement_cells();
         let tile = if let Some(world) = room.source_world() {
-            world
-                .immutable_tile(world.scope(), cell)
-                .map_err(|_| SpellItemError::Rejected("Cloak source tile"))?
+            std::borrow::Cow::Borrowed(
+                world
+                    .immutable_tile(world.scope(), cell)
+                    .map_err(|_| SpellItemError::Rejected("Cloak source tile"))?,
+            )
         } else {
             cells
                 .spell_tiles()

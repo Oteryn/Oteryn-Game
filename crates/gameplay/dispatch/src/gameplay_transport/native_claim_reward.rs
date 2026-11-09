@@ -59,7 +59,7 @@ fn callback(claim: &ServedClaim, bound: &BoundPlacement) -> Option<RewardCallbac
                     || actual.key_number.is_some()
                     || actual.text.is_some()
             })
-        || reward.text != bound.root_text
+        || reward.text.as_ref().and_then(|text| text.root()) != bound.root_text.as_deref()
     {
         return None;
     }

@@ -19,6 +19,7 @@ mod timed_passages_tests;
 #[path = "rafzane_elevator.rs"]
 mod rafzane_elevator;
 pub use rafzane_elevator::RafzaneElevator;
+
 #[path = "arena_pillars.rs"]
 mod arena_pillars;
 pub use arena_pillars::ArenaPillarProjection;
@@ -341,12 +342,10 @@ impl CallbackStates {
 
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
-    fn has_capacity(&self, additional: usize) -> bool {
-        let used = self.reserved.len()
-        let used = self.arena_pillars.len()
+            + self.reserved.len()
+            + self.arena_pillars.len()
             + self.arena_recreated.len()
             + self.changed.len()
-        let used = self.changed.len()
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
@@ -1298,11 +1297,6 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if states
-            .changed
-            .get(&key)
-            .map_or_else(|| states.phase_revision(key).unwrap_or(0), |(r, _)| *r)
-            != expected
         let projection_capacity = match projection {
             Some(QuestCallbackProjection::TimedPassages {
                 entries,
@@ -1320,7 +1314,11 @@ impl BundleFacts {
             }
             _ => usize::from(projection.is_some()) * 8,
         };
-        if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+        if states
+            .changed
+            .get(&key)
+            .map_or_else(|| states.phase_revision(key).unwrap_or(0), |(r, _)| *r)
+            != expected
             || states.reserved.contains(&key)
             || passages.iter().any(|key| states.reserved.contains(key))
             || replacements
@@ -1337,6 +1335,9 @@ impl BundleFacts {
                 QuestCallbackProjection::Portals { endpoints, .. } => endpoints
                     .iter()
                     .any(|(pos, _, _)| states.position_reserved(*pos)),
+                QuestCallbackProjection::TimedPassages { entries, .. } => entries
+                    .iter()
+                    .any(|entry| states.reserved.contains(&entry.key)),
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
@@ -1464,8 +1465,10 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos) || states.batch_blockers.contains(&pos) {
-        if states.solid_items.contains(&pos) || states.arena_pillar_closed_at(pos) {
+        if states.solid_items.contains(&pos)
+            || states.batch_blockers.contains(&pos)
+            || states.arena_pillar_closed_at(pos)
+        {
             return true;
         }
         if states.phase_entry(pos, 0).is_some() {

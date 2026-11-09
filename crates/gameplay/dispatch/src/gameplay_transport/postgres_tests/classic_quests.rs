@@ -48,7 +48,7 @@ pub(super) async fn install_with_offsets<const N: usize>(
     keys: [&str; N],
     offsets: Option<[(i32, i32); N]>,
 ) -> TestResult<[EntityRef; N]> {
-    install_offsets(owner, admitted, keys, |i| (i, 1)).await
+    install_offsets(owner, admitted, keys, |i| offsets.as_ref().and_then(|offsets| usize::try_from(i).ok().and_then(|i| offsets.get(i))).copied().unwrap_or((i, 1))).await
 }
 
 pub(super) async fn install_above<const N: usize>(
@@ -80,10 +80,6 @@ async fn install_offsets<const N: usize>(
         ).map_err(debug)?).map_err(debug)?;
     let at = runtime.read_actor_position(actor).map_err(debug)?.position();
     let mut placements = keys.into_iter().enumerate().map(|(i,key)| {
-            let (dx, dy) = match offsets {
-                Some(offsets) => offsets[i],
-                None => (i32::try_from(i)?, 1),
-            };
             let (dx,dy) = offset(i32::try_from(i)?);
             Ok(NpcPlacements { key: key.into(), placements: vec![NpcPlacement {
                 x: u16::try_from(at.x + dx)?,

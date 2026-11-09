@@ -20,13 +20,12 @@
 mod aggregate_completion_tests;
 
 pub mod admission_binding;
-pub mod authored_bindings;
-pub mod barbarian_arena;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
 pub mod arena_completion;
 pub mod authored_bindings;
+pub mod barbarian_arena;
 pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
@@ -48,10 +47,10 @@ pub mod grizzly_adams;
 pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
-pub mod ice_islands_seals;
-pub mod ice_seal_paint;
 #[path = "batch3_a/hot_cuisine.rs"]
 pub mod hot_cuisine;
+pub mod ice_islands_seals;
+pub mod ice_seal_paint;
 pub mod isle_of_evil;
 pub mod item_disguises;
 pub mod last_creep_native;

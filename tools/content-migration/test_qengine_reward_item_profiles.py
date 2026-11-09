@@ -22,6 +22,7 @@ class NativeFactJoin(unittest.TestCase):
                     self.assertEqual(target['value'], dict(key=f'oteryn:item.tibia.i{chain[stage+1]}', revision='definition-r1'))
                 else:
                     self.assertEqual(target, dict(state='NOT_APPLICABLE'))
+
     def test_m09_flask_matches_source_and_runtime_custody(self):
         key = 'oteryn:item.tibia.i12785'
         observed = next(r for r in q.capture()['records']
@@ -60,6 +61,7 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['production_binding']['external_id'], '9106')
         self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 50)
+
     def test_arena_goblets_promote_only_pinned_portable_custody(self):
         import json
         existing = {r['production_definition']['production_key']: r
@@ -81,6 +83,7 @@ class NativeFactJoin(unittest.TestCase):
             wrong['admission']['legal_destinations'].append('Equipment')
             with self.assertRaises(ValueError):
                 q.reconcile(old, wrong)
+
     def test_goblin_tools_preserve_their_source_identity_and_portable_facts(self):
         records = {r['production_binding']['external_id']: r for r in q.capture()['records']}
         for item in (17669, 17670, 17672, 17673, 17674, 17675):
@@ -92,6 +95,7 @@ class NativeFactJoin(unittest.TestCase):
                 self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
                 self.assertEqual(record['semantics']['physical']['state'], 'KNOWN')
                 self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 800 if item == 17669 else 350)
+
     def test_lion_holy_water_source_profile_has_exact_portable_custody(self):
         record = next((r for r in q.capture()['records']
                        if r['production_definition']['production_key'] == 'oteryn:item.tibia.i21466'), None)
@@ -151,6 +155,7 @@ class NativeFactJoin(unittest.TestCase):
             self.assertTrue(record['admission']['materializable'])
             self.assertEqual(record['admission']['legal_destinations'], ['CharacterInventory', 'Ground'])
             self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 850)
+
     def test_fanfare_copper_key_has_native_portable_nonstackable_facts(self):
         records = q.capture()['records']
         record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i2973'), None)

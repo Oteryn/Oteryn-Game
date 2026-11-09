@@ -56,8 +56,8 @@ pub struct SummonWaveOwner {
 impl SummonWaveOwner {
     pub fn for_boss(creature_key: &str) -> Option<Self> {
         let state = match creature_key {
-            ichgahal_think::Ichgahal_KEY => WaveState::Ichgahal(Default::default()),
-            murcion_think::Murcion_KEY => WaveState::Murcion(Default::default()),
+            ichgahal_think::ICHGAHAL_KEY => WaveState::Ichgahal(Default::default()),
+            murcion_think::MURCION_KEY => WaveState::Murcion(Default::default()),
             _ => return None,
         };
         Some(Self { state })

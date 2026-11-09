@@ -234,7 +234,6 @@ impl<'a> MovementDecision<'a> {
             return Err(MovementError::NotQualified);
         }
         owner
-            .commit_adjacent(self.expected, self.destination)
             .commit_step(self.expected, self.destination)
             .map_err(MovementError::Actor)
     }

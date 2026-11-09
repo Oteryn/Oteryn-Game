@@ -404,10 +404,8 @@ impl DurabilityRoot {
             let cooking_items = hot_cuisine_m42::owns(&request);
             let father_items = fathers_burden::owns(&request);
             let marlin_items = marlin_trophy::owns(&request);
-            let plain_keys = source.item_exchange_keys(&request.npc);
-            let generic_items = !cooking_items && !father_items && !marlin_items && plain_keys.is_some();
             let plain_keys = source.outfit_exchange_keys(&request.npc).or_else(|| source.item_exchange_keys(&request.npc));
-            let generic_items = !father_items && !marlin_items && plain_keys.is_some();
+            let generic_items = !cooking_items && !father_items && !marlin_items && plain_keys.is_some();
             let equipped_storage = source.equipped_storage_requirements(&request.npc).is_some();
             let inventory_owned = cooking_items || father_items || marlin_items || generic_items || equipped_storage;
             let inventory = if cooking_items {

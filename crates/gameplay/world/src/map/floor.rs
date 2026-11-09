@@ -42,7 +42,6 @@ use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use platform::prepare_quest_platform_rider;
-pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
 pub use quest_callback::{
     prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
     prepare_quest_encounter_ejection,
@@ -351,16 +350,6 @@ fn resolve_landing_with_teleports(
     teleport: impl Fn(TilePos) -> Option<TilePos>,
     suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-        CardinalStep::NorthEast => (1, -1),
-        CardinalStep::SouthEast => (1, 1),
-        CardinalStep::SouthWest => (-1, 1),
-        CardinalStep::NorthWest => (-1, -1),
-    };
     let (dx, dy) = direction.delta();
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
@@ -809,16 +798,6 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-            CardinalStep::NorthEast => MovementFacing::North,
-            CardinalStep::SouthEast => MovementFacing::South,
-            CardinalStep::SouthWest => MovementFacing::South,
-            CardinalStep::NorthWest => MovementFacing::North,
-        };
         let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }

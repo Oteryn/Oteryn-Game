@@ -314,8 +314,7 @@ def main():
         source, json.loads((ROOT / "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json").read_bytes()),
     )
     generated, count = regenerate(
-        register(source), *(json.loads((ROOT / p).read_text()) for p in paths)
-        source, *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
+        register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=source_cohorts(ROOT),
         coowners=source_coowners(ROOT),
     )
     if args.check and generated != original:

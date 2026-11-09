@@ -1,9 +1,0 @@
-{
-  "mechanic": "0449-diagonal-movement",
-  "kind": "keybindings",
-  "id": "0449-diagonal-movement-southwest",
-  "status": "supported",
-  "context": "gameplay",
-  "chord": "NUMPAD1",
-  "entry": "input.rs::step"
-}

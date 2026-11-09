@@ -36,6 +36,7 @@ class RewardIdentityPin(unittest.TestCase):
                 packet['records'].append(packet['records'][0])
             with self.assertRaises(ValueError, msg=mode):
                 refresh(self.SOURCE, packet)
+import copy
 import json
 import unittest
 from pathlib import Path

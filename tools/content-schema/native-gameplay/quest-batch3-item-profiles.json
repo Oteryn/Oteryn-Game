@@ -201,8 +201,7 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "fdd0125ef000da9e10e2d6dd799092b995c35054e00df32bf52fc3620e4d3a76"
-      "sha256": "735cf0285a0f79476fbd9434e9250d5a3e22f8c80434aa5dcf2bb6e44302efc3"
+      "sha256": "7fe45f79c905dc61df5c5b8579e027b5c35d82bee5c0fc0e3d747f98054a5776"
     }
   ],
   "canonical_inputs": [
@@ -272,7 +271,7 @@
     },
     {
       "path": "content/items/definitions/items-20500-20999.json",
-      "sha256": "40aa4583015d5ee1e2a09e165b7b04e7d2f95847171d37b8465f4e52a78c9e4f"
+      "sha256": "a86fb74c7d687c6531f2fbca0e42261b66cb0e6125275b52a835144edf529dda"
     },
     {
       "path": "content/items/definitions/items-21000-21499.json",
@@ -304,7 +303,7 @@
     },
     {
       "path": "content/items/definitions/items-27500-27999.json",
-      "sha256": "3853af2c97a7fd33ace405005c7d4a3bf1e11aa5cf7da796f4f3a2d5f54f34c3"
+      "sha256": "b8dfb2e0a4da5303c79d9c18760f1a62a0f4f032847a987e743b05c194fed68e"
     },
     {
       "path": "content/items/definitions/items-28000-28499.json",
@@ -354,8 +353,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "5a815878dbbf6bd4f6f9768b4710b6209b52570589b44e330829f754ec0f1954"
-      "sha256": "9d03cd20b2e1fe1e8ce27a53b01792166bf05387e1590f1ed100635202c248f3"
+      "sha256": "e10bcc68e943f55d951cc8d570ce352df23b79b40c5e970d76b465bfe656adc4"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",

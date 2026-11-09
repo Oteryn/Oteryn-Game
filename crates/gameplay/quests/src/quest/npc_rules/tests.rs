@@ -667,8 +667,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.hot_cuisine_quest",
         "oteryn:quest.in_service_of_yalahar_quest",
         "oteryn:quest.marlin_trophy_quest",
-        "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.outfit_and_addon_quests",
+        "oteryn:quest.kilmaresh_quest",
         "oteryn:quest.the_first_dragon_quest",
         "oteryn:quest.the_djinn_war_efreet_faction",
         "oteryn:quest.the_djinn_war_marid_faction",
@@ -756,11 +756,9 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 204), (0, 54)]));
     // M04 adds seven -1 defaults: three per Djinn faction and one monastery diary.
-    // Dream Courts, Tamoril, Gnomus and Julius source defaults remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 211), (0, 52)]));
+    // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
+    assert_eq!(defaults, BTreeMap::from([(-1, 211), (0, 54)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()

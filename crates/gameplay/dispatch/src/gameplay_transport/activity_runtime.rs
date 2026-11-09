@@ -1105,13 +1105,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 &world_policy_revision,
             )
             .map_err(|_| ActivityRuntimeRegistrationError)?;
-        let states = self.states.for_activity();
-        states
-            .spell_states
-            .lock()
-            .await
-            .initialize_owner_bookkeeping(&runtime)
-            .ok_or(ActivityRuntimeRegistrationError)?;
         // The source registration must retain the same immutable room already
         // owned by its seam assets, not a second room authority beside them.
         if source_room
@@ -1124,6 +1117,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if let Some(callbacks) = source_callbacks {
             states.spell_states.get_mut().soul_war_callbacks = callbacks;
         }
+        states
+            .spell_states
+            .lock()
+            .await
+            .initialize_owner_bookkeeping(&runtime)
+            .ok_or(ActivityRuntimeRegistrationError)?;
         self.activity_runtimes
             .insert(RegisteredRuntime {
                 scope: assignment.scope,
