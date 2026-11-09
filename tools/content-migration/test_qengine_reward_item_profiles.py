@@ -27,6 +27,13 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['production_binding']['external_id'], '2973')
         self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
 
+    def test_grimvale_blossoms_have_native_bounded_stack_facts(self):
+        record = next((r for r in q.capture()['records'] if r['production_definition']['production_key'] == 'oteryn:item.tibia.i22082'), None)
+        self.assertIsNotNone(record, 'Grimvale needs the source-defined harvested blossoms')
+        self.assertEqual(record['admission'], dict(materializable=True, stack_class='StackCapable', legal_destinations=['CharacterInventory','Ground']))
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
+        self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)
