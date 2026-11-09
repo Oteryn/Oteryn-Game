@@ -11,7 +11,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            1100,
+            1500,
             630,
             null_mut(),
             null_mut(),
@@ -150,10 +150,12 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut private = PrivateControls::new(hwnd);
         let mut font = console_font::ConsoleFont::default();
         let mut console = console_controls::Controls::new(hwnd);
+        let mut mirror = mirror::Mirror::new(hwnd);
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                mirror.input(&msg, tabs, &weak);
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
@@ -162,7 +164,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             let Some(shared) = weak.upgrade() else { break };
             let mut mailbox = lock(&shared);
-            if mailbox.chat_public_shutdown {
+            if mailbox.chat_public_shutdown || !mailbox.chat.open {
                 break;
             }
             if let Some(paste) = mailbox.custom_chat_paste.take() {
@@ -271,6 +273,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             console.tick(&mut mailbox, &commands, transcript);
             font.update(transcript, mailbox.chat.console.display.font_px);
             private.render(&mailbox.chat_private);
+            mirror.render(&mailbox.chat, transcript);
             let text = format!(
                 "{}\n{}",
                 panel_text(&mailbox.chat),
