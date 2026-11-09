@@ -12,6 +12,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     for fact in facts {
         match fact {
             AnalyserFact::Kill { race } => {
+                panel.kill_chart.add(seconds, 1);
                 panel.kills = panel.kills.saturating_add(1);
                 let count = panel
                     .kills_by_race

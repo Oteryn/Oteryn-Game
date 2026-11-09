@@ -819,27 +819,30 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Party Hunt Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak tabeli członków i rozliczenia loot/supplies/cost split.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/party.rs:119 + analyser_party_query_and_confirmed_table_use_production_mailbox"
  },
  {
   "id": "T109",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Loot Tracker",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak listy śledzonych itemów i historii dropów/config.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/tracking.rs:49 + analyser_loot_tracking_controls_filter_real_confirmed_drops"
  },
  {
   "id": "T110",
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Kill / Hunting Task Tracker",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak samodzielnego trackera; postęp pozostaje w Task Board.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/kills.rs:109 + analyser_hunting_task_tracker_reads_real_weekly_query_and_retains_refused_progress"
  },
  {
   "id": "T113",
@@ -1121,20 +1124,20 @@
   "src": "TIBAUD-1",
   "area": "Appearance",
   "feature": "Outfits/mounts/addons/colors",
-  "status": "PARTIAL",
-  "gap": "Apply przez klucze/mask/colors/revision; brak galerii i preview.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0025-appearance/state.rs:40 + gallery_navigation_uses_catalogue_and_never_changes_confirmed_selection; PARTIAL: rendered previews and mount gallery remain"
+  "evidence": "apps/client/src/features/0025-appearance/view/preview_window.rs:23 + appearance_preview_renders_pinned_pixels_and_keeps_server_selection_authoritative; native outfit/mount gallery and rendered preview from pinned sprites, colour masks and addons; mount artwork bound to the server cosmetics digest; existing Apply wire preserves server authority"
  },
  {
   "id": "T150",
   "src": "TIBAUD-1",
   "area": "Appearance",
   "feature": "Outfit Memorial golden/token outfits",
-  "status": "PARTIAL",
-  "gap": "Brak zakładek token exchange i preview memorial outfits.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0025-appearance/state/memorial.rs:16 + memorial_token_preview_requires_explicit_offer_and_balance; PARTIAL: server exchange and native memorial tabs remain"
+  "evidence": "apps/client/src/features/0025-appearance/view/memorial.rs:11 + memorial_tabs_and_explicit_exchange_cross_the_real_npc_session_caller; native Golden/Token tabs and pinned memorial sprite previews; explicit existing NPC talk wire for server-authoritative exchanges; artwork test memorial_golden_and_token_previews_draw_real_pinned_artwork"
  },
  {
   "id": "T151",
@@ -1211,10 +1214,10 @@
   "src": "TIBAUD-1",
   "area": "Modal dialogs",
   "feature": "Server choices/buttons i show-image",
-  "status": "PARTIAL",
-  "gap": "Brak ogólnego modal UI sterowanego serwerem; zwykłe okna mechanik go nie zastępują.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/components/modal_dialogs.rs:138 + server_dialog_keeps_ids_and_content_image_reference; PARTIAL: server wire and native modal/image rendering remain"
+  "evidence": "apps/client/src/features/0450-server-modal/view/native.rs:65 + server_modal_session_caller_delivers_inline_image_and_exact_answer_ack; capability 450 / commands 736–737; connection-fenced owner, native choices/buttons/inline RGBA and matching server acknowledgement"
  },
  {
   "id": "T160",
@@ -1326,9 +1329,10 @@
   "src": "OTCAUD1108",
   "area": "Analytics",
   "feature": "Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/view.rs:3 + analyser_dedicated_activity_views_chart_confirmed_wire_facts + boss_tracker_controls_use_existing_protocol_owners_and_feed_observed_history"
  },
  {
   "id": "O014",
@@ -1458,10 +1462,10 @@
   "src": "OTCAUD1108",
   "area": "Modal dialogs",
   "feature": "Ogólne dialogi modalne serwera",
-  "status": "PARTIAL",
-  "gap": "Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/components/modal_dialogs.rs:284 + modal_handler_rejects_stale_unknown_and_duplicate_answers; PARTIAL: server response transport and native integration remain"
+  "evidence": "apps/client/src/features/0450-server-modal/protocol.rs:31 + server_modal_real_route_checks_capability_connection_ids_and_duplicate_answers; generic dialog IDs and server-defined choices/buttons; exact response transport and replay-safe connection owner"
  },
  {
   "id": "O041",

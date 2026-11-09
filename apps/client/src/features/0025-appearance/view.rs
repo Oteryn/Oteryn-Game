@@ -28,6 +28,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Feet colour",
                 "Addon 1",
                 "Addon 2",
+                "Previous mount",
+                "Next mount",
+                "Outfit Memorial",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.appearance;
@@ -40,6 +43,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.appearance.open = value,
             submit: |mailbox, commands, action, values| {
+                if action == 11 {
+                    // Open from the appearance UI; the worker is started after releasing the mailbox.
+                    mailbox.properties.appearance.memorial.requested = true;
+                    return;
+                }
                 let panel = &mut mailbox.properties.appearance;
                 if panel.pending {
                     return;
@@ -59,6 +67,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     panel.toggle_addon(if action == 7 { 1 } else { 2 });
                     return;
                 }
+                if matches!(action, 9 | 10) {
+                    panel.cycle_mount(action == 10);
+                    return;
+                }
                 let intent = match action {
                     0 => oteryn_client_ui::appearance::Intent::Apply,
                     _ => return,
@@ -67,7 +79,20 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
         },
     );
+    preview_window::open(link);
+    memorial::watch(link);
 }
+
+#[cfg(any(windows, test))]
+#[path = "view/preview.rs"]
+pub(in crate::play) mod gallery_preview;
+
+#[cfg(windows)]
+#[path = "view/preview_window.rs"]
+mod preview_window;
+
+#[path = "view/memorial.rs"]
+pub(in crate::play) mod memorial;
 
 #[cfg(windows)]
 #[path = "native.rs"]

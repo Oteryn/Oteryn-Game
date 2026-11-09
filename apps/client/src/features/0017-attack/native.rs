@@ -1,5 +1,7 @@
 //! Battle controls and HWNDs remain on their creating thread.
 #![allow(unsafe_code)]
+#[path = "native_controls.rs"]
+mod panel_controls;
 use super::preferences::{BattleListPreferences, BattleSort, row_label, validate_lists};
 use crate::combat_input::PlayCommand;
 use crate::play::{
@@ -8,6 +10,7 @@ use crate::play::{
 };
 use oteryn_client_ui::battle::{self, Action, BattlePanel};
 use oteryn_session::{ChaseMode, FightMode};
+use panel_controls::PanelControls;
 use std::{
     ptr::{null, null_mut},
     sync::{Arc, Mutex, Weak},
@@ -104,123 +107,22 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let headings: Vec<_> = (0..4)
-            .map(|i| control(hwnd, "STATIC", "", 0, (10 + i * 180, 10, 170, 25), 0))
-            .collect();
-        let lists: Vec<_> = (0..4)
-            .map(|i| {
-                control(
-                    hwnd,
-                    "LISTBOX",
-                    "",
-                    200 + i as usize,
-                    (10 + i * 180, 40, 170, 260),
-                    LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_HSCROLL,
-                )
-            })
-            .collect();
-        let stop = control(hwnd, "BUTTON", "Stop attack", 101, (10, 320, 130, 30), 0);
-        for &list in &lists {
-            SendMessageW(list, LB_SETHORIZONTALEXTENT, 2048, 0);
-        }
-        let offensive = control(hwnd, "BUTTON", "Offensive", 102, (150, 320, 110, 30), 0);
-        let balanced = control(hwnd, "BUTTON", "Balanced", 103, (270, 320, 110, 30), 0);
-        let defensive = control(hwnd, "BUTTON", "Defensive", 104, (390, 320, 110, 30), 0);
-        let stand = control(hwnd, "BUTTON", "Stand", 107, (510, 320, 100, 30), 0);
-        let chase = control(hwnd, "BUTTON", "Chase", 108, (620, 320, 100, 30), 0);
-        let text = control(hwnd, "STATIC", "", 109, (10, 360, 720, 60), 0);
-        let editor_label = control(
-            hwnd,
-            "STATIC",
-            "List / name / name filter / maximum HP %",
-            0,
-            (10, 425, 720, 25),
-            0,
-        );
-        let active = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            300,
-            (10, 455, 170, 150),
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-        );
-        let title = control(hwnd, "EDIT", "", 301, (190, 455, 170, 26), WS_BORDER);
-        let search = control(hwnd, "EDIT", "", 302, (370, 455, 170, 26), WS_BORDER);
-        let maximum = control(
-            hwnd,
-            "EDIT",
-            "100",
-            306,
-            (550, 455, 170, 26),
-            WS_BORDER | ES_NUMBER as u32,
-        );
-        let players = control(
-            hwnd,
-            "BUTTON",
-            "Players",
-            303,
-            (10, 495, 160, 26),
-            BS_AUTOCHECKBOX as u32,
-        );
-        let creatures = control(
-            hwnd,
-            "BUTTON",
-            "Creatures",
-            304,
-            (190, 495, 160, 26),
-            BS_AUTOCHECKBOX as u32,
-        );
-        let sort = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            305,
-            (370, 495, 350, 150),
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
-        );
-        for label in [
-            "Name",
-            "Health: low first",
-            "Health: high first",
-            "Identity",
-        ] {
-            SendMessageW(sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-        }
-        let apply = control(hwnd, "BUTTON", "Save list", 307, (10, 540, 220, 30), 0);
-        let add = control(hwnd, "BUTTON", "Add list", 308, (250, 540, 220, 30), 0);
-        let remove = control(hwnd, "BUTTON", "Remove list", 309, (490, 540, 230, 30), 0);
-        let controls: Vec<_> = lists
-            .iter()
-            .copied()
-            .chain([stop, offensive, balanced, defensive, stand, chase])
-            .collect();
-        if controls
-            .iter()
-            .chain(headings.iter())
-            .chain(
-                [
-                    text,
-                    editor_label,
-                    active,
-                    title,
-                    search,
-                    maximum,
-                    players,
-                    creatures,
-                    sort,
-                    apply,
-                    add,
-                    remove,
-                ]
-                .iter(),
-            )
-            .any(|h| h.is_null())
-        {
-            DestroyWindow(hwnd);
-            close(&weak);
+        let Some(PanelControls {
+            headings,
+            lists,
+            text,
+            active,
+            title,
+            search,
+            maximum,
+            players,
+            creatures,
+            sort,
+            controls,
+        }) = PanelControls::new(hwnd, &weak)
+        else {
             return;
-        }
+        };
         let mut held: Option<BattlePanel> = None;
         let mut held_lists = None;
         let mut displayed: Vec<Vec<oteryn_session::WorldSpatialEntity>> = Vec::new();

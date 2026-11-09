@@ -121,13 +121,8 @@ fn run(
             tracker,
         } = controls::create(hwnd);
         if [
-            quests,
-            missions,
-            description,
-            refresh,
-            track,
-            list_search,
-            list_sort,
+            quests, missions, description, refresh, track, list_search, list_sort,
+            auto_add, auto_remove, filter, search, tracker,
         ]
         .iter()
         .any(|h| h.is_null())

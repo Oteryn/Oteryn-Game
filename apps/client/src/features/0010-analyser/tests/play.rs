@@ -248,6 +248,9 @@ fn analyser_party_query_and_confirmed_table_use_production_mailbox()
     assert!(link.analyser_select("party"));
     let text = oteryn_client_ui::analyser::panel_text(&link.analyser_panel());
     assert!(text.contains("Scout pays Healer: 60 gold"));
+    assert!(text.contains("balance"));
+    assert!(text.contains("Scout | 0 | 0 | 0 | 0/100 | 0/0 | 100 | 0/0"));
+    assert!(text.contains("Healer | 0 | 0 | 0 | 0/0 | 0/20 | -20 | 0/0"));
     assert!(!link.analyser_panel().party_pending);
     link.party_request(oteryn_client_ui::party::Intent::Refresh);
     assert!(matches!(
@@ -310,7 +313,9 @@ fn analyser_loot_tracking_controls_filter_real_confirmed_drops() {
         tools + 8,
         vec![String::new(), "1".into(), String::new()],
     );
-    assert!(!oteryn_client_ui::analyser::panel_text(&mailbox.analyser).contains("#1"));
+    let filtered = oteryn_client_ui::analyser::panel_text(&mailbox.analyser);
+    assert!(!filtered.contains("#1"));
+    assert!(filtered.contains("No recent drops match the tracked item selection"));
 }
 
 #[path = "tasks.rs"]
@@ -345,3 +350,6 @@ fn auxiliary_analyser_launch_preserves_session_owner_and_existing_measurements()
     outbox.logged_out();
     assert!(!link.analyser_panel().open);
 }
+
+#[path = "activity.rs"]
+mod activity;

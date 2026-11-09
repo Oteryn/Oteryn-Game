@@ -10,7 +10,18 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use winit::window::Window;
 
-pub(super) struct Hud(HWND);
+#[path = "../local-reference-preferences/arcs_native.rs"]
+mod arcs;
+#[path = "../local-reference-preferences/shortcut_strip.rs"]
+mod shortcuts;
+#[path = "slots_native.rs"]
+mod slots;
+pub(super) struct Hud {
+    arcs: arcs::ArcHud,
+    status: HWND,
+    spells: slots::SpellRow,
+    shortcuts: shortcuts::ShortcutStrip,
+}
 
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(Some(0)).collect()
@@ -39,21 +50,47 @@ impl Hud {
                 std::ptr::null(),
             )
         };
-        (!hwnd.is_null()).then_some(Self(hwnd))
+        if hwnd.is_null() {
+            return None;
+        }
+        let Some(shortcuts) = shortcuts::ShortcutStrip::new(handle.hwnd.get() as HWND) else {
+            unsafe {
+                DestroyWindow(hwnd);
+            }
+            return None;
+        };
+        let Some(arcs) = arcs::ArcHud::new(handle.hwnd.get() as HWND) else {
+            unsafe {
+                DestroyWindow(hwnd);
+            }
+            return None;
+        };
+        let Some(spells) = slots::SpellRow::new(handle.hwnd.get() as HWND) else {
+            unsafe {
+                DestroyWindow(hwnd);
+            }
+            return None;
+        };
+        Some(Self {
+            spells,
+            arcs,
+            status: hwnd,
+            shortcuts,
+        })
     }
 
     pub(super) fn update(&self, text: Option<&str>, bounds: [u16; 4]) {
         unsafe {
             MoveWindow(
-                self.0,
+                self.status,
                 i32::from(bounds[0]),
                 i32::from(bounds[1]),
                 i32::from(bounds[2]),
                 i32::from(bounds[3]),
                 1,
             );
-            SetWindowTextW(self.0, wide(text.unwrap_or("")).as_ptr());
-            ShowWindow(self.0, if text.is_some() { SW_SHOW } else { SW_HIDE });
+            SetWindowTextW(self.status, wide(text.unwrap_or("")).as_ptr());
+            ShowWindow(self.status, if text.is_some() { SW_SHOW } else { SW_HIDE });
         }
     }
 }
@@ -62,7 +99,7 @@ impl Drop for Hud {
     fn drop(&mut self) {
         // DestroyWindow is also safe if the parent already destroyed its child.
         unsafe {
-            DestroyWindow(self.0);
+            DestroyWindow(self.status);
         }
     }
 }
@@ -86,6 +123,22 @@ impl super::Application {
                     play.view.preferences().scaled_hud_bounds(),
                 );
             }
+            if let Some(hud) = &mut self.hud {
+                hud.arcs.update(play.view.hud_arc_layout());
+                let labels = play.link.spell_slot_labels();
+                for slot in hud.spells.update(Some(&labels)) {
+                    if let Some(slot) = u32::try_from(slot).ok().and_then(std::num::NonZeroU32::new)
+                    {
+                        play.link.cast_spell_slot(slot);
+                    }
+                }
+                for id in hud
+                    .shortcuts
+                    .update(Some(&play.view.preferences().shortcuts))
+                {
+                    play.link.activate_shortcut(&id);
+                }
+            }
             if status != play.status {
                 window.set_title(&format!(
                     "Oteryn — {status} — Ctrl+G: Guild — Ctrl+Shift+A: achievements"
@@ -94,8 +147,11 @@ impl super::Application {
             }
         }
         if self.play.is_none()
-            && let Some(hud) = &self.hud
+            && let Some(hud) = &mut self.hud
         {
+            hud.spells.update(None);
+            hud.arcs.update(None);
+            hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);
         }
     }

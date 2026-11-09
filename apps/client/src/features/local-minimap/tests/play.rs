@@ -236,6 +236,94 @@ fn persistent_minimap_pan_zoom_and_floor_selection_share_the_click_projection()
 }
 
 #[test]
+fn minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{MinimapMark, MinimapMemory, PreferenceStore, SettingsState};
+    let mut play = minimap_view()?;
+    let mut map = snapshot(100);
+    play.set_live_map(&map)?;
+    let mut memory = play.preferences().minimap.clone();
+    assert_eq!(memory.tiles.len(), map.tiles.len());
+    memory.add_mark(MinimapMark {
+        x: 101,
+        y: 200,
+        floor: -7,
+        label: "Meeting place".into(),
+    })?;
+    let root = std::env::temp_dir().join(format!("clientgap-map-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let file = root.join("map.json");
+    memory.export_new(&file)?;
+    assert!(memory.export_new(&file).is_err());
+    let loaded = MinimapMemory::import(&file)?;
+    assert_eq!(loaded, memory);
+    let mut mismatched = play.preferences().clone();
+    mismatched.minimap = loaded.clone();
+    if let Some(binding) = &mut mismatched.minimap.binding {
+        binding.epoch += 99;
+    }
+    play.set_preferences(mismatched)?;
+    assert!(play.scene.minimap_memory.tiles.is_empty());
+    let old_world = play.local.world();
+    let old_own = play.own();
+    let mut prefs = play.preferences().clone();
+    prefs.minimap = loaded;
+    play.set_preferences(prefs.clone())?;
+    assert!(std::sync::Arc::ptr_eq(&old_world, &play.local.world()));
+    assert_eq!(play.own(), old_own);
+    assert!(play.inputs.is_empty());
+    let path = root.join("settings.json");
+    let mut store = PreferenceStore::load(path.clone())?;
+    store.apply(prefs.clone())?;
+    assert_eq!(PreferenceStore::load(path)?.preferences().minimap, memory);
+    let mut settings = SettingsState::new(None);
+    settings.restore(&mut play, [960, 540])?;
+    assert_eq!(settings.preferences.minimap, memory);
+    let mut reset = settings.preferences.clone();
+    reset.minimap = MinimapMemory::default();
+    settings.apply(reset);
+    settings.restore(&mut play, [960, 540])?;
+    assert!(play.preferences().minimap.tiles.is_empty());
+    // A new server observation repopulates memory; a content/reset binding change
+    // invalidates old observations and markers instead of mixing map scopes.
+    map.header.reset_epoch += 1;
+    play.set_live_map(&map)?;
+    settings.restore(&mut play, [960, 540])?;
+    assert_eq!(
+        settings
+            .preferences
+            .minimap
+            .binding
+            .as_ref()
+            .map(|b| b.epoch),
+        Some(map.header.reset_epoch)
+    );
+    assert!(settings.preferences.minimap.marks.is_empty());
+    let mut invalid = memory.clone();
+    invalid.tiles.push(invalid.tiles[0]);
+    std::fs::write(&file, serde_json::to_vec(&invalid)?)?;
+    assert!(MinimapMemory::import(&file).is_err());
+    std::fs::write(&file, vec![b' '; 1024 * 1024 + 1])?;
+    assert!(MinimapMemory::import(&file).is_err());
+    let scoped_path = root.join("character-settings.json");
+    let mut scoped = SettingsState::new(Some(scoped_path.clone()));
+    scoped.select_character(Some([1; 16]));
+    let mut observed = minimap_view()?;
+    observed.set_live_map(&map)?;
+    scoped.restore(&mut observed, [960, 540])?;
+    let remembered = scoped.preferences.minimap.clone();
+    assert!(!remembered.tiles.is_empty());
+    scoped.select_character(Some([2; 16]));
+    scoped.restore(&mut observed, [960, 540])?;
+    assert!(observed.preferences().minimap.tiles.is_empty());
+    let mut restarted = SettingsState::new(Some(scoped_path));
+    restarted.select_character(Some([1; 16]));
+    assert_eq!(restarted.preferences.minimap, remembered);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
 fn minimap_world_switch_reanchors_camera_without_losing_same_world_pan() -> Result<(), BatchError> {
     let mut play = minimap_view()?;
     play.bind_minimap_world("11111111-1111-4111-8111-111111111111");
