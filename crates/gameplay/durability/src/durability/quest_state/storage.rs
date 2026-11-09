@@ -118,10 +118,12 @@ impl DurabilityRoot {
                     // One coherent copy: every quest writer and every claim that inserts an
                     // obligation holds `character_root` FOR UPDATE until it commits, so with the
                     // root held FOR SHARE no quest relation of this Character can change between
-                    // the reads below.
+                    // the reads below. Hold the current World save row too: a save
+                    // must not advance the history views between the epoch read and
+                    // their subsequent scoped progress reads.
                     let root = sqlx::query(
                         "SELECT r.character_revision::text, \
-                                (SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=r.world_id) AS save_event_epoch \
+                                (SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=r.world_id FOR SHARE OF a) AS save_event_epoch \
                            FROM game_character_roots r WHERE r.character_id=encode($1,'hex')::uuid FOR SHARE OF r",
                     )
                     .bind(id)
