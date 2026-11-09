@@ -30,6 +30,8 @@ mod native_ui_scale;
 type Shared = SettingsState;
 #[path = "basic_native.rs"]
 mod basic_window;
+#[path = "capture_native.rs"]
+mod capture_window;
 #[path = "controls_native.rs"]
 mod controls_window;
 #[path = "frames_native.rs"]
@@ -240,6 +242,15 @@ impl Settings {
         self.tooltip
             .borrow_mut()
             .refresh(self.parent, view, enabled, delay, font);
+    }
+    pub(super) fn screenshot_preferences(&self) -> oteryn_client::play::ScreenshotPreferences {
+        lock(&self.shared).preferences.screenshots.clone()
+    }
+    pub(super) fn set_screenshot_scope(&self, game_only: bool) {
+        let mut state = lock(&self.shared);
+        let mut prefs = state.preferences.clone();
+        prefs.screenshots.game_only = game_only;
+        state.apply(prefs);
     }
     pub(super) fn graphics_settings(&self) -> (oteryn_client::play::GraphicsPreferences, u16) {
         let state = lock(&self.shared);

@@ -216,7 +216,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 if shortcuts.handle(action, &mut state) {
                     continue;
                 }
-                if (160..=166).contains(&action) {
+                if (160..=167).contains(&action) {
                     drop(state);
                     subpages::open(action, Arc::clone(&shared), hwnd);
                     state = lock(&shared);

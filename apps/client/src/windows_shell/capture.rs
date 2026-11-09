@@ -1,12 +1,11 @@
 //! Desktop screenshot caller: rendered client pixels and live session observations.
 use super::*;
-use oteryn_client::screenshots::{CaptureController, Rect};
+use oteryn_client::screenshots::{CaptureController, Frame, Rect};
 use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
 #[derive(Default)]
 pub(super) struct Captures {
     controller: CaptureController,
-    game_only: bool,
     last_query: Option<std::time::Instant>,
 }
 impl Application {
@@ -29,9 +28,10 @@ impl Application {
                     && !modifiers.contains(Modifier::Alt)
                     && !modifiers.contains(Modifier::Super)
                 {
-                    self.captures.game_only = ask(
+                    let game_only = ask(
                         "Capture only the game map? Choose No for the entire client render surface. Screenshots can contain visible player information. Print Screen saves a manual capture.",
                     );
+                    self.settings.set_screenshot_scope(game_only);
                     self.captures.controller.policy.level = ask(
                         "Automatically save a screenshot when your server-reported level increases? This queries skill progress while playing.",
                     );
@@ -93,32 +93,29 @@ impl Application {
         if let Some(frame) = renderer.take_capture() {
             let result = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let frame = frame?;
-                let (width, height) = if self.captures.game_only {
-                    let (w, h) = scene.view().viewport_px();
-                    (w.min(frame.width), h.min(frame.height))
+                let (w, h) = scene.view().viewport_px();
+                let preferences = self.settings.screenshot_preferences();
+                let directory = if preferences.directory.is_empty() {
+                    oteryn_client::native_login::settings_path()?
+                        .parent()
+                        .ok_or("No screenshot directory")?
+                        .join("screenshots")
                 } else {
-                    (frame.width, frame.height)
+                    std::path::PathBuf::from(&preferences.directory)
                 };
-                let settings = oteryn_client::native_login::settings_path()?;
-                let directory = settings
-                    .parent()
-                    .ok_or("No screenshot directory")?
-                    .join("screenshots");
-                std::fs::create_dir_all(&directory)?;
-                let stamp = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)?
-                    .as_nanos();
-                let path = directory.join(format!("oteryn-{stamp}.bmp"));
-                self.captures.controller.save(
-                    &path,
-                    frame.width,
-                    frame.height,
-                    &frame.bgra,
-                    Rect {
-                        x: 0,
-                        y: 0,
-                        width,
-                        height,
+                let path = preferences.save_frame(
+                    &mut self.captures.controller,
+                    &directory,
+                    Frame {
+                        width: frame.width,
+                        height: frame.height,
+                        bgra: &frame.bgra,
+                        game: Rect {
+                            x: 0,
+                            y: 0,
+                            width: w.min(frame.width),
+                            height: h.min(frame.height),
+                        },
                     },
                 )?;
                 println!("Oteryn: screenshot saved to {}", path.display());

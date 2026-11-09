@@ -11,7 +11,7 @@ fn native_badge_target_and_refresh_do_not_query_viewer_badges() -> Result<(), &'
     let cmd =
         native_controls::submit(&mut p, 111, ["ignored", "ignored", target]).ok_or("badges")?;
     assert_eq!(cmd.kind, 388);
-    assert_eq!(cmd.payload[0], 129);
+    assert_eq!(cmd.payload[0], 132);
     assert_eq!(cmd.payload.len(), 17);
     assert_eq!(cmd.payload[1..], p.target.ok_or("target")?);
     assert!(p.badges_open);

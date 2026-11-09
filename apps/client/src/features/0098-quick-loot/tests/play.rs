@@ -211,3 +211,17 @@ fn managed_container_reset_uses_the_selected_category_and_existing_wire() -> Res
     assert!(!link.quick_loot_control(8, &[], 0));
     Ok(())
 }
+
+#[test]
+fn t056_loot_notice_filter_preserves_received_result() {
+    let (link, _, _) = crate::play::play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.discovery.loot.selected = true;
+        mailbox.discovery.loot.result = Some(oteryn_client_ui::quick_loot::QuickLootResult { items: vec![] });
+        mailbox.local_preferences.game_window.loot_messages = false;
+    }
+    assert!(!oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted"));
+    crate::play::mailbox::lock(&link.mailbox).local_preferences.game_window.loot_messages = true;
+    assert!(oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted 0 of 0"));
+}

@@ -11,6 +11,8 @@ pub enum MarketView {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarketPanel {
     pub selected: bool,
+    /// Zero shows both sides; one buy, two sell. Applies to the loaded page.
+    pub side_filter: u8,
     pub open: bool,
     pub view: MarketView,
     pub definition: u32,
@@ -28,6 +30,7 @@ impl Default for MarketPanel {
     fn default() -> Self {
         Self {
             selected: false,
+            side_filter: 0,
             open: false,
             view: MarketView::Browse,
             definition: 0,

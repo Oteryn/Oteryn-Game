@@ -118,7 +118,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 if action == 150 {
                     super::profile_table::toggle_badge(
                         &mut mailbox.cyclopedia_character,
-                        GetDlgItem(hwnd, 149),
+                        badge_id,
                     );
                     continue;
                 }

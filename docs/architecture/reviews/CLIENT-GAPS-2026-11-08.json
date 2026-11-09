@@ -343,9 +343,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Game Window: own/other spells, text, loot messages",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Zdarzenia są; brak przełączników według źródła i klasy tekstu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/game_window.rs:19 + t056_own_spell_filter_changes_live_projection; apps/client/src/features/0098-quick-loot/view.rs:3 + t056_loot_notice_filter_preserves_received_result"
  },
  {
   "id": "T057",
@@ -472,9 +473,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Screenshots: folder, game-only i manual capture",
-  "status": "MISSING",
-  "gap": "Brak systemu zrzutów i strony wyboru katalogu/zakresu.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Natywna strona Screenshots zapisuje folder i zakres game-only/full render; Print Screen pobiera klatkę z renderera i zapisuje BMP bez nadpisywania istniejących plików.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/capture_native.rs:31 + native folder and game-only settings editor; apps/client/src/features/local-reference-preferences/subpages.rs:14 + settings navigation; apps/client/src/features/local-reference-preferences/capture_options.rs:23 + configured capture writer; apps/client/src/windows_shell/capture.rs:15 + manual Print Screen caller and rendered-frame save at :106; apps/client/src/screenshots_live_tests.rs:94 + screenshot_settings_survive_restart_and_save_full_and_game_only_frames"
  },
  {
   "id": "T071",
@@ -549,27 +551,30 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Map: areas/subareas/passages/PoI/NPC",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/atlas_native.rs:47 + atlas_real_playlink_projects_regions_markers_and_navigation + cyclopedia_postgres_real_dispatch (T079 framed atlas, NPCs, uncovered membership, POI visibility and fences)"
  },
  {
   "id": "T080",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bestiary: katalog/filter/combat/loot",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0067-bestiary-charm-progression/view/illustration.rs:4 + bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies + bestiary_catalogue_projects_active_creature_categories_stats_and_loot + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T080 framed complete catalogue, native combat/loot and category filter)"
  },
  {
   "id": "T081",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Charms: points/unlock/assign/remove/reset",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/metadata.rs:11 + named_charms_and_creatures_drive_the_real_progression_caller + duplicate_creature_captions_keep_the_selected_server_identity + charm_names_and_descriptions_match_the_actual_server_catalogue + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T081 framed names, stage costs/chances and authoritative unlock/assign/remove/reset)"
  },
  {
   "id": "T082",
@@ -963,7 +968,8 @@
   "feature": "Browse/buy/sell/create/cancel/history",
   "status": "PARTIAL",
   "gap": "Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0063-market/input.rs:5 + market_side_filter_preserves_server_offer_identity (page side filter only; remaining gaps unchanged)"
  },
  {
   "id": "T125",
@@ -1001,7 +1007,8 @@
   "feature": "Katalog/search/buy/confirmation/result",
   "status": "PARTIAL",
   "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0154-store/input.rs:33 + store_category_navigation_sends_server_key_with_fresh_cursor (category navigation; graphical preview remains)"
  },
  {
   "id": "T131",
