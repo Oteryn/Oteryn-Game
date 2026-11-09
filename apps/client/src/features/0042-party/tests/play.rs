@@ -138,7 +138,6 @@ fn party_list_real_play_queue_filters_sorts_and_replaces_nearby_vitals() -> Resu
         [(1, "Zed", 1, 30, Some(40)), (2, "Amy", 2, 31, None)]
     {
         state.members.push(party::PartyEntry {
-            list: Vec::new(),
             handle,
             name: name.into(),
             leader: handle == 1,
