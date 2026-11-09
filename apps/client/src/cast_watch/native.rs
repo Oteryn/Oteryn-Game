@@ -82,7 +82,7 @@ impl Application {
                 Err(_) => {
                     self.panel.picture.clear();
                     self.panel.picture.ended = true;
-                    self.panel.feedback = "Cast picture unavailable".into();
+                    self.panel.feedback = tr!("Cast picture unavailable").into();
                     self.drawn = self.assets.draw(&self.panel.picture, Instant::now()).ok();
                     if let (Some(renderer), Some(drawn)) = (&mut self.renderer, &self.drawn) {
                         renderer.set_atlas(drawn.atlas.clone());
@@ -91,12 +91,12 @@ impl Application {
                 }
             }
             if let Some(window) = &self.window {
-                window.set_title(&format!("Oteryn Watch — {}", self.panel.picture.status()));
+                window.set_title(&lfmt!("Oteryn Watch — {}", self.panel.picture.status()));
                 window.request_redraw();
             }
         }
         if let Some(hud) = &self.hud {
-            hud.update(&format!(
+            hud.update(&lfmt!(
                 "{}\nCast chat: {}",
                 panel_text(&self.panel),
                 self.draft.0
@@ -118,7 +118,7 @@ impl ApplicationHandler for Application {
         }
         let Ok(window) = events.create_window(
             Window::default_attributes()
-                .with_title("Oteryn Watch — connecting")
+                .with_title(tr!("Oteryn Watch — connecting"))
                 .with_inner_size(LogicalSize::new(576.0, 700.0)),
         ) else {
             events.exit();

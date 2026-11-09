@@ -16,7 +16,7 @@ impl ArenaPanel {
     pub fn end(&mut self) {
         self.selected = false;
         if self.pending.take().is_some() {
-            self.feedback = Some("The session has ended");
+            self.feedback = Some(tr!("The session has ended"));
         }
     }
 }

@@ -13,7 +13,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.loyalty_skills.pending = false;
-            mailbox.loyalty_skills.error = Some("Session ended");
+            mailbox.loyalty_skills.error = Some(tr!("Session ended"));
         }
     }
 

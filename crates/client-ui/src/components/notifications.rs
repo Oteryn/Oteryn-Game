@@ -67,7 +67,11 @@ impl NotificationCenter {
         let mut text = String::new();
         for entry in &self.entries {
             if (entry.popup && self.popups_enabled) || (!entry.popup && self.banners_enabled) {
-                text.push_str(if entry.popup { "Popup: " } else { "Banner: " });
+                text.push_str(if entry.popup {
+                    tr!("Popup: ")
+                } else {
+                    tr!("Banner: ")
+                });
                 text.push_str(&entry.text);
                 text.push_str("\r\n");
             }

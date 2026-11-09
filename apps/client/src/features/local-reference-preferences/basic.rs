@@ -32,6 +32,8 @@ impl SettingsState {
         prefs.ui_scale = options.world_zoom;
         prefs.frames.foreground = options.foreground_fps;
         prefs.frames.background = options.background_fps;
+        prefs.foreground_fps = options.foreground_fps;
+        prefs.background_fps = options.background_fps;
         prefs.audio.master_volume = options.master_volume;
         prefs.audio.muted = options.muted;
         prefs.validate()?;
@@ -66,6 +68,8 @@ mod tests {
         );
         assert_eq!(state.preferences.audio.gain(), 0.0);
         assert_eq!(state.preferences.frames.foreground, 120);
+        assert_eq!(state.preferences.foreground_fps, 120);
+        assert_eq!(state.preferences.background_fps, 12);
         let w = NormalizedInputEvent::Key {
             code: KeyCode::new(26)?,
             state: ButtonState::Pressed,

@@ -29,7 +29,7 @@ impl Panel {
             reply.status,
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
         ) {
-            self.feedback = "The server refused the request".into();
+            self.feedback = tr!("The server refused the request").into();
             return;
         }
         let result = if acl_read {
@@ -50,10 +50,10 @@ impl Panel {
             house::result(&reply.payload).and_then(|(d, revision)| {
                 if d != 1 && d != 11 {
                     return Err(match d {
-                        3 => "The server refused the action: catalogue changed; refresh before retrying",
-                        8 => "The server refused the action: insufficient funds",
-                        9 => "The server refused the action: balance limit reached",
-                        _ => "The server refused the action",
+                        3 => tr!("The server refused the action: catalogue changed; refresh before retrying"),
+                        8 => tr!("The server refused the action: insufficient funds"),
+                        9 => tr!("The server refused the action: balance limit reached"),
+                        _ => tr!("The server refused the action"),
                     });
                 }
                 if let Some(row) = self.page.rows.get_mut(self.pending_index)
@@ -69,7 +69,7 @@ impl Panel {
             if acl_read {
                 "Access list loaded; edit members and confirm the matching action".into()
             } else {
-                "House updated".into()
+                tr!("House updated").into()
             }
         });
     }

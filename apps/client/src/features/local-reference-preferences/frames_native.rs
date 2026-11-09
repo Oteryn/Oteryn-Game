@@ -46,7 +46,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             660,
-            360,
+            500,
             parent,
             null_mut(),
             null_mut(),
@@ -62,7 +62,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
         let labels = control(
             hwnd,
             "STATIC",
-            "Foreground limit (0 unlimited, 1–360 FPS)\r\n\r\nBackground limit (1–360 FPS)",
+            "Foreground limit (0 unlimited, 1–500 FPS)\r\n\r\nBackground limit (1–500 FPS)",
             0,
             [16, 20, 340, 85],
             0,
@@ -102,7 +102,7 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             [315, 115, 300, 28],
             BS_AUTOCHECKBOX as u32,
         );
-        let apply = control(hwnd, "BUTTON", "Apply", 651, [450, 160, 150, 30], 0);
+        let apply = control(hwnd, "BUTTON", tr!("Apply"), 651, [450, 160, 150, 30], 0);
         let info = control(
             hwnd,
             "STATIC",
@@ -156,13 +156,15 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                                 == BST_CHECKED as isize,
                         };
                         if prefs.frames.valid() {
+                            prefs.foreground_fps = prefs.frames.foreground;
+                            prefs.background_fps = prefs.frames.background;
                             prefs.performance = Default::default();
                             state.apply(prefs);
                         } else {
-                            state.feedback = "Use foreground 0–360 and background 1–360".into();
+                            state.feedback = "Use foreground 0–500 and background 1–500".into();
                         }
                     }
-                    _ => state.feedback = "Enter foreground 0–360 and background 1–360".into(),
+                    _ => state.feedback = "Enter foreground 0–500 and background 1–500".into(),
                 }
             }
             let effective: oteryn_client::play::FramePreferences =

@@ -8,10 +8,13 @@ use windows_sys::Win32::{
         WindowsAndMessaging::*,
     },
 };
+#[path = "tooltips_native.rs"]
+mod tips;
 const ROW_SLOTS: usize = 12;
 const ROWS: usize = 3;
 const TOOLS: usize = 5;
 pub(super) struct SpellRow {
+    tips: tips::Tips,
     buttons: Vec<HWND>,
     tools: Vec<HWND>,
     pressed: Vec<bool>,
@@ -43,6 +46,7 @@ unsafe fn button(parent: HWND) -> HWND {
 impl SpellRow {
     pub(super) fn new(parent: HWND) -> Option<Self> {
         let mut row = Self {
+            tips: tips::Tips::new(parent, ROWS * ROW_SLOTS),
             buttons: Vec::new(),
             tools: Vec::new(),
             pressed: vec![false; ROWS * (ROW_SLOTS + TOOLS)],
@@ -70,7 +74,9 @@ impl SpellRow {
         &mut self,
         labels: Option<&[String]>,
         layout: &BarLayout,
+        tooltips: &[String],
     ) -> Vec<BarGesture> {
+        self.tips.update(self.parent, &self.buttons, tooltips);
         let mut gestures = Vec::new();
         let mut visible = [false; ROWS * ROW_SLOTS];
         unsafe {

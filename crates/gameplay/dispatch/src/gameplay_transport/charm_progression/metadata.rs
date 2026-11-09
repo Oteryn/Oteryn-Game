@@ -53,6 +53,8 @@ pub(super) fn project(catalogue: &CanonicalCharmCatalogue, after: u16) -> Option
             );
         }
         cards.push(Card {
+            outfit_look_type: 0,
+            object_look_type: None,
             race: (index + 1).try_into().ok()?,
             name: name.into(),
             category: category.into(),

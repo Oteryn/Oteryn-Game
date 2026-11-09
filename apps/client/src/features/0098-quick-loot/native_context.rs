@@ -18,6 +18,7 @@ fn target(
 }
 pub(in crate::play) fn decorate(
     link: &PlayLink,
+    inspect: bool,
     popup: HMENU,
     menu: Option<&Menu>,
     player: Option<oteryn_session::EntityRef>,
@@ -26,15 +27,15 @@ pub(in crate::play) fn decorate(
     for (id, label, show) in [
         (
             60001,
-            "Inspect",
-            state.inspection.selected && target(menu, player).is_some(),
+            tr!("Inspect"),
+            inspect && state.inspection.selected && target(menu, player).is_some(),
         ),
         (
             60002,
-            "Ask inspection permission",
-            state.inspection.selected && player.is_some(),
+            tr!("Ask inspection permission"),
+            inspect && state.inspection.selected && player.is_some(),
         ),
-        (60003, "Quick loot nearby", state.loot.selected),
+        (60003, tr!("Quick loot nearby"), state.loot.selected),
     ] {
         if show {
             let wide: Vec<u16> = label.encode_utf16().chain(Some(0)).collect();

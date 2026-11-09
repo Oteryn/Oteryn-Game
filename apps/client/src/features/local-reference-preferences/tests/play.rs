@@ -2,14 +2,21 @@ use super::*;
 #[path = "performance.rs"]
 mod performance_tests;
 
-#[path = "options.rs"]
-mod options;
+#[path = "action_key_interfaces.rs"]
+mod action_key_interfaces;
+
+#[path = "bar_hotkeys.rs"]
+mod bar_hotkeys;
+
 #[path = "contexts.rs"]
 mod contexts;
 #[path = "hud_options.rs"]
 mod hud_options;
 #[path = "interface.rs"]
 mod interface;
+#[path = "options.rs"]
+mod options;
+
 #[path = "status_order.rs"]
 mod status_order;
 
@@ -145,6 +152,26 @@ fn admitted_character_preferences_are_isolated_and_reloaded()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+#[path = "custom_hotkeys.rs"]
+mod custom_hotkeys;
+
+#[path = "presentation_options.rs"]
+mod presentation_options;
+
+#[path = "gameplay.rs"]
+mod gameplay;
+
+#[path = "help.rs"]
+mod help;
+
+#[path = "localization.rs"]
+mod localization;
+
+#[path = "graphics.rs"]
+mod graphics;
+
+#[path = "screenshots.rs"]
+mod screenshots;
 
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
@@ -323,72 +350,17 @@ fn every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchan
     Ok(())
 }
 
-#[test]
-fn rebound_spell_releases_after_modifier_and_preference_changes()
--> Result<(), Box<dyn std::error::Error>> {
-    use crate::play::{PreferenceInput, ReferencePreferences};
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let mut preferences = ReferencePreferences::default();
-    preferences.rebind("local-spell-action-bar-spell-1", "ALT+H")?;
-    let code = KeyCode::new(11)?;
-    let key = |state, modifiers| NormalizedInputEvent::Key {
-        code,
-        state,
-        modifiers,
-        repeat: false,
-    };
-    let mut input = PreferenceInput::default();
-    let mut spells = crate::spell::SpellHotkeys::new()?;
-    let press = input.route(
-        &preferences,
-        &[key(ButtonState::Pressed, Modifiers::one(Modifier::Alt))],
-    )?;
-    assert_eq!(spells.route(&press).len(), 1);
-    preferences.rebind("local-spell-action-bar-spell-1", "ALT+J")?;
-    let release = input.route(&preferences, &[key(ButtonState::Released, Modifiers::NONE)])?;
-    spells.route(&release);
-    let press = input.route(
-        &preferences,
-        &[NormalizedInputEvent::Key {
-            code: KeyCode::new(13)?,
-            state: ButtonState::Pressed,
-            modifiers: Modifiers::one(Modifier::Alt),
-            repeat: false,
-        }],
-    )?;
-    assert_eq!(spells.route(&press).len(), 1);
-    Ok(())
-}
-
-#[test]
-fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::error::Error>> {
-    for chord in [
-        "CTRL+G",
-        "ENTER",
-        "KEYPADENTER",
-        "CTRL+SHIFT+G",
-        "CTRL+SHIFT+L",
-        "CTRL+P",
-    ] {
-        let mut preferences = crate::play::ReferencePreferences::default();
-        assert!(
-            preferences.rebind("0009-highscores-open", chord).is_err(),
-            "{chord}"
-        );
-    }
-    Ok(())
-}
-
 #[path = "options_lane.rs"]
 mod options_lane;
 #[path = "presentation.rs"]
 mod presentation;
 #[path = "shortcuts.rs"]
 mod shortcuts;
-#[path = "graphics.rs"]
-mod graphics;
 
 #[path = "compatibility_1.rs"]
 mod compatibility_1;
 #[path = "compatibility_2.rs"]
 mod compatibility_2;
+
+#[path = "reserved.rs"]
+mod reserved;

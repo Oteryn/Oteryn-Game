@@ -110,6 +110,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
@@ -161,6 +162,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }
@@ -283,6 +285,7 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.end_custom_hotkeys();
         if let Some(launcher) = &mailbox.coin_shop {
             launcher.end();
         }

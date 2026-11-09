@@ -18,7 +18,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.potion_durations.pending = false;
-            mailbox.potion_durations.error = Some("Session ended");
+            mailbox.potion_durations.error = Some(tr!("Session ended"));
         }
     }
     pub fn potion_durations_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -29,7 +29,7 @@ impl PlayLink {
         #[cfg(windows)]
         crate::play::status_window::open_window(
             self,
-            "Potion durations — Ctrl+Alt+Shift+T",
+            tr!("Potion durations — Ctrl+Alt+Shift+T"),
             |mailbox| &mut mailbox.potion_durations,
         );
         #[cfg(not(windows))]

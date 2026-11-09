@@ -37,7 +37,7 @@ fn run(weak: WeakMailbox) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("VIP List").as_ptr(),
+            wide(tr!("VIP List")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,

@@ -1,9 +1,9 @@
 use super::Panel;
 use oteryn_client_runtime::raw_feature::house_wrap::Action;
 pub fn panel_text(panel: &Panel) -> String {
-    let mut text = String::from("House furniture\r\n");
+    let mut text = String::from(tr!("House furniture\r\n"));
     if let Some(catalogue) = &panel.catalogue {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "Page {}. Placement: {}, {}, floor {}\r\n",
             catalogue.page + 1,
             catalogue.position[0],
@@ -16,19 +16,19 @@ pub fn panel_text(panel: &Panel) -> String {
                 index + 1,
                 item.name,
                 match item.action {
-                    Action::Wrap => "Wrap",
-                    Action::Unwrap => "Place",
+                    Action::Wrap => tr!("Wrap"),
+                    Action::Unwrap => tr!("Place"),
                 }
             ));
         }
         if catalogue.entries.is_empty() {
-            text.push_str("No furniture to wrap or place\r\n");
+            text.push_str(tr!("No furniture to wrap or place\r\n"));
         }
     }
     text.push_str(if panel.pending {
-        "Waiting for the server"
+        tr!("Waiting for the server")
     } else if !panel.selected {
-        "Unavailable in this session"
+        tr!("Unavailable in this session")
     } else {
         &panel.feedback
     });

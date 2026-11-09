@@ -20,7 +20,7 @@ impl Default for FramePreferences {
 }
 impl FramePreferences {
     pub fn valid(self) -> bool {
-        self.foreground <= 360 && (1..=360).contains(&self.background)
+        self.foreground <= 500 && (1..=500).contains(&self.background)
     }
     pub fn indicator(self, fps: Option<u32>, latency: Option<u32>) -> String {
         let mut labels = Vec::new();
@@ -56,7 +56,7 @@ impl FramePacer {
         } else {
             preferences.background
         }
-        .min(360);
+        .min(500);
         let period = if limit == 0 {
             0
         } else {
@@ -101,6 +101,17 @@ impl crate::play::PlayLink {
             .cooldowns
             .as_ref()
             .and_then(|cooldowns| cooldowns.rtt_ms)
+    }
+}
+
+impl super::ReferencePreferences {
+    pub fn frame_interval(&self, focused: bool) -> std::time::Duration {
+        let fps = if focused {
+            self.foreground_fps
+        } else {
+            self.background_fps
+        };
+        std::time::Duration::from_nanos(1_000_000_000 / u64::from(fps.clamp(1, 500)))
     }
 }
 

@@ -18,9 +18,9 @@ pub(super) struct Widgets {
 pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
     unsafe {
         let fields = [
-            ("Page offset", "0"),
-            ("Page size (1-50)", "20"),
-            ("Target UUID (blank = self)", ""),
+            (tr!("Page offset"), "0"),
+            (tr!("Page size (1-50)"), "20"),
+            (tr!("Target UUID (blank = self)"), ""),
         ];
         let mut edits = [null_mut(); 3];
         for (i, (label, value)) in fields.iter().enumerate() {
@@ -36,17 +36,17 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             );
         }
         for (i, label) in [
-            "General stats",
-            "Recent deaths",
-            "Recent PvP kills",
-            "Achievements",
-            "Appearances",
-            "Store summary",
-            "Inspection",
-            "Offence",
-            "Defence",
-            "Misc",
-            "Badges",
+            tr!("General stats"),
+            tr!("Recent deaths"),
+            tr!("Recent PvP kills"),
+            tr!("Achievements"),
+            tr!("Appearances"),
+            tr!("Store summary"),
+            tr!("Inspection"),
+            tr!("Offence"),
+            tr!("Defence"),
+            tr!("Misc"),
+            tr!("Badges"),
         ]
         .iter()
         .enumerate()
@@ -66,9 +66,9 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             );
         }
         for (id, label, x) in [
-            (112, "Previous page", 10),
-            (113, "Next page", 190),
-            (117, "Analytics", 370),
+            (112, tr!("Previous page"), 10),
+            (113, tr!("Next page"), 190),
+            (117, tr!("Analytics"), 370),
             (118, "Item summary", 545),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
@@ -82,9 +82,9 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         for (id, label, x) in [
-            (114, "All PvP results", 10),
-            (115, "Unjustified", 190),
-            (116, "Guild war", 370),
+            (114, tr!("All PvP results"), 10),
+            (115, tr!("Unjustified"), 190),
+            (116, tr!("Guild war"), 370),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
         }
@@ -99,7 +99,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
         let achievement_browser = control(
             hwnd,
             "BUTTON",
-            "Browse achievements",
+            tr!("Browse achievements"),
             140,
             [545, 155, 165, 28],
             WS_TABSTOP,

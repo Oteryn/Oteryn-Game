@@ -1,11 +1,11 @@
 use super::Panel;
 pub fn request(panel: &mut Panel, payload: Vec<u8>) -> bool {
     if !panel.selected {
-        panel.feedback = "Unavailable in this session".into();
+        panel.feedback = tr!("Unavailable in this session").into();
         return false;
     }
     if panel.pending {
-        panel.feedback = "Waiting for the server".into();
+        panel.feedback = tr!("Waiting for the server").into();
         return false;
     }
     panel.pending = true;

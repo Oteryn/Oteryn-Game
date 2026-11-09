@@ -2,9 +2,13 @@ use super::PlayerTypingPanel;
 use std::fmt::Write;
 
 pub fn panel_text(panel: &PlayerTypingPanel) -> String {
-    let mut text = format!(
+    let mut text = lfmt!(
         "Player typing: {}\nVisible typing players: {}",
-        if panel.own_typing { "on" } else { "off" },
+        if panel.own_typing {
+            tr!("on")
+        } else {
+            tr!("off")
+        },
         panel.indicators.len()
     );
     for indicator in &panel.indicators {

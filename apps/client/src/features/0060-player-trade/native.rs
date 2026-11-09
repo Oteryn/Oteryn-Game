@@ -75,7 +75,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Player trade").as_ptr(),
+            wide(tr!("Player trade")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -116,7 +116,7 @@ fn run(
         let open = control(
             hwnd,
             "BUTTON",
-            "Open container",
+            tr!("Open container"),
             OPEN_CONTAINER,
             [180, 510, 150, 30],
             WS_TABSTOP,
@@ -124,7 +124,7 @@ fn run(
         let offer = control(
             hwnd,
             "BUTTON",
-            "Offer selected",
+            tr!("Offer selected"),
             OFFER,
             [10, 510, 150, 30],
             WS_TABSTOP,
@@ -132,7 +132,7 @@ fn run(
         let accept = control(
             hwnd,
             "BUTTON",
-            "Accept",
+            tr!("Accept"),
             ACCEPT,
             [10, 240, 120, 30],
             WS_TABSTOP,
@@ -140,7 +140,7 @@ fn run(
         let cancel = control(
             hwnd,
             "BUTTON",
-            "Cancel",
+            tr!("Cancel"),
             CANCEL,
             [140, 240, 120, 30],
             WS_TABSTOP,
@@ -148,7 +148,7 @@ fn run(
         let own = control(
             hwnd,
             "BUTTON",
-            "Look at yours",
+            tr!("Look at yours"),
             LOOK_OWN,
             [270, 240, 125, 30],
             WS_TABSTOP,
@@ -156,7 +156,7 @@ fn run(
         let counter = control(
             hwnd,
             "BUTTON",
-            "Look at theirs",
+            tr!("Look at theirs"),
             LOOK_COUNTER,
             [405, 240, 125, 30],
             WS_TABSTOP,
@@ -195,7 +195,7 @@ fn run(
                         != held_rows
                     {
                         mailbox.player_trade.feedback =
-                            Some("Inventory changed; choose the item again");
+                            Some(tr!("Inventory changed; choose the item again"));
                         continue;
                     }
                     let row = SendMessageW(items, LB_GETCURSEL, 0, 0);
@@ -214,7 +214,7 @@ fn run(
                         );
                     } else {
                         mailbox.player_trade.feedback =
-                            Some("Choose an item from the inventory list");
+                            Some(tr!("Choose an item from the inventory list"));
                         continue;
                     }
                 }
@@ -244,16 +244,19 @@ fn run(
                         .is_err()
                 {
                     mailbox.player_trade.pending = false;
-                    mailbox.player_trade.feedback = Some("The session has ended");
+                    mailbox.player_trade.feedback = Some(tr!("The session has ended"));
                 }
             }
             let rows = oteryn_client_ui::player_trade::picker::rows(&mailbox.player_trade.items);
             if rows != held_rows {
                 SendMessageW(items, LB_RESETCONTENT, 0, 0);
                 for (source, item) in &rows {
-                    let label = format!(
+                    let label = lfmt!(
                         "{source}: item {} x{} (subtype {})",
-                        item.item_definition_ref, item.count, item.sub_type
+                        item.item_definition_ref,
+                        item.count,
+                        item.sub_type,
+                        source = source
                     );
                     SendMessageW(items, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
@@ -344,7 +347,12 @@ pub(in crate::play) fn context_menu(link: &PlayLink, partner: oteryn_session::En
         if menu.is_null() {
             return;
         }
-        AppendMenuW(menu, MF_STRING, 1, wide("Trade with this player").as_ptr());
+        AppendMenuW(
+            menu,
+            MF_STRING,
+            1,
+            wide(tr!("Trade with this player")).as_ptr(),
+        );
         let mut point = std::mem::zeroed();
         windows_sys::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut point);
         let chosen = TrackPopupMenu(

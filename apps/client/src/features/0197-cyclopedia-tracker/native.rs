@@ -32,7 +32,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             let h = CreateWindowExW(
                 0,
                 w("STATIC").as_ptr(),
-                w("Cyclopedia tracker").as_ptr(),
+                w(tr!("Cyclopedia tracker")).as_ptr(),
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -67,19 +67,37 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             let boss = ctl(
                 h,
                 "BUTTON",
-                "Bosstiary",
+                tr!("Bosstiary"),
                 102,
                 [410, 10, 100, 25],
                 BS_AUTOCHECKBOX as u32,
             );
-            for (i, (t, id)) in [("Add", 103), ("Remove", 104), ("Refresh", 105)]
-                .iter()
-                .enumerate()
+            for (i, (t, id)) in [
+                (tr!("Add"), 103),
+                (tr!("Remove"), 104),
+                (tr!("Refresh"), 105),
+            ]
+            .iter()
+            .enumerate()
             {
                 ctl(h, "BUTTON", t, *id, [10 + i as i32 * 110, 45, 100, 28], 0);
             }
-            ctl(h, "BUTTON", "Bestiary widget", 107, [340, 45, 160, 28], 0);
-            ctl(h, "BUTTON", "Bosstiary widget", 108, [510, 45, 160, 28], 0);
+            ctl(
+                h,
+                "BUTTON",
+                tr!("Bestiary widget"),
+                107,
+                [340, 45, 160, 28],
+                0,
+            );
+            ctl(
+                h,
+                "BUTTON",
+                tr!("Bosstiary widget"),
+                108,
+                [510, 45, 160, 28],
+                0,
+            );
             let out = ctl(
                 h,
                 "EDIT",

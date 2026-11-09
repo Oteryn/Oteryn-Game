@@ -78,7 +78,7 @@ pub fn text_at(
     let elapsed = bosses.cooldown_received_at.map_or(0, |at| {
         u64::try_from(now.saturating_duration_since(at).as_millis()).unwrap_or(u64::MAX)
     });
-    let mut text = format!(
+    let mut text = lfmt!(
         "Boss Tracker\r\n{}\r\nPersonal drop chests (refresh confirms live contents)\r\n",
         crate::boss_encounter::cooldown_text(bosses, elapsed)
     );
@@ -92,20 +92,23 @@ pub fn text_at(
                 .iter()
                 .map(|byte| format!("{byte:02x}"))
                 .collect();
-            let _ = write!(
+            let _ = lwrite!(
                 text,
                 "{} | {} items | death {} | expires {}\r\n",
-                entry.boss_key, entry.item_count, death, entry.expires_at_unix_ms
+                entry.boss_key,
+                entry.item_count,
+                death,
+                entry.expires_at_unix_ms
             );
         }
         if chest.entries.len() == oteryn_client_runtime::boss_encounter::REWARD_CHEST_PAGE_SIZE {
-            text.push_str("This page is full; check the next drop page\r\n");
+            text.push_str(tr!("This page is full; check the next drop page\r\n"));
         }
     } else {
-        text.push_str("Refresh drop chests to load server records\r\n");
+        text.push_str(tr!("Refresh drop chests to load server records\r\n"));
     }
     if rewards.pending {
-        text.push_str("Reading selected drop contents\r\n");
+        text.push_str(tr!("Reading selected drop contents\r\n"));
     } else if rewards
         .browse
         .as_ref()
@@ -116,21 +119,23 @@ pub fn text_at(
     } else if let Some(feedback) = rewards.feedback {
         let _ = write!(text, "{feedback}\r\n");
     }
-    text.push_str(
-        "\r\nObserved reward history · largest quantity seen, may already be collected\r\n",
-    );
+    text.push_str(tr!(
+        "\r\nObserved reward history · largest quantity seen, may already be collected\r\n"
+    ));
     for entry in &panel.boss_drops {
-        let _ = write!(
+        let _ = lwrite!(
             text,
             "{} | item {} × {} | reward #{}\r\n",
-            entry.boss.as_deref().unwrap_or("Boss key not loaded"),
+            entry.boss.as_deref().unwrap_or(tr!("Boss key not loaded")),
             entry.definition,
             entry.quantity,
             entry.ordinal
         );
     }
     if panel.boss_drops_truncated {
-        text.push_str("Older observations were discarded at the 256-row limit\r\n");
+        text.push_str(tr!(
+            "Older observations were discarded at the 256-row limit\r\n"
+        ));
     }
     text
 }

@@ -40,7 +40,9 @@ pub fn edit_details(
         panel.anonymous = anonymous;
         true
     } else {
-        panel.feedback = Some("Enter a positive item ID, amount (1–64000) and valid unit price");
+        panel.feedback = Some(tr!(
+            "Enter a positive item ID, amount (1–64000) and valid unit price"
+        ));
         false
     }
 }

@@ -65,7 +65,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Depot — Ctrl+Shift+L").as_ptr(),
+            wide(tr!("Depot — Ctrl+Shift+L")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -119,31 +119,43 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
             ));
         }
         let controls = [
-            control(hwnd, "BUTTON", "Previous page", 30, [10, 44, 140, 28]),
-            control(hwnd, "BUTTON", "Next page", 31, [155, 44, 140, 28]),
-            control(hwnd, "BUTTON", "Refresh", 32, [300, 44, 140, 28]),
-            control(hwnd, "BUTTON", "Carried previous", 33, [470, 44, 160, 28]),
-            control(hwnd, "BUTTON", "Carried next", 34, [635, 44, 160, 28]),
+            control(hwnd, "BUTTON", tr!("Previous page"), 30, [10, 44, 140, 28]),
+            control(hwnd, "BUTTON", tr!("Next page"), 31, [155, 44, 140, 28]),
+            control(hwnd, "BUTTON", tr!("Refresh"), 32, [300, 44, 140, 28]),
             control(
                 hwnd,
                 "BUTTON",
-                "Open bag: select a carried cell",
+                tr!("Carried previous"),
+                33,
+                [470, 44, 160, 28],
+            ),
+            control(hwnd, "BUTTON", tr!("Carried next"), 34, [635, 44, 160, 28]),
+            control(
+                hwnd,
+                "BUTTON",
+                tr!("Open bag: select a carried cell"),
                 35,
                 [470, 490, 440, 28],
             ),
         ];
         let labels = [
-            control(hwnd, "STATIC", "Depot items", 301, [10, 76, 440, 20]),
+            control(hwnd, "STATIC", tr!("Depot items"), 301, [10, 76, 440, 20]),
             control(
                 hwnd,
                 "STATIC",
-                "Inventory / carried bags",
+                tr!("Inventory / carried bags"),
                 302,
                 [470, 76, 440, 20],
             ),
         ];
-        let stash = control(hwnd, "BUTTON", "Stash items…", 36, [10, 490, 215, 28]);
-        let market = control(hwnd, "BUTTON", "Market (Ctrl+M)", 37, [235, 490, 215, 28]);
+        let stash = control(hwnd, "BUTTON", tr!("Stash items…"), 36, [10, 490, 215, 28]);
+        let market = control(
+            hwnd,
+            "BUTTON",
+            tr!("Market (Ctrl+M)"),
+            37,
+            [235, 490, 215, 28],
+        );
         let status = control(hwnd, "STATIC", "", 300, [10, 530, 900, 100]);
         if boxes
             .iter()
@@ -202,9 +214,9 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                     SetWindowTextW(
                         controls[5],
                         wide(if open_bag {
-                            "Opening bag: select a carried cell (click to cancel)"
+                            tr!("Opening bag: select a carried cell (click to cancel)")
                         } else {
-                            "Open bag: select a carried cell"
+                            tr!("Open bag: select a carried cell")
                         })
                         .as_ptr(),
                     );
@@ -217,7 +229,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                     open_bag = false;
                     SetWindowTextW(
                         controls[5],
-                        wide("Open bag: select a carried cell").as_ptr(),
+                        wide(tr!("Open bag: select a carried cell")).as_ptr(),
                     );
                     continue;
                 }
@@ -265,7 +277,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                 for i in 0..32 {
                     let entry = p.reply.as_ref().and_then(|r| r.entries.get(i));
                     let label = entry.map_or_else(String::new, |e| {
-                        format!("Item {}\n×{}", e.definition, e.count)
+                        lfmt!("Item {}\n×{}", e.definition, e.count)
                     });
                     SetWindowTextW(depot[i], wide(&label).as_ptr());
                     EnableWindow(
@@ -278,7 +290,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
                     );
                     let entry = items.get(carried_page * 32 + i);
                     let label = entry.map_or_else(String::new, |e| {
-                        format!("Item {}\n×{}", e.item_definition_ref, e.count)
+                        lfmt!("Item {}\n×{}", e.item_definition_ref, e.count)
                     });
                     SetWindowTextW(carried[i], wide(&label).as_ptr());
                     EnableWindow(

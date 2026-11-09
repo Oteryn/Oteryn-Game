@@ -160,3 +160,131 @@ fn screenshot_settings_survive_restart_and_save_full_and_game_only_frames()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn screenshot_backlog_saves_preceding_frames_on_confirmed_death_and_persists_policy()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use crate::screenshots::{CaptureBacklog, Frame, Rect};
+    use std::time::{Duration, Instant};
+    let root = std::env::temp_dir().join(format!("screenshot-backlog-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let settings_path = root.join("settings.json");
+    let mut settings = SettingsState::new(Some(settings_path.clone()));
+    let mut preferences = settings.preferences.clone();
+    preferences.screenshots.backlog_seconds = 2;
+    preferences.screenshots.on_death = true;
+    settings.apply(preferences.clone());
+    let restored = SettingsState::new(Some(settings_path));
+    assert_eq!(restored.preferences.screenshots, preferences.screenshots);
+    let prefs = &restored.preferences.screenshots;
+    let mut capture = CaptureController::default();
+    prefs.apply_policy(&mut capture);
+    let (link, _, outbox) = play_channel();
+    outbox.vitals(Some(ActorVitals {
+        health: 100,
+        max_health: 100,
+        ..Default::default()
+    }));
+    capture.observe(link.screenshot_facts());
+    let mut backlog = CaptureBacklog::default();
+    let now = Instant::now();
+    assert!(backlog.sample_due(now, prefs.backlog_seconds));
+    assert!(!backlog.sample_due(now + Duration::from_millis(500), prefs.backlog_seconds));
+    let area = Rect {
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1,
+    };
+    for pixel in 0..3u8 {
+        let pixels = [pixel, 0, 0, 255];
+        assert!(
+            backlog
+                .process(
+                    &mut capture,
+                    prefs,
+                    &root,
+                    Frame {
+                        width: 1,
+                        height: 1,
+                        bgra: &pixels,
+                        game: area
+                    },
+                    now + Duration::from_secs(u64::from(pixel))
+                )?
+                .is_empty()
+        );
+    }
+    outbox.push(vec![SessionEvent::ActorVitals(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ActorVitals {
+            health: 0,
+            max_health: 100,
+            ..Default::default()
+        },
+    })]);
+    capture.observe(link.screenshot_facts());
+    assert!(capture.pending());
+    let pixels = [3, 0, 0, 255];
+    let paths = backlog.process(
+        &mut capture,
+        prefs,
+        &root,
+        Frame {
+            width: 1,
+            height: 1,
+            bgra: &pixels,
+            game: area,
+        },
+        now + Duration::from_secs(3),
+    )?;
+    assert_eq!(paths.len(), 3);
+    for (path, expected) in paths.iter().zip([1, 2, 3]) {
+        assert_eq!(std::fs::read(path)?[54], expected);
+    }
+    assert!(!capture.pending());
+    capture.manual();
+    let paths = backlog.process(
+        &mut capture,
+        prefs,
+        &root,
+        Frame {
+            width: 1,
+            height: 1,
+            bgra: &pixels,
+            game: area,
+        },
+        now + Duration::from_secs(6),
+    )?;
+    assert_eq!(paths.len(), 1, "expired backlog frames must not be saved");
+    assert!(!backlog.sample_due(now + Duration::from_secs(7), 0));
+    let mut disabled = prefs.clone();
+    disabled.backlog_seconds = 0;
+    capture.manual();
+    assert_eq!(
+        backlog
+            .process(
+                &mut capture,
+                &disabled,
+                &root,
+                Frame {
+                    width: 1,
+                    height: 1,
+                    bgra: &pixels,
+                    game: area
+                },
+                now + Duration::from_secs(7)
+            )?
+            .len(),
+        1
+    );
+    let mut invalid = preferences.clone();
+    invalid.screenshots.backlog_seconds = 11;
+    settings.apply(invalid);
+    assert_eq!(settings.preferences, preferences);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

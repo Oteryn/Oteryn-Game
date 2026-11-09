@@ -91,13 +91,13 @@ impl Slots {
         }
         let movement = &mailbox.item_movement;
         let text = if movement.pending {
-            "Moving item…"
+            tr!("Moving item…")
         } else if movement.prompt.is_some() {
-            "Choose the stack count"
+            tr!("Choose the stack count")
         } else {
             movement
                 .feedback
-                .unwrap_or("Drag to equip; drag back to Backpack to unequip")
+                .unwrap_or(tr!("Drag to equip; drag back to Backpack to unequip"))
         };
         // SAFETY: the status control and label are valid on this thread.
         if !self.status.is_null() && self.held_status != Some(text) {

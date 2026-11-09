@@ -26,7 +26,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.skill_progress.pending = false;
-            mailbox.skill_progress.error = Some("Session ended");
+            mailbox.skill_progress.error = Some(tr!("Session ended"));
         }
     }
     pub fn skill_progress_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -37,7 +37,7 @@ impl PlayLink {
         #[cfg(windows)]
         crate::play::status_window::open_window(
             self,
-            "Skill progress — Ctrl+Alt+Shift+K",
+            tr!("Skill progress — Ctrl+Alt+Shift+K"),
             |mailbox| &mut mailbox.skill_progress,
         );
         #[cfg(not(windows))]

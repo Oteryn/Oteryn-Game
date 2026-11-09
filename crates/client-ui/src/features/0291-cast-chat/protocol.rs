@@ -21,21 +21,21 @@ pub fn command(
     key: [u8; 16],
 ) -> Result<ServerMechanicCommand, &'static str> {
     if !panel.selected || panel.pending || !control.active {
-        return Err("No active cast chat");
+        return Err(tr!("No active cast chat"));
     }
     let (capability, command_type, message) = if action == 0 {
         (291, 504, Message::Reply(text.to_owned()))
     } else {
         if !(1..=4).contains(&action) || !subject.is_ascii() || subject.len() != 32 {
-            return Err("Select a viewer handle from cast chat");
+            return Err(tr!("Select a viewer handle from cast chat"));
         }
         let mut handle = [0; 16];
         for (i, byte) in handle.iter_mut().enumerate() {
             *byte = u8::from_str_radix(&subject[i * 2..i * 2 + 2], 16)
-                .map_err(|_| "Invalid viewer handle")?;
+                .map_err(|_| tr!("Invalid viewer handle"))?;
         }
         if handle == [0; 16] || !panel.subjects.contains(&handle) {
-            return Err("Unknown viewer handle");
+            return Err(tr!("Unknown viewer handle"));
         }
         (
             290,
@@ -50,7 +50,7 @@ pub fn command(
     };
     let payload = message
         .encode()
-        .map_err(|_| "Invalid cast text or moderation request")?;
+        .map_err(|_| tr!("Invalid cast text or moderation request"))?;
     Ok(ServerMechanicCommand {
         capability,
         command_type,

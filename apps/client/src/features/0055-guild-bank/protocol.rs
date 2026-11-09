@@ -9,17 +9,17 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         Intent::Refresh | Intent::Older | Intent::Claims | Intent::MoreClaims => {
             let claims = matches!(intent, Intent::Claims | Intent::MoreClaims);
             if intent == Intent::Older && panel.loaded_guild != panel.fields[0] {
-                return Err("Refresh this guild before paging".into());
+                return Err(tr!("Refresh this guild before paging").into());
             }
             let query = wire::GuildBankQuery {
                 guild: if claims { None } else { Some(guild()?) },
                 before: if intent == Intent::Older {
-                    Some(panel.next.ok_or("No older ledger entries")?)
+                    Some(panel.next.ok_or(tr!("No older ledger entries"))?)
                 } else {
                     None
                 },
                 after_claim: if intent == Intent::MoreClaims {
-                    Some(panel.next_claim.ok_or("No more open claims")?)
+                    Some(panel.next_claim.ok_or(tr!("No more open claims"))?)
                 } else {
                     None
                 },
@@ -36,7 +36,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
                 let amount = panel.fields[1]
                     .trim()
                     .parse()
-                    .map_err(|_| "Enter a positive amount")?;
+                    .map_err(|_| tr!("Enter a positive amount"))?;
                 if intent == Intent::Deposit {
                     wire::GuildBankAction::Deposit(amount)
                 } else {
@@ -55,7 +55,7 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
     Ok(FeatureCommand {
         capability: 55,
         kind,
-        payload: payload.map_err(|_| "Invalid guild UUID or amount")?,
+        payload: payload.map_err(|_| tr!("Invalid guild UUID or amount"))?,
     })
 }
 pub(in crate::play) fn apply(
@@ -72,22 +72,22 @@ pub(in crate::play) fn apply(
     panel.next = None;
     panel.next_claim = None;
     if !accepted(result) {
-        panel.feedback = "The server refused the guild bank request".into();
+        panel.feedback = tr!("The server refused the guild bank request").into();
         return;
     }
     let Ok(reply) = wire::decode_guild_bank_reply(&result.payload) else {
-        panel.feedback = "Invalid guild bank reply".into();
+        panel.feedback = tr!("Invalid guild bank reply").into();
         return;
     };
     if reply.code != 1 {
         panel.feedback = match reply.code {
-            2 => "Guild bank access denied",
-            3 => "Guild is disbanding",
-            4 => "Insufficient balance",
-            5 => "Balance limit reached",
-            6 => "Junior characters cannot transact",
-            7 => "No open claim",
-            _ => "Guild bank request refused",
+            2 => tr!("Guild bank access denied"),
+            3 => tr!("Guild is disbanding"),
+            4 => tr!("Insufficient balance"),
+            5 => tr!("Balance limit reached"),
+            6 => tr!("Junior characters cannot transact"),
+            7 => tr!("No open claim"),
+            _ => tr!("Guild bank request refused"),
         }
         .into();
         return;
@@ -95,21 +95,23 @@ pub(in crate::play) fn apply(
     panel.next = reply.next;
     panel.next_claim = reply.next_claim;
     panel.loaded_guild = panel.fields[0].clone();
-    panel.summary = format!(
+    panel.summary = lfmt!(
         "Personal bank: {}\r\nGuild bank: {}\r\nClaim: {}",
-        reply.bank_balance, reply.guild_balance, reply.claim
+        reply.bank_balance,
+        reply.guild_balance,
+        reply.claim
     );
     for entry in reply.entries {
         panel.summary.push_str(&format!(
             "\r\n#{}: {} {} ({} → {})",
             entry.ordinal,
             match entry.kind {
-                1 => "Deposit",
-                2 => "Withdrawal",
-                3 => "Disband payout",
-                4 => "Hall reserve",
-                5 => "Hall refund",
-                _ => "Hall payment",
+                1 => tr!("Deposit"),
+                2 => tr!("Withdrawal"),
+                3 => tr!("Disband payout"),
+                4 => tr!("Hall reserve"),
+                5 => tr!("Hall refund"),
+                _ => tr!("Hall payment"),
             },
             entry.amount,
             entry.before,
@@ -124,7 +126,7 @@ pub(in crate::play) fn apply(
             .collect();
         panel
             .summary
-            .push_str(&format!("\r\nOpen claim: {id} — {}", claim.amount));
+            .push_str(&lfmt!("\r\nOpen claim: {id} — {}", claim.amount, id = id));
     }
-    panel.feedback = "Guild bank confirmed by the server".into();
+    panel.feedback = tr!("Guild bank confirmed by the server").into();
 }

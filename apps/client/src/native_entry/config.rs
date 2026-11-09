@@ -14,7 +14,7 @@ pub struct NativeLoginSettingError(pub &'static str);
 
 impl Display for NativeLoginSettingError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        write!(formatter, "native login setting {} is missing", self.0)
+        lwrite!(formatter, "native login setting {} is missing", self.0)
     }
 }
 
@@ -47,7 +47,7 @@ pub struct NativeLoginConfig {
 impl Debug for NativeLoginConfig {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter
-            .debug_struct("NativeLoginConfig")
+            .debug_struct(tr!("NativeLoginConfig"))
             .field("platform_url", &self.platform_url)
             .field("gateway_url", &self.gateway_url)
             .field("world_ref", &self.world_ref)

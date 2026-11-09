@@ -45,12 +45,12 @@ pub(super) fn name(offer: &ShopOffer) -> String {
             format!(
                 "{} #{}",
                 match offer.kind {
-                    0 => "Item",
-                    1 => "Mount",
-                    2 => "Outfit",
-                    3 => "Item pair",
-                    4 => "Promotion",
-                    _ => "Reward",
+                    0 => tr!("Item"),
+                    1 => tr!("Mount"),
+                    2 => tr!("Outfit"),
+                    3 => tr!("Item pair"),
+                    4 => tr!("Promotion"),
+                    _ => tr!("Reward"),
                 },
                 offer.primary
             )

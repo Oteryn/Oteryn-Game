@@ -2,17 +2,23 @@ use super::task_board;
 use std::fmt::Write;
 
 pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>) -> String {
-    let mut text = format!(
+    let mut text = lfmt!(
         "Task Board — week {}\nPoints: {}  Bounty points: {}  Soulseals: {}\n",
-        reply.period, reply.points, reply.bounty_points, reply.soulseals
+        reply.period,
+        reply.points,
+        reply.bounty_points,
+        reply.soulseals
     );
     let weekly = &reply.weekly;
-    let _ = writeln!(
+    let _ = lwriteln!(
         text,
         "Weekly: started {}, difficulty {}, expanded {}, multiplier {}",
-        weekly.started, weekly.difficulty, weekly.expanded, weekly.multiplier
+        weekly.started,
+        weekly.difficulty,
+        weekly.expanded,
+        weekly.multiplier
     );
-    let _ = writeln!(
+    let _ = lwriteln!(
         text,
         "Kill XP: {}  Delivery XP: {}  Pending points: {}  Pending soulseals: {}",
         weekly.kill_experience,
@@ -22,20 +28,21 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
     );
     for (slot, task) in weekly.kills.iter().enumerate() {
         let race = if task.race.is_empty() {
-            "Any creature".into()
+            tr!("Any creature").into()
         } else {
             super::creature_name(&task.race)
         };
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "Kill {}. {race}: {}/{}",
             slot + 1,
             task.current,
-            task.required
+            task.required,
+            race = race
         );
     }
     for (slot, task) in weekly.deliveries.iter().enumerate() {
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "Delivery {}. {}: {}/{}  delivered: {}",
             slot + 1,
@@ -46,13 +53,16 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
         );
     }
     let bounty = &reply.bounty;
-    let _ = writeln!(
+    let _ = lwriteln!(
         text,
         "Bounty: state {}, difficulty {}, rerolls {}, daily reroll at {}",
-        bounty.state, bounty.difficulty, bounty.rerolls, bounty.daily_reroll_at
+        bounty.state,
+        bounty.difficulty,
+        bounty.rerolls,
+        bounty.daily_reroll_at
     );
     for (slot, offer) in bounty.offers.iter().enumerate() {
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "Bounty {}. {}: {} kills, {} XP, {} points, grade {}",
             slot + 1,
@@ -64,7 +74,7 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
         );
     }
     if let Some(active) = &bounty.active {
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "Active bounty: {} {}/{} (offer {})",
             super::creature_name(&active.race),
@@ -74,7 +84,7 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
         );
     }
     for (slot, list) in bounty.lists.iter().enumerate() {
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "List {}: unlocked {}, preferred {}, unwanted {}",
             slot + 1,
@@ -83,23 +93,28 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
             list.unwanted
         );
     }
-    text.push_str("\nTask shop\n");
+    text.push_str(tr!("\nTask shop\n"));
     for offer in &reply.shop {
         let _ = writeln!(text, "{}", shop_offer_text(offer, reply.points));
     }
-    text.push_str("\nBounty Talisman upgrade paths\n");
+    text.push_str(tr!("\nBounty Talisman upgrade paths\n"));
     for (path, value) in reply.talisman.iter().enumerate() {
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "  Level {} → {}",
             value.level,
             value.level.saturating_add(1).min(355)
         );
-        let _ = writeln!(
+        let _ = lwriteln!(
             text,
             "Talisman {} ({}): level {}, bonus {}, next cost {}",
             path + 1,
-            ["Damage", "Life leech", "Loot", "Bestiary"][path],
+            [
+                tr!("Damage"),
+                tr!("Life leech"),
+                tr!("Loot"),
+                tr!("Bestiary")
+            ][path],
             value.level,
             value.bonus,
             value.next_cost
@@ -113,11 +128,11 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
 
 pub fn shop_offer_text(offer: &task_board::full::ShopOffer, points: u64) -> String {
     let status = if offer.bought {
-        "Already owned".into()
+        tr!("Already owned").into()
     } else if points >= u64::from(offer.price) {
-        "Available — server confirms purchase".into()
+        tr!("Available — server confirms purchase").into()
     } else {
-        format!(
+        lfmt!(
             "{} points short",
             u64::from(offer.price).saturating_sub(points)
         )

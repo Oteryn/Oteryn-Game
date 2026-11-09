@@ -16,7 +16,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Guild(command)).is_err()
         {
             mailbox.guild.pending = false;
-            mailbox.guild.feedback = Some("The session has ended".into());
+            mailbox.guild.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn open_guild(&self) {

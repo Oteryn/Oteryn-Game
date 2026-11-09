@@ -69,9 +69,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
             0,
             w("STATIC").as_ptr(),
             w(if boss {
-                "Bosstiary tracker"
+                tr!("Bosstiary tracker")
             } else {
-                "Bestiary tracker"
+                tr!("Bestiary tracker")
             })
             .as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
@@ -94,7 +94,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
         ctl(
             h,
             "STATIC",
-            "Search tracked creatures",
+            tr!("Search tracked creatures"),
             0,
             [10, 8, 230, 20],
             0,
@@ -116,14 +116,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
             [320, 30, 175, 160],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
-        for label in ["Name", "Most kills", "Nearest completion"] {
+        for label in [tr!("Name"), tr!("Most kills"), tr!("Nearest completion")] {
             SendMessageW(sort, CB_ADDSTRING, 0, w(label).as_ptr() as isize);
         }
         SendMessageW(sort, CB_SETCURSEL, 0, 0);
         let hide = ctl(
             h,
             "BUTTON",
-            "Hide completed",
+            tr!("Hide completed"),
             203,
             [505, 30, 180, 25],
             BS_AUTOCHECKBOX as u32,
@@ -136,7 +136,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
             [10, 65, 680, 260],
             WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
         );
-        ctl(h, "STATIC", "Creature key to add", 0, [10, 335, 250, 20], 0);
+        ctl(
+            h,
+            "STATIC",
+            tr!("Creature key to add"),
+            0,
+            [10, 335, 250, 20],
+            0,
+        );
         let key = ctl(
             h,
             "EDIT",
@@ -146,9 +153,16 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
         SendMessageW(key, EM_SETLIMITTEXT, 128, 0);
-        ctl(h, "BUTTON", "Add", 206, [370, 360, 85, 28], 0);
-        ctl(h, "BUTTON", "Remove selected", 207, [465, 360, 140, 28], 0);
-        ctl(h, "BUTTON", "Refresh", 208, [610, 360, 80, 28], 0);
+        ctl(h, "BUTTON", tr!("Add"), 206, [370, 360, 85, 28], 0);
+        ctl(
+            h,
+            "BUTTON",
+            tr!("Remove selected"),
+            207,
+            [465, 360, 140, 28],
+            0,
+        );
+        ctl(h, "BUTTON", tr!("Refresh"), 208, [610, 360, 80, 28], 0);
         let status = ctl(h, "STATIC", "", 209, [10, 400, 680, 60], 0);
         if [search, sort, hide, list, key, status]
             .iter()
@@ -278,7 +292,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
                         row.thresholds[0],
                         row.thresholds[1],
                         goal,
-                        if row.completed { " — Complete" } else { "" }
+                        if row.completed {
+                            tr!(" — Complete")
+                        } else {
+                            ""
+                        }
                     );
                     SendMessageW(list, LB_ADDSTRING, 0, w(&label).as_ptr() as isize);
                 }
@@ -289,13 +307,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, boss: bool) {
                     SendMessageW(list, LB_SETCURSEL, i, 0);
                 }
                 let message = if !panel.selected {
-                    "Feature unavailable in this session"
+                    tr!("Feature unavailable in this session")
                 } else if panel.pending {
-                    "Waiting for the server"
+                    tr!("Waiting for the server")
                 } else {
-                    panel.feedback.unwrap_or(
-                        "Select a tracked creature to remove it. Progress comes from the server.",
-                    )
+                    panel.feedback.unwrap_or(tr!(
+                        "Select a tracked creature to remove it. Progress comes from the server."
+                    ))
                 };
                 SetWindowTextW(status, w(message).as_ptr());
                 held = Some(panel);

@@ -42,32 +42,34 @@ fn prepare(
     occurrence: [u8; 16],
 ) -> Result<WheelCommand, &'static str> {
     if !panel.selected {
-        return Err("Wheel and Atelier are unavailable in this session");
+        return Err(tr!("Wheel and Atelier are unavailable in this session"));
     }
     if panel.pending.is_some() {
-        return Err("Waiting for the server");
+        return Err(tr!("Waiting for the server"));
     }
     if intent == Intent::Retry {
-        return panel.retry.clone().ok_or("No request needs retrying");
+        return panel.retry.clone().ok_or(tr!("No request needs retrying"));
     }
     if intent == Intent::Refresh {
         return WheelCommand::new(wheel::COMMAND_TYPE_WHEEL_ALLOCATION, vec![8, 0])
-            .ok_or("Could not refresh the Wheel");
+            .ok_or(tr!("Could not refresh the Wheel"));
     }
     if panel.retry.is_some() {
-        return Err("Retry the unresolved request before making another change");
+        return Err(tr!(
+            "Retry the unresolved request before making another change"
+        ));
     }
     if !panel.synchronized {
-        return Err("Refresh the current Wheel and Atelier state first");
+        return Err(tr!("Refresh the current Wheel and Atelier state first"));
     }
     let wheel = panel
         .confirmed_wheel
         .as_ref()
-        .ok_or("Refresh the Wheel first")?;
+        .ok_or(tr!("Refresh the Wheel first"))?;
     let atelier = panel
         .confirmed_atelier
         .as_ref()
-        .ok_or("Refresh the Atelier first")?;
+        .ok_or(tr!("Refresh the Atelier first"))?;
     if matches!(intent, Intent::Save | Intent::Reset) {
         let payload = wheel::encode_wheel_request(&wheel::WheelAllocationRequest {
             action: if intent == Intent::Save { 1 } else { 2 },
@@ -80,12 +82,12 @@ fn prepare(
             },
             vessels: (intent == Intent::Save).then_some(panel.vessels),
         })
-        .map_err(|_| "Wheel edits could not be sent")?;
+        .map_err(|_| tr!("Wheel edits could not be sent"))?;
         return WheelCommand::new(wheel::COMMAND_TYPE_WHEEL_ALLOCATION, payload)
-            .ok_or("Wheel edits could not be sent");
+            .ok_or(tr!("Wheel edits could not be sent"));
     }
     if panel.dirty() {
-        return Err("Save or refresh your pending Wheel edits first");
+        return Err(tr!("Save or refresh your pending Wheel edits first"));
     }
     let mutation = match intent {
         Intent::Reveal => {
@@ -93,36 +95,36 @@ fn prepare(
                 .quality_quotes
                 .iter()
                 .find(|quote| quote.quality == panel.quality)
-                .ok_or("Refresh current Atelier prices first")?;
+                .ok_or(tr!("Refresh current Atelier prices first"))?;
             atelier::Mutation::Reveal {
                 quality: panel.quality,
             }
         }
         Intent::ToggleLock => {
-            let gem = panel.selected_gem().ok_or("Select a gem first")?;
+            let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
             let payload = atelier::encode_set_lock(&atelier::SetLockRequest {
                 occurrence,
                 expected_revision: atelier.revision,
                 gem: gem.id,
                 locked: !gem.locked,
             })
-            .map_err(|_| "Gem lock change could not be sent")?;
+            .map_err(|_| tr!("Gem lock change could not be sent"))?;
             return WheelCommand::new(atelier::COMMAND_TYPE_ATELIER_SET_LOCK, payload)
-                .ok_or("Gem lock change could not be sent");
+                .ok_or(tr!("Gem lock change could not be sent"));
         }
         Intent::SwitchDomain | Intent::Dismantle => {
-            let gem = panel.selected_gem().ok_or("Select a gem first")?;
+            let gem = panel.selected_gem().ok_or(tr!("Select a gem first"))?;
             if gem.vessel {
-                return Err("Remove the gem from its vessel and save first");
+                return Err(tr!("Remove the gem from its vessel and save first"));
             }
             if intent == Intent::Dismantle && gem.locked {
-                return Err("Unlock the gem first");
+                return Err(tr!("Unlock the gem first"));
             }
             atelier
                 .quality_quotes
                 .iter()
                 .find(|quote| quote.quality == gem.quality)
-                .ok_or("Refresh current Atelier prices first")?;
+                .ok_or(tr!("Refresh current Atelier prices first"))?;
             if intent == Intent::SwitchDomain {
                 atelier::Mutation::SwitchDomain { gem: gem.id }
             } else {
@@ -133,28 +135,28 @@ fn prepare(
             let (kind, mod_id) = panel
                 .modifier
                 .filter(|id| panel.modifiers().contains(id))
-                .ok_or("Select a Workshop modifier first")?;
+                .ok_or(tr!("Select a Workshop modifier first"))?;
             let grade = panel.grade(kind, mod_id);
             if grade >= 3 {
-                return Err("This modifier is already Grade IV");
+                return Err(tr!("This modifier is already Grade IV"));
             }
             atelier
                 .grade_quotes
                 .iter()
                 .find(|quote| quote.kind == kind && quote.grade == grade + 1)
-                .ok_or("Refresh current Workshop prices first")?;
+                .ok_or(tr!("Refresh current Workshop prices first"))?;
             atelier::Mutation::GradeUp { kind, mod_id }
         }
-        _ => return Err("Unknown Wheel action"),
+        _ => return Err(tr!("Unknown Wheel action")),
     };
     let payload = atelier::encode_mutate(&atelier::MutateRequest {
         occurrence,
         expected_revision: atelier.revision,
         mutation,
     })
-    .map_err(|_| "Atelier change could not be sent")?;
+    .map_err(|_| tr!("Atelier change could not be sent"))?;
     WheelCommand::new(atelier::COMMAND_TYPE_ATELIER_MUTATE, payload)
-        .ok_or("Atelier change could not be sent")
+        .ok_or(tr!("Atelier change could not be sent"))
 }
 
 fn operation_refused(response: &WheelResponse) -> Option<bool> {
@@ -184,7 +186,9 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
         if pending.mutation {
             panel.retry = Some(pending);
         }
-        panel.feedback = Some("The response did not match this request; refresh and retry");
+        panel.feedback = Some(tr!(
+            "The response did not match this request; refresh and retry"
+        ));
         return false;
     }
     let outcome = match response.status {
@@ -196,13 +200,13 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
         panel.retry = outcome.is_none().then_some(pending);
     }
     panel.feedback = match outcome {
-        Some(false) => Some("The server confirmed the request"),
-        Some(true) => {
-            Some("The server refused the change; check Premium, points, location and resources")
-        }
-        None => Some(
-            "The outcome is not confirmed; Retry sends the same request without a second payment",
-        ),
+        Some(false) => Some(tr!("The server confirmed the request")),
+        Some(true) => Some(tr!(
+            "The server refused the change; check Premium, points, location and resources"
+        )),
+        None => Some(tr!(
+            "The outcome is not confirmed; Retry sends the same request without a second payment"
+        )),
     };
     let Some((wheel, atelier)) = response
         .wheel
@@ -215,13 +219,15 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
                 .and_then(|bytes| atelier::decode_reply(bytes).ok()),
         )
     else {
-        panel.feedback = Some("The current view is unavailable; refresh before editing");
+        panel.feedback = Some(tr!(
+            "The current view is unavailable; refresh before editing"
+        ));
         return false;
     };
     if wheel.refused || atelier.refused {
-        panel.feedback = Some(
-            "Wheel or Atelier is unavailable for this character; check level, promotion and Premium",
-        );
+        panel.feedback = Some(tr!(
+            "Wheel or Atelier is unavailable for this character; check level, promotion and Premium"
+        ));
         return false;
     }
     if panel
@@ -233,7 +239,9 @@ pub fn apply_result(panel: &mut WheelPanel, response: &WheelResponse) -> bool {
             .as_ref()
             .is_some_and(|old| atelier.revision < old.revision)
     {
-        panel.feedback = Some("The response is older than the current view; refresh again");
+        panel.feedback = Some(tr!(
+            "The response is older than the current view; refresh again"
+        ));
         return false;
     }
     let mut vessels = [None; 4];

@@ -123,7 +123,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> (Controls, [icons::Icon; 2]) {
         let open = control(
             hwnd,
             "BUTTON",
-            "Open selected bag",
+            tr!("Open selected bag"),
             106,
             [610, 252, 270, 28],
             WS_TABSTOP,
@@ -169,8 +169,8 @@ pub(super) unsafe fn create(hwnd: HWND) -> (Controls, [icons::Icon; 2]) {
             WS_TABSTOP,
         );
         let secondary = [
-            ("Current dust", 113),
-            ("History", 114),
+            (tr!("Current dust"), 113),
+            (tr!("History"), 114),
             ("Dust to slivers", 115),
             ("Slivers to cores", 116),
             ("Raise dust limit", 117),

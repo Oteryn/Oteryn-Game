@@ -68,7 +68,7 @@ pub(in crate::play) fn open_shared(
                 let hwnd = CreateWindowExW(
                     0,
                     wide("STATIC").as_ptr(),
-                    wide("Containers — carried and ground").as_ptr(),
+                    wide(tr!("Containers — carried and ground")).as_ptr(),
                     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
@@ -111,9 +111,9 @@ pub(in crate::play) fn open_shared(
                     let views = list(101, 10, 80);
                     let entries = list(102, 100, 220);
                     for (id, label, x) in [
-                        (103_usize, "Open selected", 10),
-                        (104, "Up", 175),
-                        (105, "Close view", 340),
+                        (103_usize, tr!("Open selected"), 10),
+                        (104, tr!("Up"), 175),
+                        (105, tr!("Close view"), 340),
                     ] {
                         CreateWindowExW(
                             0,
@@ -299,9 +299,10 @@ pub(in crate::play) fn open_shared(
                                         views,
                                         LB_ADDSTRING,
                                         0,
-                                        wide(&format!(
+                                        wide(&lfmt!(
                                             "View {}: container {}",
-                                            view.view_id, view.container_handle
+                                            view.view_id,
+                                            view.container_handle
                                         ))
                                         .as_ptr() as isize,
                                     );
@@ -316,9 +317,10 @@ pub(in crate::play) fn open_shared(
                                     entries,
                                     LB_ADDSTRING,
                                     0,
-                                    wide(&format!(
+                                    wide(&lfmt!(
                                         "Item {} ×{}",
-                                        item.item_definition_ref, item.count
+                                        item.item_definition_ref,
+                                        item.count
                                     ))
                                     .as_ptr() as isize,
                                 );

@@ -71,7 +71,7 @@ fn send(panel: &mut Panel, commands: &UnboundedSender<PlayCommand>, request: wir
     {
         panel.geometry.pending = None;
         panel.geometry.auto_load = false;
-        panel.failed("The session has ended");
+        panel.failed(tr!("The session has ended"));
     }
 }
 pub(in crate::play) fn submit(

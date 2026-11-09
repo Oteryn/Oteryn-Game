@@ -20,14 +20,18 @@ impl QueueWait {
     }
     pub fn text(&self, now: Instant) -> String {
         if !self.active {
-            return "Queue wait ended.".into();
+            return tr!("Queue wait ended.").into();
         }
         let seconds = self.remaining_seconds(now);
         let position = self.position.map_or_else(
-            || "Waiting for capacity.".into(),
-            |n| format!("Queue position {n}."),
+            || tr!("Waiting for capacity.").into(),
+            |n| lfmt!("Queue position {n}.", n = n),
         );
-        format!("{position} Retrying in {seconds}s.")
+        lfmt!(
+            "{position} Retrying in {seconds}s.",
+            position = position,
+            seconds = seconds
+        )
     }
     pub fn remaining_seconds(&self, now: Instant) -> u64 {
         let remaining = self

@@ -19,14 +19,14 @@ pub(super) fn submit(
             fields[3].trim().parse::<u8>(),
             fields[4].trim().parse::<u16>(),
         ) else {
-            panel.feedback = Some("Enter a valid view id and page index".into());
+            panel.feedback = Some(tr!("Enter a valid view id and page index").into());
             return None;
         };
         panel.view_id = view;
         panel.index = index;
         let command = seek(panel);
         if command.is_none() {
-            panel.feedback = Some("Enter a view id from 0 to 15".into());
+            panel.feedback = Some(tr!("Enter a view id from 0 to 15").into());
         }
         command
     } else {
@@ -35,7 +35,7 @@ pub(super) fn submit(
             fields[1].trim().parse::<i32>(),
             fields[2].trim().parse::<i16>(),
         ) else {
-            panel.feedback = Some("Enter numeric tile coordinates and floor".into());
+            panel.feedback = Some(tr!("Enter numeric tile coordinates and floor").into());
             return None;
         };
         panel.x = x;
@@ -48,15 +48,15 @@ pub(super) fn submit(
 pub(super) fn result_text(panel: &BrowseFieldPanel) -> String {
     let mut text = panel_text(panel);
     if panel.pending {
-        text.push_str("\nWaiting for the server");
+        text.push_str(tr!("\nWaiting for the server"));
     }
     if !panel.response.is_empty() {
         match oteryn_session::container_tree::decode_container_view_result(&panel.response) {
-            Ok(outcome) => text.push_str(&format!(
+            Ok(outcome) => text.push_str(&lfmt!(
                 "\nResult: {}",
                 oteryn_client_runtime::container_tree::feedback(Some(outcome))
             )),
-            Err(_) => text.push_str("\nThe server returned an invalid field result"),
+            Err(_) => text.push_str(tr!("\nThe server returned an invalid field result")),
         }
     }
     if let Some(view) = panel
@@ -65,19 +65,23 @@ pub(super) fn result_text(panel: &BrowseFieldPanel) -> String {
         .iter()
         .find(|view| view.view_id == panel.view_id)
     {
-        text.push_str("\nField/container rows:");
+        text.push_str(tr!("\nField/container rows:"));
         for (row, item) in view.entries.iter().enumerate() {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "\n{row}: Item {} × {}",
-                item.item_definition_ref, item.count
+                item.item_definition_ref,
+                item.count,
+                row = row
             ));
         }
     }
-    text.push_str("\nBackpack rows:");
+    text.push_str(tr!("\nBackpack rows:"));
     for (row, item) in panel.inventory.entries.iter().enumerate() {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "\n{row}: Item {} × {}",
-            item.item_definition_ref, item.count
+            item.item_definition_ref,
+            item.count,
+            row = row
         ));
     }
     text

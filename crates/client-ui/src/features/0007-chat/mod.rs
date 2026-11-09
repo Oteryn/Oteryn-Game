@@ -1,6 +1,9 @@
 //! Local speech and named private messages over the session chat owner.
 mod input;
+#[path = "state/presentation.rs"]
+mod presentation;
 mod protocol;
+pub use presentation::Presentation;
 mod state;
 mod view;
 pub use crate::chat_public_channels::apply_result;

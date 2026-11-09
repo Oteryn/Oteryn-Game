@@ -69,7 +69,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Highscores — Ctrl+H").as_ptr(),
+            wide(tr!("Highscores — Ctrl+H")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -109,10 +109,10 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             170,
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
-        let refresh = control(hwnd, "BUTTON", "Refresh", 103, 430, 80, 0);
-        let previous = control(hwnd, "BUTTON", "Previous", 104, 520, 80, 0);
-        let next = control(hwnd, "BUTTON", "Next", 105, 610, 80, 0);
-        let show_me = control(hwnd, "BUTTON", "Show me", 106, 700, 100, 0);
+        let refresh = control(hwnd, "BUTTON", tr!("Refresh"), 103, 430, 80, 0);
+        let previous = control(hwnd, "BUTTON", tr!("Previous"), 104, 520, 80, 0);
+        let next = control(hwnd, "BUTTON", tr!("Next"), 105, 610, 80, 0);
+        let show_me = control(hwnd, "BUTTON", tr!("Show me"), 106, 700, 100, 0);
         let text = CreateWindowExW(
             0,
             wide("EDIT").as_ptr(),
@@ -143,9 +143,11 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             return;
         }
         for label in highscores::CATEGORIES {
+            let label = oteryn_client_ui::localization::tr(label);
             SendMessageW(category, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
         for label in highscores::VOCATIONS {
+            let label = oteryn_client_ui::localization::tr(label);
             SendMessageW(vocation, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
         let mut held = None;
@@ -196,7 +198,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(PlayCommand::ServerMechanic(command)).is_err()
                 {
                     panel.pending = false;
-                    panel.feedback = Some("The session has ended".into());
+                    panel.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(panel) {

@@ -9,17 +9,21 @@ pub fn request(
     next: bool,
 ) -> Result<FeatureCommand, &'static str> {
     if !panel.selected {
-        return Err("Unavailable in this session");
+        return Err(tr!("Unavailable in this session"));
     }
     if panel.pending.is_some() {
-        return Err("Waiting for the server");
+        return Err(tr!("Waiting for the server"));
     }
     let command = if let Some(action) = action {
-        let row = panel.page.rows.get(panel.index).ok_or("Select a house")?;
+        let row = panel
+            .page
+            .rows
+            .get(panel.index)
+            .ok_or(tr!("Select a house"))?;
         house::mutation(panel.world, &row.house, row.acl_revision, action)?
     } else {
         let cursor = if next {
-            Some(panel.page.cursor.as_deref().ok_or("No next page")?)
+            Some(panel.page.cursor.as_deref().ok_or(tr!("No next page"))?)
         } else {
             None
         };

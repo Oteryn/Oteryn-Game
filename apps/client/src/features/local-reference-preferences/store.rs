@@ -25,7 +25,7 @@ impl PreferenceStore {
             .take((1 << 20) + 1)
             .read_to_end(&mut bytes)?;
         if bytes.len() > 1 << 20 {
-            return Err(io::Error::other("Settings file exceeds 1 MiB"));
+            return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
         }
         let mut document: serde_json::Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         if let Some(fields) = document.as_object_mut()

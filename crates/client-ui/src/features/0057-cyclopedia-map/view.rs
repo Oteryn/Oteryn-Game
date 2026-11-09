@@ -8,9 +8,9 @@ pub fn panel_text(panel: &Panel) -> String {
         panel.summary,
         map_text(panel),
         if panel.pending {
-            "Waiting for the server"
+            tr!("Waiting for the server")
         } else if !panel.selected && panel.feedback.is_empty() {
-            "Unavailable in this session"
+            tr!("Unavailable in this session")
         } else {
             &panel.feedback
         }
@@ -54,15 +54,15 @@ pub fn map_points(panel: &Panel) -> Vec<MapPoint> {
 pub fn map_text(panel: &Panel) -> String {
     use std::fmt::Write;
     if panel.map.is_none() {
-        return "Query to load the exploration map".into();
+        return tr!("Query to load the exploration map").into();
     }
     let points = map_points(panel);
-    let mut out = format!(
+    let mut out = lfmt!(
         "Visible POI overview — floor {} (north up; fitted to visible points)\r\n",
         panel.floor
     );
     if panel.hide_pois {
-        out.push_str("POI layer hidden\r\n");
+        out.push_str(tr!("POI layer hidden\r\n"));
     }
     for row in 0..12 {
         for column in 0..32 {
@@ -80,8 +80,8 @@ pub fn map_text(panel: &Panel) -> String {
         let (x, y, z) = point.position;
         let _ = write!(out, "◆ {x},{y},{z}\r\n");
     }
-    out.push_str(
-        "Only server-visible POIs are shown. Region, passage and NPC geometry is unavailable.\r\n",
-    );
+    out.push_str(tr!(
+        "Only server-visible POIs are shown. Region, passage and NPC geometry is unavailable.\r\n"
+    ));
     out
 }

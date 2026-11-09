@@ -30,7 +30,7 @@ pub(in crate::play) fn enabled(panel: &DepotSearchPanel) -> bool {
 pub(in crate::play) fn presentation(panel: &DepotSearchPanel) -> String {
     let mut text = oteryn_client_ui::depot_search::panel_text(panel);
     if panel.pending {
-        text.push_str("\nWaiting for server…");
+        text.push_str(tr!("\nWaiting for server…"));
     }
 
     text
@@ -74,7 +74,7 @@ fn dispatch_panel(
         Some(())
     })();
     if parsed.is_none() {
-        panel.feedback = Some("Enter valid values for the labelled controls".into());
+        panel.feedback = Some(tr!("Enter valid values for the labelled controls").into());
         return;
     }
     let command = if detail {
@@ -86,7 +86,7 @@ fn dispatch_panel(
         && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         panel.pending = false;
-        panel.feedback = Some("The session has ended".into());
+        panel.feedback = Some(tr!("The session has ended").into());
     }
 }
 
@@ -161,7 +161,7 @@ fn activate_panel(
     };
     let Some(payload) = request.and_then(|r| wire::encode_request(r).ok()) else {
         panel.feedback =
-            Some("Select a current result, or list holdings for the first page".into());
+            Some(tr!("Select a current result, or list holdings for the first page").into());
         return;
     };
     if let Some(command) = oteryn_client_ui::depot_search::request(
@@ -170,7 +170,7 @@ fn activate_panel(
     ) && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         panel.pending = false;
-        panel.feedback = Some("The session has ended".into());
+        panel.feedback = Some(tr!("The session has ended").into());
     }
 }
 

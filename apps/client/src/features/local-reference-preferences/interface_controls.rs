@@ -3,7 +3,7 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 
 pub(crate) struct InterfaceControls {
-    game_window: [HWND; 8],
+    game_window: [HWND; 14],
     label: HWND,
     scale: HWND,
     cursor: HWND,
@@ -40,6 +40,12 @@ impl InterfaceControls {
                 "PvP frames",
                 "Loot highlights",
                 "Server notice banner",
+                "Action bar labels",
+                "Action bar cooldowns",
+                "Three action-bar rows",
+                "Insert newly learned spells",
+                "Action-bar item amounts",
+                "Action-bar tooltips",
             ]
             .map(|label| {
                 control(
@@ -64,16 +70,17 @@ impl InterfaceControls {
             if game_window.iter().any(|handle| handle.is_null()) {
                 return None;
             }
-            let names = ["Own name", "Other player names", "Creature names"].map(|label| {
-                control(
-                    hwnd,
-                    "BUTTON",
-                    label,
-                    0,
-                    [0, 0, 220, 26],
-                    BS_AUTOCHECKBOX as u32,
-                )
-            });
+            let names =
+                [tr!("Own name"), tr!("Other player names"), "Creature names"].map(|label| {
+                    control(
+                        hwnd,
+                        "BUTTON",
+                        label,
+                        0,
+                        [0, 0, 220, 26],
+                        BS_AUTOCHECKBOX as u32,
+                    )
+                });
             for (index, handle) in names.iter().enumerate() {
                 MoveWindow(*handle, 10 + index as i32 * 230, 265, 220, 26, 1);
             }
@@ -99,7 +106,7 @@ impl InterfaceControls {
             let cursor = control(
                 hwnd,
                 "BUTTON",
-                "Crosshair cursor",
+                tr!("Crosshair cursor"),
                 236,
                 [10, 225, 300, 26],
                 BS_AUTOCHECKBOX as u32,
@@ -152,6 +159,12 @@ impl InterfaceControls {
                 pvp_frame,
                 loot_highlight,
                 banner,
+                bar_labels,
+                bar_cooldowns,
+                three_rows,
+                auto_insert,
+                amounts,
+                bar_tooltips,
             ] = self
                 .game_window
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -163,6 +176,12 @@ impl InterfaceControls {
             preferences.game_window.pvp_frame = pvp_frame;
             preferences.game_window.loot_highlight = loot_highlight;
             preferences.game_window.banner = banner;
+            preferences.action_bar.labels = bar_labels;
+            preferences.action_bar.cooldowns = bar_cooldowns;
+            preferences.action_bar.three_rows = three_rows;
+            preferences.action_bar.auto_insert = auto_insert;
+            preferences.action_bar.amounts = amounts;
+            preferences.action_bar.tooltips = bar_tooltips;
             preferences.hud_names = self
                 .names
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -196,6 +215,12 @@ impl InterfaceControls {
                 options.pvp_frame,
                 options.loot_highlight,
                 options.banner,
+                preferences.action_bar.labels,
+                preferences.action_bar.cooldowns,
+                preferences.action_bar.three_rows,
+                preferences.action_bar.auto_insert,
+                preferences.action_bar.amounts,
+                preferences.action_bar.tooltips,
             ]) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
             }

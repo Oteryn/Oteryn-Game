@@ -21,7 +21,7 @@ impl Default for PerformanceSettings {
 }
 impl PerformanceSettings {
     pub fn valid(self) -> bool {
-        self.foreground_fps <= 360 && (1..=360).contains(&self.background_fps)
+        self.foreground_fps <= 500 && (1..=500).contains(&self.background_fps)
     }
     pub fn interval(self, active: bool) -> Duration {
         let fps = if active {
@@ -159,7 +159,12 @@ impl super::ReferencePreferences {
         {
             self.performance
         } else {
-            self.frames.into()
+            let mut frames = self.frames;
+            if frames == super::FramePreferences::default() {
+                frames.foreground = self.foreground_fps;
+                frames.background = self.background_fps;
+            }
+            frames.into()
         }
     }
 }

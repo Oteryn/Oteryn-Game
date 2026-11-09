@@ -49,5 +49,4 @@ impl SettingsState {
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
     }
-
 }

@@ -13,7 +13,7 @@ use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetFocus;
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetFocus, SetFocus};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
 const MODES: usize = 101;

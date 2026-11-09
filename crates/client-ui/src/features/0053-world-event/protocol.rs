@@ -6,7 +6,7 @@ use oteryn_client_runtime::world_event::{
 
 pub fn request(panel: &mut WorldEventPanel) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("World events unavailable in this session");
+        panel.feedback = Some(tr!("World events unavailable in this session"));
         return None;
     }
     if panel.pending {
@@ -25,7 +25,7 @@ pub fn request(panel: &mut WorldEventPanel) -> Option<FeatureCommand> {
 pub fn apply_result(panel: &mut WorldEventPanel, result: &GatedCommandResult) {
     panel.pending = false;
     panel.state = None;
-    panel.feedback = Some("The server refused the world-event query");
+    panel.feedback = Some(tr!("The server refused the world-event query"));
     if matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -34,6 +34,6 @@ pub fn apply_result(panel: &mut WorldEventPanel, result: &GatedCommandResult) {
         panel.feedback = panel
             .state
             .is_none()
-            .then_some("The server returned an invalid world event");
+            .then_some(tr!("The server returned an invalid world event"));
     }
 }

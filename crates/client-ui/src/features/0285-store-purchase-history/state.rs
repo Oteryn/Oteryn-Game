@@ -33,9 +33,10 @@ pub fn set_filter(panel: &mut Panel, offer: &str, from: &str, until: &str) -> bo
             .then_some((from, until))
     })();
     if offer.len() > 256 || offer.chars().any(char::is_control) || dates.is_none() {
-        panel.feedback =
+        panel.feedback = tr!(
             "Enter a valid offer filter and inclusive Unix millisecond range (from <= through)"
-                .into();
+        )
+        .into();
         return false;
     }
     if let Some((from, until)) = dates {
@@ -44,7 +45,8 @@ pub fn set_filter(panel: &mut Panel, offer: &str, from: &str, until: &str) -> bo
         panel.until_ms = until;
     }
     panel.feedback =
-        "Filters apply to the loaded purchase page; refresh or Next page for more records".into();
+        tr!("Filters apply to the loaded purchase page; refresh or Next page for more records")
+            .into();
     true
 }
 

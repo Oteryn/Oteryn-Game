@@ -47,10 +47,10 @@ impl ShortcutControls {
                 ),
             ];
             let buttons = [
-                ("Add →", 260, 10),
-                ("Remove", 261, 380),
-                ("Move up", 262, 495),
-                ("Move down", 263, 610),
+                ("Add →", 360, 10),
+                ("Remove", 361, 380),
+                ("Move up", 362, 495),
+                ("Move down", 363, 610),
             ]
             .map(|(label, id, x)| control(hwnd, "BUTTON", label, id, [x, 345, 110, 28], 0));
             if labels
@@ -84,13 +84,13 @@ impl ShortcutControls {
     pub(crate) unsafe fn handle(&self, id: usize, state: &mut Shared) -> bool {
         unsafe {
             let edit = match id {
-                260 => ShortcutEdit::Add,
-                261 => ShortcutEdit::Remove,
-                262 => ShortcutEdit::Up,
-                263 => ShortcutEdit::Down,
+                360 => ShortcutEdit::Add,
+                361 => ShortcutEdit::Remove,
+                362 => ShortcutEdit::Up,
+                363 => ShortcutEdit::Down,
                 _ => return false,
             };
-            let list = usize::from(id != 260);
+            let list = usize::from(id != 360);
             let selected = usize::try_from(SendMessageW(self.lists[list], LB_GETCURSEL, 0, 0))
                 .ok()
                 .and_then(|i| self.keys[list].get(i));

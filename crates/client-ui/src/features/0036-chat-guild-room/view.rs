@@ -5,7 +5,7 @@ use std::fmt::Write;
 pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::new();
     if let GuildRoomState::Member { motd, .. } = &panel.guild {
-        let _ = writeln!(text, "Guild — {motd}");
+        let _ = lwriteln!(text, "Guild — {motd}", motd = motd);
     }
     text
 }

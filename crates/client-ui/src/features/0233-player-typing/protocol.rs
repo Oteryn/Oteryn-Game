@@ -3,11 +3,11 @@ use oteryn_client_runtime::{CommandStatus, TypingUpdate, WorldSpatialEntity};
 
 pub fn request(panel: &mut PlayerTypingPanel, typing: bool) -> Option<PlayerTypingCommand> {
     if !panel.selected {
-        panel.feedback = Some("Player typing is unavailable in this session");
+        panel.feedback = Some(tr!("Player typing is unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     panel.pending = true;
@@ -39,7 +39,7 @@ pub fn apply_result(
                 panel.own_typing = command.typing;
                 panel.feedback = None;
             } else {
-                panel.feedback = Some("The server refused the typing state");
+                panel.feedback = Some(tr!("The server refused the typing state"));
             }
         }
     }

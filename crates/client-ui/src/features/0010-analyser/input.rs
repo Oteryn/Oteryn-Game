@@ -28,7 +28,7 @@ pub fn set_xp_goal(panel: &mut super::Panel, value: &str) -> bool {
             .ok()
             .and_then(|remaining| panel.gained_xp.checked_add(remaining))
         else {
-            panel.feedback = Some("Enter the XP still needed for your level goal");
+            panel.feedback = Some(tr!("Enter the XP still needed for your level goal"));
             return false;
         };
         Some(goal)
@@ -48,7 +48,9 @@ pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool
         .filter(|item| *item != 0)
         .zip(price.trim().parse::<u64>().ok());
     let Some((item, price)) = parsed else {
-        panel.feedback = Some("Enter an item number from the analyser and its unit value");
+        panel.feedback = Some(tr!(
+            "Enter an item number from the analyser and its unit value"
+        ));
         return false;
     };
     let prices = if panel.tool == super::Tool::Supply {
@@ -57,13 +59,13 @@ pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool
         &mut panel.loot_prices
     };
     if !prices.contains_key(&item) && prices.len() >= super::state::items::MAX_ITEM_DETAILS {
-        panel.feedback = Some("The item price list is full");
+        panel.feedback = Some(tr!("The item price list is full"));
         return false;
     }
     prices.insert(item, price);
     panel.party.clear();
     panel.party_revision = panel.party_revision.saturating_add(1);
-    panel.party_feedback = Some("Prices changed; refresh party accounting");
+    panel.party_feedback = Some(tr!("Prices changed; refresh party accounting"));
     panel.price_input = [item.to_string(), price.to_string()];
     panel.feedback = None;
     true

@@ -18,7 +18,7 @@ pub(in crate::play) fn gift_submit(
     if recipient.len() > 64 || amount.len() > 20 {
         panel.gift_reviewed = None;
         panel.feedback =
-            Some("Enter a recipient of at most 64 bytes and a valid coin amount".into());
+            Some(tr!("Enter a recipient of at most 64 bytes and a valid coin amount").into());
         return false;
     }
     panel.gift_fields = [recipient.clone(), amount.clone()];
@@ -32,8 +32,15 @@ pub(in crate::play) fn gift_submit(
 impl PlayLink {
     pub fn store_category(&self, key: &str) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        let Some(command) = oteryn_client_ui::store::select_category(&mut mailbox.store, key) else { return false; };
-        if self.commands.send(PlayCommand::ServerMechanic(command)).is_err() {
+        let Some(command) = oteryn_client_ui::store::select_category(&mut mailbox.store, key)
+        else {
+            return false;
+        };
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
             mailbox.store.pending = false;
             mailbox.store.feedback = Some("The session has ended".into());
             return false;
@@ -53,7 +60,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.store.pending = false;
-            mailbox.store.feedback = Some("The session has ended".into());
+            mailbox.store.feedback = Some(tr!("The session has ended").into());
         }
     }
 
