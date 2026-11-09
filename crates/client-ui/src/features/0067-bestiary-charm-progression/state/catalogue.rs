@@ -19,6 +19,14 @@ pub fn text(panel: &super::Panel) -> String {
     if panel.pending {
         out.push_str("Waiting for the server\r\n");
     }
+    if let Some(card) = catalogue
+        .page
+        .cards
+        .iter()
+        .find(|card| panel.fields[1] == card.race.to_string())
+    {
+        out.push_str(&super::illustration::illustration(card));
+    }
     for (index, category) in catalogue.page.categories.iter().enumerate() {
         let _ = writeln!(out, "Category {}: {category}\r", index + 1);
     }

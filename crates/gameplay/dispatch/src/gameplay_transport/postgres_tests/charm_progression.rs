@@ -26,8 +26,16 @@ async fn exchange(
     admitted: &mut AdmittedSession,
     action: &CharmProgressionAction,
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
-    let command_id = admitted.continuity.next_command_id;
     let payload = wire::encode_charm_progression_request(action).map_err(debug)?;
+    exchange_payload(owner, admitted, payload).await
+}
+
+async fn exchange_payload(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    payload: Vec<u8>,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    let command_id = admitted.continuity.next_command_id;
     let bytes = oteryn_protocol_oteryn::encode_client_command(
         admitted.continuity.connection_generation,
         &oteryn_protocol_oteryn::ClientCommandValue {
@@ -312,6 +320,27 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
         let mut admitted = dependencies.admitted;
         admitted.item_fence = Some(current.item_fence());
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        owner
+            .runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                dependencies.actor,
+                admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(current.character_id.as_bytes())
+                        .map_err(debug)?,
+                    current.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        assert!(
+            crate::gameplay_transport::battle_instinct_status::actor_is_current(
+                &*owner.runtime.lock().await,
+                admitted
+            )
+        );
         assert!(owner.charm_progression_available());
         // Unnegotiated: the command never reaches the charm port.
         let (status, _) = exchange(&owner, &mut admitted, &CharmProgressionAction::Query).await?;
@@ -326,6 +355,9 @@ fn scenario(expansion: bool, premium_current: bool) -> TestResult {
         )
         .ok_or("selection")?;
 
+        if !expansion && !premium_current {
+            catalogue::verify(&owner, &mut admitted, races).await?;
+        }
         let query = reply(&owner, &mut admitted, CharmProgressionAction::Query).await?;
         assert_eq!(query.outcome, CharmProgressionOutcome::Query);
         assert!(
@@ -628,3 +660,6 @@ fn charm_premium_real_dispatch_has_six_slots_without_expansion() -> TestResult {
         .map_err(|_| "premium charm scenario panicked")?
         .map_err(Into::into)
 }
+
+#[path = "charm_progression/catalogue.rs"]
+mod catalogue;

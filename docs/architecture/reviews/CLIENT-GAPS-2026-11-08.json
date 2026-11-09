@@ -551,9 +551,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bestiary: katalog/filter/combat/loot",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0067-bestiary-charm-progression/view/illustration.rs:4 + bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies + bestiary_catalogue_projects_active_creature_categories_stats_and_loot + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T080 framed complete catalogue, native combat/loot and category filter)"
  },
  {
   "id": "T081",

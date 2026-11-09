@@ -41,17 +41,16 @@ pub(super) async fn dispatch(
         .and_then(|page| wire::encode_page(&page).ok())
         .map_or(GuildReply::Rejected, GuildReply::Payload)
 }
-fn category<'a>(native: &'a NativeGameplayState, key: &str) -> Option<&'a str> {
-    let record = native
-        .creature_profiles()
-        .records
-        .iter()
-        .find(|r| r.profile.target.key == key)?;
-    let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
-        return None;
-    };
-    Some(&profile.details.as_ref()?.bestiary.as_ref()?.class)
+fn category<'a>(native: &'a NativeGameplayState, key: &str) -> &'a str {
+    native.creature_profiles().records.iter()
+        .find(|record| record.profile.target.key == key)
+        .and_then(|record| match &record.profile.data {
+            ProjectV2AuthoringProfileData::Creature(profile) => profile.details.as_ref()?.bestiary.as_ref(),
+            _ => None,
+        })
+        .map_or("Unclassified", |bestiary| bestiary.class.as_str())
 }
+
 fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Option<Card> {
     let policy = native
         .policies()
@@ -61,7 +60,7 @@ fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Opti
     Some(Card {
         race: ordinal,
         name: policy.display_name.clone(),
-        category: category(native, race.key())?.into(),
+        category: category(native, race.key()).into(),
         detail: String::new(),
     })
 }
@@ -69,7 +68,7 @@ fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
     let races = super::canonical_races()?;
     let categories: Vec<_> = races
         .iter()
-        .filter_map(|r| category(native, r.key()))
+        .map(|r| category(native, r.key()))
         .collect::<BTreeSet<_>>()
         .into_iter()
         .map(str::to_owned)
@@ -297,6 +296,17 @@ mod tests {
                     wire::decode_page(&bytes).map_err(|e| format!("{e:?}"))?,
                     detail
                 );
+                let mut after = 0;
+                let mut seen = BTreeSet::new();
+                loop {
+                    let page = project(native, Request { after, race: 0, category: 0 }).ok_or("full catalogue page")?;
+                    wire::encode_page(&page).map_err(|e| format!("{e:?}"))?;
+                    for card in page.cards { assert!(seen.insert(card.race)); }
+                    let Some(next) = page.next else { break };
+                    assert!(next > after);
+                    after = next;
+                }
+                assert_eq!(seen.len(), super::super::canonical_races().ok_or("canonical races")?.len());
                 Ok(())
             })?
             .join()
