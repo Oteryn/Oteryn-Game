@@ -153,9 +153,13 @@ impl NativeWaveSpawnMap for WaveMap<'_> {
                 return None;
             }
             let allowed = self.map.admits(at);
-            if !close || allowed {
-                return Some((at, allowed));
+            // Source getClosePosition uses Tile:isWalkable(), whose projectile
+            // refusal is independent of movement. Random placement and the
+            // unconditional source-centre fallback retain creation admission.
+            if close && !self.map.admits_close_spawn_candidate(runtime, at)? {
+                continue;
             }
+            return Some((at, allowed));
         }
         let at = MovementLocalPosition {
             x: around.x,

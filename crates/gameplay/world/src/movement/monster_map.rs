@@ -1,6 +1,7 @@
 //! Current Map/Item/LocalObject facts, borrowed for one physical Item-owner transaction.
 #[cfg(test)]
 mod movement_script_tests;
+mod source_close_spawn;
 mod special_movement;
 pub use special_movement::step_in as apply_committed_step_in;
 #[cfg(any(test, feature = "test-support"))]
