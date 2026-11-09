@@ -1042,7 +1042,13 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 /// Exact primary state operation shared by lowering and bound admission validation.
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
-    let bound_effect = callback.storage.iter().position(|state| !state.preserve);
+    // A guarded exchange may only read progress. Its first guard still binds
+    // admission/value terms without turning that read into a phase advance.
+    let bound_effect = callback
+        .storage
+        .iter()
+        .position(|state| !state.preserve)
+        .or_else(|| (!callback.storage.is_empty()).then_some(0));
     Ok(QuestTransition {
         world_change: None,
         key: callback.key.clone(),
@@ -1055,7 +1061,10 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 track: state.track.clone(),
                 from: QuestComparison::Between(state.minimum, state.maximum),
                 effect: if state.preserve {
-                    QuestEffectKind::Add(0)
+                    match binding.filter(|_| Some(index) == bound_effect) {
+                        Some(binding) => QuestEffectKind::AddWithBinding { delta: 0, binding },
+                        None => QuestEffectKind::Add(0),
+                    }
                 } else {
                     match (
                         state.at_least,

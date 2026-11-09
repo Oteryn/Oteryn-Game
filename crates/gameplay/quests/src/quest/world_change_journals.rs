@@ -1026,6 +1026,118 @@ mod tests {
     }
 
     #[test]
+    fn personal_npc_barter_binds_value_terms_without_advancing_the_phase() -> Result<(), String> {
+        let mut value = npc_programme_fixture()?;
+        let programme = value["programs"]
+            .as_array_mut()
+            .ok_or("programmes")?
+            .iter_mut()
+            .find(|p| p["runtime_enabled"] == true)
+            .ok_or("programme")?;
+        let mut barter = programme["npc_callbacks"][0].clone();
+        let key = "oteryn:quest-reward/worldchg-m31/lumberjack/wood";
+        barter["key"] = key.into();
+        barter["keywords"] = serde_json::json!(["sell wood"]);
+        barter["storage"][0] = serde_json::json!({"track":programme["phase_track"],
+            "minimum":2,"maximum":4,"set":2,"preserve":true});
+        barter["take"] = serde_json::json!([{"item":"oteryn:item.tibia.i5901","count":1}]);
+        barter["give"] =
+            serde_json::json!({"item":"oteryn:item.tibia.i3031","count":50,"contents":[]});
+        programme["npc_callbacks"]
+            .as_array_mut()
+            .ok_or("callbacks")?
+            .push(barter);
+        programme["stage_bindings"]["s2"]
+            .as_array_mut()
+            .ok_or("stage")?
+            .push(key.into());
+        let document = super::parse(Box::leak(value.to_string().into_boxed_str()))?;
+        let programme = document
+            .programs
+            .iter()
+            .find(|p| p.runtime_enabled)
+            .ok_or("programme")?;
+        let callback = super::lower_npc_callbacks(programme)?
+            .into_iter()
+            .find(|c| c.key == key)
+            .ok_or("barter")?;
+        let catalogue = |callback: &super::super::reward_callbacks::RewardCallback| {
+            super::super::QuestStateCatalogue::new(
+                "m31-barter",
+                programme
+                    .tracks
+                    .iter()
+                    .map(|track| super::super::QuestTrack {
+                        key: track.key.clone(),
+                        quest: track.quest.clone(),
+                        initial: track.initial,
+                        min: track.min,
+                        max: track.max,
+                    })
+                    .collect(),
+                vec![super::super::reward_callbacks::primary_transition(
+                    callback,
+                )?],
+            )
+            .map_err(|error| format!("{error:?}"))
+        };
+        let original = catalogue(&callback)?;
+        for phase in [2, 3, 4] {
+            let stored = std::collections::BTreeMap::from([(programme.phase_track.clone(), phase)]);
+            for _ in 0..2 {
+                let changes = original
+                    .evaluate(original.transition(key).ok_or("transition")?, &stored, 0)
+                    .map_err(|error| format!("{error:?}"))?;
+                assert_eq!(changes.len(), 1);
+                assert_eq!((changes[0].before, changes[0].after), (phase, phase));
+            }
+        }
+        for phase in [-1, 0, 1, 5, 7] {
+            let stored = std::collections::BTreeMap::from([(programme.phase_track.clone(), phase)]);
+            assert!(
+                original
+                    .evaluate(original.transition(key).ok_or("transition")?, &stored, 0)
+                    .is_err()
+            );
+        }
+        let mut legacy = callback.clone();
+        legacy.key = "oteryn:quest-reward/m31-legacy-guard".into();
+        legacy.minimum_level = None;
+        assert!(super::super::reward_callbacks::gated_binding(&legacy)?.is_none());
+        let legacy_transition = super::super::reward_callbacks::primary_transition(&legacy)?;
+        assert!(
+            legacy_transition
+                .effects
+                .iter()
+                .all(|effect| effect.effect == super::super::QuestEffectKind::Add(0))
+        );
+        for edit in 0..4 {
+            let mut edited = callback.clone();
+            match edit {
+                0 => edited.give.as_mut().ok_or("payment")?.count = 51,
+                1 => edited.take.first_mut().ok_or("wood")?.count = 2,
+                2 => edited.minimum_level = Some(18),
+                _ => edited.requires_premium = false,
+            }
+            assert_ne!(
+                original.definition_hash(&programme.quest),
+                catalogue(&edited)?.definition_hash(&programme.quest),
+                "barter terms {edit} are absent from the quest pin"
+            );
+        }
+        let mut presentation = callback.clone();
+        presentation.reply.push("A presentation edit.".into());
+        presentation
+            .sources
+            .push("https://example.invalid/reference".into());
+        assert_eq!(
+            original.definition_hash(&programme.quest),
+            catalogue(&presentation)?.definition_hash(&programme.quest)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn native_npc_journals_inherit_recipe_gates_and_complete_with_the_achievement()
     -> Result<(), String> {
         let value = npc_programme_fixture()?;
