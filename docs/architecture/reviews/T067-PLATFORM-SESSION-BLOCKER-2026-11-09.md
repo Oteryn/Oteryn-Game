@@ -1,5 +1,12 @@
 # T067 — native session consumer compatibility
 
+RESOLVED: owner accepted Platform #1796, merged main at
+`45d3413619f85a5289a221ee47412350761a56a9`. The accepted
+`OTERYN_V2_NATIVE_REMEMBERED_DEVICE_SESSION_CONTRACT.md` and its fixtures
+replace this historical candidate assessment. The implemented consumer is
+`apps/client/src/device_login.rs` and `native_entry/authorize.rs`. The remainder
+of this document records the old blocker; it is no longer an open dependency.
+
 Platform main inspected at `bc6f88346e6aaf1347f0a5a798b33a5ede00bc04` on 2026-11-09.
 T067 remains PARTIAL; no working quick-login or stay-logged-in claim is made.
 

@@ -116,6 +116,9 @@ impl ApplicationHandler for Application {
         }
         match event {
             WindowEvent::CloseRequested => {
+                if !self.settings.confirm_exit() {
+                    return;
+                }
                 if let Some(renderer) = &mut self.renderer
                     && renderer.close(self.generation).is_err()
                 {
@@ -164,6 +167,15 @@ impl ApplicationHandler for Application {
             && let Some(play) = &self.play
         {
             play.link.window_toggle(id, &events);
+        }
+        if self.settings.take_native_sign_out() {
+            if let Some(entry) = &mut self.entry {
+                entry.native_sign_out();
+            }
+            if let Some(play) = &mut self.play {
+                play.view.logout();
+            }
+            self.leave_play("Native sign-out requested. Clearing the saved device credential.");
         }
         self.poll_entry();
         if let Some(play) = &mut self.play {

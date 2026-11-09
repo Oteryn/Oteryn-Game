@@ -162,7 +162,7 @@ impl Application {
             for spell in self.hotkeys.route(events) {
                 play.view.cast(spell);
             }
-            if logout_key(events) {
+            if logout_key(events) && self.settings.confirm_logout() {
                 play.view.logout();
             }
             let suppress_primary = match play.view.world_pointer_input(&play.link, events) {

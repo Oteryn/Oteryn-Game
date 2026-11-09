@@ -36,6 +36,7 @@ impl SettingsState {
                 }
             }
         }
+        selected.preferences.miscellaneous=crate::play::MiscellaneousPreferences::load();
         self.help_report_pending = false;
         self.store = selected.store;
         self.preferences = selected.preferences;

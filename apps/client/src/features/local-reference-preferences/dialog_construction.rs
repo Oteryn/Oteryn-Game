@@ -2,6 +2,7 @@ use super::*;
 impl Controls {
     pub(in super::super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let miscellaneous = MiscellaneousControls::new(hwnd)?;
             let graphics = GraphicsControls::new(hwnd)?;
             let shortcuts = ShortcutControls::new(hwnd)?;
             let battle_filters = BattleFilterControls::new(hwnd)?;
@@ -330,6 +331,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                miscellaneous,
                 custom_editor,
                 battle_filters,
                 mixer,

@@ -1,4 +1,7 @@
 use super::*;
+#[path = "miscellaneous_controls.rs"]
+mod miscellaneous_controls;
+use miscellaneous_controls::MiscellaneousControls;
 #[path = "interface_controls.rs"]
 mod interface_controls;
 use interface_controls::InterfaceControls;
@@ -57,6 +60,7 @@ use mixer_controls::MixerControls;
 mod battle_filter_controls;
 use battle_filter_controls::BattleFilterControls;
 pub(super) struct Controls {
+    pub(super) miscellaneous: MiscellaneousControls,
     pub(super) language: LanguageControls,
     pub(super) presentation: PresentationControls,
     pub(super) minimap: MinimapControls,
@@ -144,5 +148,29 @@ impl Controls {
                 _ => Ok(()),
             }
         }
+    }
+}
+
+pub(super) unsafe fn show_apply(apply: HWND, page: SettingsPage) {
+    unsafe {
+        ShowWindow(
+            apply,
+            if matches!(
+                page,
+                SettingsPage::Interface
+                    | SettingsPage::Status
+                    | SettingsPage::Sound
+                    | SettingsPage::Mixer
+                    | SettingsPage::Effects
+                    | SettingsPage::Battle
+                    | SettingsPage::Graphics
+                    | SettingsPage::Arcs
+                    | SettingsPage::ActorHud
+            ) {
+                SW_SHOW
+            } else {
+                SW_HIDE
+            },
+        );
     }
 }

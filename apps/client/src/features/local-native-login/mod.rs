@@ -115,6 +115,11 @@ impl LoginSettings {
                 .iter()
                 .position(|field| field.1 == name)
                 .map(|index| self.values()[index].to_owned())
+                .or_else(|| {
+                    (name == "OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED")
+                        .then(|| std::env::var(name).ok())
+                        .flatten()
+                })
         })
         .map_err(|error| error.to_string())?
         .ok_or_else(|| tr!("Enter the Platform URL.").into())

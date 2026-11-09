@@ -3051,7 +3051,9 @@ name = "oteryn-platform-client"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64 0.22.1",
  "bytes",
+ "ed25519-dalek",
  "futures",
  "oteryn-diagnostics",
  "oteryn-foundation",
@@ -3060,6 +3062,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
  "tokio",
  "tough",
  "url",

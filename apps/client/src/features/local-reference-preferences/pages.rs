@@ -23,10 +23,11 @@ pub enum SettingsPage {
     ConsoleFilters,
     ActionBarLayout,
     Language,
+    Miscellaneous,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 22] = [
+    pub const ALL: [Self; 23] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -49,6 +50,7 @@ impl SettingsPage {
         Self::ConsoleFilters,
         Self::ActionBarLayout,
         Self::Language,
+        Self::Miscellaneous,
     ];
 
     pub const fn label(self) -> &'static str {
@@ -74,6 +76,7 @@ impl SettingsPage {
             Self::MinimapTransfer => "Help / minimap transfer",
             Self::ConsoleFilters => "Console",
             Self::ActionBarLayout => "Interface / action bar layout",
+            Self::Miscellaneous => "Miscellaneous / confirmations and login",
             Self::Language => "Interface / language",
         }
     }

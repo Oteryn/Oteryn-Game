@@ -323,3 +323,5 @@ mod tests {
 }
 
 pub mod updates;
+
+pub mod device_sessions;

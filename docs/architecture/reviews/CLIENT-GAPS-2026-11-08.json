@@ -464,10 +464,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous: confirmations, stay logged in, quick login",
-  "status": "PARTIAL",
-  "gap": "Pojedyncze confirmation istnieją; brak wspólnej strony sesji/potwierdzeń.",
+  "status": "DONE",
+  "gap": "Wspólna strona Miscellaneous, potwierdzenia logout/exit, sesja w pamięci, jawne remember-device w Windows Credential Manager, quick login z ponowną walidacją wyboru, enrollment/rotation/revoke przez zaakceptowany kontrakt Platform #1796. Feature switch stays default OFF; production enablement and recovery qualification remain operations gates.",
   "lane": "cg_options",
-  "evidence": "docs/architecture/reviews/T067-PLATFORM-SESSION-BLOCKER-2026-11-09.md:7 + pinned Platform source inspection: missing accepted operational native session/remembered-family enrollment and rotation contract; Rust routes install UnavailableAuthority; PHP supports only candidate protocol 1."
+  "evidence": "apps/client/src/native_entry/authorize.rs:54 + remembered_login_enrolls_restarts_rotates_before_results_and_revokes_over_https; apps/client/src/device_login/attempt.rs:40 + a_successor_that_cannot_be_saved_is_revoked_before_any_result_is_used; apps/client/src/device_login/tests.rs:188 + process_session_uses_bound_enrollment_keeps_no_vault_secret_and_quick_login_rechecks_availability; crates/platform-client/tests/device_sessions.rs:9 + accepted_device_fixtures_and_ed25519_proofs_are_exact; apps/client/src/features/local-reference-preferences/miscellaneous_controls.rs:1 + miscellaneous_sign_out_and_confirmation_defaults_reach_the_settings_owner; docs/contracts/fixtures/remembered-device-v1/PLATFORM-PROVENANCE.md:1 + Platform main 45d3413619f85a5289a221ee47412350761a56a9."
  },
  {
   "id": "T068",

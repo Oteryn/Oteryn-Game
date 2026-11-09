@@ -23,6 +23,7 @@ impl std::error::Error for NativeLoginSettingError {}
 /// Native login settings with an optional character preselection.
 #[derive(Clone)]
 pub struct NativeLoginConfig {
+    pub device_sessions: Arc<crate::device_login::DeviceLogin>,
     pub platform_url: String,
     pub gateway_url: String,
     pub oauth_client_id: String,
@@ -71,10 +72,18 @@ impl NativeLoginConfig {
         let Ok(platform_url) = setting("OTERYN_PLATFORM_URL") else {
             return Ok(None);
         };
+        let gateway_url = setting("OTERYN_GATEWAY_URL")?;
+        let oauth_client_id = setting("OTERYN_OAUTH_CLIENT_ID")?;
+        let device_sessions = Arc::new(crate::device_login::DeviceLogin::configured(
+            &platform_url,
+            &oauth_client_id,
+            lookup("OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED").as_deref() == Some("true"),
+        ));
         Ok(Some(Self {
+            device_sessions,
             platform_url,
-            gateway_url: setting("OTERYN_GATEWAY_URL")?,
-            oauth_client_id: setting("OTERYN_OAUTH_CLIENT_ID")?,
+            gateway_url,
+            oauth_client_id,
             world_ref: lookup("OTERYN_WORLD").unwrap_or_default(),
             character_id: lookup("OTERYN_CHARACTER_ID").unwrap_or_default(),
             dev_root: PathBuf::from(setting("OTERYN_DEV_ROOT")?),
@@ -114,4 +123,18 @@ pub fn open_system_browser(url: &str) -> bool {
             std::thread::spawn(move || child.wait());
         })
         .is_ok()
+}
+
+impl NativeLoginConfig {
+    pub(crate) async fn forget_devices(&self) {
+        use oteryn_platform_client::{PlatformClientConfig, gameplay_entry::login_client};
+        if let (Ok(platform), Ok(gateway)) = (
+            PlatformClientConfig::new(&self.platform_url),
+            PlatformClientConfig::new(&self.gateway_url),
+        ) && let Ok(client) =
+            login_client(&platform, &gateway, &self.oauth_client_id, self.retry_unit)
+        {
+            self.device_sessions.sign_out(&client).await;
+        }
+    }
 }

@@ -21,6 +21,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            miscellaneous,
             graphics,
             mut shortcuts,
             language,
@@ -154,6 +155,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             minimap.show(state.page == SettingsPage::MinimapTransfer);
             presentation.show(state.page);
             language.show(state.page == SettingsPage::Language);
+            miscellaneous.show(state.page == SettingsPage::Miscellaneous);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -206,25 +208,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 };
                 ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
             }
-            ShowWindow(
-                apply,
-                if matches!(
-                    state.page,
-                    SettingsPage::Interface
-                        | SettingsPage::Status
-                        | SettingsPage::Sound
-                        | SettingsPage::Mixer
-                        | SettingsPage::Effects
-                        | SettingsPage::Battle
-                        | SettingsPage::Graphics
-                        | SettingsPage::Arcs
-                        | SettingsPage::ActorHud
-                ) {
-                    SW_SHOW
-                } else {
-                    SW_HIDE
-                },
-            );
+            controls::show_apply(apply, state.page);
             let index = SendMessageW(list, CB_GETCURSEL, 0, 0);
             if index != selected && index >= 0 {
                 selected = index;
@@ -236,6 +220,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if miscellaneous.action(action, &mut state) {
+                    continue;
+                }
                 if shortcuts.handle(action, &mut state) {
                     continue;
                 }
@@ -366,6 +353,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 graphics.refresh(&state.preferences);
                 presentation.refresh(&state.preferences);
                 language.refresh(&state.preferences);
+                miscellaneous.refresh(&state.preferences);
                 gameplay.refresh(&state.preferences);
                 screenshots.refresh(&state.preferences);
                 actor_hud.refresh(&state.preferences);
