@@ -10,6 +10,9 @@ use crate::item_look::{
 use crate::item_view::ItemHandle;
 use crate::world_spatial_entities::EntityRef;
 
+#[path = "inspection/catalogue.rs"]
+pub mod catalogue;
+
 pub const CAPABILITY_INSPECTION_V1: u32 = 132;
 pub const COMMAND_TYPE_INSPECTION: u32 = 153;
 pub const STATE_DOMAIN_INSPECTION: u32 = 97;
@@ -32,6 +35,7 @@ pub enum Request {
         index: u8,
     },
     Catalogue(u32),
+    CatalogueQuery(catalogue::Query),
     /// 1 ask, 2 grant, 3 revoke, 4 allow all, 5 disable allow all, 6 poll requests.
     Permission {
         action: u8,
@@ -122,6 +126,9 @@ pub fn encode_request(request: Request) -> Result<Vec<u8>> {
         Request::Catalogue(reference) if reference != 0 => {
             push_varint_field(&mut out, 4, u64::from(reference))
         }
+        Request::CatalogueQuery(query) => {
+            push_message_field(&mut out, 6, &catalogue::encode(query)?)
+        }
         Request::Permission { action, target } => {
             if !(1..=6).contains(&action) || target.is_some() != (action <= 3) {
                 return bad();
@@ -183,6 +190,7 @@ pub fn decode_request(input: &[u8]) -> Result<Request> {
                 }
                 Request::Catalogue(n)
             }
+            50 => Request::CatalogueQuery(catalogue::decode(read_bytes(input, cursor)?)?),
             42 => {
                 let mut action = None;
                 let mut target = None;

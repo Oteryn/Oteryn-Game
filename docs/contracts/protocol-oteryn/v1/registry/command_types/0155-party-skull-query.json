@@ -5,6 +5,6 @@
   "capability": 134,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/party_skull_v1.proto#PartySkullQueryV1",
   "result_schema": "docs/contracts/protocol-oteryn/v1/party_skull_v1.proto#PartyIconsV1",
-  "max_payload_bytes": 0,
+  "max_payload_bytes": 2,
   "max_result_payload_bytes": 12288
 }

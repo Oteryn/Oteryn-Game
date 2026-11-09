@@ -121,13 +121,8 @@ fn run(
             tracker,
         } = controls::create(hwnd);
         if [
-            quests,
-            missions,
-            description,
-            refresh,
-            track,
-            list_search,
-            list_sort,
+            quests, missions, description, refresh, track, list_search, list_sort,
+            auto_add, auto_remove, filter, search, tracker,
         ]
         .iter()
         .any(|h| h.is_null())
@@ -320,12 +315,7 @@ fn run(
                     SendMessageW(missions, LB_RESETCONTENT, 0, 0);
                     if let Some(QuestLogView::Line(line)) = &panel.state.log.view {
                         let selected = shown_quests.iter().position(|id| *id == line.quest_index);
-                        SendMessageW(
-                            quests,
-                            LB_SETCURSEL,
-                            selected.map_or(usize::MAX, |row| row),
-                            0,
-                        );
+                        SendMessageW(quests, LB_SETCURSEL, selected.unwrap_or(usize::MAX), 0);
                         for m in &line.missions {
                             SendMessageW(
                                 missions,

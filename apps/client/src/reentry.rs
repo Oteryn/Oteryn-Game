@@ -45,6 +45,7 @@ pub struct Reentry {
     waiting: Option<(AdmissionWait, QueueWait)>,
     last_wait_text: Option<String>,
     pending: Option<Receiver<Result<AdmittedSession, GameplayEntryError>>>,
+    training_completion: Option<Box<dyn Fn() -> bool + Send>>,
 }
 
 impl Reentry {
@@ -57,6 +58,7 @@ impl Reentry {
             waiting: None,
             last_wait_text: None,
             pending: None,
+            training_completion: None,
         }
     }
 
@@ -125,6 +127,9 @@ impl Reentry {
             return false;
         }
         token.cancel();
+        if let Some(config) = &self.client.native_login {
+            config.training_queue.clear();
+        }
         if let Some((_, queue)) = &mut self.waiting {
             queue.cancel();
         }
@@ -178,12 +183,34 @@ impl Reentry {
                 PublicClass::SessionUnavailable,
             )),
         };
+        // Cancel and poll are serialized by the UI owner. A completed worker may have
+        // queued its result just before cancellation; it must not start play afterward.
+        let result = if self
+            .attempt_cancellation
+            .as_ref()
+            .is_some_and(CancellationToken::is_cancelled)
+        {
+            Err(GameplayEntryError::Rejected(
+                PublicClass::SessionUnavailable,
+            ))
+        } else {
+            result
+        };
         self.pending = None;
         self.attempt_cancellation = None;
         self.progress = None;
         self.waiting = None;
         self.last_wait_text = None;
         let result = result.and_then(|admitted| self.client.start_play(admitted));
+        self.training_completion = result
+            .as_ref()
+            .ok()
+            .map(|(_, link)| Box::new(link.training_completion()) as Box<dyn Fn() -> bool + Send>);
+        if result.is_err()
+            && let Some(config) = &self.client.native_login
+        {
+            config.training_queue.clear();
+        }
         self.state.finish(result.is_ok());
         Some(result)
     }
@@ -191,6 +218,18 @@ impl Reentry {
     pub fn leave_play(&mut self) {
         if self.state == EntryState::Playing {
             self.state = EntryState::Offline;
+            let confirmed = self
+                .training_completion
+                .take()
+                .is_some_and(|completed| completed());
+            if self
+                .client
+                .native_login
+                .as_ref()
+                .is_some_and(|config| config.training_queue.finish_current(confirmed))
+            {
+                self.request();
+            }
         }
     }
 
@@ -307,4 +346,34 @@ mod tests {
         entry.shutdown();
         Ok(())
     }
+    #[test]
+    fn cancel_before_poll_overrides_an_already_queued_admission_result()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut entry = Reentry::new(ClientBootstrap::new()?);
+        entry.state = EntryState::Entering;
+        entry.attempt_cancellation = Some(CancellationToken::new());
+        let (sender, receiver) = mpsc::channel();
+        entry.pending = Some(receiver);
+        assert!(
+            sender
+                .send(Err(GameplayEntryError::Rejected(
+                    PublicClass::TemporarilyUnavailable
+                )))
+                .is_ok()
+        );
+        assert!(entry.cancel_entry());
+        let result = entry.poll().ok_or("queued result missing")?;
+        assert_eq!(
+            result.as_ref().err().copied(),
+            Some(GameplayEntryError::Rejected(
+                PublicClass::SessionUnavailable
+            ))
+        );
+        entry.shutdown();
+        Ok(())
+    }
 }
+
+#[cfg(test)]
+#[path = "features/0054-training/tests/reentry.rs"]
+mod training_batch_tests;

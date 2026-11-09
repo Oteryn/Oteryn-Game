@@ -7,7 +7,7 @@ pub fn panel_text(panel: &Panel) -> String {
             let kind = match kind {
                 "1" => "outfit",
                 "2" => "mount",
-                _ => "item",
+                _ => "creature",
             };
             let direction = match direction {
                 "0" => "north",

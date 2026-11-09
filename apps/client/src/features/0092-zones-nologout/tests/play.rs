@@ -141,3 +141,40 @@ fn raids_global_client_history_is_bounded_and_new_connection_starts_empty() -> R
     assert_eq!(next.server_message_status(), None);
     Ok(())
 }
+
+#[test]
+fn server_warning_wire_reaches_interactive_notice_and_changed_text_gets_new_key()
+-> Result<(), String> {
+    use oteryn_protocol_oteryn::zones_nologout::{decode_server_message, encode_server_message};
+    let (link, _commands, outbox) = play_channel();
+    let mut view = view().map_err(|error| error.to_string())?;
+    let wire = encode_server_message(&ServerMessage::Warning("Balancing rules changed".into()))
+        .map_err(|_| "encode")?;
+    let message = decode_server_message(&wire).map_err(|_| "decode")?;
+    outbox.push(vec![message_event(1, message)]);
+    let Some(PlayEvent::Pushed(batch)) = link.poll() else {
+        return Err("missing notice batch".into());
+    };
+    view.apply_pushed(&batch)
+        .map_err(|error| error.to_string())?;
+    let notices: Vec<_> = batch.server_messages.interactive_notices().collect();
+    assert_eq!(notices.len(), 1);
+    let first = notices.first().ok_or("missing notice")?;
+    assert_eq!(first.message, "Balancing rules changed");
+    let key = first.key.clone();
+    outbox.push(vec![
+        message_event(2, ServerMessage::Warning("Balancing rules changed".into())),
+        message_event(3, ServerMessage::Warning("New balancing rules".into())),
+        message_event(4, ServerMessage::StatusText("Ordinary HUD status".into())),
+    ]);
+    let Some(PlayEvent::Pushed(batch)) = link.poll() else {
+        return Err("missing notice batch".into());
+    };
+    view.apply_pushed(&batch)
+        .map_err(|error| error.to_string())?;
+    let notices: Vec<_> = batch.server_messages.interactive_notices().collect();
+    assert_eq!(notices.len(), 2);
+    assert_eq!(notices[0].key, key);
+    assert_ne!(notices[1].key, key);
+    Ok(())
+}

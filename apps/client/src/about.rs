@@ -31,39 +31,42 @@ impl Survey {
         crate::crash_report::save(&self.preview(), path, consent)
     }
 }
-#[cfg(windows)]
-pub(crate) fn run_survey() {
-    use crate::crash_report::consent_dialog;
-    if !consent_dialog(
+/// The sign-in survey's invitation, answer, preview and consent flow.
+pub fn review_survey_at(path: &Path, mut ask: impl FnMut(&str) -> bool) -> io::Result<bool> {
+    if !ask(
         "Would you like to answer an optional one-question Oteryn client survey? You can decline to save your answer after reviewing it. Nothing is uploaded.",
     ) {
-        return;
+        return Ok(false);
     }
-    let survey = Survey::new(consent_dialog(
-        "Was browser sign-in easy? Yes = Easy; No = Difficult.",
-    ));
-    if !consent_dialog(&format!(
+    let survey = Survey::new(ask("Was browser sign-in easy? Yes = Easy; No = Difficult."));
+    if !ask(&format!(
         "{}\nSave this response as a local file?",
         survey.preview()
     )) {
-        return;
+        return Ok(false);
     }
-    let result = (|| -> io::Result<std::path::PathBuf> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    survey.save(path, true)
+}
+#[cfg(windows)]
+pub(crate) fn run_survey() {
+    let result = (|| -> io::Result<Option<std::path::PathBuf>> {
         let settings = crate::native_login::settings_path().map_err(io::Error::other)?;
         let directory = settings
             .parent()
             .ok_or_else(|| io::Error::other("No configuration directory"))?;
-        std::fs::create_dir_all(directory)?;
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
         let path = directory.join(format!("client-survey-{stamp}.txt"));
-        survey.save(&path, true)?;
-        Ok(path)
+        Ok(review_survey_at(&path, crate::crash_report::consent_dialog)?.then_some(path))
     })();
     match result {
-        Ok(path) => show_information(&format!(
+        Ok(None) => {}
+        Ok(Some(path)) => show_information(&format!(
             "Survey response saved to {}. You can share or delete this file yourself.",
             path.display()
         )),

@@ -83,12 +83,14 @@ pub fn text(panel: &Panel, seconds: u64) -> String {
         }
     }
     text.push_str("\r\nRecent confirmed drops · newest first\r\n");
+    let mut visible_drops = false;
     for drop in panel
         .loot_drops
         .iter()
         .rev()
         .filter(|drop| !panel.loot_only_tracked || panel.loot_tracked.contains(&drop.item))
     {
+        visible_drops = true;
         let _ = write!(
             text,
             "+{}s · #{} × {}\r\n",
@@ -97,6 +99,8 @@ pub fn text(panel: &Panel, seconds: u64) -> String {
     }
     if panel.loot_drops.is_empty() {
         text.push_str("No drops received yet\r\n");
+    } else if !visible_drops {
+        text.push_str("No recent drops match the tracked item selection\r\n");
     }
     if panel.omitted_drops != 0 {
         let _ = write!(
