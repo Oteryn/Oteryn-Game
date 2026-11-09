@@ -9,6 +9,15 @@ mod area_entries;
 #[path = "m01b_explore/claim_entries.rs"]
 mod claim_entries;
 
+#[path = "m01b_explore/camp_temple_entries.rs"]
+mod camp_temple_entries;
+
+#[path = "m01b_explore/key_entries.rs"]
+mod key_entries;
+
+#[path = "m01b_explore/minotaur_entry.rs"]
+mod minotaur_entry;
+
 #[path = "m01b_explore/fire_axe.rs"]
 mod fire_axe;
 
@@ -278,6 +287,19 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if matches!(
+        name,
+        "m01b/iron-helmet/s1/ironhelmet" | "m01b/goblin-temple/s1/goblintemple"
+    ) {
+        return camp_temple_entries::world(native, name);
+    }
+    if name == "m01b/katana/s1/id4603" {
+        return key_entries::world(native);
+    }
+    if name == "m01b/minotaur-hell/s1/minohell1" {
+        return minotaur_entry::world(native);
+    }
+
     if name == "m01b/frost-dragon/s1/okolnir" {
         return claim_entries::world(native);
     }
@@ -449,12 +471,39 @@ pub(super) async fn exercise(
     if callback.admission.as_ref().is_some_and(|a| a.premium) {
         return exercise_premium(owner, admitted, h, callback).await;
     }
+    let additional = [
+        (
+            "m01b/iron-helmet/s1/ironhelmet",
+            "oteryn:quest-progress/chosen-source/iron_helmet_quest/s1",
+        ),
+        (
+            "m01b/katana/s1/id4603",
+            "oteryn:quest-progress/chosen-source/katana_quest/s1",
+        ),
+        (
+            "m01b/minotaur-hell/s1/minohell1",
+            "oteryn:quest-progress/chosen-source/minotaur_hell_quest/s1",
+        ),
+    ];
+    let additional_counter = additional
+        .iter()
+        .find(|(key, _)| callback.key.ends_with(*key))
+        .map(|(_, counter)| *counter);
     let dragon_tower = callback.key.ends_with("m01b/dragon-tower/s1/entry");
     let elvenbane = callback.key.ends_with("m01b/elvenbane/s1/entry");
     let alawar = callback.key.ends_with("m01b/alawar-s-vault/s1/entry");
     let geomancer = callback.key.ends_with("m01b/geomancer/s1/entry");
-    assert!(dragon_tower || elvenbane || alawar || geomancer || callback.key.ends_with(ENTRY));
-    let counter = if dragon_tower {
+    assert!(
+        additional_counter.is_some()
+            || dragon_tower
+            || elvenbane
+            || alawar
+            || geomancer
+            || callback.key.ends_with(ENTRY)
+    );
+    let counter = if let Some(counter) = additional_counter {
+        counter
+    } else if dragon_tower {
         "oteryn:quest-progress/chosen-source/dragon_tower_quest/s1"
     } else if elvenbane {
         "oteryn:quest-progress/authored/elvenbane_quest/s1"
@@ -502,16 +551,17 @@ pub(super) async fn exercise(
     ];
     let moves: &[StepDirection] = if dragon_tower {
         &dragon_moves
-    } else if elvenbane || alawar || geomancer {
+    } else if additional_counter.is_some() || elvenbane || alawar || geomancer {
         &geomancer_moves
     } else {
         &longsword_moves
     };
-    let first_entry = if dragon_tower || elvenbane || alawar || geomancer {
-        0
-    } else {
-        2
-    };
+    let first_entry =
+        if additional_counter.is_some() || dragon_tower || elvenbane || alawar || geomancer {
+            0
+        } else {
+            2
+        };
     for (index, &direction) in moves.iter().enumerate() {
         owner.clock_origin = owner
             .clock_origin

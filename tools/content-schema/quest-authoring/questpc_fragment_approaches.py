@@ -5,6 +5,10 @@ from pathlib import Path
 SOURCE = 'tools/content-schema/quest-authoring/samples/chests/claims.json'
 PREFIX = 'canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part'
 APPROACHES = {
+    'canary:reward-claim/quest/u8_0/fishing_box': (32016, 31409, -7, 6587),
+    'canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls': (33198, 31923, -11, 353),
+    'canary:reward-claim/kv/minohell1': (32131, 32066, -12, 351),
+    'canary:reward-claim/quest/key/id4603': (32177, 32132, -9, 355),
     'canary:reward-claim/kv/goblintemple': (31973, 32210, -12, 502),
     'canary:reward-claim/kv/ironhelmet': (32770, 32225, -7, 4516),
     'canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir': (32146, 31431, -8, 4407),

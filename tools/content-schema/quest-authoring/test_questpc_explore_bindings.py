@@ -21,6 +21,48 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_fishing_and_berserker_approaches_keep_their_own_placements(self):
+        bindings = (
+            ('oteryn:quest.fishing_box_quest', 's1', 'claim:canary:reward-claim/quest/u8_0/fishing_box',
+             'chosen-source/fishing_box_quest'),
+            ('oteryn:quest.berserker_treasure_quest', 's1',
+             'claim:canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls',
+             'chosen-source/berserker_treasure_quest'),
+        )
+        with mock.patch.object(explore, 'BINDINGS', bindings):
+            callbacks = explore.callbacks(ROOT)
+            self.assertEqual([c['selector']['position'] for c in callbacks], [
+                dict(x=32016, y=31409, floor=-7), dict(x=33198, y=31923, floor=-11)])
+            self.assertTrue(all(c['admission'] == {'premium': True} for c in callbacks))
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_minotaur_hell_entry_reaches_its_retained_deep_room(self):
+        binding = (('oteryn:quest.minotaur_hell_quest', 's1',
+                    'claim:canary:reward-claim/kv/minohell1', 'chosen-source/minotaur_hell_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32131, 'y': 32066, 'floor': -12},
+                'ordinal': 0, 'appearance': 351})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_katana_entry_reaches_the_key_cache_before_the_locked_room(self):
+        binding = (('oteryn:quest.katana_quest', 's1',
+                    'claim:canary:reward-claim/quest/key/id4603', 'chosen-source/katana_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32177, 'y': 32132, 'floor': -9},
+                'ordinal': 0, 'appearance': 355})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_camp_and_temple_entries_are_activated(self):
+        callbacks = explore.callbacks(ROOT)
+        for quest in ('oteryn:quest.iron_helmet_quest', 'oteryn:quest.goblin_temple_quest'):
+            with self.subTest(quest=quest):
+                self.assertTrue(any(c['quest'] == quest for c in callbacks),
+                                'camp or temple entry is activated')
+
     def test_goblin_temple_entry_is_beside_its_retained_chest(self):
         binding = (('oteryn:quest.goblin_temple_quest', 's1',
                     'claim:canary:reward-claim/kv/goblintemple', 'chosen-source/goblin_temple_quest'),)

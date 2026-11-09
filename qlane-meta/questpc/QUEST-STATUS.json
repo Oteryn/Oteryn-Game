@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b13/56wired,16anchors,12PG-proven. BehemothGREEN60.580s;FrostcompiledClippy4m11s/profile5GREEN,nativePGbuilding.33routes/43stages remain;PARTIAL.",
+  "batch_state": "M01b17/56wired,20anchors,13PG-proven. FrostGREEN61.803s;4newentries31Python/5Rust/strictClippy4m27sGREEN,nativePGbuilding.29routes/39stages remain;PARTIAL.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
