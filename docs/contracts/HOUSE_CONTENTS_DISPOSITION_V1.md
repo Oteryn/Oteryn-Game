@@ -46,3 +46,37 @@ The client must show the selected house, recipient and effective transfer or
 move-out terms before confirmation. Confirmations bind to that exact selection;
 changing it invalidates confirmation. Wrapping confirms the selected item and
 its admitted wrapped form. Closing or refusing confirmation emits no mutation.
+
+## Transfer selection and confirmations
+
+Canary `99902524`, `src/server/network/protocol/protocolgame.cpp:12197-12249`
+selects a house and exposes schedule move-out, cancel move-out, offer transfer,
+cancel transfer, accept transfer and reject transfer. A transfer offer carries
+recipient name, effective date and gold price. `src/game/game.cpp:13124-13339`
+requires the current owner for scheduling/cancellation and the nominated
+recipient for acceptance/rejection; accepting reserves the price plus rent from
+the recipient's bank. Cancelling or rejecting an accepted transfer refunds both.
+These are Game gold, not purchased coins. The existing Game bank contract owns
+these writes; no commercial balance or StoreInbox is involved.
+
+Oteryn retains its accepted bounded move-out scheduling window. Every mutation
+requires an explicit confirmation displaying the exact house and action; offers
+also display recipient, date and price, and acceptance displays price plus rent.
+Refreshing/reselecting a different revision invalidates an old confirmation.
+The house list includes current owned houses and incoming transfer offers, with
+server-authoritative names, terms and allowed actions. No free-form house key or
+client-supplied ownership fact is an authority grant.
+
+For disposition, the existing `game_item_bindings.character_id` is the explicit
+item owner. Placement/reclaim provenance alone is not an owner binding. Personal
+house disposition uses that binding when present and otherwise the seller;
+Guild disposition retains its separately accepted reclaim-subject rules.
+`CharacterInbox` / `game_item_character_inbox_locations` is the accepted depot
+mail inbox (DEPOT-0/INBOX-1); it is distinct from the Store inbox.
+
+`src/creatures/players/player.cpp:12947-13017` rejects transfer to oneself,
+a missing recipient, a recipient without a vocation, a non-premium recipient,
+and an account already bidding on a house. Acceptance rechecks the nominated
+recipient, premium and vocation, available price-plus-rent balance and whether
+the offer was already accepted. Existing Oteryn Account/World housing-slot,
+ban and bank limits continue to apply; Platform remains premium authority.

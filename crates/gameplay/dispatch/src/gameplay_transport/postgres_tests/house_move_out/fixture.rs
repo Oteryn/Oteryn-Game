@@ -238,7 +238,7 @@ pub(super) async fn assert_frozen(h: &Harness) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn assert_final(h: &Harness, recipient: [u8; 16]) -> TestResult {
+pub(super) async fn assert_final(h: &Harness, recipient: [u8; 16], bound: bool) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("INSERT INTO game_item_house_interior_locations SELECT item_instance_id,world_id,$1,'frozen',1,game_character_uuid_v7() FROM game_character_inbox_deliveries LIMIT 1")
         .bind(HOUSE).execute(&mut *tx).await?;
@@ -257,16 +257,16 @@ pub(super) async fn assert_final(h: &Harness, recipient: [u8; 16]) -> TestResult
 
     let rows:Vec<(Vec<u8>,i64)>=sqlx::query_as("SELECT uuid_send(character_id),count(*) FROM game_character_inbox_deliveries WHERE cause_kind='HOUSE_DISPOSITION' GROUP BY character_id ORDER BY character_id")
         .fetch_all(&h.pool).await?;
-    assert_eq!(rows.len(), 2);
+    assert_eq!(rows.len(), if bound { 2 } else { 1 });
     assert_eq!(
         rows.iter()
             .find(|(id, _)| id == &recipient)
             .map(|(_, n)| *n),
-        Some(51)
+        if bound { Some(51) } else { None }
     );
     assert_eq!(
         rows.iter().find(|(c, _)| c == &id(41)).map(|(_, n)| *n),
-        Some(50)
+        Some(if bound { 50 } else { 101 })
     );
     let remaining: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_item_house_interior_locations")
@@ -442,5 +442,17 @@ pub(super) async fn assert_unproven_checkpoint_closed(h: &Harness) -> TestResult
             .contains("house disposition lacks own physical HouseOperation event")
     );
     tx.rollback().await?;
+    Ok(())
+}
+
+// An initial bound-item fixture supplies the existing authoritative owner field.
+// The new unbound case intentionally leaves every item without that field.
+pub(super) async fn bind_fixture_items(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_bindings(item_instance_id,world_id,character_id,cause) SELECT item_instance_id,world_id,reclaim_subject_character_id,'DAILY_REWARD' FROM game_item_house_reclaim_provenance WHERE house_key=$1").bind(HOUSE).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }

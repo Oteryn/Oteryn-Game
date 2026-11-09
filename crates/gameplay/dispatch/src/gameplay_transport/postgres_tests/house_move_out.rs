@@ -151,6 +151,22 @@ async fn reply(
     decode_house_move_out_reply(&bytes).map_err(debug)
 }
 fn scenario() -> TestResult {
+    scenario_contents(true)
+}
+
+#[test]
+fn t135_unbound_contents_go_to_seller_not_depositor() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_contents(false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "T135 disposition thread failed")??;
+    Ok(())
+}
+fn scenario_contents(bound: bool) -> TestResult {
     run(async |admin| {
         reset();
         let mut h =
@@ -166,6 +182,9 @@ fn scenario() -> TestResult {
                 .await?;
         let recipient = seed::reclaim_character(&h, 60, 70, now).await?;
         seed::house_and_items(&h, *recipient.as_bytes(), 101).await?;
+        if bound {
+            seed::bind_fixture_items(&h).await?;
+        }
         seed::assert_unproven_removal_closed(&h).await?;
         h.root = seed::runtime_root(&h, &admin).await?;
         let deps = Dependencies::new()?;
@@ -391,7 +410,7 @@ fn scenario() -> TestResult {
             if phase >= 2 {
                 // Observe both final commit and replay using a newly recovered Root.
                 h.root = seed::runtime_root(&h, &admin).await?;
-                seed::assert_final(&h, *recipient.as_bytes()).await?;
+                seed::assert_final(&h, *recipient.as_bytes(), bound).await?;
             }
         }
         seed::assert_runtime_privileges(&h).await?;
