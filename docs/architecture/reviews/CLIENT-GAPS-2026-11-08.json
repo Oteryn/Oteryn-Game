@@ -487,9 +487,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Help: FAQ/manual/client help/reports",
-  "status": "PARTIAL",
-  "gap": "Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Native Settings Help provides local FAQ, playing-manual and client-troubleshooting topics plus navigation to the existing Reports form. Report opening is deferred to the game thread, requires an active session and never submits a report automatically.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:8 (production Help navigation); apps/client/src/features/local-reference-preferences/help_native.rs:28 and :94 (native topics and report action); apps/client/src/features/local-reference-preferences/help.rs:12 and :32 (help content and session-bound report opening); apps/client/src/features/local-reference-preferences/native.rs:203 (game-thread consumer); apps/client/src/features/local-reference-preferences/tests/options_lane.rs:3 + help_navigation_opens_existing_report_without_submitting (all topics, unavailable-session rejection, real PlayLink report opening and empty command queue)."
  },
  {
   "id": "T073",
