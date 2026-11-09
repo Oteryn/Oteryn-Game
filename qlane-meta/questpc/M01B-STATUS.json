@@ -83,19 +83,19 @@
       "Fury Gates Mini World Change"
     ],
     "wired_native_visit_anchors": 51,
-    "pg_proven_explore_stages": 36
+    "pg_proven_explore_stages": 37
   },
   "validation": {
-    "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
+    "quest_unit_tests": "GREEN381passed,0failed,0ignored,124.04s;currentCobra profile/data",
     "focused_profile_tests": "RED1failure0.02s,thenGREEN4passed0.03s",
     "authoring_modules": "PASS112modules on entrance-batch snapshot;own15tests rerun after fragment planner",
     "authoring_checks": "PASS run_checks.py --part checks on entrance-batch snapshot",
     "content_tree": "PASS full validation on entrance-batch snapshot",
-    "clippy": "quests+dispatch --all-targets strict PASS7m03s before final2Premium PG cases added",
+    "clippy": "GREEN quests+dispatch alltargets-Dwarnings7m53s",
     "postgres_catalogue": "PASS PostgreSQL18.6,8.262173426s",
     "postgres_native_step": "PASS Longsword60.462902524s,Geomancer60.816349711s",
-    "workspace_all_targets": "PASS7m46s --keep-going after four incoming constructor/test-export repairs",
-    "fmt": "PASS cargo fmt --all --check and explicit own-file rustfmt",
+    "workspace_all_targets": "GREEN currentCobra/Hero-helper workspace8m39s",
+    "fmt": "GREEN cargo fmt --all --check andexplicitownRustfiles",
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
     "post_merge_postgres": "No further merges permitted;all4cases executed on current mechanic Rust/data",
@@ -240,7 +240,10 @@
     "cobra_inactive_resolver": "RED unsupportedArea0.53s -> GREEN1test1.561s includingretainedB3ground;stage4readonlyguards s1=12,s2=5,s3=1;level250/Premiumretained. Inactive,noactivebindingcountchange. Fullauthoringretry1212tests/117modulesPASS afteroneOOMSIGKILLtreechild;checksPASS;activeJSONunchanged.",
     "fury_native_postgres": "GREEN80.739761441s m01b_fury_native_survey_requires_selected_city_and_premium onb338efe70;actualselectedThaisdays,currentreset/Premium/replay/freshonce/revisit,wholecompletion0. PriorRED70.03292385s InvalidEffect fixedviafullcataloguekeyvalidator. Actualentryphaseonly;Fury s2/othercities/Furyosa notqualified.",
     "fury_final_prevention": "GREEN currentworkspacealltargets5m33s andcargo fmtallcheck;380questunits94.15s;strictquestsClippy10.81s;1212authoringtests/117modules,checks/tree/nativeproviderregeneration/pins/dupmigrationsPASS;FuryrealPG80.739761441s. Cobrahelperinactive/1focusedtest1.561s;noactiveJSONchange.",
-    "cobra_live_activation": "ActivationRED missing s4 -> GREEN1authoringtest1.196s;8Rustprofiletests8.11s includefullcatalogue/readguardbounds/bindinghash;strictquests+dispatchalltargetsClippy7m53s;1212authoringtests/117modules,checks/tree/nativeproviderregenPASS. NativePG2casesbuilding,notqualified. Currentworkspacecheckpending;prior5m33s checkpredatesactivation."
+    "cobra_live_activation": "ActivationRED missing s4 -> GREEN1authoringtest1.196s;8Rustprofiletests8.11s includefullcatalogue/readguardbounds/bindinghash;strictquests+dispatchalltargetsClippy7m53s;1212authoringtests/117modules,checks/tree/nativeproviderregenPASS. NativePG2casesbuilding,notqualified. Currentworkspacecheckpending;prior5m33s checkpredatesactivation.",
+    "cobra_native_postgres": "GREEN2cases209.38s: m01b_cobra_visit96.714073058s; m01b_grave_danger_visits112.663183545s. Runtime/data5823d16a4. All12gravevisitsnativeSTEP;bossconditionsfixtureonly;partialboss/minlevel/Premium/refusedreplay/freshonce/revisit/wholecompletion0. Noexplorationcounts/rootrevisionseeded.",
+    "hero_fire_inactive_resolver": "RED unsupportedsource0.65s -> GREEN2tests1.657s;verifiedCanary04b83b51 movements_lava.lua arrival33552,32049,z15,cleareast33553,32049ground20537;stage1/2guards1/1,CurrentPremium,canonicalmin0. INACTIVE,noactivecallbackdatachange. Full118moduleauthoringrunnerpending.",
+    "hero_fire_publication": "Cadenceexception:inactiveHero2focusedtests1.657s andcurrentauthoringchecksPASS;full118moduleunitrunnerstillrunning onpush. ActiveCobra contentalready117modules/1212authoringtestsGREEN andownPG2cases209.38s. Currentworkspace/fmt/pins/tree PASS;HerochangesnoactiveJSON."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],

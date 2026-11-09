@@ -7,6 +7,9 @@ QUEST = 'oteryn:quest.ferumbras_ascension_quest'
 BASE = ('https://raw.githubusercontent.com/opentibiabr/canary/04b83b51/'
         'data-otservbr-global/scripts/quests/')
 SITES = {
+    'hero-into-the-fire': ('oteryn:quest.hero_of_rathleton_quest',
+        'canary:quest/hero_of_rathleton_quest', 'hero_of_rathleton/movements_lava.lua',
+        (33552, 32049, -15), (33553, 32049, -15, 20537)),
     'deeplings-navigator-hub': ('oteryn:quest.deeplings_worldchange',
         'canary:quest/deeplings_worldchange', 'deeplings_worldchange/actions_golden_anchor.lua',
         (33640, 31379, -9), (33641, 31379, -9, 8287)),
