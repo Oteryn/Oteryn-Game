@@ -183,6 +183,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             drop(mailbox);
             if picker || returner {
                 let link = PlayLink {
+                    owns_session: false,
                     mailbox: shared,
                     commands: commands.clone(),
                 };
