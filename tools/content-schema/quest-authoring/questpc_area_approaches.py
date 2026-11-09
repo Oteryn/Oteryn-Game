@@ -25,6 +25,8 @@ def resolve(root, reference):
     index, record = matches[0]
     source = record['declaration']['position']
     origin, (x, y, floor, appearance) = APPROACHES[key]
+    if source is not None and source.get('coordinate_frame') != 'global-target-2026-09-27':
+        raise ValueError('Pinned Area coordinate frame changed: ' + key)
     if source is None or (source['x'], source['y'], -source['floor']) != origin:
         raise ValueError('Pinned Area marker changed: ' + key)
     if floor != origin[2] or abs(x - origin[0]) + abs(y - origin[1]) != DISTANCES.get(key, 1):

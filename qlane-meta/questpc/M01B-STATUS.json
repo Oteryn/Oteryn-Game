@@ -83,19 +83,19 @@
       "Fury Gates Mini World Change"
     ],
     "wired_native_visit_anchors": 52,
-    "pg_proven_explore_stages": 37
+    "pg_proven_explore_stages": 38
   },
   "validation": {
-    "quest_unit_tests": "GREEN381passed,0failed,0ignored,124.04s;currentCobra profile/data",
+    "quest_unit_tests": "GREEN381passed,0failed,0ignored,86.70s withactiveHero3",
     "focused_profile_tests": "RED1failure0.02s,thenGREEN4passed0.03s",
-    "authoring_modules": "PASS112modules on entrance-batch snapshot;own15tests rerun after fragment planner",
-    "authoring_checks": "PASS run_checks.py --part checks on entrance-batch snapshot",
+    "authoring_modules": "GREEN118modules/1215tests,0failures;existing skips unchanged",
+    "authoring_checks": "GREEN currentrun_checks.py --part checks",
     "content_tree": "PASS full validation on entrance-batch snapshot",
     "clippy": "GREEN quests+dispatch alltargets-Dwarnings7m53s",
     "postgres_catalogue": "PASS PostgreSQL18.6,8.262173426s",
     "postgres_native_step": "PASS Longsword60.462902524s,Geomancer60.816349711s",
-    "workspace_all_targets": "GREEN currentCobra/Hero-helper workspace8m39s",
-    "fmt": "GREEN cargo fmt --all --check andexplicitownRustfiles",
+    "workspace_all_targets": "GREEN currentunmergedHero3/frameguard workspace9m52s",
+    "fmt": "GREEN cargo fmt --all --check",
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
     "post_merge_postgres": "No further merges permitted;all4cases executed on current mechanic Rust/data",
@@ -245,7 +245,10 @@
     "hero_fire_inactive_resolver": "RED unsupportedsource0.65s -> GREEN2tests1.657s;verifiedCanary04b83b51 movements_lava.lua arrival33552,32049,z15,cleareast33553,32049ground20537;stage1/2guards1/1,CurrentPremium,canonicalmin0. INACTIVE,noactivecallbackdatachange. Full118moduleauthoringrunnerpending.",
     "hero_fire_publication": "Cadenceexception:inactiveHero2focusedtests1.657s andcurrentauthoringchecksPASS;full118moduleunitrunnerstillrunning onpush. ActiveCobra contentalready117modules/1212authoringtestsGREEN andownPG2cases209.38s. Currentworkspace/fmt/pins/tree PASS;HerochangesnoactiveJSON.",
     "hero_active_premerge": "WIP Hero3:activationRED->GREEN2tests1.202s;381questunits86.70s;strictquests+dispatchClippy7m12s;fullauthoringcompletedbeforeownermerge. NativePGbuildinterrupted for explicit856a420d6 qmechmerge;noHero3PGqualificationclaimed. 35routes/37stagesPG-proven.",
-    "merge_correction": "Ownercorrection:qmechmergeABORTEDbeforecommit;nohardreset,noforeignmergepreserved. HeroWIPsourcekept;nativePGbuildinterruptedandwillrestartonunmergedbranch. 381questunits86.70s,strictClippy7m12s,118modules/1214authoringtestsPASS beforemerge;source/datarestoredexactly."
+    "merge_correction": "Ownercorrection:qmechmergeABORTEDbeforecommit;nohardreset,noforeignmergepreserved. HeroWIPsourcekept;nativePGbuildinterruptedandwillrestartonunmergedbranch. 381questunits86.70s,strictClippy7m12s,118modules/1214authoringtestsPASS beforemerge;source/datarestoredexactly.",
+    "hero_fire_native_postgres": "GREEN2cases210.95s on7d7350fc6:Hero firstsurvey94.230475462s;fire-room116.711981393s. Real firstsurveySTEP,separateevidence-ownerpreconditiononly,CurrentPremium/refusedreplay/freshonce/revisit/wholecompletion0. Noexploration/rootrevisionseeding. Qmechmergeaborted;unmergedbranchproof.",
+    "area_coordinate_frame": "RED foreignframeaccepted -> GREEN2focusedtests1.312s plusfull118modules/1215tests;allAreaapproachesrequireglobal-target-2026-09-27. ActivecallbackJSONunchanged.",
+    "hero_final_validation": "HeroPG2cases210.95s:94.230475462sfirstsurvey,116.711981393sfire-room;381questunits86.70s;strictquests+dispatchClippy7m12s;currentworkspace9m52s/fmt;118authoringmodules1215tests/checks/tree/regen/pins/dupmigrationsPASS. Crystal201189f8 confirms33552,32049,z15andaction24866. Noqmech/mainmerge."
   },
   "migration_range": "2000-2009",
   "migrations_used": [],

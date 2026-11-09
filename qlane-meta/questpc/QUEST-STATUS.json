@@ -1115,5 +1115,5 @@
     "additional_dispatch_non_pg_units": "PENDING: stopped redundant rebuild under publication-cadence exception"
   },
   "m01b_latest_batch": "Deeplings PG GREEN64.396295735s. WIP FireEarth survey:strictClippy5m15s,6profile0.06s,115modules/1206authoringtests/checks/tree/fmt/pins PASS. OwnnativePG building;NOTqualified.34wiredroutes35stages,33PG-provenroutes34stages;M01b PARTIAL.",
-  "m01b_latest_slice": "Hero3 compilingWIP38stages/52anchors;35routes/37PG-provenstages. RequestedqmechmergeABORTEDpernewowner;nohardreset. NativeHeroPGandcurrentworkspacecheckpendingrestart;no furthermerges."
+  "m01b_latest_slice": "Hero3QUALIFIED nativeSTEP116.711981393s+firstsurvey94.230475462s;Area-frameguardGREEN,workspace9m52s/381questunits/118authoringmodules1215tests.35routes/38stagesPG-proven,52anchors;11routes/18stagesunwired;M01bPARTIAL. Noqmech/mainmerge."
 }

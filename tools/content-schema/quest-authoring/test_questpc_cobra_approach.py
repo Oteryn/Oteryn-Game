@@ -1,9 +1,11 @@
 """The Cobra investigation remains behind every preceding Grave Danger stage."""
+import json
 from pathlib import Path
 import unittest
 from unittest import mock
 
 import questpc_explore_bindings as explore
+import questpc_area_approaches as areas
 import test_questpc_explore_bindings as explore_tests
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -29,3 +31,13 @@ class CobraApproachTests(unittest.TestCase):
         self.assertEqual(len([s for s in callback['storage'] if not s.get('preserve')]),2)
         self.assertTrue(any(c['quest']=='oteryn:quest.grave_danger_quest'
                              and '/s4/' in c['key'] for c in explore.callbacks(ROOT)))
+
+    def test_cobra_marker_cannot_borrow_another_coordinate_frame(self):
+        records = json.loads((ROOT / areas.SOURCE).read_text())['records']
+        record = next(r for r in records if r['declaration']['identity']['key']
+                      == 'oteryn:area.hunting_place.cobra_bastion')
+        record['declaration']['position']['coordinate_frame'] = 'foreign-target-frame'
+        with mock.patch.object(areas.Path, 'read_text',
+                               return_value=json.dumps({'records': records})):
+            with self.assertRaisesRegex(ValueError, 'coordinate frame'):
+                areas.resolve(ROOT, 'area-approach:oteryn:area.hunting_place.cobra_bastion')
