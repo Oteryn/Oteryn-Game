@@ -1,5 +1,11 @@
 use super::*;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static LOSS_PUBLICATION_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn lose_control_for_cause(
         &self,
@@ -369,6 +375,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     None => return ControlLossResult::Unknown,
                 }
             }
+        }
+        #[cfg(test)]
+        if let Ok(barrier) = LOSS_PUBLICATION_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
         }
         let mark = ControlLossMark {
             epoch: epoch.get(),

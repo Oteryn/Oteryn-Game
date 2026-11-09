@@ -152,14 +152,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             self.spell_lane_permit().await.ok_or(Unavailable)?;
         }
-        let mut lost = self
+        let lost = self
             .states
             .lost
             .lock()
             .map_err(|_| Unavailable)?
             .get(&attempt.game_session_id)
-            .copied()
-            .ok_or(Rejected)?;
+            .copied();
+        let mut lost = match lost {
+            Some(lost) => lost,
+            None => {
+                // The durable loss commit is visible before the loss task finishes its
+                // runtime mark, cleanup and lost-entry publication. This is readiness,
+                // not a permanent rejection: let the existing bounded pre-write retry
+                // read the completed publication, then prove every resume fence below.
+                let session = FreshAdmissionStore::from_root(self.root.clone())
+                    .current_session(attempt.game_session_id)
+                    .await
+                    .map_err(|_| Unavailable)?;
+                return Err(
+                    if session.session_state() == GameSessionState::Reconnectable {
+                        Unavailable
+                    } else {
+                        Rejected
+                    },
+                );
+            }
+        };
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
