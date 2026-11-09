@@ -2371,7 +2371,7 @@
         "rune_consumption": null
       },
       "admission": {
-        "materializable": false,
+        "materializable": true,
         "stack_class": "NonStackable",
         "legal_destinations": [
           "Ground"
@@ -2537,7 +2537,7 @@
         "rune_consumption": null
       },
       "admission": {
-        "materializable": false,
+        "materializable": true,
         "stack_class": "NonStackable",
         "legal_destinations": [
           "Ground"
@@ -2703,7 +2703,7 @@
         "rune_consumption": null
       },
       "admission": {
-        "materializable": false,
+        "materializable": true,
         "stack_class": "NonStackable",
         "legal_destinations": [
           "Ground"
@@ -2869,7 +2869,7 @@
         "rune_consumption": null
       },
       "admission": {
-        "materializable": false,
+        "materializable": true,
         "stack_class": "NonStackable",
         "legal_destinations": [
           "Ground"

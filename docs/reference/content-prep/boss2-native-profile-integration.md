@@ -1,11 +1,20 @@
 # Native profile qualification after qmech integration
 
-The canonical Item definitions and the independently captured Elemental Spheres
-and Rafzane providers retain nonmaterializable, Ground-only corpse/scenery
-admission. Floor assembly and QM50 must preserve that same boundary. Native
-container capacity does not grant general MINT authority. Both captures now
-check the canonical definition before retaining that restriction; source
+Stationary World scenery retains nonmaterializable admission. Native corpse
+counterparts require materializable, Ground-only admission: the production
+creature reward catalogue filters unmaterializable Items, and
+`spell_item_transaction.rs::prepare_corpse_in_transaction` rejects them too.
+Their nonportable destination and the existing death/corpse receipt remain
+mandatory; data admission does not grant an arbitrary MINT caller. Source
 physics, container capacities, decay, and appearance bindings remain unchanged.
+
+The initial floor-assembly repair incorrectly extended the scenery restriction
+to corpses. A forward correction restores its ten native corpse counterparts
+and qualifies the four overlapping Elemental Spheres counterparts the same way.
+The negative admission test now rejects actual inventory portability and also
+rejects an unmaterializable corpse. The new Ground-corpse regression was red
+for ten source records before this correction, then all three coherence tests,
+four Elemental Spheres tests and the Elemental Arrival test passed.
 
 Source: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
 [`data/items/items.xml`](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml):
@@ -43,3 +52,13 @@ capture regressions and the original verification test pass, including refusal
 of a fresh pin over changed recipe rows and refusal of an old whole-shard pin.
 The repository refresh and verification commands pass; the generated witness
 changes only `source_packet_sha256`, with no row or recipe hash changed.
+
+The shared explicit-ID capture also filtered its result through the global
+default cohort, dropping the real requested parchment 2833. It now retains the
+requested selection; the three existing parchment tests pass. Default capture
+membership is unchanged. Regeneration next reaches
+`QREADY1_CRAFT_ITEM_CONFLICT:oteryn:item.tibia.i21506`. The complete two-crate
+client run collected all failures: 438 cases, 424 passed and 14 failed; the
+placement-index pin itself was refreshed with its validating repository tool.
+The Ahau exit gesture is still under investigation, so this is not a completed
+post-integration native play qualification.

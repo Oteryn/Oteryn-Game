@@ -19,7 +19,7 @@ class ElementalArrivalProfiles(unittest.TestCase):
         for item in corpses | scenery:
             row = records[f'oteryn:item.tibia.i{item}']
             self.assertEqual(row['admission'], {
-                'materializable': False,
+                'materializable': item in corpses,
                 'stack_class': 'NonStackable',
                 'legal_destinations': ['Ground'],
             })

@@ -1,4 +1,4 @@
-"""Independent native providers must retain the canonical corpse MINT boundary."""
+"""Native corpse counterparts must satisfy the closed Ground corpse owner."""
 import json
 import unittest
 
@@ -21,21 +21,15 @@ class NativeCorpseProfileCoherence(unittest.TestCase):
                 self.assertEqual(record, second[key])
                 self.assertIs(record['admission']['materializable'], False)
 
-    def test_source_corpses_preserve_canonical_nonmaterializable_admission(self):
+    def test_source_corpses_remain_materializable_ground_only_counterparts(self):
         packet = json.loads((floor.ROOT / floor.PATH).read_bytes())
         records = {row['production_definition']['production_key']: row
                    for row in packet['records']}
-        canonical = {}
-        for path in (floor.ROOT / 'content/items/definitions').glob('items-*.json'):
-            for row in json.loads(path.read_bytes())['records']:
-                definition = row['definition']
-                canonical[definition['identity']['key']] = definition
         for item in sorted(floor.ELEMENTAL_CORPSES):
             key = f'oteryn:item.tibia.i{item}'
             with self.subTest(item=item):
-                self.assertIs(canonical[key]['materializable'], False)
                 self.assertEqual(records[key]['admission'], {
-                    'materializable': False,
+                    'materializable': True,
                     'stack_class': 'NonStackable',
                     'legal_destinations': ['Ground'],
                 })
