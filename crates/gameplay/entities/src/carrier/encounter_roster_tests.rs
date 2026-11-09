@@ -312,6 +312,28 @@ fn engenc_defender_completion_is_exact_participant_fenced_and_idempotent() -> Te
 }
 
 #[test]
+fn qm50_platform_rider_keeps_other_occupants_and_rolls_back_failed_map_batch() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let rider = player(&mut runtime)?;
+    let creatures =
+        checked(runtime.commit_quest_creature_spawn(&[("creature:rat", 20, position(100))]))?;
+    let before = runtime.encounter_fixture_snapshot();
+    assert!(
+        runtime
+            .commit_quest_platform_rider(rider, || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let landed = checked(runtime.commit_quest_platform_rider(rider, || true))?;
+    assert_eq!(landed.position(), rider.destination);
+    assert_eq!(
+        checked(runtime.read_actor_position(creatures[0]))?.position(),
+        position(100)
+    );
+    Ok(())
+}
+
+#[test]
 fn m49_arrival_spawn_rolls_back_when_the_world_readset_fence_fails() -> TestResult {
     let mut runtime = runtime(1)?;
     let before = runtime.encounter_fixture_snapshot();

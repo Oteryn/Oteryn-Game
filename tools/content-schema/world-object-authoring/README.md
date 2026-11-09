@@ -92,3 +92,10 @@ python build_catalogue.py --source <checkout>                                 # 
 python build_catalogue.py --source <checkout> --check                         # catalogue drift check
 python test_world_objects.py
 ```
+
+## Rafzan elevator ground (M50)
+
+Run `python3 tools/content-schema/world-object-authoring/qm50_ground.py [--check]`.
+This generator verifies the pinned source facts and emits the ground record for
+17970, retaining its existing Item pointer and source ground speed of 110.
+The full catalogue builder includes the same shard in its qualified corpus.

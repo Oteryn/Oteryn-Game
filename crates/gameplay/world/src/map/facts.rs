@@ -121,6 +121,8 @@ pub struct BundleFacts {
     palette: Vec<PaletteFacts>,
     /// Movement targets may be unplaced; these are resolved by the same served Item index.
     movement_definitions: BTreeMap<u16, EntryFacts>,
+    /// Blocking facts retained from the same native owner as unplaced states.
+    movement_solidities: BTreeMap<u16, bool>,
     /// `(compact id, palette index)` ascending by id, for the ids only one palette entry has.
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
@@ -214,6 +216,7 @@ impl BundleFacts {
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
             ids: self.ids.clone(),
             placements,
             map_source_items: self
@@ -259,6 +262,7 @@ impl BundleFacts {
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
+            movement_solidities: self.movement_solidities.clone(),
             ids: self.ids.clone(),
             placements: self
                 .placements
@@ -306,15 +310,17 @@ impl BundleFacts {
             }
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
+        let mut movement_solidities = BTreeMap::new();
         let movement_definitions = [
             1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
             12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
-            14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+            14163, 14164, 14255, 17939, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
+            movement_solidities.insert(id, definition.solid.unwrap_or(true));
             Some((
                 id,
                 EntryFacts {
@@ -333,6 +339,7 @@ impl BundleFacts {
         Ok(Self {
             palette,
             movement_definitions,
+            movement_solidities,
             ids: unique,
             placements: Vec::new(),
             map_source_items: BTreeMap::new(),
@@ -357,9 +364,19 @@ impl BundleFacts {
     }
 
     /// Collision of a transformed entry whose exact definition and appearance
-    /// already have qualified palette facts. Unknown/ambiguous targets cannot
+    /// already have qualified palette or native unplaced-state facts. Unknown targets cannot
     /// clear a blocker from the immutable base map.
     fn override_blocks(&self, after: EntryFacts) -> Option<bool> {
+        if let (Some(qualified), Some(solid)) = (
+            self.movement_definitions.get(&after.appearance_id),
+            self.movement_solidities.get(&after.appearance_id),
+        ) && qualified.definition == after.definition
+            && qualified.terrain_kind == after.terrain_kind
+            && qualified.blocks_projectile == after.blocks_projectile
+        {
+            return Some(*solid);
+        }
+
         let reference = match after.definition {
             MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
         };

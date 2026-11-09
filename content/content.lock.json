@@ -32,7 +32,7 @@
     "Presentation": 3146,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 345,
+    "RewardClaim": 336,
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5784,
+          "record_count": 5787,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "d61dc4c2b4c662877ac7f2527f818abd744205ca393aed1db23ee5ead0bf9c98"
+          "sha256": "89a0a833ded25fc8908306a064ccef586a8184e34950b19c39f9ed44f93e997f"
         },
         {
           "creates_canonical_identities": false,
