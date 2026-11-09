@@ -48,7 +48,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let has_combat_effects = observed
             .iter()
             .chain(clocks.get(&session).into_iter().flat_map(|c| &c.observed))
-            .any(|b| matches!(b.category, 0 | 2..=7 | 10 | 11));
+            .any(|b| matches!(b.category, 0 | 2..=7 | 10..=12 | 20..=25));
         let clock = clocks.entry(session).or_insert_with(|| ImbuementClock {
             at_ms: now,
             observed: observed.clone(),
