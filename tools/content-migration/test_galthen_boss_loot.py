@@ -16,6 +16,10 @@ class GalthenBossLootTests(unittest.TestCase):
         self.assertIn({'kind': 'SIGNED_POINTS', 'value': 15},
                       [row['parameter']['value'] for row in modifiers if row['kind'] == 'SPEED'])
         resistances = rows['44649']['semantics']['protection']['value']['resistances']['value']
+        self.assertEqual(rows['44649']['semantics']['protection']['value']['armor'],
+                         {'state': 'KNOWN', 'value': 2})
+        self.assertEqual(rows['44648']['semantics']['protection']['value']['armor'],
+                         {'state': 'KNOWN', 'value': 2})
         self.assertIn({'kind': 'ICE', 'percent': {'state': 'KNOWN',
                       'value': {'denominator': 1, 'numerator': 6}}}, resistances)
         monk = rows['50255']['semantics']['skill_modifiers']['value']['modifiers']['value']
@@ -25,7 +29,9 @@ class GalthenBossLootTests(unittest.TestCase):
     def test_unmapped_or_malformed_ability_never_partially_publishes(self):
         for attrs in ({'speed': 'invalid'}, {'speed': '15', 'suppressunknown': '1'},
                       {'speed': '15', 'absorbpercentice': '999'},
-                      {'speed': '15', 'mantra': '32768'}):
+                      {'speed': '15', 'mantra': '32768'},
+                      {'speed': '15', 'armor': 'invalid'},
+                      {'speed': '15', 'armor': '2147483648'}):
             with self.subTest(attrs=attrs):
                 row = {'semantics': {}}
                 with self.assertRaisesRegex(ValueError, 'M25_LOOT_EQUIPMENT_SOURCE'):

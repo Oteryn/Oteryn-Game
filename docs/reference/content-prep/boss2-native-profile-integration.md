@@ -140,6 +140,17 @@ passed in 8m07s. The post-fix Rust test compiled but its linker hit a full disk
 removed and the same test is being rerun. This resource failure is not treated
 as a mechanic qualification pass.
 
+The rerun exposed an incomplete protection group (`Item updates base`): the
+new resistance lowering had omitted the required armor leaf. The source
+decoder now retains explicit armor, with UNKNOWN for absent leaves, and
+validates its signed bounds before publishing either group. The armor
+regression was red, then the seven capture/registration cases passed (0.562s).
+A new Rust test goes through the real `qualified_records()` and native ability
+decoder for all nineteen source profiles, checking the raw speed independently
+and the boots' speed 15 plus armor 2. It and the existing exact-identity/hash
+negative test both pass (2/2, 0.044s total). Full native-world/PG reruns remain
+separate from these completed source-decoder tests.
+
 The post-fix native PG rerun reached real database migrations, but neither
 mechanic body ran: `srx3_cloak_` cases took 74.825 and 75.355 seconds and both
 failed with `while executing migration 2020: error returned from database:

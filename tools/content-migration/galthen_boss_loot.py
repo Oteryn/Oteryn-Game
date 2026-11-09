@@ -35,13 +35,22 @@ def complete_source_abilities(row, attributes):
         if typed is None:
             raise ValueError('M25_LOOT_EQUIPMENT_SOURCE')
         modifiers = sorted((modifiers or []) + typed['value'], key=lambda entry: entry['kind'])
+    armor = None
+    if 'armor' in attributes:
+        try:
+            armor = int(attributes['armor'])
+        except (TypeError, ValueError) as error:
+            raise ValueError('M25_LOOT_EQUIPMENT_SOURCE') from error
+        if not -(2**31) <= armor < 2**31:
+            raise ValueError('M25_LOOT_EQUIPMENT_SOURCE')
     # Validate both groups before publishing either one.
     if modifiers is not None:
         row['semantics']['skill_modifiers'] = base.source.K({
             'modifiers': base.source.K(modifiers)})
-    if resistances is not None:
+    if resistances is not None or armor is not None:
         row['semantics']['protection'] = base.source.K({
-            'resistances': base.source.K(resistances)})
+            'armor': base.source.K(armor) if armor is not None else base.source.U,
+            'resistances': base.source.K(resistances) if resistances is not None else base.source.U})
 
 
 def table_proofs(root):
