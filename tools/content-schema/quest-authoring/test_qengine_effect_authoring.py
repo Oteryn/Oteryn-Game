@@ -1,5 +1,4 @@
 import copy
-import json
 import unittest
 
 import qengine_access
@@ -31,24 +30,6 @@ class SharedEffectAuthoring(unittest.TestCase):
     def test_all_source_effect_shapes_validate(self):
         for row in qengine_access.document()['callbacks']:
             quest_batch4.validate_effects(row, row['key'])
-
-    def test_scripted_landing_requires_explicit_native_player_destination(self):
-        document = json.loads((qengine_access.ROOT / 'content/quests/authored-bindings/m03-25-years-time-machine.json').read_text())
-        source = document['quests'][0]['stages'][0]['trigger']['callback']
-        source['effects'] = {'scripted_teleport': True}
-        quest_batch4.validate_effects(source, 'scripted source')
-        for change in ('not_boolean', 'no_destination', 'no_native', 'monster'):
-            row = copy.deepcopy(source)
-            if change == 'not_boolean':
-                row['effects']['scripted_teleport'] = 1
-            elif change == 'no_destination':
-                row['teleport'] = None
-            elif change == 'no_native':
-                row['selector']['native'] = None
-            else:
-                row['actor_kind'] = 'monster'
-            with self.assertRaises(ValueError, msg=change):
-                quest_batch4.validate_effects(row, 'scripted source')
 
     def test_encounter_bounds_and_atomic_effect_composition(self):
         source = next(row for row in qengine_access.document()['callbacks']

@@ -242,15 +242,8 @@ def validate_effects(callback, context):
             require(integer(effect['effect'],1,65535), context + ': invalid effect')
         require(callback.get('native_rule') is None or not effects, context + ': native rule has unrelated effects')
         effects = {}
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'scripted_teleport'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
     fields(effects, set(), allowed, context + ': effects')
-    if 'scripted_teleport' in effects:
-        require(type(effects['scripted_teleport']) is bool, context + ': invalid scripted teleport')
-        if effects['scripted_teleport']:
-            require(isinstance(callback.get('teleport'), dict)
-                    and isinstance(callback.get('selector', {}).get('native'), dict)
-                    and callback.get('actor_kind', 'player') == 'player',
-                    context + ': scripted teleport requires native player destination')
     require(legacy_facing is None or effects.get('facing') is None,
             context + ': conflicting destination facings')
     outfit = effects.get('outfit_reward')
@@ -269,7 +262,7 @@ def validate_effects(callback, context):
             and callback.get('teleport') is not None, context + ': invalid destination facing')
     require(callback['trigger'] != 'step_out' or not callback['return_on_failure'],
             context + ': stepout cannot return to the departed tile')
-    require(callback.get('native_rule') is None or all(value is None or (field == 'scripted_teleport' and value is False) for field, value in effects.items()),
+    require(callback.get('native_rule') is None or all(value is None for value in effects.values()),
             context + ': native rule has unrelated effects')
     magic = effects.get('magic')
     if magic is not None:

@@ -447,7 +447,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let prepare = |to| {
-                crate::map::floor::prepare_scripted_quest_teleport_facing(
+                crate::map::floor::prepare_quest_callback_teleport_facing(
                     runtime,
                     self.movement_cells(),
                     actor,
@@ -457,7 +457,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocked,
                     &closed,
                     facing.or(callback.effects.facing.map(super::effects::facing)),
-                    callback.effects.scripted_teleport,
                 )
                 .ok()
             };
@@ -559,7 +558,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         } else {
             match callback.teleport {
-                Some(to) => match crate::map::floor::prepare_scripted_quest_teleport_facing(
+                Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
                     runtime,
                     self.movement_cells(),
                     actor,
@@ -569,7 +568,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocked,
                     &closed,
                     facing.or(callback.effects.facing.map(super::effects::facing)),
-                    callback.effects.scripted_teleport,
                 ) {
                     Ok(proof) => Some(proof),
                     Err(_) => return UseDisposition::NotPossible,
@@ -986,17 +984,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             };
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
-            #[cfg(test)]
-            if !matches!(
-                &outcome,
-                Ok(QuestTransitionOutcome::Committed(_)
-                    | QuestTransitionOutcome::AlreadyCommitted(_))
-            ) {
-                eprintln!(
-                    "QUEST_CALLBACK commit refused key={} outcome={outcome:?}",
-                    callback.key
-                );
-            }
             match outcome {
                 Ok(
                     QuestTransitionOutcome::Committed(ref committed)

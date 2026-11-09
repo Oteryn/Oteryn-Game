@@ -45,9 +45,6 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
-    /// Opt in to source-script displacement onto a present blocked pad.
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub scripted_teleport: bool,
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
@@ -269,13 +266,6 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
-    if effects.scripted_teleport
-        && (callback.teleport.is_none()
-            || callback.selector.native.is_none()
-            || callback.actor_kind != ActorKind::Player)
-    {
-        return false;
-    }
     if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
         return false;
     }
