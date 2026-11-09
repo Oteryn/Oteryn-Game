@@ -132,7 +132,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(RespawnExit::StaleOwner);
             }
-            (runtime.binding(), runtime.content_pin().clone())
+            (runtime.binding(), {
+                let pin = runtime.content_pin();
+                let start = pin.entry_start();
+                crate::foundation::ChannelContentPin::from_activation(
+                    pin.world_id(),
+                    pin.activation_sequence(),
+                    pin.server_artifact_digest(),
+                    pin.client_artifact_digest(),
+                    pin.frame_binding_digest(),
+                    pin.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                )
+            })
         };
         let owner = CorpseDecayFence {
             runtime_scope: binding.runtime_scope(),

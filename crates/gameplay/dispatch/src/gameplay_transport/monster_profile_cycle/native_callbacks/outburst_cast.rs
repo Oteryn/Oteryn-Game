@@ -387,7 +387,19 @@ impl OutburstCasts {
                             receipt,
                             now_us: now,
                             stamp,
-                            pin: runtime.content_pin().clone(),
+                            pin: {
+                                let pin = runtime.content_pin();
+                                let start = pin.entry_start();
+                                crate::foundation::ChannelContentPin::from_activation(
+                                    pin.world_id(),
+                                    pin.activation_sequence(),
+                                    pin.server_artifact_digest(),
+                                    pin.client_artifact_digest(),
+                                    pin.frame_binding_digest(),
+                                    pin.map_revision_digest(),
+                                    (start.x, start.y, start.floor),
+                                )
+                            },
                             source: p.proof.clone(),
                             spawn_source: p.token.clone(),
                         });
