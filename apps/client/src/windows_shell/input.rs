@@ -52,6 +52,9 @@ impl Application {
                 });
             }
 
+            if play.link.custom_hotkeys_input(events) {
+                return;
+            }
             if play.view.audio_input(events) {
                 self.settings.capture(&mut play.view);
                 return;

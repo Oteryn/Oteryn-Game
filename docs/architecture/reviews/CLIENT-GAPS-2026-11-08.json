@@ -265,7 +265,7 @@
   "status": "DONE",
   "gap": "Brak kompletnej konfiguracji wszystkich rzędów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/bar_hotkeys.rs:85 + action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch; All three rows and 36 slots are selectable in Options, with atomic conflict checks, clearable extra-slot chords and restart persistence. Reuses cg-options 252372ef3 runtime slot API; native slot selection and shell hotkeys dispatch through the existing cast caller, including slot 36 and the death gate."
+  "evidence": "apps/client/src/features/local-reference-preferences/bar_hotkeys.rs:85 + options_key_edit_uses_action_keys_and_executes_the_live_mixed_slot + action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch; Options reads and edits cg-options ActionKeys for all 36 slots; native bar edits sync back, named saved settings survive restart, mixed slots dispatch through the owner executor, repeats are suppressed and chat letters remain available. Legacy custom slot chords remain readable."
  },
  {
   "id": "T049",
@@ -1040,9 +1040,10 @@
   "src": "TIBAUD-1",
   "area": "House",
   "feature": "Podium: outfit/mount/creature/item",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Set/projection są; brak preview i kompletu przełączników creature podium.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0150-house-podium/graphic_window.rs:18; apps/client/src/features/0150-house-podium/preview_assets.rs:25; crates/gameplay/dispatch/src/gameplay_transport/house_podium.rs:183 + cp01_house_podium_scenario (observed red/green); podium_preview_composites_and_clips_real_sprite_cells; podium_artwork_route_decodes_draft_and_returns_real_artwork_codec"
  },
  {
   "id": "T137",
@@ -1071,7 +1072,7 @@
   "feature": "Offline / exercise / multi-character dialog",
   "status": "DONE",
   "gap": "Komendy offline/exercise są; brak pełnego multi-character wyboru treningu.",
-  "evidence": "apps/client/src/reentry.rs:204 + training_batch_reentry_advances_only_after_confirmation_and_cancel_clears_the_queue; apps/client/src/native_entry/authorize.rs:71 + training_batch_admits_each_owned_character_with_a_fresh_ticket",
+  "evidence": "apps/client/src/reentry.rs:204 + training_batch_reentry_advances_only_after_confirmation_and_cancel_clears_the_queue; apps/client/src/native_entry/authorize.rs:71 + training_batch_admits_each_owned_character_with_a_fresh_ticket; apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training",
   "lane": "cg_analytics"
  },
  {
@@ -1354,9 +1355,10 @@
   "src": "OTCAUD1108",
   "area": "Battle list",
   "feature": "Battle list i wybór celu",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brakuje filtrów typu/profesji/gildii i wyboru sortowania listy; obecny panel sortuje encje według identyfikatora.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0017-attack/metadata.rs:41; apps/client/src/features/0017-attack/metadata_native.rs:9; crates/gameplay/dispatch/src/gameplay_transport/battle_metadata.rs:23 + battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filtered_actor; battle_metadata_route_enforces_selection_and_bounded_request"
  },
  {
   "id": "O015",

@@ -74,13 +74,20 @@ impl PreferenceBinding {
 }
 impl ReferencePreferences {
     pub(super) fn bar_slot_chord(&self, slot: u32) -> &str {
-        self.custom_hotkeys
-            .iter()
-            .find_map(|(chord, action)| {
-                matches!(action, CustomAction::ActionBar { slot: bound } if *bound == slot)
-                    .then_some(chord.as_str())
+        let key = usize::try_from(slot)
+            .ok()
+            .and_then(|value| value.checked_sub(1));
+        key.and_then(|key| self.action_keys.0.get(&key))
+            .map(String::as_str)
+            .unwrap_or_else(|| {
+                self.custom_hotkeys
+                    .iter()
+                    .find_map(|(chord, action)| {
+                        matches!(action, CustomAction::ActionBar { slot: bound } if *bound == slot)
+                            .then_some(chord.as_str())
+                    })
+                    .unwrap_or("")
             })
-            .unwrap_or("")
     }
     pub(super) fn rebind_bar_slot(
         &mut self,
@@ -89,15 +96,50 @@ impl ReferencePreferences {
     ) -> Result<(), PreferenceError> {
         let mut candidate = self.clone();
         candidate.custom_hotkeys.retain(|_, action| !matches!(action, CustomAction::ActionBar { slot: bound } if *bound == slot));
+        let index = usize::try_from(slot)
+            .ok()
+            .and_then(|value| value.checked_sub(1))
+            .ok_or(PreferenceError)?;
         let chord = chord.trim().to_ascii_uppercase();
         if !chord.is_empty() {
-            if candidate.custom_hotkeys.contains_key(&chord) {
-                return Err(PreferenceError);
-            }
-            candidate.assign_custom_hotkey(&chord, CustomAction::ActionBar { slot })?;
+            candidate.action_keys.0.insert(index, chord);
+        } else {
+            candidate.action_keys.0.remove(&index);
         }
         candidate.validate_bindings()?;
         *self = candidate;
         Ok(())
     }
+}
+
+pub(super) fn routed_action(
+    preferences: &ReferencePreferences,
+    code: oteryn_input_actions::KeyCode,
+    modifiers: oteryn_input_actions::Modifiers,
+    chat_on: bool,
+) -> Option<CustomAction> {
+    use oteryn_input_actions::Modifier;
+    if chat_on
+        && ((4..=39).contains(&code.get()) || code.get() == 44)
+        && ![Modifier::Control, Modifier::Alt, Modifier::Super]
+            .iter()
+            .any(|modifier| modifiers.contains(*modifier))
+    {
+        return None;
+    }
+    let matches = |key: &str| super::bindings::parse_action_chord(key) == Some((code, modifiers));
+    preferences
+        .custom_hotkeys
+        .iter()
+        .find(|(key, _)| matches(key))
+        .map(|(_, action)| action.clone())
+        .or_else(|| {
+            preferences
+                .action_keys
+                .0
+                .iter()
+                .find(|(_, key)| matches(key))
+                .and_then(|(slot, _)| u32::try_from(slot + 1).ok())
+                .map(|slot| CustomAction::ActionBar { slot })
+        })
 }

@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) struct Widgets {
+    pub(super) badge_id: HWND,
     pub(super) edits: [HWND; 3],
     pub(super) output: HWND,
     pub(super) heading: HWND,
@@ -12,7 +13,6 @@ pub(super) struct Widgets {
     pub(super) cards: Vec<HWND>,
     pub(super) stamina_bar: HWND,
     pub(super) training_bar: HWND,
-    pub(super) badge_id: HWND,
 }
 
 pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
@@ -152,6 +152,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
         let badge_id = super::super::profile_table::badge_controls(hwnd);
         super::super::offence_table::controls(hwnd);
         Widgets {
+            badge_id,
             edits,
             output,
             heading,
@@ -162,7 +163,6 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             cards,
             stamina_bar,
             training_bar,
-            badge_id,
         }
     }
 }

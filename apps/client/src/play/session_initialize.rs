@@ -10,6 +10,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
         outbox.end(public_class(&error));
         return false;
     }
+    outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.appearance_initialize(session);
     outbox.equipment_initialize(session.equipment_selected());
@@ -95,6 +96,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
     outbox.hotkey_equip_smart_mode(session.server_mechanic_selected(180));
     outbox.hotkey_equip_items(session.hotkey_equip_items());
+    outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));
     outbox.store_initialize(session.server_mechanic_selected(154));
     outbox.vip_presence_initialize(session.feature_selected(258));

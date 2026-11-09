@@ -124,6 +124,9 @@ impl ReferencePreferences {
                 self.validate_custom_chords(primary, secondary)?;
             }
         }
+        if !self.action_keys.valid(self) {
+            return Err(PreferenceError);
+        }
         Ok(())
     }
 
@@ -228,15 +231,17 @@ impl PreferenceInput {
                     modifiers,
                 } => {
                     if !self.held.contains_key(code)
-                        && let Some((_, action)) =
-                            preferences.custom_hotkeys.iter().find(|(key, _)| {
-                                parse(key).is_ok_and(|chord| chord == Chord(*code, *modifiers))
-                            })
+                        && let Some(action) = super::bar_hotkeys::routed_action(
+                            preferences,
+                            *code,
+                            *modifiers,
+                            chat_on,
+                        )
                     {
                         if *state == ButtonState::Pressed {
                             self.held.insert(*code, None);
                             if !repeat && self.actions.len() < 16 {
-                                self.actions.push(action.clone());
+                                self.actions.push(action);
                             }
                         }
                         continue;
@@ -308,4 +313,10 @@ pub(super) fn window_events(
         repeat: false,
     })
     .collect()
+}
+
+pub(crate) fn parse_action_chord(value: &str) -> Option<(KeyCode, Modifiers)> {
+    parse(value)
+        .ok()
+        .map(|Chord(code, modifiers)| (code, modifiers))
 }

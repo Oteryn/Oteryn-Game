@@ -73,7 +73,12 @@ impl PlayLink {
                     let mailbox = lock(&self.mailbox);
                     if mailbox.quest_shutdown
                         || mailbox.world_input_blocked()
-                        || mailbox.spell_bar.bar.spell(slot).is_none()
+                        || (mailbox.spell_bar.bar.spell(slot).is_none()
+                            && !mailbox
+                                .bar_actions
+                                .saved
+                                .0
+                                .contains_key(&(slot.get() as usize - 1)))
                     {
                         return false;
                     }

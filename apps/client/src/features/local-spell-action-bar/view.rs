@@ -1,5 +1,27 @@
+#[path = "hotkeys.rs"]
+mod hotkeys;
+#[path = "item_actions.rs"]
+mod item_actions;
+pub use hotkeys::ActionKeys;
+#[cfg(any(windows, test))]
+pub(in crate::play) use hotkeys::bind as bind_custom_key;
+pub use item_actions::ItemUseMode;
+#[path = "amount.rs"]
+mod amount;
+#[path = "layout.rs"]
+mod layout;
+pub use layout::{BarDock, BarGesture, BarLayout};
+#[path = "assignments.rs"]
+mod assignments;
 use crate::play::PlayView;
 use crate::spell::SPELL_SLOTS;
+pub(crate) use assignments::BarActionsState;
+#[cfg(any(windows, test))]
+pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
+#[cfg(any(windows, test))]
+pub(in crate::play) use assignments::set_action as set_extra;
+pub use assignments::{BarAction, BarActions, PassiveAbility};
+pub(in crate::play) use assignments::{activate as activate_extra, clear_extra};
 
 
 impl PlayView {
@@ -69,14 +91,39 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
         link,
         Form {
             title: "Spell action bar",
-            labels: &["Slot (1–36)", "Server cast index (see spellbook)"],
-            buttons: &["Bind", "Clear", "Cast"],
+            labels: &[
+                "Slot number (1–36)",
+                "Server cast index (see live catalogue)",
+                "Carried item definition (equip)",
+                "Text to say",
+                "Keyboard chord (empty clears)",
+            ],
+            buttons: &[
+                "Spell",
+                "Clear",
+                "Use",
+                "Equip",
+                "Text",
+                "Instinct",
+                "Harmony",
+                "Serene",
+                "Bind key",
+                "Use self",
+                "Use target",
+                "Use cursor",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_bar;
                 (
                     panel.open,
                     false,
-                    vec!["1".into(), String::new()],
+                    vec![
+                        "1".into(),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                    ],
                     format!(
                         "{}\r\n{}\r\n{}",
                         oteryn_client_ui::spell_action_bar::panel_text(
@@ -107,10 +154,44 @@ impl crate::play::PlayLink {
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
-        oteryn_client_ui::spell_action_bar::slot_labels(
+        let mut labels = oteryn_client_ui::spell_action_bar::slot_labels(
             &mailbox.spell_bar,
             &mailbox.spell_catalog.catalog,
-        )
+        );
+        for (slot, label) in labels.iter_mut().enumerate() {
+            let Some(spell) = u32::try_from(slot + 1)
+                .ok()
+                .and_then(std::num::NonZeroU32::new)
+                .and_then(|slot| mailbox.spell_bar.bar.spell(slot))
+            else {
+                continue;
+            };
+            if let Some(definition) = mailbox
+                .spell_catalog
+                .catalog
+                .entries()
+                .iter()
+                .find(|entry| entry.cast_index == spell.get())
+                .and_then(|entry| entry.rune_item)
+            {
+                label.push_str(&format!(
+                    "\nVisible: {}",
+                    amount::visible_count(&mailbox, definition)
+                        .map_or_else(|| "?".into(), |count| count.to_string())
+                ));
+            }
+        }
+        for (slot, action) in &mailbox.bar_actions.saved.0 {
+            if let Some(label) = labels.get_mut(*slot) {
+                *label = format!("{}: {}", slot + 1, assignments::label(&mailbox, action));
+            }
+        }
+        for (slot, key) in &mailbox.bar_actions.keys.0 {
+            if let Some(label) = labels.get_mut(*slot) {
+                label.push_str(&format!("\n{key}"));
+            }
+        }
+        labels
     }
     pub fn cast_spell_slot(&self, slot: std::num::NonZeroU32) {
         super::input::send_cast(self, slot);

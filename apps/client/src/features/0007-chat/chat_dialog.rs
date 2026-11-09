@@ -157,7 +157,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 SetFocus(message);
             }
             mailbox.chat.text = read_text(message);
-            super::super::super::feature_0233_player_typing::input::composer(
+            crate::play::feature_0233_player_typing::input::composer(
                 &mut mailbox,
                 &commands,
                 GetForegroundWindow() == hwnd && GetFocus() == message,
@@ -265,7 +265,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     _ => Mode::Say,
                 };
                 mailbox.chat.text = read_text(message);
-                super::super::input::enqueue(&mut mailbox, &commands, mode, &read_text(recipient));
+                crate::play::feature_0007_chat::input::enqueue(&mut mailbox, &commands, mode, &read_text(recipient));
                 if mailbox.chat.pending {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
@@ -288,7 +288,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let _ = DestroyWindow(hwnd);
         }
         if let Some(shared) = weak.upgrade() {
-            super::super::super::feature_0233_player_typing::input::composer(
+            crate::play::feature_0233_player_typing::input::composer(
                 &mut lock(&shared),
                 &commands,
                 false,

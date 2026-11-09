@@ -22,6 +22,7 @@ pub struct SettingsState {
     character: Option<[u8; 16]>,
     skills_edit: u64,
     pub(crate) item_hotkeys_edit: u64,
+    pub(crate) bar_actions_edit: u64,
     minimap_edit: u64,
     spellbook_edit: u64,
     archive_edit: u64,
@@ -107,6 +108,7 @@ impl SettingsState {
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.item_hotkeys_edit = self.battle_edit;
+        self.bar_actions_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
         self.archive_edit = self.battle_edit;
@@ -144,6 +146,7 @@ impl SettingsState {
             character: None,
             skills_edit: 0,
             item_hotkeys_edit: 0,
+            bar_actions_edit: 0,
             minimap_edit: 0,
             spellbook_edit: 0,
             archive_edit: 0,
@@ -278,7 +281,7 @@ impl SettingsState {
         if self.preferences.skills_layout != preferences.skills_layout {
             self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
         }
-        if self.preferences.battle_lists != preferences.battle_lists {
+        if self.preferences.battle_lists != preferences.battle_lists || self.preferences.active_battle_list != preferences.active_battle_list {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
         if !preferences.chat_context_hotkeys {

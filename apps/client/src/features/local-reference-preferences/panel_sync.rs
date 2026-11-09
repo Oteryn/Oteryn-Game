@@ -33,7 +33,7 @@ impl SettingsState {
 
     pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
         let mut preferences = self.preferences.clone();
-        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
+        if let Some(edit) = link.sync_battle_list_state(&mut preferences.battle_lists, &mut preferences.active_battle_list, self.battle_edit)
         {
             self.apply(preferences);
             self.battle_edit = edit;

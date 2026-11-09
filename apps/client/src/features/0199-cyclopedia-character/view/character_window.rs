@@ -85,6 +85,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
         let character_widgets::Widgets {
+            badge_id,
             edits,
             output,
             heading,
@@ -95,7 +96,6 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             cards,
             stamina_bar,
             training_bar,
-            badge_id,
         } = character_widgets::create(hwnd);
         let mut tables = super::character_paint::Tables::default();
         let mut message: MSG = std::mem::zeroed();

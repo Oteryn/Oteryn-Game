@@ -112,6 +112,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
     pub(super) local_preferences: crate::play::ReferencePreferences,
+    pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
     pub(super) custom_chat_paste: Option<String>,
     pub(super) tracked_custom_ability: Option<u32>,
     pub(super) custom_hotkey_feedback: Option<String>,

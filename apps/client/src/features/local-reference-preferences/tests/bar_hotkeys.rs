@@ -124,6 +124,7 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
     crate::play::mailbox::lock(&link.mailbox).death.dead = true;
     assert!(!link.custom_hotkey_action(&play, &crate::play::CustomAction::ActionBar { slot: 36 }));
     assert!(commands.try_recv().is_err());
+    assert!(!settings.preferences.action_keys.0.contains_key(&35));
     std::fs::remove_file(path)?;
     Ok(())
 }
