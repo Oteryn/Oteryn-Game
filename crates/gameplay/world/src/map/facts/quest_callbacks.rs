@@ -23,6 +23,14 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// Change a separate shared object and restore only that committed revision.
+    TimedRemoteTransform {
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        restore: EntryFacts,
+        due: u64,
+    },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
         entries: Vec<(u64, u64, Option<EntryFacts>)>,
@@ -77,6 +85,30 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedRemoteTransform {
+                key,
+                expected,
+                after,
+                restore,
+                due,
+            } => {
+                if *key == owner
+                    || *expected == u64::MAX
+                    || self.hidden.contains(key)
+                    || self.changed.get(key).map_or(0, |(revision, _)| *revision) != *expected
+                {
+                    return false;
+                }
+                let revision = expected + 1;
+                self.changed.insert(*key, (revision, *after));
+                self.movement_decays.insert(
+                    (*due, *key),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                    },
+                );
+            }
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
                 let keys: BTreeSet<_> = entries.iter().map(|(key, _, _)| *key).collect();
                 if entries.is_empty()
@@ -1191,6 +1223,51 @@ mod lifecycle_tests {
 #[cfg(test)]
 mod readset_tests {
     use super::*;
+    #[test]
+    fn remote_trial_reset_is_atomic_and_revision_fenced() {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 2074,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let lit = EntryFacts {
+            appearance_id: 2075,
+            ..original
+        };
+        let reset = QuestCallbackProjection::TimedRemoteTransform {
+            key: 11,
+            expected: 0,
+            after: lit,
+            restore: original,
+            due: 15_000_000,
+        };
+        assert!(facts.apply_quest_callback(10, 0, original, &[], &[], false, Some(&reset)));
+        // A second trial source cannot publish against the earlier shared revision.
+        assert!(!facts.apply_quest_callback(12, 0, original, &[], &[], false, Some(&reset)));
+        assert_eq!(facts.object_revision(12), 0);
+        assert_eq!(facts.expire_movement_items(14_999_999), 0);
+        assert_eq!(facts.expire_movement_items(15_000_000), 1);
+        assert_eq!(facts.object_revision(11), 2);
+        let next = QuestCallbackProjection::TimedRemoteTransform {
+            key: 11,
+            expected: 2,
+            after: lit,
+            restore: original,
+            due: 30_000_000,
+        };
+        assert!(facts.apply_quest_callback(12, 0, original, &[], &[], false, Some(&next)));
+        // An intervening edit owns the newer revision; an old reset cannot overwrite it.
+        assert!(facts.apply_quest_callback(11, 3, lit, &[], &[], false, None));
+        assert_eq!(facts.expire_movement_items(30_000_000), 0);
+        assert_eq!(facts.object_revision(11), 4);
+    }
+
     #[test]
     fn multi_cell_readset_refuses_stale_unchanged_cell_without_partial_writes() {
         let facts = BundleFacts::default();
