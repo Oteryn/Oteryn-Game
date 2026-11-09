@@ -23,7 +23,7 @@ sqlx = { workspace = true, features = ["json"] }
 time = { version = "=0.3.55", features = ["parsing", "formatting"] }
 tokio = { workspace = true, features = ["macros", "test-util"] }
 toml.workspace = true
-uuid = { version = "=1.25.0", features = ["v7"] }
+uuid = { version = "=1.29.0", features = ["v7"] }
 
 [lints]
 workspace = true

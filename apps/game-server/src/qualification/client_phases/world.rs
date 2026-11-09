@@ -941,7 +941,10 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         client_row_c18b::run_packet(clients).await;
         release_row_characters(clients).await;
     }
-    client_row_c20a::run_packet(clients, world, &metadata.spawns).await;
+    if e2e_row_selected(228) {
+        client_row_c20a::run_packet(clients, world, &metadata.spawns).await;
+        release_row_characters(clients).await;
+    }
     if e2e_row_selected(110) {
         client_row_c20b::run_packet(clients).await;
         release_row_characters(clients).await;
@@ -950,7 +953,10 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         client_row_c20c::run_packet(clients).await;
         release_row_characters(clients).await;
     }
-    client_row_c20d::run_packet(clients, world, &metadata.spawns).await;
+    if e2e_row_selected(229) {
+        client_row_c20d::run_packet(clients, world, &metadata.spawns).await;
+        release_row_characters(clients).await;
+    }
     if e2e_row_selected(112) {
         client_row_e01::run_packet(clients).await;
         release_row_characters(clients).await;
@@ -1418,6 +1424,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     include!("full_e2ef4_mount.rs");
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
+    if let Err(error) = &profile_result {
+        evidence(&format!("world_profile state=failed error={error}"));
+    }
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -1426,8 +1435,12 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
             );
         }
     }
-    if tile(client.world_spatial().actor_position)? != TOWN {
-        return Err("Platform-created character did not enter the configured town".into());
+    let entered_at = tile(client.world_spatial().actor_position)?;
+    if entered_at != TOWN {
+        return Err(format!(
+            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+        )
+        .into());
     }
     let snapshot = client
         .session_mut()

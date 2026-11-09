@@ -2,7 +2,7 @@
 // needs about 80 s), so CI runs one batch per head. `OTERYN_E2E_ROW_BATCH` is
 // `start:len` over the row indices passed to `e2e_row_selected` in `journeys`;
 // `all` runs every row.
-const E2E_ROW_BATCH_DEFAULT: (usize, usize) = (0, 20);
+const E2E_ROW_BATCH_DEFAULT: (usize, usize) = (0, 15);
 
 fn e2e_row_batch(value: Option<&str>) -> Option<(usize, usize)> {
     match value {

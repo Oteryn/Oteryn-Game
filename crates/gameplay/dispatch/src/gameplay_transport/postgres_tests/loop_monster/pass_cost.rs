@@ -1,11 +1,21 @@
 //! MAINRED-NB: measure the real held pass over a channel-sized idle census.
 use super::*;
 use crate::foundation::MovementLocalPosition;
+use oteryn_gameplay_durability::durability::native_world_read::qualified_combat_tile;
 use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
 
 #[test]
 fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResult {
-    run_case(async |harness| {
+    pass_cost(false)
+}
+
+#[test]
+fn monster_pass_cost_spread_channel_batches_exact_empty_tiles() -> TestResult {
+    pass_cost(true)
+}
+
+fn pass_cost(spread: bool) -> TestResult {
+    run_case(async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -18,7 +28,11 @@ fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResul
             crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
-        let (deps, rat) = super::fixture::dependencies_with_capacity(active, &pin, 1024)?;
+        let (deps, rat) = if spread {
+            spread_dependencies(active, &pin)?
+        } else {
+            super::fixture::dependencies_with_capacity(active, &pin, 1024)?
+        };
         let mut owner = deps.owner(harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells().into();
@@ -34,42 +48,56 @@ fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResul
         )
         .map_err(debug)?;
         let mut actors = vec![rat];
-        'cells: for x in -14..18 {
-            for y in -15..17 {
-                let at = MovementLocalPosition { x, y, floor: -7 };
-                let admits = |runtime: &crate::foundation::ChannelRuntimeV1, at| {
-                    Some(oteryn_gameplay_durability::durability::native_world_read::qualified_combat_tile(
-                        &deps.room, runtime, &*objects, at,
-                    ).is_ok_and(|tile| tile.ground_present() && !tile.block_solid() && !tile.floor_change()))
-                };
-                if admits(&runtime, at) != Some(true)
-                    || runtime.position_occupied_by_other(rat, at).map_err(debug)?
-                    || runtime.read_actor_position(rat).map_err(debug)?.position() == at
-                {
-                    continue;
-                }
-                let stamp = runtime.issue_owner_work().map_err(debug)?;
-                let receipt = runtime
-                    .realize_raid_spawn(
-                        stamp,
-                        RaidSpawnIdentity {
-                            firing_id: *world.as_bytes(),
-                            wave: 0,
-                            entry: 0,
-                            index: u16::try_from(actors.len())?,
-                        },
-                        &spec,
-                        Some(at),
-                        admits,
-                    )
-                    .map_err(debug)?;
-                let RaidSpawnOutcome::Placed(actor) = receipt.outcome else {
-                    return Err("qualified creature placement refused".into());
-                };
-                actors.push(actor);
-                if actors.len() == 512 {
-                    break 'cells;
-                }
+        let positions = if spread {
+            // One real native creature per spatial chunk. A dense 32x32 fixture
+            // hides the node's thousands of independent 16x16 empty-cell reads.
+            (1..512)
+                .map(|index| MovementLocalPosition {
+                    x: index * 16 + 1,
+                    y: 1,
+                    floor: 7,
+                })
+                .collect::<Vec<_>>()
+        } else {
+            (-14..18)
+                .flat_map(|x| (-15..17).map(move |y| MovementLocalPosition { x, y, floor: -7 }))
+                .collect()
+        };
+        for at in positions {
+            let admits = |runtime: &crate::foundation::ChannelRuntimeV1, at| {
+                Some(
+                    qualified_combat_tile(&deps.room, runtime, &*objects, at).is_ok_and(|tile| {
+                        tile.ground_present() && !tile.block_solid() && !tile.floor_change()
+                    }),
+                )
+            };
+            if admits(&runtime, at) != Some(true)
+                || runtime.position_occupied_by_other(rat, at).map_err(debug)?
+                || runtime.read_actor_position(rat).map_err(debug)?.position() == at
+            {
+                continue;
+            }
+            let stamp = runtime.issue_owner_work().map_err(debug)?;
+            let receipt = runtime
+                .realize_raid_spawn(
+                    stamp,
+                    RaidSpawnIdentity {
+                        firing_id: *world.as_bytes(),
+                        wave: 0,
+                        entry: 0,
+                        index: u16::try_from(actors.len())?,
+                    },
+                    &spec,
+                    Some(at),
+                    admits,
+                )
+                .map_err(debug)?;
+            let RaidSpawnOutcome::Placed(actor) = receipt.outcome else {
+                return Err("qualified creature placement refused".into());
+            };
+            actors.push(actor);
+            if actors.len() == 512 {
+                break;
             }
         }
         assert_eq!(
@@ -120,7 +148,7 @@ fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResul
             let elapsed = started.elapsed();
             let scans = ground_scans(owner.root).await? - before;
             eprintln!(
-                "MONSTER-PASS-COST creatures={} now={now} elapsed_ms={} ground_scans={scans}",
+                "MONSTER-PASS-COST spread={spread} creatures={} now={now} elapsed_ms={} ground_scans={scans}",
                 actors.len(),
                 elapsed.as_millis()
             );
@@ -136,6 +164,109 @@ fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResul
         );
         Ok(())
     })
+}
+
+// The existing bundle fixture supplies a thin walkable World, with the same
+// native Content and owner pins as production. Terrain is explicit test DATA.
+fn spread_dependencies(
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+) -> TestResult<(Dependencies, ExactActorRef)> {
+    use crate::content::channel_content_pin::ChannelContentPin;
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    let mut deps = Dependencies::new()?;
+    let native = active.native_gameplay().ok_or("native gameplay")?;
+    let entry = pin.qualified_room();
+    let world = crate::map::spell_tiles::tests::movement_arena::rectangle((0, 0), (8191, 2), -7);
+    let cells = world
+        .movement_cells(entry.movement_cells())
+        .map_err(debug)?;
+    let room = entry
+        .bundle_view(
+            cells,
+            world.frame_binding_digest(deps.admitted.world_id),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: 0,
+                y: 0,
+                floor: 7,
+            },
+        )
+        .ok_or("spread bundle combat view")?;
+    let channel_pin = ChannelContentPin::from_activation(
+        deps.admitted.world_id,
+        pin.activation_sequence(),
+        active.identity().server_artifact_digest(),
+        active.identity().client_artifact_digest(),
+        room.frame_binding().digest(),
+        room.map_revision_digest(),
+        (0, 0, 7),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        deps.admitted.world_id,
+        deps.admitted.channel_id,
+        crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        1024,
+        channel_pin,
+    )
+    .map_err(debug)?;
+    native
+        .install_companion_policies(&mut runtime)
+        .map_err(debug)?;
+    let reservation = runtime
+        .reserve_fresh_session(deps.admitted.game_session_id)
+        .map_err(debug)?;
+    deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+    runtime
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
+    let policy = runtime
+        .companion_policy("oteryn:creature.rat")
+        .map_err(debug)?;
+    let spec = NativeRaidSpawnSpec::qualified(
+        &policy.definition_key,
+        &policy.definition_revision,
+        native.source_digest(),
+        false,
+    )
+    .map_err(debug)?;
+    let stamp = runtime.issue_owner_work().map_err(debug)?;
+    let objects = deps.door.get_mut();
+    let receipt = runtime
+        .realize_raid_spawn(
+            stamp,
+            RaidSpawnIdentity {
+                firing_id: *deps.admitted.world_id.as_bytes(),
+                wave: 0,
+                entry: 0,
+                index: 0,
+            },
+            &spec,
+            Some(MovementLocalPosition {
+                x: 1,
+                y: 1,
+                floor: 7,
+            }),
+            |runtime, at| {
+                Some(
+                    qualified_combat_tile(&room, runtime, objects, at).is_ok_and(|tile| {
+                        tile.ground_present() && !tile.block_solid() && !tile.floor_change()
+                    }),
+                )
+            },
+        )
+        .map_err(debug)?;
+    let RaidSpawnOutcome::Placed(rat) = receipt.outcome else {
+        return Err("spread first creature placement refused".into());
+    };
+    deps.room = room;
+    deps.combat_room = Some(deps.room.clone());
+    deps.runtime = tokio::sync::Mutex::new(runtime);
+    Ok((deps, rat))
 }
 
 async fn ground_scans(root: &crate::durability::DurabilityRoot) -> TestResult<i64> {

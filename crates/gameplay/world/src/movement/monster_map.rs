@@ -218,6 +218,47 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     pub fn view(&self) -> &MonsterMap {
         &self.view
     }
+    /// Prefetch the current census's exact addresses in bounded SQL batches. A sparse
+    /// World must not read 256 neighbouring cells for every occupied 16x16 chunk.
+    /// These observations remain scoped to this borrowed physical transaction;
+    /// read_items still qualifies each requested address against the pinned Map.
+    pub async fn prefetch_empty_tiles(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        positions: &[MovementLocalPosition],
+    ) -> Result<(), SpellItemError> {
+        if !self.view.matches(runtime)
+            || self.authority.runtime_scope() != runtime.binding().runtime_scope()
+            || self.authority.generation() != runtime.binding().scope_generation().get()
+            || self.content.source_digest() != runtime.content_pin().server_artifact_digest()
+        {
+            return Err(SpellItemError::Rejected("current Monster Map authority"));
+        }
+        let pending = positions
+            .iter()
+            .filter_map(|at| {
+                let mut position = Vec::with_capacity(10);
+                position.extend_from_slice(&at.x.to_be_bytes());
+                position.extend_from_slice(&at.y.to_be_bytes());
+                position.extend_from_slice(&at.floor.to_be_bytes());
+                (!self.empty_tiles.contains(&position)
+                    && !self.read_chunks.contains(&(
+                        at.x.div_euclid(16),
+                        at.y.div_euclid(16),
+                        at.floor,
+                    )))
+                .then_some(position)
+            })
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        for batch in pending.chunks(256) {
+            self.empty_tiles.extend(
+                read_creature_empty_tiles_in_transaction(self.tx, self.authority, batch).await?,
+            );
+        }
+        Ok(())
+    }
     /// Reuse proven empty Ground cells only inside this borrowed physical transaction.
     /// The scope Item lock excludes concurrent writes; consumers still validate the
     /// transaction before publishing runtime decisions. No cache survives a pass.
@@ -238,7 +279,9 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         )
         .map_err(SpellItemError::Rejected)?;
         let chunk = (at.x.div_euclid(16), at.y.div_euclid(16), at.floor);
-        if !self.read_chunks.contains(&chunk) {
+        if !self.empty_tiles.contains(&target.spatial_position)
+            && !self.read_chunks.contains(&chunk)
+        {
             let mut positions = Vec::with_capacity(256);
             for x in chunk.0 * 16..=chunk.0 * 16 + 15 {
                 for y in chunk.1 * 16..=chunk.1 * 16 + 15 {
