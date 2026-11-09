@@ -1055,7 +1055,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
     // A guarded exchange may only read progress while still binding admission.
-    let bound_effect = callback.storage.iter().position(|state| !state.preserve)
+    let bound_effect = callback
+        .storage
+        .iter()
+        .position(|state| !state.preserve)
         .or_else(|| (!callback.storage.is_empty()).then_some(0));
     let stamp_binding = binding.filter(|_| temporal_payment::guarded(callback));
     Ok(QuestTransition {
