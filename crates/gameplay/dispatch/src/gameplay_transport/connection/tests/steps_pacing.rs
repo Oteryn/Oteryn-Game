@@ -555,7 +555,7 @@ impl FreshAdmissionAuthority for DromeDrunkMovementAuthority {
         };
         let mut owned = self.owner.borrow_mut();
         let (runtime, states) = &mut *owned;
-        match states.step_with_creature_field_contact(
+        match states.step_with_non_player_field_contact(
             runtime,
             self.room.movement_cells(),
             actor,

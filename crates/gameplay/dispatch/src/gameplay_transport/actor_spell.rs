@@ -2504,8 +2504,15 @@ impl ChannelSpellStates {
 #[path = "actor_spell_source_creature_dot_owner_tests.rs"]
 mod source_creature_dot_owner_tests;
 
+#[derive(Debug, Clone, Copy)]
+pub(in crate::gameplay_transport) enum NonPlayerFieldOrigin {
+    Creature,
+    Environment,
+}
+
 #[derive(Debug)]
-pub(in crate::gameplay_transport) struct CreatureFieldContact {
+pub(in crate::gameplay_transport) struct NonPlayerFieldContact {
+    pub(in crate::gameplay_transport) origin: NonPlayerFieldOrigin,
     pub(in crate::gameplay_transport) source: String,
     pub(in crate::gameplay_transport) definition:
         oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
@@ -2517,7 +2524,7 @@ impl ChannelSpellStates {
     /// Real STEP and field initial HP/DOT are staged before movement. This is an
     /// owner method, not a callback that can mutate the stores during preflight.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::gameplay_transport) fn step_with_creature_field_contact(
+    pub(in crate::gameplay_transport) fn step_with_non_player_field_contact(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         cells: &crate::content::NativeEntryMovementCells,
@@ -2528,7 +2535,7 @@ impl ChannelSpellStates {
         blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
-        contact: Option<CreatureFieldContact>,
+        contact: Option<NonPlayerFieldContact>,
     ) -> actor_movement::StepInChannel {
         let Some(contact) = contact else {
             return actor_movement::step_in_channel_with_source_step(
@@ -2588,26 +2595,35 @@ impl ChannelSpellStates {
                 runtime, cells, actor, session, expected, direction, blocking,
             )?
         };
-        let (mut next, _damage) = before
-            .stage_creature_field_contact(
+        let stage_hit = |state: &PlayerSpellState, amount, element, now| {
+            crate::spell::actor_conditions::stage_typed_hit_at_position(
+                runtime,
+                actor,
+                destination,
+                state,
+                amount,
+                crate::player_lethal::PlayerHitKind::from_dot(element),
+                now,
+            )
+            .ok()
+        };
+        let staged = match contact.origin {
+            NonPlayerFieldOrigin::Creature => before.stage_creature_field_contact(
                 contact.source,
                 &contact.definition,
                 &facts,
                 contact.element,
-                |state, amount, element, now| {
-                    crate::spell::actor_conditions::stage_typed_hit_at_position(
-                        runtime,
-                        actor,
-                        destination,
-                        state,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_dot(element),
-                        now,
-                    )
-                    .ok()
-                },
-            )
-            .ok_or(crate::movement::MovementError::NotQualified)?;
+                stage_hit,
+            ),
+            NonPlayerFieldOrigin::Environment => before.stage_environment_field_contact(
+                contact.source,
+                &contact.definition,
+                &facts,
+                contact.element,
+                stage_hit,
+            ),
+        };
+        let (mut next, _damage) = staged.ok_or(crate::movement::MovementError::NotQualified)?;
         let changed = next != *before;
         let death = if next.vitals().health == 0 {
             self.deaths

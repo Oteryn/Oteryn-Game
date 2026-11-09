@@ -153,7 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .binary_search(&30)
                 .is_err()
         {
-            states.step_with_creature_field_contact(
+            states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),
                 actor,
