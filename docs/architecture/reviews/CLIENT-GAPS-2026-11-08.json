@@ -177,7 +177,7 @@
   "status": "DONE",
   "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:259; apps/client/src/features/0287-actor-spell-catalog/archive.rs:169; apps/client/src/features/0287-actor-spell-catalog/archive.rs:144; apps/client/src/features/local-spell-action-bar/input.rs:27; crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs:72; crates/protocol-oteryn/src/spellbook_details.rs:40"
  },
  {
   "id": "T038",
@@ -1607,7 +1607,7 @@
   "status": "DONE",
   "gap": "Print Screen zapisuje klatkę renderera BMP; Ctrl+Shift+F10 wybiera zakres i opt-in dla poziomu, śmierci oraz osiągnięcia. Fakty pochodzą z sesji i zapytania skill-display.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/windows_shell/capture.rs:66 + server_skill_reply_and_achievement_delta_reach_capture_caller + live_death_events_reach_capture_caller_even_when_respawn_is_coalesced + shell_capture_observes_live_facts_and_retries_failed_saves"
+  "evidence": "apps/client/src/windows_shell/capture.rs:6; apps/client/src/windows_shell/capture.rs:74; apps/client/src/features/local-reference-preferences/capture_options.rs:105; apps/client/src/features/local-death-respawn/protocol.rs:158; apps/client/src/features/0279-skill-progress/protocol.rs:62; crates/gameplay/dispatch/src/gameplay_transport/skill_progress.rs:33; crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs:14"
  },
  {
   "id": "O072",
@@ -1627,7 +1627,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/0117-boss-encounter/input.rs:11 + bosstiary_browser_actions_select_details_and_enter_confirmed_record; apps/client/src/features/0117-boss-encounter/tests/browser.rs:8"
+  "evidence": "apps/client/src/features/0117-boss-encounter/input.rs:31; apps/client/src/features/0117-boss-encounter/input.rs:32; apps/client/src/features/0117-boss-encounter/protocol.rs:12; apps/client/src/features/0117-boss-encounter/view.rs:13; crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs:9; crates/protocol-oteryn/src/boss_encounter/catalogue.rs:12; apps/client/src/features/0117-boss-encounter/input.rs:10; crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs:5; crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs:77"
  },
  {
   "id": "O077",
@@ -1637,7 +1637,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/0132-inspection/input/catalogue.rs:24 + item_catalogue_search_drops_and_market_use_production_queues; crates/gameplay/dispatch/src/gameplay_transport/inspection/catalogue.rs:7 + item_catalogue_projects_real_search_categories_and_inverse_loot"
+  "evidence": "apps/client/src/features/0132-inspection/input/catalogue.rs:36; apps/client/src/features/0132-inspection/input/catalogue.rs:166; crates/client-ui/src/features/0132-inspection/protocol.rs:95; crates/gameplay/dispatch/src/gameplay_transport/inspection/catalogue.rs:7; crates/protocol-oteryn/src/inspection/catalogue.rs:16"
  },
  {
   "id": "O078",
@@ -1656,7 +1656,7 @@
   "feature": "Cyklopedia: katalog domów i aukcje",
   "status": "DONE",
   "gap": "Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację.",
-  "evidence": "apps/client/src/features/0049-house/view.rs:8 + house_production_queue_and_result_cleanup; house_catalogue_shows_auction_identity_and_navigation",
+  "evidence": "apps/client/src/features/0049-house/view.rs:11; apps/client/src/features/0049-house/input.rs:139; crates/client-ui/src/features/0049-house/state.rs:22; crates/gameplay/dispatch/src/gameplay_transport/house_query.rs:140; crates/protocol-oteryn/src/house.rs:33",
   "lane": "cg_ui"
  },
  {
@@ -1667,7 +1667,7 @@
   "status": "DONE",
   "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:259; apps/client/src/features/0287-actor-spell-catalog/archive.rs:169; apps/client/src/features/0287-actor-spell-catalog/archive.rs:144; apps/client/src/features/local-spell-action-bar/input.rs:27; crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs:72; crates/protocol-oteryn/src/spellbook_details.rs:40"
  },
  {
   "id": "O083",

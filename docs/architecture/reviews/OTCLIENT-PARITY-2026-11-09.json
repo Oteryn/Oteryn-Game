@@ -5448,7 +5448,7 @@
     "otclient_path": [
       "modules/game_notifications/controllers/screenshot.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/local-reference-preferences/native.rs",
@@ -5472,7 +5472,7 @@
       }
     ],
     "mechanics_row": [],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Zrzuty ekranu i automatyczne wyzwalacze. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O071",
     "previous_status": "MISSING",
     "closed_list_status": "DONE",
@@ -5480,14 +5480,52 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje zapisu zrzutu ekranu, wyboru zakresu przechwytywania i automatycznych wyzwalaczy zdarzeń; same nazwy preferencji nie mają implementacji.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Ręczny skrót i serwerowe fakty level/death/achievement wyzwalają zapis rzeczywiście wyrenderowanej klatki; lokalna funkcja nie wymaga komendy zrzutu na serwer.",
     "otclient_evidence": [
       {
         "path": "modules/game_notifications/controllers/screenshot.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/windows_shell/capture.rs",
+        "line": 6,
+        "detail": "Wejście ręcznego zrzutu: pub(super) fn capture_input(&mut self, events: &[NormalizedInputEvent]) -> bool {"
+      },
+      {
+        "path": "apps/client/src/windows_shell/capture.rs",
+        "line": 74,
+        "detail": "Caller po renderowaniu: .screenshots(renderer, scene, self.play.as_ref().map(|play| &play.link));"
+      },
+      {
+        "path": "apps/client/src/features/local-reference-preferences/capture_options.rs",
+        "line": 105,
+        "detail": "Zapis obrazu: capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;"
+      },
+      {
+        "path": "apps/client/src/features/local-death-respawn/protocol.rs",
+        "line": 158,
+        "detail": "Rzeczywiste fakty sesji: pub fn screenshot_facts(&self) -> crate::screenshots::Facts {"
+      },
+      {
+        "path": "apps/client/src/features/0279-skill-progress/protocol.rs",
+        "line": 62,
+        "detail": "Źródło potwierdzonego poziomu: pub(in crate::play) fn skill_progress_result("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/skill_progress.rs",
+        "line": 33,
+        "detail": "Źródło serwerowego poziomu: pub(super) async fn skill_progress_page("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/death.rs",
+        "line": 14,
+        "detail": "Źródło zdarzenia śmierci: pub(in crate::gameplay_transport) async fn respawn_after_death("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: bestiariusz i charmy",
@@ -5567,7 +5605,7 @@
     "otclient_path": [
       "modules/game_cyclopedia/tab/charms/charms.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0067-bestiary-charm-progression/view.rs",
@@ -5588,7 +5626,7 @@
     "mechanics_row": [
       "P01"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: charmy. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O073",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -5596,21 +5634,59 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Wybór/odblokowanie/przypisanie/usunięcie charmu ma natywny caller i serwer charm_progression, a potwierdzony wynik wraca do przeglądarki.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/charms/charms.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/input.rs",
+        "line": 49,
+        "detail": "Wejście: pub fn charm_progression_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/input.rs",
+        "line": 16,
+        "detail": "Przekazanie komendy: pub(in crate::play) fn submit("
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/protocol.rs",
+        "line": 48,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn apply("
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/view.rs",
+        "line": 14,
+        "detail": "Widok: pub(in crate::play) fn open_window(link: &PlayLink) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression.rs",
+        "line": 138,
+        "detail": "Serwer: pub(super) async fn charm_progression_wire("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/charm_progression.rs",
+        "line": 119,
+        "detail": "protocol-oteryn: pub fn encode_charm_progression_request(action: &CharmProgressionAction) -> WireResult<Vec<u8>> {"
+      },
+      {
+        "path": "apps/client/src/features/0067-bestiary-charm-progression/view.rs",
+        "line": 79,
+        "detail": "Caller wyboru rasy: super::input::catalogue::submit(mailbox, commands, action - 14);"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: bosstiariusz",
     "otclient_path": [
       "modules/game_cyclopedia/tab/bosstiary/bosstiary.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0117-boss-encounter/native.rs",
@@ -5646,7 +5722,7 @@
     "mechanics_row": [
       "P02"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: bosstiariusz. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O074",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -5654,21 +5730,69 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Bosstiary browser filtruje potwierdzony katalog, wybiera szczegóły/rekord i wysyła istniejące komendy boss_encounter.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/bosstiary/bosstiary.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/input.rs",
+        "line": 31,
+        "detail": "Wejście: pub fn boss_encounter_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/input.rs",
+        "line": 32,
+        "detail": "Przekazanie komendy: enqueue(&mut lock(&self.mailbox), &self.commands, intent);"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/protocol.rs",
+        "line": 12,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult) {"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::{cooldown_window, open_window};"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs",
+        "line": 9,
+        "detail": "Serwer: pub(super) async fn boss_cooldowns_wire("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/boss_encounter/catalogue.rs",
+        "line": 12,
+        "detail": "protocol-oteryn: pub fn encode(&self) -> Option<Vec<u8>> {"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/input.rs",
+        "line": 10,
+        "detail": "Wejście browsera: pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs",
+        "line": 5,
+        "detail": "Serwer katalogu bossów: #[path = \"boss_encounter/catalogue.rs\"]"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs",
+        "line": 77,
+        "detail": "Rzeczywisty katalog bossów: .read_boss_catalogue_page(self.character, self.holder, fence, page)"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: sloty bossów",
     "otclient_path": [
       "modules/game_cyclopedia/tab/boss_slots/boss_slots.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0117-boss-encounter/native.rs",
@@ -5699,7 +5823,7 @@
     "mechanics_row": [
       "P02"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: sloty bossów. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O075",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -5707,21 +5831,69 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Wybór bossa i slotu przechodzi przez bosstiary_slots_wire; panel prezentuje potwierdzone sloty, punkty, bonusy, opłatę i czas.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/boss_slots/boss_slots.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/input.rs",
+        "line": 31,
+        "detail": "Wejście: pub fn boss_encounter_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/input.rs",
+        "line": 32,
+        "detail": "Przekazanie komendy: enqueue(&mut lock(&self.mailbox), &self.commands, intent);"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/protocol.rs",
+        "line": 12,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult) {"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::{cooldown_window, open_window};"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs",
+        "line": 9,
+        "detail": "Serwer: pub(super) async fn boss_cooldowns_wire("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/boss_encounter.rs",
+        "line": 24,
+        "detail": "protocol-oteryn: pub fn decode_reward_chest_query(payload: &[u8]) -> Result<Option<[u8; 16]>, Error> {"
+      },
+      {
+        "path": "apps/client/src/features/0117-boss-encounter/input.rs",
+        "line": 24,
+        "detail": "Wybór slotu: pub fn boss_slot_select_slot(&self) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/boss_encounter.rs",
+        "line": 127,
+        "detail": "Producent slotów: async fn bosstiary_slots_wire("
+      },
+      {
+        "path": "crates/client-ui/src/features/0117-boss-encounter/protocol/auxiliary.rs",
+        "line": 101,
+        "detail": "Konsument slotów: panel.slots = Some(reply);"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: postać, odznaki, zgony i PvP",
     "otclient_path": [
       "modules/game_cyclopedia/tab/character/character.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0199-cyclopedia-character/native.rs",
@@ -5764,7 +5936,7 @@
       "P12b",
       "P12c"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: postać, odznaki, zgony i PvP. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O076",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -5772,21 +5944,59 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Panel postaci odpytuje rzeczywistą Cyklopedię, odznaki, zgony i PvP; serwer czyta właściwy fenced character/account owner.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/character/character.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/input.rs",
+        "line": 6,
+        "detail": "Wejście: pub fn cyclopedia_character_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/input.rs",
+        "line": 9,
+        "detail": "Przekazanie komendy: && self.commands.send(PlayCommand::Feature(command)).is_err()"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/protocol.rs",
+        "line": 9,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn cyclopedia_character_result(&self, result: &GatedCommandResult) {"
+      },
+      {
+        "path": "apps/client/src/features/0199-cyclopedia-character/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia_character.rs",
+        "line": 24,
+        "detail": "Serwer: async fn cyclopedia_character_command("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/cyclopedia_character.rs",
+        "line": 205,
+        "detail": "protocol-oteryn: pub fn decode_badges_request(payload: &[u8]) -> Result<(), BadgesWireError> {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia_character.rs",
+        "line": 64,
+        "detail": "Właściciel odznak: self.root.refresh_account_badges(self.character,self.holder,fence,now).await.map_err(|_| ())?;"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: katalog przedmiotów",
     "otclient_path": [
       "modules/game_cyclopedia/tab/items/items.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "crates/client-ui/src/features/0132-inspection/view.rs",
@@ -5833,7 +6043,7 @@
       "I16",
       "E05"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: katalog przedmiotów. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O077",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -5841,14 +6051,42 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Katalog przedmiotów obsługuje strony, kategorie, wyszukiwanie, szczegóły, źródła dropu i przejście do rynku na podstawie serwerowej inspekcji definicji.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/items/items.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0132-inspection/input/catalogue.rs",
+        "line": 36,
+        "detail": "Wejście katalogu przedmiotów: pub fn item_catalogue_input("
+      },
+      {
+        "path": "apps/client/src/features/0132-inspection/input/catalogue.rs",
+        "line": 166,
+        "detail": "Caller strony/szczegółów: && commands.send(PlayCommand::ServerMechanic(command)).is_err()"
+      },
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/protocol.rs",
+        "line": 95,
+        "detail": "Konsument odpowiedzi: pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/inspection/catalogue.rs",
+        "line": 7,
+        "detail": "Serwer katalogu/źródeł dropu: pub(super) async fn inspect("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/inspection/catalogue.rs",
+        "line": 16,
+        "detail": "Wire katalogu: pub fn items(after: u32, category: u8, search: &str) -> Result<Query> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: mapa i odkrywanie",
@@ -5938,7 +6176,7 @@
     "otclient_path": [
       "modules/game_cyclopedia/tab/house/house.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0049-house/controller.rs",
@@ -5964,7 +6202,7 @@
     "mechanics_row": [
       "S05"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: katalog domów i aukcje. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O079",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -5972,21 +6210,49 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje podłączenia katalogu i aukcji domów do sesji oraz natywnego okna; kontroler 0049 i model odpowiedzi istnieją, ale nie są zamontowane w aplikacji.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywny katalog odpytuje domy i aukcje, pokazuje tożsamość/metadata i nawigację; źródłem jest house_query i rzeczywisty stan właściciela aukcji.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/house/house.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0049-house/view.rs",
+        "line": 11,
+        "detail": "Wejście katalogu domów: pub(in crate::play) fn open_window(link: &PlayLink) {"
+      },
+      {
+        "path": "apps/client/src/features/0049-house/input.rs",
+        "line": 139,
+        "detail": "Caller domów: if commands.send(PlayCommand::Feature(command)).is_err() {"
+      },
+      {
+        "path": "crates/client-ui/src/features/0049-house/state.rs",
+        "line": 22,
+        "detail": "Konsument odpowiedzi: pub fn apply(&mut self, command: &FeatureCommand, reply: &GatedCommandResult) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/house_query.rs",
+        "line": 140,
+        "detail": "Serwer katalogu: pub(super) async fn query_houses("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/house.rs",
+        "line": 33,
+        "detail": "Wire domów: pub fn encode_guildhall_leadership(intent: GuildhallLeadershipIntent) -> Result<Vec<u8>> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: Magical Archive",
     "otclient_path": [
       "modules/game_cyclopedia/tab/magicalArchives/magicalArchives.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0287-actor-spell-catalog/view.rs",
@@ -6032,7 +6298,7 @@
     "mechanics_row": [
       "ADD-0287"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: Magical Archive. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O080",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -6040,21 +6306,54 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywny Magical Archive przypisuje czary z potwierdzonej strony, zapisuje tożsamość i rozwiązuje świeże indeksy serwera przed wywołaniem istniejącego cast.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/tab/magicalArchives/magicalArchives.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs",
+        "line": 259,
+        "detail": "Wejście przypisania archiwum: if !super::archive::assign(&shared, row, selected_slot) {"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/archive.rs",
+        "line": 169,
+        "detail": "Rozwiązanie aktualnych indeksów: pub(in crate::play) fn resolve(mailbox: &mut crate::play::mailbox::Mailbox) {"
+      },
+      {
+        "path": "apps/client/src/features/0287-actor-spell-catalog/archive.rs",
+        "line": 144,
+        "detail": "Utrwalenie przypisań: pub fn sync_archive_bindings(&self, bindings: &mut ArchiveBindings, edit: u64) -> Option<u64> {"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/input.rs",
+        "line": 27,
+        "detail": "Caller cast: link.request_combat(crate::combat_input::CombatCommand::Cast(bound));"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/spellbook_details.rs",
+        "line": 72,
+        "detail": "Serwer opisu czaru: pub(super) async fn spellbook_details_page("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/spellbook_details.rs",
+        "line": 40,
+        "detail": "Wire książki czarów: pub fn encode(&self) -> Option<Vec<u8>> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Trackery bestiariusza i bosstiariusza",
     "otclient_path": [
       "modules/game_cyclopedia/game_cyclopedia.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0197-cyclopedia-tracker/native.rs",
@@ -6083,7 +6382,7 @@
       "P22c",
       "P22d"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Trackery bestiariusza i bosstiariusza. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O081",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -6091,21 +6390,54 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywne akcje trackera przechodzą przez istniejącą komendę cyclopedia_tracker, a serwer zwraca rzeczywisty progres bestiariusza/bosstiariusza.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/game_cyclopedia.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0197-cyclopedia-tracker/input.rs",
+        "line": 6,
+        "detail": "Wejście: pub fn cyclopedia_tracker_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0197-cyclopedia-tracker/input.rs",
+        "line": 8,
+        "detail": "Przekazanie komendy: enqueue(&mut mailbox, &self.commands, intent);"
+      },
+      {
+        "path": "apps/client/src/features/0197-cyclopedia-tracker/protocol.rs",
+        "line": 7,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn cyclopedia_tracker_result(&self, result: &GatedCommandResult) {"
+      },
+      {
+        "path": "apps/client/src/features/0197-cyclopedia-tracker/view.rs",
+        "line": 13,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia_tracker.rs",
+        "line": 62,
+        "detail": "Serwer: async fn cyclopedia_tracker("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/cyclopedia_tracker.rs",
+        "line": 71,
+        "detail": "protocol-oteryn: pub fn decode_request(bytes: &[u8]) -> Option<TrackerRequest> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Drużyna, shared XP i tarcze",
     "otclient_path": [
       "modules/game_interface/gameinterface.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0042-party/native.rs",
@@ -6147,7 +6479,7 @@
       "S01",
       "S02"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Drużyna, shared XP i tarcze. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O082",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -6155,14 +6487,57 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Zaproszenie, członkostwo i wspólne XP mają rzeczywiste komendy/właścicieli; party/skull push aktualizuje tarcze nad żywymi encjami.",
     "otclient_evidence": [
       {
         "path": "modules/game_interface/gameinterface.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0042-party/input.rs",
+        "line": 10,
+        "detail": "Wejście: pub fn party_request(&self, intent: Intent) {"
+      },
+      {
+        "path": "apps/client/src/features/0042-party/input.rs",
+        "line": 13,
+        "detail": "Przekazanie komendy: && self.commands.send(PlayCommand::Party(command)).is_err()"
+      },
+      {
+        "path": "apps/client/src/features/0042-party/protocol.rs",
+        "line": 11,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn party_result(&self, response: &PartyResponse) {"
+      },
+      {
+        "path": "apps/client/src/features/0042-party/view.rs",
+        "line": 17,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/party_command.rs",
+        "line": 80,
+        "detail": "Serwer: pub(super) async fn party_wire_command("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/party.rs",
+        "line": 75,
+        "detail": "protocol-oteryn: pub fn encode_party_intent(intent: PartyIntent) -> Result<Vec<u8>> {"
+      },
+      {
+        "path": "apps/client/src/features/0134-party-skull/protocol.rs",
+        "line": 97,
+        "detail": "Konsument tarcz: oteryn_session::SessionEvent::PartyIcons(delta) => show_icons(panel, &delta.value),"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/party_xp.rs",
+        "line": 47,
+        "detail": "Właściciel shared XP: pub(super) async fn plan_shared_xp_in_transaction("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Edycja list gości, współwłaścicieli i drzwi",
