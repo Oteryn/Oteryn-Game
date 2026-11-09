@@ -1,21 +1,9 @@
-//! M30 durable-owner PG seam. Native roster/projection is covered in entities/dispatch.
-pub use oteryn_gameplay_admission_evidence as admission_evidence;
-pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
-pub use oteryn_gameplay_domain::domain;
-pub use oteryn_gameplay_durability::{character_bootstrap_intent, durability};
-pub use oteryn_gameplay_entities as foundation;
-pub use oteryn_gameplay_native_admission_source as native_admission_source;
-
-// This canonical shared harness supplies more writers than this focused case needs.
-#[allow(
-    dead_code,
-    reason = "canonical PG harness; this target uses the native quest owner"
-)]
-#[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
-mod fixture;
+//! M30 durable-owner cases mounted in the routed authority lane.
+use crate::{durability, foundation};
+use crate::bestiary_postgres_harness as fixture;
 
 // Execute the production queue directly without compiling dispatch's unrelated lib-test suite.
-#[path = "../../dispatch/src/gameplay_transport/quest_hits/queue.rs"]
+#[path = "../../../../../crates/gameplay/dispatch/src/gameplay_transport/quest_hits/queue.rs"]
 mod dispatcher_hit_queue;
 
 use durability::character_progression::ExperienceRewardOccurrence;
@@ -36,7 +24,7 @@ const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 
 fn catalogue(maximum: i64, advance: Option<i64>) -> fixture::TestResult<Arc<QuestStateCatalogue>> {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../quests/src/quest/authored_bindings/fixtures/kill.json"
+        "../../../../../crates/gameplay/quests/src/quest/authored_bindings/fixtures/kill.json"
     ))?;
     let quest = &mut value["quests"][0];
     quest["tracks"][0]["initial"] = json!(4);
@@ -362,7 +350,7 @@ fn engenc_hit_objective_rejects_unproven_use_postgres() -> fixture::TestResult {
 
 fn hit_catalogue() -> fixture::TestResult<Arc<QuestStateCatalogue>> {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../quests/src/quest/authored_bindings/fixtures/kill.json"
+        "../../../../../crates/gameplay/quests/src/quest/authored_bindings/fixtures/kill.json"
     ))?;
     let quest = &mut value["quests"][0];
     quest["tracks"][0]["initial"] = json!(4);
@@ -1446,7 +1434,7 @@ async fn exercise_child_training(h: &fixture::Harness) -> fixture::TestResult {
     const CHILD_PHASE: &str = "oteryn:quest-progress/engenc/child/phase";
     let bytes = std::fs::read(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../content/quests/authored-bindings/engenc-child-of-destiny.json"),
+            .join("../../content/quests/authored-bindings/engenc-child-of-destiny.json"),
     )?;
     let mut bindings = Bindings::parse(&bytes)?;
     bindings.verify_embedded_recipe_evidence()?;
