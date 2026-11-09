@@ -6,6 +6,7 @@ pub mod collection;
 pub(crate) mod embedded;
 mod imported_recipe;
 pub mod kills;
+mod progress_storage;
 mod state_operations;
 pub mod terrain_use;
 pub use kills::KillCounter;

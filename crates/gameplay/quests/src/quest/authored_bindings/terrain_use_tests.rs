@@ -140,3 +140,47 @@ fn terrain_use_position_key_survives_map_repacking_but_keeps_tile_and_ordinal_ex
     assert!(Bindings::parse(&serde_json::to_vec(&value).map_err(|e| e.to_string())?).is_err());
     Ok(())
 }
+
+#[test]
+fn terrain_use_counter_increments_and_raise_preserves_higher_progress() -> Result<(), String> {
+    use crate::quest::QuestStateCatalogue;
+    use std::collections::BTreeMap;
+    for increment in [true, false] {
+        let mut value = document();
+        let storage = &mut value["quests"][0]["stages"][0]["trigger"]["usage"]["storage"][0];
+        storage["maximum"] = if increment { 1 } else { 2 }.into();
+        storage[if increment { "increment" } else { "at_least" }] = true.into();
+        let bindings = Bindings::parse(&serde_json::to_vec(&value).map_err(|e| e.to_string())?)?;
+        let catalogue =
+            bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("revision")?)?;
+        let transition = catalogue
+            .transition("oteryn:quest-terrain-use/m01c-fixture")
+            .ok_or("transition")?;
+        let before = if increment { 1 } else { 2 };
+        let changes = catalogue
+            .evaluate(
+                transition,
+                &BTreeMap::from([("oteryn:quest-progress/m01c-terrain".into(), before)]),
+                0,
+            )
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(changes[0].after, 2, "storage operator was ignored");
+    }
+    Ok(())
+}
+
+#[test]
+fn terrain_use_rejects_conflicting_or_overflowing_storage_modes() -> Result<(), String> {
+    for case in 0..2 {
+        let mut value = document();
+        let storage = &mut value["quests"][0]["stages"][0]["trigger"]["usage"]["storage"][0];
+        storage["increment"] = true.into();
+        if case == 0 {
+            storage["at_least"] = true.into();
+        } else {
+            storage["maximum"] = 2.into();
+        }
+        assert!(Bindings::parse(&serde_json::to_vec(&value).map_err(|e| e.to_string())?).is_err());
+    }
+    Ok(())
+}

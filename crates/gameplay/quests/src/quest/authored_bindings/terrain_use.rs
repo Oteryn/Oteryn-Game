@@ -1,7 +1,7 @@
 //! Read a committed native tool action; this binding never performs a terrain mutation.
 use super::{BoundQuest, QuestTransition};
 use crate::quest::world_callbacks::Storage;
-use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
+use crate::quest::{QuestComparison, QuestEffect};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -91,11 +91,7 @@ impl TerrainUse {
                     .tracks
                     .iter()
                     .find(|track| track.key == storage.track)
-                    .is_none_or(|track| {
-                        storage.minimum < track.minimum
-                            || storage.maximum > track.maximum
-                            || !(track.minimum..=track.maximum).contains(&storage.set)
-                    })
+                    .is_none_or(|track| !super::progress_storage::valid(storage, track, true))
             {
                 return Err("terrain USE foreign/unbounded track".into());
             }
@@ -122,14 +118,7 @@ impl TerrainUse {
                 .map(|storage| QuestEffect {
                     track: storage.track.clone(),
                     from: QuestComparison::Between(storage.minimum, storage.maximum),
-                    effect: if storage.preserve {
-                        QuestEffectKind::Add(0)
-                    } else {
-                        QuestEffectKind::SetWithBinding {
-                            value: storage.set,
-                            binding,
-                        }
-                    },
+                    effect: super::progress_storage::effect(storage, binding),
                 })
                 .collect(),
         })

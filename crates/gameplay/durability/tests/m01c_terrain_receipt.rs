@@ -262,6 +262,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         "terrain tool definition snapshot is immutable"
     );
     production_dead_archer_entry(h, &authority, native, tool).await?;
+    terrain_counter_fixture(h, &authority, native, tool).await?;
     Ok(())
 }
 
@@ -424,5 +425,129 @@ async fn production_dead_archer_entry(
     eprintln!(
         "M01C_DEAD_ARCHER production_entry wrong_tile_refused exact_tile_committed replay_safe completion_held"
     );
+    Ok(())
+}
+
+async fn terrain_counter_fixture(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    tool: [u8; 16],
+) -> f::TestResult {
+    use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
+    let placement = vec![0x55_u8; 40];
+    let document = serde_json::json!({"schema":1,"quests":[{
+        "quest":"oteryn:quest.m01c_counter_fixture","recipe_sha256":"a".repeat(64),
+        "tracks":[{"key":"oteryn:quest-progress/m01c-use-counter","initial":0,"minimum":0,"maximum":2}],
+        "stages":[{"key":"s1","completes":false,"trigger":{"kind":"terrain_use","usage":{
+            "key":"oteryn:quest-terrain-use/m01c-counter","tools":[{"key":"oteryn:item.tibia.i3457","revision":"definition-r1"}],
+            "placement":placement,"result":607,"storage":[{"track":"oteryn:quest-progress/m01c-use-counter","minimum":0,"maximum":1,"set":1,"increment":true}],
+            "sources":["M01c engine counter fixture"]
+        }}}],"sources":["M01c engine fixture; no production quest qualification"]
+    }]});
+    let bindings = Bindings::parse(&serde_json::to_vec(&document)?).map_err(f::debug)?;
+    let catalogue = Arc::new(
+        bindings
+            .attach(&QuestStateCatalogue::empty("content-1").ok_or("revision")?)
+            .map_err(f::debug)?,
+    );
+    let item_fence = f::item_fence()?;
+    let permit =
+        durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(item_fence.runtime_scope)
+            .await
+            .map_err(f::debug)?;
+    let scope = durability::terrain_tool::TerrainScope {
+        map_revision: "map-1".into(),
+        content_generation: native.source_digest(),
+        reset_epoch: 0,
+    };
+    let mut expected_revision = 0;
+    for n in 0..2_u64 {
+        if n > 0 {
+            let states = h
+                .root
+                .terrain_tool_snapshot(
+                    &permit,
+                    authority,
+                    &h.node,
+                    durability::item_decay_retire::CorpseDecayFence {
+                        runtime_scope: item_fence.runtime_scope,
+                        scope_ownership_generation: item_fence.scope_ownership_generation,
+                    },
+                    scope.clone(),
+                )
+                .await
+                .map_err(f::debug)?;
+            let restored = states
+                .iter()
+                .find(|state| state.placement == placement)
+                .ok_or("decayed counter target")?;
+            assert_eq!(
+                restored.item, 606,
+                "the existing clock must restore the dig target"
+            );
+            expected_revision = restored.revision;
+        }
+        let command = reward_fixture::command(9700 + n)?;
+        let mutation = durability::terrain_tool::TerrainMutation {
+            tool,
+            tool_key: "oteryn:item.tibia.i3457".into(),
+            tool_revision: "definition-r1".into(),
+            placement: placement.clone(),
+            expected_revision,
+            before: 606,
+            after: 607,
+            decay: vec![(606, 1)],
+        };
+        let result = h
+            .root
+            .apply_terrain_tool(
+                &permit,
+                authority,
+                &h.node,
+                item_fence,
+                command,
+                command.command_id().get().to_be_bytes().to_vec(),
+                scope.clone(),
+                Some(mutation),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert_eq!(result, Some(UseDisposition::Committed));
+        let request = QuestTransitionRequest {
+            transition_key: "oteryn:quest-terrain-use/m01c-counter".into(),
+            cause: QuestCause::Command(command),
+        };
+        let result = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(3 + n)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+        let replay = h
+            .root
+            .commit_character_quest_transition(
+                authority,
+                &h.node,
+                f::fence(3 + n)?,
+                request,
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(matches!(
+            replay,
+            QuestTransitionOutcome::AlreadyCommitted(_)
+        ));
+        let value:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-use-counter'").bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(value, i64::try_from(n + 1)?);
+    }
+    eprintln!("M01C_USE_COUNTER two_native_actions_two_increments replay_did_not_increment");
     Ok(())
 }
