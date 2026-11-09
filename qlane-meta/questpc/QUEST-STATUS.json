@@ -1130,8 +1130,19 @@
     "scope": "Bewitched s1 only: exact authored personal-daily adaptation, first objective, pinned spoiler and retained huge cauldron corner required; global event and later stages are untouched.",
     "native_landmark": "32732,31935,z12 source stack[7272,12023];clear entry32733,31935,-12ground7272;startEast32734,31935,-12.",
     "red_green": "Liveactivation RED0vs1->GREEN3focusedtests1.275s;full121modules1225tests0failingmodules.",
-    "pending": "Dailyreentry,ingredients,brewing,combat,reward/completion remain separate later-stage obligations. Additionaldispatchall-featureClippy running atowner-requestedpublication;standardstrictClippy andworkspacealltargets alreadyPASS.",
+    "pending": "Dailyreentry,ingredients,brewing,combat,reward/completion remain separate later-stage obligations;allfirst-surveypublicationgatespassed.",
     "native_postgres": "m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew GREEN71.68814649s,0ignored;exactnativecauldron[7272,12023]preserved;realSTEPonce/replay/revisit,no laterstage/completion/globaleventcredit.",
-    "publication_gates": "PASS121modules1225authoringtests;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt;strictquests+dispatchalltargetsClippy5m11s;workspacealltargets4m49s."
+    "publication_gates": "PASS121modules1225authoringtests;checks;content-tree;nativeproviderregeneration;callbackcheck;equipment5795pin;dupmigrations;fmt;strictquests+dispatchalltargetsClippy5m11s;workspacealltargets4m49s.",
+    "additional_feature_gate": "Post-publication strictdispatchall-targets/all-featuresClippyGREEN4m12s on07594a170;no source fix required."
+  },
+  "iceberg_fixed_expedition": {
+    "state": "PREPARED_INACTIVE",
+    "scope": "Chakoya s1 fixed personal expedition only;canonical Premium retained;no global World-owner promotion. Other stages/dynamic expedition/repeat/objective/source changes reject.",
+    "native": "ExactArea75507rev1117033 marker32623,32584,z7;retained stack[799,7152];clear approach32622,32585,-7ground6585;startSouth32622,32586ground6582.",
+    "red_green": "3new tests REDmissingresolver/currentWorldowner/missingNative.require->GREEN0.680s;existing4nativeanchor+3cauldrontestsGREEN.",
+    "regression_postgres": "ExistingBewitched realnativeSTEPcase GREEN181.037823667s,0ignored. This isNOTaChakoyaPGqualification.",
+    "pending": "PreparedsliceallgatesGREEN;callbackNOTlive;ownChakoyaPremiumPGcasepreparedlocally,notrun.37routes40stages54anchorsPG-provenunchanged;9routes16stagesremain.",
+    "workspace": "GREENworkspacealltargets8m23s andfmt. No Rust/SQLcontentchange in thispreparedslice.",
+    "publication_gates": "GREEN122authoringmodules1228tests,0failingmodules;authoringchecks;content-tree;callbackcheckunchanged;equipment5795pin;dupmigrations;workspacealltargets8m23s;fmt;existingBewitchedPGregression181.037823667s. Python-onlyslice,noRust/SQLchanges."
   }
 }

@@ -136,6 +136,7 @@ def callbacks(root):
         fury_approach = None
         station_approach = None
         cauldron_approach = None
+        iceberg_approach = None
         if area.startswith('station-approach:'):
             import questpc_station_approaches
             station_approach = questpc_station_approaches.resolve(
@@ -144,6 +145,11 @@ def callbacks(root):
         elif area.startswith('cauldron-approach:'):
             import questpc_cauldron_approaches
             cauldron_approach = questpc_cauldron_approaches.resolve(
+                root, quest, stage, area, definition=definition)
+            world_change = None
+        elif area.startswith('iceberg-approach:'):
+            import questpc_iceberg_approaches
+            iceberg_approach = questpc_iceberg_approaches.resolve(
                 root, quest, stage, area, definition=definition)
             world_change = None
         elif area.startswith('fury-approach:'):
@@ -165,6 +171,8 @@ def callbacks(root):
             at, appearance, sources = station_approach
         elif cauldron_approach is not None:
             at, appearance, sources = cauldron_approach
+        elif iceberg_approach is not None:
+            at, appearance, sources = iceberg_approach
         elif fury_approach is not None:
             at, appearance, sources = fury_approach[:3]
         elif area.startswith('door-approach:'):
