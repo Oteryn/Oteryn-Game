@@ -68,6 +68,7 @@ impl PlayView {
             actor_options,
         )?;
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
+        crate::play::feature_0233_touch_controls::view::draw(batch, view, atlas, &self.touch)?;
         if !effects {
             return Ok(());
         }

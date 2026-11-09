@@ -85,6 +85,9 @@ impl ApplicationHandler for Application {
     }
 
     fn suspended(&mut self, event_loop: &ActiveEventLoop) {
+        if let Some(play) = &mut self.play {
+            play.view.cancel_touch_controls();
+        }
         if let Some(renderer) = &mut self.renderer
             && renderer.suspend(self.generation).is_err()
         {
@@ -109,8 +112,20 @@ impl ApplicationHandler for Application {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        // Every window event goes through the adapter and router first; select or walk is
-        // triggered only by the routed gameplay action.
+        // Touch owns its contacts; keyboard and mouse keep their existing adapter and router.
+        if matches!(event, WindowEvent::Touch(_)) {
+            self.touch_seen = true;
+        }
+        if let Some(play) = &mut self.play {
+            match play.view.touch_window_event(&play.link, &event) {
+                Ok(true) => return,
+                Ok(false) => {}
+                Err(_) => {
+                    self.fail(event_loop, ShellError::RendererRender);
+                    return;
+                }
+            }
+        }
         if let Ok(events) = self.input.process_window_event(&event) {
             self.handle_input(event_loop, &events);
         }
@@ -182,6 +197,9 @@ impl ApplicationHandler for Application {
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             play.view.enable_resource_hud(true);
+            if self.touch_seen {
+                play.view.enable_touch_controls();
+            }
         }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)
