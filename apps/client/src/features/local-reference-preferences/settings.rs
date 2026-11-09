@@ -1,13 +1,14 @@
 //! Local-only preferences whose keys come from the audited client reference surface.
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
-
+#[path = "game_window.rs"]
+mod game_window;
+pub use game_window::GameWindowPreferences;
 use crate::map::World;
 use crate::play::PlayView;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
-
 #[path = "arcs.rs"]
 mod arcs;
 pub use arcs::{ArcLayout, ArcPreferences};
@@ -48,7 +49,6 @@ pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
-
 const PANEL_IDS: &[&str] = &[
     "battle",
     "chat",
@@ -68,15 +68,15 @@ const PANEL_IDS: &[&str] = &[
     "vip",
     "wheel",
 ];
-
 #[path = "defaults.rs"]
 mod defaults;
 use defaults::*;
-
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub game_window: GameWindowPreferences,
     #[serde(default = "enabled")]
     pub tooltips_enabled: bool,
     #[serde(default = "default_tooltip_delay")]
@@ -183,7 +183,6 @@ pub struct ReferencePreferences {
     #[serde(default = "default_panels")]
     pub visible_panels: Vec<String>,
 }
-
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
@@ -212,6 +211,7 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            game_window: Default::default(),
             show_effects: true,
             show_lights: true,
             show_harmony: true,
@@ -241,7 +241,6 @@ impl Default for ReferencePreferences {
         }
     }
 }
-
 impl ReferencePreferences {
     pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
 
