@@ -155,3 +155,44 @@ fn m04_white_raven_final_hand_in_keeps_topic_and_exact_items() -> Result<(), Str
     );
     Ok(())
 }
+
+#[test]
+fn m04_all_five_terminal_bindings_are_unique_and_native_admitted() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    for (quest, npc) in [
+        ("a_father_s_burden_quest", "tereban"),
+        ("the_djinn_war_efreet_faction", "malor"),
+        ("the_djinn_war_marid_faction", "gabel"),
+        ("marlin_trophy_quest", "pemaret"),
+        ("the_white_raven_monastery_quest", "costello"),
+    ] {
+        let quest = format!("oteryn:quest.{quest}");
+        let npc = format!("oteryn:npc.{npc}");
+        let admitted = source
+            .admitted_for_npc(&npc, loaded.catalogue())
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("missing native NPC: {npc}"))?;
+        let program = admitted
+            .program(&quest)
+            .ok_or_else(|| format!("missing programme: {quest}"))?;
+        let terminal = program
+            .document
+            .rules
+            .iter()
+            .filter(|rule| rule.completes)
+            .collect::<Vec<_>>();
+        assert_eq!(terminal.len(), 1, "{quest}");
+        assert_eq!(terminal[0].npc, npc);
+        assert!(
+            !terminal[0].guards.is_empty(),
+            "terminal branch must recheck progress: {quest}"
+        );
+        assert!(
+            !terminal[0].keywords.is_empty(),
+            "terminal branch must require a source utterance: {quest}"
+        );
+    }
+    Ok(())
+}
