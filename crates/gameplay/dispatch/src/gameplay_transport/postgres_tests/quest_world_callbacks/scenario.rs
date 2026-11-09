@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let qm48 = name == "qm48/mammoth";
-    let m03_use = name == super::super::qengine_m03_use::NAME;
+    let m03_use = name.starts_with(super::super::qengine_m03_use::NAME);
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use::NAME);
     let m01b_explore = name.starts_with("m01b/");
@@ -698,7 +698,10 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if name == super::super::qengine_m03_aliases::NAME {
+            super::super::qengine_m03_aliases::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if m03_use {
             super::super::qengine_m03_use::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
         } else if m03_pits {

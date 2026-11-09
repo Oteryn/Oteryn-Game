@@ -58,3 +58,17 @@ Crystal's Lua `creature:teleportTo` delegates to `internalTeleport`:
 The latter requires a present tile and calls `queryAdd` with `FLAG_NOLIMIT`.
 game.cpp body SHA256: `5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6`.
 creature_functions.cpp body SHA256: `fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac`.
+
+Admission qualification (2026-11-09):
+`m03_every_machine_counterpart_native_use_guards_replay_and_free_return_postgres`
+passed on PostgreSQL 18.6 in 113.724511589 seconds. It exercises every entrance
+and paired return, including return ordinals 1 and 2, through network USE.
+Every entrance checks level, promotion, regular blessings and live Premium;
+every return succeeds after promotion, blessings and Premium are removed.
+Exact request replays preserve the movement revision and receipt count.
+The nine round trips leave one progress track at 1, eighteen receipts and no
+quest completion. Actor pre-positioning uses the sealed movement owner over
+unchanged B3 tiles. Qualification covers the admission boundary.
+
+The canonical entry/return case passed in 169.998617116 seconds and the Pits
+native STEP case passed in 99.909705642 seconds in the same focused run.

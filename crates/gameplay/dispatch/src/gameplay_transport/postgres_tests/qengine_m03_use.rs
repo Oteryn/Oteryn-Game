@@ -48,7 +48,8 @@ pub(super) fn world(
                     "/../../../content/world/placements/region-z08-x126-y125.b3"
                 )),
                 region: (8, 126, 125),
-                bounds: (32429, 32166, 32431, 32168),
+                // Half-open bounds retain all nine parts and the source pad.
+                bounds: (32429, 32164, 32432, 32168),
                 start: (32429, 32167),
                 expected: vec![
                     ExpectedTile {
@@ -69,7 +70,8 @@ pub(super) fn world(
                     "/../../../content/world/placements/region-z08-x130-y121.b3"
                 )),
                 region: (8, 130, 121),
-                bounds: (33453, 31029, 33454, 31031),
+                // Include the rightmost parts and the pad at y=31030.
+                bounds: (33452, 31027, 33455, 31031),
                 start: (33453, 31030),
                 expected: vec![
                     ExpectedTile {
@@ -207,7 +209,7 @@ pub(super) async fn exercise(
 }
 // Only pre-existing eligibility is fixture data. Restore every ownership trigger
 // before invoking dispatch; purchases themselves are outside the admission mechanic.
-async fn facts(h: &Harness, promotion: bool, count: usize) -> TestResult {
+pub(super) async fn facts(h: &Harness, promotion: bool, count: usize) -> TestResult {
     let catalogue =
         oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()?;
     let (_, regular) = catalogue
@@ -235,10 +237,10 @@ async fn facts(h: &Harness, promotion: bool, count: usize) -> TestResult {
     tx.commit().await?;
     Ok(())
 }
-async fn footprint(h: &Harness) -> Result<(i64, i64), sqlx::Error> {
+pub(super) async fn footprint(h: &Harness) -> Result<(i64, i64), sqlx::Error> {
     sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE quest_key=$1),(SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1)").bind(QUEST).fetch_one(&h.pool).await
 }
-async fn position(
+pub(super) async fn position(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult<(i32, i32, i16)> {
@@ -255,6 +257,15 @@ async fn use_machine(
     command: u64,
     at: Position,
 ) -> TestResult<(UseDisposition, Vec<u8>, Vec<u8>)> {
+    use_part(owner, admitted, command, at, 1).await
+}
+pub(super) async fn use_part(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command: u64,
+    at: Position,
+    ordinal: u8,
+) -> TestResult<(UseDisposition, Vec<u8>, Vec<u8>)> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -266,7 +277,7 @@ async fn use_machine(
             y: at.y,
             floor: at.floor,
         },
-        1,
+        ordinal,
     )
     .ok_or("machine key")?;
     let mut placement = map.overlay.base().digest().to_vec();
