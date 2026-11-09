@@ -37,6 +37,7 @@ mod clock;
 mod counterparts;
 mod craft_epoch;
 mod effects;
+mod feaster_routes;
 mod ground_stack;
 mod guarded_routes;
 mod imported_explore;
@@ -128,7 +129,9 @@ mod mammoth_tests;
 mod native;
 mod nomads_window;
 mod nomads_land;
+mod phase;
 use native::valid_native_callback;
+pub use phase::select_storage_phase;
 
 /// Exact carried material required alongside a World tool's primary input.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -336,11 +339,6 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
     }
 }
 
-/// Closed read-only source gates. They create no synthetic personal quest state.
-pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
-    (key == nomads_window::KEY).then(nomads_window::requirements)
-}
-
 impl Callback {
     /// A fenced single-player STEP may stage inside its own bounded room.
     /// Runtime admission still rejects every other player in that room.
@@ -364,6 +362,11 @@ impl Callback {
     pub fn requires_live_drunk(&self) -> bool {
         self.key == "oteryn:quest-callback/qm48/mammoth"
     }
+}
+
+/// Closed read-only source gates. They create no synthetic personal quest state.
+pub fn stateless_ground_requirements(key: &str) -> Option<Vec<WorldRequirement>> {
+    (key == nomads_window::KEY).then(nomads_window::requirements)
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
@@ -432,6 +435,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qready1-crafts.json"
+        "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
@@ -495,6 +499,15 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             return Err("duplicate callback selector across registries".into());
         }
         previous.push(callback);
+        let prior = selectors.entry(selector).or_default();
+        if prior.len() >= MAX_EFFECTS
+            || prior
+                .iter()
+                .any(|existing| !phase::disjoint(existing, callback))
+        {
+            return Err("duplicate callback selector across registries".into());
+        }
+        prior.push(callback);
     }
     Ok(())
 }
@@ -692,6 +705,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
                 || treasure_source::admitted(callback)
+                || feaster_routes::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     phase::authored_source(callback, source)

@@ -1022,6 +1022,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        let selected = if selected.len() > 1 {
+            // Release all Channel guards before the current Character read. The
+            // existing native CAS and fenced Quest commit still recheck actor,
+            // object and phase after this preview; stale phases fail closed.
+            if selected.iter().any(|(_, key)| *key != selected[0].1) {
+                return entered;
+            }
+            let Some(catalogue) = self.quest_catalogue.as_ref() else {
+                return entered;
+            };
+            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+                return entered;
+            };
+            let Ok(state) = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+            else {
+                return entered;
+            };
+            let candidates = selected
+                .iter()
+                .map(|(callback, _)| *callback)
+                .collect::<Vec<_>>();
+            let Ok(Some(chosen)) =
+                world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue)
+            else {
+                return entered;
+            };
+            selected
+                .iter()
+                .copied()
+                .filter(|(callback, _)| callback.key == chosen.key)
+                .collect::<Vec<_>>()
+        } else {
+            selected
+        };
         let had_callbacks = !selected.is_empty();
         self.select_step_phase(&mut selected, actor, session, entered, &cause);
         // Ambiguous content never chooses one action by incidental registration order.
