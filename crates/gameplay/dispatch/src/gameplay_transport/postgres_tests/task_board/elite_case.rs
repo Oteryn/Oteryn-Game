@@ -52,8 +52,11 @@ pub(super) async fn run_case(
     rat: crate::foundation::ExactActorRef,
 ) -> TestResult {
     let session = admitted.game_session_id;
+    progression_case::fixture_vocation(owner, admitted, "monk").await?;
     elite(owner, admitted, true).await?;
     let initial = full_board(owner, admitted, 7, 0, "").await?;
+    assert_eq!(initial.refusal, 0);
+    assert_eq!(initial.bounty.offers.len(), 3);
     assert!(
         initial
             .bounty
@@ -61,7 +64,9 @@ pub(super) async fn run_case(
             .iter()
             .all(|task| task.elite && task.dust > 0)
     );
-    full_board(owner, admitted, 11, 0, "").await?;
+    let rerolled = full_board(owner, admitted, 11, 0, "").await?;
+    assert_eq!(rerolled.refusal, 0);
+    assert_eq!(rerolled.bounty.offers.len(), 3);
     let reloaded = fixture_board_data(harness).await?;
     for task in &initial.bounty.offers {
         assert_eq!(reloaded.bounty.rarity.get(&task.race), Some(&1));
@@ -184,12 +189,19 @@ pub(super) async fn run_case(
         current.bounty.offers.clear();
         save(harness, &current).await?;
         let before_dust = dust(harness).await?;
-        settle_kill(owner, harness, admitted, premium, serial).await?;
+        // Shared XP is off: a non-damaging Premium party member is not a task recipient.
+        settle_kill(owner, harness, admitted, premium, serial + 20, false).await?;
+        assert_eq!(dust(harness).await?, before_dust);
+        assert_eq!(
+            fixture_board_data(harness).await?.bounty.state,
+            rules::BountyStatus::Active
+        );
+        settle_kill(owner, harness, admitted, premium, serial, true).await?;
         assert_eq!(dust(harness).await?, before_dust + expected_dust);
-        settle_kill(owner, harness, admitted, premium, serial).await?;
+        settle_kill(owner, harness, admitted, premium, serial, true).await?;
         assert_eq!(dust(harness).await?, before_dust + expected_dust);
         // A distinct death before task credit also cannot award completion dust twice.
-        settle_kill(owner, harness, admitted, premium, serial + 10).await?;
+        settle_kill(owner, harness, admitted, premium, serial + 10, true).await?;
         assert_eq!(dust(harness).await?, before_dust + expected_dust);
         let fence = owner
             .current_quest_fence(session)
@@ -233,6 +245,7 @@ async fn settle_kill(
     admitted: &AdmittedSession,
     premium: bool,
     serial: u16,
+    task_board_eligible: bool,
 ) -> TestResult {
     use crate::durability::{
         character_progression::{ExperienceAwardRequest, ExperienceRewardOccurrence},
@@ -295,6 +308,7 @@ async fn settle_kill(
             party_id: None,
             party_revision: None,
             members: vec![PartyKillXpMember {
+                task_board_eligible,
                 fence,
                 premium,
                 forge_dust: None,
@@ -305,7 +319,11 @@ async fn settle_kill(
                 request: ExperienceAwardRequest {
                     occurrence: ExperienceRewardOccurrence::from_bytes(death_occurrence(serial))
                         .map_err(debug)?,
-                    amount: oteryn_simulation_determinism::ExactI64::new(5),
+                    amount: oteryn_simulation_determinism::ExactI64::new(if task_board_eligible {
+                        5
+                    } else {
+                        0
+                    }),
                     context: binding.context.clone(),
                     policy_revision: binding.policy_revision.clone(),
                     reward_revision: binding.reward_revision.clone(),

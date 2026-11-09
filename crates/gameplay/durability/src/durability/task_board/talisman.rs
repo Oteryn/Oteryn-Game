@@ -193,7 +193,8 @@ mod tests {
     use oteryn_gameplay_quests::quest::task_board::full::BountyTask;
 
     #[test]
-    fn talisman_requires_equipped_extra_slot_and_active_matching_bounty() {
+    fn talisman_requires_equipped_extra_slot_and_active_matching_bounty() -> Result<(), &'static str>
+    {
         let mut board = TaskBoardData::default();
         let tracks = [
             (task_board::TALISMAN_DAMAGE.to_owned(), 1),
@@ -236,7 +237,7 @@ mod tests {
         // A frozen lethal-hit snapshot survives the task's completing credit.
         assert_eq!(snapshot.bonuses("oteryn:creature.rat"), [300, 0, 0, 10_000]);
         board.bounty.state = BountyStatus::Active;
-        let active = board.bounty.active.as_mut().expect("active bounty");
+        let active = board.bounty.active.as_mut().ok_or("active bounty")?;
         active.elite = true;
         active.dust = 8;
         let elite = BountyTalismanSnapshot::from_board(&board, &tracks, false);
@@ -249,5 +250,6 @@ mod tests {
             !BountyTalismanSnapshot::from_board(&board, &tracks, false)
                 .elite("oteryn:creature.rat")
         );
+        Ok(())
     }
 }

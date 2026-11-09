@@ -222,7 +222,7 @@ Zasady przeciw dublowaniu:
 
 | id | obszar | funkcja | status | brak |
 |---|---|---|---|---|
-| T201 | Hunting tasks | Elite checkbox i Platinum tasks w Bounty Board | PARTIAL | Implementation wired; focused PG execution pending after host SIGKILL and an isolated build reaching the focused-test time limit. Owner-approved numeric profile remains PARITY_PENDING. Evidence: apps/client/src/features/0072-task-board/tests/controls.rs:171 + elite_checkbox_uses_the_real_play_queue; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:203 + task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust. |
+| T201 | Hunting tasks | Elite checkbox i Platinum tasks w Bounty Board | DONE | Owner-approved numeric profile remains PARITY_PENDING. Real rolls, persisted rarity growth/reset, combat modifiers, Platinum XP and Premium-only dust/replay verified. Evidence: apps/client/src/features/0072-task-board/tests/controls.rs:171 + elite_checkbox_uses_the_real_play_queue; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:203 + task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust; crates/gameplay/dispatch/src/gameplay_transport/bounty_talisman.rs:287 + elite_spell_batch_halves_actual_hp_and_replay. Focused dispatch: 2 passed, 132.49s, real local PostgreSQL. All six locale catalogs checked. |
 
 ## cg_reward — uzupełnienie audytu 2026-11-09
 

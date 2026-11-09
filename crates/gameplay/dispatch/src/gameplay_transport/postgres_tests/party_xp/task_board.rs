@@ -443,3 +443,75 @@ pub(super) async fn assert_replay(
     );
     Ok(())
 }
+
+pub(super) async fn install_elite_last_kill(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    players: &[(ExactActorRef, GameSessionId)],
+) -> TestResult {
+    for (_, session) in players {
+        let fence = owner
+            .current_quest_fence(*session)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let body: serde_json::Value = sqlx::query_scalar(
+            "SELECT body FROM game_character_task_boards WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let mut data: TaskBoardData = serde_json::from_value(body)?;
+        let active = data.bounty.active.as_mut().ok_or("active bounty")?;
+        active.elite = true;
+        active.dust = 8;
+        active.grade = 3;
+        active.current = active.required - 1;
+        data.bounty.selection_serial = 1;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_character_task_boards SET body=$2 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(serde_json::to_value(data)?).execute(&mut *tx).await?;
+        tx.commit().await?;
+        owner.refresh_quest_session(*session, false).await;
+    }
+    Ok(())
+}
+pub(super) async fn assert_elite_last_kill(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    players: &[(ExactActorRef, GameSessionId)],
+) -> TestResult {
+    for (index, (_, session)) in players.iter().enumerate() {
+        let fence = owner
+            .current_quest_fence(*session)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let dust: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_forge_dust_entries WHERE character_id=encode($1,'hex')::uuid AND amount=8")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            dust,
+            i64::from(index == 0),
+            "only the damaging member earns Elite completion dust"
+        );
+        let body: serde_json::Value = sqlx::query_scalar(
+            "SELECT body FROM game_character_task_boards WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let data: TaskBoardData = serde_json::from_value(body)?;
+        assert_eq!(
+            data.bounty.state,
+            if index == 0 {
+                BountyStatus::Completed
+            } else {
+                BountyStatus::Active
+            }
+        );
+    }
+    Ok(())
+}
