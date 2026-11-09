@@ -10,13 +10,23 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 #[test]
 fn engenc2_nomads_native_use_refuses_missing_ground_before_quest_receipt() -> TestResult {
-    scenario(false)
+    scenario(Scenario::Window)
 }
 #[test]
 fn engenc2_nomads_flat_source_crate_materializes_once_postgres() -> TestResult {
-    scenario(true)
+    scenario(Scenario::Crate)
 }
-fn scenario(materialize_crate: bool) -> TestResult {
+#[test]
+fn engenc2_nomads_amphora_ground_relocation_refuses_inventory_postgres() -> TestResult {
+    scenario(Scenario::Amphora)
+}
+#[derive(Clone, Copy)]
+enum Scenario {
+    Window,
+    Crate,
+    Amphora,
+}
+fn scenario(mode: Scenario) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -198,32 +208,56 @@ fn scenario(materialize_crate: bool) -> TestResult {
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
 
-            if materialize_crate {
+            if !matches!(mode, Scenario::Window) {
+                let amphora = matches!(mode, Scenario::Amphora);
+                let source_y = if amphora { 32853 } else { 32854 };
                 use crate::durability::map_item_mint::{
                     FlatMapCrateProof, MapItemMintOutcome, MapItemMintRequest,
                 };
                 let definition = crate::durability::item_mint::TypedDefinitionRef {
                     family: "Item".into(),
-                    production_key: "oteryn:item.tibia.i2471".into(),
+                    production_key: if amphora {
+                        "oteryn:item.tibia.i2904"
+                    } else {
+                        "oteryn:item.tibia.i2471"
+                    }
+                    .into(),
                     revision_ref: "definition-r1".into(),
                 };
-                let item = crate::gameplay_transport::item_ref_admission::generation_item_facts(
-                    native,
-                    &definition,
-                )
+                let item = if amphora {
+                    oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(
+                        native,
+                        &definition,
+                    )
+                } else {
+                    crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                        native,
+                        &definition,
+                    )
+                }
                 .map_err(debug)?;
-                let placement_key = oteryn_world_bundle::bundle::placement_key(-9, 33218, 32854, 1)
-                    .ok_or("source crate key")?;
-                let tile = world.base().tile(33218, 32854, -9).ok_or("source tile")?;
-                let proof = FlatMapCrateProof::qualify(
-                    &item,
-                    world.base().digest(),
-                    placement_key,
-                    tile.depths(),
-                )
-                .ok_or("native empty source crate proof")?;
+                let placement_key =
+                    oteryn_world_bundle::bundle::placement_key(-9, 33218, source_y, 1)
+                        .ok_or("source crate key")?;
+                let tile = world
+                    .base()
+                    .tile(33218, source_y, -9)
+                    .ok_or("source tile")?;
+                let proof = if amphora {
+                    None
+                } else {
+                    Some(
+                        FlatMapCrateProof::qualify(
+                            &item,
+                            world.base().digest(),
+                            placement_key,
+                            tile.depths(),
+                        )
+                        .ok_or("native empty source crate proof")?,
+                    )
+                };
                 let request = MapItemMintRequest {
-                    flat_crate: Some(proof),
+                    flat_crate: proof,
                     command: crate::foundation::CommandRef::new(
                         admitted.game_session_id,
                         crate::foundation::CommandId::new(900).map_err(debug)?,
@@ -248,7 +282,23 @@ fn scenario(materialize_crate: bool) -> TestResult {
                 let content =
                     crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
                         .with_wheel(owner.premium_coordinator);
-                let destination = crate::durability::item_loop_move::LoopDestination::MainBackpack;
+                let destination = if amphora {
+                    crate::durability::item_loop_move::LoopDestination::Ground(
+                        crate::durability::item_loop_move::LoopGround {
+                            spatial_position: [
+                                33217_i32.to_be_bytes().as_slice(),
+                                32854_i32.to_be_bytes().as_slice(),
+                                (-9_i16).to_be_bytes().as_slice(),
+                            ]
+                            .concat(),
+                            map_revision: crate::map::overlay::map_revision(world.base()),
+                            content_revision: request.content_revision.clone(),
+                            placement_context: frame.to_vec(),
+                        },
+                    )
+                } else {
+                    crate::durability::item_loop_move::LoopDestination::MainBackpack
+                };
                 assert_eq!(
                     owner
                         .root
@@ -267,6 +317,9 @@ fn scenario(materialize_crate: bool) -> TestResult {
                 );
                 let mut unqualified = request.clone();
                 unqualified.flat_crate = None;
+                if amphora {
+                    unqualified.quantity = 2;
+                }
                 let mut frozen = owner
                     .root
                     .freeze_map_item_mint(
@@ -343,12 +396,12 @@ fn scenario(materialize_crate: bool) -> TestResult {
                             pickup_cell: Some(
                                 [
                                     33218_i32.to_be_bytes().as_slice(),
-                                    32854_i32.to_be_bytes().as_slice(),
+                                    i32::from(source_y).to_be_bytes().as_slice(),
                                     (-9_i16).to_be_bytes().as_slice(),
                                 ]
                                 .concat(),
                             ),
-                            destination,
+                            destination: destination.clone(),
                         },
                     )
                     .await
@@ -361,14 +414,30 @@ fn scenario(materialize_crate: bool) -> TestResult {
                     sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations")
                         .fetch_one(&h.pool)
                         .await?;
-                assert_eq!(remaining_ground, 0);
+                assert_eq!(remaining_ground, i64::from(amphora));
                 let carried: bool = sqlx::query_scalar(
                     "SELECT EXISTS (SELECT 1 FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid)"
                 ).bind(first.item_instance_id.as_slice()).fetch_one(&h.pool).await?;
-                assert!(
-                    carried,
-                    "the same source crate must be a direct backpack entry"
-                );
+                assert_eq!(carried, !amphora);
+                if let crate::durability::item_loop_move::LoopDestination::Ground(to) = destination
+                {
+                    let refused = owner.root.commit_item_loop_move(
+                        &permit, owner.character, owner.holder, &fence.item_fence(),
+                        crate::foundation::CommandRef::new(admitted.game_session_id, crate::foundation::CommandId::new(901).map_err(debug)?),
+                        &content,
+                        crate::durability::item_loop_move::LoopMoveRequest {
+                            item: first.item_instance_id, count: None, pickup_cell: Some(to.spatial_position),
+                            destination: crate::durability::item_loop_move::LoopDestination::MainBackpack,
+                        },
+                    ).await.map_err(debug)?;
+                    assert!(
+                        matches!(
+                            refused,
+                            Err(crate::durability::item_loop_move::LoopMoveRefusal::NotSupported)
+                        ),
+                        "Ground-only amphora cannot enter inventory: {refused:?}"
+                    );
+                }
                 drop(permit);
                 drop(owner);
                 drop(authority);

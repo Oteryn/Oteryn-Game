@@ -185,6 +185,10 @@ pub struct LoopGroundItem {
 pub trait ItemLoopContent: ItemWeightLookup {
     fn loop_content_digest(&self) -> [u8; 32];
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts>;
+    /// Only Ground-to-Ground relocation may admit a movable, non-portable profile.
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {
         None
     }
@@ -1162,7 +1166,14 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let Some(facts) = content.loop_facts(&definition) else {
+    let facts = if source == SourceKind::Ground
+        && matches!(request.destination, LoopDestination::Ground(_))
+    {
+        content.loop_ground_facts(&definition)
+    } else {
+        content.loop_facts(&definition)
+    };
+    let Some(facts) = facts else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
     if facts.definition != definition {
@@ -1642,10 +1653,12 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let world = fence.runtime_scope.world_id();
-                        if let Err(reason) = plan_map_item_loop_mint(
-                            mint,
-                            content.loop_facts(&mint.item.definition).as_ref(),
-                        ) {
+                        let facts = if matches!(destination, LoopDestination::Ground(_)) {
+                            content.loop_ground_facts(&mint.item.definition)
+                        } else {
+                            content.loop_facts(&mint.item.definition)
+                        };
+                        if let Err(reason) = plan_map_item_loop_mint(mint, facts.as_ref()) {
                             return refuse(reason);
                         }
                         plan_loop_destination(
