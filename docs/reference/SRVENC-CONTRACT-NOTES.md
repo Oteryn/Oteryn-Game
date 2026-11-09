@@ -2271,3 +2271,15 @@ GREEN real PG m51_postgres_native_portals_complete_all_ten_pits_and_reward:
 completed rank1, one reward claim/item. Dispatch clippy --all-targets -D warnings
 PASS277.191s. Engine pin identity unchanged. M51 remains PARTIAL pending full
 source reset closure and immediate abandoned-run custody cleanup.
+
+## M51: commit-time kick deadline closes the read/write race
+
+Crystal201189f svargrond_arena.lua:259-313 makes the original600-second deadline
+final. The durable transition validator now refuses a new death credit or portal
+progress once its transaction clock reaches that deadline, even if the earlier
+read was live. An unchanged receipt and a timeout/leave reset remain permitted;
+a fabricated late victory cannot hide inside a reset. No DDL or numbers added.
+RED m51_commit_clock_refuses_late_victory_and_portal_progress: actual assertion
+failure (112.106s including cold build). GREEN8 M51 tests:27.090s; real PG native
+origin5.965053611s, custody5.954610372s, runtime-role5.960392139s. Durability
+clippy --all-targets -D warnings PASS98.231s. M51 still PARTIAL for reset closure.

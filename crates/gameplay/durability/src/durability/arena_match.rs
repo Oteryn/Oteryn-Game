@@ -462,6 +462,12 @@ fn valid_transition(
     let Ok(action) = decode_match_request(payload) else {
         return false;
     };
+    // Crystal201189f svargrond_arena.lua:259-313: the original kick deadline
+    // is final. A read before expiry cannot authorize progress committed later.
+    let expired = matches!(before.phase, 1 | 2) && before.deadline_ms <= now_ms;
+    if expired && ready != before {
+        return false;
+    }
     if after == ready {
         return true;
     }
@@ -471,7 +477,7 @@ fn valid_transition(
     {
         return true;
     }
-    if disposition != D::Applied {
+    if expired || disposition != D::Applied {
         return false;
     }
     let mut expected = ready.clone();
