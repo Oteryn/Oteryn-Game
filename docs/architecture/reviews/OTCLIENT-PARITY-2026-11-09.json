@@ -1573,7 +1573,7 @@
     "otclient_path": [
       "modules/game_creatureinformation/creatureinformation.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0134-party-skull/view.rs",
@@ -1606,7 +1606,7 @@
       "S02",
       "S08"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Nazwy, zdrowie i ikony nad stworzeniami. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O021",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -1614,21 +1614,44 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje pełnego zestawu pasków zdrowia i ikon party/skull nad postacią w widoku świata; potwierdzone tarcze/czaszki są prezentowane w osobnym panelu.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Nazwy i HP są rysowane przy żywych encjach; party/skull pobierane z serwerowego push są przypisane do identity/generation encji, a nie tylko osobnego panelu.",
     "otclient_evidence": [
       {
         "path": "modules/game_creatureinformation/creatureinformation.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0023-presentation/actor_hud.rs",
+        "line": 94,
+        "detail": "Rysowanie nad encją: icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;"
+      },
+      {
+        "path": "apps/client/src/features/0134-party-skull/protocol.rs",
+        "line": 18,
+        "detail": "Konsument ikon: pub(in crate::play) fn apply("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/party_skull.rs",
+        "line": 45,
+        "detail": "Serwerowy push: let encoded = encode_party_icons(&icons).map_err(|_| ServeEnd::Disconnected)?;"
+      },
+      {
+        "path": "crates/protocol-oteryn/src/party_skull.rs",
+        "line": 21,
+        "detail": "Wire ikon: pub fn encode_party_icons(icons: &[PartyIcon]) -> Result<Vec<u8>, PartyWireError> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Cyklopedia: nawigacja między działami",
     "otclient_path": [
       "modules/game_cyclopedia/game_cyclopedia.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0199-cyclopedia-character/native.rs",
@@ -1664,7 +1687,7 @@
     "mechanics_row": [
       "P12c"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Cyklopedia: nawigacja między działami. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O022",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -1672,14 +1695,42 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Wspólny host Cyklopedii zmienia działy i wywołuje ich rzeczywiste zapytania; odpowiedzi trafiają do istniejących paneli mapy, bossów, przedmiotów i postaci.",
     "otclient_evidence": [
       {
         "path": "modules/game_cyclopedia/game_cyclopedia.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0057-cyclopedia-map/view.rs",
+        "line": 8,
+        "detail": "Wejście hosta: pub(in crate::play) fn open_window(link: &PlayLink) {"
+      },
+      {
+        "path": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs",
+        "line": 84,
+        "detail": "Nawigacja działów: pub(super) fn navigate_section(mailbox: &mut Mailbox, index: usize, values: &[String]) -> bool {"
+      },
+      {
+        "path": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs",
+        "line": 32,
+        "detail": "Caller wybranego działu: ) && commands.send(PlayCommand::Feature(command)).is_err()"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs",
+        "line": 71,
+        "detail": "Serwer mapy: return self.cyclopedia_atlas_wire(admitted, id, payload).await;"
+      },
+      {
+        "path": "crates/protocol-oteryn/src/cyclopedia.rs",
+        "line": 14,
+        "detail": "Wire mapy: pub fn encode_current_subarea(membership: Option<(u32, u32)>) -> [u8; 9] {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Przełączniki kompatybilności protokołu OT",
@@ -1717,7 +1768,7 @@
     "otclient_path": [
       "modules/game_forge/game_forge.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0152-item-forge/native.rs",
@@ -1743,7 +1794,7 @@
     "mechanics_row": [
       "P18"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Kuźnia egzaltacji. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O024",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -1751,21 +1802,59 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywny caller wybiera rzeczywiste przedmioty i operację kuźni, wysyła komendę 152, a właściciel item_forge zatwierdza wynik i historię.",
     "otclient_evidence": [
       {
         "path": "modules/game_forge/game_forge.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0152-item-forge/input.rs",
+        "line": 6,
+        "detail": "Wejście: pub fn item_forge_request(&self, payload: Vec<u8>) {"
+      },
+      {
+        "path": "apps/client/src/features/0152-item-forge/input.rs",
+        "line": 13,
+        "detail": "Przekazanie komendy: .send(PlayCommand::ServerMechanic(command))"
+      },
+      {
+        "path": "apps/client/src/features/0152-item-forge/protocol.rs",
+        "line": 12,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn item_forge_result("
+      },
+      {
+        "path": "apps/client/src/features/0152-item-forge/view.rs",
+        "line": 12,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/item_forge.rs",
+        "line": 43,
+        "detail": "Serwer: async fn item_forge_balance("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/item_forge.rs",
+        "line": 60,
+        "detail": "protocol-oteryn: pub fn decode(bytes: &[u8]) -> Option<Self> {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/item_forge.rs",
+        "line": 115,
+        "detail": "Serwer operacji: pub(super) async fn execute("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Okręgi HP/MP i status mnicha",
     "otclient_path": [
       "modules/game_healthcircle/game_healthcircle.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/local-spell-action-bar/view.rs",
@@ -1817,7 +1906,7 @@
       "C11",
       "UI-SPELL-BAR"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Okręgi HP/MP i status mnicha. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O025",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -1825,21 +1914,49 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje okręgów HP/MP wokół postaci; wartości zasobów i stany mnicha są dostępne w tekstowym HUD.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Ustawienia łuków są konsumowane przez renderer HP/MP wokół gracza; status mnicha pochodzi z serwerowego battle_instinct_status.",
     "otclient_evidence": [
       {
         "path": "modules/game_healthcircle/game_healthcircle.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/local-reference-preferences/arc_controls.rs",
+        "line": 80,
+        "detail": "Ustawienia łuków: pub(crate) unsafe fn read(&self, preferences: &mut ReferencePreferences) -> Result<(), String> {"
+      },
+      {
+        "path": "apps/client/src/features/0023-presentation/resources.rs",
+        "line": 36,
+        "detail": "Renderer HP/MP: pub(super) fn draw("
+      },
+      {
+        "path": "apps/client/src/features/0278-battle-instinct-status/protocol.rs",
+        "line": 51,
+        "detail": "Konsument mnicha: pub(in crate::play) fn battle_instinct_status_result("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/battle_instinct_status.rs",
+        "line": 88,
+        "detail": "Producent statusu: pub(super) async fn battle_instinct_status_page("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/actor_spell.rs",
+        "line": 446,
+        "detail": "Wire zasobów: pub fn encode_actor_vitals(vitals: &ActorVitals) -> Result<Vec<u8>, ActorSpellError> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "HP, MP, soul i warunki",
     "otclient_path": [
       "modules/game_healthinfo/healthinfo.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/local-spell-action-bar/view.rs",
@@ -1882,7 +1999,7 @@
       "C09",
       "C10"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: HP, MP, soul i warunki. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O026",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -1890,21 +2007,54 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "HP/MP/soul oraz stany i odpoczynek konsumują rzeczywiste ActorVitals i odpowiedzi serwerowe; projekcje nie nadają lokalnie zasobów.",
     "otclient_evidence": [
       {
         "path": "modules/game_healthinfo/healthinfo.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/protocol.rs",
+        "line": 21,
+        "detail": "Konsument HP/MP/soul: if let SessionEvent::ActorVitals(delta) = event {"
+      },
+      {
+        "path": "apps/client/src/features/0276-condition-status/protocol.rs",
+        "line": 7,
+        "detail": "Wejście stanów: pub fn condition_status_request(&self) {"
+      },
+      {
+        "path": "apps/client/src/features/0276-condition-status/protocol.rs",
+        "line": 51,
+        "detail": "Redukcja stanów: pub(in crate::play) fn condition_status_result("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/condition_status.rs",
+        "line": 141,
+        "detail": "Serwer stanów: pub(super) async fn condition_status_page(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/rest_status.rs",
+        "line": 29,
+        "detail": "Serwer odpoczynku: pub(super) async fn rest_status_page("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/actor_spell.rs",
+        "line": 446,
+        "detail": "Wire zasobów: pub fn encode_actor_vitals(vitals: &ActorVitals) -> Result<Vec<u8>, ActorSpellError> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Rankingi",
     "otclient_path": [
       "modules/game_highscore/game_highscore.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0009-highscores/native.rs",
@@ -1930,7 +2080,7 @@
     "mechanics_row": [
       "S11"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Rankingi. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O027",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -1938,21 +2088,54 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Formularz zapytania rankingu buduje komendę, transport kieruje ją do odpowiedzi highscore_snapshot, a klient redukuje strony kategorii/świata.",
     "otclient_evidence": [
       {
         "path": "modules/game_highscore/game_highscore.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0009-highscores/input.rs",
+        "line": 5,
+        "detail": "Wejście: pub fn highscores_request(&self, action: Action) {"
+      },
+      {
+        "path": "apps/client/src/features/0009-highscores/input.rs",
+        "line": 10,
+        "detail": "Przekazanie komendy: .send(PlayCommand::ServerMechanic(command))"
+      },
+      {
+        "path": "apps/client/src/features/0009-highscores/protocol.rs",
+        "line": 6,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn highscores_result("
+      },
+      {
+        "path": "apps/client/src/features/0009-highscores/view.rs",
+        "line": 12,
+        "detail": "Widok: pub(in crate::play) use native::open_window;"
+      },
+      {
+        "path": "crates/protocol-oteryn/src/highscores.rs",
+        "line": 158,
+        "detail": "protocol-oteryn: pub fn encode_highscores_query(query: HighscoresQuery) -> WireResult<Vec<u8>> {"
+      },
+      {
+        "path": "crates/gameplay/durability/src/durability/highscore_snapshot/reply.rs",
+        "line": 37,
+        "detail": "Właściciel rankingu: pub async fn answer_session_highscores("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Skróty klawiszowe i akcje przedmiotów",
     "otclient_path": [
       "modules/game_hotkeys/hotkeys_manager.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0179-hotkey-equip/native.rs",
@@ -2002,7 +2185,7 @@
       "I17c",
       "I17d"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Skróty klawiszowe i akcje przedmiotów. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O028",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -2010,14 +2193,42 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Własne skróty prowadzą do tekstu/czaru/użycia przedmiotu; cele self/target/cursor rozwiązywane z bieżących uchwytów, a equip ma osobny rzeczywisty caller.",
     "otclient_evidence": [
       {
         "path": "modules/game_hotkeys/hotkeys_manager.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/hotkeys.rs",
+        "line": 122,
+        "detail": "Wejście dowolnego skrótu: pub fn custom_hotkeys_input(&self, events: &[NormalizedInputEvent]) -> bool {"
+      },
+      {
+        "path": "apps/client/src/features/local-spell-action-bar/item_actions.rs",
+        "line": 56,
+        "detail": "Użycie przedmiotu: .send(crate::combat_input::PlayCommand::WorldContext(command))"
+      },
+      {
+        "path": "apps/client/src/features/0179-hotkey-equip/input.rs",
+        "line": 4,
+        "detail": "Wejście equip: pub fn hotkey_equip_assign(&self, slot: usize, definition: u32) -> bool {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs",
+        "line": 13,
+        "detail": "Serwer użycia kontekstowego: pub(in super::super) async fn route<A: FreshAdmissionAuthority>("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/world_object.rs",
+        "line": 307,
+        "detail": "Wire celu użycia: pub fn encode_use_intent(target: &WorldObjectTarget) -> Result<Vec<u8>, WorldObjectError> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Przykład renderowania HTML",
@@ -2055,7 +2266,7 @@
     "otclient_path": [
       "modules/game_imbuementtracker/imbuementtracker.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0068-imbue/native.rs",
@@ -2081,7 +2292,7 @@
     "mechanics_row": [
       "P21"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Tracker czasu imbuementów wyposażenia. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O030",
     "previous_status": "PARTIAL",
     "closed_list_status": "DONE",
@@ -2089,21 +2300,49 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "Brakuje stale widocznego trackera wszystkich wyposażonych imbuementów z filtrami czasu; czas jest pokazany tylko dla przedmiotu w oknie imbuingu.",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Tracker odpytuje wyposażone przedmioty przez inspekcję przedmiotów, filtruje potwierdzone czasy i odświeża widget istniejącego panelu.",
     "otclient_evidence": [
       {
         "path": "modules/game_imbuementtracker/imbuementtracker.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0068-imbue/input/tracker.rs",
+        "line": 80,
+        "detail": "Wejście trackera: pub fn imbue_tracker_refresh(&self) -> bool {"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/input/tracker.rs",
+        "line": 60,
+        "detail": "Zapytanie wyposażenia: if commands.send(PlayCommand::ServerMechanic(command)).is_err() {"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/protocol.rs",
+        "line": 32,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn equipment_inspection_result("
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs",
+        "line": 53,
+        "detail": "Serwer czasu imbuementów: pub(super) async fn inspect("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/inspection.rs",
+        "line": 104,
+        "detail": "Wire trackera: pub fn encode_request(request: Request) -> Result<Vec<u8>> {"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Nakładanie i usuwanie imbuementów",
     "otclient_path": [
       "modules/game_imbuing/imbuing.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "apps/client/src/features/0068-imbue/native.rs",
@@ -2124,7 +2363,7 @@
     "mechanics_row": [
       "P21"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Nakładanie i usuwanie imbuementów. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O031",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -2132,21 +2371,59 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Natywne akcje nakładania/usuwania przechodzą do komendy Imbue i serwerowego imbuement_wire; panel redukuje wynik zamiast optymistycznie nadawać efekt.",
     "otclient_evidence": [
       {
         "path": "modules/game_imbuing/imbuing.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0068-imbue/input.rs",
+        "line": 30,
+        "detail": "Wejście: pub fn imbue_details_request(&self) {"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/input.rs",
+        "line": 35,
+        "detail": "Przekazanie komendy: enqueue(&mut lock(&self.mailbox), &self.commands, intent);"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/protocol.rs",
+        "line": 27,
+        "detail": "Konsument odpowiedzi: pub(in crate::play) fn imbue_result(&self, response: &ImbueResponse) {"
+      },
+      {
+        "path": "apps/client/src/features/0068-imbue/view.rs",
+        "line": 10,
+        "detail": "Widok: pub fn open_imbue(&self) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs",
+        "line": 295,
+        "detail": "Serwer: pub(super) async fn use_imbuement_item_impl("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/imbuement.rs",
+        "line": 81,
+        "detail": "protocol-oteryn: pub fn encode_imbuement_request(r: &ImbuementRequest) -> Result<Vec<u8>, Error> {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/imbuement.rs",
+        "line": 430,
+        "detail": "Serwer operacji: pub(super) async fn imbuement_wire("
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Inspekcja przedmiotu",
     "otclient_path": [
       "modules/game_inspect/inspect.lua"
     ],
-    "oteryn_status": "UNKNOWN",
+    "oteryn_status": "DONE",
     "oteryn_evidence": [
       {
         "path": "crates/client-ui/src/features/0132-inspection/view.rs",
@@ -2167,7 +2444,7 @@
     "mechanics_row": [
       "I16"
     ],
-    "missing": "Nie potwierdzono całego łańcucha produkcyjnego wejście → konsument → protocol-oteryn/serwer (albo równoważnego źródła lokalnego) dla pełnego zakresu: Inspekcja przedmiotu. Istniejące pliki i fragmenty wskazano w dowodach; historyczne DONE/testy nie stanowią świeżej weryfikacji.",
+    "missing": "",
     "id": "O032",
     "previous_status": "DONE",
     "closed_list_status": null,
@@ -2175,14 +2452,42 @@
     "otclient_commit": "3aac800317437428929a210ef6077e823fe6ebda",
     "comparison_commit": "245549611949c294a6b307604dfb69ffa9037936",
     "historical_gap": "",
-    "assessment": "Nie stwierdzono konkretnego usunięcia implementacji. UNKNOWN oznacza niezamkniętą weryfikację, nie regresję i nie MISSING.",
+    "assessment": "Inspekcja wybranego przedmiotu rozwiązuje rzeczywisty uchwyt, przesyła go przez discovery_send do serwera i wyświetla potwierdzony wynik.",
     "otclient_evidence": [
       {
         "path": "modules/game_inspect/inspect.lua",
         "line": 1,
         "detail": "Plik odniesienia istnieje w przypiętym drzewie."
       }
-    ]
+    ],
+    "verification_trace": [
+      {
+        "path": "apps/client/src/features/0132-inspection/input.rs",
+        "line": 12,
+        "detail": "Wejście wybranego uchwytu: pub fn inspect_selected_item(&self) -> bool {"
+      },
+      {
+        "path": "apps/client/src/features/0132-inspection/input.rs",
+        "line": 10,
+        "detail": "Caller inspekcji: command.is_some_and(|command| self.discovery_send(command))"
+      },
+      {
+        "path": "crates/client-ui/src/features/0132-inspection/protocol.rs",
+        "line": 95,
+        "detail": "Konsument wyniku: pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {"
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs",
+        "line": 38,
+        "detail": "Właściciel odczytu: async fn inspection_command("
+      },
+      {
+        "path": "crates/protocol-oteryn/src/inspection.rs",
+        "line": 16,
+        "detail": "Wire inspekcji: pub const COMMAND_TYPE_INSPECTION: u32 = 153;"
+      }
+    ],
+    "verified_base": "12d7bbcb39558f9c88f02636d99bacc21a6f0435"
   },
   {
     "feature": "Układ interfejsu i okna boczne",

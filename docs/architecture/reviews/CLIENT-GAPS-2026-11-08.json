@@ -557,7 +557,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8"
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view.rs:8; apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84; apps/client/src/features/0057-cyclopedia-map/view/actions.rs:32; crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:71; crates/protocol-oteryn/src/cyclopedia.rs:14"
  },
  {
   "id": "T078",
@@ -1437,7 +1437,7 @@
   "status": "DONE",
   "gap": "Nazwy, potwierdzone zdrowie i pełne stany tarcz/czaszek są rysowane w świecie; ikony odświeżają się bez otwierania panelu i zachowują miganie oraz generację encji.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/icons.rs:12 + o021_overhead_queries_server_icons_without_opening_status_window + live_names_reach_scene_and_disappear_with_visibility"
+  "evidence": "apps/client/src/features/0023-presentation/actor_hud.rs:94; apps/client/src/features/0134-party-skull/protocol.rs:18; crates/gameplay/dispatch/src/gameplay_transport/connection/serve/party_skull.rs:45; crates/protocol-oteryn/src/party_skull.rs:21"
  },
  {
   "id": "O022",
@@ -1447,7 +1447,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8"
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view.rs:8; apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84; apps/client/src/features/0057-cyclopedia-map/view/actions.rs:32; crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs:71; crates/protocol-oteryn/src/cyclopedia.rs:14"
  },
  {
   "id": "O025",
@@ -1457,7 +1457,7 @@
   "status": "DONE",
   "gap": "Okręgi HP/MP wokół postaci i wskaźniki harmony/serene korzystają z potwierdzonych zasobów; widoczność, geometria i przezroczystość mają trwałe ustawienia.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/resources.rs:99 + monk indicators and player-centred HP/MP rings; apps/client/src/features/local-reference-preferences/arc_controls.rs:91 + native circle settings; apps/client/src/features/local-reference-preferences/tests/presentation.rs:171 + o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals; apps/client/src/features/local-reference-preferences/tests/hud_options.rs:104 + hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:218 + hud_arcs_project_server_vitals_and_persist_geometry_controls"
+  "evidence": "apps/client/src/features/local-reference-preferences/arc_controls.rs:80; apps/client/src/features/0023-presentation/resources.rs:36; apps/client/src/features/0278-battle-instinct-status/protocol.rs:51; crates/gameplay/dispatch/src/gameplay_transport/battle_instinct_status.rs:88; crates/protocol-oteryn/src/actor_spell.rs:446"
  },
  {
   "id": "O028",
@@ -1467,7 +1467,7 @@
   "status": "DONE",
   "gap": "Brakuje menedżera dowolnych skrótów tekstowych i użycia przedmiotów na self/target/cursor; istnieją przypisania akcji klienta, czarów i formularz equip.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-spell-action-bar/hotkeys.rs:109 + custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters; apps/client/src/features/local-spell-action-bar/item_actions.rs:21 + item_hotkeys_resolve_live_handles_for_self_target_and_cursor"
+  "evidence": "apps/client/src/features/local-spell-action-bar/hotkeys.rs:122; apps/client/src/features/local-spell-action-bar/item_actions.rs:56; apps/client/src/features/0179-hotkey-equip/input.rs:4; crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:13; crates/protocol-oteryn/src/world_object.rs:307"
  },
  {
   "id": "O030",
@@ -1477,7 +1477,7 @@
   "status": "DONE",
   "gap": "",
   "lane": "cg_cyclo",
-  "evidence": "apps/client/src/features/0068-imbue/input/tracker.rs:76 + equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed"
+  "evidence": "apps/client/src/features/0068-imbue/input/tracker.rs:80; apps/client/src/features/0068-imbue/input/tracker.rs:60; apps/client/src/features/0068-imbue/protocol.rs:32; crates/gameplay/dispatch/src/gameplay_transport/inspection.rs:53; crates/protocol-oteryn/src/inspection.rs:104"
  },
  {
   "id": "O033",
