@@ -89,3 +89,74 @@ fn server_skill_reply_and_achievement_delta_reach_capture_caller()
     }
     Ok(())
 }
+
+#[test]
+fn screenshot_settings_survive_restart_and_save_full_and_game_only_frames()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        play::{ScreenshotPreferences, SettingsState},
+        screenshots::{Frame, Rect},
+    };
+    let root = std::env::temp_dir().join(format!("screenshot-settings-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let settings_path = root.join("settings.json");
+    let directory = root.join("chosen");
+    let mut settings = SettingsState::new(Some(settings_path.clone()));
+    let mut preferences = settings.preferences.clone();
+    preferences.screenshots.directory = directory.to_str().ok_or("directory")?.into();
+    preferences.screenshots.game_only = true;
+    settings.apply(preferences.clone());
+    let restored = SettingsState::new(Some(settings_path));
+    assert_eq!(restored.preferences.screenshots, preferences.screenshots);
+    let pixels: Vec<u8> = (0..24).collect();
+    let frame = || Frame {
+        width: 3,
+        height: 2,
+        bgra: &pixels,
+        game: Rect {
+            x: 1,
+            y: 0,
+            width: 1,
+            height: 2,
+        },
+    };
+    let mut capture = CaptureController::default();
+    capture.manual();
+    let cropped = restored.preferences.screenshots.save_frame(
+        &mut capture,
+        &root.join("fallback"),
+        frame(),
+    )?;
+    assert!(!capture.pending());
+    assert_eq!(cropped.parent(), Some(directory.as_path()));
+    let bytes = std::fs::read(&cropped)?;
+    assert_eq!(&bytes[18..22], &1i32.to_le_bytes());
+    assert_eq!(&bytes[22..26], &(-2i32).to_le_bytes());
+    assert_eq!(&bytes[54..], &[&pixels[4..8], &pixels[16..20]].concat());
+    let mut full: ScreenshotPreferences = restored.preferences.screenshots.clone();
+    full.game_only = false;
+    full.directory.clear();
+    capture.manual();
+    let entire = full.save_frame(&mut capture, &root.join("fallback"), frame())?;
+    assert!(!capture.pending());
+    assert_eq!(entire.parent(), Some(root.join("fallback").as_path()));
+    let bytes = std::fs::read(&entire)?;
+    assert_eq!(&bytes[18..22], &3i32.to_le_bytes());
+    assert_eq!(&bytes[54..], pixels.as_slice());
+    capture.manual();
+    let second = full.save_frame(&mut capture, &root.join("fallback"), frame())?;
+    assert_ne!(second, entire);
+    let mut invalid = preferences.clone();
+    invalid.screenshots.directory = "relative-folder".into();
+    settings.apply(invalid);
+    assert_eq!(settings.preferences, preferences);
+    let blocked = root.join("not-a-directory");
+    std::fs::write(&blocked, b"preserve")?;
+    full.directory = blocked.to_str().ok_or("blocked directory")?.into();
+    capture.manual();
+    assert!(full.save_frame(&mut capture, &root, frame()).is_err());
+    assert!(capture.pending());
+    assert_eq!(std::fs::read(blocked)?, b"preserve");
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

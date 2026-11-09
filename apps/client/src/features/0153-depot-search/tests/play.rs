@@ -196,3 +196,48 @@ fn depot_native_callback_does_not_drop_the_session_owner() -> Result<(), Box<dyn
     assert!(mailbox.quest_shutdown && mailbox.wheel_shutdown);
     Ok(())
 }
+
+#[test]
+fn depot_native_retrieve_rejects_a_changed_displayed_reply()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::depot_search::{
+        self as wire, Outcome, Reply, Request, SearchResult,
+    };
+    let (link, mut receiver, outbox) = play_channel();
+    outbox.depot_search_initialize(true);
+    let displayed = Reply {
+        outcome: Outcome::Listed,
+        retrieved: 0,
+        results: vec![SearchResult {
+            client_id: 321,
+            depot: 7,
+            stash: 0,
+            inbox: 0,
+            tiers: vec![],
+        }],
+    };
+    let mut current = displayed.clone();
+    current.results[0].client_id = 999;
+    crate::play::mailbox::lock(&link.mailbox).depot_search.reply = Some(current.clone());
+    let inputs = native::Inputs::default();
+    native::activate_displayed(&link.mailbox, &link.commands, &inputs, 8, Some(&displayed));
+    assert!(receiver.try_recv().is_err());
+    assert!(
+        link.depot_search_panel()
+            .feedback
+            .as_deref()
+            .is_some_and(|message| message.contains("Results changed"))
+    );
+    native::activate_displayed(&link.mailbox, &link.commands, &inputs, 8, Some(&current));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("retrieve-all missing".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        Request::Retrieve {
+            client_id: 999,
+            all: true
+        }
+    );
+    Ok(())
+}

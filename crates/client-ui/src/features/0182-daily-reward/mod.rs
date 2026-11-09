@@ -8,7 +8,7 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{Intent, apply_result, request};
+pub use protocol::{Intent, apply_result, request, request_details};
 pub use state::DailyRewardPanel;
 pub use view::panel_text;
 #[cfg(test)]
@@ -18,3 +18,7 @@ mod tests;
 #[path = "state/returner.rs"]
 mod returner;
 pub use returner::{ReturnerOffer, ReturnerRewardPanel};
+
+#[path = "state/details.rs"]
+mod details;
+pub use details::{apply_details, details_text};

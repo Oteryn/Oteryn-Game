@@ -5,6 +5,12 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "shortcut_controls.rs"]
+mod shortcut_controls;
+use shortcut_controls::ShortcutControls;
+#[path = "graphics_controls.rs"]
+mod graphics_controls;
+use graphics_controls::GraphicsControls;
 #[path = "layout_controls.rs"]
 mod layout_controls;
 use layout_controls::LayoutControls;
@@ -16,6 +22,8 @@ mod hud_controls;
 use hud_controls::HudControls;
 
 pub(super) struct Controls {
+    pub(super) graphics: GraphicsControls,
+    pub(super) shortcuts: ShortcutControls,
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,
@@ -57,6 +65,8 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let graphics = GraphicsControls::new(hwnd)?;
+            let shortcuts = ShortcutControls::new(hwnd)?;
             let actor_hud = HudControls::new(hwnd)?;
             let console = ConsoleControls::new(hwnd)?;
             let layout = LayoutControls::new(hwnd)?;
@@ -334,6 +344,8 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                graphics,
+                shortcuts,
                 actor_hud,
                 manual,
                 console,

@@ -12,3 +12,12 @@ impl BattlePanel {
         self.rows.sort_by_key(|e| e.entity);
     }
 }
+
+/// The registered read-only metadata command path for battle filters.
+pub fn metadata_request(
+    state: &mut super::PlayerMetadataState,
+    visible: &[oteryn_client_runtime::combat::EntityRef],
+    now: std::time::Instant,
+) -> Option<oteryn_client_runtime::server_mechanic::ServerMechanicCommand> {
+    super::metadata::request(state, visible, now)
+}

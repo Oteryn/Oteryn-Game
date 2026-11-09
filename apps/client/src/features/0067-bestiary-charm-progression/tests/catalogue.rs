@@ -73,6 +73,10 @@ fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
     );
     link.bestiary_catalogue_request(7);
     assert_eq!(link.charm_progression_panel().fields[1], "9");
+    assert!(
+        oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel())
+            .contains("Moss keeper — category illustration")
+    );
     link.bestiary_catalogue_request(6);
     assert_eq!(link.charm_progression_panel().fields[1], "7");
     assert!(receiver.try_recv().is_err());
@@ -101,6 +105,8 @@ fn bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies()
         },
     );
     let text = oteryn_client_ui::charm_progression::bestiary_text(&link.charm_progression_panel());
+    assert!(text.contains("Grove watcher — category illustration"));
+    assert!(text.contains("███████"));
     assert!(text.contains("Health: 90"));
     assert!(text.contains("Resistance fire: 20/1%"));
     assert!(text.contains("Twig: 1-2"));

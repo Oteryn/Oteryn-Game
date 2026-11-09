@@ -10,6 +10,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Vec<HWND> {
             "Minimap...",
             "Frames...",
             "General options...",
+            "Screenshots...",
         ]
         .iter()
         .enumerate()
@@ -41,7 +42,7 @@ pub(super) fn page_help(page: SettingsPage) -> &'static str {
             "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
         }
         SettingsPage::Graphics => {
-            "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+            "Fullscreen, VSync and integral world scaling apply immediately. Engine and antialiasing show the supported modes."
         }
         SettingsPage::Sound => "Master volume % (0–100). Changes apply to playback immediately.",
         _ => "",

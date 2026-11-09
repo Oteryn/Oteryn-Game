@@ -1,6 +1,6 @@
 //! Native appearance commands. Retained intents never rebase at a newer Character root.
 #[path = "appearance_change/catalogue.rs"]
-mod catalogue;
+pub(super) mod catalogue;
 #[path = "appearance_change/command_replay.rs"]
 mod command_replay;
 #[path = "appearance_change/observation.rs"]

@@ -1,6 +1,13 @@
 use super::*;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> {
+        let entities = self.world_entities()?;
+        entities
+            .iter()
+            .find(|entity| entity.entity.identity == *entities.own_identity())
+            .copied()
+    }
     fn refusal_detail(&self) -> Option<oteryn_session::refusal_detail::RefusalDetail> {
         self.last_refusal_detail()
     }

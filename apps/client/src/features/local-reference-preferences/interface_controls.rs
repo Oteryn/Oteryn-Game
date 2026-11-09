@@ -3,6 +3,7 @@ use super::*;
 use oteryn_client::play::ReferencePreferences;
 
 pub(crate) struct InterfaceControls {
+    game_window: [HWND; 8],
     label: HWND,
     scale: HWND,
     cursor: HWND,
@@ -30,6 +31,39 @@ impl InterfaceControls {
                 [560, 225, 100, 26],
                 WS_BORDER | ES_NUMBER as u32,
             );
+            let game_window = [
+                "Own spell effects",
+                "Other spell effects",
+                "Combat value text",
+                "Loot result messages",
+                "Target frame",
+                "PvP frames",
+                "Loot highlights",
+                "Server notice banner",
+            ]
+            .map(|label| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    label,
+                    0,
+                    [0, 0, 220, 26],
+                    BS_AUTOCHECKBOX as u32,
+                )
+            });
+            for (index, handle) in game_window.iter().enumerate() {
+                MoveWindow(
+                    *handle,
+                    10 + (index % 3) as i32 * 230,
+                    305 + (index / 3) as i32 * 35,
+                    220,
+                    26,
+                    1,
+                );
+            }
+            if game_window.iter().any(|handle| handle.is_null()) {
+                return None;
+            }
             let names = ["Own name", "Other player names", "Creature names"].map(|label| {
                 control(
                     hwnd,
@@ -74,6 +108,7 @@ impl InterfaceControls {
                 .iter()
                 .any(|handle| handle.is_null()))
             .then_some(Self {
+                game_window,
                 label,
                 scale,
                 cursor,
@@ -95,6 +130,7 @@ impl InterfaceControls {
             ]
             .into_iter()
             .chain(self.names)
+            .chain(self.game_window)
             {
                 ShowWindow(handle, if visible { SW_SHOW } else { SW_HIDE });
             }
@@ -107,6 +143,26 @@ impl InterfaceControls {
             preferences.tooltip_delay_ms = text(self.delay)
                 .parse()
                 .map_err(|_| "Invalid tooltip delay".to_owned())?;
+            let [
+                own_spells,
+                other_spells,
+                value_text,
+                loot_messages,
+                target_frame,
+                pvp_frame,
+                loot_highlight,
+                banner,
+            ] = self
+                .game_window
+                .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
+            preferences.game_window.own_spells = own_spells;
+            preferences.game_window.other_spells = other_spells;
+            preferences.game_window.value_text = value_text;
+            preferences.game_window.loot_messages = loot_messages;
+            preferences.game_window.target_frame = target_frame;
+            preferences.game_window.pvp_frame = pvp_frame;
+            preferences.game_window.loot_highlight = loot_highlight;
+            preferences.game_window.banner = banner;
             preferences.hud_names = self
                 .names
                 .map(|handle| SendMessageW(handle, BM_GETCHECK, 0, 0) == 1);
@@ -130,6 +186,19 @@ impl InterfaceControls {
                 self.delay,
                 wide(&preferences.tooltip_delay_ms.to_string()).as_ptr(),
             );
+            let options = preferences.game_window;
+            for (handle, enabled) in self.game_window.iter().zip([
+                options.own_spells,
+                options.other_spells,
+                options.value_text,
+                options.loot_messages,
+                options.target_frame,
+                options.pvp_frame,
+                options.loot_highlight,
+                options.banner,
+            ]) {
+                SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
+            }
             for (handle, enabled) in self.names.iter().zip(preferences.hud_names) {
                 SendMessageW(*handle, BM_SETCHECK, usize::from(enabled), 0);
             }

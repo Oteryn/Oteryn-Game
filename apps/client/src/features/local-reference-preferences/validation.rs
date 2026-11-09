@@ -1,8 +1,7 @@
-//! Validation shared by native settings, imports, and persistence.
+//! Shared validation, including both generations of graphics preferences.
 use super::*;
 impl ReferencePreferences {
     pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
-
     pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
         if index >= Self::MOUSE_PRESETS.len() {
             return Err(PreferenceError);
@@ -10,7 +9,6 @@ impl ReferencePreferences {
         self.swap_mouse_buttons = index == 1;
         Ok(())
     }
-
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         if !self.performance.valid() {
@@ -26,6 +24,13 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
+        if self.active_battle_list >= self.battle_lists.len()
+            || !self.bar_actions.valid()
+            || !self.bar_layout.valid()
+            || !self.action_keys.valid(self)
+        {
+            return Err(PreferenceError);
+        }
         if self.tooltip_delay_ms > 3000
             || self.arc_opacity > 100
             || !(10..=32).contains(&self.console_font_px)
@@ -36,6 +41,7 @@ impl ReferencePreferences {
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()
             || !self.frames.valid()
+            || !self.screenshots.valid()
             || !self.arcs.valid()
             || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)

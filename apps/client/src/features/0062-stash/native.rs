@@ -76,7 +76,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             940,
-            560,
+            610,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -165,6 +165,10 @@ fn run(
             [340, 358, 250, 28],
             WS_TABSTOP,
         );
+        let category = control(hwnd, "EDIT", "", 114, [100, 400, 170, 28], ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP);
+        let trader = control(hwnd, "EDIT", "", 115, [370, 400, 220, 28], ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP);
+        control(hwnd, "STATIC", "Category:", 116, [10, 402, 85, 24], 0);
+        control(hwnd, "STATIC", "Trader:", 117, [290, 402, 75, 24], 0);
         let item = control(
             hwnd,
             "LISTBOX",
@@ -194,7 +198,7 @@ fn run(
             "EDIT",
             "",
             107,
-            [10, 396, 900, 115],
+            [10, 442, 900, 115],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         if [
@@ -208,6 +212,9 @@ fn run(
             stow,
             status,
             carried_label,
+            search,
+            category,
+            trader,
         ]
         .iter()
         .any(|h| h.is_null())
@@ -236,9 +243,14 @@ fn run(
             for id in std::mem::take(&mut actions.0) {
                 let intent = match id {
                     SEARCH if !mailbox.stash.pending => {
-                        let mut text = [0u16; 257];
-                        let n = GetWindowTextW(search, text.as_mut_ptr(), 257);
-                        mailbox.stash.query = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        let mut text = [0u16; 129];
+                        let n = GetWindowTextW(search, text.as_mut_ptr(), 129);
+                        let search = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        let n = GetWindowTextW(category, text.as_mut_ptr(), 129);
+                        let category = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        let n = GetWindowTextW(trader, text.as_mut_ptr(), 129);
+                        let trader = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        PlayLink::stash_enqueue_filter(&mut mailbox, &commands, search, category, trader);
                         None
                     }
                     SORT if !mailbox.stash.pending => {
@@ -247,7 +259,7 @@ fn run(
                             Sort::Name => Sort::Stock,
                             Sort::Stock => Sort::Name,
                         };
-                        None
+                        Some(Intent::Filter)
                     }
                     PREVIOUS => Some(Intent::Previous),
                     NEXT => Some(Intent::Next),

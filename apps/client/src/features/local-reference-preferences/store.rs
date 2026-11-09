@@ -27,8 +27,18 @@ impl PreferenceStore {
         if bytes.len() > 1 << 20 {
             return Err(io::Error::other("Settings file exceeds 1 MiB"));
         }
-        let preferences: ReferencePreferences =
-            serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut document: serde_json::Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        if let Some(fields) = document.as_object_mut()
+            && fields.get("hotkey_profiles").is_some_and(|value| value.get("presets").is_some_and(serde_json::Value::is_object) && value.get("selected").is_some_and(serde_json::Value::is_string) && value.get("chat_on").is_some_and(serde_json::Value::is_boolean))
+        {
+            if fields.contains_key("hotkey_contexts") {
+                return Err(io::Error::other("Conflicting hotkey context formats"));
+            }
+            if let Some(contexts) = fields.remove("hotkey_profiles") {
+                fields.insert("hotkey_contexts".into(), contexts);
+            }
+        }
+        let preferences: ReferencePreferences = serde_json::from_value(document).map_err(io::Error::other)?;
         preferences.validate().map_err(io::Error::other)?;
         Ok(preferences)
     }
@@ -111,5 +121,25 @@ impl PreferenceStore {
         std::env::var_os("LOCALAPPDATA")
             .map(PathBuf::from)
             .map(|root| root.join(Path::new("Oteryn/client-preferences.json")))
+    }
+}
+
+#[cfg(test)]
+mod merge_compatibility {
+    use super::*;
+    #[test]
+    fn rich_options_profiles_load_after_context_extraction() -> Result<(), Box<dyn std::error::Error>> {
+        let path = std::env::temp_dir().join(format!("clientgap-profile-merge-{}.json", std::process::id()));
+        let mut preferences = ReferencePreferences::default();
+        preferences.rebind("0009-highscores-open", "ALT+H")?;
+        preferences.add_hotkey_profile("Merge compatibility")?;
+        let mut old = serde_json::to_value(&preferences)?;
+        let fields = old.as_object_mut().ok_or("preference object")?;
+        let contexts = fields.remove("hotkey_contexts").ok_or("contexts")?;
+        fields.insert("hotkey_profiles".into(), contexts);
+        std::fs::write(&path, serde_json::to_vec(&old)?)?;
+        assert_eq!(PreferenceStore::read_transfer(&path)?, preferences);
+        std::fs::remove_file(path)?;
+        Ok(())
     }
 }

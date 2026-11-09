@@ -30,6 +30,9 @@ impl PlayLink {
         use oteryn_client_ui::quick_loot::{
             Action, QuickLootCategory as Category, QuickLootFilterMode as Mode, QuickLootRecipient,
         };
+        if action == 9 {
+            return self.discovery_panel().loot.managed && self.inventory_open_container();
+        }
         if action == 7 {
             let mut mailbox = lock(&self.mailbox);
             mailbox.discovery.loot.managed = !mailbox.discovery.loot.managed;

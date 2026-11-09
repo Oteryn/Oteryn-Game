@@ -238,3 +238,43 @@ fn failed_panel_send_releases_pending_controls() {
     assert!(!link.battle_panel().pending);
     assert_eq!(link.battle_panel().pending_command, None);
 }
+
+#[test]
+fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::feature_0017_attack::view::BattleListPreferences;
+    use crate::play::{PreferenceStore, SettingsState};
+    let root = std::env::temp_dir().join(format!("active-battle-list-{}", std::process::id()));
+    let base = root.join("preferences.json");
+    let mut settings = SettingsState::new(Some(base.clone()));
+    settings.select_character(Some([15; 16]));
+    let mut preferences = settings.preferences.clone();
+    preferences.battle_lists.push(BattleListPreferences {
+        name: "Targets".into(),
+        ..Default::default()
+    });
+    settings.apply(preferences);
+    let (link, _, _) = play_channel();
+    settings.sync_battle_lists(&link);
+    assert!(link.battle_select_list(1));
+    settings.sync_battle_lists(&link);
+    assert_eq!(
+        PreferenceStore::load(PreferenceStore::character_path(&base, [15; 16]))?
+            .preferences()
+            .active_battle_list,
+        1
+    );
+    settings.select_character(Some([40; 16]));
+    settings.sync_battle_lists(&link);
+    assert_eq!(link.active_battle_list(), 0);
+    settings.select_character(Some([15; 16]));
+    settings.sync_battle_lists(&link);
+    assert_eq!(link.active_battle_list(), 1);
+    assert!(!link.battle_select_list(2));
+    assert_eq!(link.active_battle_list(), 1);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[path = "metadata.rs"]
+mod metadata;

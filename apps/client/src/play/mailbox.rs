@@ -113,6 +113,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 pub(super) struct Mailbox {
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     pub(super) local_preferences: crate::play::ReferencePreferences,
+    pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,

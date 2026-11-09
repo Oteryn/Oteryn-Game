@@ -73,6 +73,11 @@ fn parse(value: &str) -> Result<Chord, PreferenceError> {
     Ok(Chord(code.ok_or(PreferenceError)?, modifiers))
 }
 
+pub(crate) fn parse_action_chord(value: &str) -> Option<(KeyCode, Modifiers)> {
+    parse(value)
+        .ok()
+        .map(|Chord(code, modifiers)| (code, modifiers))
+}
 fn validate_map(map: &std::collections::BTreeMap<String, String>) -> Result<(), PreferenceError> {
     for (id, value) in map {
         if !REGISTERED_BINDINGS

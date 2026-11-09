@@ -1,5 +1,9 @@
 #[path = "state/catalogue.rs"]
 pub mod catalogue;
+#[path = "state/charm_browser.rs"]
+pub mod charm_browser;
+#[path = "view/illustration.rs"]
+mod illustration;
 mod input;
 mod protocol;
 mod state;

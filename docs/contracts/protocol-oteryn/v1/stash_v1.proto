@@ -9,6 +9,13 @@ message StashIntentV1 {
   optional uint64 item_handle = 3; // stow only
   optional bytes row_handle = 4; // withdraw only; exact 16-byte last_entry_id
   optional uint32 amount = 5; // withdraw only; >0, at most 20*stack_max
+  optional StashFilterV1 filter = 6; // fresh view only; excluded from conversion receipt identity
+}
+message StashFilterV1 {
+  string search = 1; // <=128 UTF-8 bytes, case-insensitive name/key substring
+  string category = 2; // <=128 bytes; admitted item type, weapon type or equipment slot
+  string trader = 3; // <=128 bytes; admitted buyer name substring (BuyFromPlayer offers)
+  bool stock_order = 4; // descending quantity; otherwise ascending pinned name
 }
 message StashRowV1 {
   bytes handle = 1;
@@ -24,11 +31,11 @@ message StashReplyV1 {
   optional bytes transaction = 2; // immutable receipt identity; unchanged on replay
   uint32 page = 3;
   bool has_more = 4;
-  repeated StashRowV1 rows = 5; // <=32, ordered by key/revision (UTF-8 byte order)
+  repeated StashRowV1 rows = 5; // <=32, unique handles; order is server-selected by the view criteria
   string message = 6; // deterministic native message for outcome
   uint32 stowed_quantity = 7; // success stow only, 1..100; replay retains the original tally
 }
-// Request <=48 bytes; result/page delta <=36,000 bytes. Canonical decoding rejects
+// Base conversion intent <=48 bytes; request with view criteria <=460 bytes; result/page delta <=36,000 bytes. Canonical decoding rejects
 // duplicate/unknown fields, cross-action fields, zero quantities and invalid pages.
 // Domain 27/type 1 replaces the complete page. Its revision is connection-local.
 // Browse reopens after reconnect/resync. Row handles are invalidated by value
@@ -41,3 +48,10 @@ message StashReplyV1 {
 // from the pinned OTS implementations: whole main-bag sources, 20 output
 // stacks, atomic full withdrawal, no top-up/loot routing. Historical durable
 // PremiumRequired receipts remain decodable but are never produced anew.
+
+// Filters apply before pagination across all balances. Metadata is derived from the
+// active item pin and admitted NPC offers. Unmatched/old revisions remain visible
+// with empty criteria and remain searchable by key. Category/trader criteria
+// select only known matching metadata.
+// Conversion receipts retain their original canonical base intent; view criteria
+// never select a definition to mint or change a durable receipt.
