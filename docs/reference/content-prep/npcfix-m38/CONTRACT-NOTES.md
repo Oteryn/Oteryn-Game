@@ -7,3 +7,10 @@ The native hidden-path and hidden-path-repeat rules already exist. This work reu
 Donor URL: https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/maris_mistrock.lua (the same4bcd7342 source bytes).
 
 Promotion-candidate file SHA256: 1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a.
+
+M38 Rascalio basic contact: keep the retained Oteryn name/job leaves, but use
+only the neutral greeting prefix for the event visitor. The full retained
+greeting's Draccoon mission statement is not evidence of current quest state.
+This is an explicit Oteryn adaptation, not canonical dialogue fidelity; travel,
+mission grants and other dialogue operations remain closed. See
+rascalio-event-contact.md for the exact retained Dialogue identity and scope.

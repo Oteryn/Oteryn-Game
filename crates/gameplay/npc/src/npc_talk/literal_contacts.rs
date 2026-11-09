@@ -1,11 +1,13 @@
 //! Closed lore-only contacts; no quest, currency or exchange operations are admitted.
-pub(super) const REVISION_MATERIAL: &str =
-    "literal-contacts:v1;mayor_pocaro:literal;wayland_smythers:literal;minzy:name,job,story";
+pub(super) const REVISION_MATERIAL: &str = "literal-contacts:v2;mayor_pocaro:literal;wayland_smythers:literal;minzy:name,job,story;rascalio:name,job;rascalio-greet:Be greeted, |PLAYERNAME|!";
 
 pub(super) fn admitted(key: &str) -> bool {
     matches!(
         key,
-        "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers" | "oteryn:npc.minzy"
+        "oteryn:npc.mayor_pocaro"
+            | "oteryn:npc.wayland_smythers"
+            | "oteryn:npc.minzy"
+            | "oteryn:npc.rascalio"
     )
 }
 
@@ -15,7 +17,17 @@ pub(super) fn keyword_allowed(
 ) -> bool {
     admitted(key)
         && super::literal_keyword(keyword)
-        && (key != "oteryn:npc.minzy" || matches!(keyword.key.as_str(), "name" | "job" | "story"))
+        && match key {
+            "oteryn:npc.minzy" => matches!(keyword.key.as_str(), "name" | "job" | "story"),
+            "oteryn:npc.rascalio" => matches!(keyword.key.as_str(), "name" | "job"),
+            _ => true,
+        }
+}
+
+pub(super) fn greeting(key: &str) -> Option<&'static str> {
+    // Explicit Oteryn adaptation: the retained greeting asserts a Cook quest mission.
+    // Its neutral prefix also suits the event occurrence, without inventing quest state.
+    (key == "oteryn:npc.rascalio").then_some("Be greeted, |PLAYERNAME|!")
 }
 
 #[cfg(test)]
@@ -75,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn m38_minzy_literal_contact_holds_unknown_and_stateful_topics() {
+    fn m38_literal_contacts_hold_unknown_and_stateful_topics() {
         let model = model();
         let mut topic = model
             .npcs()
@@ -90,9 +102,58 @@ mod tests {
             .clone();
         topic.key = "favour".into();
         topic.triggers = vec!["favour".into()];
-        assert!(!keyword_allowed("oteryn:npc.minzy", &topic));
+        for key in ["oteryn:npc.minzy", "oteryn:npc.rascalio"] {
+            assert!(!keyword_allowed(key, &topic));
+        }
         topic.key = "name".into();
         topic.reset = true;
-        assert!(!keyword_allowed("oteryn:npc.minzy", &topic));
+        for key in ["oteryn:npc.minzy", "oteryn:npc.rascalio"] {
+            assert!(!keyword_allowed(key, &topic));
+        }
+    }
+
+    #[test]
+    fn m38_rascalio_event_contact_answers_literal_topics_without_granting_travel() {
+        let model = model();
+        let book = NpcTalkBook::from_model(&model);
+        let entry = book
+            .get("oteryn:npc.rascalio")
+            .expect("Rascalio event contact is admitted");
+        assert!(entry.admitted_dialogue);
+        assert!(!entry.bank);
+        assert!(entry.offers.is_empty());
+        assert!(entry.travel_routes.is_empty());
+        assert_eq!(
+            entry.render_source_text(&entry.greeting_reply, "Quest witness"),
+            "Be greeted, Quest witness!"
+        );
+        let at = ChatPosition {
+            x: 32258,
+            y: 31643,
+            floor: 7,
+        };
+        let npcs = [TalkNpc {
+            id: 1u8,
+            position: ChatPosition {
+                x: 32259,
+                y: 31643,
+                floor: 7,
+            },
+            entry,
+        }];
+        let mut engaged = None;
+        assert_eq!(
+            talk(at, "hi", &npcs, &mut engaged).expect("greeting").text,
+            "Be greeted, |PLAYERNAME|!"
+        );
+        assert_eq!(
+            talk(at, "name", &npcs, &mut engaged).expect("name").text,
+            "I am known as Rascalio."
+        );
+        assert_eq!(
+            talk(at, "job", &npcs, &mut engaged).expect("job").text,
+            "My role here is Ferryman."
+        );
+        assert!(talk(at, "passage", &npcs, &mut engaged).is_none());
     }
 }

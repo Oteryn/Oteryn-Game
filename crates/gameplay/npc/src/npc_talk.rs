@@ -505,7 +505,9 @@ impl NpcTalkBook {
                     continue;
                 }
                 (
-                    dialogue.greet[0].clone(),
+                    literal_contacts::greeting(&reference.key)
+                        .unwrap_or(&dialogue.greet[0])
+                        .to_owned(),
                     dialogue.farewell[0].clone(),
                     None,
                     dialogue
@@ -574,6 +576,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
                         || dark_messages.is_some()

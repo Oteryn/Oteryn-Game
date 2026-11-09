@@ -21,3 +21,19 @@ Rascalio at Meriana and other quest locations. Cell occupancy defers appearance
 through the shared conditional actor owner; ordinary map admission still gates
 construction. Database read failures retain the last successful projection and
 retry on the next world tick, matching the existing timed NPC loop policy.
+
+## Basic dialogue adaptation
+
+The retained Oteryn Dialogue is
+`content/dialogues/definitions/dialogues-00500-00835.json`, identity
+`oteryn:dialogue.npc.rascalio`, revision `definition-r1`. Its two keywords are
+`name` ("I am known as Rascalio.") and `job` ("My role here is Ferryman.").
+These are existing project replies, not newly asserted canonical source quotes.
+
+Basic contact admits only those two literal leaves, with no service, fee,
+exchange, mission or travel authority. The existing full greeting assumes a
+mission for the Draccoon; it cannot establish that state for an event visitor.
+The explicitly adapted Oteryn greeting therefore keeps only its neutral prefix,
+"Be greeted, |PLAYERNAME|!", rendered with the admitted customer's name.
+The talk-book revision includes this policy and greeting. Cook-quest fidelity,
+ferrying and event activation remain outside this basic contact slice.

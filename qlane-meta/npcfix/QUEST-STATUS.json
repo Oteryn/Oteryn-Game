@@ -269,5 +269,20 @@
       "World pin-check PASS (unchanged inputs)",
       "duplicate migrations PASS"
     ]
+  },
+  "rascalio_literal_slice": {
+    "state": "GREEN_FOCUSED",
+    "red_seconds": 45.64,
+    "green_seconds": 51.93,
+    "unit_cases": 3,
+    "test": "m38_rascalio_event_contact_answers_literal_topics_without_granting_travel",
+    "production": "Closed name/job leaves and neutral, player-name-rendered greeting; talk-book policy revision updated",
+    "scope": "Basic dialogue only; ferrying, event producer/schedule and whole M38 remain unfinished",
+    "checks": [
+      "strict NPC all-target/all-feature Clippy PASS",
+      "fmt PASS",
+      "duplicate migration check PASS"
+    ],
+    "pg": "Live dispatch scenario drafted; not yet executed"
   }
 }
