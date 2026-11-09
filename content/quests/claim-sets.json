@@ -134,6 +134,16 @@
       ]
     ]
   },
+  "oteryn:quest.emperor_s_cookies_quest": {
+    "groups": [
+      [
+        "quest/u6_1/emperors_cookies/rewards/cookies"
+      ],
+      [
+        "quest/key/id3802"
+      ]
+    ]
+  },
   "oteryn:quest.fire_axe_quest": {
     "groups": [
       [
@@ -184,6 +194,16 @@
       ],
       [
         "kv/katanacorpse2"
+      ]
+    ]
+  },
+  "oteryn:quest.koshei_the_deathless_quest": {
+    "groups": [
+      [
+        "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs"
+      ],
+      [
+        "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum"
       ]
     ]
   },

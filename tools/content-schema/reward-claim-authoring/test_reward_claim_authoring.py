@@ -420,6 +420,13 @@ def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
             {"oteryn:quest-transition/quest/u7_9/dreamers_challenge/" + marker + "/chest"}
         for marker in ("bplong_sword", "chest_book", "chests3_small_diamond", "chests_wine")
     })
+    expected_claim_sets.update({
+        "oteryn:reward-claim." + marker.replace("/", "."):
+            {"oteryn:quest-transition/" + marker + "/chest"}
+        for marker in ("quest/u6_1/emperors_cookies/rewards/cookies", "quest/key/id3802",
+                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs",
+                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum")
+    })
     assert bound == expected_claim_sets | {
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
             {"oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest"},
@@ -445,6 +452,17 @@ def test_dreamer_wine_alternatives_share_one_required_group() -> None:
             if ref["server"] == "crystalserver"} == {6197, 6198, 6199, 6200}
     assert {p["quest_transition"] for p in wine["placements"]} == {
         "oteryn:quest-transition/" + prefix + "chests_wine/chest"}
+
+
+def test_m35_final_loot_sets_exclude_access_keys_and_components() -> None:
+    rules = json.loads((rca.ROOT / "content/quests/claim-sets.json").read_text())
+    assert rules["oteryn:quest.emperor_s_cookies_quest"]["groups"] == [
+        ["quest/u6_1/emperors_cookies/rewards/cookies"], ["quest/key/id3802"],
+    ]
+    assert rules["oteryn:quest.koshei_the_deathless_quest"]["groups"] == [
+        ["quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs"],
+        ["quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum"],
+    ]
 
 
 def test_committed_content_is_valid() -> None:

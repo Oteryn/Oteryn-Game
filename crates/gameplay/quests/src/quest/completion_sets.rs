@@ -164,7 +164,7 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         let catalogue = lowered.catalogue();
-        assert_eq!(catalogue.completion_sets.len(), 20);
+        assert_eq!(catalogue.completion_sets.len(), 22);
         for (quest, rule) in &catalogue.completion_sets {
             assert!(
                 rule.groups.len() >= 2,
