@@ -32,15 +32,18 @@ ledger and branch instructions below are historical, not the current queue.
   hub binding is not authored here. Source evidence is in
   `docs/reference/content-prep/M03-time-machine-admission.md`.
 
-W15b restored parser slice (2026-11-09): reused the bounded top-level item
-reader from f4b876061, without its old migration or package. Plain claims
-preserve 1..20 ordered rewards and validate every item; key-bound claims remain
-single-item. The new preservation regression ran RED, then both focused parser
-tests passed GREEN (including zero-count and 0/1/20/21 cardinality). This is
-PARTIAL: bundle and reference chest dispatch still need to pass the complete
-vector into existing atomic RewardClaimMintRequest.additional_items. No new
-content inputs or migration. The broad content unit run was stopped in unrelated
-native-profile cases in favour of focused tests; do not report it fully green.
+W15b restored multi-item slices (2026-11-09): reused the bounded reader and
+reference/bundle dispatch from f4b876061, plus real-dispatch cases from
+b1dfcda43, without importing old migrations or the package. Plain claims retain
+1..20 ordered, admitted rewards; key-bound claims remain single-item. Both
+chest paths pass all items into existing atomic RewardClaimMintRequest.
+additional_items. Parser regression ran RED, then both focused tests passed.
+PostgreSQL18.6 real-dispatch proof: multiple roots/replay PASS75.422832551s;
+one-free-slot atomic refusal PASS78.224649992s. Existing Root persistence is
+reused; no new migration/content inputs. Architecture and fmt passed. Changed
+crate clippy follows the owner's immediate-push instruction. The broad content
+unit run was stopped in unrelated native-profile cases; do not call it green.
+This qualifies the multi-item slice, not every repeat/random reward variant.
 
 Royal Costume preserved slice restored (2026-11-09): only the final crown
 exchange now completes the quest. The real-dispatch story starts with no

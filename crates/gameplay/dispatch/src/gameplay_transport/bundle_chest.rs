@@ -142,10 +142,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return outcome(UseDisposition::Exhausted);
                     }
                 }
-                let (Some(fence), Ok(command_id), [reward]) = (
+                let (Some(fence), Ok(command_id), Some((reward, additional))) = (
                     command.item_fence,
                     CommandId::new(command.command_id),
-                    bound.placement.items.as_slice(),
+                    bound.placement.items.split_first(),
                 ) else {
                     return outcome(UseDisposition::Rejected);
                 };
@@ -180,8 +180,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(contents) = contents else {
                     return outcome(UseDisposition::Rejected);
                 };
+                let additional_items = additional
+                    .iter()
+                    .map(|reward| {
+                        generation_item_facts(native, &item_ref(&reward.item)).map(|item| {
+                            RewardClaimMintContent {
+                                fluid_subtype: None,
+                                item,
+                                quantity: reward.count,
+                                key_number: None,
+                                text: None,
+                            }
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>();
+                let Ok(additional_items) = additional_items else {
+                    return outcome(UseDisposition::Rejected);
+                };
                 let request = RewardClaimMintRequest {
-                    additional_items: Vec::new(),
+                    additional_items,
                     command: CommandRef::new(command.game_session_id, command_id),
                     claim: TypedDefinitionRef {
                         family: "RewardClaim".into(),

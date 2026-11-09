@@ -63,8 +63,8 @@ use crate::content::{
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{CurrentCharacterItemFence, ItemTransferError};
 use crate::durability::reward_claim_mint::{
-    GrantNotice, RewardClaimAchievement, RewardClaimMintError, RewardClaimMintOutcome,
-    RewardClaimMintRequest, RewardClaimRefusal,
+    GrantNotice, RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError,
+    RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
 };
 use crate::foundation::CommandRef;
 use oteryn_gameplay_domain::domain::interaction::{
@@ -208,6 +208,7 @@ pub struct ResolvedChest {
     pub claim: TypedDefinitionRef,
     pub reward_item: TypedDefinitionRef,
     pub quantity: u32,
+    pub additional_items: Vec<(TypedDefinitionRef, u32)>,
     /// That placement's `oteryn:achievement/<slug>` key, if the chest grants one.
     pub achievement: Option<String>,
     /// The quest transition the chest requests (QUEST-STATE-0 §5.4), recorded as an obligation
@@ -250,11 +251,16 @@ pub fn resolve_chest(
             _ => None,
         })
         .ok_or(ChestUseError::ChestHasNoClaim)?;
-    // Link validation guarantees exactly one reward item per placement; fail closed otherwise.
-    let [reward] = entry.items.as_slice() else {
+    // Preserve source order; the whole bounded reward vector shares one claim.
+    let Some((reward, additional)) = entry.items.split_first() else {
         return Err(ChestUseError::ChestHasNoClaim);
     };
-    if reward.item.family() != DefinitionFamily::Item {
+    if entry.items.len() > 20
+        || entry
+            .items
+            .iter()
+            .any(|item| item.item.family() != DefinitionFamily::Item)
+    {
         return Err(ChestUseError::Content(PickupContentError::NotAnItem));
     }
     Ok(ResolvedChest {
@@ -266,6 +272,10 @@ pub fn resolve_chest(
         claim: durable_ref("RewardClaim", claim),
         reward_item: durable_ref("Item", &reward.item),
         quantity: reward.count,
+        additional_items: additional
+            .iter()
+            .map(|item| (durable_ref("Item", &item.item), item.count))
+            .collect(),
         achievement: entry.achievement.clone(),
         quest_transition: entry.quest_transition.clone(),
         key_number: entry.key_number,
@@ -298,6 +308,20 @@ pub async fn prepare_chest_use(
     let child = chest_use_occurrence(&request, &chest)?;
     let item = resolve_item_definition_facts(content, &chest.reward_item)
         .map_err(ChestUseError::Content)?;
+    let additional_items = chest
+        .additional_items
+        .iter()
+        .map(|(definition, quantity)| {
+            resolve_item_definition_facts(content, definition).map(|item| RewardClaimMintContent {
+                fluid_subtype: None,
+                item,
+                quantity: *quantity,
+                key_number: None,
+                text: None,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(ChestUseError::Content)?;
     let Some(current) = session
         .root
         .read_character_backpack(session.authority, fence.character_id)
@@ -309,7 +333,7 @@ pub async fn prepare_chest_use(
     let backpack = resolve_item_definition_facts(content, &current.backpack.definition)
         .map_err(ChestUseError::Content)?;
     let mint_request = RewardClaimMintRequest {
-        additional_items: Vec::new(),
+        additional_items,
         command: request.command,
         claim: chest.claim,
         source_placement: request.chest.as_str().to_owned(),
@@ -609,6 +633,7 @@ mod tests {
 
     fn resolved(claim_key: &str, definition: &str) -> ResolvedChest {
         ResolvedChest {
+            additional_items: Vec::new(),
             definition: definition.into(),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
