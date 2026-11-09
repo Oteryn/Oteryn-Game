@@ -114,6 +114,30 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         assert!(progress.tracks.is_empty());
         assert!(copy.states()[DEEPLING_QUEST].completed);
         assert!(copy.save_event_quest_progress(DEEPLING_QUEST).is_none());
+        let mut duplicate = request.clone();
+        duplicate.cause = QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(u64::try_from(epoch)? + 1).map_err(f::debug)?,
+        ));
+        let duplicate = h
+            .root
+            .commit_character_quest_transition(
+                &authority,
+                &h.node,
+                f::fence(2)?,
+                duplicate,
+                catalogue.clone(),
+            )
+            .await?;
+        assert!(
+            matches!(duplicate, QuestTransitionOutcome::Refused(_)),
+            "a fresh command must not complete twice in the source cycle: {duplicate:?}"
+        );
+        assert_eq!(
+            h.root_revision().await?,
+            "2",
+            "refusal must not advance Character state"
+        );
     }
     // The source owner, rather than the test, advances the cycle generation.
     sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(jsonb_set(state,'{stage}','3'),'{entered_epoch}','1') WHERE world_id=encode($1,'hex')::uuid AND change_key='deeplings'")
@@ -139,7 +163,13 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     );
     let replay = h
         .root
-        .commit_character_quest_transition(&authority, &h.node, f::fence(2)?, request, catalogue)
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(2)?,
+            request.clone(),
+            catalogue.clone(),
+        )
         .await?;
     assert!(
         matches!(replay, QuestTransitionOutcome::AlreadyCommitted(_)),
@@ -152,6 +182,68 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .counter_quest_progress(DEEPLING_QUEST)
             .is_none(),
         "replay cannot retag old completion"
+    );
+    // Completion must name this source owner, even when the canonical quest is
+    // already complete and a changed definition would otherwise keep its pin.
+    for (ordinal, world_change) in [(4, None), (5, Some("hive_born"))] {
+        let invalid = std::sync::Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![],
+                vec![QuestTransition {
+                    key: key.into(),
+                    quest: DEEPLING_QUEST.into(),
+                    effects: vec![],
+                    completes: true,
+                    experience: None,
+                    world_change: world_change.map(str::to_owned),
+                }],
+            )
+            .map_err(f::debug)?,
+        );
+        let mut attempt = request.clone();
+        attempt.cause = QuestCause::Command(CommandRef::new(
+            GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+            CommandId::new(ordinal).map_err(f::debug)?,
+        ));
+        let result = h
+            .root
+            .commit_character_quest_transition(&authority, &h.node, f::fence(2)?, attempt, invalid)
+            .await?;
+        assert!(
+            matches!(result, QuestTransitionOutcome::Refused(_)),
+            "unbound source completion: {result:?}"
+        );
+        assert_eq!(h.root_revision().await?, "2");
+    }
+    let mut fresh = request;
+    fresh.cause = QuestCause::Command(CommandRef::new(
+        GameSessionId::decode(&f::id(f::SESSION)).map_err(f::debug)?,
+        CommandId::new(6).map_err(f::debug)?,
+    ));
+    let result = h
+        .root
+        .commit_character_quest_transition(&authority, &h.node, f::fence(2)?, fresh, catalogue)
+        .await?;
+    assert!(
+        matches!(result, QuestTransitionOutcome::Committed(_)),
+        "next source cycle must permit fresh completion: {result:?}"
+    );
+    let current = h
+        .root
+        .read_character_quest_state(&authority, f::fence(3)?.character_id)
+        .await?;
+    let progress = current
+        .counter_quest_progress(DEEPLING_QUEST)
+        .ok_or("fresh cycle completion")?;
+    assert_eq!(progress.occurrence_generation, 2);
+    assert!(progress.completed);
+    let generations: Vec<String> = sqlx::query_scalar("SELECT occurrence_generation::text FROM game_character_counter_quest_scopes ORDER BY committed_character_revision")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(
+        generations,
+        vec!["1", "2"],
+        "refusals and replay must not create scope receipts"
     );
     Ok(())
 }

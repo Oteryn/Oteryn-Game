@@ -1235,6 +1235,38 @@ impl DurabilityRoot {
                         }
                     }
                     let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
+                    if completes {
+                        use oteryn_gameplay_quests::quest::shared_world_progress as shared;
+                        use oteryn_gameplay_world_change::counter::CounterKind as K;
+                        let counter = match quest {
+                            shared::HIVE_QUEST => Some(K::HiveBorn),
+                            shared::DEEPLING_QUEST => Some(K::Deeplings),
+                            _ => None,
+                        };
+                        if let Some(counter) = counter {
+                            // Canonical completion is permanent history. A fresh
+                            // completion must bind the declared source owner and
+                            // independently resolve its current cycle under lock.
+                            if transition.world_change.as_deref() != Some(counter.key()) {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                            let current: Option<String> = sqlx::query_scalar("SELECT c.change_key FROM game_world_reset_active a JOIN game_world_change_counters c ON c.world_id=a.world_id AND c.reset_epoch=a.reset_epoch WHERE a.world_id=encode($1,'hex')::uuid AND c.change_key=$2 FOR SHARE OF a,c")
+                                .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(counter.key()).fetch_optional(&mut *tx).await?;
+                            if current.is_none() {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                            // The Character root serializes completions; the World
+                            // and counter locks keep this scope through projection.
+                            let completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_current_counter_quest_progress p WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND p.quest_key=$3 AND p.change_key=$4 AND p.completes)")
+                                .bind(id).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(quest).bind(counter.key()).fetch_one(&mut *tx).await?;
+                            if completed {
+                                tx.rollback().await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        }
+                    }
                     if completes && let Some(epoch) = &save_event_epoch {
                         // The root lock serializes all event completions for this
                         // Character. Canonical completion from older saves neither
