@@ -5,6 +5,7 @@ pub fn apply(panel: &mut Panel, catalog: SpellCatalog) {
     if panel.selected {
         panel.catalog.replace(catalog);
         panel.page = 0;
+        panel.selection = 0;
     }
 }
 
@@ -16,6 +17,7 @@ pub fn navigate(panel: &mut Panel, filter: &str, action: usize) {
     if panel.filter != filter {
         panel.filter = filter.to_owned();
         panel.page = 0;
+        panel.selection = 0;
     }
 
     let count = panel
@@ -30,8 +32,12 @@ pub fn navigate(panel: &mut Panel, filter: &str, action: usize) {
             .page
             .saturating_add(1)
             .min(count.saturating_sub(1) / 16),
-        _ => 0,
+        0 => 0,
+        _ => panel.page,
     };
+    if action <= 2 {
+        panel.selection = panel.page * 16;
+    }
 }
 
 /// Local filters never change the server's eligibility decision.
@@ -54,9 +60,45 @@ pub fn set_filters(panel: &mut Panel, max_level: &str, group: &str, learned_only
     panel.filter_error = false;
     if (panel.max_level, panel.group, panel.learned_only) != (max_level, group, learned_only) {
         panel.page = 0;
+        panel.selection = 0;
     }
     panel.max_level = max_level;
     panel.group = group;
     panel.learned_only = learned_only;
+    true
+}
+
+pub fn select_relative(panel: &mut Panel, forward: bool) {
+    let count = panel
+        .catalog
+        .entries()
+        .iter()
+        .filter(|entry| panel.matches(entry))
+        .count();
+    panel.selection = if forward {
+        panel
+            .selection
+            .saturating_add(1)
+            .min(count.saturating_sub(1))
+    } else {
+        panel.selection.saturating_sub(1)
+    };
+    panel.page = panel.selection / 16;
+}
+
+/// Exact profession keys come from the shared, pinned content metadata.
+pub fn set_vocation(panel: &mut Panel, text: &str) -> bool {
+    let text = text.trim().to_lowercase().replace(' ', "_");
+    if !text.is_empty() && !super::VOCATIONS.contains(&text.as_str()) {
+        panel.filter_error = true;
+        return false;
+    }
+    let vocation = (!text.is_empty()).then_some(text);
+    if panel.vocation != vocation {
+        panel.page = 0;
+        panel.selection = 0;
+    }
+    panel.vocation = vocation;
+    panel.filter_error = false;
     true
 }

@@ -111,6 +111,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) hud_resource: super::resource_hud::MailboxState,
     pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) ui_sounds: Vec<super::UiSound>,
     pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,

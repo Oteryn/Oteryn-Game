@@ -42,27 +42,30 @@
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "HUD i sidebar: dock/show/hide/order/layout",
-  "status": "PARTIAL",
-  "gap": "Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Panele HUD w grze: przeciąganie, dokowanie, rozmiar, kolejność, menu show/hide i zapis po restarcie; dane przez rzeczywisty PlayView.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/native.rs:60 + t010_hud_sidebars_drag_dock_resize_hide_reorder_and_survive_restart"
  },
  {
   "id": "T011",
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "HP/mana, soul/stamina, conditions/rest",
-  "status": "PARTIAL",
-  "gap": "Dane i teksty są; brak pełnej konfigurowalnej prezentacji pasków/łuków/ikon.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Konfigurowalne wartości HP/MP/soul/stamina, belki i łuki oraz ikony warunków/rest korzystają z istniejących zapytań sesji; HUD nie otwiera paneli i nie zmienia profilu Cyklopedii.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/play/resource_hud.rs:142 + t011_server_resources_reach_configurable_hud_without_opening_windows"
  },
  {
   "id": "T012",
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "Światło i efekty wizualne",
-  "status": "PARTIAL",
-  "gap": "Światło i zdarzenia są; brak całego zestawu widocznych efektów i konfiguracji referencji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Światło i przełączniki pozostają spięte z serwerem; wszystkie efekty/missile z przypiętego katalogu mają klatki, timing, kierunek i wygasanie; słowa udanego czaru pochodzą z katalogu serwera. Zdarzenia przechodzą rzeczywisty reducer i PlayView.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/scene.rs:11 + t012_server_effects_and_missiles_reach_animated_scene_and_respect_options + t012_spell_words_use_server_catalog_only_after_server_success + t012_verified_effects_animate_once_and_missiles_keep_direction + t012_effect_sprites_remain_visible_in_complete_darkness"
  },
  {
   "id": "T015",
@@ -1273,9 +1276,10 @@
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "Monk harmony/serene/combo i HUD controls",
-  "status": "PARTIAL",
-  "gap": "Harmony/serene tekstowo są; brak pełnych pasków/combo i niezależnych ustawień HUD mnicha.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Harmony i Serene mają niezależną prezentację; opcjonalny wskaźnik combo przy postaci pokazuje pięć autorytatywnych ładunków Harmony i zmienia się wyłącznie po ActorVitals.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:149 + t162_monk_combo_tracks_server_harmony_and_has_independent_controls"
  },
  {
   "id": "T163",
@@ -1411,9 +1415,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Nazwy, zdrowie i ikony nad stworzeniami",
-  "status": "PARTIAL",
-  "gap": "Brakuje pełnego zestawu pasków zdrowia i ikon party/skull nad postacią w widoku świata; potwierdzone tarcze/czaszki są prezentowane w osobnym panelu.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Nazwy, potwierdzone zdrowie i pełne stany tarcz/czaszek są rysowane w świecie; ikony odświeżają się bez otwierania panelu i zachowują miganie oraz generację encji.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/icons.rs:12 + o021_overhead_queries_server_icons_without_opening_status_window + live_names_reach_scene_and_disappear_with_visibility"
  },
  {
   "id": "O022",
@@ -1460,9 +1465,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Układ interfejsu i okna boczne",
-  "status": "PARTIAL",
-  "gap": "Brakuje dokowanych, przeciąganych i zapamiętywanych miniokien w kolumnach interfejsu; istnieją osobne okna Win32 i przełączniki widoczności.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Miniokna są dziećmi okna gry, zachowują własne wątki i rzeczywistych konsumentów; przeciąganie/resize, dokowanie w kolumnach, kolejność i układ po restarcie są wspólne dla natywnych paneli.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/miniwindow/native.rs:79 + o033_native_sidebar_actions_preserve_order_resize_and_closed_siblings"
  },
  {
   "id": "O035",

@@ -13,14 +13,17 @@ pub(super) struct Options {
     floor: i16,
     own: Option<EntityRef>,
     scale: u16,
+    age: std::time::Duration,
 }
 impl Options {
     pub(super) fn new(
         preferences: &crate::play::ReferencePreferences,
         floor: i16,
         own: Option<EntityRef>,
+        age: std::time::Duration,
     ) -> Self {
         Self {
+            age,
             pvp_frame: preferences.game_window.pvp_frame,
             loot_highlight: preferences.game_window.loot_highlight,
             health: preferences.creature_bars,
@@ -32,47 +35,6 @@ impl Options {
             own,
         }
     }
-}
-
-fn marks(
-    batch: &mut SpriteBatch,
-    view: &TileView,
-    atlas: &AtlasImage,
-    at: [f32; 2],
-    icon: &PartyIcon,
-    scale: f32,
-) -> Result<(), BatchError> {
-    for (offset, value, pattern) in [
-        (0.0, icon.shield, [5_u8, 7, 2]),
-        (8.0, icon.skull, [7_u8, 5, 2]),
-    ] {
-        if value == 0 {
-            continue;
-        }
-        let color = match value {
-            1 | 3 | 5 | 7 | 9 => PresentationColor::Blue,
-            2 | 4 | 6 | 8 | 10 => PresentationColor::Yellow,
-            _ => PresentationColor::Red,
-        };
-        for (row, bits) in pattern.into_iter().enumerate() {
-            for col in 0..3 {
-                if bits & (4 >> col) != 0 {
-                    pixel(
-                        batch,
-                        view,
-                        atlas,
-                        [
-                            at[0] + (offset + col as f32 * 2.0) * scale,
-                            at[1] + row as f32 * 2.0 * scale,
-                        ],
-                        [2.0 * scale; 2],
-                        color,
-                    )?;
-                }
-            }
-        }
-    }
-    Ok(())
 }
 
 pub(super) fn draw(
@@ -129,7 +91,16 @@ pub(super) fn draw(
             && Some(entity.entity) != options.own
             && let Some(icon) = icons.iter().find(|icon| icon.entity == entity.entity)
         {
-            marks(batch, view, atlas, [x, y], icon, scale)?;
+            icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;
+            icons::draw(
+                batch,
+                view,
+                atlas,
+                [x + 16.0 * scale, y],
+                icon.skull,
+                true,
+                options.age,
+            )?;
         }
         if options.npc && entity.kind == EntityKind::Npc {
             for (row, bits) in [7_u8, 5, 7, 2].into_iter().enumerate() {
@@ -155,7 +126,17 @@ pub(super) fn draw(
         && let Some(own_ref) = options.own
         && let Some(icon) = icons.iter().find(|icon| icon.entity == own_ref)
     {
-        marks(batch, view, atlas, view.tile_to_screen(own), icon, scale)?;
+        let [x, y] = view.tile_to_screen(own);
+        icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;
+        icons::draw(
+            batch,
+            view,
+            atlas,
+            [x + 16.0 * scale, y],
+            icon.skull,
+            true,
+            options.age,
+        )?;
     }
     Ok(())
 }

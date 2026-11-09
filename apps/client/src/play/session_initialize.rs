@@ -2,6 +2,7 @@ use super::*;
 
 pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.discovery_initialize(session);
+    outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
     if let Err(error) = outbox

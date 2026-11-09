@@ -17,6 +17,7 @@ impl Controls {
             let battle_sounds = BattleSoundControls::new(hwnd)?;
             let frames = FrameControls::new(hwnd)?;
             let actor_hud = HudControls::new(hwnd)?;
+            let resources = ResourceControls::new(hwnd)?;
             let console = ConsoleControls::new(hwnd)?;
             let layout = LayoutControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
@@ -344,6 +345,7 @@ impl Controls {
                 graphics,
                 shortcuts,
                 actor_hud,
+                resources,
                 manual,
                 console,
                 layout,

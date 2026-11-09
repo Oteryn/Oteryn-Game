@@ -57,3 +57,44 @@ fn t032_spellbook_filters_confirmed_level_group_and_learning() {
     protocol::navigate(&mut panel, "exori", 2);
     assert!(panel_text(&panel).contains("Page 1/1"));
 }
+
+#[test]
+fn t033_selection_follows_filtered_catalogue_rows() {
+    let mut panel = catalogue();
+    assert_eq!(
+        panel.selected_spell().map(|entry| entry.cast_index),
+        Some(71)
+    );
+    protocol::select_relative(&mut panel, true);
+    assert_eq!(
+        panel.selected_spell().map(|entry| entry.cast_index),
+        Some(93)
+    );
+    protocol::select_relative(&mut panel, true);
+    assert_eq!(
+        panel.selected_spell().map(|entry| entry.cast_index),
+        Some(93)
+    );
+    assert!(protocol::set_filters(&mut panel, "", "1", false));
+    assert_eq!(
+        panel.selected_spell().map(|entry| entry.cast_index),
+        Some(71)
+    );
+}
+
+#[test]
+fn o059_selected_spell_details_distinguish_unknown_cooldown() {
+    let panel = catalogue();
+    let bar = oteryn_client_runtime::spell::ActionBar::default();
+    let text = oteryn_client_ui::spell_catalog::detail_text(&panel, &bar);
+    assert!(text.contains("Healing"));
+    assert!(text.contains("exura"));
+    assert!(text.contains("Mana: 20"));
+    assert!(text.contains("Cooldown: unknown"));
+    let mut empty = panel;
+    protocol::navigate(&mut empty, "missing", 0);
+    assert_eq!(
+        oteryn_client_ui::spell_catalog::detail_text(&empty, &bar),
+        "No spell selected"
+    );
+}

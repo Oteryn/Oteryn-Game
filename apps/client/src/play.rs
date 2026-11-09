@@ -26,12 +26,16 @@ pub struct PlayView {
     served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
     world_weather: Option<oteryn_session::world_weather::WorldWeather>,
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
+    resource_hud: resource_hud::ViewState,
+    party_icon_epoch: std::time::Instant,
+    party_icons_refresh: Option<std::time::Instant>,
     party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
     vitals: Option<oteryn_session::ActorVitals>,
     battle_instinct: Option<oteryn_client_ui::battle_instinct_status::BattleInstinctStatus>,
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
+    spell_words: std::collections::BTreeMap<u32, String>,
     pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
@@ -82,6 +86,9 @@ impl PlayView {
             world_clock: None,
             served_channel: None,
             world_weather: None,
+            resource_hud: Default::default(),
+            party_icon_epoch: std::time::Instant::now(),
+            party_icons_refresh: None,
             party_icons: Vec::new(),
             vitals: None,
             battle_instinct: None,
@@ -89,6 +96,7 @@ impl PlayView {
             sounds: Vec::new(),
             ui_sounds: Vec::new(),
             visuals: Vec::new(),
+            spell_words: std::collections::BTreeMap::new(),
             tutorial_overlay: Default::default(),
             own,
             facing: StepDir::South,
@@ -120,15 +128,21 @@ impl PlayView {
 }
 
 mod end;
+mod hud_layout;
 mod input;
 mod mailbox;
 mod refusal_details;
+mod resource_hud;
+pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
 mod session_loop;
 mod session_stepper;
 #[cfg(windows)]
 mod status_window;
 mod stepper;
 mod tick;
+pub use resource_hud::ResourceHudOptions;
+mod window_controls;
+pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 

@@ -87,6 +87,10 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub hud_layout: crate::play::HudLayout,
+    #[serde(default)]
+    pub resource_hud: crate::play::ResourceHudOptions,
     #[serde(default = "default_boss_opacity")]
     pub boss_area_opacity: u8,
     #[serde(default)]
@@ -252,6 +256,8 @@ impl Default for ReferencePreferences {
         Self {
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),
+            hud_layout: Default::default(),
+            resource_hud: Default::default(),
             tooltips_enabled: true,
             tooltip_delay_ms: 500,
             hud_health: true,

@@ -325,5 +325,8 @@ fn numbered_value(value: u64) -> PresentationEventKind {
 #[path = "play_additional.rs"]
 mod additional;
 
+#[path = "visual_sprites.rs"]
+mod visual_sprites;
+
 #[path = "boss_area.rs"]
 mod boss_area;

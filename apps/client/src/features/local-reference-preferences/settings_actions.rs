@@ -1,5 +1,24 @@
 use super::*;
 impl SettingsState {
+    pub fn request_hud_toggle(&mut self, panel: crate::play::HudPanel) {
+        self.hud_toggle = Some(panel);
+    }
+    pub fn take_hud_toggle(&mut self) -> Option<crate::play::HudPanel> {
+        self.hud_toggle.take()
+    }
+    pub fn take_window_selection(&mut self) -> Option<(&'static str, Vec<NormalizedInputEvent>)> {
+        let id = self.window_actions.pop_front()?;
+        let raw = super::super::bindings::window_events(&self.preferences, id);
+        let (events, _) = self.input(&raw);
+        Some((id, events))
+    }
+    pub fn request_magical_archive(&mut self) {
+        self.magical_archive_requested = true;
+    }
+    pub fn take_magical_archive_request(&mut self) -> bool {
+        std::mem::take(&mut self.magical_archive_requested)
+    }
+
     pub fn select_page(&mut self, index: usize) -> bool {
         let Some(page) = SettingsPage::ALL.get(index) else {
             return false;
@@ -153,6 +172,8 @@ impl SettingsState {
             shutdown: false,
             input: PreferenceInput::default(),
             page: SettingsPage::default(),
+            hud_toggle: None,
+            magical_archive_requested: false,
             last_key: Default::default(),
         }
     }

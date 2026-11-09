@@ -11,7 +11,7 @@ impl ReferencePreferences {
     }
 
     pub(in super::super) fn validate(&self) -> Result<(), PreferenceError> {
-        if !self.graphics.valid() {
+        if !self.hud_layout.valid() || !self.graphics.valid() {
             return Err(PreferenceError);
         }
         if self

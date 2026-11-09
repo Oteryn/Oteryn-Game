@@ -39,6 +39,9 @@ use console_controls::ConsoleControls;
 #[path = "hud_controls.rs"]
 mod hud_controls;
 use hud_controls::HudControls;
+#[path = "resource_controls.rs"]
+mod resource_controls;
+use resource_controls::ResourceControls;
 #[path = "frame_controls.rs"]
 mod frame_controls;
 use frame_controls::FrameControls;
@@ -66,6 +69,7 @@ pub(super) struct Controls {
     pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,
+    pub(super) resources: ResourceControls,
     pub(super) mixer: MixerControls,
     pub(super) stability: HWND,
     pub(super) battle_sounds: BattleSoundControls,
