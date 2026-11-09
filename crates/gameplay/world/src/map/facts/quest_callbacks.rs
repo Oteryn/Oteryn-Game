@@ -23,6 +23,14 @@ struct DynamicPortal {
 pub enum QuestCallbackProjection {
     /// Restore exactly this revision at an original source deadline.
     TimedTransform { due: u64, restore: EntryFacts },
+    /// A separately selected source object; its own revision fences restoration.
+    TimedTargetTransform {
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        restore: EntryFacts,
+        due: u64,
+    },
     /// Each read revision, including cells which do not change, fences the batch.
     ReadsetTransforms {
         entries: Vec<(u64, u64, Option<EntryFacts>)>,
@@ -77,6 +85,31 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedTargetTransform {
+                key,
+                expected,
+                after,
+                restore,
+                due,
+            } => {
+                if *key == owner
+                    || self.hidden.contains(key)
+                    || self.changed.get(key).map_or(0, |(r, _)| *r) != *expected
+                {
+                    return false;
+                }
+                let Some(revision) = expected.checked_add(1) else {
+                    return false;
+                };
+                self.changed.insert(*key, (revision, *after));
+                self.movement_decays.insert(
+                    (*due, *key),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                    },
+                );
+            }
             QuestCallbackProjection::ReadsetTransforms { entries, reset } => {
                 let keys: BTreeSet<_> = entries.iter().map(|(key, _, _)| *key).collect();
                 if entries.is_empty()
@@ -1154,6 +1187,73 @@ mod primal_pod_removal_tests {
 #[cfg(test)]
 mod lifecycle_tests {
     use super::*;
+
+    #[test]
+    fn remote_source_reset_is_atomic_and_fences_the_target_revision() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 2074,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let active = EntryFacts {
+            appearance_id: 2075,
+            ..original
+        };
+        let timer = |expected, due| QuestCallbackProjection::TimedTargetTransform {
+            key: 2,
+            expected,
+            after: active,
+            restore: original,
+            due,
+        };
+        assert!(facts.apply_quest_callback(
+            1,
+            0,
+            original,
+            &[],
+            &[],
+            false,
+            Some(&timer(0, 15_000_000))
+        ));
+        assert_eq!((facts.object_revision(1), facts.object_revision(2)), (1, 1));
+        assert_eq!(facts.expire_movement_items(14_999_999), 0);
+        assert!(facts.apply_quest_callback(2, 1, active, &[], &[], false, None));
+        assert_eq!(facts.expire_movement_items(15_000_000), 0);
+        assert!(facts.apply_quest_callback(
+            1,
+            1,
+            original,
+            &[],
+            &[],
+            false,
+            Some(&timer(2, 30_000_000))
+        ));
+        assert!(!facts.apply_quest_callback(
+            1,
+            2,
+            original,
+            &[],
+            &[],
+            false,
+            Some(&timer(1, 31_000_000))
+        ));
+        assert_eq!((facts.object_revision(1), facts.object_revision(2)), (2, 3));
+        assert_eq!(facts.next_movement_decay_time(), Some(30_000_000));
+        assert_eq!(facts.expire_movement_items(30_000_000), 1);
+        assert_eq!((facts.object_revision(1), facts.object_revision(2)), (2, 4));
+        let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+        assert_eq!(
+            state.changed.get(&2).map(|(_, value)| value.appearance_id),
+            Some(2074)
+        );
+        Ok(())
+    }
 
     #[test]
     fn source_reset_deadline_cannot_overwrite_a_newer_transform() {

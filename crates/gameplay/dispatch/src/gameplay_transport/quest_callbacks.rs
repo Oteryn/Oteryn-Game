@@ -19,6 +19,7 @@ mod phase;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
+mod source_transforms;
 mod timed_encounter;
 
 use super::paced_movement::underwater_drown::underwater;
@@ -53,6 +54,7 @@ struct Pending {
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
     ingress_settled: bool,
+    projection_target: Option<u64>,
 }
 
 /// A World observation is retained only until the native actor/object CAS. It is
@@ -738,7 +740,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
-        let selected = self
+        let mut selected = self
             .callback_content()
             .iter()
             .filter(|c| {
@@ -748,6 +750,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        let source_trial = selected
+            .iter()
+            .any(|c| c.effects.target_transform.is_some());
+        self.select_source_phase(&mut selected, actor, &command)
+            .await;
+        if source_trial && selected.is_empty() {
+            return Some(UseOutcome::rejected());
+        }
         let [callback] = selected.as_slice() else {
             return None;
         };
@@ -1038,6 +1048,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         origin: Some(origin),
                         context: None,
                         ingress_settled: false,
+                        projection_target: None,
                     });
                     pending.origin = Some(origin);
                 }

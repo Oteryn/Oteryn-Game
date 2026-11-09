@@ -3,16 +3,20 @@ use super::{ActorKind, Callback, Trigger};
 use std::collections::BTreeMap;
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
+    let source_trial = left.trigger == Trigger::Use
+        && left.effects.target_transform.is_some()
+        && left.effects.target_transform == right.effects.target_transform
+        && left.item_on_target == right.item_on_target;
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player
-        && matches!(left.trigger, Trigger::StepIn | Trigger::StepOut)
+        && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
         && left.trigger == right.trigger
         && left.selector == right.selector
         && left.quest == right.quest
         && left.storage.iter().any(|a| {
-            a.preserve
+            (a.preserve || source_trial)
                 && right.storage.iter().any(|b| {
-                    b.preserve
+                    (b.preserve || source_trial)
                         && a.track == b.track
                         && (a.maximum < b.minimum || b.maximum < a.minimum)
                 })

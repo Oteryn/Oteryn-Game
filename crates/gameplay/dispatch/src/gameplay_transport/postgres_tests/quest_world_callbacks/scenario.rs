@@ -22,8 +22,9 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m44_lions = name.starts_with("m44-lions-strength/");
     let m44_children = name == "qn1-children-lever-1/ordinary";
-    let m44 = name == "uneasy-alliance-crystal" || m44_children;
+    let m44 = name == "uneasy-alliance-crystal" || m44_children || m44_lions;
     let qm48 = name == "qm48/mammoth";
     let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -60,8 +61,16 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if m44_children {
-        Position { x: trigger.x + 1, ..trigger }
+    let start = if m44_lions {
+        Position {
+            x: trigger.x - 1,
+            ..trigger
+        }
+    } else if m44_children {
+        Position {
+            x: trigger.x + 1,
+            ..trigger
+        }
     } else if name == "unnatural-selection-dance-2" {
         let (x, y, floor) = oteryn_gameplay_quests::quest::unnatural_selection::TILES[7];
         Position { x, y, floor }
@@ -156,7 +165,9 @@ fn scenario_case(
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
     } else {
-        callback(if name == "triangle-tower-wall" {
+        callback(if m44_lions && name.ends_with("-uncertain") {
+            "m44-lions-strength/first"
+        } else if name == "triangle-tower-wall" {
             "triangle-tower-lever"
         } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
@@ -348,7 +359,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m44_children {
+        let world = if m44_lions {
+            super::super::m44_lions_lifecycle::world(
+                generation.native_gameplay().ok_or("lions policies")?,
+            )?
+        } else if m44_children {
             super::super::m44_children_lifecycle::world(
                 generation.native_gameplay().ok_or("children policies")?,
             )?
@@ -591,7 +606,14 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
-        if m44 {
+        if m44_lions {
+            owner.quest_catalogue = Some(std::sync::Arc::new(
+                super::super::m44_lions_lifecycle::catalogue(
+                    owner.quest_catalogue.as_ref().ok_or("lions catalogue")?,
+                    &callback,
+                )?,
+            ));
+        } else if m44 {
             owner.quest_catalogue = Some(std::sync::Arc::new(
                 super::super::m44_source_lifecycle::catalogue(
                     owner.quest_catalogue.as_ref().ok_or("source catalogue")?,
@@ -785,6 +807,16 @@ fn scenario_case(
                 &h,
                 fence,
                 source_id,
+            )
+            .await?;
+        } else if m44_lions {
+            super::super::m44_lions_lifecycle::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                fence,
+                &callback,
+                name.ends_with("-uncertain"),
             )
             .await?;
         } else if m44_children {

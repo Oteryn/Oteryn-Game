@@ -294,6 +294,7 @@ pub(super) fn lower_embedded_quest_state(
     for callback in super::fire_feathered_native::callbacks()
         .into_iter()
         .chain(super::shared_world_progress::callbacks())
+        .chain(super::source_world_objects::lions_pagodas())
     {
         for storage in callback.storage {
             lowered

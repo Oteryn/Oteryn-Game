@@ -41,6 +41,7 @@ pub mod phase;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
+    TargetTransform,
 };
 pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
 
@@ -347,6 +348,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
     callbacks.push(super::source_world_objects::uneasy_crystal());
+    callbacks.extend(super::source_world_objects::lions_pagodas());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());

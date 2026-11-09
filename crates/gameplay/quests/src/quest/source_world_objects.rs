@@ -66,9 +66,139 @@ pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
     callback.key != UNEASY_CRYSTAL || appearance == 10186
 }
 
+/// Crystal 201189f actions_lions_rock.lua:14-84, OTS_HYPOTHESIS_ONLY.
+/// First progress is max(old, 1) + 1; later trials add one without regressing it.
+pub(crate) fn lions_pagodas() -> Vec<Callback> {
+    use super::world_callbacks::{ItemOnTarget, TargetTransform};
+    let trials = [
+        (
+            "strength",
+            (33137, 32291, 1, 21390),
+            (33134, 32289),
+            9634,
+            "You have sacrificed a cobra tongue at an ancient statue. The light in the small pyramid nearby begins to shine.",
+        ),
+        (
+            "beauty",
+            (33138, 32369, 3, 2110),
+            (33136, 32369),
+            21389,
+            "You burnt a lion's mane flower. The light in the small pyramid nearby begins to shine.",
+        ),
+        (
+            "tears",
+            (33154, 32279, 2, 21391),
+            (33156, 32279),
+            21466,
+            "You have purified a sacret pedestal with holy water. You have now passed the last testto enter thge inner sanctum.",
+        ),
+    ];
+    let mut callbacks = Vec::new();
+    for (name, (x, y, ordinal, appearance), (px, py), item, message) in trials {
+        for first in [true, false] {
+            let mut callback = uneasy_crystal();
+            callback.key = format!(
+                "oteryn:quest-callback/m44-lions-{name}/{}",
+                if first { "first" } else { "later" }
+            );
+            callback.quest = "oteryn:quest.tibia_tales".into();
+            callback.selector = Selector {
+                native: Some(NativeSelector {
+                    position: Position { x, y, floor: -8 },
+                    ordinal,
+                    appearance,
+                }),
+                position: None,
+                unique: None,
+                action: None,
+                appearance: Some(appearance),
+            };
+            callback.effects = CallbackEffectSet::default();
+            callback.effects.target_transform = Some(TargetTransform {
+                position: Position {
+                    x: px,
+                    y: py,
+                    floor: -8,
+                },
+                from: 2074,
+                to: 2075,
+                reset_after_ms: 15_000,
+            });
+            callback.item_on_target = Some(ItemOnTarget {
+                item: format!("oteryn:item.tibia.i{item}"),
+                alternatives: Vec::new(),
+                count: 1,
+                replacement: None,
+                target_replacement: None,
+                reusable: false,
+            });
+            callback.storage = vec![
+                Storage {
+                    track: format!(
+                        "oteryn:quest-progress/quest/u10_70/lions_rock/outer_sanctum/lions_{name}"
+                    ),
+                    minimum: -1,
+                    maximum: 0,
+                    set: 1,
+                    preserve: false,
+                    increment: false,
+                    at_least: false,
+                },
+                Storage {
+                    track: "oteryn:quest-progress/quest/u10_70/lions_rock/questline".into(),
+                    minimum: if first { -1 } else { 1 },
+                    maximum: if first { 0 } else { 2_147_483_646 },
+                    set: if first { 2 } else { 1 },
+                    preserve: false,
+                    increment: !first,
+                    at_least: false,
+                },
+            ];
+            callback.success_message = Some(message.into());
+            callback.sources = vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:14-84".into()];
+            callbacks.push(callback);
+        }
+    }
+    callbacks
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn lions_rock_pagodas_bind_each_offering_and_both_questline_phases() -> Result<(), String> {
+        let callbacks = super::super::world_callbacks::load()?;
+        let trials: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.key.contains("m44-lions-"))
+            .collect();
+        assert_eq!(trials.len(), 6);
+        for callback in trials {
+            super::super::world_callbacks::parse(
+                &serde_json::json!({"schema":1,"callbacks":[callback]}).to_string(),
+            )?;
+            let value = serde_json::to_value(&callback.effects).map_err(|e| e.to_string())?;
+            assert_eq!(value["target_transform"]["from"], 2074);
+            assert_eq!(value["target_transform"]["to"], 2075);
+            assert_eq!(value["target_transform"]["reset_after_ms"], 15000);
+            assert_eq!(callback.storage[0].set, 1);
+            assert!(!callback.item_on_target.as_ref().ok_or("offering")?.reusable);
+            let mut invalid = callback.clone();
+            invalid
+                .effects
+                .target_transform
+                .as_mut()
+                .ok_or("target")?
+                .reset_after_ms = 0;
+            assert!(
+                super::super::world_callbacks::parse(
+                    &serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn uneasy_native_counterpart_matches_the_retained_bare_map_object() -> Result<(), String> {
         let callback = uneasy_crystal();

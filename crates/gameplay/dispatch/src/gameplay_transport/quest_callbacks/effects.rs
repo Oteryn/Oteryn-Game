@@ -21,6 +21,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(target) = &callback.effects.target_transform {
+            return super::source_transforms::prepare(map, target).map(Some);
+        }
         if let Some(presence) = &callback.effects.item_presence {
             let pos = tile(presence.position);
             let facts = map

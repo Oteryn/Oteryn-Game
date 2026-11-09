@@ -117,6 +117,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        let projection_target = match &projection {
+            Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
+                key, ..
+            }) => Some(*key),
+            _ => None,
+        };
+        if let Some(target) = projection_target
+            && !self
+                .states
+                .quest_callbacks
+                .source_target_available(actor, session, &cause, key, target)
+        {
+            return UseDisposition::Exhausted;
+        }
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -304,6 +318,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    projection_target: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -433,6 +448,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    projection_target: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -599,7 +615,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    projection_target: None,
                 });
+                record.projection_target = projection_target;
                 record.context.get_or_insert(context).clone()
             } else {
                 return UseDisposition::Rejected;
@@ -730,6 +748,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => {}
             }
         }
+        if let Some(target) = &callback.effects.target_transform
+            && let Some(crate::map::facts::QuestCallbackProjection::TimedTargetTransform {
+                due,
+                ..
+            }) = projection.as_mut()
+        {
+            let Some(published_due) = self
+                .owner_now()
+                .get()
+                .checked_add(u64::from(target.reset_after_ms) * 1_000)
+            else {
+                return UseDisposition::Exhausted;
+            };
+            *due = published_due;
+        }
         if !map.facts.apply_quest_callback(
             key,
             expected_revision,
@@ -745,6 +778,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             projection,
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
         ) || callback.effects.reset_after_ms.is_some()
+            || callback.effects.target_transform.is_some()
             || callback
                 .effects
                 .portals
