@@ -1,6 +1,9 @@
 //! Local-only preferences whose keys come from the audited client reference surface.
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
+#[path = "game_window.rs"]
+mod game_window;
+pub use game_window::GameWindowPreferences;
 use crate::map::World;
 use crate::play::PlayView;
 use serde::{Deserialize, Serialize};
@@ -86,6 +89,8 @@ use defaults::*;
 pub struct ReferencePreferences {
     #[serde(default)]
     pub graphics: GraphicsPreferences,
+    #[serde(default)]
+    pub game_window: GameWindowPreferences,
     #[serde(default = "enabled")]
     pub tooltips_enabled: bool,
     #[serde(default = "default_tooltip_delay")]
@@ -247,6 +252,7 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            game_window: Default::default(),
             show_effects: true,
             show_lights: true,
             show_harmony: true,

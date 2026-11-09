@@ -163,9 +163,10 @@
   "src": "TIBAUD-1",
   "area": "Skills",
   "feature": "Magical Archive i przypisanie czaru",
-  "status": "PARTIAL",
-  "gap": "Katalog i sloty są; brak osobnego pełnego archiwum i graficznego przypisywania.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "T038",
@@ -341,9 +342,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Game Window: own/other spells, text, loot messages",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Zdarzenia są; brak przełączników według źródła i klasy tekstu.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/game_window.rs:19 + t056_own_spell_filter_changes_live_projection; apps/client/src/features/0098-quick-loot/view.rs:3 + t056_loot_notice_filter_preserves_received_result"
  },
  {
   "id": "T057",
@@ -388,9 +390,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Graphics: foreground/background FPS i FPS/latency indicator",
-  "status": "MISSING",
-  "gap": "Brak równoważnych kontrolek limitów i wskaźników w Settings.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings expose persisted foreground/background limits (1–360 FPS) and independent FPS/latency indicators. Window focus selects the live redraw limit; successful render presentations supply measured FPS and confirmed server cooldown observations supply latency, with explicit unavailable states.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:12 (native Frames settings entry); apps/client/src/features/local-reference-preferences/frames_native.rs:70 and :144 (controls, validation and saved preferences); apps/client/src/features/local-reference-preferences/frame_native.rs:29 (production focus-aware scheduling and indicators); apps/client/src/windows_shell/application_handler.rs:166 and apps/client/src/windows_shell/capture.rs:92 (live shell/render hooks); apps/client/src/features/local-reference-preferences/frames.rs:108 + frame_limits_follow_focus_and_report_measured_frames_and_server_latency (focus changes, measured FPS, real PlayLink server RTT, persistence and invalid-limit rejection)."
  },
  {
   "id": "T062",
@@ -487,9 +490,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous / Help: FAQ/manual/client help/reports",
-  "status": "PARTIAL",
-  "gap": "Raportowanie jest osobno; brak kompletnej strony pomocy/nawigacji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Native Settings Help provides local FAQ, playing-manual and client-troubleshooting topics plus navigation to the existing Reports form. Report opening is deferred to the game thread, requires an active session and never submits a report automatically.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:8 (production Help navigation); apps/client/src/features/local-reference-preferences/help_native.rs:28 and :94 (native topics and report action); apps/client/src/features/local-reference-preferences/help.rs:12 and :32 (help content and session-bound report opening); apps/client/src/features/local-reference-preferences/native.rs:203 (game-thread consumer); apps/client/src/features/local-reference-preferences/tests/options_lane.rs:3 + help_navigation_opens_existing_report_without_submitting (all topics, unavailable-session rejection, real PlayLink report opening and empty command queue)."
  },
  {
   "id": "T073",
@@ -506,9 +510,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: minimap import/export",
-  "status": "MISSING",
-  "gap": "Brak narzędzia wymiany trwałych map/markerów.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Settings provide minimap import/export and marker editing. Imports require confirmation, validate bounded files and preserve character/world/channel/content scope; exports refuse to overwrite existing files. Imported observations never replace authoritative world geometry.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/subpages.rs:11 (production settings navigation); apps/client/src/features/local-reference-preferences/minimap_native.rs:80 (import/export controls) and :181 (native transfer actions and confirmation); apps/client/src/features/local-minimap/view.rs:115 (export_new) and :131 (validated import); apps/client/src/features/local-minimap/tests/play.rs:239 + minimap_transfer_round_trips_scoped_memory_and_markers_without_changing_world (round-trip, markers, persistence, scope isolation, invalid and oversized files)."
  },
  {
   "id": "T076",
@@ -544,27 +549,30 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Map: areas/subareas/passages/PoI/NPC",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/atlas_native.rs:47 + atlas_real_playlink_projects_regions_markers_and_navigation + cyclopedia_postgres_real_dispatch (T079 framed atlas, NPCs, uncovered membership, POI visibility and fences)"
  },
  {
   "id": "T080",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Bestiary: katalog/filter/combat/loot",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są kills/stage/thresholds; brak pełnego katalogu, ilustracji i danych resistance/loot.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0067-bestiary-charm-progression/view/illustration.rs:4 + bestiary_catalogue_queue_categories_and_detail_use_confirmed_server_replies + bestiary_catalogue_projects_active_creature_categories_stats_and_loot + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T080 framed complete catalogue, native combat/loot and category filter)"
  },
  {
   "id": "T081",
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Charms: points/unlock/assign/remove/reset",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje są; wybór wymaga indeksów, brak pełnego selektora i opisów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/metadata.rs:11 + named_charms_and_creatures_drive_the_real_progression_caller + duplicate_creature_captions_keep_the_selected_server_identity + charm_names_and_descriptions_match_the_actual_server_catalogue + charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee (T081 framed names, stage costs/chances and authoritative unlock/assign/remove/reset)"
  },
  {
   "id": "T082",
@@ -958,7 +966,8 @@
   "feature": "Browse/buy/sell/create/cancel/history",
   "status": "PARTIAL",
   "gap": "Handel/anonimowość są; brak pełnego katalogu filtrów, statystyk cen i tabel UI.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0063-market/input.rs:5 + market_side_filter_preserves_server_offer_identity (page side filter only; remaining gaps unchanged)"
  },
  {
   "id": "T125",
@@ -996,7 +1005,8 @@
   "feature": "Katalog/search/buy/confirmation/result",
   "status": "PARTIAL",
   "gap": "Zakup jest; brak pełnej nawigacji kategorii, sortów, preview i layoutu.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0154-store/input.rs:33 + store_category_navigation_sends_server_key_with_fresh_cursor (category navigation; graphical preview remains)"
  },
  {
   "id": "T131",
@@ -1529,9 +1539,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Lista czarów i wyszukiwanie",
-  "status": "PARTIAL",
-  "gap": "Brakuje filtrów profesji/grupy i szczegółowego widoku wybranego czaru z czasem odnowienia; istnieje stronicowana lista z wyszukiwaniem nazwy/formuły.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Filtry nazwy/formuły, profesji, grupy, poziomu i premium; karta szczegółów z czasem pozostałego cooldownu opartym na snapshotach serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:323 + native filtered spell detail with live cooldown projection; apps/client/src/features/0287-actor-spell-catalog/book.rs:222 + spellbook_routes_queries_retains_confirmed_pages_and_persists_filters; apps/client/src/features/0287-actor-spell-catalog/book_detail.rs:50 + spellbook_details_project_live_spell_and_group_cooldowns_without_claiming_cast_authority"
  },
  {
   "id": "O066",
@@ -1608,9 +1619,10 @@
   "src": "OTCAUD1108",
   "area": "Skills",
   "feature": "Cyklopedia: Magical Archive",
-  "status": "PARTIAL",
-  "gap": "Brakuje archiwum czarów z filtrami profesji/grupy i kartą szczegółów; dostępny jest podstawowy katalog czarów postaci.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Magical Archive z graficznym przypisaniem do 12 slotów, trwałym zapisem i bezpiecznym odtworzeniem według bieżącego katalogu serwera.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0287-actor-spell-catalog/book_native.rs:228 + native Magical Archive toggle and assignment controls; apps/client/src/features/0287-actor-spell-catalog/archive.rs:90 + confirmed-page assignment and live catalog identity resolution; apps/client/src/features/local-reference-preferences/native.rs:228 + persisted binding sync; apps/client/src/features/0287-actor-spell-catalog/archive_tests.rs:6 + magical_archive_assignments_persist_and_resolve_current_server_indices"
  },
  {
   "id": "O083",

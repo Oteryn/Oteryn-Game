@@ -48,3 +48,10 @@ message BestiaryCatalogueCardV1 {
   string category = 3; // an exact member of the page categories
   string detail = 4; // <=16000 UTF-8 bytes; empty on browse pages
 }
+
+// Optional read-only named catalogue on the same negotiated command 84:
+// request fe 01 after:u8 (0..32). Its strict bounded card/page reply is the
+// bestiary_catalogue codec: card.race is the existing Charm wire ordinal,
+// name/category/description come from the server's validated Charm import.
+// Pages contain at most 20 cards; next is the final ordinal on a nonfinal page.
+// This request neither unlocks a stage nor changes balances or assignments.
