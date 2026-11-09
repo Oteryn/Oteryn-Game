@@ -282,5 +282,11 @@
  "Start next week": "Start next week",
  "Weekly rewards received": "Weekly rewards received",
  "Task points": "Task points",
- "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}"
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
+ "Elite": "Elite",
+ "Ordinary": "Ordinary",
+ "Silver": "Silver",
+ "Platinum": "Platinum",
+ "Dust (Premium)": "Dust (Premium)",
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Elite tasks: monsters deal +100% damage and take -50% damage.\n"
 }

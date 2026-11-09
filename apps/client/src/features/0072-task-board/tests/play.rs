@@ -126,6 +126,7 @@ fn full_reply() -> task_board::full::Reply {
             }],
         },
         bounty: Bounty {
+            elite: false,
             state: 0,
             difficulty: 0,
             selected: 0,

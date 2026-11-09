@@ -69,6 +69,7 @@ fn decode_action(payload: &[u8]) -> Option<(TaskBoardAction, bool)> {
             },
             17 => TaskBoardAction::BuyTalisman,
             18 => TaskBoardAction::UpgradeTalisman { path: slot },
+            19 => TaskBoardAction::SetElite { enabled: slot == 1 },
             _ => return None,
         };
         return Some((action, false));
@@ -122,7 +123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return TaskBoardReply::Rejected;
         };
         let results_query = kind == wire::full::COMMAND_WEEKLY_RESULTS;
-        if (kind != wire::COMMAND_TYPE_TASK_BOARD && !results_query)
+        let elite_command = kind == wire::full::COMMAND_ELITE_BOUNTY;
+        if (kind != wire::COMMAND_TYPE_TASK_BOARD && !results_query && !elite_command)
             || (results_query
                 && (legacy
                     || action != TaskBoardAction::Query
@@ -130,6 +132,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .continuity
                         .selected_capabilities
                         .contains(wire::full::CAPABILITY_WEEKLY_RESULTS_V1)))
+        {
+            return TaskBoardReply::Rejected;
+        }
+        if (elite_command
+            && (legacy
+                || !matches!(
+                    action,
+                    TaskBoardAction::Query | TaskBoardAction::SetElite { .. }
+                )
+                || !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::full::CAPABILITY_WEEKLY_RESULTS_V1)))
+            || (!elite_command && matches!(action, TaskBoardAction::SetElite { .. }))
         {
             return TaskBoardReply::Rejected;
         }

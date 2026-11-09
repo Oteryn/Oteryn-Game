@@ -282,5 +282,11 @@
  "Start next week": "Starta nästa vecka",
  "Weekly rewards received": "Veckobelöningar mottagna",
  "Task points": "Uppdragspoäng",
- "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Prisjakt: status {}, svårighet {}, omlottningar {}, gratis omlottning av erbjudanden vid {}"
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Prisjakt: status {}, svårighet {}, omlottningar {}, gratis omlottning av erbjudanden vid {}",
+ "Elite": "Elit",
+ "Ordinary": "Vanlig",
+ "Silver": "Silver",
+ "Platinum": "Platina",
+ "Dust (Premium)": "Stoft (Premium)",
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Elituppdrag: monster orsakar +100% skada och tar -50% skada.\n"
 }

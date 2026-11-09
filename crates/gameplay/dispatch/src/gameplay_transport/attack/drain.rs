@@ -700,6 +700,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         talisman_damage,
                     )
                 };
+                let landed = if talisman.elite(&race_key) {
+                    landed / 2
+                } else {
+                    landed
+                };
                 if landed <= 0 {
                     train_swing(
                         &mut states,
@@ -782,6 +787,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     talisman_damage,
                                 )
                             });
+                            let primary = if talisman.elite(&race_key) {
+                                primary / 2
+                            } else {
+                                primary
+                            };
                             let element = match ranged.damage {
                                 ranged::RangedDamage::Magic { element, .. }
                                 | ranged::RangedDamage::Distance { element, .. } => element,

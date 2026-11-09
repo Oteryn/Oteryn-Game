@@ -61,6 +61,8 @@ pub(super) async fn install_boards(
         bounty: BountyBoard {
             state: BountyStatus::Active,
             active: Some(BountyTask {
+                elite: false,
+                dust: 0,
                 race: "oteryn:creature.rat".into(),
                 required: 25,
                 current: 0,
@@ -190,6 +192,8 @@ pub(super) async fn prepare_selection(
     .into_iter()
     .zip(0_u8..)
     .map(|(race, slot)| BountyTask {
+        elite: false,
+        dust: 0,
         race: race.into(),
         slot,
         ..task.clone()

@@ -39,6 +39,7 @@ fn reply() -> Reply {
             }],
         },
         bounty: Bounty {
+            elite: false,
             state: 2,
             difficulty: 0,
             selected: 1,
@@ -46,6 +47,8 @@ fn reply() -> Reply {
             rerolls: 3,
             daily_reroll_at: 1_800_000_000,
             offers: vec![BountyOffer {
+                elite: false,
+                dust: 0,
                 race: "oteryn:creature.rat".into(),
                 required: 25,
                 experience: 100,
@@ -53,6 +56,8 @@ fn reply() -> Reply {
                 grade: 0,
             }],
             active: Some(BountyOffer {
+                elite: false,
+                dust: 0,
                 race: "oteryn:creature.rat".into(),
                 required: 25,
                 experience: 100,
@@ -84,7 +89,7 @@ fn reply() -> Reply {
 
 #[test]
 fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields() {
-    for action in (4..=18).filter(|action| *action != 12) {
+    for action in (4..=19).filter(|action| *action != 12) {
         let request = Request {
             action,
             selection: 0,
@@ -108,7 +113,8 @@ fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields(
     }
     for (action, selection) in [
         (3, 0),
-        (19, 0),
+        (20, 0),
+        (19, 2),
         (4, 1),
         (5, 4),
         (6, 9),
@@ -210,6 +216,8 @@ fn full_task_board_expanded_board_is_bounded_without_truncation() {
     ];
     board.bounty.offers = vec![
         BountyOffer {
+            elite: false,
+            dust: 0,
             race: longest.clone(),
             required: u32::MAX,
             experience: u64::MAX,
@@ -409,4 +417,18 @@ fn monday_results_are_optional_bounded_and_cannot_accompany_an_active_week() {
     reply.weekly.started = false;
     reply.weekly_results.as_mut().expect("results").period = reply.period;
     assert!(encode_reply(&reply).is_err());
+}
+
+#[test]
+fn elite_platinum_offer_roundtrips_and_rejects_dust_without_elite() {
+    let mut state = reply();
+    state.bounty.elite = true;
+    let task = &mut state.bounty.offers[0];
+    task.grade = 3;
+    task.elite = true;
+    task.dust = 8;
+    let bytes = encode_reply(&state).expect("Elite Platinum reply");
+    assert_eq!(decode_reply(&bytes), Ok(state.clone()));
+    state.bounty.offers[0].elite = false;
+    assert!(encode_reply(&state).is_err());
 }

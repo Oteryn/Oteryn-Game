@@ -28,6 +28,8 @@ use crate::gameplay_transport::kill_reward::DrainOutcome;
 use crate::gameplay_transport::{ComposedFreshAdmission, character_gameplay_fence};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 
+#[path = "task_board/elite_case.rs"]
+mod elite_case;
 #[path = "task_board/scenarios.rs"]
 mod scenarios;
 use scenarios::*;
@@ -193,8 +195,22 @@ fn scenario() -> TestResult {
     scenario_with_fault(None)
 }
 
-#[allow(clippy::too_many_lines)]
 fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
+    scenario_with_mode(fault, false)
+}
+
+#[test]
+fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("task-board-elite", || {
+        scenario_with_mode(None, true)
+    })
+}
+
+#[allow(clippy::too_many_lines)]
+fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
         let harness = Harness::create_with_admission_seed(admin, tag, false, false).await?;
@@ -276,17 +292,20 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         runtime
             .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", OPEN_RAT)
             .map_err(debug)?;
-        let rat = {
+        let (rat, rat_actor) = {
             let creature = runtime
                 .visible_entities()
                 .creatures
                 .first()
                 .copied()
                 .expect("the rat is visible");
-            EntityRef {
-                identity: creature.actor.placement_identity(),
-                generation: creature.generation,
-            }
+            (
+                EntityRef {
+                    identity: creature.actor.placement_identity(),
+                    generation: creature.generation,
+                },
+                creature.actor,
+            )
         };
         let door_content =
             crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
@@ -480,6 +499,27 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         )
         .ok_or("selection")?;
 
+        let first = admitted.continuity.next_command_id;
+        let (_, elite) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[vec![8, 19, 16, 1, 26, 0]],
+            6174,
+        )
+        .await?;
+        assert_eq!(elite.len(), 1);
+        assert_eq!(elite[0].1, CommandStatus::Accepted);
+        let first = admitted.continuity.next_command_id;
+        let (_, normal) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[vec![8, 19, 16, 0, 26, 0]],
+            6174,
+        )
+        .await?;
+        assert_eq!(normal[0].1, CommandStatus::Accepted);
         let legacy = board(&owner, &mut admitted, 0, 0).await?;
         assert!(!legacy.refused);
         assert!(
@@ -496,6 +536,15 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         // This Character entered the fixture at level one; accepted progression at
         // level eight is now fixture input. All task mutations below use real dispatch.
         progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+        if elite_case_enabled {
+            elite_case::run_case(&owner, &harness, &mut admitted, actor, rat_actor).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
+
         capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
         let start_id = admitted.continuity.next_command_id;
         let started = full_board(&owner, &mut admitted, 5, 0, "").await?;

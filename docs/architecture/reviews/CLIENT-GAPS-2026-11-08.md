@@ -216,3 +216,9 @@ Zasady przeciw dublowaniu:
 |---|---|---|---|---|
 | O035 | Mobile | Mobilny joystick ruchu | DONE | Joystick dotykowy w istniejącym kliencie Windows: osiem sektorów, martwa strefa, powtarzanie w kolejce paced-movement i zatrzymanie po puszczeniu/anulowaniu lub utracie fokusu. Sektory ukośne naprzemiennie wysyłają istniejące kroki kardynalne; protokół obsługuje cztery kierunki. Bez portu Android/iOS. evidence: apps/client/src/features/0233-touch-controls/input.rs:91 + touch_joystick_uses_paced_keyboard_steps_and_release_stops; apps/client/src/features/0233-touch-controls/native.rs:7 + touch_default_tap_dead_zone_and_contact_ownership |
 | O056 | Mobile | Mobilny pasek skrótów | DONE | Dotykowy pasek attack/look/follow/use z widocznym wyborem i powrotem do domyślnego walk-to/use po ponownym dotknięciu. Korzysta z istniejących ścieżek myszy/klawiatury, pokazuje się po pierwszym dotyku i nie przechwytuje myszy; napisy we wszystkich sześciu lokalizacjach. evidence: apps/client/src/features/0233-touch-controls/input.rs:110 + touch_hotbar_world_taps_equal_mouse_context_and_follow_keys; apps/client/src/features/0233-touch-controls/view.rs:6 + touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode |
+
+## cg_tasks — TIBAUD-2
+
+| id | obszar | funkcja | status | brak |
+|---|---|---|---|---|
+| T201 | Hunting tasks | Elite checkbox i Platinum tasks w Bounty Board | PARTIAL | Implementation wired; focused PG execution pending after host SIGKILL during dispatch test compilation. Owner-approved numeric profile remains PARITY_PENDING. Evidence: apps/client/src/features/0072-task-board/tests/controls.rs:171 + elite_checkbox_uses_the_real_play_queue; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs:203 + task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust. |

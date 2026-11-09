@@ -25,7 +25,7 @@ message TaskBoardReplyV1 {
   repeated uint64 talisman_next_costs = 9 [packed = false]; // 0 at maximum level
 }
 
- // Full request actions 4..18: all fields explicitly present, canonical field order.
+ // Full request actions 4..19: all fields explicitly present, canonical field order.
 message TaskBoardFullRequestV1 {
   uint32 action = 1;
   uint32 selection = 2;
@@ -59,7 +59,9 @@ message TaskBoardBountyOfferV1 {
   uint32 required = 2;
   uint64 experience = 3;
   uint32 points = 4;
-  uint32 grade = 5;
+  uint32 grade = 5; // Ordinary=0, Silver=1, Gold=2, Platinum=3 (474)
+  bool elite = 6; // capability 474 extension; omitted when false
+  uint32 dust = 7; // frozen Elite completion dust, Premium only
 }
 message TaskBoardListSlotV1 {
   bool unlocked = 1;
@@ -76,6 +78,7 @@ message TaskBoardBountyV1 {
   repeated TaskBoardBountyOfferV1 offers = 7; // <=3
   optional TaskBoardBountyOfferV1 active = 8;
   repeated TaskBoardListSlotV1 lists = 9; // <=5
+  bool elite = 10; // next-roll preference; capability 474 only
 }
 message TaskBoardTalismanPathV1 {
   uint32 level = 1;

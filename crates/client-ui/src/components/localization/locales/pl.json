@@ -282,5 +282,11 @@
  "Start next week": "Rozpocznij następny tydzień",
  "Weekly rewards received": "Otrzymane nagrody tygodniowe",
  "Task points": "Punkty zadań",
- "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Zlecenie: stan {}, trudność {}, losowania {}, darmowe losowanie ofert o {}"
+ "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}": "Zlecenie: stan {}, trudność {}, losowania {}, darmowe losowanie ofert o {}",
+ "Elite": "Elitarne",
+ "Ordinary": "Zwykłe",
+ "Silver": "Srebrne",
+ "Platinum": "Platynowe",
+ "Dust (Premium)": "Pył (Premium)",
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Zadania elitarne: potwory zadają +100% obrażeń i otrzymują -50% obrażeń.\n"
 }
