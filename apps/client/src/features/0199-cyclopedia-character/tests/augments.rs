@@ -113,3 +113,21 @@ fn activity_handoff_cancels_the_source_modifier_query_and_observation() -> Resul
     assert!(!panel.augments.open);
     Ok(())
 }
+
+#[test]
+fn native_modifiers_wait_for_the_independent_blessings_reply() -> Result<(), &'static str> {
+    use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, request_blessings};
+    let mut panel = CyclopediaCharacterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    request_blessings(&mut panel).ok_or("blessings query")?;
+    assert!(crate::play::feature_0199_cyclopedia_character::view::native::display(&panel).contains("Waiting for the server"));
+    assert!(crate::play::feature_0199_cyclopedia_character::view::native::submit(&mut panel, 180, ["0", "20", ""]).is_none());
+    assert!(panel.blessings.pending);
+    assert!(!panel.pending);
+    assert!(panel.augments.requested.is_none());
+    assert!(oteryn_client_ui::cyclopedia_character::augment_request(&mut panel, AugmentIntent::Refresh).is_none());
+    assert!(panel.augments.requested.is_none());
+    Ok(())
+}

@@ -20,6 +20,9 @@
 pub(crate) mod live;
 
 pub(crate) use live::audit::OneItemForgeV1;
+pub use live::preview::{
+    ForgePreviewItem, ForgePreviewQuote, ForgePreviewSelection, ForgePreviewSnapshot,
+};
 
 /// Server-resolved operands from the existing session ItemHandle owner. The wire intent
 /// retains handles; these native identities are frozen privately with the occurrence.

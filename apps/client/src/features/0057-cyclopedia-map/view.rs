@@ -46,6 +46,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous map floor",
                 "Next map floor",
                 "Toggle POI layer",
+                "Analytics overview",
+                "Hunting analyser",
+                "Experience analyser",
+                "Loot analyser",
+                "Supplies analyser",
+                "Damage analyser",
+                "Healing analyser",
+                "Browse creature catalogue",
+                "Next creature page",
+                "Creature details",
+                "Next creature loot page",
+                "Previous creature category",
+                "Next creature category",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -64,6 +77,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.cyclopedia_map.open = value,
             submit: |mailbox, commands, action, values| {
+                if (33..39).contains(&action) {
+                    crate::play::feature_0067_bestiary_charm_progression::input::catalogue::submit(mailbox, commands, action - 33);
+                    mailbox.properties.cyclopedia_map.navigate(oteryn_client_ui::cyclopedia_map::Section::Bestiary);
+                    return;
+                }
+                if analytics::select(mailbox, action) { return; }
                 if actions::navigate_section(mailbox, action, &values) {
                     return;
                 }
@@ -96,10 +115,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     return;
                 }
                 if action == 18 || action == 19 {
-                    mailbox
-                        .properties
-                        .charm_progression
-                        .select_race(action == 18);
+                    if mailbox.properties.charm_progression.catalogue.page.cards.is_empty() {
+                        mailbox.properties.charm_progression.select_race(action == 18);
+                    } else {
+                        crate::play::feature_0067_bestiary_charm_progression::input::catalogue::submit(mailbox, commands, if action == 18 { 6 } else { 7 });
+                    }
                     mailbox
                         .properties
                         .cyclopedia_map
@@ -168,7 +188,7 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
             oteryn_client_ui::charm_progression::charms_text(&mailbox.properties.charm_progression)
         }
         Section::Bosses => oteryn_client_ui::boss_encounter::panel_text(&mailbox.boss_encounter),
-        Section::Analytics => oteryn_client_ui::analyser::panel_text(&mailbox.analyser),
+        Section::Analytics => analytics::text(mailbox),
         Section::Items => {
             oteryn_client_ui::inspection::catalogue_text(&mailbox.discovery.inspection)
         }
@@ -203,6 +223,18 @@ mod actions;
 #[cfg(test)]
 #[path = "view/tests.rs"]
 mod navigation_tests;
+
+#[cfg(test)]
+#[path = "view/analytics_tests.rs"]
+mod analytics_tests;
+
+#[cfg(any(windows, test))]
+#[path = "view/analytics.rs"]
+mod analytics;
+
+#[cfg(windows)]
+#[path = "view/atlas.rs"]
+pub(in crate::play) mod atlas;
 
 #[cfg(windows)]
 #[path = "view/atlas_native.rs"]

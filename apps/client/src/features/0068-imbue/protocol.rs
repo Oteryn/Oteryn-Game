@@ -28,3 +28,20 @@ impl Outbox {
         oteryn_client_ui::imbue::apply_result(&mut lock(&self.0).imbue, response);
     }
 }
+
+pub(in crate::play) fn equipment_inspection_result(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+) {
+    let scope = super::input::tracker::scope(mailbox);
+    mailbox.imbue.equipment.reconcile(scope);
+    if mailbox.world_input_blocked() {
+        mailbox.imbue.equipment.pending = None;
+        return;
+    }
+    if matches!(mailbox.discovery.inspection.last_request,
+        Some(oteryn_client_ui::inspection::Request::Item(item)) if mailbox.imbue.equipment.pending == Some(item))
+    {
+        mailbox.imbue.equipment.accept(response);
+    }
+}

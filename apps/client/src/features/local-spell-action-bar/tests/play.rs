@@ -196,3 +196,48 @@ fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn 
 
 #[path = "directional.rs"]
 mod directional;
+
+#[test]
+fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
+-> Result<(), Box<dyn std::error::Error>> {
+    use std::num::NonZeroU32;
+    let (link, mut commands, outbox) = play_channel();
+    let mut fields = vec![String::new(); 12];
+    fields[11] = "71".into();
+    assert!(link.spell_bar_bind(&fields));
+    let mut view = view()?;
+    view.cast(NonZeroU32::new(12).ok_or("slot")?);
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==71)
+    );
+    outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: oteryn_session::ActorCooldowns {
+            server_now_ms: 100,
+            rtt_ms: None,
+            entries: vec![oteryn_session::ActorCooldown {
+                kind: oteryn_session::ActorCooldownKind::Spell,
+                id: 71,
+                expires_at_ms: 600,
+            }],
+        },
+    })]);
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let text = oteryn_client_ui::spell_action_bar::panel_text(
+        &mailbox.spell_bar,
+        &mailbox.spell_catalog.catalog,
+    );
+    assert!(text.contains("12: 71"));
+    assert!(text.contains("500 ms"));
+    assert!(
+        mailbox
+            .spell_bar
+            .bar
+            .spell(NonZeroU32::new(13).ok_or("slot")?)
+            .is_none()
+    );
+    Ok(())
+}

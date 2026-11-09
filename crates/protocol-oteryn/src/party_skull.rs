@@ -114,3 +114,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[path = "party_skull/status.rs"]
+mod status;
+pub use status::{PvpSituation, PvpStatus};

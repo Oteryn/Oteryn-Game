@@ -12,6 +12,7 @@ pub(super) struct Widgets {
     pub(super) cards: Vec<HWND>,
     pub(super) stamina_bar: HWND,
     pub(super) training_bar: HWND,
+    pub(super) badge_id: HWND,
 }
 
 pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
@@ -139,7 +140,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             .collect();
         let stamina_bar = control(hwnd, "msctls_progress32", "", 470, [10, 575, 335, 18], 0);
         let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
-        super::super::profile_table::badge_controls(hwnd);
+        let badge_id = super::super::profile_table::badge_controls(hwnd);
         super::super::offence_table::controls(hwnd);
         Widgets {
             edits,
@@ -152,6 +153,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             cards,
             stamina_bar,
             training_bar,
+            badge_id,
         }
     }
 }

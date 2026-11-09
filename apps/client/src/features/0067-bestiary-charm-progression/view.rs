@@ -27,6 +27,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Next charm",
                 "Previous eligible race",
                 "Next eligible race",
+                "Browse creature catalogue",
+                "Next catalogue page",
+                "Creature details",
+                "Next loot page",
+                "Previous creature category",
+                "Next creature category",
+                "Previous catalogue creature",
+                "Next catalogue creature",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.charm_progression;
@@ -43,6 +51,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.charm_progression.open = value,
             submit: |mailbox, commands, action, values| {
+                if action >= 14 {
+                    for (index, value) in values.into_iter().enumerate() { super::input::edit(&mut mailbox.properties.charm_progression, index, value); }
+                    super::input::catalogue::submit(mailbox, commands, action - 14);
+                    return;
+                }
                 let panel = &mut mailbox.properties.charm_progression;
                 if panel.pending {
                     return;

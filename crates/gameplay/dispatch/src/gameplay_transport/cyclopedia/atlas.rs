@@ -1,216 +1,257 @@
-//! T079: overview cells and public markers from the same admitted World as exploration.
+//! Static atlas facts from the actual admitted bundle; exploration POIs stay on the legacy query.
 use super::*;
-use wire::atlas::{Area, Atlas, HEIGHT, Marker, Query, WIDTH};
-impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn cyclopedia_atlas_wire(
-        &self,
-        admitted: AdmittedSession,
-        id: u64,
-        payload: &[u8],
-    ) -> GuildReply {
-        let Ok(mut query) = Query::decode(payload) else {
-            return GuildReply::Rejected;
-        };
-        let Some(fence) = admitted.item_fence else {
-            return GuildReply::Rejected;
-        };
-        if !admitted
-            .continuity
-            .selected_capabilities
-            .contains(wire::CAPABILITY_CYCLOPEDIA_MAP_V1)
-        {
-            return GuildReply::Rejected;
-        }
-        let Some(current) =
-            super::super::character_gameplay_fence::current(self, admitted.game_session_id, false)
-                .await
-        else {
-            return GuildReply::Rejected;
-        };
-        if current.item_fence() != fence
-            || fence.game_session_id != admitted.game_session_id
-            || fence.connection_generation.get() != admitted.continuity.connection_generation
-        {
-            return GuildReply::Rejected;
-        }
-        let progress = match self.cyclopedia_basic_wire(admitted, id, 72, &[]).await {
-            GuildReply::Payload(bytes) => match wire::decode_result(&bytes) {
-                Ok(value) => Some(value),
-                Err(_) => return GuildReply::Rejected,
-            },
-            GuildReply::Rejected => None,
-            GuildReply::Unavailable => return GuildReply::Unavailable,
-        };
-        let Some(actor) = admitted.runtime_actor else {
-            return GuildReply::Rejected;
-        };
-        let mut runtime = self.runtime.lock().await;
-        let binding = runtime.binding();
-        if admitted.world_id != binding.world_id()
-            || Some(admitted.channel_id) != binding.channel_id()
-            || fence.runtime_scope != binding.runtime_scope()
-            || fence.scope_ownership_generation != binding.scope_generation()
-            || runtime.owner_fence().is_err()
-            || !runtime
-                .player_control_facts(actor, admitted.game_session_id)
-                .is_ok_and(|f| f.control_loss.is_none())
-        {
-            return GuildReply::Rejected;
-        }
-        let Some(position) =
-            super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
-        else {
-            return GuildReply::Rejected;
-        };
-        let npcs: Vec<_> = runtime
-            .npc_atlas_positions()
-            .map(|(key, at)| (key.to_owned(), at))
-            .collect();
-        drop(runtime);
-        let base = position.map.overlay.base();
-        let step = 1u32 << query.zoom;
-        if query.floor == 127 {
-            let Ok(floor) = i8::try_from(position.at.floor) else {
-                return GuildReply::Rejected;
-            };
-            query.floor = floor;
-        }
-        if query.x == u16::MAX && query.y == u16::MAX {
-            let (Ok(x), Ok(y)) = (u16::try_from(position.at.x), u16::try_from(position.at.y))
-            else {
-                return GuildReply::Rejected;
-            };
-            query.x = x.saturating_sub((WIDTH as u32 * step / 2).min(65535) as u16);
-            query.y = y.saturating_sub((HEIGHT as u32 * step / 2).min(65535) as u16);
-        }
-        let floors = base.tiles().fold(0u16, |mask, (floor, _, _, _)| {
-            mask | (1u16 << (-floor as u8))
-        });
-        let mut cells = vec![0; WIDTH * HEIGHT];
-        let mut ids = std::collections::BTreeSet::new();
-        for run in base
-            .subareas
-            .runs
-            .iter()
-            .filter(|run| run.floor == query.floor)
-        {
-            let Some(row) = u32::from(run.y)
-                .checked_sub(u32::from(query.y))
-                .map(|v| v / step)
-                .filter(|r| *r < HEIGHT as u32)
-            else {
-                continue;
-            };
-            let left = u32::from(run.begin).max(u32::from(query.x));
-            let right = u32::from(run.end).min(u32::from(query.x) + WIDTH as u32 * step);
-            if left >= right {
-                continue;
-            }
-            ids.insert(run.subarea);
-            for col in (left - u32::from(query.x)) / step..=(right - 1 - u32::from(query.x)) / step
-            {
-                let cell = &mut cells[row as usize * WIDTH + col as usize];
-                if *cell == 0 {
-                    *cell = run.subarea;
-                }
-            }
-        }
-        let mut areas = Vec::new();
-        for a in &base.subareas.areas {
-            if ids.contains(&a.id)
-                || base
-                    .subareas
-                    .areas
-                    .iter()
-                    .any(|child| ids.contains(&child.id) && child.parent == Some(a.id))
-            {
-                areas.push(Area {
-                    id: a.id,
-                    parent: a.parent.unwrap_or(0),
-                    name: label(&a.name),
-                });
-            }
-        }
-        if areas.len() > 64 {
-            return GuildReply::Rejected;
-        }
-        let inside = |x: u16, y: u16| {
-            u32::from(x) >= u32::from(query.x)
-                && u32::from(y) >= u32::from(query.y)
-                && u32::from(x) < u32::from(query.x) + WIDTH as u32 * step
-                && u32::from(y) < u32::from(query.y) + HEIGHT as u32 * step
-        };
-        let mut markers = Vec::new();
-        for (key, at) in npcs {
-            if -at.floor == i16::from(query.floor)
-                && let (Ok(x), Ok(y)) = (u16::try_from(at.x), u16::try_from(at.y))
-                && inside(x, y)
-            {
-                markers.push(Marker {
-                    kind: 1,
-                    x,
-                    y,
-                    label: label(&key),
-                });
-            }
-        }
-        for (floor, x, y, _) in base
-            .tiles()
-            .filter(|(floor, x, y, _)| *floor == query.floor && inside(*x, *y))
-        {
-            let pos = crate::map::overlay::TilePos { x, y, floor };
-            if position.map.floors.contains(pos) || position.map.floors.teleport(pos).is_some() {
-                markers.push(Marker {
-                    kind: 2,
-                    x,
-                    y,
-                    label: if let Some(to) = position.map.floors.teleport(pos) {
-                        format!("Passage to {},{},{}", to.x, to.y, to.floor)
-                    } else {
-                        "Floor passage".into()
-                    },
-                });
-            }
-        }
-        for &(x, y, floor) in progress.iter().flat_map(|p| &p.visible) {
-            if floor == query.floor && inside(x, y) {
-                markers.push(Marker {
-                    kind: 3,
-                    x,
-                    y,
-                    label: "Visible exploration point".into(),
-                });
-            }
-        }
-        markers.sort_by(|a, b| (a.kind, a.y, a.x, &a.label).cmp(&(b.kind, b.y, b.x, &b.label)));
-        let Ok(marker_total) = u32::try_from(markers.len()) else {
-            return GuildReply::Rejected;
-        };
-        let markers = markers
-            .into_iter()
-            .skip(usize::from(query.page) * 64)
-            .take(64)
-            .collect();
-        let atlas = Atlas {
-            query,
-            digest: base.digest(),
-            floors,
-            progress,
-            cells,
-            areas,
-            markers,
-            marker_total,
-        };
-        match atlas.encode() {
-            Ok(bytes) => GuildReply::Payload(bytes),
-            Err(_) => GuildReply::Rejected,
-        }
+use oteryn_protocol_oteryn::cyclopedia::geometry::{
+    self as wire, Area, AreaPage, GeometryPage, Reply, Request, Run,
+};
+use std::collections::HashSet;
+pub(super) async fn dispatch(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    payload: &[u8],
+) -> GuildReply {
+    let Ok(request) = wire::decode_request(payload) else {
+        return GuildReply::Rejected;
+    };
+    let runtime = owner.runtime.lock().await;
+    if !super::super::battle_instinct_status::actor_is_current(&runtime, admitted)
+        || super::super::item_ref_admission::pinned_index(&runtime, owner.active_generation)
+            .is_none()
+    {
+        return GuildReply::Rejected;
     }
+    drop(runtime);
+    let Some(map) = owner.bundle_map() else {
+        return GuildReply::Rejected;
+    };
+    project(&map.overlay.base().subareas, request)
+        .and_then(|reply| wire::encode_reply(&reply).ok())
+        .map_or(GuildReply::Rejected, GuildReply::Payload)
 }
-fn label(s: &str) -> String {
-    let mut end = s.len().min(128);
-    while !s.is_char_boundary(end) {
-        end -= 1;
+fn project(table: &oteryn_world_bundle::subarea::Table, request: Request) -> Option<Reply> {
+    wire::encode_request(request).ok()?;
+    if request.floor == 1 {
+        if request.area != 0
+            && !table
+                .areas
+                .iter()
+                .any(|area| area.id == request.area && area.parent.is_none())
+        {
+            return None;
+        }
+        let present: HashSet<_> = table.runs.iter().map(|run| run.subarea).collect();
+        let parents: HashSet<_> = table
+            .areas
+            .iter()
+            .filter(|area| present.contains(&area.id))
+            .filter_map(|area| area.parent)
+            .collect();
+        let mut areas: Vec<_> = table
+            .areas
+            .iter()
+            .filter(|area| {
+                area.parent.unwrap_or(0) == request.area
+                    && (present.contains(&area.id) || parents.contains(&area.id))
+            })
+            .collect();
+        areas.sort_by_key(|area| area.id);
+        let after = usize::from(request.after);
+        if after > areas.len() {
+            return None;
+        }
+        let more = areas.len() - after > wire::AREA_PAGE;
+        let areas: Vec<_> = areas
+            .into_iter()
+            .skip(after)
+            .take(wire::AREA_PAGE)
+            .map(|area| Area {
+                id: area.id,
+                parent: area.parent.unwrap_or(0),
+                name: area.name.clone(),
+            })
+            .collect();
+        let next = if more {
+            Some((after + areas.len()).try_into().ok()?)
+        } else {
+            None
+        };
+        return Some(Reply::Areas(AreaPage {
+            parent: request.area,
+            after: request.after,
+            next,
+            areas,
+        }));
     }
-    s[..end].chars().filter(|c| !c.is_control()).collect()
+    let selected = table.areas.iter().find(|area| area.id == request.area)?;
+    let members: HashSet<_> = table
+        .areas
+        .iter()
+        .filter(|area| {
+            area.id == selected.id
+                || (selected.parent.is_none() && area.parent == Some(selected.id))
+        })
+        .map(|area| area.id)
+        .collect();
+    let runs: Vec<_> = table
+        .runs
+        .iter()
+        .filter(|run| run.floor == request.floor && members.contains(&run.subarea))
+        .collect();
+    if runs.len() > wire::MAX_RUNS {
+        return None;
+    }
+    let bounds = if runs.is_empty() {
+        [0; 4]
+    } else {
+        [
+            runs.iter().map(|r| r.begin).min()?,
+            runs.iter().map(|r| r.y).min()?,
+            runs.iter().map(|r| r.end).max()?.checked_sub(1)?,
+            runs.iter().map(|r| r.y).max()?,
+        ]
+    };
+    let offset = usize::from(request.after) * wire::RUN_PAGE;
+    if offset > runs.len() {
+        return None;
+    }
+    let next = if runs.len() - offset > wire::RUN_PAGE {
+        Some(request.after.checked_add(1)?)
+    } else {
+        None
+    };
+    let total = runs.len().try_into().ok()?;
+    let runs = runs
+        .into_iter()
+        .skip(offset)
+        .take(wire::RUN_PAGE)
+        .map(|r| Run {
+            y: r.y,
+            begin: r.begin,
+            end: r.end,
+            subarea: r.subarea,
+        })
+        .collect();
+    Some(Reply::Geometry(GeometryPage {
+        area: request.area,
+        floor: request.floor,
+        page: request.after,
+        next,
+        total,
+        bounds,
+        runs,
+    }))
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn atlas_projects_bundle_regions_subareas_floors_and_complete_geometry_pages()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_world_bundle::subarea::{Area as NativeArea, Run as NativeRun, Table};
+        let area = |id, parent, name: &str| NativeArea {
+            id,
+            parent,
+            name: name.into(),
+            key: format!("oteryn:area.{id}"),
+            source_record_sha256: "1".repeat(64),
+            town_id: None,
+            hometown: false,
+            temple: None,
+        };
+        let mut table = Table {
+            areas: vec![
+                area(1, None, "Harbor"),
+                area(2, Some(1), "Inner harbor"),
+                area(3, None, "Highlands"),
+            ],
+            ..Table::default()
+        };
+        table.runs = (0..1025)
+            .map(|y| NativeRun {
+                floor: -7,
+                y,
+                begin: 10,
+                end: 20,
+                subarea: 2,
+            })
+            .collect();
+        table.runs.push(NativeRun {
+            floor: -6,
+            y: 2000,
+            begin: 40,
+            end: 50,
+            subarea: 3,
+        });
+        let Reply::Areas(roots) = project(
+            &table,
+            Request {
+                area: 0,
+                floor: 1,
+                after: 0,
+            },
+        )
+        .ok_or("regions")?
+        else {
+            return Err("wrong region reply".into());
+        };
+        assert_eq!(roots.areas.iter().map(|a| a.id).collect::<Vec<_>>(), [1, 3]);
+        let Reply::Areas(children) = project(
+            &table,
+            Request {
+                area: 1,
+                floor: 1,
+                after: 0,
+            },
+        )
+        .ok_or("subareas")?
+        else {
+            return Err("wrong subarea reply".into());
+        };
+        assert_eq!(children.areas[0].id, 2);
+        let Reply::Geometry(first) = project(
+            &table,
+            Request {
+                area: 1,
+                floor: -7,
+                after: 0,
+            },
+        )
+        .ok_or("map")?
+        else {
+            return Err("wrong geometry reply".into());
+        };
+        assert_eq!(
+            (first.runs.len(), first.total, first.next),
+            (1024, 1025, Some(1))
+        );
+        assert_eq!(first.bounds, [10, 0, 19, 1024]);
+        let Reply::Geometry(last) = project(
+            &table,
+            Request {
+                area: 1,
+                floor: -7,
+                after: 1,
+            },
+        )
+        .ok_or("continuation")?
+        else {
+            return Err("wrong continuation".into());
+        };
+        assert_eq!((last.runs.len(), last.next), (1, None));
+        let Reply::Geometry(empty) = project(
+            &table,
+            Request {
+                area: 1,
+                floor: -6,
+                after: 0,
+            },
+        )
+        .ok_or("floor")?
+        else {
+            return Err("wrong floor reply".into());
+        };
+        assert_eq!(empty.total, 0);
+        assert_eq!(wire::MAX_RUNS, oteryn_world_bundle::subarea::MAX_RUNS);
+        assert_eq!(wire::MAX_AREAS, oteryn_world_bundle::subarea::MAX_AREAS);
+        Ok(())
+    }
 }

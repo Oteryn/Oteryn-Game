@@ -204,6 +204,9 @@ mod tests {
     }
 }
 
+#[path = "cyclopedia_atlas.rs"]
+pub mod geometry;
+
 #[cfg(test)]
 #[path = "cyclopedia_atlas_tests.rs"]
 mod atlas_tests;

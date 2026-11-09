@@ -1,4 +1,3 @@
-//! Atlas controls consume confirmed server observations; clicks never move the character.
 use super::Panel;
 use oteryn_client_runtime::cyclopedia_map::atlas::{HEIGHT, Query, WIDTH};
 pub fn atlas_action(p: &mut Panel, action: usize) -> bool {

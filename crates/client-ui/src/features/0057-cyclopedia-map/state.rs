@@ -9,6 +9,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub geometry: super::geometry::Atlas,
     pub atlas: Option<oteryn_client_runtime::cyclopedia_map::atlas::Atlas>,
     pub atlas_query: oteryn_client_runtime::cyclopedia_map::atlas::Query,
     pub atlas_open: bool,
@@ -115,5 +116,13 @@ impl Panel {
                 }
             });
         self.floor = floors[index];
+    }
+}
+
+impl Panel {
+    pub fn invalidate_atlas(&mut self) {
+        self.geometry = Default::default();
+        self.map = None;
+        self.summary.clear();
     }
 }

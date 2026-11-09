@@ -95,6 +95,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             cards,
             stamina_bar,
             training_bar,
+            badge_id,
         } = character_widgets::create(hwnd);
         let mut tables = super::character_paint::Tables::default();
         let mut message: MSG = std::mem::zeroed();
@@ -117,7 +118,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 if action == 150 {
                     super::profile_table::toggle_badge(
                         &mut mailbox.cyclopedia_character,
-                        GetDlgItem(hwnd, 149),
+                        badge_id,
                     );
                     continue;
                 }

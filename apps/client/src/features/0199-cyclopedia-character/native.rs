@@ -6,7 +6,7 @@ pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
     format!(
         "{}\r\n{}\r\n{}",
-        if p.pending {
+        if p.pending || p.blessings.pending {
             "Waiting for the server"
         } else if !p.selected {
             "Feature unavailable in this session"
@@ -27,7 +27,7 @@ pub(in crate::play) fn submit(
     id: usize,
     values: [&str; 3],
 ) -> Option<FeatureCommand> {
-    if p.pending || !p.selected {
+    if p.pending || p.blessings.pending || !p.selected {
         return None;
     }
     if matches!(id, 180..=185) || (p.augments.open && matches!(id, 112 | 113)) {

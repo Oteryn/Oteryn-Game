@@ -9,7 +9,8 @@ No new state domain. Generic CommandResult payloads carry the following bytes.
 
 ## Request
 
-All multibyte scalars little endian. Command 72 has an empty payload. Command 73
+All multibyte scalars little endian. Command 72 uses an empty payload for the legacy discovery query; the opt-in
+atlas payload is defined below. Command 73
 has exactly 9 bytes: operation u8 (1 start, 2 shuffle, 3 find at server position,
 4 donate), area u32 (1), amount u32 (1..10,000,000 for donate; zero otherwise).
 The retained wire value 1 aliases the current canonical subarea resolved from the
@@ -58,6 +59,42 @@ runtime position. Queries poll the requesting character's visible POIs. Automati
 effect/message events remain subsequent presentation work. The native client
 selects existing capability 57, routes 72/73 through its session loop, and exposes
 the controls and key binding already implemented by main's0057 client feature.
+
+## Public atlas extension (O078)
+
+Command 72 additionally accepts the explicit nine-byte opt-in body `ff 01`,
+`area:u32`, `floor:i8`, `after:u16`, all multibyte scalars little endian.
+Floor 1 lists the admitted region's children (`area=0` lists top-level regions),
+using an exclusive page offset at most 1024. Native floors -15..0 request the
+selected area's geometry; `after` then identifies a 1024-span page, starting at 0.
+No position, discovery completion, Premium state, POI pool or donation authority
+is supplied by this read-only extension.
+
+Atlas replies have their own strict codec and an absolute 10,264-byte bound.
+Legacy empty queries and their fixed basic-map reply codec remain unchanged.
+
+- Kind 1: parent:u32, offset:u16, next:u16 (0=end), count:u8 (at most 16), then
+  area records: id:u32, parent:u32 (0=root), name length:u16 and 1..256 UTF-8 bytes.
+  Records are unique and sorted by id; every record belongs to the requested parent.
+- Kind 2: area:u32, floor:i8, page:u16, next:u16 (0=end), total:u32,
+  bounds `(min_x,min_y,max_x,max_y):u16[4]`, count:u16, then at most 1024
+  records `(y:u16, begin:u16, end:u16, subarea:u32)`. Horizontal spans are
+  half-open, sorted and disjoint. Bounds cover the complete selected area/floor,
+  not just the current page. Empty geometry has total zero and zero bounds.
+
+Only the actual server bundle's admitted membership masks are projected after
+checking the current actor/session and content pin. Root regions include their
+admitted subareas; a subarea filter includes only its own spans. The client retains
+at most the bundle's 262,144-span bound and validates stable bounds, totals and
+contiguous pages before appending. Its normal play tick requests the next page
+without blocking. Scope changes and terminal session paths discard the atlas.
+
+The native atlas paints these real spans north-up, with region/subarea selection,
+floor filters, independently visible region and POI layers. POIs still come only
+from the existing current-location query, preserving its same-floor viewport and
+discovery gates. An atlas region selection never redirects exploration actions or
+charges a donation. Resource entries `O078-ATLAS-*` register all new byte, string,
+page and retained-geometry budgets.
 
 
 ## T079 atlas query extension

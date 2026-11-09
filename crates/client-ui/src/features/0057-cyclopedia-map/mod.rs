@@ -1,5 +1,9 @@
 #[path = "view/atlas.rs"]
 mod atlas;
+#[path = "view/geometry.rs"]
+pub mod atlas_view;
+#[path = "state/atlas.rs"]
+pub mod geometry;
 pub use atlas::{atlas_action, atlas_color, atlas_detail};
 mod input;
 mod state;

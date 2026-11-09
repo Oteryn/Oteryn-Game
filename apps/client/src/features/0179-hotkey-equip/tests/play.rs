@@ -105,3 +105,52 @@ fn native_hotkey_configuration_and_visible_refusal() -> Result<(), Box<dyn std::
     assert!(native::panel_text(&p).contains("refused"));
     Ok(())
 }
+
+#[test]
+fn item_hotkeys_persist_per_character_and_negotiate_smart_sources()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_0179_hotkey_equip::view::supported_capabilities;
+    use crate::play::{PreferenceStore, SettingsState};
+    let root = std::env::temp_dir().join(format!("item-hotkeys-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let base = root.join("preferences.json");
+    let mut settings = SettingsState::new(Some(base.clone()));
+    settings.select_character(Some([41; 16]));
+    let (link, _, outbox) = play_channel();
+    outbox.hotkey_equip_items(vec![256]);
+    settings.sync_item_hotkeys(&link);
+    assert!(link.hotkey_equip_assign(11, 256));
+    link.set_smart_equip(false);
+    settings.sync_item_hotkeys(&link);
+    let saved = PreferenceStore::load(PreferenceStore::character_path(&base, [41; 16]))?;
+    assert_eq!(
+        saved.preferences().item_hotkeys.bindings[11].map(|id| id.get()),
+        Some(256)
+    );
+    assert!(!saved.preferences().item_hotkeys.smart);
+    assert!(!supported_capabilities([41; 16], Some(&base)).contains(&180));
+    assert!(supported_capabilities([42; 16], Some(&base)).contains(&180));
+    settings.select_character(Some([42; 16]));
+    settings.sync_item_hotkeys(&link);
+    assert!(
+        link.hotkey_equip_panel()
+            .bindings
+            .iter()
+            .all(Option::is_none)
+    );
+    settings.select_character(Some([41; 16]));
+    settings.sync_item_hotkeys(&link);
+    assert_eq!(
+        link.hotkey_equip_panel().bindings[11].map(|id| id.get()),
+        Some(256)
+    );
+    assert!(!link.hotkey_equip_panel().smart);
+    let capabilities = supported_capabilities([41; 16], Some(&base));
+    assert!(capabilities.windows(2).all(|pair| pair[0] < pair[1]));
+    assert_eq!(
+        capabilities.len() + 1,
+        oteryn_session::CLIENT_SUPPORTED_CAPABILITIES.len()
+    );
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
