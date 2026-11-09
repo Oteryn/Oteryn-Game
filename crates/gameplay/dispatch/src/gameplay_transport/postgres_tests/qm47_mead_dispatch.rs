@@ -2,7 +2,9 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::durability::quest_state::{
+    CommittedQuestTransition, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+};
 use crate::foundation::{CommandId, CommandRef};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
@@ -64,22 +66,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     // Arrange Sven's external accepted state with one sip left and the winning streak at 8.
-    let seed = QuestTransition {
-        key: "oteryn:quest-transition/m47-native-fixture-round".into(),
-        quest: mead::QUEST.into(),
-        effects: mead::TRACKS
-            .into_iter()
-            .zip([2, 2, 8, 20])
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        completes: false,
-        experience: None,
-        world_change: None,
-    };
+    let seed = round_seed("round", [2, 2, 8, 20]);
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
@@ -89,6 +76,8 @@ pub(super) async fn exercise(
                 .collect::<Result<Vec<_>, _>>()?,
             vec![
                 seed.clone(),
+                round_seed("passed", [3, 3, 9, 17]),
+                round_seed("exhausted", [2, 2, 4, 21]),
                 base.transition(mead::KEY).ok_or("transition")?.clone(),
             ],
         )
@@ -284,6 +273,7 @@ pub(super) async fn exercise(
                 })
         );
         if failed && won {
+            round_states(owner, admitted, h, fence, receipt).await?;
             eprintln!(
                 "M47_NATIVE_POSTGRES_EXECUTED failed={failed} won={won} uses={}",
                 attempt + 1
@@ -292,6 +282,179 @@ pub(super) async fn exercise(
         }
     }
     Err("native mead did not exercise both outcomes in 128 uses".into())
+}
+
+fn round_seed(name: &str, values: [i64; 4]) -> QuestTransition {
+    QuestTransition {
+        key: format!("oteryn:quest-transition/m47-native-fixture-{name}"),
+        quest: mead::QUEST.into(),
+        effects: mead::TRACKS
+            .into_iter()
+            .zip(values)
+            .map(|(track, value)| QuestEffect {
+                track: track.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(value),
+            })
+            .collect(),
+        completes: false,
+        experience: None,
+        world_change: None,
+    }
+}
+
+async fn round_states(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    late: CommittedQuestTransition,
+) -> TestResult {
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone();
+    let key =
+        oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 2).ok_or("barrel key")?;
+    let mut placement = owner
+        .bundle_map()
+        .ok_or("map")?
+        .overlay
+        .base()
+        .digest()
+        .to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    for (name, values, message) in [
+        (
+            "passed",
+            [3, 3, 9, 17],
+            "You already passed the test, no need to torture yourself anymore.",
+        ),
+        ("exhausted", [1, 1, 4, 21], "Ask Sven for another round."),
+    ] {
+        let command = admitted.continuity.next_command_id;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        assert!(matches!(
+            slot.commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: format!("oteryn:quest-transition/m47-native-fixture-{name}"),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(10000 + command).map_err(debug)?,
+                    )),
+                },
+                catalogue.clone(),
+            )
+            .await?,
+            QuestTransitionOutcome::Committed(_)
+        ));
+        drop(slot);
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+            placement: placement.clone(),
+            expected_revision: owner.bundle_map().ok_or("map")?.facts.object_revision(key),
+        })
+        .map_err(debug)?;
+        let result =
+            super::quest_world_callbacks::wire(owner, admitted, command, 2, payload.clone())
+                .await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        assert_eq!(
+            owner.states.chat.drain(admitted.game_session_id),
+            vec![ChatLine::Private {
+                speaker_name: "Game".into(),
+                text: message.into(),
+            }]
+        );
+        let expected: std::collections::BTreeMap<_, _> = mead::NATIVE_TRACKS
+            .into_iter()
+            .zip(values.into_iter().chain([0]))
+            .map(|(key, value)| (key.to_owned(), value))
+            .collect();
+        assert_eq!(
+            tracks(h, fence)
+                .await?
+                .into_iter()
+                .collect::<std::collections::BTreeMap<_, _>>(),
+            expected
+        );
+        let replay =
+            super::quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        assert_eq!(replay, result);
+        assert!(owner.states.chat.drain(admitted.game_session_id).is_empty());
+    }
+    let before = tracks(h, fence).await?;
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(mead::KEY)
+    .fetch_one(&h.pool)
+    .await?;
+    // The wire retains only its newest terminal result. Older durable receipts must
+    // still preserve the original roll after later USEs have changed the round.
+    let permit = owner.spell_lane_permit().await.ok_or("permit")?;
+    let context = context(owner, admitted).await?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+    let replay = slot
+        .commit_world_callback(
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            QuestTransitionRequest {
+                transition_key: late.transition_key.clone(),
+                cause: late.cause,
+            },
+            catalogue,
+            &permit,
+            context,
+            None,
+        )
+        .await?;
+    assert_eq!(replay, QuestTransitionOutcome::AlreadyCommitted(late));
+    drop(slot);
+    drop(permit);
+    assert!(owner.states.chat.drain(admitted.game_session_id).is_empty());
+    assert_eq!(tracks(h, fence).await?, before);
+    let after: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(mead::KEY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(after, receipts);
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    assert!(
+        states
+            .get(
+                &runtime,
+                admitted.runtime_actor.ok_or("actor")?,
+                admitted.game_session_id
+            )
+            .ok_or("state")?
+            .owned_conditions()
+            .displayed_temporary_appearance_at(owner.owner_now().get())
+            .is_none()
+    );
+    eprintln!("M47_NATIVE_ROUNDS_POSTGRES_EXECUTED passed=true exhausted=true late_replay=true");
+    Ok(())
+}
+
+async fn tracks(
+    h: &Harness,
+    fence: CurrentCharacterGameplayFence,
+) -> TestResult<Vec<(String, i64)>> {
+    Ok(sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[]) ORDER BY track_key")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(mead::NATIVE_TRACKS.as_slice())
+        .fetch_all(&h.pool).await?)
 }
 
 async fn context(
