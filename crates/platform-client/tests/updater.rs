@@ -21,7 +21,7 @@ impl Transport for Fixture {
         &self,
         url: Url,
     ) -> Result<
-        Pin<Box<dyn futures::Stream<Item = Result<Bytes, TransportError>> + Send>>,
+        Pin<Box<dyn futures::Stream<Item = Result<Bytes, TransportError>> + Send + Sync>>,
         TransportError,
     > {
         self.requests
