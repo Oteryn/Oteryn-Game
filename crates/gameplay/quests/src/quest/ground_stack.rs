@@ -12,6 +12,7 @@ pub const MAX_STACK_ITEMS: usize = 64;
 
 pub mod alternatives;
 mod dense_pattern;
+pub mod rotation;
 
 /// One required mutable stack entry, in bottom-to-top append order.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
