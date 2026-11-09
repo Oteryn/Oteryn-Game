@@ -1025,7 +1025,7 @@
   "area": "Stash",
   "feature": "Stow/withdraw/paging i search/filter/sort",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "evidence": "apps/client/src/features/0062-stash/input.rs:33 + stash_panel_request_uses_codec_and_applies_encoded_reply; crates/gameplay/durability/src/durability/character_stash/browse.rs:13 + stash_global_filter_precedes_pagination_and_stock_order_is_stable; stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays",
   "lane": "cg_ui"
  },
@@ -1035,7 +1035,7 @@
   "area": "Store",
   "feature": "Katalog/search/buy/confirmation/result",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0154-store/native/browser.rs:1 + store_browser_caller_preserves_selected_quote_through_native_confirmation; apps/client/src/features/0154-store/native/assets.rs:76 + store_preview_renders_real_item_outfit_and_mount_sprites; crates/gameplay/dispatch/src/gameplay_transport/store/browse.rs:6 + store_real_dispatch_pages_purchases_mints_once_and_replays"
  },
@@ -1185,7 +1185,7 @@
   "area": "Appearance",
   "feature": "Outfits/mounts/addons/colors",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0025-appearance/view/preview_window.rs:23 + appearance_preview_renders_pinned_pixels_and_keeps_server_selection_authoritative; native outfit/mount gallery and rendered preview from pinned sprites, colour masks and addons; mount artwork bound to the server cosmetics digest; existing Apply wire preserves server authority"
  },
@@ -1195,7 +1195,7 @@
   "area": "Appearance",
   "feature": "Outfit Memorial golden/token outfits",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0025-appearance/view/memorial.rs:11 + memorial_tabs_and_explicit_exchange_cross_the_real_npc_session_caller; native Golden/Token tabs and pinned memorial sprite previews; explicit existing NPC talk wire for server-authoritative exchanges; artwork test memorial_golden_and_token_previews_draw_real_pinned_artwork"
  },
@@ -1265,7 +1265,7 @@
   "area": "Modal dialogs",
   "feature": "Amount/text/edit/confirm/dont-show-again",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0115-mail/view/dialogs.rs:192 + native_confirmation_cancel_never_persists_and_confirm_survives_reload + cp01_mail_scenario; shared multiline native editor, UTF-8 byte validation, explicit confirm/cancel and saved dont-show-again; existing mail server wire exercised"
  },
@@ -1275,7 +1275,7 @@
   "area": "Modal dialogs",
   "feature": "Server choices/buttons i show-image",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0450-server-modal/view/native.rs:65 + server_modal_session_caller_delivers_inline_image_and_exact_answer_ack; capability 450 / commands 736–737; connection-fenced owner, native choices/buttons/inline RGBA and matching server acknowledgement"
  },
@@ -1285,7 +1285,7 @@
   "area": "Modal dialogs",
   "feature": "Blessings / death protection overview",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0199-cyclopedia-character/view/blessings.rs:22 + blessings_dialog_requests_self_and_reduces_the_real_server_reply; capability 199 / command 388 StoreSummary wired through PlayLink/Outbox; dedicated self-only window, refusal/retry and shortcut tests"
  },
@@ -1335,7 +1335,7 @@
   "area": "Modal dialogs",
   "feature": "Nagging / balancing / generic notices",
   "status": "DONE",
-  "gap": "—",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
   "evidence": "apps/client/src/features/0092-zones-nologout/view/notices.rs:4 + server_warning_wire_reaches_interactive_notice_and_changed_text_gets_new_key + native_confirmation_cancel_never_persists_and_confirm_survives_reload; domain-57 Warning/Advance frames wired through the real mailbox to a bounded interactive native worker; stable per-message saved suppression and confirm/cancel"
  },
@@ -1497,7 +1497,7 @@
   "status": "DONE",
   "gap": "Joystick dotykowy w istniejącym kliencie Windows: osiem sektorów, martwa strefa, powtarzanie w kolejce paced-movement i zatrzymanie po puszczeniu/anulowaniu lub utracie fokusu. Sektory ukośne naprzemiennie wysyłają istniejące kroki kardynalne; protokół obsługuje cztery kierunki. Bez portu Android/iOS.",
   "lane": "cg_mobile",
-  "evidence": "apps/client/src/features/0233-touch-controls/input.rs:91 + touch_joystick_uses_paced_keyboard_steps_and_release_stops; apps/client/src/features/0233-touch-controls/native.rs:7 + touch_default_tap_dead_zone_and_contact_ownership"
+  "evidence": "apps/client/src/windows_shell/application_handler.rs:137; apps/client/src/features/0233-touch-controls/native.rs:20; apps/client/src/features/0233-touch-controls/input.rs:91; apps/client/src/features/0233-touch-controls/input.rs:106; apps/client/src/play/session_loop.rs:200; crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:30"
  },
  {
   "id": "O036",
@@ -1534,10 +1534,10 @@
   "src": "OTCAUD1108",
   "area": "Modal dialogs",
   "feature": "Ogólne dialogi modalne serwera",
-  "status": "DONE",
-  "gap": "—",
+  "status": "PARTIAL",
+  "gap": "Brakuje produkcyjnego producenta ogólnych dialogów z wyborami i przyciskami definiowanymi przez reguły gry. Jedyny caller ModalHub.execute przekazuje MOTD z choices: Vec::new() i dwoma stałymi przyciskami; query/answer, codec i natywna obsługa wyborów istnieją.",
   "lane": "cg_ui",
-  "evidence": "apps/client/src/features/0450-server-modal/protocol.rs:31 + server_modal_real_route_checks_capability_connection_ids_and_duplicate_answers; generic dialog IDs and server-defined choices/buttons; exact response transport and replay-safe connection owner"
+  "evidence": "apps/client/src/play/session_loop.rs:36; apps/client/src/features/0450-server-modal/protocol.rs:40; crates/gameplay/dispatch/src/gameplay_transport/server_modal.rs:40; crates/gameplay/dispatch/src/gameplay_transport/server_modal.rs:47; crates/gameplay/dispatch/src/gameplay_transport/server_modal/owner.rs:72; crates/protocol-oteryn/src/server_modal.rs:2"
  },
  {
   "id": "O041",
@@ -1577,7 +1577,7 @@
   "status": "DONE",
   "gap": "Dotykowy pasek attack/look/follow/use z widocznym wyborem i powrotem do domyślnego walk-to/use po ponownym dotknięciu. Korzysta z istniejących ścieżek myszy/klawiatury, pokazuje się po pierwszym dotyku i nie przechwytuje myszy; napisy we wszystkich sześciu lokalizacjach.",
   "lane": "cg_mobile",
-  "evidence": "apps/client/src/features/0233-touch-controls/input.rs:110 + touch_hotbar_world_taps_equal_mouse_context_and_follow_keys; apps/client/src/features/0233-touch-controls/view.rs:6 + touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode"
+  "evidence": "apps/client/src/windows_shell/application_handler.rs:137; apps/client/src/features/0233-touch-controls/input.rs:110; apps/client/src/features/0233-touch-controls/input.rs:127; apps/client/src/features/0233-touch-controls/input.rs:142; crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:13; crates/protocol-oteryn/src/world_object.rs:307"
  },
  {
   "id": "O059",
@@ -1676,7 +1676,7 @@
   "feature": "Edycja list gości, współwłaścicieli i drzwi",
   "status": "DONE",
   "gap": "Natywny wielowierszowy edytor wczytuje Guest/Subowner/Door z serwera i zapisuje z odczytaną globalną rewizją; odczyt jest session/World/content/access-fenced.",
-  "evidence": "apps/client/src/features/0049-house/input.rs:57 + house_acl_editor_loads_each_server_list_and_saves_its_revision; crates/gameplay/dispatch/src/gameplay_transport/house_query/acl.rs:7 + house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences; apps/client/src/play/mailbox/activity_scope.rs:68 + house_acl_handoff_cancels_pending_read_and_ignores_late_snapshot",
+  "evidence": "apps/client/src/features/0049-house/input.rs:151; apps/client/src/features/0049-house/input.rs:139; crates/client-ui/src/features/0049-house/state.rs:22; crates/gameplay/dispatch/src/gameplay_transport/house_query/acl.rs:67; crates/protocol-oteryn/src/house/acl_read.rs:20",
   "lane": "cg_ui"
  }
 ]
