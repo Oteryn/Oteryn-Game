@@ -94,7 +94,10 @@ struct RoomWave {
 }
 
 pub(super) fn supports(key: &str) -> bool {
-    matches!(key, "oteryn:creature.ichgahal" | "oteryn:creature.murcion")
+    matches!(
+        key,
+        "oteryn:creature.ichgahal" | "oteryn:creature.murcion" | "oteryn:creature.vemiath"
+    )
 }
 
 pub(super) fn has_boss(runtime: &ChannelRuntimeV1) -> bool {
@@ -120,8 +123,13 @@ pub(super) async fn warm(runtime: &ChannelRuntimeV1, map: &mut CurrentMonsterMap
             continue;
         }
         let centre = position.position();
-        for dy in -2..=2 {
-            for dx in -2..=2 {
+        let offset = if runtime.matches_live_creature_identity(actor, b"oteryn:creature.vemiath") {
+            1
+        } else {
+            2
+        };
+        for dy in -offset..=offset {
+            for dx in -offset..=offset {
                 let (Some(x), Some(y)) = (centre.x.checked_add(dx), centre.y.checked_add(dy))
                 else {
                     continue;
@@ -318,10 +326,11 @@ impl RoomWaveStates {
         let mut monsters = Vec::new();
         let mut maximum = 0;
         // Source fixed centres use the captured source frame, not the moving boss.
-        let source_centre = if key == "oteryn:creature.ichgahal" {
-            [33008, 32334, 15]
-        } else {
-            [33008, 32367, 15]
+        let source_centre = match key {
+            "oteryn:creature.ichgahal" => [33008, 32334, 15],
+            "oteryn:creature.murcion" => [33008, 32367, 15],
+            "oteryn:creature.vemiath" => [33043, 32335, 15],
+            _ => return Err(()),
         };
         if room.source_world().is_none() {
             return Err(());

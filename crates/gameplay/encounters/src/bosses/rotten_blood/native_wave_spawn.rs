@@ -1,4 +1,4 @@
-//! Current physical owner for Ichgahal/Murcion source spawn requests.
+//! Current physical owner for Ichgahal/Murcion/Vemiath source spawn requests.
 //! Qualification of the room, source cadence and subsequent AI registration
 //! remain independently owned; a request never substitutes for current custody.
 use super::summon_wave::{SummonPlacement, SummonWaveEffect};
@@ -107,6 +107,7 @@ impl NativeWaveSpawnOwner {
         let key = match key.as_str() {
             "oteryn:creature.ichgahal" => "oteryn:creature.ichgahal",
             "oteryn:creature.murcion" => "oteryn:creature.murcion",
+            "oteryn:creature.vemiath" => "oteryn:creature.vemiath",
             _ => return None,
         };
         let binding = runtime.binding();
@@ -204,7 +205,12 @@ impl NativeWaveSpawnOwner {
         }
         // The source maximum per think is five bloodjaws, four minimum
         // mushrooms and three wave mushrooms. Retain only this occurrence.
-        if ordinal >= 12 {
+        let limit = if self.key == "oteryn:creature.vemiath" {
+            9
+        } else {
+            12
+        };
+        if ordinal >= limit {
             return Err(NativeWaveSpawnError::InvalidSource);
         }
         let SummonWaveEffect::Spawn {
@@ -224,8 +230,23 @@ impl NativeWaveSpawnOwner {
             (
                 "oteryn:creature.mushroom",
                 SummonPlacement::Close { offset_tiles } | SummonPlacement::Random { offset_tiles },
-            ) if *offset_tiles == mushroom_offset => *offset_tiles,
-            ("oteryn:creature.elder_bloodjaw", SummonPlacement::Close { offset_tiles: 2 }) => 2,
+            ) if self.key != "oteryn:creature.vemiath" && *offset_tiles == mushroom_offset => {
+                *offset_tiles
+            }
+            ("oteryn:creature.elder_bloodjaw", SummonPlacement::Close { offset_tiles })
+                if *offset_tiles
+                    == if self.key == "oteryn:creature.vemiath" {
+                        1
+                    } else {
+                        2
+                    } =>
+            {
+                *offset_tiles
+            }
+            (
+                "oteryn:creature.pillar_of_dark_energy",
+                SummonPlacement::Close { offset_tiles: 1 },
+            ) if self.key == "oteryn:creature.vemiath" => 1,
             _ => return Err(NativeWaveSpawnError::InvalidSource),
         };
         let boss_position = runtime

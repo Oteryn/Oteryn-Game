@@ -158,3 +158,90 @@ fn invalid_draw_or_taint_preserves_attempt_and_does_not_borrow_another_room() {
         );
     }
 }
+
+#[test]
+fn vemiath_population_uses_its_own_close_offset_and_disabled_gate() {
+    const KEY: &str = "oteryn:creature.vemiath";
+    for (disabled, paused, expected_bloodjaws) in
+        [(false, false, 5), (true, false, 0), (false, true, 0)]
+    {
+        let mut owner = SummonWaveOwner::for_boss(KEY).expect("Vemiath native source population");
+        let mut input = facts(&[]);
+        input.mechanics_disabled = disabled;
+        input.bloodjaw_spawn_paused = paused;
+        let draws = Cell::new(0_u32);
+        let effects = owner
+            .think(&input, || {
+                draws.set(draws.get() + 1);
+                8_000
+            })
+            .expect("source population");
+        assert_eq!(draws.get(), 0, "Vemiath population has no interval draw");
+        assert_eq!(
+            count_spawn(
+                &effects,
+                "oteryn:creature.elder_bloodjaw",
+                SummonPlacement::Close { offset_tiles: 1 }
+            ),
+            expected_bloodjaws
+        );
+        assert_eq!(
+            count_spawn(
+                &effects,
+                "oteryn:creature.pillar_of_dark_energy",
+                SummonPlacement::Close { offset_tiles: 1 }
+            ),
+            4
+        );
+        assert_eq!(effects.len(), expected_bloodjaws + 4);
+    }
+}
+
+#[test]
+fn vemiath_population_counts_both_minions_at_seventeen_tiles_on_its_floor() {
+    for (distance, floor, bloodjaws, pillars) in [(17, 15, 4, 3), (18, 15, 5, 4), (17, 14, 5, 4)] {
+        let neighbours = [
+            SummonNeighbour {
+                creature_key: "oteryn:creature.elder_bloodjaw",
+                position: RoomPosition {
+                    x: BOSS.x + distance,
+                    y: BOSS.y,
+                    floor,
+                },
+            },
+            SummonNeighbour {
+                creature_key: "oteryn:creature.pillar_of_dark_energy",
+                position: RoomPosition {
+                    x: BOSS.x + distance,
+                    y: BOSS.y,
+                    floor,
+                },
+            },
+        ];
+        let draws = Cell::new(0_u32);
+        let effects = SummonWaveOwner::for_boss("oteryn:creature.vemiath")
+            .expect("Vemiath")
+            .think(&facts(&neighbours), || {
+                draws.set(draws.get() + 1);
+                8_000
+            })
+            .expect("population");
+        assert_eq!(draws.get(), 0, "Vemiath does not draw a wave interval");
+        assert_eq!(
+            count_spawn(
+                &effects,
+                "oteryn:creature.elder_bloodjaw",
+                SummonPlacement::Close { offset_tiles: 1 }
+            ),
+            bloodjaws
+        );
+        assert_eq!(
+            count_spawn(
+                &effects,
+                "oteryn:creature.pillar_of_dark_energy",
+                SummonPlacement::Close { offset_tiles: 1 }
+            ),
+            pillars
+        );
+    }
+}

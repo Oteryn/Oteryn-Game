@@ -1,7 +1,7 @@
-//! Per-attempt adapter for Crystal Ichgahal/Murcion onThink summon waves.
+//! Per-attempt adapter for Crystal Ichgahal/Murcion waves and Vemiath population.
 //! The runtime supplies its current census and consumes the resulting requests;
 //! these descriptions confer no creature placement or removal authority.
-use super::{RoomPosition, elder_bloodjaw_think, ichgahal_think, murcion_think};
+use super::{RoomPosition, elder_bloodjaw_think, ichgahal_think, murcion_think, vemiath_think};
 
 #[derive(Clone, Copy, Debug)]
 pub struct SummonNeighbour<'a> {
@@ -46,6 +46,7 @@ pub enum SummonWaveRefusal {
 enum WaveState {
     Ichgahal(ichgahal_think::IchgahalThinkOwner),
     Murcion(murcion_think::MurcionThinkOwner),
+    Vemiath,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -58,6 +59,7 @@ impl SummonWaveOwner {
         let state = match creature_key {
             ichgahal_think::Ichgahal_KEY => WaveState::Ichgahal(Default::default()),
             murcion_think::Murcion_KEY => WaveState::Murcion(Default::default()),
+            vemiath_think::VEMIATH_KEY => WaveState::Vemiath,
             _ => return None,
         };
         Some(Self { state })
@@ -103,6 +105,28 @@ impl SummonWaveOwner {
                 )
                 .map(|effects| effects.into_iter().map(SummonWaveEffect::from).collect())
                 .map_err(|_| SummonWaveRefusal::InvalidIntervalDraw),
+            WaveState::Vemiath => Ok(vemiath_think::population(
+                &vemiath_think::VemiathThinkFacts {
+                    boss: facts.boss,
+                    mechanics_disabled: facts.mechanics_disabled,
+                    bloodjaw_spawn_paused: facts.bloodjaw_spawn_paused,
+                    bloodjaw_target: target,
+                    nearby_bloodjaws: count(
+                        vemiath_think::ELDER_BLOODJAW_KEY,
+                        vemiath_think::counts_summon,
+                    ),
+                    nearby_pillars: count(vemiath_think::PILLAR_KEY, vemiath_think::counts_summon),
+                },
+            )
+            .into_iter()
+            .map(|spawn| SummonWaveEffect::Spawn {
+                creature_key: spawn.creature_key,
+                around: spawn.around,
+                placement: SummonPlacement::Close {
+                    offset_tiles: spawn.offset_tiles,
+                },
+            })
+            .collect()),
             WaveState::Murcion(owner) => owner
                 .think(
                     &murcion_think::MurcionThinkFacts {
@@ -132,6 +156,8 @@ impl SummonWaveOwner {
         match &mut self.state {
             WaveState::Ichgahal(owner) => owner.record_wave_summon(actor),
             WaveState::Murcion(owner) => owner.record_wave_summon(actor),
+            // Vemiath has close population only, never a replaceable random wave.
+            WaveState::Vemiath => {}
         }
     }
 }

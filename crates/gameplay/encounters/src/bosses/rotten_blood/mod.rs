@@ -16,6 +16,7 @@ pub mod native_pillar;
 pub mod native_wave_spawn;
 pub mod pillar_of_dark_energy_think;
 pub mod summon_wave;
+pub mod vemiath_think;
 
 const GLOOM_INITIAL_RANGE_TILES: u16 = 3;
 const GLOOM_JUMP_RANGE_TILES: u16 = 6;
