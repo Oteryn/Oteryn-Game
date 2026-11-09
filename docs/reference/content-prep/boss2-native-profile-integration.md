@@ -35,3 +35,11 @@ Quest-authoring checks exposed two reward-claim variant failures. The focused
 native-client run passed six scene tests, but the start-area test rejects the
 placement-index digest and the Ahau exit capture does not reach the return
 position. These failures remain visible; no test is skipped or relaxed.
+
+The subsequent M42 capture repair keeps the fixed predecessor and all selected
+recipe-row hashes. It verifies the whole-shard hash against the current packet,
+then independently compares the consumed rows with that predecessor. Three new
+capture regressions and the original verification test pass, including refusal
+of a fresh pin over changed recipe rows and refusal of an old whole-shard pin.
+The repository refresh and verification commands pass; the generated witness
+changes only `source_packet_sha256`, with no row or recipe hash changed.
