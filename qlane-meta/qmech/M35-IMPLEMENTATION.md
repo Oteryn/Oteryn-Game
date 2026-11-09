@@ -94,16 +94,58 @@ The slice with 22 claim sets remains PARTIAL for the full M35 row: four quests a
   The reconstructed caller must retain the Channel's command-ingress state while
   clearing its quest cache; a fresh ingress correctly refuses continuation at command 3.
 
-## Dreamer alternative caller qualification in progress
+## Dreamer alternative caller qualification
 
-A new live wine-alternative case found that the existing four wine placements
-are not yet admitted by the committed runtime: the binder serves zero claims.
-The canonical vial (`oteryn:item.tibia.i2874`) remains non-materializable with
-unknown fluid semantics, and the reward has four `ITEM_SEMANTICS_MISSING` holds.
-The source-only fluid packet proves raw subtype 1 = WATER; the quest name must
-not be used to infer wine. The existing native vial profile is materializable,
-and the reward MINT owner already persists child fluid subtypes atomically.
-The missing connection is scoped native authoring -> content child decoder ->
-bundle-chest caller. The declaration count of 22 is not proof that every
-cohort's complete physical reward route is admitted. A bridge and live subtype
-assertion are being implemented; no assertion or admission guard is removed.
+The live alternative case exposed two missing production connections: the
+native container projection discarded the source fluid subtype, and the
+native item provider did not publish the reward's certificate and bread.
+The bridge now qualifies only the existing exact native empty-vial profile
+for Dreamer's four source placements (UIDs 6197–6200). It preserves the
+canonical definition and immutable source snapshot, decodes the child subtype,
+and passes it through the bundle-chest caller to the existing atomic child
+fluid MINT owner. The source packet proves raw subtype 1 = WATER; the quest
+name is not evidence for wine. Missing, zero and subtype 15 are rejected.
+
+The callback generator closes the full declared reward item set and adds five
+source-qualified identities: blue legs 645, star amulet 3014, hat of the mad
+3210, brown bread 3602 and certificate 6498. Its equipment cohort remains
+independently counted; the generator also corrects the pre-existing engine
+packet count from 63 to the retained packet's actual 64. Native-only
+regeneration updates dependent digests rather than hand-editing them.
+The callback test fixture now replays the exact pre-callback admission packet,
+before later rendering attributes are attached; all refusal assertions remain.
+The exact complete-container closure increases from 137 to 140 identities,
+and the exact native recipe count from 70 to 71 (held shapes 35 to 34).
+
+The mounted PostgreSQL regression uses all four physical wine placements in
+both traversal orders, reloads quest tracks between commands, and requires
+one root receipt, three children and one WATER fluid row atomically linked to
+that receipt. Every alternative after the first must refuse another grant;
+canonical Dreamer completion must remain false because its other three
+required groups are unclaimed. Alawar still exercises both required-chest
+orders and completion only at the last chest.
+
+The declaration count of 22 is not proof that every cohort's complete physical
+reward route is admitted. Remaining undeclared final groups are Elvenbane,
+Fanfare, Ferumbras' Ascension and Forgotten Knowledge; their physical final
+claim identities still require source qualification. Other declared sets
+retain source item admission holds (including Draconia, Edron Goblin, Fire Axe,
+Ghoul Room and Goblin Temple); this scoped WATER bridge does not admit them.
+
+Bridge validation (live retained PostgreSQL 18.6, two Cargo build jobs):
+
+- `cargo fmt --all` plus rustfmt for the mounted PostgreSQL case: passed.
+- Content + dispatch `cargo check --locked --all-features`: passed.
+- Content + dispatch clippy, all features/targets, `-D warnings`: passed.
+- Content `world_reward_claims`: 12 passed.
+- Dispatch `m35_`: 2 passed in 272.10 seconds; both database completion
+  markers were printed, with both traversal orders exercised per case.
+- Dispatch exact production equipment source/profile test: 1 passed.
+- Container authoring: 14 passed after native regeneration; callback profiles:
+  13 passed; variant authoring: 13 passed; source snapshot: 9 passed;
+  existing reward authoring script: 29 passed.
+- Native-only regeneration and reproducibility check: passed, 44 generated files.
+- Compiler `pin-refresh` and `pin-check`: passed. Map digest remains
+  `4b6cb9bf12cf8b14b66da82168c23b53f89c45dfeb5c5d666829d5c562a4d7cb`;
+  refreshed inputs digest is
+  `f60dc45c615b91527b32f9c304cdc17b965d81cc85564221ecf2e37c096b2e61`.

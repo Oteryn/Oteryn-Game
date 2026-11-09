@@ -69,6 +69,7 @@ def canonical_schema(root):
                         'properties': {'item': {'$ref': '#/$defs/ref'},
                             'count': {'type': 'integer', 'minimum': 1, 'maximum': 100},
                             'key_number': {'type': 'integer', 'minimum': 1, 'maximum': 65535},
+                            'fluid_subtype': {'const': 1},
                             'text': {'type': 'string', 'minLength': 1, 'maxLength': 4000}}}}
                 }}}
         }}

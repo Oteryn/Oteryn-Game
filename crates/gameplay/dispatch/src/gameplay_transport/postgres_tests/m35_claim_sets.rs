@@ -6,7 +6,7 @@ use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
-use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -19,13 +19,32 @@ fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
             for reverse in [false, true] {
-                scenario(reverse).map_err(|e| e.to_string())?;
+                scenario(reverse, false).map_err(|e| e.to_string())?;
             }
             Ok(())
         })?
         .join()
         .map_err(|_| "M35 dispatch scenario panicked")??;
     println!("M35_ALAWAR_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:2131-2161: these placements share ChestsWine storage.
+#[test]
+fn m35_dreamer_wine_alternatives_do_not_complete_other_required_groups() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            for reverse in [false, true] {
+                scenario(reverse, true).map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "M35 wine dispatch scenario panicked")??;
+    println!("M35_WINE_ALTERNATIVES_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 fn definition(key: &str) -> TypedDefinitionRef {
@@ -35,8 +54,25 @@ fn definition(key: &str) -> TypedDefinitionRef {
         revision_ref: "definition-r1".into(),
     }
 }
-fn scenario(reverse: bool) -> TestResult {
-    let chest = (32105, 31567, -9);
+fn scenario(reverse: bool, wine: bool) -> TestResult {
+    let (chest, appearance, quest) = if wine {
+        (
+            (32749, 32341, -14),
+            2469,
+            "oteryn:quest.dreamer_s_challenge_quest",
+        )
+    } else {
+        (
+            (32105, 31567, -9),
+            2472,
+            "oteryn:quest.alawar_s_vault_quest",
+        )
+    };
+    let choices: &[(u16, u16)] = if wine {
+        &[(32749, 6197), (32751, 6198), (32753, 6199), (32755, 6200)]
+    } else {
+        &[(32105, 6045), (32109, 6046)]
+    };
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "m35_claim_sets", false, false).await?;
         prepare_current_session(&h).await?;
@@ -54,7 +90,21 @@ fn scenario(reverse: bool) -> TestResult {
             )?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = source_world_choices(chest, &[(32105, 6045), (32109, 6046)], 2472)?;
+        if wine {
+            for (key, weight) in [
+                ("oteryn:item.tibia.i6498", 150),
+                ("oteryn:item.tibia.i3602", 400),
+                ("oteryn:item.tibia.i2874", 180),
+            ] {
+                let facts = generation_item_facts(native, &definition(key)).map_err(debug)?;
+                assert_eq!(facts.weight, Some(weight));
+                assert_ne!(
+                    facts.stack,
+                    crate::durability::item_transfer::ItemStackClass::Unknown
+                );
+            }
+        }
+        let world = source_world_choices(chest, choices, appearance)?;
         let bound = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
             &|_| true,
@@ -65,10 +115,16 @@ fn scenario(reverse: bool) -> TestResult {
                     .placements
                     .iter()
                     .all(|p| p.placement.quest_transition.is_some()),
-                "Alawar chest must bind a claim-set transition"
+                "source chest must bind a claim-set transition"
             );
         }
-        assert_eq!(bound.served.len(), 2);
+        assert_eq!(
+            bound.served.len(),
+            if wine { 1 } else { 2 },
+            "left out: {:?}; unbound: {:?}",
+            bound.left_out,
+            bound.unbound
+        );
         let catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
@@ -159,12 +215,13 @@ fn scenario(reverse: bool) -> TestResult {
         let clock_origin = std::time::Instant::now();
         let mut position = at;
         let mut command = 1;
-        let order = if reverse {
-            [32109, 32105]
-        } else {
-            [32105, 32109]
-        };
-        for (index, x) in order.into_iter().enumerate() {
+        for index in 0..choices.len() {
+            let position_index = if reverse {
+                choices.len() - index - 1
+            } else {
+                index
+            };
+            let x = choices[position_index].0;
             // Rebuild the caller while retaining the Channel's command-stream truth.
             // Drop its quest cache so admission must reload the durable claim tracks.
             let mut owner = deps.owner(&h, &authority);
@@ -201,6 +258,11 @@ fn scenario(reverse: bool) -> TestResult {
                 placement,
                 expected_revision: 0,
             };
+            let first_result = if wine && index > 0 {
+                UseDisposition::NothingToUse
+            } else {
+                UseDisposition::Committed
+            };
             assert_eq!(
                 wire_use_targets_retained(
                     &owner,
@@ -213,8 +275,8 @@ fn scenario(reverse: bool) -> TestResult {
                 )
                 .await?,
                 [
-                    (CommandStatus::Accepted, UseDisposition::Committed),
-                    (CommandStatus::DuplicateReplay, UseDisposition::Committed),
+                    (CommandStatus::Accepted, first_result),
+                    (CommandStatus::DuplicateReplay, first_result),
                     (CommandStatus::Accepted, UseDisposition::NothingToUse)
                 ]
             );
@@ -227,20 +289,46 @@ fn scenario(reverse: bool) -> TestResult {
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(
-                counts,
-                (index as i64 + 1, index as i64 + 1, index as i64 + 1, 0)
-            );
+            let claims = if wine { 1 } else { index as i64 + 1 };
+            assert_eq!(counts, (claims, claims, claims, 0));
             let snapshot = h
                 .root
                 .read_character_quest_state(&authority, fence.character_id)
                 .await
                 .map_err(debug)?;
-            let quest = snapshot
-                .states()
-                .get("oteryn:quest.alawar_s_vault_quest")
-                .ok_or("quest state")?;
-            assert_eq!(quest.completed, index == 1);
+            let state = snapshot.states().get(quest).ok_or("quest state")?;
+            assert_eq!(state.completed, !wine && index == 1);
+            if wine {
+                let fluids: Vec<(i64, i16, bool, bool)> = sqlx::query_as(
+                    "SELECT i.quantity, f.fluid_subtype, m.root_transaction_id=r.transaction_id, \
+                     f.last_transaction_id=m.transaction_id FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_nested_entries e ON e.parent_item_instance_id=r.item_instance_id \
+                     JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id \
+                     JOIN game_item_fluid_states f ON f.item_instance_id=i.item_instance_id \
+                     JOIN game_item_fluid_reward_mints m ON m.item_instance_id=i.item_instance_id \
+                     WHERE i.definition_production_key='oteryn:item.tibia.i2874' LIMIT 2")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(fluids, vec![(1, 1, true, true)]);
+                let children: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(children, 3);
+                assert_eq!(
+                    snapshot.tracks().get(
+                        "oteryn:quest-progress/quest/u7_9/dreamers_challenge/chests_wine/claimed"
+                    ),
+                    Some(&1)
+                );
+                assert_eq!(
+                    snapshot
+                        .tracks()
+                        .iter()
+                        .filter(|(key, _)| key.ends_with("/claimed"))
+                        .count(),
+                    1
+                );
+            }
         }
         drop(authority);
         drop(seal);

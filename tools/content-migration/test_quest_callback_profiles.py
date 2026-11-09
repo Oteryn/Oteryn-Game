@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import quest_callback_profiles as profiles
+import quests_2_emperor_item_profiles as emperor
 import timed_item_profiles as timed
 import writable_item_profiles as writing
 
@@ -32,6 +33,14 @@ class QuestCallbackProfiles(unittest.TestCase):
         (self.root / 'content/quests/killing-in-the-name-of.json').write_bytes(
             (ROOT / 'content/quests/killing-in-the-name-of.json').read_bytes())
         self.document = json.loads((ROOT / PROFILE).read_bytes())
+        # Replay the generator's pre-callback boundary: the published file has
+        # later rendering attributes, while callback_definition requires this
+        # exact retained admission packet. Keep every rejection assertion below.
+        packet = json.loads((ROOT / emperor.PATH).read_bytes())
+        packet_rows = {r['production_definition']['production_key']: r
+                       for r in packet['records']}
+        self.document['records'] = [packet_rows.get(r['production_definition']['production_key'], r)
+                                    for r in self.document['records']]
         self.document['records'] = [r for r in self.document['records']
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
@@ -178,7 +187,9 @@ class QuestCallbackProfiles(unittest.TestCase):
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
         # 3083), with 3083 also used by Triangle Tower: 130 + 4 identities.
-        self.assertEqual(len(expected), 137)
+        self.assertEqual(len(expected), 140)
+        # Dreamer adds certificate, bread and a WATER vial to the exact closure.
+        self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         # Full-charge bags add Triangle Tower's Garlic Necklace and Desert's
         # Protection Amulet, Ring of Healing and Magic Light Wand.

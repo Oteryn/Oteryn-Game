@@ -129,9 +129,9 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        # Combined ITEMHOLD-Q and QUESTPC4 container admissions retain source witnesses.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 70)
-        self.assertEqual(len(errors), 35)
+        # ITEMHOLD-Q, QUESTPC4 and the scoped Dreamer water vial retain source witnesses.
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 71)
+        self.assertEqual(len(errors), 34)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

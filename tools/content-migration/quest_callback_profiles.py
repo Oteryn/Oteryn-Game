@@ -232,6 +232,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             source_packet, present.get(key), definition, root)
         if key in {f'oteryn:item.tibia.i{item}' for item in container_native.CHARGED_QUEST_CLAIMS.values()}:
             definition = container_native.native_charge_item(definition, present.get(key))
+        if key == 'oteryn:item.tibia.i2874':
+            # Only an agreeing, already-admitted native empty-vial profile closes this hold.
+            definition = container_native.native_water_vial(definition, present.get(key))
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']
