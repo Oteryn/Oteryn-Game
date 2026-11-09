@@ -563,6 +563,7 @@ pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod native_kills;
 pub mod native_hits;
+pub mod native_hit_capture;
 pub(crate) mod native_events;
 mod planegazer_finale;
 pub mod rotten_blood;
