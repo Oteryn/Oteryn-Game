@@ -52,7 +52,7 @@ pub(super) fn project(catalogue: &CanonicalCharmCatalogue, after: u16) -> Option
                 value % 100
             );
         }
-        cards.push(Card {
+        cards.push(Card { echo_warden_completed: None,
             outfit_look_type: 0,
             object_look_type: None,
             race: (index + 1).try_into().ok()?,
