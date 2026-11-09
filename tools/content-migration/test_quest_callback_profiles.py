@@ -205,7 +205,9 @@ class QuestCallbackProfiles(unittest.TestCase):
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
         # 3083), with 3083 also used by Triangle Tower: 130 + 4 identities.
-        self.assertEqual(len(expected), 140)
+        self.assertEqual(len(expected), 142)
+        # Fire Axe adds the already-admitted dragon necklace and Fire Axe to bags.
+        self.assertTrue({'oteryn:item.tibia.i3085', 'oteryn:item.tibia.i3320'} <= expected)
         # Dreamer adds certificate, bread and a WATER vial to the exact closure.
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (6498, 3602, 2874)} <= expected)
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)

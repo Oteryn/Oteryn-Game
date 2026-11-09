@@ -23,6 +23,7 @@ ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
 # exact quest claims; neither global Item definitions nor other quests change.
 CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
+    'canary:reward-claim/kv/fireaxe1': 3085,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
     'canary:reward-claim/kv/trollcave1': 3083,

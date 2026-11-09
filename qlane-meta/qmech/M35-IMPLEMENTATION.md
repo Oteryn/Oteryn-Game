@@ -263,3 +263,33 @@ formatting passed; the live PostgreSQL case passed in154.24 seconds and printed
 The expanded donor scan also checked every additional pinned OTBM (41 maps,
 verifying each Git blob identity), finding no UID1035 under any carrier; together
 with the two primary maps, all43 source maps lack that unique binding.
+
+## Fire Axe complete charged bag admission
+
+The new authoring regression first failed: UID6067 had no native projection.
+Crystal201189f `chest.lua:1078-1087` grants a brown bag2853 containing Ring of
+Healing3098 x1, Dragon Necklace3085 with200 charges, Small Diamonds3028 x7,
+and Fire Axe3320 x1. The charge disposition already correctly normalizes the
+necklace to one instance at its full200-charge definition; only its historical
+canonical materialization hold prevented the complete bag from being served.
+
+The exact `kv/fireaxe1` claim now reuses the established native charged-item
+qualification. It requires agreeing canonical/native identity, binding, physical,
+stack, charge and custody facts. Neither the canonical Item nor the immutable
+source packet changes. Generated native recipes increase71->72, held shapes
+34->33, and the exact bag-member closure140->142 (3085 and3320). The native
+Item provider is byte-identical to the preceding head; no known facts are lost.
+
+The mounted live dispatch case passed in60.54 seconds, printing
+`M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED`. It checks the actual root MINT,
+all four nested definitions/quantities, one necklace rather than200 instances,
+exact duplicate replay, refusal of a fresh duplicate claim, consumed quest
+obligation, and canonical completion=false while `fireaxe2` remains unclaimed.
+This proves the repaired bag caller; the complete two-floor reward route still
+needs its combined caller proof.
+
+Fresh checks passed: formatter; content+dispatch all-features/all-target clippy
+with `-D warnings`; content decoder12 tests; container authoring15 tests;
+variant authoring13; callback generator14; existing chest authoring29; native-only
+regeneration and its reproducibility check. Generated files came from their
+existing generators. Local node boot remains skipped per owner.

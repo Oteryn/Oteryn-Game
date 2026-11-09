@@ -64,6 +64,7 @@ enum Case {
     Key3520,
     Koshei,
     BlackKnight,
+    FireAxeBag,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -83,6 +84,20 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
         .join()
         .map_err(|_| "M35 Fanfare dispatch scenario panicked")??;
     println!("M35_FANFARE_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+// Crystal 201189f8 chest.lua:1078-1087: complete bag, not a 200-item necklace stack.
+#[test]
+fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, Case::FireAxeBag).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M35 Fire Axe dispatch scenario panicked")??;
+    println!("M35_FIRE_AXE_BAG_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
 // Crystal 201189f8 chest.lua:932-947: independent Crown Armor and Crown Shield.
@@ -144,6 +159,12 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             2472,
             "oteryn:quest.fanfare_quest",
             &[(32390, 6142)],
+        ),
+        Case::FireAxeBag => (
+            (33078, 31656, -11),
+            2472,
+            "oteryn:quest.fire_axe_quest",
+            &[(33078, 6067)],
         ),
         Case::BlackKnight => (
             (32868, 31955, -11),
@@ -432,6 +453,37 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     matches!(case, Case::Fanfare)
                         || matches!(case, Case::Alawar | Case::Koshei | Case::BlackKnight)
                             && index == 1
+                );
+            }
+            if matches!(case, Case::FireAxeBag) {
+                let children: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_item_nested_entries e \
+                     JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key LIMIT 5")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(
+                    children,
+                    vec![
+                        ("oteryn:item.tibia.i3028".to_owned(), 7),
+                        ("oteryn:item.tibia.i3085".to_owned(), 1),
+                        ("oteryn:item.tibia.i3098".to_owned(), 1),
+                        ("oteryn:item.tibia.i3320".to_owned(), 1)
+                    ]
+                );
+                let roots: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts r \
+                     JOIN game_item_instances i USING(item_instance_id) LIMIT 2")
+                    .fetch_all(&h.pool).await?;
+                assert_eq!(roots, vec![("oteryn:item.tibia.i2853".to_owned(), 1)]);
+                assert_eq!(
+                    snapshot
+                        .tracks()
+                        .get("oteryn:quest-progress/kv/fireaxe1/claimed"),
+                    Some(&1)
+                );
+                assert!(
+                    !snapshot
+                        .tracks()
+                        .contains_key("oteryn:quest-progress/kv/fireaxe2/claimed")
                 );
             }
             if matches!(case, Case::Koshei | Case::BlackKnight) {
