@@ -45,6 +45,7 @@ pub async fn run_session<T: Stepper>(
                     match command.capability {
                         7 => outbox.console_result(&result),
                         10 => outbox.analyser_result(&command, &result),
+                        72 if command.kind==oteryn_client_runtime::task_board::task_board::soulpit::COMMAND_TYPE => outbox.soulseal_result(&command,&result),
                         72 => outbox.task_board_full_result(&result),
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),

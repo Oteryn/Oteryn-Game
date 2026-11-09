@@ -32,6 +32,21 @@
   },
   {
     "mechanic": "0072-task-board",
+    "kind": "handlers",
+    "id": "0072-task-board-soulseal-fights",
+    "status": "supported",
+    "commands": [
+      6120
+    ],
+    "direction": "client_to_server",
+    "capability": 72,
+    "entry": "state/fights.rs::request",
+    "not_applicable": {
+      "settings": "Fight costs and entry are server-owned."
+    }
+  },
+  {
+    "mechanic": "0072-task-board",
     "kind": "keybindings",
     "id": "0072-task-board-soulseals",
     "status": "supported",

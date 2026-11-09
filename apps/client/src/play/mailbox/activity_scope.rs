@@ -48,6 +48,8 @@ impl Mailbox {
         self.stash.pending = Default::default();
         self.guild.pending = Default::default();
         self.task_board.pending = Default::default();
+        self.task_board.fights = Default::default();
+        self.task_board.soulseals_open = false;
         self.npc_shop.pending = Default::default();
         self.npc_shop.live.pending = false;
         self.dialogue.pending = false;

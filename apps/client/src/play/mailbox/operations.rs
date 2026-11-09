@@ -117,6 +117,7 @@ impl Outbox {
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
+        mailbox.task_board = Default::default();
         mailbox.premium_game = Default::default();
         mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
@@ -171,6 +172,7 @@ impl Outbox {
         }
         mailbox.arena.end();
         mailbox.properties.end();
+        mailbox.task_board = Default::default();
         mailbox.premium_game = Default::default();
         mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
@@ -304,6 +306,7 @@ impl Drop for PlayLink {
             launcher.end();
         }
         mailbox.properties.end();
+        mailbox.task_board = Default::default();
         mailbox.premium_game = Default::default();
         mailbox.end_wheel_visuals();
         mailbox.item_forge.resource_dialog.reset();
