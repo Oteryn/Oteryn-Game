@@ -21,6 +21,14 @@ a claim that the donor startup container implements personal progress.
 
 The bounded reward text model now preserves legacy root strings and represents
 ordered child text explicitly. The MINT adapter projects each body to its authored
-child index, preserving the source container topology. The callback remains
-unregistered until its durable SQL source-plan guard and complete cabinet PG
-case pass; the parser/model slice is not a whole-quest qualification.
+child index, preserving the source container topology. The callback is registered after its complete production World reward PG case
+passed (PostgreSQL 18.6, 52.493176599s). The World path binds the quest definition
+and same-transaction MINT; migration 2071 also protects NPC source plans using
+the new child-text shape. This is a cabinet-mechanic proof, not whole-quest qualification.
+
+The physical parchment promotion reuses the pinned Canary XML importer:
+[items.xml:5818–5823](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml#L5818-L5823),
+SHA-256 `1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`,
+and the retained client appearance bank. It qualifies portable custody through the
+exact existing binding; it does not infer a write-once target or install a writing
+or transformation hook. The existing unresolved target remains UNKNOWN.

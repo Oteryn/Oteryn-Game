@@ -4,7 +4,7 @@ Checked against qmech aca848557. Paths below refer to this package, not a frozen
 
 | quest | missing mechanic (server or client) | evidence (the quest file and step, plus the missing hook/table/command) | blocks the quest fully or partly |
 |---|---|---|---|
-| Nomads Land Quest | M15 child-text SQL source-plan binding and full cabinet PG case remain | Pinned Crystal `container_misc.lua:803-822` contains parchment 2833 inside bag 2853 with case 7527. The new bounded `RewardText` model and MINT child-index projection pass tests; migration 1641 still compares `m.root_text` with scalar `give.text`. The source callback remains unregistered until the child binding guard and real World reward case pass. | Partly: cabinet reward; implementing locally, no external engine wait. |
+| Nomads Land Quest | None for M15: ordered child literal text and cabinet grant implemented | Source cabinet `container_misc.lua:803-822`; registered `questpc5-nomads-cabinet.json`; bounded `RewardText`, native parchment qualification, migration 2071 source/MINT predicate. Production World reward PG passed on PostgreSQL 18.6 in 52.493176599s, proving atomic child text, ordered contents, replay and once-only refusal. | M15 unblocked; the physical window puzzle remains separate. |
 | Nomads Land Quest | Server: exact mutable Ground stack/order prerequisite | Same definition, s4 requires arranging crates/amphora at the window. `crates/gameplay/quests/src/quest/world_callbacks.rs:151` WorldRequirement only contains position/appearance for an immovable map entry, with no mutable Ground item identity/count/order predicate. | Partly: physical window puzzle. |
 | Targuna Quest | None for M16: server/client mechanism and canonical Sterling binding pass focused tests | Same recipe s2-s3. Capability 449 / command 733, durable marker and private minimap delivery are implemented. Canonical Root PG passed 57.993081347s; actual Sterling dialogue/query PG passed 93.153805224s on PostgreSQL 18.6, proving mission 4 and exactly one marker. | M16 unblocked; no whole-Targuna journey or complete node-boot claim. |
 | Targuna Quest | Server: quest-guarded object taming with atomic quest progress | Same definition, s8-s9 earn Bunch of Turnips then tame Reliable Ram. `crates/gameplay/content/src/content/native_gameplay/mount_taming.rs:17` TamingRule has target item/mount/chance/equipment but no quest guard/progress plan; `crates/gameplay/dispatch/src/gameplay_transport/mount_taming.rs:292` builds MountTamingRequest without a quest transition. | Partly: final ram step. |
@@ -57,3 +57,40 @@ The retained source resolves the formerly unknown book identity, exact 954-byte 
 RED: the real cabinet plan failed with `invalid type: map, expected a string`. GREEN: three child-text/binding/legacy cases, plus ten focused literal-text cases. The shared MINT adapter validates the bounded model and copies each literal only to its authored child index; legacy string-valued plans retain their exact JSON form. Workspace all-target check passed 4m04s, changed-crate clippy passed, fmt passed, quest-authoring checks and all 116 unit modules passed, content-tree validation and native-provider regeneration/pin-check passed. No migration is included in this slice.
 
 A draft child-text SQL predicate separately executed 13 positive/adversarial cases against PostgreSQL 18.6 in 0.054304s. That prototype is not the complete cabinet MINT proof and is not counted as M15 DONE. Next: install the source guard in the lane range, register the source callback only after the full World reward PG case passes, and push the completed mechanic.
+
+## M15 cabinet GREEN (supersedes unregistered/pending cabinet notes)
+
+`questpc5_nomads_cabinet_mints_bound_child_text_atomically_and_replays`
+ran against PostgreSQL 18.6: `M15_CABINET_PG_COMPLETED duration=52.493176599s success=true`.
+The actual production World callback writes the canonical quest definition hash,
+MINT reservation/receipt, ordered case/parchment children and initial Text in the
+same transaction. It refuses without a backpack, replays the original command
+without another Text/reward, and refuses a new once-claim command. The test uses
+a stage-ready capsule; it does not claim the whole Nomads Land journey.
+
+The earlier grant failed because native parchment 2833 was nonmaterializable.
+`questpc5_parchment_profile.py` reuses the pinned source importer, preserves the
+existing exact binding and accepted facts, and qualifies portable custody only.
+Only native Item record 2833 changes; its unresolved write-once target remains
+UNKNOWN. Three positive/adversarial profile regressions pass. No writing or
+transformation hook is inferred.
+
+Migration 2071 and its 13-case PostgreSQL predicate regression are already pushed
+as `992a871dabb5ee498b758c47b01adaf0f78a535c` (0.042617s). The unchanged legacy
+literal-text MINT case passed with this migration in 52.93231087s. The SQL source
+predicate protects NPC reward plans; World rewards instead bind the canonical
+quest definition and the same-transaction MINT. The cabinet test checks that
+actual World contract rather than inventing an NPC source-plan row.
+
+Full repository regeneration completed; World pin stayed unchanged. Post-regeneration
+content-tree validation passed. Quest-authoring checks and all 116 unit modules
+also passed after regeneration (zero failed modules). All 398 quests crate unit
+tests passed; workspace all-target check passed in 4m13s.
+CLAIMS.md remains coordinator-owned. M16 focused completion is recorded above.
+
+Final cabinet-slice verification: changed-crate clippy with `-D warnings` passed
+(3m25s), fmt passed, World pin-check passed unchanged at
+`7b680a6007b27dff037ef35cfdb4bd97deec63b32e47c88cc597a603cd28a41c`.
+No main/qmech merge was made. The read-only queue audit still lists M16 OPEN,
+but its focused implementation/proof is above; other questpc5-reported M23 is
+claimed by srvgap1108. No other lane's quest is claimed or rewritten here.
