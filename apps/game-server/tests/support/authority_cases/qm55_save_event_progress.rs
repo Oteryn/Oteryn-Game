@@ -164,6 +164,21 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     assert!(empty.completed);
     assert_eq!(empty.reset_epoch, 1);
     assert!(empty.tracks.is_empty());
+    let duplicate = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(4)?,
+            request(EMPTY_FINISH, 4)?,
+            catalogue.clone(),
+        )
+        .await?;
+    assert!(
+        matches!(duplicate, QuestTransitionOutcome::Refused(_)),
+        "fresh command cannot complete twice in a save: {duplicate:?}"
+    );
+    assert_eq!(h.root_revision().await?, "4");
     sqlx::query(
         "UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid",
     )
@@ -184,6 +199,42 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 .completed
         );
     }
+    let next_completion = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(4)?,
+            request(EMPTY_FINISH, 5)?,
+            catalogue.clone(),
+        )
+        .await?;
+    assert!(
+        matches!(next_completion, QuestTransitionOutcome::Committed(_)),
+        "next save permits completion despite canonical history: {next_completion:?}"
+    );
+    let copy = h
+        .root
+        .read_character_quest_state(&authority, character)
+        .await?;
+    let next = copy
+        .save_event_quest_progress(EMPTY)
+        .ok_or("next save completion missing")?;
+    assert_eq!(next.reset_epoch, 2);
+    assert!(next.completed);
+    assert!(next.tracks.is_empty());
+    let duplicate = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(5)?,
+            request(EMPTY_FINISH, 6)?,
+            catalogue.clone(),
+        )
+        .await?;
+    assert!(matches!(duplicate, QuestTransitionOutcome::Refused(_)));
+    assert_eq!(h.root_revision().await?, "5");
     assert!(matches!(
         h.root
             .commit_character_quest_transition(

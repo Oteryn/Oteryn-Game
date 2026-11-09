@@ -764,6 +764,18 @@ impl DurabilityRoot {
                     {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
+                    // The existing ledger scopes non-counter event receipts to
+                    // the World/server save. Capture that scope before its active
+                    // gate and fence publication against a concurrent save switch.
+                    let save_event_epoch = if transition.world_change.as_deref().is_some_and(|change|
+                        oteryn_gameplay_world_change::counter::CounterKind::from_key(change).is_none()) {
+                        let epoch: Option<String> = sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
+                            .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                        let Some(epoch) = epoch else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        Some(epoch)
+                    } else { None };
                     if let Some(change) = transition.world_change.as_deref()
                         && !super::super::world_event::change_active(&mut tx, fence.runtime_scope.world_id(), change).await?
                     {
@@ -1206,6 +1218,18 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
+                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
+                    if completes && let Some(epoch) = &save_event_epoch {
+                        // The root lock serializes all event completions for this
+                        // Character. Canonical completion from older saves neither
+                        // proves nor blocks completion in the captured occurrence.
+                        let completed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_event_quest_progress p WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid AND p.quest_key=$3 AND p.reset_epoch=$4::text::numeric AND p.completes)")
+                            .bind(id).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(quest).bind(epoch).fetch_one(&mut *tx).await?;
+                        if completed {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let committed_revision = root
                         .revision
                         .checked_add(1)
@@ -1235,7 +1259,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
+
                     let (cause_id, ordinal) = request.cause.key();
                     let track_keys: Vec<&str> =
                         changes.iter().map(|change| change.track.as_str()).collect();
@@ -1288,9 +1312,13 @@ impl DurabilityRoot {
                     if transition.world_change.is_some()
                         || oteryn_gameplay_quests::quest::shared_world_progress::records_counter_progress(transition)
                     {
-                        sqlx::query("INSERT INTO game_character_event_quest_progress(character_id,world_id,reset_epoch,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after) SELECT r.character_id,a.world_id,a.reset_epoch,r.committed_character_revision,r.quest_key,r.transition_key,r.completes,r.track_keys,r.values_after FROM game_character_quest_receipts r JOIN game_world_reset_active a ON a.world_id=encode($3,'hex')::uuid WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision=$2::text::numeric")
-                            .bind(id).bind(&committed).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                        let projected = sqlx::query("INSERT INTO game_character_event_quest_progress(character_id,world_id,reset_epoch,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after) SELECT r.character_id,a.world_id,a.reset_epoch,r.committed_character_revision,r.quest_key,r.transition_key,r.completes,r.track_keys,r.values_after FROM game_character_quest_receipts r JOIN game_world_reset_active a ON a.world_id=encode($3,'hex')::uuid WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision=$2::text::numeric AND ($4::text IS NULL OR a.reset_epoch=$4::text::numeric)")
+                            .bind(id).bind(&committed).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(save_event_epoch.as_deref())
                             .execute(&mut *tx).await?;
+                        if projected.rows_affected() != 1 {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     for change in &changes {
                         let written = sqlx::query(
