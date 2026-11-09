@@ -1,6 +1,7 @@
 use oteryn_client_runtime::charm_progression::catalogue::{Page, Request};
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Catalogue {
+    pub names: std::collections::BTreeMap<u16, String>,
     pub page: Page,
     pub detail: String,
     pub category: u8,
@@ -18,6 +19,14 @@ pub fn text(panel: &super::Panel) -> String {
     let mut out = format!("Creature catalogue — {category}\r\n{}\r\n", panel.feedback);
     if panel.pending {
         out.push_str("Waiting for the server\r\n");
+    }
+    if let Some(card) = catalogue
+        .page
+        .cards
+        .iter()
+        .find(|card| panel.fields[1] == card.race.to_string())
+    {
+        out.push_str(&super::illustration::illustration(card));
     }
     for (index, category) in catalogue.page.categories.iter().enumerate() {
         let _ = writeln!(out, "Category {}: {category}\r", index + 1);
