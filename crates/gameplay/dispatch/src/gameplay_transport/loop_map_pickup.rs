@@ -133,6 +133,9 @@ pub(super) async fn move_map_item(
     let Ok(entry) = entry else {
         return stale;
     };
+    if !oteryn_gameplay_items::map_pickup::whole_quantity_requested(entry.quantity, request.count) {
+        return refused(LoopMoveRefusal::NotSupported);
+    }
     let item = if ground_push {
         oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(native, &definition)
     } else {

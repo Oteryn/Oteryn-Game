@@ -84,6 +84,12 @@ pub fn empty_amphora_push_quantity(key: &str, facts: PickupFacts) -> Result<u32,
     Ok(1)
 }
 
+/// A map source is materialized whole; a partial or different requested count is unsupported.
+pub fn whole_quantity_requested(quantity: u32, requested: Option<u32>) -> bool {
+    (1..=crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX).contains(&quantity)
+        && requested.is_none_or(|count| count == quantity)
+}
+
 #[cfg(test)]
 mod amphora_tests {
     use super::*;
@@ -151,5 +157,27 @@ mod amphora_tests {
             ),
             Err(Ineligible::Contents)
         );
+    }
+}
+
+#[cfg(test)]
+mod quantity_tests {
+    use super::whole_quantity_requested;
+    #[test]
+    fn map_source_refuses_different_requested_counts_before_materialization() {
+        assert!(whole_quantity_requested(1, None));
+        assert!(whole_quantity_requested(1, Some(1)));
+        assert!(whole_quantity_requested(7, Some(7)));
+        assert!(
+            !whole_quantity_requested(1, Some(2)),
+            "a request for two must not silently move one"
+        );
+        assert!(
+            !whole_quantity_requested(7, Some(3)),
+            "a partial request must not silently move the whole source"
+        );
+        assert!(!whole_quantity_requested(7, Some(0)));
+        assert!(!whole_quantity_requested(0, None));
+        assert!(!whole_quantity_requested(101, None));
     }
 }

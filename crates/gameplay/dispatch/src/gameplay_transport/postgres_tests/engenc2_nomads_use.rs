@@ -237,6 +237,33 @@ fn scenario(mode: Scenario) -> TestResult {
                         item_fence: Some(fence.item_fence()),
                     })
                 };
+                let refused_count = owner
+                    .move_loop_item(
+                        deps.actor,
+                        command(899)?,
+                        LoopMove {
+                            item: source,
+                            count: Some(2),
+                            target: LoopTarget::Ground(
+                                oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                                    x: 33216,
+                                    y: 32854,
+                                    floor: -9,
+                                },
+                            ),
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    refused_count,
+                    LoopMoveResult::Refused(LoopMoveRefusal::NotSupported)
+                );
+                let receipts_before: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_map_item_mint_receipts)+(SELECT count(*) FROM game_map_item_mint_reservations)")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(
+                    receipts_before, 0,
+                    "unsupported quantity must not reserve or materialize the source"
+                );
                 let result = owner
                     .move_loop_item(
                         deps.actor,
