@@ -1,4 +1,6 @@
 //! M49: retire the exact arriving corpse and persist its summon intent in the drop transaction.
+mod contents;
+
 use super::*;
 use crate::durability::spell_owner_commit::SpellCommitWindow;
 use oteryn_gameplay_quests::quest::elemental_arrival::SummonPlan;
@@ -170,6 +172,7 @@ impl DurabilityRoot {
                 let moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None, None).await?;
                 if busy { return Ok(moved); } // Source onAddItem leaves a busy boss's arriving corpse alone.
                 let (transaction,event,occurred): (String,String,i64) = sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut **tx).await?;
+                contents::retire_contents(&mut tx, fence, command, corpse.instance, &transaction, occurred).await?;
                 let readset: Vec<_> = plan.readset().iter().map(|cell| json!({"key":cell.key,"revision":cell.revision,"position":[cell.position.x,cell.position.y,cell.position.floor],"appearance":cell.appearance})).collect();
                 let mut placement = scope.map.to_vec(); placement.extend(plan.target().key.to_be_bytes());
                 let tuple = tx.tuple();

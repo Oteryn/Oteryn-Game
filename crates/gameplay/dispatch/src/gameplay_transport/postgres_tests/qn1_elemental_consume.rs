@@ -125,13 +125,21 @@ fn facts(key: &str) -> ItemDefinitionFacts {
 }
 #[test]
 fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::TestResult {
-    run(false)
+    run(false, 0)
 }
 #[test]
 fn qn1_elemental_native_corpse_arrival_postgres() -> f::TestResult {
-    run(true)
+    run(true, 0)
 }
-fn run(native: bool) -> f::TestResult {
+#[test]
+fn qn1_elemental_arrival_consumes_direct_loot_atomically() -> f::TestResult {
+    run(true, 1)
+}
+#[test]
+fn qn1_elemental_arrival_rolls_back_loot_and_drop_for_unsupported_child() -> f::TestResult {
+    run(true, 2)
+}
+fn run(native: bool, loot: u8) -> f::TestResult {
     let Some(admin) = f::configured_admin() else {
         return Ok(());
     };
@@ -144,15 +152,16 @@ fn run(native: bool) -> f::TestResult {
                     let start = std::time::Instant::now();
                     let h = f::Harness::create(
                         admin,
-                        if native {
-                            "qn1_elemental_native"
-                        } else {
-                            "qn1_elemental_consume"
+                        match (native, loot) {
+                            (_, 1) => "qn1_elemental_loot",
+                            (_, 2) => "qn1_elemental_loot_rollback",
+                            (true, _) => "qn1_elemental_native",
+                            (false, _) => "qn1_elemental_consume",
                         },
                         true,
                     )
                     .await?;
-                    let result = exercise(&h, native).await;
+                    let result = exercise(&h, native, loot).await;
                     h.cleanup().await?;
                     result?;
                     assert!(start.elapsed().as_secs_f64() > 0.01);
@@ -174,7 +183,7 @@ fn run(native: bool) -> f::TestResult {
         .map_err(|_| "elemental consumption PG thread failed")?
         .map_err(Into::into)
 }
-async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
+async fn exercise(h: &f::Harness, native: bool, loot: u8) -> f::TestResult {
     let content = Content {
         ground_only: native,
     };
@@ -282,6 +291,62 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
     }
     let (item,revision):(Vec<u8>,String)=sqlx::query_as("SELECT decode(replace(item_instance_id::text,'-',''),'hex'),state_revision::text FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i8139' AND lifecycle=1").fetch_one(&h.pool).await?;
     let item: [u8; 16] = item.try_into().map_err(|_| "corpse identity")?;
+    let mut loot_ids = Vec::new();
+    if loot > 0 {
+        use crate::durability::item_mint::{
+            CorpseContainerPlacement, CorpseLootMintRequest, ItemMintCause, ItemMintOutcome,
+        };
+        use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+        for ordinal in 1..=2 {
+            let mut candidate = h
+                .root
+                .freeze_corpse_loot_mint(
+                    &authority,
+                    &h.node,
+                    CorpseLootMintRequest {
+                        cause: ItemMintCause::for_test(
+                            WorldId::decode(&f::id(f::WORLD)).map_err(f::debug)?,
+                            ChannelId::decode(&f::id(f::CHANNEL)).map_err(f::debug)?,
+                            ScopeOwnershipGeneration::new(1).map_err(f::debug)?,
+                            2,
+                            1,
+                            f::definition("LootTable", "fixture:elemental"),
+                            "fixture:elemental-loot".into(),
+                            ordinal,
+                        ),
+                        item: f::definition(
+                            "Item",
+                            if loot == 2 && ordinal == 2 {
+                                "oteryn:item.tibia.i2874"
+                            } else {
+                                "oteryn:item.tibia.i3031"
+                            },
+                        ),
+                        quantity: if loot == 2 && ordinal == 2 { 1 } else { 60 },
+                        placement: CorpseContainerPlacement {
+                            corpse_item_instance_id: item,
+                            placement_ordinal: ordinal,
+                            fluid_subtype: (loot == 2 && ordinal == 2).then_some(1),
+                        },
+                        content_revision: "content-1".into(),
+                        ruleset_revision: "ruleset-1".into(),
+                        sim_revision: "sim-1".into(),
+                    },
+                )
+                .await
+                .map_err(f::debug)?;
+            let lane = candidate.fresh_death_lane_permit().await;
+            match h
+                .root
+                .commit_corpse_loot_mint(&lane, &authority, &h.node, &mut candidate)
+                .await
+                .map_err(f::debug)?
+            {
+                ItemMintOutcome::Committed(receipt) => loot_ids.push(receipt.item_instance_id),
+                other => return Err(format!("loot MINT {other:?}").into()),
+            }
+        }
+    }
     let recipe = &rules::RECIPES[0];
     let position = recipe.summon;
     let target_key = crate::map::view::placement_key(
@@ -503,6 +568,35 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         )
         .await
         .map_err(f::debug)?;
+    if loot == 2 {
+        assert!(matches!(
+            result,
+            Err(crate::durability::item_loop_move::LoopMoveRefusal::Rejected)
+        ));
+        assert!(!window.commit_called());
+        window.release();
+        for (ordinal, child) in loot_ids.iter().enumerate() {
+            let state: (i64, i16, i64) = sqlx::query_as("SELECT i.quantity,i.lifecycle,(SELECT count(*) FROM game_item_corpse_container_entries e WHERE e.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
+                .bind(child.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                state,
+                (if ordinal == 0 { 60 } else { 1 }, 1, 1),
+                "refusal must roll back an earlier child retirement"
+            );
+        }
+        let body: (i64, i16, String) = sqlx::query_as("SELECT quantity,lifecycle,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(body, (1, 1, (corpse.state_revision - 1).to_string()));
+        let counts: (i64, i64, i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_elemental_loot_retire_receipts),(SELECT count(*) FROM game_elemental_summon_intents),(SELECT count(*) FROM game_elemental_arrival_receipts),(SELECT count(*) FROM game_item_loop_move_receipts)")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(
+            counts,
+            (0, 0, 0, 0),
+            "refusal must leave no partial retirement, summon or drop receipt"
+        );
+        eprintln!("QN1_ELEMENTAL_LOOT_ROLLBACK_PG_EXECUTED");
+        return Ok(());
+    }
     let receipt = result.map_err(|e| format!("arrival refused {e:?}"))?;
     assert!(!receipt.replayed);
     assert!(
@@ -510,6 +604,15 @@ async fn exercise(h: &f::Harness, native: bool) -> f::TestResult {
         "arrival COMMIT escaped its caller window"
     );
     window.install();
+    for child in &loot_ids {
+        let state: (i64, i16, i64, i64) = sqlx::query_as("SELECT i.quantity,i.lifecycle,(SELECT count(*) FROM game_item_corpse_container_entries e WHERE e.item_instance_id=i.item_instance_id),(SELECT count(*) FROM game_item_audit_outbox a WHERE a.item_instance_id=i.item_instance_id AND a.transaction_id=i.last_transaction_id) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
+            .bind(child.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            state,
+            (0, 2, 0, 1),
+            "arrival must retire and audit each loot entry"
+        );
+    }
     let recovered = h
         .root
         .reconcile_item_loop_move(
