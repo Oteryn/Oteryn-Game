@@ -2250,3 +2250,24 @@ movements_arena_pit.lua:24-64. This SDK slice does not yet mount the death polle
 Seven M51 durability tests PASS:126.678s including compilation; real PG origin
 4.977148183s, custody5.285750185s, runtime role4.988332058s. Durability/dispatch
 clippy -D warnings PASS115.057s. M51 remains PARTIAL: producer and reset closure.
+
+## M51: automatic credited death on the server creature cadence
+
+The regular monster-cycle entry polls active arena runs before acquiring the
+spell lane. One epoch/time gate coalesces the Channel's connection callers;
+at most ten live pits are inspected. Exact opponent death and most-damage
+Character are revalidated with current actor/session control and character lease.
+Existing kill rewards settle before the new native receipt or opponent removal;
+the existing character revision sequencer and durable current pit custody
+authorize phase1 -> phase2. The current original deadline remains in force.
+Source: Crystal201189f creaturescripts_arena_kill.lua:2-38. No new SQL/allocation.
+The full real-combat native portal test now removes the Status command between
+combat and the portal. It requires persisted victory from the ordinary monster
+cycle, plus exactly ten native DEATH receipts and ten native STEP receipts,
+then retains all prior rank, achievement, reward and replay assertions.
+Actual RED: first pit remains phase1 without the producer, real PG52.55s.
+GREEN real PG m51_postgres_native_portals_complete_all_ten_pits_and_reward:
+59.165918176s (488.670s including cold compilation), PostgreSQL180006, fee1000,
+completed rank1, one reward claim/item. Dispatch clippy --all-targets -D warnings
+PASS277.191s. Engine pin identity unchanged. M51 remains PARTIAL pending full
+source reset closure and immediate abandoned-run custody cleanup.

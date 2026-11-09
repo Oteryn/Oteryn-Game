@@ -6,12 +6,14 @@ use crate::durability::arena_match::{self as durable, MatchState, MatchTransitio
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
-use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 use crate::map::facts::ArenaPillarProjection as PillarProjection;
+use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+#[path = "arena_match/death_poll.rs"]
+mod death_poll;
 #[path = "arena_match/pillar.rs"]
 mod pillar;
 #[path = "arena_match/portal_step.rs"]
@@ -48,6 +50,7 @@ pub(super) use composed_methods;
 pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, LiveMatch>>,
+    victory_poll: Mutex<Option<(u64, u64)>>,
 }
 #[derive(Clone)]
 struct LiveMatch {
@@ -180,7 +183,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         payload: &[u8],
     ) -> Option<Vec<u8>> {
         let action = wire::decode_match_request(payload).ok()?;
-        if let A::Drome(action) = action { return self.drome_command(admitted, id, action, payload).await; }
+        if let A::Drome(action) = action {
+            return self.drome_command(admitted, id, action, payload).await;
+        }
         let actor = admitted.runtime_actor?;
         let supplied = admitted.item_fence?;
         let command = CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?);
@@ -238,7 +243,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_arena_match(self.character, self.holder, fence, command, payload)
             .await
             .ok()?;
-        if !read.dead && read.pit_owned
+        if !read.dead
+            && read.pit_owned
             && (read.state.rank == 0
                 || (read.state.session == *admitted.game_session_id.as_bytes()
                     && read.state.scope_generation == fence.scope_ownership_generation.get()))
@@ -301,7 +307,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match action {
                 A::Drome(_) => return None,
                 A::Status => {}
-                A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {disposition=D::WrongState;}
+                A::Enter if self.runtime.lock().await.is_tibiadrome(actor) => {
+                    disposition = D::WrongState;
+                }
                 A::Enter if after.rank == 0 && after.completed < 3 => {
                     let rank = after.completed + 1;
                     let runtime = self.runtime.lock().await;

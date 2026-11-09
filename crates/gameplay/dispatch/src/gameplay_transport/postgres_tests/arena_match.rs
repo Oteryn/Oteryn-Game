@@ -288,8 +288,15 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
             };
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
             let advanced = if native_portals {
-                let victory = command(&owner, &mut admitted, A::Status).await?;
-                assert_eq!((victory.state.pit, victory.state.phase), (pit, 2));
+                owner.drain_monster_melee().await;
+                let stored: (i32, i32) = sqlx::query_as(
+                    "SELECT (body->>'pit')::int,(body->>'phase')::int FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid",
+                ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(
+                    stored,
+                    (i32::from(pit), 2),
+                    "credited death must persist without an arena Status command"
+                );
                 let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(pit)
                     .ok_or("source pit")?
                     .layout();
@@ -352,13 +359,15 @@ fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
             .await?;
         assert_eq!(victories, 10);
         if native_portals {
-            let native_receipts: i64 = sqlx::query_scalar(
-                "SELECT count(*) FROM game_arena_match_receipts WHERE native_origin_binding IS NOT NULL",
-            ).fetch_one(&harness.pool).await?;
-            assert_eq!(
-                native_receipts, 10,
-                "one native STEP receipt per pit, no arena Advance command"
-            );
+            for (prefix, callback) in [
+                (b"oteryn:svargrond-native-step:v1".as_slice(), "STEP"),
+                (b"oteryn:svargrond-native-death:v1".as_slice(), "DEATH"),
+            ] {
+                let native_receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
+                ).bind(i32::try_from(prefix.len())?).bind(prefix).fetch_one(&harness.pool).await?;
+                assert_eq!(native_receipts, 10, "one native {callback} receipt per pit");
+            }
         }
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;
         assert_eq!(achievements, 1);
