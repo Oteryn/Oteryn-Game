@@ -21,6 +21,31 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_goblin_temple_entry_is_beside_its_retained_chest(self):
+        binding = (('oteryn:quest.goblin_temple_quest', 's1',
+                    'claim:canary:reward-claim/kv/goblintemple', 'chosen-source/goblin_temple_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 31973, 'y': 32210, 'floor': -12},
+                'ordinal': 0, 'appearance': 502})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_iron_helmet_entry_reaches_the_retained_porgol_camp(self):
+        binding = (('oteryn:quest.iron_helmet_quest', 's1',
+                    'claim:canary:reward-claim/kv/ironhelmet', 'chosen-source/iron_helmet_quest'),)
+        with mock.patch.object(explore, 'BINDINGS', binding):
+            callback, = explore.callbacks(ROOT)
+            self.assertEqual(callback['selector']['native'], {
+                'position': {'x': 32770, 'y': 32225, 'floor': -7},
+                'ordinal': 0, 'appearance': 4516})
+            self.test_declared_area_point_really_has_the_retained_native_ground()
+
+    def test_frost_dragon_lair_entry_is_activated(self):
+        callbacks = [c for c in explore.callbacks(ROOT) if c['quest'] == 'oteryn:quest.frost_dragon_quest']
+        self.assertEqual(len(callbacks), 1, 'Frost Dragon lair entry is activated')
+        self.assertEqual(callbacks[0]['selector']['position']['floor'], -8)
+
     def test_frost_dragon_approach_is_beside_the_retained_quest_corpse(self):
         binding = (('oteryn:quest.frost_dragon_quest', 's1',
                     'claim:canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir',

@@ -5,6 +5,9 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.frost_dragon_quest', 's1',
+     'claim:canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir',
+     'chosen-source/frost_dragon_quest'),
     ('oteryn:quest.behemoth_quest', 's1',
      'spawn-approach:oteryn:spawn.x33230_y31696_z12#3', 'chosen-source/behemoth_quest'),
     ('oteryn:quest.dragon_tower_quest', 's1',

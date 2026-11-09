@@ -585,6 +585,61 @@
       "minimum_level": 60
     },
     {
+      "key": "oteryn:quest-callback/m01b/frost-dragon/s1/okolnir",
+      "quest": "oteryn:quest.frost_dragon_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32146,
+          "y": 31431,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4407,
+        "native": {
+          "position": {
+            "x": 32146,
+            "y": 31431,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 4407
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/frost_dragon_quest/s1/visited/okolnir",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/frost_dragon_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/273",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/geomancer/s1/entry",
       "quest": "oteryn:quest.geomancer_quest",
       "trigger": "step_in",

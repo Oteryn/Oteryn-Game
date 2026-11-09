@@ -6,6 +6,9 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 #[path = "m01b_explore/area_entries.rs"]
 mod area_entries;
 
+#[path = "m01b_explore/claim_entries.rs"]
+mod claim_entries;
+
 #[path = "m01b_explore/fire_axe.rs"]
 mod fire_axe;
 
@@ -275,6 +278,9 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == "m01b/frost-dragon/s1/okolnir" {
+        return claim_entries::world(native);
+    }
     if name == "m01b/behemoth/s1/entry" {
         return spawn_entries::world(native);
     }
