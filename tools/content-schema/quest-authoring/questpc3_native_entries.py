@@ -149,7 +149,7 @@ def build_grimvale(root=ROOT):
         native['stages'].append({'key':'s2-'+name.lower(),'completes':False,'trigger':{'kind':'kill','counter':{
             'key':'oteryn:quest-transition/native-kills/m01c-grimvale-'+name.lower(),
             'creature':creature,'track':kills,'gate':track,'gate_value':1,'minimum':0,'maximum':10,'advance_gate_to':2}}})
-    native['sources'].append('content/creatures/definitions/creatures-01500-01863.json:Werewolf/Werebear/Wereboar')
+    native['sources'].extend([path+':s2', 'content/creatures/definitions/creatures-01500-01863.json:Werewolf/Werebear/Wereboar'])
     return document
 
 

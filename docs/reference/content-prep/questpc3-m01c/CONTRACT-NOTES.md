@@ -16,3 +16,10 @@ Grimvale's harvested blossoms are Item 22082, not planted nightshade 22063 or
 `1b2e040732a7b0da269579380a4d3fa8a93d17aa`; the existing source importer also
 checks the pinned appearance flags. The chosen first step requires five;
 collection preserves their custody and requires registered premium admission.
+
+Grimvale stage s2 lowers the chosen recipe's ten kills of Werewolf, Werebear
+or Wereboar into one shared counter, active only after s1 and advancing the
+route to s3 at ten. This slice follows the structured species/count contract;
+it does not add a geographic predicate from the objective's prose. The PG
+fixture exercises trusted native-death notification admission at Root, not
+transport capture or an end-to-end completed Grimvale quest.

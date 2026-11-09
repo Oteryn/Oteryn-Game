@@ -1156,6 +1156,7 @@ async fn production_grimvale_collection(
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     assert!(incomplete);
     prerequisite_admission_fixture(h, authority, &catalogue).await?;
+    production_grimvale_hunt(h, authority, &catalogue, &premium).await?;
     eprintln!(
         "M01C_GRIMVALE production_catalogue count4_refused count5_committed missing_premium_refused live_custody5 replay_safe completion_held"
     );
@@ -1313,6 +1314,87 @@ async fn prerequisite_admission_fixture(
     ));
     eprintln!(
         "M01C_PREREQUISITE missing_refused started_refused completed_accepted owner_writes_only replay_stable"
+    );
+    Ok(())
+}
+
+async fn production_grimvale_hunt(
+    h: &f::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    catalogue: &Arc<QuestStateCatalogue>,
+    premium: &PremiumProbe,
+) -> f::TestResult {
+    use durability::character_progression::ExperienceRewardOccurrence;
+    use durability::quest_state::native_kills::{NativeDeathSource, NativeQuestDeath};
+    let hash = catalogue
+        .definition_hash("oteryn:quest.grimvale_quest")
+        .ok_or("Grimvale definition")?;
+    let observed_database_micros: i64 =
+        sqlx::query_scalar("SELECT (extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let party = Arc::new(foundation::PartySnapshot {
+        world: f::id(f::WORLD),
+        character: f::id(f::CHARACTER),
+        party_id: None,
+        revision: None,
+        leader: None,
+        shared_xp_enabled: false,
+        members: Vec::new(),
+        observed_database_micros,
+    });
+    for n in 0..11_u8 {
+        let species = ["werewolf", "werebear", "wereboar"][usize::from(n) % 3];
+        let death = NativeQuestDeath {
+            transition: format!("oteryn:quest-transition/native-kills/m01c-grimvale-{species}"),
+            creature: format!("oteryn:creature.{species}"),
+            observed_revision: 13 + u64::from(n),
+            definition_hash: Some(hash),
+            source: NativeDeathSource::Party(Arc::clone(&party)),
+        };
+        let cause = QuestCause::CreatureDeath(
+            ExperienceRewardOccurrence::from_bytes(f::id(150 + n)).map_err(f::debug)?,
+        );
+        for replay in [false, true] {
+            let outcome = h
+                .root
+                .commit_character_native_quest_kill_with_admission(
+                    authority,
+                    &h.node,
+                    f::fence(13 + u64::from(n))?,
+                    cause,
+                    death.clone(),
+                    Arc::clone(catalogue),
+                    premium,
+                )
+                .await
+                .map_err(f::debug)?;
+            assert!(
+                if n == 10 {
+                    matches!(
+                        outcome,
+                        QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+                    )
+                } else if replay {
+                    matches!(outcome, QuestTransitionOutcome::AlreadyCommitted(_))
+                } else {
+                    matches!(outcome, QuestTransitionOutcome::Committed(_))
+                },
+                "kill {n} replay={replay}: {outcome:?}"
+            );
+        }
+        let count: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-grimvale-kills'")
+            .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(count, (i64::from(n) + 1).min(10));
+        let route: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-grimvale-route'")
+            .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(route, if n >= 9 { 2 } else { 1 });
+    }
+    let incomplete: bool = sqlx::query_scalar("SELECT completed_character_revision IS NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.grimvale_quest'")
+        .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    assert!(incomplete, "the hunt must not complete the whole quest");
+    eprintln!(
+        "M01C_GRIMVALE_HUNT mixed_species10 eleventh_refused bounded_counter phase2 replay_stable completion_held root_notification_fixture"
     );
     Ok(())
 }
