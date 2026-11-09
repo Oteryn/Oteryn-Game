@@ -284,8 +284,7 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
             .await
             .is_err()
     );
-    let sequencer =
-        crate::durability::character_revision_sequencer::CharacterRevisionSequencer::default();
+    let sequencer = crate::durability::character_revision_sequencer::CharacterRevisionSequencer::default();
     let mut slot = sequencer.acquire(fence.character_id).await;
     let result = slot
         .commit_npc_teleport(
@@ -327,6 +326,63 @@ async fn exercise_peter(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     assert_eq!(replay.reply, result.reply);
+    // Model an arrival already consumed by the placement owner. Replaying the
+    // NPC command must return its response without teleporting the actor again.
+    sqlx::query("DELETE FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid")
+        .bind(f::id(f::CHARACTER).as_slice())
+        .execute(&h.pool)
+        .await?;
+    let replay = slot
+        .commit_npc_teleport(
+            &h.root,
+            &authority,
+            &h.node,
+            &permit,
+            fence,
+            request.clone(),
+            catalogue.clone(),
+            &NoItems,
+            NpcTeleportAdmission { arrival },
+        )
+        .await
+        .map_err(f::debug)?;
+    assert_eq!(replay.reply, result.reply);
+    assert_eq!(
+        h.root
+            .read_npc_pending_arrival(&authority, &h.node, fence)
+            .await
+            .map_err(f::debug)?,
+        None,
+        "command replay must not recreate a consumed arrival"
+    );
+    for changed_arrival in [
+        PendingArrival {
+            destination: LastPositionCell {
+                x: arrival.destination.x + 1,
+                ..arrival.destination
+            },
+            ..arrival
+        },
+        PendingArrival {
+            occurrence: TravelOccurrence::from_bytes(f::id(99)).map_err(f::debug)?,
+            ..arrival
+        },
+    ] {
+        assert!(matches!(
+            slot.commit_npc_teleport(
+                &h.root,
+                &authority,
+                &h.node,
+                &permit,
+                fence,
+                request.clone(),
+                catalogue.clone(),
+                &NoItems,
+                NpcTeleportAdmission { arrival: changed_arrival },
+            ).await,
+            Err(crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence)
+        ), "replay cannot substitute its admitted arrival");
+    }
     let mut changed = request.clone();
     changed.message = "trade".into();
     assert!(
