@@ -610,7 +610,7 @@ fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, p
                 false,
             )
             .await?;
-            let result = producer_scenario(&h, block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff).await;
+            let result = producer_scenario(&h, ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff }).await;
             let cleanup = h.cleanup().await;
             result?;
             cleanup
@@ -646,7 +646,18 @@ async fn producer_seed(
     Ok(())
 }
 
-async fn producer_scenario(harness: &Harness, block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool, prove_handoff: bool) -> TestResult {
+struct ProducerProofs {
+    block_spawn: bool,
+    prove_phases: bool,
+    prove_spectators: bool,
+    prove_clear: bool,
+    prove_stage: bool,
+    prove_batches: bool,
+    prove_handoff: bool,
+}
+
+async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestResult {
+    let ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff } = proofs;
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -1482,11 +1493,11 @@ async fn mint_feroxa_clear_corpse(
         other => return Err(debug(other)),
     };
     let mut loot = Vec::new();
-    for ordinal in 1..=entries + if nested { 2 } else { 0 } {
+    for ordinal in 1..=entries + if nested { 4 } else { 0 } {
     let mut candidate = h.root.freeze_corpse_loot_mint(owner.character, &h.node, CorpseLootMintRequest {
         cause: cause("fixture:purpose.feroxa-clear", ordinal),
-        item: definition(if nested && ordinal==entries+1 { "oteryn:item.tibia.i2854" } else { "oteryn:item.tibia.i3031" }),
-        quantity: if nested && ordinal==entries+1 { 1 } else { 17 },
+        item: definition(if nested && (ordinal==entries+1 || ordinal==entries+3) { "oteryn:item.tibia.i2854" } else { "oteryn:item.tibia.i3031" }),
+        quantity: if nested && (ordinal==entries+1 || ordinal==entries+3) { 1 } else { 17 },
         placement: CorpseContainerPlacement { corpse_item_instance_id: corpse, placement_ordinal: ordinal, fluid_subtype: None },
         content_revision: "content-1".into(), ruleset_revision: "ruleset-1".into(), sim_revision: "sim-1".into(),
     }).await.map_err(debug)?;
@@ -1498,7 +1509,7 @@ async fn mint_feroxa_clear_corpse(
     }
     if nested {
         let bag = loot.get(usize::try_from(entries)?).ok_or("nested bag")?;
-        let child = loot.last().ok_or("nested gold")?;
+        let child = loot.get(usize::try_from(entries+1)?).ok_or("nested gold")?;
         let mut tx = h.pool.begin().await?;
         // Trusted imported custody baseline only; the tested clear uses all guards.
         sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
@@ -1506,6 +1517,18 @@ async fn mint_feroxa_clear_corpse(
             .bind(child.as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(child.as_slice()).bind(bag.as_slice()).execute(&mut *tx).await?;
+        // Keep the nested-corpse case above, and import a second actual backpack
+        // as an ordinary Ground root with its own nested coin.
+        let bag = loot.get(usize::try_from(entries+2)?).ok_or("ground bag")?;
+        let child = loot.last().ok_or("ground bag gold")?;
+        sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(child.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,minted_transaction_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(child.as_slice()).bind(bag.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(bag.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) SELECT encode($1,'hex')::uuid,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,nextval('game_item_ground_stack_ordinal_seq') FROM game_item_ground_locations WHERE item_instance_id=encode($2,'hex')::uuid")
+            .bind(bag.as_slice()).bind(corpse.as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
     }
     Ok((corpse, loot))
