@@ -13,3 +13,10 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::{open_shared, open_window};
+
+#[cfg(test)]
+#[path = "console_tests.rs"]
+mod console_tests;
+
+#[path = "console.rs"]
+mod console;

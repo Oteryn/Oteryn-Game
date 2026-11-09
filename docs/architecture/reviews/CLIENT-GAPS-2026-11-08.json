@@ -301,9 +301,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / Console: font/time/seconds/level",
-  "status": "MISSING",
-  "gap": "Brak kontrolek fontów, timestamps i poziomów.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Console display udostępnia rozmiar fontu, czas odbioru UTC, sekundy i aktualne poziomy rozmówców. Ograniczone zapytanie 736 w istniejącym CHAT_V1 czyta poziomy z trwałego stanu tego samego World; brak danych nie tworzy poziomu.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:9 + console_controls_reach_received_lines_and_current_server_levels + console_query_uses_selected_chat_capability_and_leaves_legacy_lines_unchanged + console_metadata_dispatch_checks_selection_and_preserves_unavailable_levels"
  },
  {
   "id": "T055",

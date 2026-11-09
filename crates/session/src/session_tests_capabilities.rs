@@ -108,6 +108,7 @@ fn derived_gated_routes_match_previous_table() {
     // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
         (3, &[7, 8], &[7, 8]),
+        (7, &[13, 736], &[12]),
         (51, &[60, 61], &[]),
         // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.
         (39, &[38], &[]),
@@ -170,7 +171,7 @@ fn derived_gated_routes_match_previous_table() {
         (1, &[4, 5], &[4, 5]),
         (8, &[], &[13]),
         (9, &[14], &[]),
-        (10, &[], &[15]),
+        (10, &[734, 735], &[15]),
         // C12 enables the existing world-interaction and item-look command routes.
         (11, &[15, 31], &[]),
         (28, &[30], &[]),
@@ -489,4 +490,85 @@ fn proficiency_state_is_advertised_and_uses_the_real_gated_command_route()
     assert_eq!(route.1, &[732]);
     assert!(route.2.is_empty());
     Ok(())
+}
+
+#[test]
+fn console_query_uses_selected_chat_capability_and_leaves_legacy_lines_unchanged()
+-> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                use oteryn_protocol_oteryn::chat::console;
+                for selected in [false, true] {
+                    let (client, mut server) = tokio::io::duplex(128 * 1024);
+                    let peer = tokio::spawn(async move {
+                        let raw = if selected {
+                            vec![(
+                                12,
+                                0,
+                                1,
+                                oteryn_protocol_oteryn::chat::encode_chat_rooms(
+                                    ChatRoomSet::default(),
+                                ),
+                            )]
+                        } else {
+                            vec![]
+                        };
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            if selected { &[7] } else { &[] },
+                            &[],
+                            (1, spatial(0)),
+                            &raw,
+                        )
+                        .await?;
+                        if selected {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(command.command_type, console::COMMAND);
+                            assert_eq!(
+                                console::decode_names(command.payload),
+                                Some(vec!["Bryn".into()])
+                            );
+                            let payload = console::encode_levels(&[Some(42)]).ok_or("levels")?;
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    41,
+                                    command.command_id,
+                                    CommandStatus::Accepted,
+                                    &payload,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut admission = admission()?;
+                    admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                    let mut session = Session::admit(client, admission).await?;
+                    let payload = console::encode_names(&["Bryn".into()]).ok_or("names")?;
+                    let result = session.gated_command(7, 736, &payload).await;
+                    if selected {
+                        assert_eq!(
+                            console::decode_levels(&result?.payload),
+                            Some(vec![Some(42)])
+                        );
+                    } else {
+                        assert!(matches!(
+                            result,
+                            Err(SessionError::CapabilityNotSelected { capability: 7 })
+                        ));
+                    }
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })
+        })?
+        .join()
+        .map_err(|_| "console session scenario panicked")??
 }

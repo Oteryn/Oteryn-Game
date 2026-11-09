@@ -5,7 +5,8 @@
   "requires": [],
   "acceptance_requires": false,
   "commands": [
-    13
+    13,
+    736
   ],
   "domains": [
     12

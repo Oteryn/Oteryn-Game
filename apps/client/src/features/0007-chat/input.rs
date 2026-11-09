@@ -21,6 +21,11 @@ impl PlayLink {
         true
     }
     pub fn open_chat(&self) {
+        // Reopening the console refreshes opt-in current levels immediately.
+        let display = lock(&self.mailbox).chat.console.display;
+        if let Err(message) = self.console_display(display) {
+            lock(&self.mailbox).chat.feedback = Some(message.into());
+        }
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]

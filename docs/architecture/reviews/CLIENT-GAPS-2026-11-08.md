@@ -128,7 +128,7 @@ Zasady przeciw dublowaniu:
 | T051 | Options | Interface / HUD: player/creature names, HP/mana, marks, NPC icons | MISSING | Brak osobnych przełączników dla owner i pozostałych aktorów. |
 | T052 | Options | Interface / HUD: arcs/distance/size/opacity | MISSING | Brak konfigurowalnych łuków HP/mana. |
 | T053 | Options | Interface / HUD: status bars/panel, style, skills/condition order | PARTIAL | Dane statusu są; brak edytora stylu, pozycji i kolejności. |
-| T054 | Options | Interface / Console: font/time/seconds/level | MISSING | Brak kontrolek fontów, timestamps i poziomów. |
+| T054 | Options | Interface / Console: font/time/seconds/level | DONE | Natywne Console display: font, czas odbioru UTC, sekundy i aktualne poziomy z serwera. evidence: apps/client/src/features/0007-chat/console.rs:9 + console_controls_reach_received_lines_and_current_server_levels + console_query_uses_selected_chat_capability_and_leaves_legacy_lines_unchanged + console_metadata_dispatch_checks_selection_and_preserves_unavailable_levels |
 | T055 | Options | Interface / Console: info/event/status/private/store filters | MISSING | Brak niezależnych filtrów i opcji private tab. |
 | T056 | Options | Interface / Game Window: own/other spells, text, loot messages | PARTIAL | Zdarzenia są; brak przełączników według źródła i klasy tekstu. |
 | T057 | Options | Interface / Game Window: target/PvP frame, banner, loot highlight | PARTIAL | Cel jest wybierany; brak konfiguracji ramek/banerów/kolorowania loot. |

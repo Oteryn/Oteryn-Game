@@ -2,6 +2,22 @@
   {
     "mechanic": "0007-chat",
     "kind": "handlers",
+    "id": "0007-chat-console",
+    "status": "supported",
+    "commands": [
+      736
+    ],
+    "direction": "client_to_server",
+    "capability": 7,
+    "entry": "protocol.rs::console_request",
+    "test": "tests/state.rs::console_metadata_query_is_bounded",
+    "not_applicable": {
+      "settings": "Console controls are local presentation preferences."
+    }
+  },
+  {
+    "mechanic": "0007-chat",
+    "kind": "handlers",
     "id": "0007-chat-input",
     "status": "supported",
     "commands": [

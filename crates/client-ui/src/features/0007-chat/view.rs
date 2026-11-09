@@ -5,7 +5,7 @@ use std::fmt::Write;
 pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::from("Local Chat — Say / Whisper / Yell / Private\n");
     text.push_str(&crate::chat_guild_room::panel_text(panel));
-    for line in &panel.lines {
+    for (index, line) in panel.lines.iter().enumerate() {
         if !panel.console.communication.visible(line) {
             continue;
         }
@@ -23,6 +23,13 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         ) {
             continue;
         }
+        if let ChatLine::Guild(line) = line
+            && !matches!(&panel.guild, oteryn_client_runtime::chat_guild_room::GuildRoomState::Member {guild_id,..} if *guild_id == line.guild_id)
+        {
+            continue;
+        }
+        let prefix = panel.console.metadata.prefix(panel.console.display, index);
+        text.push_str(&prefix);
         match line {
             ChatLine::Local {
                 speaker_name,
@@ -30,13 +37,28 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 text: message,
                 ..
             } => {
-                let _ = writeln!(text, "[{mode:?}] {speaker_name}: {message}");
+                let name = if *mode == oteryn_client_runtime::chat::ChatSpeechMode::MonsterSay {
+                    speaker_name.clone()
+                } else {
+                    panel
+                        .console
+                        .metadata
+                        .name(panel.console.display, speaker_name)
+                };
+                let _ = writeln!(text, "[{mode:?}] {}: {message}", name);
             }
             ChatLine::Private {
                 speaker_name,
                 text: message,
             } => {
-                let _ = writeln!(text, "[Private] {speaker_name}: {message}");
+                let _ = writeln!(
+                    text,
+                    "[Private] {}: {message}",
+                    panel
+                        .console
+                        .metadata
+                        .name(panel.console.display, speaker_name)
+                );
             }
             ChatLine::Guild(line)
                 if matches!(
@@ -45,7 +67,53 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                         if *guild_id == line.guild_id
                 ) =>
             {
-                let _ = writeln!(text, "[Guild] {}: {}", line.speaker_name, line.text);
+                let _ = writeln!(
+                    text,
+                    "[Guild] {}: {}",
+                    panel
+                        .console
+                        .metadata
+                        .name(panel.console.display, &line.speaker_name),
+                    line.text
+                );
+            }
+            ChatLine::Room {
+                room,
+                speaker_name,
+                text: message,
+            } => {
+                let _ = writeln!(
+                    text,
+                    "[{room:?}] {}: {message}",
+                    panel
+                        .console
+                        .metadata
+                        .name(panel.console.display, speaker_name)
+                );
+            }
+            ChatLine::Party {
+                speaker_name,
+                text: message,
+            } => {
+                let _ = writeln!(
+                    text,
+                    "[Party] {}: {message}",
+                    panel
+                        .console
+                        .metadata
+                        .name(panel.console.display, speaker_name)
+                );
+            }
+            ChatLine::PrivateChannel(line) => {
+                let _ = writeln!(
+                    text,
+                    "[Private channel] {}: {}",
+                    panel
+                        .console
+                        .metadata
+                        .name(panel.console.display, &line.speaker_name),
+                    line.text
+                );
             }
             ChatLine::Dropped => text.push_str("[Some chat lines were dropped]\n"),
             _ => {}

@@ -142,7 +142,7 @@ pub use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INT
 pub use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatLine, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode,
     ChatWireError, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
-    encode_chat_intent,
+    console as chat_console, encode_chat_intent,
 };
 /// The capability-4 item types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
