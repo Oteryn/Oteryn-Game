@@ -151,3 +151,10 @@ for these exact callbacks; completing their dispatch transaction remains a
 separate runtime step. Unit checks cover one-shot doors, sequential chambers,
 unchanged admission epochs and rejection of rebound native selectors. These
 checks do not replace real-caller PostgreSQL qualification.
+
+The mounted server PostgreSQL entry case now also executes the authored s2
+admission through `commit_character_world_callback_with_items`, refusing the
+s2 door and s3 entry beforehand, then checking s2 replay, entered=1, exactly two
+total receipts including s1, and no quest completion. This qualifies the durable
+server-writer route. It does not qualify physical encounter publication or
+ordinary-combat defender deaths; those still require the dispatch scenario.

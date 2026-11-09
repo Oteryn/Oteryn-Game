@@ -190,5 +190,77 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         1
     );
     assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_states WHERE completed_character_revision IS NOT NULL").fetch_one(&h.pool).await?, 0);
+    // The real server writer must reject the next chamber and its door before
+    // admission, then fence and replay the authored s2 entry exactly once.
+    for suffix in ["s2/door", "s3/entry"] {
+        let outcome = h
+            .root
+            .commit_character_world_callback_with_items(
+                &authority,
+                &h.node,
+                f::fence(2)?,
+                QuestTransitionRequest {
+                    transition_key: format!("oteryn:quest-callback/engenc/asura/{suffix}"),
+                    cause: QuestCause::Use(CommandRef::new(
+                        session,
+                        CommandId::new(9820).map_err(f::debug)?,
+                    )),
+                },
+                Arc::clone(&catalogue),
+                &lane,
+                context.clone(),
+                None,
+                None,
+                &gate,
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(
+            matches!(outcome, QuestTransitionOutcome::Refused(_)),
+            "{suffix}"
+        );
+    }
+    assert_eq!(h.root_revision().await?, "2");
+    let entry = QuestTransitionRequest {
+        transition_key: "oteryn:quest-callback/engenc/asura/s2/entry".into(),
+        cause: QuestCause::Use(CommandRef::new(
+            session,
+            CommandId::new(9821).map_err(f::debug)?,
+        )),
+    };
+    for (revision, replay) in [(2, false), (3, true)] {
+        let outcome = h
+            .root
+            .commit_character_world_callback_with_items(
+                &authority,
+                &h.node,
+                f::fence(revision)?,
+                entry.clone(),
+                Arc::clone(&catalogue),
+                &lane,
+                context.clone(),
+                None,
+                None,
+                &gate,
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(if replay {
+            matches!(outcome, QuestTransitionOutcome::AlreadyCommitted(_))
+        } else {
+            matches!(outcome, QuestTransitionOutcome::Committed(_))
+        });
+    }
+    assert_eq!(h.root_revision().await?, "3");
+    let entered: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/engenc/asura/s2/entered'")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(entered, 1);
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_receipts")
+            .fetch_one(&h.pool)
+            .await?,
+        2
+    );
+    assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_states WHERE completed_character_revision IS NOT NULL").fetch_one(&h.pool).await?, 0);
     Ok(())
 }
