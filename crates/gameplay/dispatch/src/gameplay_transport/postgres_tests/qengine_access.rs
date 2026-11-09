@@ -815,7 +815,6 @@ async fn wardrobe(
         carried_item: None,
         carried_target: None,
         peer_requires: None,
-        capture_creature: false,
         corpse_target: None,
         creature_target: None,
         fresh_corpse: false,

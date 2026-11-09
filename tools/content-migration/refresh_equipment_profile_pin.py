@@ -95,34 +95,31 @@ def source_coowners(root):
     return [(owner.COHORT_NAME, registered_source_document(root, document), expected)]
 
 
-def merged_source_duplicates(root):
-    """Closed source intersections introduced by the mechanic integration."""
-    import elemental_spheres_profiles as elemental
-    import floor_assembly_profiles as floor
+def merged_source_duplicates(root, source):
+    """Count only intersections not already removed by source-cohort owners."""
     import qengine_reward_item_profiles as engine
-    import quest_callback_profiles as callbacks
-    floor_keys = {f'oteryn:item.tibia.i{i}' for i in floor.IDS}
-    elemental_keys = {f'oteryn:item.tibia.i{i}' for i in elemental.IDS}
-    expected_floor = {f'oteryn:item.tibia.i{i}' for i in
-                      (7738,7739,7740,7741,7742,7743,7744,7745,7746,7748,8106,8139,8140,8141)}
-    if floor_keys & elemental_keys != expected_floor:
-        raise ValueError('merged Elemental/Floor source intersection differs')
-    # These named cohorts also occur in QENGINE's exact IDS witness. M05's jar
-    # is counted here for its separate ENGNPC-M05 row, in addition to the
-    # independently checked QENGINE/QNPCFX pair below.
-    engine_shared = {f'oteryn:item.tibia.i{i}' for i in
-                     (5467,21389,21466,22008,27654,12526,12533,12534,12535,21506,21507)}
-    if not engine_shared <= {f'oteryn:item.tibia.i{i}' for i in engine.IDS}:
+    import engnpc2_slug_corpse_profiles as slugs
+    # equipment_source_overlaps already lowers the Floor, craft, M05 and M22
+    # rows. M26's five shared boss identities are likewise removed there, so
+    # no compensating subtraction of unrelated M35 claim identities belongs here.
+    cohorts = (
+        ('M07-FIRE-BUG', {5467}),
+        ('M07-LION-TRIALS', {21389, 21466}),
+        ('ENGNPC2-SLUG-CORPSES', set(slugs.IDS)),
+    )
+    engine_shared = set()
+    for name, ids in cohorts:
+        matches = re.findall(rf'\("{re.escape(name)}",\s*([\d_]+)\)', source)
+        if len(matches) != 1 or int(matches[0].replace('_', '')) != len(ids):
+            raise ValueError('merged source cohort declaration differs: ' + name)
+        identities = {f'oteryn:item.tibia.i{i}' for i in ids}
+        if engine_shared & identities:
+            raise ValueError('ambiguous merged source intersection')
+        engine_shared.update(identities)
+    engine_keys = keys(json.loads((root / engine.PROOF).read_bytes()))
+    if engine_keys != {f'oteryn:item.tibia.i{i}' for i in engine.IDS} or not engine_shared <= engine_keys:
         raise ValueError('merged QENGINE source intersection differs')
-    # The frozen pre-pass3 provider a2e337c72e already admits these four
-    # M35 claim items and the access key. Certificate6498 is new and is
-    # deliberately NOT subtracted. Retain both source witnesses.
-    claim_shared = {f'oteryn:item.tibia.i{i}' for i in (645,3014,3210,3602,2973)}
-    if not claim_shared <= callbacks.requested_keys(root):
-        raise ValueError('merged claim/callback source intersection differs')
-    if expected_floor & engine_shared or expected_floor & claim_shared or engine_shared & claim_shared:
-        raise ValueError('ambiguous merged source intersection')
-    return expected_floor | engine_shared | claim_shared
+    return engine_shared
 
 
 def coowner_equivalent(source, qualified):
@@ -385,7 +382,7 @@ def main():
     generated, count = regenerate(
         register(source), *(json.loads((ROOT / p).read_text()) for p in paths), srx3=srx3,
         coowners=source_coowners(ROOT), engine_npc_shared=("oteryn:item.tibia.i27654",),
-        duplicate_keys=merged_source_duplicates(ROOT),
+        duplicate_keys=merged_source_duplicates(ROOT, source),
     )
     if args.check and generated != original:
         raise SystemExit("equipment cohort pin is stale")

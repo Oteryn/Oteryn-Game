@@ -74,6 +74,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("M41", 6),
     // Nine fixed elevator/evacuation scenery profiles; qm50_elevator_profiles.py.
     ("QM50-ELEVATOR", 9),
+    // Independent Rafzane scenery cohort; rafzane_elevator_profiles.py.
+    // equipment_source_overlaps.py removes its exact shared elevator identities.
+    ("QMECH-M50", 0),
     // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
     ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at
@@ -95,7 +98,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The marlin retains its independently sealed NonStackable native core.
     // Diary3212 already exists: its physical admission adds no profile count.
     ("ENGNPC-M04", 3),
-    ("ENGNPC-M05", 1),
+    ("ENGNPC-M05", 0),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
     ("FORGECREATURE", 1),
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
@@ -161,7 +164,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Its pinned XML has no speed attribute; the native source default is zero.
     ("M30A-HIT-SOURCE", 1),
     // M22 adds only antler talisman 22008; herb/antlers retain their existing owners.
-    ("M22-TAINTED-TALISMAN", 1),
+    ("M22-TAINTED-TALISMAN", 0),
     // M44: Crystal 201189f movements_lions_rock.lua:54-108 grants scroll 21467.
     // quest_callback_profiles.py qualifies its exact portable definition; speed_bonus=0.
     ("M44-LIONS-AMPHORA", 1),
@@ -193,7 +196,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("QNPCFX", 8),
     // M49 soils, four altars, inactive/charged states and corpses from pinned
     // Crystal 201189f XML/client, qualified by elemental_spheres_profiles.py.
-    ("QMECH-M49", 19),
+    ("QMECH-M49", 5),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     ("QUESTPC4-TREASURE-REWARDS", 5),
@@ -645,30 +648,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         "oteryn:item.tibia.i12535",
         "oteryn:item.tibia.i21389",
         "oteryn:item.tibia.i21466",
-        "oteryn:item.tibia.i21506",
-        "oteryn:item.tibia.i21507",
-        "oteryn:item.tibia.i22008",
-        "oteryn:item.tibia.i27654",
-        "oteryn:item.tibia.i2973",
-        "oteryn:item.tibia.i3014",
-        "oteryn:item.tibia.i3210",
-        "oteryn:item.tibia.i3602",
         "oteryn:item.tibia.i5467",
-        "oteryn:item.tibia.i645",
-        "oteryn:item.tibia.i7738",
-        "oteryn:item.tibia.i7739",
-        "oteryn:item.tibia.i7740",
-        "oteryn:item.tibia.i7741",
-        "oteryn:item.tibia.i7742",
-        "oteryn:item.tibia.i7743",
-        "oteryn:item.tibia.i7744",
-        "oteryn:item.tibia.i7745",
-        "oteryn:item.tibia.i7746",
-        "oteryn:item.tibia.i7748",
-        "oteryn:item.tibia.i8106",
-        "oteryn:item.tibia.i8139",
-        "oteryn:item.tibia.i8140",
-        "oteryn:item.tibia.i8141",
     ];
     assert_eq!(
         profiles.records.len(),

@@ -48,7 +48,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34111
+      "records": 34121
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 336
+      "records": 345
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -104,7 +104,7 @@
     },
     "item_conversion": {
       "index": "content/craft/index.json",
-      "records": 129
+      "records": 131
     }
   },
   "managed_files": [
@@ -382,6 +382,9 @@
       "path": "content/encounters/raids/index.json"
     },
     {
+      "path": "content/interactions/reward_claims/engclaim-native.json"
+    },
+    {
       "path": "content/interactions/reward_claims/index.json"
     },
     {
@@ -604,7 +607,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34110.json"
+      "path": "content/items/definitions/items-34000-34120.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
@@ -730,6 +733,9 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
+      "path": "content/quests/native-reward-callbacks/engclaim.json"
+    },
+    {
       "path": "content/services/bank/bank-00000-00001.json"
     },
     {
@@ -850,10 +856,25 @@
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
     },
     {
+      "path": "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json"
+    },
+    {
       "path": "tools/content-schema/native-gameplay/loot-tables.json"
     },
     {
+      "path": "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json"
+    },
+    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc5-parchment-profile.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -931,7 +952,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1871,
+          "record_count": 1872,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -939,7 +960,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "5b0531550dc98b86ad6767d3622367501019147dc7a6e7275fa7ef25295fa13e"
+          "sha256": "f678d6714c7fff39cb90d42704e0bce42f7a91e4204cf28dc91070a0447b8073"
         },
         {
           "creates_canonical_identities": false,
@@ -1010,7 +1031,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 5787,
+          "record_count": 6216,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1018,7 +1039,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "5a45e4294d597c4c7b13507ab2b8c9f8a1967cacb0ed568c92fd46041b9919ef"
+          "sha256": "6dfc1ae4c11ccf7d8928e6ba46d47969d4f67b45382fe41b0029823b9c3cf32c"
         },
         {
           "creates_canonical_identities": false,
@@ -1038,7 +1059,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1871,
+          "record_count": 1872,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -1046,12 +1067,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "2518c0afd2555bfbab808ddd22f20c0bca664eda9def01a58f4a15f1f9cbd8ff"
+          "sha256": "4876bc43e9ccfea6f6d3bfa82f007d4b1ebd67bcfb2e1630fa7e1ded93f37a06"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/bindings/spell-appearances.json",
-          "record_count": 334,
+          "record_count": 336,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1",
@@ -1059,7 +1080,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_spell_appearances.rs#SpellAppearancesDocument"
           },
-          "sha256": "f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"
+          "sha256": "bf34f281dd2c7a26acc5b262d3123a22a4fcdb5716ad37da696d67d9dc239b52"
         },
         {
           "creates_canonical_identities": false,

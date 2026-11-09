@@ -12,6 +12,7 @@ import unittest
 import compose_monster_current_sources as compose
 import import_current_spell_sources as current
 import import_spell_families as importer
+import engenc2_fugue_profile as fugue
 
 
 class CakeNativeSuccessorTests(unittest.TestCase):
@@ -52,7 +53,16 @@ class CakeNativeSuccessorTests(unittest.TestCase):
     def test_actual_generated_provider_contains_complete_canonical_cake(self):
         baseline = importer.baseline_outputs(importer.ROOT)
         result = compose.compose(importer.ROOT, baseline, current.outputs(importer.ROOT, baseline))
+        # Registration adds the independently qualified Fugue after Cake's
+        # composition stage, then closes loot over that complete Creature set.
+        fugue.admit(importer.ROOT, result, importer.canonical_bytes)
         creatures = json.loads(result[compose.CREATURES])
+        fugue_source = json.loads((importer.ROOT / fugue.SOURCE).read_bytes())
+        self.assertEqual([r for r in creatures['records']
+                          if r['profile']['target'] == fugue.ref('Creature')],
+                         [fugue.native(fugue_source)[0]])
+        result['tools/content-schema/native-gameplay/loot-tables.json'] = successor.loot_successor(
+            importer.ROOT, creatures)
         cake, = [row for row in creatures['records']
                  if row['profile']['target']['key'] == 'oteryn:creature.cake_golem']
         self.assertEqual(cake['profile']['data']['profile']['details']['corpse_item']['key'],

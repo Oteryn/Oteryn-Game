@@ -196,6 +196,15 @@ pub(super) async fn drive(
         },
         now,
     );
+    let prepared_names = owner
+        .capture_native_health_names(runtime)
+        .map_err(|_| "capture names")?;
+    let read_names = owner
+        .read_prepared_native_health_names(permit, prepared_names)
+        .await;
+    let names = owner
+        .seal_native_health_names(runtime, read_names)
+        .map_err(|_| "seal names")?;
     owner
         .drive_monster_profiles(
             runtime,
@@ -207,6 +216,7 @@ pub(super) async fn drive(
             revisions,
             &[],
             now,
+            &names,
         )
         .await
         .map_err(|_| "source-family production drive")?;

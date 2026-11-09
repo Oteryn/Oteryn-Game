@@ -3,7 +3,9 @@
 -- row captures a whole antlers stack and replaces it with one nonstacking object.
 ALTER TABLE game_item_craft_records
  ADD COLUMN ingredient_consumed_quantity BIGINT NOT NULL DEFAULT 1
- CHECK (ingredient_consumed_quantity BETWEEN 1 AND 100);
+ CHECK (ingredient_consumed_quantity BETWEEN 1 AND 100),
+ ADD CONSTRAINT game_item_craft_captured_debit_agrees
+ CHECK (ingredient_consumed_quantity=ingredient_count);
 
 DO $migration$
 DECLARE body TEXT; before TEXT; after TEXT;
@@ -28,18 +30,7 @@ BEGIN
  IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected craft target admission'; END IF;
  EXECUTE replace(body,before,after);
 
- body:=pg_get_functiondef('game_item_craft_complete(uuid)'::regprocedure);
- before:=$old$x.quantity=(r.ingredient_before_item->>'quantity')::bigint-1$old$;
- after:=$new$x.quantity=(r.ingredient_before_item->>'quantity')::bigint-r.ingredient_consumed_quantity$new$;
- IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected craft target completion'; END IF;
- EXECUTE replace(body,before,after);
-
- body:=pg_get_functiondef('game_item_instance_guard()'::regprocedure);
- before:=$old$r.ingredient_before_item=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()) THEN
-     IF NEW.quantity<>OLD.quantity-1$old$;
- after:=$new$r.ingredient_before_item=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()) THEN
-     IF NEW.quantity<>OLD.quantity-(SELECT r.ingredient_consumed_quantity FROM game_item_craft_records r
-       WHERE r.transaction_id=NEW.last_transaction_id AND r.ingredient_item_instance_id=OLD.item_instance_id)$new$;
- IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected craft target mutation'; END IF;
- EXECUTE replace(body,before,after);
+ -- 2030 already routes both completion and the instance mutation through the
+ -- captured ingredient_count. The equality constraint above makes the later
+ -- exact talisman admission use that same debit without replacing either owner.
 END $migration$;

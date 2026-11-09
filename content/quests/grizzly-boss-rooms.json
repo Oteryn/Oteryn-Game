@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "92a27c94026b588e66c1a9eb16012331e1e740b7ec379ce736dc2133ef0b151d",
+    "content/items/definitions/spell-native-profiles.json": "6dfc1ae4c11ccf7d8928e6ba46d47969d4f67b45382fe41b0029823b9c3cf32c",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -698,7 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "ba9d50513c3b1c26d5d7b3a254591412bb31eef38eed2e1b77046dfa5cd4ebf8",
+    "content/world/placements/index.json": "85f5861407c006ed68d0f5ad2ac0ef9aaf0665177cb44aeb863f3cbf15fc0318",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "c280a3777ab40f568fd4cda4883af45ceaea36e0a4bdc15e87b9ab3c237d34c3",
@@ -755,6 +755,7 @@
     "content/world/terrain/terrain-08669-08720.json": "7ac60833042bb552d12ca1b75cccd9b18a9161c2ca0de779809e8f4898d3f081",
     "content/world/terrain/terrain-08693-08693.json": "9a1acf62162cfebf939e5d4146199be0733642279701c94b4b5bb41e4b0b2f00",
     "content/world/terrain/terrain-08748-08748.json": "34b262af1c1cc7e0379152c1ed2b8110bb5390613930018ebe284f3f086fd4dd",
-    "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3"
+    "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3",
+    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c"
   }
 }
