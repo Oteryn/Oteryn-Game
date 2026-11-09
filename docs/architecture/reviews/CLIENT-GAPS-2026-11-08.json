@@ -495,10 +495,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Help: settings import/export/backup/reset/defaults",
-  "status": "PARTIAL",
-  "gap": "Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults.",
+  "status": "DONE",
+  "gap": "Native settings expose confirmed import, export, backup restore and reset to defaults. Transfers validate bounded files, preserve the previous settings before replacement and refuse to overwrite an existing export. The former architecture blocker is resolved.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/store.rs:64 + active_settings_use_transfer_size_limit; existing settings_transfer_backup_and_defaults_survive_restart covers transfer/defaults. Remaining: workspace architecture validation blocked by unowned 0199-cyclopedia-character/native.rs (648 lines)."
+  "evidence": "apps/client/src/features/local-reference-preferences/dialog.rs:227 + apps/client/src/features/local-reference-preferences/transfer.rs:3 (production native actions 110–113); apps/client/src/features/local-reference-preferences/sync.rs:129 (SettingsState transfer/defaults API); apps/client/src/features/local-reference-preferences/store.rs:21 (validated 1 MiB reads and atomic storage); apps/client/src/features/local-reference-preferences/tests/play.rs:148 + settings_transfer_backup_and_defaults_survive_restart; apps/client/src/features/local-reference-preferences/tests/options_lane.rs:275 + binding_snapshots_and_chat_profiles_survive_the_same_settings_transfer. Both caller tests and workspace architecture validation pass."
  },
  {
   "id": "T074",
