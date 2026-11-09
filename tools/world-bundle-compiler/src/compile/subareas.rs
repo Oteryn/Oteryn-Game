@@ -366,31 +366,35 @@ impl Source {
             .ok_or_else(|| fail("source towns"))?;
         // Keep the starter town even when a later reviewed pin moves its entry elsewhere:
         // existing Characters may still be its citizens after that World reset.
-        let mut matching = towns.iter().filter(|t| t["name"] == "Newhaven");
-        let town = matching
-            .next()
-            .ok_or_else(|| fail("Newhaven source town"))?;
-        if matching.next().is_some() {
-            return Err(fail("ambiguous Newhaven town"));
+        // Anna (Crystal 201189f8 anna.lua:107) makes the player a Targuna
+        // citizen. Both starter towns must retain their captured temple lookup.
+        for (name, source_id) in [("Newhaven", 514), ("Targuna", 526)] {
+            let mut matching = towns.iter().filter(|t| t["name"] == name);
+            let town = matching
+                .next()
+                .ok_or_else(|| fail(format!("{name} source town")))?;
+            if matching.next().is_some() {
+                return Err(fail(format!("ambiguous {name} town")));
+            }
+            let town_id = town["town_id"]
+                .as_u64()
+                .and_then(|id| u32::try_from(id).ok())
+                .ok_or_else(|| fail(format!("{name} town id")))?;
+            let temple: Position = serde_json::from_value(town["temple"].clone()).map_err(fail)?;
+            let starter = source
+                .table
+                .areas
+                .iter_mut()
+                .find(|a| a.id == source_id && a.name == name)
+                .ok_or_else(|| fail(format!("{name} source area")))?;
+            starter.town_id = Some(town_id);
+            starter.hometown = true;
+            starter.temple = Some(subarea::Temple {
+                x: temple.x,
+                y: temple.y,
+                floor: native_floor(temple.z)?,
+            });
         }
-        let town_id = town["town_id"]
-            .as_u64()
-            .and_then(|id| u32::try_from(id).ok())
-            .ok_or_else(|| fail("Newhaven town id"))?;
-        let temple: Position = serde_json::from_value(town["temple"].clone()).map_err(fail)?;
-        let starter = source
-            .table
-            .areas
-            .iter_mut()
-            .find(|a| a.id == 514 && a.name == "Newhaven")
-            .ok_or_else(|| fail("Newhaven source area"))?;
-        starter.town_id = Some(town_id);
-        starter.hometown = true;
-        starter.temple = Some(subarea::Temple {
-            x: temple.x,
-            y: temple.y,
-            floor: native_floor(temple.z)?,
-        });
         let area = &source.table.areas[area_index];
         let region = area.parent.unwrap_or(area.id);
         if let Some(id) = area.town_id {
@@ -638,6 +642,16 @@ mod tests {
                 floor: -7
             })
         );
+        let targuna = source.table.town(34).ok_or_else(|| fail("Targuna"))?;
+        assert_eq!(targuna.name, "Targuna");
+        assert_eq!(
+            targuna.temple,
+            Some(subarea::Temple {
+                x: 31934,
+                y: 31925,
+                floor: -7
+            })
+        );
         let town = source.table.town(8).ok_or_else(|| fail("Thais"))?;
         assert_eq!(town.name, "Thais");
         assert_eq!(
@@ -648,7 +662,7 @@ mod tests {
                 floor: -7
             })
         );
-        assert_eq!(source.table.areas.iter().filter(|a| a.hometown).count(), 20);
+        assert_eq!(source.table.areas.iter().filter(|a| a.hometown).count(), 21);
         assert!(source.table.town(999).is_none());
         Ok(())
     }
