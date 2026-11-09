@@ -338,7 +338,12 @@ impl CreatureAiTable {
                 actor,
                 sequence: entry.sequence,
             },
-            target: entry.state.target.filter(|_| selected),
+            target: entry
+                .state
+                .last
+                .as_ref()
+                .and_then(|report| report.target)
+                .filter(|_| selected),
         })
     }
 
