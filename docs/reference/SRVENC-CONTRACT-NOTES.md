@@ -2500,3 +2500,30 @@ No SQL, migration or numeric allocation. Engine-only bundle identity matches.
 Physical portable top-Item retirement remains the unfinished M51 composition.
 World clippy --all-targets -D warnings PASS72.302s, workspace fmt check
 PASS15.378s; direct rustfmt check of both changed Rust files also passed.
+
+### M51 truthful arena-reset retirement audit grammar (writer pending)
+Added optional OneItemDecayRetireV1 protobuf tag10, OneItemArenaResetV1, the next
+unused field in this branch's existing one-item DECAY_RETIRE grammar. Existing
+payloads omit it; their canonical bytes and exact Channel/Instance scope tests
+remain unchanged. No event/command/capability/mechanic ID, migration or resource
+row allocation. Crystal201189f lib/quests/svargrond_arena.lua:217-225 is the source
+for retirement; the arena cause must not impersonate corpse decay, World reset
+or Instance retirement. The historical payload itself grants no authority.
+The current slice admits only a whole Ground root in its exact Channel and
+current Ground generation, inside the source pit reset box. It records exact
+Character/session/run, rank, pit and original deadline, preserves the Item's
+identity/definition/key number and retires its full quantity to zero. Mixed
+causes/locations, unknown Ground codec, invalid geometry, scope/value changes
+and event time at/after the original pit deadline are refused. Container-child
+and historical Ground-generation adoption remain unsupported pending their
+physical-owner proofs; neither is silently rewritten as current ownership.
+RED106.539s including test compilation; 16 retirement audit tests then
+GREEN24.806s including all legacy encoding tests and three new arena cases.
+Six existing own arena PG cases passed in26.973s total, with real PostgreSQL
+proof5.830-12.671s per case (role/custody race, native origin, timeout, terminal
+release, actual death cleanup). Durability clippy --all-targets -D warnings
+PASS77.236s and fmt PASS15.633s. Engine-only identity matches the committed pin.
+An initial build was stopped before cleaning inactive own caches; no compiler
+was active during the successful cleanup. This code does not yet select or
+retire a Ground Item. M51 remains PARTIAL until current pit custody, original
+native top-Thing capture and the shared physical retirement writer are composed.
