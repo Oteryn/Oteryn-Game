@@ -236,37 +236,21 @@ async fn execute(
             admission.character,
             admission.holder,
             fence,
-            pending.request,
+            pending.request.clone(),
             &weights,
         )
         .await
     {
         Ok(RewardClaimMintOutcome::Committed(_) | RewardClaimMintOutcome::AlreadyCommitted(_)) => {
-            clear(admission, command.game_session_id);
-            let mut outcome = NpcConversations::bank_reply(
-                &pending.intent,
-                if pending.cupcake {
-                    "Here it is. Enjoy your meal!"
-                } else {
-                    "Here it is. Handle it with care."
-                }
-                .into(),
-            );
-            outcome.inventory_changed = true;
-            if !current(
-                admission,
-                actor,
-                command,
-                &pending.intent,
-                &pending.context,
-                fence,
-            )
-            .await
-                && let Some(conversation) = outcome.conversation.as_mut()
+            #[cfg(test)]
+            if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+                && let Some(state) = sessions.get_mut(&command.game_session_id)
+                && state.cake_brutus_interrupt_after_commit == Some(command.command_id)
             {
-                conversation.open = None;
+                state.cake_brutus_interrupt_after_commit = None;
+                return unknown();
             }
-            outcome
+            committed_reply(admission, actor, command, fence, pending).await
         }
         Err(RewardClaimMintError::Unavailable(_)) => unknown(),
         Err(error) => {
@@ -286,6 +270,39 @@ async fn execute(
             NpcConversations::bank_reply(&pending.intent, reply.into())
         }
     }
+}
+async fn committed_reply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    pending: Pending,
+) -> NpcTalkOutcome {
+    clear(admission, command.game_session_id);
+    let mut outcome = NpcConversations::bank_reply(
+        &pending.intent,
+        if pending.cupcake {
+            "Here it is. Enjoy your meal!"
+        } else {
+            "Here it is. Handle it with care."
+        }
+        .into(),
+    );
+    outcome.inventory_changed = true;
+    if !current(
+        admission,
+        actor,
+        command,
+        &pending.intent,
+        &pending.context,
+        fence,
+    )
+    .await
+        && let Some(conversation) = outcome.conversation.as_mut()
+    {
+        conversation.open = None;
+    }
+    outcome
 }
 pub(in crate::gameplay_transport) async fn resume(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -315,18 +332,41 @@ pub(in crate::gameplay_transport) async fn resume(
         return Some(unknown());
     };
     let fence = proof.item_fence();
-    if fence.character_id != pending.character
-        || !current(
-            admission,
-            actor,
-            command,
-            &pending.intent,
-            &pending.context,
+    if fence.character_id != pending.character {
+        return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
+    }
+    match admission
+        .root
+        .reconcile_cake_brutus_reward(
+            admission.character,
+            admission.holder,
             fence,
+            pending.request.clone(),
         )
         .await
     {
-        return Some(unknown());
+        Ok(Some(_)) => Some(committed_reply(admission, actor, command, fence, pending).await),
+        Ok(None) => {
+            clear(admission, command.game_session_id);
+            Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
+        }
+        Err(_) => Some(unknown()),
     }
-    Some(execute(admission, actor, command, fence, pending).await)
+}
+
+#[cfg(test)]
+impl NpcConversations {
+    pub(in crate::gameplay_transport) fn fixture_interrupt_cake_brutus_commit(
+        &self,
+        session: GameSessionId,
+        command: u64,
+    ) -> Result<(), String> {
+        let mut sessions = self.sessions.lock().map_err(|_| "sessions")?;
+        let state = sessions.get_mut(&session).ok_or("session")?;
+        if command == 0 || state.cake_brutus_interrupt_after_commit.is_some() {
+            return Err("fault already armed or invalid command".into());
+        }
+        state.cake_brutus_interrupt_after_commit = Some(command);
+        Ok(())
+    }
 }

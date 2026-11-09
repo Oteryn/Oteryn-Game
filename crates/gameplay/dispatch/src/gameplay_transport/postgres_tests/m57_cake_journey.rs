@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 #[test]
@@ -149,6 +150,46 @@ fn m57_a_piece_of_cake_full_journey_completes_with_both_annual_rewards() -> Test
                 let grants:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievement_grant_requests WHERE source_kind='oteryn:cake-isle-step' AND character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
                 assert_eq!(grants,2,"five island entries grant each account achievement only once");
+                // The next community occurrence is historical input too. Personal
+                // progress and annual MINT admission are exercised afresh below.
+                let mut next = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *next).await?;
+                sqlx::query("INSERT INTO game_cake_world_progress VALUES(encode($1,'hex')::uuid,2027,200,200)")
+                    .bind(id(42).as_slice()).execute(&mut *next).await?;
+                sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer,brutus_present) VALUES(encode($1,'hex')::uuid,2027,3,4,true)")
+                    .bind(id(42).as_slice()).execute(&mut *next).await?;
+                next.commit().await?;
+                super::classic_quests::talk(&mut owner,&deps.admitted,npc,9030,"help").await?;
+                for (x,y) in machines {
+                    travel(&owner,deps.actor,deps.admitted.game_session_id,MovementLocalPosition{y:mark.y+1,..mark}).await?;
+                    step(&mut owner,deps.actor,deps.admitted.game_session_id,StepDirection::North).await?;
+                    travel(&owner,deps.actor,deps.admitted.game_session_id,MovementLocalPosition{x,y:y-1,floor:7}).await?;
+                    step(&mut owner,deps.actor,deps.admitted.game_session_id,StepDirection::South).await?;
+                }
+                travel(&owner,deps.actor,deps.admitted.game_session_id,MovementLocalPosition{x:33303,y:32063,floor:7}).await?;
+                super::classic_quests::talk(&mut owner,&deps.admitted,npc,9031,"hi").await?;
+                owner.states.npc_conversations.fixture_interrupt_cake_brutus_commit(deps.admitted.game_session_id,9032)?;
+                owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("claim clock")?;
+                let fence=owner.current_quest_fence(deps.admitted.game_session_id).await.map_err(|_|"reward fence")?.ok_or("reward fence")?;
+                let command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:9032,item_fence:Some(fence.item_fence())};
+                let lost=owner.npc_talk(deps.actor,command,oteryn_protocol_oteryn::npc_service::NpcTalkIntent{npc_actor:npc,text:"tapestry".into()}).await;
+                assert!(lost.unknown,"lose only the reply after the real annual MINT committed");
+                let next_claim:Vec<String>=sqlx::query_scalar("SELECT reward_key FROM game_cake_reward_claims WHERE character_id=encode($1,'hex')::uuid AND event_year=2027")
+                    .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+                assert_eq!(next_claim,["oteryn:item.tibia.i20350"],"last year's claim must not consume the new annual entitlement");
+                sqlx::query("UPDATE game_cake_phases SET event_end_cleaned_up=true,brutus_present=false WHERE world_id=encode($1,'hex')::uuid AND event_year=2027")
+                    .bind(id(42).as_slice()).execute(&h.pool).await?;
+                assert!(owner.refresh_cake_bridge().await,"cleanup reaches the real fenced map owner");
+                assert!(deps.runtime.lock().await.visible_entities().npcs.iter().all(|entry|entry.actor.placement_identity()!=npc.identity));
+                let recovered=owner.resume_npc_bank(deps.actor,command).await.ok_or("retained Cake reward")?;
+                assert!(!recovered.unknown,"a committed claim must reconcile after Brutus has disappeared");
+                assert_eq!(recovered.disposition,oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok);
+                assert!(recovered.inventory_changed);
+                assert!(recovered.conversation.as_ref().is_some_and(|conversation|conversation.open.is_none()),"reconciliation never reopens the departed NPC");
+                assert!(owner.resume_npc_bank(deps.actor,command).await.is_none(),"a known reply clears retained work");
+                let total:i64=sqlx::query_scalar("SELECT count(*) FROM game_cake_reward_claims c JOIN game_reward_claim_mint_receipts r USING(transaction_id) JOIN game_item_audit_outbox a USING(transaction_id) WHERE c.character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(total,3,"recovery never repeats an Item MINT or audit event");
             }
             h.cleanup().await?;
             assert!(started.elapsed()>std::time::Duration::from_millis(10));

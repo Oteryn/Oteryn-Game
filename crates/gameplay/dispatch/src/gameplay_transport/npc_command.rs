@@ -96,6 +96,8 @@ struct SessionNpc {
     seasonal: Option<seasonal::Pending>,
     cake: Option<cake::Pending>,
     cake_brutus: Option<cake_brutus::Pending>,
+    #[cfg(test)]
+    cake_brutus_interrupt_after_commit: Option<u64>,
     quest_dialogue: quest_dialogue::State,
     catalogue: Option<catalogue::Pending>,
     delayed_end: Option<catalogue::DelayedEnd>,

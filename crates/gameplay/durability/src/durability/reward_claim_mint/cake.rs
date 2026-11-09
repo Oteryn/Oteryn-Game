@@ -124,3 +124,64 @@ impl DurabilityRoot {
         })).await?
     }
 }
+
+impl DurabilityRoot {
+    /// Resolve the accepted command without admitting another MINT. Brutus may
+    /// have disappeared, and the historical Content/annual phase may have ended.
+    pub async fn reconcile_cake_brutus_reward(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: RewardClaimMintRequest,
+    ) -> Result<Option<CommittedRewardClaimMint>> {
+        validate_request(&request)?;
+        if request.command.game_session_id() != fence.game_session_id
+            || request.source_placement != "oteryn:npc.brutus_the_baker"
+        {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        let binding = intent_binding(&request, fence.character_id)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let (world, channel) =
+                        scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if !character_item_fence_is_current(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        request.command,
+                        fence.character_id,
+                        *world.as_bytes(),
+                        *channel.as_bytes(),
+                    )
+                    .await?
+                    {
+                        return Ok(Err(RewardClaimMintError::AuthorityRejected));
+                    }
+                    // Keep the writer's Character-before-cause lock order.
+                    lock_cause(&mut tx, request.command).await?;
+                    let committed =
+                        if let Some(row) = load_receipt(&mut tx, request.command).await? {
+                            if row.try_get::<Vec<u8>, _>("intent_binding")? != binding {
+                                return Ok(Err(RewardClaimMintError::ConflictingCause));
+                            }
+                            Some(decode_receipt(&row)?)
+                        } else {
+                            None
+                        };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(committed))
+                })
+            })
+            .await?
+    }
+}
