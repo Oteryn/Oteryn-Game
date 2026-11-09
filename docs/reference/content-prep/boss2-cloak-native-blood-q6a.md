@@ -27,6 +27,12 @@ combat formulas, and all assertions remain intact. The regression also injects
 a real receipt-insert failure and requires the event to survive until retry.
 The post-fix run passed in 62.907 seconds; its explicit execution marker measured
 62.759105367 seconds and recorded the injected SQL failure before successful retry.
+The expanded real-PG regression passed in 62.744 seconds (execution marker
+62.679689028 seconds), additionally checking both role grants, the absence of a
+PUBLIC grant, all three stored absolute decay deadlines, and a second real hit's
+durable NoOp while first-stage blood exists. Seven native Cloak units passed in
+89.10 seconds. Workspace compilation passed in 5m40s; dispatch Clippy passed in
+2m26s, alongside formatting, equipment-pin verification, and migration checks.
 
 This slice implements pool creation. The donor's separate pool StepIn behavior
 (lines 830–855: Player damage, Cloak healing, and pool consumption) still requires

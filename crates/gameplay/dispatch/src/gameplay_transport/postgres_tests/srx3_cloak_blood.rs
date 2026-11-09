@@ -43,6 +43,18 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
             assert!(native.qualifies_soul_war_callbacks(native.source_digest()));
             let h = Harness::create_with_admission_seed(admin, "srx3_cloak_blood", false, false)
                 .await?;
+            let grants: (bool, bool, bool) = sqlx::query_as(
+                "SELECT has_function_privilege('oteryn_game_runtime','game_cloak_blood_source_proven()','EXECUTE'),\
+                 has_function_privilege('oteryn_game_control','game_cloak_blood_source_proven()','EXECUTE'),\
+                 NOT EXISTS(SELECT 1 FROM pg_proc p, LATERAL aclexplode(p.proacl) a \
+                 WHERE p.oid='game_cloak_blood_source_proven()'::regprocedure \
+                 AND a.grantee=0 AND a.privilege_type='EXECUTE')",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(
+                grants,
+                (true, true, true),
+                "closed source trigger has both required role grants and no PUBLIC grant"
+            );
             let evidence = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -195,6 +207,70 @@ fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() 
             assert_eq!(
                 replay, 1,
                 "normal owner retry must not mint the acknowledged blood event twice"
+            );
+            let stages: Vec<(i32, String, Option<String>, i64, i64)> = sqlx::query_as(
+                "SELECT s.source_stage,s.definition_production_key,s.target_production_key,\
+                 s.duration_millis,s.expires_at_unix_ms-r.occurred_at_unix_ms \
+                 FROM game_spell_field_temporal_schedules s JOIN game_spell_item_receipts r \
+                 ON r.transaction_id=s.source_transaction_id WHERE r.cause_kind=2 \
+                 AND r.spell_production_key='oteryn:encounter.soul_war_taint_zones' \
+                 AND r.channel_id=encode($1,'hex')::uuid ORDER BY s.source_stage",
+            )
+            .bind(owner.channel_id.as_bytes().as_slice())
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(
+                stages,
+                vec![
+                    (
+                        1,
+                        "oteryn:item.tibia.i33854".into(),
+                        Some("oteryn:item.tibia.i34006".into()),
+                        600_000,
+                        600_000
+                    ),
+                    (
+                        2,
+                        "oteryn:item.tibia.i34006".into(),
+                        Some("oteryn:item.tibia.i34007".into()),
+                        300_000,
+                        900_000
+                    ),
+                    (
+                        3,
+                        "oteryn:item.tibia.i34007".into(),
+                        None,
+                        300_000,
+                        1_200_000
+                    ),
+                ],
+                "real blood MINT retains all native source deadlines and terminal retirement"
+            );
+            // A different genuine hit is a distinct callback, but the donor
+            // specifically refuses another first-stage pool on the same tile.
+            for _ in 0..16 {
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(3))
+                    .ok_or("second semantic swing clock")?;
+                owner
+                    .refresh_attack_weapon(player, admitted.game_session_id)
+                    .await;
+                owner.drain_auto_attacks().await;
+                let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=2 AND creature_definition_key='oteryn:creature.cloak_of_terror'")
+                    .fetch_one(&h.pool).await?;
+                if receipts >= 2 {
+                    break;
+                }
+            }
+            let operations: Vec<i32> = sqlx::query_scalar(
+                "SELECT operation_count FROM game_spell_item_receipts WHERE cause_kind=2 \
+                 AND creature_definition_key='oteryn:creature.cloak_of_terror' ORDER BY operation_count DESC",
+            ).fetch_all(&h.pool).await?;
+            assert_eq!(
+                operations,
+                [1, 0],
+                "a new real hit durably records NoOp while first-stage blood exists"
             );
             drop(owner);
             drop(authority);
