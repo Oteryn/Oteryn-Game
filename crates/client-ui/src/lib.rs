@@ -322,3 +322,6 @@ pub mod modal_dialogs;
 
 #[path = "components/notifications.rs"]
 pub mod notifications;
+
+#[path = "features/0450-server-modal/mod.rs"]
+pub mod server_modal;

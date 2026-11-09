@@ -6,5 +6,5 @@
   "payload_schema": "cyclopedia-basic-v1.md#request",
   "result_schema": "cyclopedia-basic-v1.md#result",
   "max_payload_bytes": 9,
-  "max_result_payload_bytes": 69
+  "max_result_payload_bytes": 10264
 }

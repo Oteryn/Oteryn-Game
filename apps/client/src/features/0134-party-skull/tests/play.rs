@@ -329,3 +329,6 @@ fn pushed_party_icons_reach_the_panel_and_entity_leaves_remove_them() {
     assert!(link.party_skull_panel().icons.is_empty());
     assert_eq!(link.party_skull_panel().summary, "No visible party icons");
 }
+
+#[path = "pvp_status.rs"]
+mod pvp_status;

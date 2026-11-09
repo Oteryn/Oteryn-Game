@@ -1,13 +1,11 @@
 //! Local-only preferences whose keys come from the audited client reference surface.
 //!
 //! These values neither select a protocol capability nor manufacture server-owned panel data.
-
 use crate::map::World;
 use crate::play::PlayView;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
-
 #[path = "arcs.rs"]
 mod arcs;
 pub use arcs::{ArcLayout, ArcPreferences};
@@ -16,30 +14,39 @@ mod basic;
 pub use basic::{BASIC_GROUPS, BasicOptions};
 #[path = "bindings.rs"]
 mod bindings;
-#[path = "control_preferences.rs"]
+#[path = "control_input.rs"]
 mod controls;
 #[path = "frames.rs"]
 mod frames;
-#[path = "profiles.rs"]
-mod profiles;
 pub use frames::{FramePacer, FramePreferences};
 #[path = "help.rs"]
 mod help;
+#[path = "profile_contexts.rs"]
+mod profile_contexts;
+#[path = "profiles.rs"]
+mod profiles;
+#[path = "status_order.rs"]
+mod status_order;
 #[path = "shortcuts.rs"]
 mod shortcuts;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
 mod sync;
+#[path = "tooltips.rs"]
+mod tooltips;
+#[path = "ui_geometry.rs"]
+mod ui_geometry;
+pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, scale_ui_rect};
+pub use tooltips::{HoverTooltip, TooltipTarget};
 pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
-pub use profiles::HotkeyProfiles;
+pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
-
 const PANEL_IDS: &[&str] = &[
     "battle",
     "chat",
@@ -59,52 +66,43 @@ const PANEL_IDS: &[&str] = &[
     "vip",
     "wheel",
 ];
-
-fn enabled() -> bool {
-    true
-}
-
-fn default_arc_distance() -> u16 {
-    8
-}
-fn default_arc_size() -> u16 {
-    3
-}
-
-fn default_hud_names() -> [bool; 3] {
-    [true; 3]
-}
-
-fn default_shortcuts() -> Vec<String> {
-    WINDOW_ACTIONS
-        .iter()
-        .map(|(id, _)| (*id).to_owned())
-        .collect()
-}
-
-fn default_hud_bounds() -> [u16; 4] {
-    [8, 8, 900, 40]
-}
-
-fn default_scale() -> u16 {
-    100
-}
-
-fn default_rotation_modifier() -> String {
-    "CTRL".into()
-}
-
-fn default_panels() -> Vec<String> {
-    ["battle", "chat", "inventory", "minimap"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect()
-}
-
+#[path = "defaults.rs"]
+mod defaults;
+use defaults::*;
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "enabled")]
+    pub tooltips_enabled: bool,
+    #[serde(default = "default_tooltip_delay")]
+    pub tooltip_delay_ms: u16,
+    #[serde(default = "enabled")]
+    pub hud_health: bool,
+    #[serde(default = "enabled")]
+    pub hud_mana: bool,
+    #[serde(default = "enabled")]
+    pub hud_marks_own: bool,
+    #[serde(default = "enabled")]
+    pub hud_marks_other: bool,
+    #[serde(default)]
+    pub hud_npc_icons: bool,
+    #[serde(default)]
+    pub hud_npc_names: Option<bool>,
+    #[serde(default = "default_arc_opacity")]
+    pub arc_opacity: u8,
+    #[serde(default)]
+    pub chat_context_hotkeys: bool,
+    #[serde(default = "default_console_font")]
+    pub console_font_px: u16,
+    #[serde(default)]
+    pub compact_status: bool,
+    #[serde(default = "enabled")]
+    pub status_panel_visible: bool,
+    #[serde(default)]
+    pub skill_order: Vec<u8>,
+    #[serde(default)]
+    pub condition_order: Vec<u8>,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -139,10 +137,6 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub health_circle: bool,
     #[serde(default)]
-    pub active_battle_list: usize,
-    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
-    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
-    #[serde(default)]
     pub shortcuts_collapsed: bool,
     #[serde(default = "default_shortcuts")]
     pub shortcut_order: Vec<String>,
@@ -163,21 +157,28 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout,
     #[serde(default)]
-    pub audio: crate::play::AudioSettings,
-    #[serde(default)]
-    pub keybindings: std::collections::BTreeMap<String, String>,
-    #[serde(default)]
-    pub secondary_keybindings: std::collections::BTreeMap<String, String>,
-    #[serde(default)]
-    pub hotkey_profiles: HotkeyProfiles,
+    pub active_battle_list: usize,
     #[serde(default)]
     pub action_keys: crate::play::feature_local_spell_action_bar::view::ActionKeys,
     #[serde(default)]
     pub bar_layout: crate::play::feature_local_spell_action_bar::view::BarLayout,
     #[serde(default)]
     pub bar_actions: crate::play::feature_local_spell_action_bar::view::BarActions,
+    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
+    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
+    #[serde(default)]
+    pub audio: crate::play::AudioSettings,
+    #[serde(default)]
+    pub keybindings: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub secondary_keybindings: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub hotkey_contexts: HotkeyProfiles,
     #[serde(default)]
     pub item_hotkeys: crate::play::feature_0179_hotkey_equip::view::ItemHotkeys,
+    #[serde(default)]
+    pub hotkey_profiles:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>,
     #[serde(default)]
     pub english: bool,
     /// Requested world zoom percentage, fitted to the current viewport when projected.
@@ -186,10 +187,24 @@ pub struct ReferencePreferences {
     #[serde(default = "default_panels")]
     pub visible_panels: Vec<String>,
 }
-
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            tooltips_enabled: true,
+            tooltip_delay_ms: 500,
+            hud_health: true,
+            hud_mana: true,
+            hud_marks_own: true,
+            hud_marks_other: true,
+            hud_npc_icons: false,
+            hud_npc_names: None,
+            arc_opacity: 100,
+            chat_context_hotkeys: false,
+            console_font_px: 14,
+            compact_status: false,
+            status_panel_visible: true,
+            skill_order: Vec::new(),
+            condition_order: Vec::new(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
@@ -208,8 +223,6 @@ impl Default for ReferencePreferences {
             health_circle: false,
             shortcuts_collapsed: false,
             shortcut_order: default_shortcuts(),
-            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
-            active_battle_list: 0,
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
@@ -218,28 +231,34 @@ impl Default for ReferencePreferences {
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
+            active_battle_list: Default::default(),
+            action_keys: Default::default(),
+            bar_layout: Default::default(),
+            bar_actions: Default::default(),
+            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             secondary_keybindings: std::collections::BTreeMap::new(),
-            hotkey_profiles: HotkeyProfiles::default(),
+            hotkey_contexts: HotkeyProfiles::default(),
             item_hotkeys: Default::default(),
-            bar_actions: Default::default(),
-            bar_layout: Default::default(),
-            action_keys: Default::default(),
+            hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
         }
     }
 }
-
 impl ReferencePreferences {
+    pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
+    pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
+        if index >= Self::MOUSE_PRESETS.len() { return Err(PreferenceError); }
+        self.swap_mouse_buttons = index == 1;
+        Ok(())
+    }
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         self.validate_profiles()?;
-        if !self.bar_actions.valid() || !self.bar_layout.valid() || !self.action_keys.valid(self) {
-            return Err(PreferenceError);
-        }
+        self.validate_status_order()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)
@@ -248,7 +267,9 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if self.active_battle_list >= self.battle_lists.len()
+        if self.active_battle_list >= self.battle_lists.len() || !self.bar_actions.valid() || !self.bar_layout.valid() || !self.action_keys.valid(self) { return Err(PreferenceError); }
+        if self.tooltip_delay_ms > 3000 || self.arc_opacity > 100
+            || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80
             || !(1..=8).contains(&self.arc_size)
@@ -278,18 +299,7 @@ impl ReferencePreferences {
         }
         Ok(())
     }
-
-    #[must_use]
-    pub fn panel_visible(&self, id: &str) -> bool {
-        self.visible_panels.iter().any(|visible| visible == id)
-    }
-
-    pub fn scaled_hud_bounds(&self) -> [u16; 4] {
-        self.hud_bounds
-            .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
-    }
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreferenceError;
 
@@ -352,6 +362,7 @@ impl PlayView {
         let fit = (self.local.viewport[0] / crate::scene::SCENE_COLUMNS)
             .min(self.local.viewport[1] / crate::scene::SCENE_ROWS)
             .max(1);
+        self.scene.set_label_scale(self.preferences().interface_scale);
         self.scene.set_tile_px(pixels.min(fit))
     }
 

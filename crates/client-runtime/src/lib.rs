@@ -292,6 +292,10 @@ pub mod stash;
 #[path = "features/0081-npc-shop/protocol.rs"]
 pub mod npc_shop;
 
+/// Optional current Forge candidates and advisory pair quotes.
+#[path = "features/0152-item-forge/protocol.rs"]
+pub mod forge_preview;
+
 /// Imbuement commands executed through the admitted session.
 #[path = "features/0068-imbue/protocol.rs"]
 pub mod imbue;
@@ -329,3 +333,6 @@ pub mod cui3 {
         item_forge, item_view, store,
     };
 }
+
+#[path = "features/0450-server-modal/protocol.rs"]
+pub mod server_modal;

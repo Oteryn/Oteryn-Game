@@ -232,13 +232,13 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                         .add_hotkey_profile(text(name).trim())
                         .map_err(|e| e.to_string()),
                     504 => {
-                        let old = candidate.hotkey_profiles.selected.clone();
+                        let old = candidate.hotkey_contexts.selected.clone();
                         candidate
                             .rename_hotkey_profile(&old, text(name).trim())
                             .map_err(|e| e.to_string())
                     }
                     505 => {
-                        let old = candidate.hotkey_profiles.selected.clone();
+                        let old = candidate.hotkey_contexts.selected.clone();
                         candidate
                             .remove_hotkey_profile(&old)
                             .map_err(|e| e.to_string())
@@ -273,14 +273,14 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
             let changed =
                 held.as_ref()
                     .is_none_or(|old: &oteryn_client::play::ReferencePreferences| {
-                        old.hotkey_profiles != state.preferences.hotkey_profiles
+                        old.hotkey_contexts != state.preferences.hotkey_contexts
                             || old.keybindings != state.preferences.keybindings
                             || old.secondary_keybindings != state.preferences.secondary_keybindings
                     });
             if changed {
                 names = state
                     .preferences
-                    .hotkey_profiles
+                    .hotkey_contexts
                     .presets
                     .keys()
                     .cloned()
@@ -291,18 +291,18 @@ pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
                 }
                 let active = names
                     .iter()
-                    .position(|n| n == &state.preferences.hotkey_profiles.selected)
+                    .position(|n| n == &state.preferences.hotkey_contexts.selected)
                     .unwrap_or(0);
                 SendMessageW(profiles, CB_SETCURSEL, active, 0);
                 SendMessageW(
                     context,
                     CB_SETCURSEL,
-                    usize::from(state.preferences.hotkey_profiles.chat_on),
+                    usize::from(state.preferences.hotkey_contexts.chat_on),
                     0,
                 );
                 SetWindowTextW(
                     name,
-                    wide(&state.preferences.hotkey_profiles.selected).as_ptr(),
+                    wide(&state.preferences.hotkey_contexts.selected).as_ptr(),
                 );
                 held = Some(state.preferences.clone());
                 selected = -1;

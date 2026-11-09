@@ -63,7 +63,7 @@ fn battle_metadata_route_enforces_selection_and_bounded_request()
                     .ok_or("query")?;
                     let command = oteryn_protocol_oteryn::ClientCommandView {
                         command_id: 1,
-                        command_type: 736,
+                        command_type: 738,
                         payload: &payload,
                     };
                     assert!(matches!(

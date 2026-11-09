@@ -36,7 +36,7 @@ pub(super) fn reservations(preferences: &ReferencePreferences) -> Vec<Chord> {
             .values()
             .filter_map(|value| parse(value)),
     );
-    for preset in preferences.hotkey_profiles.presets.values() {
+    for preset in preferences.hotkey_contexts.presets.values() {
         for context in [&preset.chat_on, &preset.chat_off] {
             chords.extend(
                 context

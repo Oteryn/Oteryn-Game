@@ -1,0 +1,41 @@
+[
+  {
+    "mechanic": "0450-server-modal",
+    "kind": "handlers",
+    "id": "0450-server-modal-answer",
+    "status": "supported",
+    "entry": "protocol.rs::answer",
+    "direction": "client_to_server",
+    "capability": 450,
+    "commands": [
+      737
+    ],
+    "not_applicable": {
+      "settings": "Server dialog choices have no persistent preferences.",
+      "input": "The native session driver queries automatically and maps server-controlled buttons."
+    }
+  },
+  {
+    "mechanic": "0450-server-modal",
+    "kind": "panels",
+    "id": "0450-server-modal-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0450-server-modal",
+    "kind": "handlers",
+    "id": "0450-server-modal-query",
+    "status": "supported",
+    "entry": "protocol.rs::query",
+    "direction": "client_to_server",
+    "capability": 450,
+    "commands": [
+      736
+    ],
+    "not_applicable": {
+      "settings": "Server dialog choices have no persistent preferences.",
+      "input": "The native session driver queries automatically and maps server-controlled buttons."
+    }
+  }
+]

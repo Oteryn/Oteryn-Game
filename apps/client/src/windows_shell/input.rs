@@ -12,6 +12,9 @@ impl Application {
             .settings
             .control_events(events, self.play.as_ref().map(|play| &play.link));
         let events = controls.as_slice();
+        if self.capture_input(events) {
+            return;
+        }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let routed = self
             .settings
@@ -26,6 +29,9 @@ impl Application {
                     self.fail(event_loop, ShellError::RendererRender);
                     return;
                 }
+            }
+            if play.view.notification_input(events) {
+                return;
             }
             play.view.observe_creature_pointer(events);
             if play.link.use_with_cancel_input(events) {
@@ -42,6 +48,7 @@ impl Application {
                     winit::window::CursorIcon::Default
                 });
             }
+
             if play.link.custom_hotkeys_input(events) {
                 return;
             }
@@ -72,6 +79,7 @@ impl Application {
                 || play.link.prey_input(events)
                 || play.link.task_board_input(events)
                 || play.link.wheel_input(events)
+                || play.link.item_catalogue_input(events)
                 || play.link.discovery_input(events)
                 || play.link.exiva_input(events)
                 || play.link.analyser_input(events)
@@ -108,6 +116,7 @@ impl Application {
                 || play.link.training_input(events)
                 || play.link.guild_bank_input(events)
                 || play.link.timed_item_input(events)
+                || play.link.cyclopedia_atlas_input(events)
                 || play.link.cyclopedia_map_input(events)
                 || play.link.party_skull_input(events)
                 || play.link.character_info_input(events)

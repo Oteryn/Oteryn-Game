@@ -7,14 +7,23 @@ pub(crate) struct ArcControls {
     distance: HWND,
     size: HWND,
     enabled: HWND,
+    opacity: HWND,
 }
 impl ArcControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let opacity = control(
+                hwnd,
+                "EDIT",
+                "100",
+                248,
+                [250, 145, 100, 26],
+                WS_BORDER | ES_NUMBER as u32,
+            );
             let label = control(
                 hwnd,
                 "STATIC",
-                "Arc distance px (0–80) / segment size px (1–8)",
+                "Arc distance (0–80) / size (1–8) / opacity % (0–100)",
                 0,
                 [10, 110, 700, 26],
                 0,
@@ -43,7 +52,7 @@ impl ArcControls {
                 [10, 185, 300, 26],
                 BS_AUTOCHECKBOX as u32,
             );
-            (![label, distance, size, enabled]
+            (![label, distance, size, enabled, opacity]
                 .iter()
                 .any(|handle| handle.is_null()))
             .then_some(Self {
@@ -51,18 +60,28 @@ impl ArcControls {
                 distance,
                 size,
                 enabled,
+                opacity,
             })
         }
     }
     pub(crate) unsafe fn show(&self, visible: bool) {
         unsafe {
-            for handle in [self.label, self.distance, self.size, self.enabled] {
+            for handle in [
+                self.label,
+                self.distance,
+                self.size,
+                self.enabled,
+                self.opacity,
+            ] {
                 ShowWindow(handle, if visible { SW_SHOW } else { SW_HIDE });
             }
         }
     }
     pub(crate) unsafe fn read(&self, preferences: &mut ReferencePreferences) -> Result<(), String> {
         unsafe {
+            preferences.arc_opacity = text(self.opacity)
+                .parse()
+                .map_err(|_| "Invalid arc opacity".to_owned())?;
             preferences.arc_distance = text(self.distance)
                 .parse()
                 .map_err(|_| "Invalid arc distance".to_owned())?;
@@ -75,6 +94,10 @@ impl ArcControls {
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
+            SetWindowTextW(
+                self.opacity,
+                wide(&preferences.arc_opacity.to_string()).as_ptr(),
+            );
             SetWindowTextW(
                 self.distance,
                 wide(&preferences.arc_distance.to_string()).as_ptr(),

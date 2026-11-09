@@ -298,6 +298,38 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
 }
 
 #[test]
+fn podium_creature_selection_uses_the_existing_wire_and_creature_preview()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, _) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        let p = &mut mailbox.properties.house_podium;
+        p.selected = true;
+        p.fields = [
+            ID.into(),
+            "3".into(),
+            "2".into(),
+            "oteryn:creature.dragon".into(),
+        ];
+        p.loaded_item = ID.into();
+        p.revision = Some(38);
+    }
+    link.house_podium_request(Intent::Set);
+    let crate::combat_input::PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("podium command missing".into());
+    };
+    let request = wire::SetRequest::decode(&command.payload).ok_or("podium wire")?;
+    assert_eq!((command.capability, command.kind), (150, 175));
+    assert_eq!(request.display_kind, 3);
+    assert_eq!(request.key, "oteryn:creature.dragon");
+    assert!(
+        oteryn_client_ui::house_podium::panel_text(&link.house_podium_panel())
+            .contains("Preview: creature oteryn:creature.dragon facing south")
+    );
+    Ok(())
+}
+
+#[test]
 fn podium_creature_selector_updates_the_real_panel_without_sending()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = crate::play::play_channel();

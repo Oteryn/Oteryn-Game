@@ -195,15 +195,15 @@ impl ReferencePreferences {
     }
 
     pub(super) fn validate_bindings(&self) -> Result<(), PreferenceError> {
-        if !self.hotkey_profiles.valid_shape() {
+        if !self.hotkey_contexts.valid_shape() {
             return Err(PreferenceError);
         }
-        for (name, preset) in &self.hotkey_profiles.presets {
+        for (name, preset) in &self.hotkey_contexts.presets {
             for (chat_on, bindings) in [(true, &preset.chat_on), (false, &preset.chat_off)] {
                 validate_map(&bindings.primary)?;
                 validate_map(&bindings.secondary)?;
-                let (primary, secondary) = if name == &self.hotkey_profiles.selected
-                    && chat_on == self.hotkey_profiles.chat_on
+                let (primary, secondary) = if name == &self.hotkey_contexts.selected
+                    && chat_on == self.hotkey_contexts.chat_on
                 {
                     (&self.keybindings, &self.secondary_keybindings)
                 } else {
@@ -221,7 +221,7 @@ impl ReferencePreferences {
         &self,
         events: &[NormalizedInputEvent],
     ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
-        self.route_input_chat(events, self.hotkey_profiles.chat_on)
+        self.route_input_chat(events, self.hotkey_contexts.chat_on)
     }
 
     pub fn route_input_chat(
@@ -291,7 +291,7 @@ impl PreferenceInput {
         preferences: &ReferencePreferences,
         events: &[NormalizedInputEvent],
     ) -> Result<Vec<NormalizedInputEvent>, PreferenceError> {
-        self.route_chat(preferences, events, preferences.hotkey_profiles.chat_on)
+        self.route_chat(preferences, events, preferences.hotkey_contexts.chat_on)
     }
 
     pub fn route_chat(

@@ -1,4 +1,3 @@
-//! Construction and validation of the settings dialog controls.
 use super::*;
 #[path = "interface_controls.rs"]
 mod interface_controls;
@@ -6,9 +5,20 @@ use interface_controls::InterfaceControls;
 #[path = "arc_controls.rs"]
 mod arc_controls;
 use arc_controls::ArcControls;
+#[path = "layout_controls.rs"]
+mod layout_controls;
+use layout_controls::LayoutControls;
+#[path = "console_controls.rs"]
+mod console_controls;
+use console_controls::ConsoleControls;
+#[path = "hud_controls.rs"]
+mod hud_controls;
+use hud_controls::HudControls;
 
 pub(super) struct Controls {
-    pub(super) extra: Vec<HWND>,
+    pub(super) actor_hud: HudControls,
+    pub(super) console: ConsoleControls,
+    pub(super) layout: LayoutControls,
     pub(super) arcs: ArcControls,
     pub(super) interface: InterfaceControls,
     pub(super) profile_name: HWND,
@@ -20,6 +30,7 @@ pub(super) struct Controls {
     pub(super) list: HWND,
     pub(super) chord: HWND,
     pub(super) rebind: HWND,
+    pub(super) manual: HWND,
     pub(super) chat_on: HWND,
     pub(super) chat_off: HWND,
     pub(super) mouse_preset: HWND,
@@ -46,6 +57,9 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let actor_hud = HudControls::new(hwnd)?;
+            let console = ConsoleControls::new(hwnd)?;
+            let layout = LayoutControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
@@ -103,6 +117,14 @@ impl Controls {
                 WS_BORDER | ES_AUTOHSCROLL as u32,
             );
             let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+            let manual = control(
+                hwnd,
+                "BUTTON",
+                "Manual hotkeys (no automatic chat presets)",
+                227,
+                [10, 190, 630, 30],
+                0,
+            );
             let chat_on = control(
                 hwnd,
                 "BUTTON",
@@ -121,12 +143,15 @@ impl Controls {
             );
             let mouse_preset = control(
                 hwnd,
-                "BUTTON",
-                "Swap primary / secondary mouse buttons",
+                "COMBOBOX",
+                "",
                 221,
-                [10, 150, 360, 26],
-                BS_AUTOCHECKBOX as u32,
+                [10, 150, 360, 150],
+                CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
             );
+            for label in oteryn_client::play::ReferencePreferences::MOUSE_PRESETS {
+                SendMessageW(mouse_preset, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+            }
             let delay_label = control(
                 hwnd,
                 "STATIC",
@@ -269,9 +294,9 @@ impl Controls {
                 )
             })
             .collect::<Vec<_>>();
-            let extra = super::super::subpages::create(hwnd);
             let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
             if [
+                manual,
                 profile_name,
                 profile_save,
                 profile_load,
@@ -304,13 +329,15 @@ impl Controls {
             ]
             .iter()
             .chain(hud_checks.iter())
-            .chain(extra.iter())
             .any(|h| h.is_null())
             {
                 return None;
             }
             Some(Self {
-                extra,
+                actor_hud,
+                manual,
+                console,
+                layout,
                 arcs,
                 interface,
                 profile_name,

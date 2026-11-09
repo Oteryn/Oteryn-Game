@@ -3,7 +3,7 @@
   "kind": "handlers",
   "id": "0017-battle-metadata",
   "status": "supported",
-  "commands": [736],
+  "commands": [738],
   "direction": "client_to_server",
   "capability": 17,
   "entry": "protocol.rs::metadata_request",

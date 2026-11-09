@@ -80,8 +80,19 @@ impl Minimap {
         if !(1..=36).contains(&world.len())
             || !world.bytes().all(|c| c.is_ascii_hexdigit() || c == b'-')
         {
-            self.feedback = "Invalid minimap world binding; local saving is disabled".into();
+            if let Err(error) = self.save() {
+                self.feedback =
+                    format!("Could not save minimap before refusing world binding: {error}");
+            } else {
+                self.feedback = "Invalid minimap world binding; local saving is disabled".into();
+            }
             self.world = None;
+            self.binding = None;
+            self.cells.clear();
+            self.markers.clear();
+            self.dirty = false;
+            self.tracking = true;
+            self.zoom = 1;
         } else if self.world.as_deref() != Some(world) {
             if let Err(error) = self.save() {
                 self.feedback = error.to_string();
@@ -188,15 +199,26 @@ impl Minimap {
     #[cfg_attr(not(windows), allow(dead_code))]
     pub fn pan(&mut self, dx: i32, dy: i32) {
         self.tracking = false;
-        self.x = self.x.saturating_add(dx.saturating_mul(self.zoom));
-        self.y = self.y.saturating_add(dy.saturating_mul(self.zoom));
+        self.x = self
+            .x
+            .saturating_add(dx.saturating_mul(self.zoom))
+            .clamp(0, 65_535);
+        self.y = self
+            .y
+            .saturating_add(dy.saturating_mul(self.zoom))
+            .clamp(0, 65_535);
     }
     pub fn position(&self, x: i32, y: i32) -> Option<(i32, i32, i16)> {
-        Some((
+        if !(0..31).contains(&x) || !(0..25).contains(&y) {
+            return None;
+        }
+        let position = (
             self.x.checked_add((x - 15).checked_mul(self.zoom)?)?,
             self.y.checked_add((y - 12).checked_mul(self.zoom)?)?,
             self.floor,
-        ))
+        );
+        ((0..=65_535).contains(&position.0) && (0..=65_535).contains(&position.1))
+            .then_some(position)
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
     #[cfg_attr(not(windows), allow(dead_code))]
@@ -339,3 +361,7 @@ impl Drop for Minimap {
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/play_persistence.rs"]
+mod play_persistence;

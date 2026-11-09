@@ -1,6 +1,6 @@
 //! Bounded read-only player filters on the existing ATTACK_V1 capability.
 use crate::world_spatial_entities::EntityRef;
-pub const COMMAND_TYPE_BATTLE_METADATA_QUERY: u32 = 736;
+pub const COMMAND_TYPE_BATTLE_METADATA_QUERY: u32 = 738;
 pub const MAX_ENTRIES: usize = 16;
 pub const MAX_REQUEST_BYTES: usize = 1 + 24 * MAX_ENTRIES;
 pub const MAX_REPLY_BYTES: usize = 1 + 26 * MAX_ENTRIES;

@@ -2,6 +2,14 @@ use super::*;
 
 #[path = "options.rs"]
 mod options;
+#[path = "contexts.rs"]
+mod contexts;
+#[path = "hud_options.rs"]
+mod hud_options;
+#[path = "interface.rs"]
+mod interface;
+#[path = "status_order.rs"]
+mod status_order;
 
 #[test]
 fn named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate()
@@ -369,9 +377,12 @@ fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::err
     Ok(())
 }
 
+#[path = "options_lane.rs"]
+mod options_lane;
+#[path = "presentation.rs"]
+mod presentation;
+
 #[path = "compatibility_1.rs"]
 mod compatibility_1;
 #[path = "compatibility_2.rs"]
 mod compatibility_2;
-#[path = "presentation.rs"]
-mod presentation;
