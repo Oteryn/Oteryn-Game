@@ -245,6 +245,26 @@ fn scenario(materialize_crate: bool) -> TestResult {
                         .into(),
                     sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
                 };
+                let content =
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(owner.premium_coordinator);
+                let destination = crate::durability::item_loop_move::LoopDestination::MainBackpack;
+                assert_eq!(
+                    owner
+                        .root
+                        .preflight_map_item_loop_pickup(
+                            owner.character,
+                            owner.holder,
+                            &fence.item_fence(),
+                            &content,
+                            &request,
+                            &destination,
+                        )
+                        .await
+                        .map_err(debug)?,
+                    Ok(()),
+                    "the production preflight must admit the qualified crate"
+                );
                 let mut unqualified = request.clone();
                 unqualified.flat_crate = None;
                 let mut frozen = owner
@@ -308,6 +328,47 @@ fn scenario(materialize_crate: bool) -> TestResult {
                         .fetch_one(&h.pool)
                         .await?;
                 assert_eq!(receipts, 1);
+                let moved = owner
+                    .root
+                    .commit_item_loop_move(
+                        &permit,
+                        owner.character,
+                        owner.holder,
+                        &fence.item_fence(),
+                        frozen.request().command,
+                        &content,
+                        crate::durability::item_loop_move::LoopMoveRequest {
+                            item: first.item_instance_id,
+                            count: None,
+                            pickup_cell: Some(
+                                [
+                                    33218_i32.to_be_bytes().as_slice(),
+                                    32854_i32.to_be_bytes().as_slice(),
+                                    (-9_i16).to_be_bytes().as_slice(),
+                                ]
+                                .concat(),
+                            ),
+                            destination,
+                        },
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(
+                    moved.is_ok(),
+                    "qualified empty crate must enter backpack: {moved:?}"
+                );
+                let remaining_ground: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(remaining_ground, 0);
+                let carried: bool = sqlx::query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid)"
+                ).bind(first.item_instance_id.as_slice()).fetch_one(&h.pool).await?;
+                assert!(
+                    carried,
+                    "the same source crate must be a direct backpack entry"
+                );
                 drop(permit);
                 drop(owner);
                 drop(authority);

@@ -69,7 +69,32 @@ fn map_mint_owner_consumes_the_exact_crate_scope_and_preserves_legacy_refusal() 
         Err(MapItemMintRefusal::ItemIsContainer)
     );
     assert_eq!(plan_map_item_mint_request(&request, false), Ok(()));
+    assert_eq!(
+        oteryn_gameplay_durability::durability::item_loop_move::plan_map_item_loop_mint(
+            &request,
+            Some(&item)
+        ),
+        Ok(()),
+        "the live loop preflight must admit the same qualified empty source crate"
+    );
+    use oteryn_gameplay_durability::durability::item_loop_move::{
+        LoopMoveRefusal, plan_map_item_loop_mint,
+    };
+    assert_eq!(
+        plan_map_item_loop_mint(&request, None),
+        Err(LoopMoveRefusal::NotSupported)
+    );
+    let mut changed = item.clone();
+    changed.weight = Some(1);
+    assert_eq!(
+        plan_map_item_loop_mint(&request, Some(&changed)),
+        Err(LoopMoveRefusal::NotSupported)
+    );
     request.flat_crate = None;
+    assert_eq!(
+        plan_map_item_loop_mint(&request, Some(&item)),
+        Err(LoopMoveRefusal::NotSupported)
+    );
     assert_eq!(
         plan_map_item_mint_request(&request, false),
         Err(MapItemMintRefusal::ItemIsContainer)
