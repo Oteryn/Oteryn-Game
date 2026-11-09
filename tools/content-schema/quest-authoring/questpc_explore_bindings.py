@@ -5,6 +5,8 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.fishing_box_quest', 's1', 'claim:canary:reward-claim/quest/u8_0/fishing_box', 'chosen-source/fishing_box_quest'),
+    ('oteryn:quest.berserker_treasure_quest', 's1', 'claim:canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls', 'chosen-source/berserker_treasure_quest'),
     ('oteryn:quest.iron_helmet_quest', 's1', 'claim:canary:reward-claim/kv/ironhelmet', 'chosen-source/iron_helmet_quest'),
     ('oteryn:quest.goblin_temple_quest', 's1', 'claim:canary:reward-claim/kv/goblintemple', 'chosen-source/goblin_temple_quest'),
     ('oteryn:quest.katana_quest', 's1', 'claim:canary:reward-claim/quest/key/id4603', 'chosen-source/katana_quest'),

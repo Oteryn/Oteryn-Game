@@ -370,6 +370,61 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/berserker-treasure/s1/white_pearls",
+      "quest": "oteryn:quest.berserker_treasure_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33198,
+          "y": 31923,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 353,
+        "native": {
+          "position": {
+            "x": 33198,
+            "y": 31923,
+            "floor": -11
+          },
+          "ordinal": 0,
+          "appearance": 353
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserker_treasure_quest/s1/visited/white_pearls",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/berserker_treasure_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/211",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
       "key": "oteryn:quest-callback/m01b/dragon-tower/s1/entry",
       "quest": "oteryn:quest.dragon_tower_quest",
       "trigger": "step_in",
@@ -583,6 +638,61 @@
         "premium": true
       },
       "minimum_level": 60
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/fishing-box/s1/fishing_box",
+      "quest": "oteryn:quest.fishing_box_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32016,
+          "y": 31409,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6587,
+        "native": {
+          "position": {
+            "x": 32016,
+            "y": 31409,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 6587
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/fishing_box_quest/s1/visited/fishing_box",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/fishing_box_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/chests/claims.json#/claims/269",
+        "https://github.com/opentibiabr/canary/tree/04b83b51",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
     },
     {
       "key": "oteryn:quest-callback/m01b/frost-dragon/s1/okolnir",

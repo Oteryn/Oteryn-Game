@@ -21,6 +21,13 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_fishing_and_berserker_entries_are_activated(self):
+        callbacks = explore.callbacks(ROOT)
+        for quest in ('oteryn:quest.fishing_box_quest', 'oteryn:quest.berserker_treasure_quest'):
+            with self.subTest(quest=quest):
+                self.assertEqual(sum(c['quest'] == quest for c in callbacks), 1,
+                                 'one retained entry is activated per quest')
+
     def test_fishing_and_berserker_approaches_keep_their_own_placements(self):
         bindings = (
             ('oteryn:quest.fishing_box_quest', 's1', 'claim:canary:reward-claim/quest/u8_0/fishing_box',

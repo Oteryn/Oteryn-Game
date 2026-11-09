@@ -24,9 +24,11 @@
       "Iron Helmet Quest",
       "Goblin Temple Quest",
       "Katana Quest",
-      "Minotaur Hell Quest"
+      "Minotaur Hell Quest",
+      "Fishing Box Quest",
+      "Berserker Treasure Quest"
     ],
-    "wired_explore_stages": 17,
+    "wired_explore_stages": 19,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -40,9 +42,13 @@
       "Dragon Tower Quest",
       "Fire Axe Quest",
       "Behemoth Quest",
-      "Frost Dragon Quest"
+      "Frost Dragon Quest",
+      "Iron Helmet Quest",
+      "Goblin Temple Quest",
+      "Katana Quest",
+      "Minotaur Hell Quest"
     ],
-    "wired_native_visit_anchors": 20
+    "wired_native_visit_anchors": 22
   },
   "validation": {
     "quest_unit_tests": "373 passed,0 failed,44.87s before coordinator merge0326dc2e5",
@@ -92,11 +98,17 @@
     "frost_activation": "RED missingentry3.448s -> GREEN25Python47.752s;latestinactivecamp/temple additions27tests47.475s;5Rustprofile0.04s",
     "frost_postgres": "GREEN61.803332956s:actualcorpse retained,CurrentPremium refusal/freshonce/replay/revisit",
     "four_claim_entries": "ActivationRED2missingentries -> GREEN30Python74.264s;latestinactiveFishing/Berserker additions31tests74.260s",
-    "four_claim_profile": "5RustprofiletestsPASS0.04s",
-    "four_claim_postgres": "PENDING:IronHelmet,GoblinTemple,Katana,MinotaurHell nativecases building in one filtered invocation",
-    "next_two_claim_resolvers": "FishingBox/Berserker:REDunsupportedclaim0.199s -> focusedGREEN1.593s;inactive,activeJSONunchanged"
+    "four_claim_profile": "5RustprofiletestsPASS0.05s",
+    "four_claim_postgres": "GREEN4passed248.49s:GoblinTemple61.463286153s,IronHelmet60.566955281s,Katana61.722523584s,MinotaurHell64.73660606s;actualSTEP,freshonce,replay/revisit,completion0",
+    "next_two_claim_resolvers": "FishingBox/Berserker:REDunsupportedclaim0.199s -> focusedGREEN1.593s;inactive,activeJSONunchanged",
+    "treasure_activation": "RED2missingentries5.136s -> GREEN32Python88.274s;realB3 entry and starting tiles verified;CurrentPremium preserved",
+    "treasure_postgres": "PENDING2nativecases:Cargo build started after strictClippy/profile passed",
+    "treasure_clippy": "GREEN quests+dispatch all-targets -Dwarnings5m39s",
+    "treasure_profile": "GREEN5Rustprofiletests0.05s",
+    "treasure_content_tree": "GREEN independent content-tree validation",
+    "treasure_regeneration": "GREEN repo native-provider regeneration and qengine_access --check;no generated pin changes;duplicate migration check empty"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish4nativeclaim-entrycases;thenFishingBox/Berserker.17wired,13PG-proven;29routes/39stages unwired. M01b PARTIAL."
+  "continuation": "FinishFishingBox/Berserker nativecases;19wired,17PG-proven;27routes/37stages unwired. M01b PARTIAL."
 }

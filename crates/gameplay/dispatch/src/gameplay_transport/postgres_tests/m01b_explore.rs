@@ -27,6 +27,9 @@ mod koshei;
 #[path = "m01b_explore/spawn_entries.rs"]
 mod spawn_entries;
 
+#[path = "m01b_explore/treasure_entries.rs"]
+mod treasure_entries;
+
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
@@ -268,7 +271,9 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 pub(super) fn start(name: &str, trigger: Position) -> Position {
     if matches!(
         name,
-        "m01b/fire-axe/s1/entry" | "m01b/dragon-tower/s1/entry"
+        "m01b/fire-axe/s1/entry"
+            | "m01b/dragon-tower/s1/entry"
+            | "m01b/berserker-treasure/s1/white_pearls"
     ) {
         Position {
             x: trigger.x - 1,
@@ -300,6 +305,12 @@ pub(super) fn world(
         return minotaur_entry::world(native);
     }
 
+    if matches!(
+        name,
+        "m01b/fishing-box/s1/fishing_box" | "m01b/berserker-treasure/s1/white_pearls"
+    ) {
+        return treasure_entries::world(native, name);
+    }
     if name == "m01b/frost-dragon/s1/okolnir" {
         return claim_entries::world(native);
     }
@@ -620,7 +631,11 @@ async fn exercise_premium(
     if let Some(minimum) = callback.minimum_level {
         koshei::seed_level(h, i64::from(minimum)).await?;
     }
-    let (entry, exit) = if callback.key.ends_with("m01b/fire-axe/s1/entry") {
+    let (entry, exit) = if callback.key.ends_with("m01b/fire-axe/s1/entry")
+        || callback
+            .key
+            .ends_with("m01b/berserker-treasure/s1/white_pearls")
+    {
         (StepDirection::East, StepDirection::West)
     } else {
         (StepDirection::West, StepDirection::East)
