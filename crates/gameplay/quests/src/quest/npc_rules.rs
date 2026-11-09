@@ -477,6 +477,21 @@ impl NpcRuleCatalog {
         &self.programs
     }
 
+    /// Whether native admission needs the Character build owner's vocation.
+    #[must_use]
+    pub fn requires_vocation(&self, npc: &str) -> bool {
+        self.programs
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .any(|rule| {
+                rule.npc == npc
+                    && rule
+                        .guards
+                        .iter()
+                        .any(|guard| matches!(guard, NpcRuleGuard::Vocation { .. }))
+            })
+    }
+
     #[must_use]
     pub fn program(&self, quest: &str) -> Option<&NpcRuleProgram> {
         self.programs
@@ -694,6 +709,8 @@ mod level_tests;
 mod premium_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod vocation_tests;
 
 #[cfg(test)]
 mod draconia_source_tests {

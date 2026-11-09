@@ -824,8 +824,8 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
-    let npc_level = if reward_callbacks::needs_level(admission, actor, command, &intent, &runtime)
-        || catalogue::needs_level(admission, actor, command, &intent, &runtime)
+    let npc_facts = if reward_callbacks::needs_level(admission, actor, command, &intent, &runtime)
+        || catalogue::needs_character_facts(admission, actor, command, &intent, &runtime)
     {
         let context = admission.states.npc_conversations.current_npc(
             &admission.states.chat,
@@ -838,6 +838,17 @@ pub(super) async fn npc_bank_talk(
         let Some(level) = reward_callbacks::read_level(admission, command).await else {
             return rejected();
         };
+        let Some(character) = command.item_fence.map(|fence| fence.character_id) else {
+            return rejected();
+        };
+        let Ok(build) = admission
+            .root
+            .read_character_build_state(admission.character, character)
+            .await
+        else {
+            return rejected();
+        };
+        let vocation = format!("oteryn:vocation.{}", build.vocation());
         runtime = admission.runtime.lock().await;
         if !runtime
             .player_control_facts(actor, session)
@@ -857,12 +868,16 @@ pub(super) async fn npc_bank_talk(
         {
             return rejected();
         }
-        Some(level)
+        (Some(level), Some(vocation))
     } else {
-        None
+        (None, None)
+    };
+    let npc_facts = crate::durability::quest_state::npc_program::NpcProgramFacts {
+        level: npc_facts.0,
+        vocation: npc_facts.1.as_deref(),
     };
     if let Some(step) =
-        reward_callbacks::prepare(admission, actor, command, &intent, &runtime, npc_level)
+        reward_callbacks::prepare(admission, actor, command, &intent, &runtime, npc_facts)
     {
         drop(runtime);
         drop(_trade_permit);
@@ -910,7 +925,7 @@ pub(super) async fn npc_bank_talk(
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = catalogue::prepare(
-        admission, actor, command, &intent, &runtime, &ordinary, npc_level,
+        admission, actor, command, &intent, &runtime, &ordinary, npc_facts,
     ) {
         drop(runtime);
         drop(_trade_permit);

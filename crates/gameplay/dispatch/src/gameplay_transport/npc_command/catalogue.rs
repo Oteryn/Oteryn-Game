@@ -4,7 +4,7 @@ use super::*;
 use crate::domain::CharacterId;
 use crate::durability::quest_state::{
     QuestTransitionOutcome,
-    npc_program::{self, NpcProgramRequest},
+    npc_program::{self, NpcProgramFacts, NpcProgramRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
@@ -63,7 +63,7 @@ fn npc_needs_level(source: &NpcRuleCatalog, npc: &str) -> bool {
     })
 }
 
-pub(super) fn needs_level(
+pub(super) fn needs_character_facts(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: UseCommand,
@@ -82,7 +82,9 @@ pub(super) fn needs_level(
     ) else {
         return false;
     };
-    NpcRuleCatalog::runtime().is_ok_and(|source| npc_needs_level(source, &context.2))
+    NpcRuleCatalog::runtime().is_ok_and(|source| {
+        npc_needs_level(source, &context.2) || source.requires_vocation(&context.2)
+    })
 }
 
 pub(super) fn prepare(
@@ -92,10 +94,10 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
-    level: Option<u32>,
+    facts: NpcProgramFacts<'_>,
 ) -> Option<Step> {
     prepare_inner(
-        admission, actor, command, intent, runtime, ordinary, true, level,
+        admission, actor, command, intent, runtime, ordinary, true, facts,
     )
 }
 
@@ -107,7 +109,7 @@ pub(super) fn has_eligible_program(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
-    level: Option<u32>,
+    facts: NpcProgramFacts<'_>,
 ) -> bool {
     matches!(
         prepare_inner(
@@ -118,7 +120,7 @@ pub(super) fn has_eligible_program(
             runtime,
             &NpcTalkOutcome::only(NpcIntentDisposition::Ok),
             false,
-            level,
+            facts,
         ),
         Some(Step::Reply { .. } | Step::Commit(_) | Step::Held)
     )
@@ -126,7 +128,7 @@ pub(super) fn has_eligible_program(
 
 #[allow(
     clippy::too_many_arguments,
-    reason = "the observed level joins the existing exact NPC context, reply and topic mode"
+    reason = "observed Character facts join the existing exact NPC context, reply and topic mode"
 )]
 fn prepare_inner(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -136,7 +138,7 @@ fn prepare_inner(
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
     advance_topic: bool,
-    level: Option<u32>,
+    facts: NpcProgramFacts<'_>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -176,7 +178,9 @@ fn prepare_inner(
     if matches!(state.catalogue, Some(Pending::Commit { .. })) {
         return Some(Step::Held);
     }
-    if npc_needs_level(source, &context.2) && level.is_none() {
+    if (npc_needs_level(source, &context.2) && facts.level.is_none())
+        || (source.requires_vocation(&context.2) && facts.vocation.is_none())
+    {
         return Some(Step::Refused);
     }
     let previous = match &state.catalogue {
@@ -222,7 +226,7 @@ fn prepare_inner(
         .duration_since(std::time::UNIX_EPOCH)
         .ok()
         .and_then(|d| i64::try_from(d.as_secs()).ok())?;
-    let plan = match npc_program::preview(&request, &tracks, catalogue, now, level.unwrap_or(0)) {
+    let plan = match npc_program::preview(&request, &tracks, catalogue, now, facts) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
             if greeting && advance_topic {

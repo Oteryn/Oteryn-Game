@@ -2,6 +2,7 @@
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::quest_dialogue::{self, Choice, Step, Topic};
 use super::*;
+use crate::durability::quest_state::npc_program::NpcProgramFacts;
 use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
 use serde::Deserialize;
@@ -33,7 +34,7 @@ struct Offer {
 
 struct OfferFacts<'a> {
     offers: &'a Offers,
-    level: Option<u32>,
+    player: NpcProgramFacts<'a>,
 }
 
 pub(super) fn needs_level(
@@ -84,7 +85,7 @@ pub(super) fn prepare(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
-    level: Option<u32>,
+    player: NpcProgramFacts<'_>,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
     let offers = load_offers()?;
@@ -97,7 +98,7 @@ pub(super) fn prepare(
         &callbacks,
         OfferFacts {
             offers: &offers,
-            level,
+            player,
         },
     )
 }
@@ -121,7 +122,7 @@ pub(super) fn prepare_with_callbacks(
         callbacks,
         OfferFacts {
             offers: &offers,
-            level: None,
+            player: NpcProgramFacts::default(),
         },
     )
 }
@@ -162,7 +163,10 @@ pub(super) fn prepare_offer_fixture(
         &[],
         OfferFacts {
             offers: &offers,
-            level,
+            player: NpcProgramFacts {
+                level,
+                vocation: None,
+            },
         },
     )
 }
@@ -176,7 +180,8 @@ fn prepare_with_sources(
     callbacks: &[reward_callbacks::RewardCallback],
     facts: OfferFacts<'_>,
 ) -> Option<Step> {
-    let OfferFacts { offers, level } = facts;
+    let OfferFacts { offers, player } = facts;
+    let level = player.level;
     if offers.schema != 1
         || offers.offers.len() > 512
         || offers.offers.iter().any(|o| o.requires.len() > 8)
@@ -280,7 +285,9 @@ fn prepare_with_sources(
     // programme planner reads that copy. Eligible callbacks and offers retain
     // precedence; only the ineligible keyword fallback may defer.
     if fallback
-        && super::catalogue::has_eligible_program(admission, actor, command, intent, runtime, level)
+        && super::catalogue::has_eligible_program(
+            admission, actor, command, intent, runtime, player,
+        )
     {
         None
     } else {

@@ -327,6 +327,7 @@ pub(super) fn plan(
                             | NpcRuleGuard::StorageTime { .. }
                             | NpcRuleGuard::CalendarMonth { .. }
                             | NpcRuleGuard::Level { .. }
+                            | NpcRuleGuard::Vocation { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));

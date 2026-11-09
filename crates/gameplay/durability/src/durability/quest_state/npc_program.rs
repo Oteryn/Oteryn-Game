@@ -9,6 +9,14 @@ mod items;
 mod rewards;
 
 
+/// Advisory preview facts. Locked execution replaces both from Character owners.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NpcProgramFacts<'a> {
+    pub level: Option<u32>,
+    /// The source catalogue's qualified vocation key, e.g. `oteryn:vocation.knight`.
+    pub vocation: Option<&'a str>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
     pub command: CommandRef,
@@ -69,13 +77,13 @@ pub fn preview(
     tracks: &BTreeMap<String, i64>,
     catalogue: &QuestStateCatalogue,
     now: i64,
-    level: u32,
+    facts: NpcProgramFacts<'_>,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
     let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
         return Ok(None);
     };
-    match evaluate_source(&source, request, tracks, catalogue, now, None, level) {
+    match evaluate_source(&source, request, tracks, catalogue, now, None, facts) {
         Err(_) if request.npc == "oteryn:npc.tereban" => evaluate_source(
             &source,
             request,
@@ -83,7 +91,7 @@ pub fn preview(
             catalogue,
             now,
             Some(&fathers_burden::optimistic_inventory()),
-            level,
+            facts,
         ),
         Err(_) if marlin_trophy::owns(request) => evaluate_source(
             &source,
@@ -92,10 +100,10 @@ pub fn preview(
             catalogue,
             now,
             Some(&marlin_trophy::optimistic_inventory()),
-            level,
+            facts,
         ),
         Err(error) => match source.optimistic_item_inventory(&request.npc) {
-            Some(inventory) => evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory), level),
+            Some(inventory) => evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory), facts),
             None => Err(error),
         },
         result => result,
@@ -109,7 +117,7 @@ fn evaluate_source(
     catalogue: &QuestStateCatalogue,
     now: i64,
     inventory: Option<&NpcInventorySnapshot>,
-    level: u32,
+    facts: NpcProgramFacts<'_>,
 ) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError>
 {
     let mut complete = tracks.clone();
@@ -149,8 +157,8 @@ fn evaluate_source(
         inventory: inventory.unwrap_or(&empty),
         now_epoch_seconds: now,
         calendar_month: utc_calendar_month(now)?,
-        level,
-        vocation: "",
+        level: facts.level.unwrap_or(0),
+        vocation: facts.vocation.unwrap_or(""),
         sex: 0,
         outfits: &BTreeMap::new(),
     };
@@ -349,7 +357,15 @@ impl DurabilityRoot {
             // Progression is already locked under this Character root; preview facts
             // never authorize a source level guard.
             let level = u32::try_from(state.try_get::<i64,_>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?;
-            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref(),level);
+            // Build writes share the locked Character root. Its absent row has the
+            // same `none` meaning as read_character_build_state; preview is never authority.
+            let vocation = if source.requires_vocation(&request.npc) {
+                let stored: Option<String> = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+                    .bind(id).fetch_optional(&mut **tx).await?;
+                Some(format!("oteryn:vocation.{}", stored.as_deref().unwrap_or(crate::domain::character_build::NO_VOCATION)))
+            } else { None };
+            let facts = NpcProgramFacts { level: Some(level), vocation: vocation.as_deref() };
+            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref(),facts);
             if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !rewards::has_experience(&plan.effects) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
