@@ -1328,6 +1328,7 @@ struct AdmissionRetryBudget<'r> {
     /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
     /// whole backoff.
     root: Option<&'r DurabilityRoot>,
+    _foreground_waiter: Option<crate::durability::ForegroundWaiterGuard>,
 }
 
 /// The earliest retry after a step that found the holder busy, measured from the failure
@@ -1346,6 +1347,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
             root: None,
+            _foreground_waiter: None,
         }
     }
 
@@ -1358,6 +1360,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
+            _foreground_waiter: Some(root.foreground_waiter()),
         }
     }
 

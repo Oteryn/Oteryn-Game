@@ -12,6 +12,17 @@ async fn hold_holder(root: &super::DurabilityRoot, hold: std::time::Duration) ->
         .await
 }
 
+async fn hold_background_holder(root: &super::DurabilityRoot, hold: std::time::Duration) -> Result<(), crate::durability::DurabilityError> {
+    root.try_issue_background_semantic_pass()?
+        .run(move |_holder, _deadline| {
+            Box::pin(async move {
+                tokio::time::sleep(hold).await;
+                Ok(())
+            })
+        })
+        .await
+}
+
 async fn ready_root(database_url: &str) -> Result<super::DurabilityRoot, Box<dyn Error>> {
     let root = super::DurabilityRoot::connect_test_runtime(database_url)?;
     if !root.maintain_ready_once().await? {
@@ -156,8 +167,12 @@ fn a_busy_holder_retry_wins_against_background_passes() -> TestResult {
             let stop = std::sync::Arc::clone(&stop);
             async move {
                 while !stop.load(Ordering::Acquire) {
-                    let _ = hold_holder(&root, std::time::Duration::from_millis(100)).await;
-                    tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+                    let _ = hold_background_holder(
+                        &root,
+                        std::time::Duration::from_millis(10),
+                    )
+                    .await;
+                    tokio::task::yield_now().await;
                 }
             }
         });
@@ -181,6 +196,23 @@ fn a_busy_holder_retry_wins_against_background_passes() -> TestResult {
         }
         stop.store(true, Ordering::Release);
         background.await?;
+        database.cleanup().await
+    })
+}
+
+#[test]
+fn background_pass_resumes_after_foreground_retry_guard_drops() -> TestResult {
+    run_postgres_test(async {
+        let (database, database_url) = migrated_database("holder_background_resumes").await?;
+        let root = ready_root(&database_url).await?;
+        let waiter = root.foreground_waiter();
+        assert!(matches!(
+            root.try_issue_background_semantic_pass(),
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ));
+
+        drop(waiter);
+        hold_background_holder(&root, std::time::Duration::ZERO).await?;
         database.cleanup().await
     })
 }

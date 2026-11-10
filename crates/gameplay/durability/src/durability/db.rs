@@ -41,6 +41,30 @@ const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
 /// when (NBDIAG-4).
 type HolderOwner = Option<(&'static std::panic::Location<'static>, Instant)>;
 
+#[derive(Clone, Default)]
+struct ForegroundWaiterPriority(Arc<AtomicUsize>);
+
+impl ForegroundWaiterPriority {
+    fn register(&self) -> ForegroundWaiterGuard {
+        self.0.fetch_add(1, Ordering::AcqRel);
+        ForegroundWaiterGuard(Arc::clone(&self.0))
+    }
+
+    fn background_may_acquire(&self) -> bool {
+        self.0.load(Ordering::Acquire) == 0
+    }
+}
+
+/// Scoped registration of foreground demand for the single durability holder.
+#[must_use = "background priority is restored when the guard is dropped"]
+pub struct ForegroundWaiterGuard(Arc<AtomicUsize>);
+
+impl Drop for ForegroundWaiterGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+
 /// Records the maintenance window's own checkout of the holder when it ends (NBDIAG-5).
 struct MaintenanceUsage(Instant);
 
@@ -1006,6 +1030,7 @@ pub struct DurabilityRoot {
     ready_demand: Arc<AtomicBool>,
     /// Signalled each time the holder is observed back in the idle pool (NODEBOOT-1).
     holder_returned: Arc<Notify>,
+    foreground_waiters: ForegroundWaiterPriority,
     maintenance: Arc<Mutex<()>>,
     /// Which semantic pass has the holder checked out (NBDIAG-4).
     holder_owner: Arc<StdMutex<HolderOwner>>,
@@ -1078,6 +1103,7 @@ impl DurabilityRoot {
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
+            foreground_waiters: ForegroundWaiterPriority::default(),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
@@ -1116,6 +1142,7 @@ impl DurabilityRoot {
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
+            foreground_waiters: ForegroundWaiterPriority::default(),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
@@ -1293,6 +1320,7 @@ impl DurabilityRoot {
         earliest: tokio::time::Instant,
         latest: tokio::time::Instant,
     ) {
+        let _waiter = self.foreground_waiter();
         let mut returned = std::pin::pin!(self.holder_returned.notified());
         returned.as_mut().enable();
         if self.is_ready() {
@@ -1304,6 +1332,11 @@ impl DurabilityRoot {
         {
             tokio::time::sleep_until(earliest.min(latest)).await;
         }
+    }
+
+    /// Register bounded foreground demand so background-only passes skip their tick.
+    pub fn foreground_waiter(&self) -> ForegroundWaiterGuard {
+        self.foreground_waiters.register()
     }
 
     #[must_use]
@@ -1353,6 +1386,17 @@ impl DurabilityRoot {
             deadline: issued + self.pass_deadline(),
             owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
         })
+    }
+
+    /// Non-blocking semantic-pass acquisition for cadence work that may skip this tick.
+    #[track_caller]
+    pub fn try_issue_background_semantic_pass(
+        &self,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        if !self.foreground_waiters.background_may_acquire() {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        self.try_issue_semantic_pass()
     }
 
     /// [`Self::try_issue_semantic_pass`] for work owed to an outer operation

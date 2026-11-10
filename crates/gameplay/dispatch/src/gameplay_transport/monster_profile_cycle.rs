@@ -26,7 +26,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
-        let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
+        let pass = self
+            .root
+            .try_issue_background_semantic_pass()
+            .map_err(|_| ())?;
         let (next_due, proposals, native_actors) = {
             let mut context = (
                 self,

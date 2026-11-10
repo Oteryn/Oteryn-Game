@@ -1,6 +1,33 @@
 use super::*;
 use std::net::{IpAddr, Ipv4Addr};
 
+#[test]
+fn foreground_waiter_wins_against_continuous_background_reacquisition() {
+    let priority = ForegroundWaiterPriority::default();
+    let holder_available = AtomicBool::new(false);
+    let waiter = priority.register();
+
+    holder_available.store(true, Ordering::Release);
+    for _ in 0..10_000 {
+        if priority.background_may_acquire() {
+            let _ = holder_available.swap(false, Ordering::AcqRel);
+        }
+    }
+
+    assert!(holder_available.swap(false, Ordering::AcqRel));
+    drop(waiter);
+}
+
+#[test]
+fn background_acquisition_resumes_after_foreground_waiter_drops() {
+    let priority = ForegroundWaiterPriority::default();
+    let waiter = priority.register();
+    assert!(!priority.background_may_acquire());
+
+    drop(waiter);
+    assert!(priority.background_may_acquire());
+}
+
 fn config() -> Result<DurabilityRootConfig, DurabilityError> {
     DurabilityRootConfig::new_with_isolated_test_ledger(
         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
