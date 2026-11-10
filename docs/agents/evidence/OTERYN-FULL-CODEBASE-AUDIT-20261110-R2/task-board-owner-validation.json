@@ -1,0 +1,10 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "PASS",
+  "at_utc": "2026-11-10T16:42:07.087634+00:00",
+  "method": "Root read the delegated report and all recorded notes, then independently checked exact Git/worktree digests and ranges. This is evidence validation, not a second manual read of the 14 SQL/Rust owner files.",
+  "reference_sets": 10,
+  "full_owner_files": 14,
+  "errors": [],
+  "source_packet_sha256": "60dce6d2d9c258be876c45feb3a9406847e374191c8567807c4d967eb7721766"
+}

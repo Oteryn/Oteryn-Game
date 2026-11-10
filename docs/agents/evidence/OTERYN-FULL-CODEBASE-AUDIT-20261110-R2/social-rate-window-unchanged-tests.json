@@ -1,0 +1,31 @@
+{
+  "source_base": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "source": "crates/gameplay/social/src/spectate/rate_window.rs",
+  "source_sha256": "21bc9e326a7337cb46ea3e1a085de7c5fc932fe752942ce8ad10fa534408f303",
+  "source_unchanged": true,
+  "observed_at_utc": "2026-11-10T16:33:02.808615+00:00",
+  "tests_passed": 1,
+  "scope": "One original unchanged rolling-rate-window test through path-only rustc harness; no replacement implementation, Cargo, authentication, SQL or native execution.",
+  "runs": [
+    {
+      "command": [
+        "/home/agent/.cargo/bin/rustc",
+        "--edition=2024",
+        "--test",
+        "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/social-rate-window-tests/harness.rs",
+        "-o",
+        "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/social-rate-window-tests/tests"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "/workspace/scratch/9868b8ed6bb7/audit-r2/lead/social-rate-window-tests/tests",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "output": "\nrunning 1 test\ntest rate_window::tests::spectate_rate_window_does_not_reset_at_calendar_boundary ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n"
+    }
+  ]
+}

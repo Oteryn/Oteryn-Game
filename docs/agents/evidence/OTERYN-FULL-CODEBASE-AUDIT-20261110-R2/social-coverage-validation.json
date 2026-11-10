@@ -1,0 +1,629 @@
+{
+  "status": "PASS",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "at_utc": "2026-11-10T16:40:03.265114+00:00",
+  "scope": "all tracked files in crates/gameplay/social",
+  "review_method": "Prior full substantive manual source read recorded in lead ledger; this operation validates exact bytes and recorded complete ranges only.",
+  "full_files": 56,
+  "lines": 11871,
+  "source_clean": true,
+  "errors": [],
+  "files": [
+    {
+      "path": "crates/gameplay/social/Cargo.toml",
+      "sha256": "b99e16186f6908d978414355aaa9f0a908d0b04cd336d44a9fcb178430ae9a8a",
+      "lines": 49,
+      "ranges": [
+        [
+          1,
+          49
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/achievement_catalogue.rs",
+      "sha256": "cee73c60b25eb7c32bbfe27489df17ae1bd405f956dd082e85a4f66168310364",
+      "lines": 641,
+      "ranges": [
+        [
+          1,
+          641
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/access.rs",
+      "sha256": "7cdf0bd21e5d0a396ae6ed0414a3703174b69366c1fb7ab92e4bdc62627ea877",
+      "lines": 233,
+      "ranges": [
+        [
+          1,
+          233
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/admission.rs",
+      "sha256": "d5b5247e9754848bc7d1a10e1baf740aaa06b80f4c91d19f83537cf68d201913",
+      "lines": 130,
+      "ranges": [
+        [
+          1,
+          130
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/audit.rs",
+      "sha256": "7f274080e21cccc33efee059b0688675805366a93876fce1e940a6f751b70ef3",
+      "lines": 176,
+      "ranges": [
+        [
+          1,
+          176
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/chat.rs",
+      "sha256": "13349f222f5cfe324cf925f4557b89ea592b3e5ba56338bb7b1182edce3f3c99",
+      "lines": 364,
+      "ranges": [
+        [
+          1,
+          364
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/mod.rs",
+      "sha256": "f265fed2ac9aeee08967be34a2f936ddace7c228031f5b5228c9668f3cc5555d",
+      "lines": 364,
+      "ranges": [
+        [
+          1,
+          364
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/preferences.rs",
+      "sha256": "53b4862c20422547ad8561e3468c58872ef22eb20229ad51fbdda59b386fa58f",
+      "lines": 68,
+      "ranges": [
+        [
+          1,
+          68
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/projection.rs",
+      "sha256": "a0837abe5ef50a31b8e909e1666cbbb6d962e607fffbf040ea2a1db5e834e17a",
+      "lines": 233,
+      "ranges": [
+        [
+          1,
+          233
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/service.rs",
+      "sha256": "64f99d2987def88b0b8978d5eee96e1c5821856d34e910998bc045bee9f47081",
+      "lines": 569,
+      "ranges": [
+        [
+          1,
+          569
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/settings_tests.rs",
+      "sha256": "159e3aefa8a7da9678db98ee58d9925f530ba01f4d0e969733d50edd046d2d35",
+      "lines": 74,
+      "ranges": [
+        [
+          1,
+          74
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/cast/tests.rs",
+      "sha256": "0320e3a0425fe65a152eb83437d989683b3d1645845aaeca91d9d3898e393af6",
+      "lines": 613,
+      "ranges": [
+        [
+          1,
+          613
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/egress.rs",
+      "sha256": "9c56f3b421fa03a2703112be8183c6c618b0511775bb35ebf5bc3c4c7c831365",
+      "lines": 272,
+      "ranges": [
+        [
+          1,
+          272
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/greeting.rs",
+      "sha256": "a219a128bd81240f2a499d0bc3a2fa9f7e6198393c7c50f960df2177703984d2",
+      "lines": 58,
+      "ranges": [
+        [
+          1,
+          58
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/guild_room.rs",
+      "sha256": "e4abe60b3fa47f980ef83b14068acae93e2f214ea77f2bc873bcd2ef578c8d8e",
+      "lines": 30,
+      "ranges": [
+        [
+          1,
+          30
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/guild_room_tests.rs",
+      "sha256": "7ba352206005828ab040988416edf2684e53877e3614d199e286ddb587bf7c49",
+      "lines": 28,
+      "ranges": [
+        [
+          1,
+          28
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/line.rs",
+      "sha256": "7a87341fc132a5de5a7bdc9fea1e4aeb7e490e6c7b6ac8033752f6739812b71c",
+      "lines": 72,
+      "ranges": [
+        [
+          1,
+          72
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/mod.rs",
+      "sha256": "a0642856b163045bf6c61e5066ebd343b23fdd0b4c8f67e28d6143c48d4d2253",
+      "lines": 26,
+      "ranges": [
+        [
+          1,
+          26
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/relay/guild_room_tests.rs",
+      "sha256": "22357d77891f6c52bf163ec5e1df251e320c10242d7a99389801cf791b50d812",
+      "lines": 177,
+      "ranges": [
+        [
+          1,
+          177
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/relay/mod.rs",
+      "sha256": "d6c262d53440382277e238c714b13bb1c8646b88f22997f74711f84d3df8829b",
+      "lines": 548,
+      "ranges": [
+        [
+          1,
+          548
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/relay/payload.rs",
+      "sha256": "e6d2cac95f90d36a41b232f5d5b814f67621e0049f3c89bf0db7df3b1e8331e9",
+      "lines": 113,
+      "ranges": [
+        [
+          1,
+          113
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/relay/tests.rs",
+      "sha256": "91170a6459da1b506622e43c6b855c07d6ae93aff55f27cde27bd9f2d87388eb",
+      "lines": 808,
+      "ranges": [
+        [
+          1,
+          808
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/relay/world_extensions_tests.rs",
+      "sha256": "87788e348599ec0c4932f40a14f4cb1d9139a5afcfce294a60ea048a4c6cea3f",
+      "lines": 119,
+      "ranges": [
+        [
+          1,
+          119
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/spam.rs",
+      "sha256": "542cabb41ca1c74654357ec2dfe8971eaa5a36b042062164d5845fe4d2780a2c",
+      "lines": 95,
+      "ranges": [
+        [
+          1,
+          95
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/tests.rs",
+      "sha256": "14b6188d5a522c2795330aefc785627c10938daac9f5221c19df8c0fe656eac1",
+      "lines": 466,
+      "ranges": [
+        [
+          1,
+          466
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/guild.rs",
+      "sha256": "798e634c5c18ec3af5f2828615eb1dbd3071d239cce1d10c462b09c9e764a899",
+      "lines": 62,
+      "ranges": [
+        [
+          1,
+          62
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/guild/deadlines.rs",
+      "sha256": "7fc790d3a24b2b641e64ee8a45515b1144f923e2a98c56a97551b7edcbd1aded",
+      "lines": 32,
+      "ranges": [
+        [
+          1,
+          32
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/guild/disband.rs",
+      "sha256": "b0244ae45a2cae618ac793c571fbf931bd2a236a8e162ab7a1c11b3e2366302f",
+      "lines": 36,
+      "ranges": [
+        [
+          1,
+          36
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/interaction/chest_use.rs",
+      "sha256": "8e910b555653f7d6adb609c9e2c9cc246cdbba180bd259e258de6e6089706415",
+      "lines": 737,
+      "ranges": [
+        [
+          1,
+          737
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "sha256": "13c37e4ec9109641ea57f92aa9fe1c4305d686dd4790c4de321f7134ea785b4e",
+      "lines": 57,
+      "ranges": [
+        [
+          1,
+          57
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/party/mod.rs",
+      "sha256": "451113095e3a8552540a33de333b8ca34dd847d80198469ba424cf701bcba6ce",
+      "lines": 48,
+      "ranges": [
+        [
+          1,
+          48
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/party/view.rs",
+      "sha256": "875cad52b9dff9113de10dd0743c1105860dab8dcdcd6df7cb64b672e5326347",
+      "lines": 279,
+      "ranges": [
+        [
+          1,
+          279
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/party/view_tests.rs",
+      "sha256": "ddc11f4228b77f7c20db73c286cd6a73a95c5f7319804cb4484b2d35bbfc9aca",
+      "lines": 358,
+      "ranges": [
+        [
+          1,
+          358
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/client.rs",
+      "sha256": "559e65ab1d509d66250a8b2441be2fff15989f81431d476897518aaeacfaf060",
+      "lines": 286,
+      "ranges": [
+        [
+          1,
+          286
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/clock.rs",
+      "sha256": "c7a5349d4c5e953320f0a96e343c7f0192a4fa59b5fb8f3da7a19995546c5061",
+      "lines": 140,
+      "ranges": [
+        [
+          1,
+          140
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/mod.rs",
+      "sha256": "c16e1735aa0b0408f369fb09738e2125b7f9e6baf6385d48697700cf3c9a376c",
+      "lines": 451,
+      "ranges": [
+        [
+          1,
+          451
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/refresh.rs",
+      "sha256": "fbd29eeda19299c05f79e3c8bfc2594989408ed80e311401c00be30a973c6c94",
+      "lines": 230,
+      "ranges": [
+        [
+          1,
+          230
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/snapshot.rs",
+      "sha256": "aa03d6c8eb4cb554b3c645c2d0a3cb175ac41dd08758bf4efc01666478a042f9",
+      "lines": 275,
+      "ranges": [
+        [
+          1,
+          275
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/test_producer.rs",
+      "sha256": "186613ad7d455cde2250d6440e78638635102837f81437c5dc6b61fd968b559e",
+      "lines": 317,
+      "ranges": [
+        [
+          1,
+          317
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/premium/tests.rs",
+      "sha256": "1c59f7db0a52793d24ced43ae4bcbe53244cfd5554ef35bf6180da25f5792b46",
+      "lines": 803,
+      "ranges": [
+        [
+          1,
+          803
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/security/mod.rs",
+      "sha256": "26951ba66c8747a0136c9f605328540874ca1c92a2fa7830a152c93aeeb7a991",
+      "lines": 5,
+      "ranges": [
+        [
+          1,
+          5
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/audit.rs",
+      "sha256": "d46ab73007befaa89591a279fa95e9904177152f3423475c5eca58b910e84407",
+      "lines": 115,
+      "ranges": [
+        [
+          1,
+          115
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/audit_tests.rs",
+      "sha256": "01fceba84818dcd960dd572147e17fba6aa15325074734a9e802cae405e67caa",
+      "lines": 84,
+      "ranges": [
+        [
+          1,
+          84
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/grant.rs",
+      "sha256": "033fbfa1be55220a9f6d727e93429a1cf67b01612141fc6aceff3f99043bb8d7",
+      "lines": 143,
+      "ranges": [
+        [
+          1,
+          143
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/grant_tests.rs",
+      "sha256": "317882b863181dcd83284db1cc72c475f2a7c98d35e121c5088cbb23df09a28e",
+      "lines": 89,
+      "ranges": [
+        [
+          1,
+          89
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/lifecycle_tests.rs",
+      "sha256": "7977d9d47e79b685b2121841ca92bf8812667ba7dd305c7301cb5923ea7085f3",
+      "lines": 107,
+      "ranges": [
+        [
+          1,
+          107
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/mod.rs",
+      "sha256": "524ef56a647a60028a8d99e73b5672cab9fc8c046ef0b1119bf5c8fa9784d5f0",
+      "lines": 30,
+      "ranges": [
+        [
+          1,
+          30
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/projection.rs",
+      "sha256": "cff8bfced5e0dc5ba2ae0f2aadebb9a5c50f57f21a97eb58d1d1203078f17867",
+      "lines": 112,
+      "ranges": [
+        [
+          1,
+          112
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/projection_tests.rs",
+      "sha256": "fecc4ddbbc5d68f8fd927cef4bdaf24926e9e9011982513da754b684035fe106",
+      "lines": 68,
+      "ranges": [
+        [
+          1,
+          68
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/rate_window.rs",
+      "sha256": "21bc9e326a7337cb46ea3e1a085de7c5fc932fe752942ce8ad10fa534408f303",
+      "lines": 30,
+      "ranges": [
+        [
+          1,
+          30
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/rate_window_tests.rs",
+      "sha256": "0daa929d0e7240b467fb8d0bbd809ffc8b0379089c13e06e22af30b8824bd1f7",
+      "lines": 14,
+      "ranges": [
+        [
+          1,
+          14
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/runtime.rs",
+      "sha256": "e4bb5fda642b789a1da943f2770ac2d67ad8714d7e48daf6c7f79741f68cda89",
+      "lines": 162,
+      "ranges": [
+        [
+          1,
+          162
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/session.rs",
+      "sha256": "e253b5a3116f7cacdcdebe7bed0e28f1fe3a72292d95598a847f32c614bb90a4",
+      "lines": 156,
+      "ranges": [
+        [
+          1,
+          156
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/session_tests.rs",
+      "sha256": "1dcba7b69239dfa5c5c0c75d596462b678ed5d36ad31b63e27680133563d42a2",
+      "lines": 133,
+      "ranges": [
+        [
+          1,
+          133
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/spectate_test_support.rs",
+      "sha256": "3c71d77cc1013efda175ac8fe2dcad686cdcfddbd65720e73da3862d7d98a3c9",
+      "lines": 87,
+      "ranges": [
+        [
+          1,
+          87
+        ]
+      ]
+    },
+    {
+      "path": "crates/gameplay/social/src/spectate/world_projection_tests.rs",
+      "sha256": "348a38927e044169925a5ae094f1fe09782af83db4f83e606f02d516f01ce4ac",
+      "lines": 99,
+      "ranges": [
+        [
+          1,
+          99
+        ]
+      ]
+    }
+  ]
+}

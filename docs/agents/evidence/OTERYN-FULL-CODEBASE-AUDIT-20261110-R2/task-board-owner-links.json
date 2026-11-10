@@ -1,0 +1,336 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "status": "REVIEWED",
+  "method": "Full manual source review of the 14 durable owner files, selected actual production/SQL cross-references; no SQL/native execution.",
+  "full_owner_files": 14,
+  "full_owner_lines": 2419,
+  "evidence": [
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/task_board.rs",
+      "ranges": [
+        [
+          46,
+          89
+        ],
+        [
+          152,
+          200
+        ],
+        [
+          323,
+          347
+        ]
+      ],
+      "sha256": "fac1692b0e284cdfed243675362c74111b48d93bf3794bc5c1241ead2c377749",
+      "range_unit": "lines",
+      "source_lines": 380
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
+      "ranges": [
+        [
+          3295,
+          3390
+        ]
+      ],
+      "sha256": "0f2b63f0952e5e60bfe46eebede785bd1f480cdded78be0adcf4719d258a19aa",
+      "range_unit": "lines",
+      "source_lines": 3609
+    },
+    {
+      "path": "crates/gameplay/quests/src/quest/task_board_full.rs",
+      "ranges": [
+        [
+          409,
+          476
+        ]
+      ],
+      "sha256": "6e78e4fffa737b24dc9b349ee14e9e6bbb82d532f1d297df92d43184ece1049b",
+      "range_unit": "lines",
+      "source_lines": 992
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/writer.rs",
+      "ranges": [
+        [
+          52,
+          75
+        ],
+        [
+          84,
+          202
+        ]
+      ],
+      "sha256": "dab9d17bee22a99adf52cf254caf15751e0449f05b3afab0bbdaa3dd3c18d85d",
+      "range_unit": "lines",
+      "source_lines": 232
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/state.rs",
+      "ranges": [
+        [
+          16,
+          74
+        ],
+        [
+          82,
+          195
+        ],
+        [
+          198,
+          390
+        ]
+      ],
+      "sha256": "13eab1f565c805a4cf3bfc9ab3abb1f37724d2c29e46abf9d423d75660c2242d",
+      "range_unit": "lines",
+      "source_lines": 390
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/custody.rs",
+      "ranges": [
+        [
+          1,
+          40
+        ]
+      ],
+      "sha256": "c7e6b4e22376ed4a8fbbd205d4963c64a057bdcc4b27ed9e2ac2c956f517cdd7",
+      "range_unit": "lines",
+      "source_lines": 167
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/progression.rs",
+      "ranges": [
+        [
+          153,
+          253
+        ]
+      ],
+      "sha256": "7e0c3abd21409578e22bc2f47a8680685be0939ef561d61f4a6dfd7379b68541",
+      "range_unit": "lines",
+      "source_lines": 253
+    },
+    {
+      "path": "apps/game-server/migrations/0620_task_board_weekly.sql",
+      "ranges": [
+        [
+          1,
+          179
+        ]
+      ],
+      "sha256": "73acc2b1d511955bf512e167f8c7851400801b793c01e69f1a8a073778e9529a",
+      "range_unit": "lines",
+      "source_lines": 179
+    },
+    {
+      "path": "apps/game-server/migrations/0621_task_board_custody.sql",
+      "ranges": [
+        [
+          261,
+          277
+        ]
+      ],
+      "sha256": "86aad16881c8f48a2a8396efe2fa3d55b5a559d9e2ce6d381f1baa4253a6420a",
+      "range_unit": "lines",
+      "source_lines": 653
+    },
+    {
+      "path": "apps/game-server/migrations/2724_bounty_elite_rarity.sql",
+      "ranges": [
+        [
+          1,
+          15
+        ]
+      ],
+      "sha256": "f9e9e9e5119e0c3d93ed279b8a67e8758465049a672132c8295c762e72f97967",
+      "range_unit": "lines",
+      "source_lines": 15
+    }
+  ],
+  "full_owner_entries": [
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board.rs",
+      "ranges": [
+        [
+          1,
+          112
+        ]
+      ],
+      "sha256": "98a4bef7db51e672e98596dd25cde9c0d2011b9fb427720276e1c176931ef5c4",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/availability.rs",
+      "ranges": [
+        [
+          1,
+          73
+        ]
+      ],
+      "sha256": "867fa4558ae6fcbbe4f8add7fb200b7d0c98aec65a0ef7c8c833300c486c3b43",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/catalogue.rs",
+      "ranges": [
+        [
+          1,
+          136
+        ]
+      ],
+      "sha256": "d2bdb0306ffc494325897927df7ca9c32d7bcbe2ab4ecc14f575a461755e1565",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/custody.rs",
+      "ranges": [
+        [
+          1,
+          167
+        ]
+      ],
+      "sha256": "c7e6b4e22376ed4a8fbbd205d4963c64a057bdcc4b27ed9e2ac2c956f517cdd7",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/entitlements.rs",
+      "ranges": [
+        [
+          1,
+          211
+        ]
+      ],
+      "sha256": "860bd1e98fb03d57bde51e9634c26f0a280d368bc334c9813b6c4afa254e1364",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/expansion.rs",
+      "ranges": [
+        [
+          1,
+          109
+        ]
+      ],
+      "sha256": "12229240c6d34da82aa0a24da1a798797425e296e12d68ac7dc7cae386e28868",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/fee.rs",
+      "ranges": [
+        [
+          1,
+          111
+        ]
+      ],
+      "sha256": "b747bbc54f772e80636275c7d8a049a63172dcc9eb777cfd6b04e2d431cedc80",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/mint.rs",
+      "ranges": [
+        [
+          1,
+          249
+        ]
+      ],
+      "sha256": "0d61c2e56d3aae648c9158c07facf4fe6d87491cd184c8060fa77749872f1eff",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/progression.rs",
+      "ranges": [
+        [
+          1,
+          253
+        ]
+      ],
+      "sha256": "7e0c3abd21409578e22bc2f47a8680685be0939ef561d61f4a6dfd7379b68541",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/soulseal_catalogue.rs",
+      "ranges": [
+        [
+          1,
+          46
+        ]
+      ],
+      "sha256": "e4032a00d257190aa3f6184854aded2d13fb68d4b0e5e0acbe8c9db41c9c08a2",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/soulseal_debit.rs",
+      "ranges": [
+        [
+          1,
+          75
+        ]
+      ],
+      "sha256": "39492254e2738eb54d63ca21c6e3eb82d13cf8726403f4e26977e58d5b689224",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/state.rs",
+      "ranges": [
+        [
+          1,
+          390
+        ]
+      ],
+      "sha256": "13eab1f565c805a4cf3bfc9ab3abb1f37724d2c29e46abf9d423d75660c2242d",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/talisman.rs",
+      "ranges": [
+        [
+          1,
+          255
+        ]
+      ],
+      "sha256": "83563e204d9ded0ed8e62e423ecb6a173ad1aaf48a8f166888f9519c9c13eb2e",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/task_board/writer.rs",
+      "ranges": [
+        [
+          1,
+          232
+        ]
+      ],
+      "sha256": "dab9d17bee22a99adf52cf254caf15751e0449f05b3afab0bbdaa3dd3c18d85d",
+      "module": "oteryn-gameplay-durability",
+      "review_status": "full_file_review; package incomplete",
+      "semantic_group": "task-board-authoritative-context-and-atomic-value-owner"
+    }
+  ],
+  "validation": "Exact Git/worktree bytes, SHA-256 and range endpoints PASS.",
+  "runtime_tests_run": [],
+  "open_question": "Separate unqualified question retained privately; not a confirmed finding."
+}

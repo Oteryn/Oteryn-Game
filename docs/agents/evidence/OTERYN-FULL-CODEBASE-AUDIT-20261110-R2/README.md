@@ -1,12 +1,12 @@
-# OTERYN FULL AUDIT — continuation checkpoint 16
+# OTERYN FULL AUDIT — continuation checkpoint 17
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. The audit continues across all remaining packages and supplementary domains.
 
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- **61 packages REVIEWED / 6 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
-- **6,377 distinct substantively analyzed files**: 6,239 full and 138 selected-range files; 1,182,650 deduplicated text line positions.
+- **62 packages REVIEWED / 5 IN PROGRESS / 0 NOT STARTED / 0 VERIFIED**.
+- **6,483 distinct substantively analyzed files**: 6,356 full and 127 selected-range files; 1,207,988 deduplicated text line positions.
 - Four binary fixtures were semantically decoded in full, totaling 475 bytes. Their exact ranges use bytes and are excluded from line counts.
 - 192 historical files retain their exact ranges only because their Git blobs are identical. Four changed historical files receive no automatic carryover credit; fresh review is attributed separately.
 - REVIEWED requires every tracked package file and a substantive report. File discovery, text search, hash checks and test-source inspection are not runtime execution.
@@ -38,7 +38,7 @@ Cumulative confirmed counts: **P0=0 / P1=4 / P2=16 / P3=0**. Existing LIKELY=2 a
 
 ## Current main and scope
 
-Fresh main observed at 16:24:58 UTC remains `b028bef4ddcc6d48bdd6cf61479c94e42435ed88`. The complete source-tree delta from the input is 22 files. The earlier four startup-diagnostic files at `af33fd3baeac15d9991bd24c91bcacc8733492e2` are unchanged. The new **18-file Windows HUD/manifest successor is REVIEWED separately**: twelve complete source/XML reads and six complete locale semantic comparisons, with all old translation values unchanged. Root independently checked exact hashes, ranges and the full changed-path partition. One existing portable formatting test passed. See `latest-main-hud-delta.md`, its JSON and `latest-main-hud-validation.json`. No Windows launch, linker, installer or native cleanup execution was performed; primary audit counts remain tied to the immutable input.
+Fresh main observed at 16:41:24 UTC remains `b028bef4ddcc6d48bdd6cf61479c94e42435ed88`. The complete source-tree delta from the input is 22 files. The earlier four startup-diagnostic files at `af33fd3baeac15d9991bd24c91bcacc8733492e2` are unchanged. The new **18-file Windows HUD/manifest successor is REVIEWED separately**: twelve complete source/XML reads and six complete locale semantic comparisons, with all old translation values unchanged. Root independently checked exact hashes, ranges and the full changed-path partition. One existing portable formatting test passed. See `latest-main-hud-delta.md`, its JSON and `latest-main-hud-validation.json`. No Windows launch, linker, installer or native cleanup execution was performed; primary audit counts remain tied to the immutable input.
 
 ## Reports
 
@@ -48,6 +48,7 @@ Fresh main observed at 16:24:58 UTC remains `b028bef4ddcc6d48bdd6cf61479c94e4243
 - Gameplay foundation, content promotion and native admission source: `foundation.md`, `content-promotion.md`, `native-admission-source.md`.
 - Complete spell source: `spell-review.md`, `spell-coverage-validation.json`, `spell-embedded-source-validation.json`; complete content: `content.md`, `content-completion-validation.json`; complete items: `items-review.md`, `items-coverage-validation.json`, `items-imbuement-unchanged-tests.json`.
 - Complete encounters: `encounters-review.md`, `encounters-coverage-validation.json`, `encounters-entry-unchanged-tests.json`; partial dispatch: `dispatch-progress.md`; complete quests: `quests-review.md`, `quests-coverage-validation.json`, `quests-calendar-unchanged-tests.json`.
+- Complete social: `social-review.md`, `social-coverage-validation.json`, `social-rate-window-unchanged-tests.json`; Task Board durable-owner closure: `task-board-owner-links.md`, `task-board-owner-links.json`, `task-board-owner-validation.json`.
 - Native client application: `apps-client.md`; 1,180 full files, with unresolved candidates separated from confirmed findings.
 - Protocol/session: `protocol-session.md`, `platform-client.md`, `session.md`, `protocol.md`; partial `durability-progress.md` and `game-server-progress.md`.
 - Gameplay: `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`, `social-rules.md`, `spell-rules.md`, `world-change.md`, `npc.md`.
@@ -73,10 +74,12 @@ Content is now **REVIEWED: 139/139 files and 71,505 line-accounting units**. Its
 
 Encounters is now **REVIEWED: 93/93 files and 22,624 lines**. The complete source, manifest and test bodies were read, and exact Git/worktree/full-range checks passed. Review traces pure rules, native physical state, map-dependent callbacks, timers, child lifecycle and actual boss entry/party prerequisites. Six original endgame-entry tests passed through an unchanged-source path-only rustc harness. Other native/source test bodies were inspected, not executed. No additional confirmed finding was established.
 
-Frozen durability coverage is **516/721 full files**, 529 with substantive ranges and **169,636 lines**. Frozen game-server coverage is **585/873 full files**, 586 with ranges and **162,679 lines**. Frozen dispatch coverage is **421/1668 full files**, 510 with ranges and **85,449 lines**. The 496-file durability capture and parent-validated 585-file server capture are included. The latter explicitly separates 583 manual source files from two mixed semantic data files. Supporting content and unexecuted companion effects receive no automatic review credit. All attributed ranges are deduplicated; later live work is excluded.
+Frozen durability coverage is **540/721 full files**, 551 with ranges and **175,666 lines**. Frozen game-server coverage remains **585/873 full files**, 586 with ranges and **162,679 lines**. Frozen dispatch coverage is **455/1668 full files**, 537 with ranges and **92,760 lines**. Immutable captures retain durability 528, server 585 and dispatch 431 full files. The server capture still explicitly separates 583 manual source files and two mixed semantic data files; later worker output is excluded. All attributed ranges are deduplicated.
 
-Quests is now **REVIEWED: 103/103 files and 30,058 lines**. All implementations, catalogues and test bodies were read. Review covers state and source ownership, NPC/reward/world callbacks, all source-specific quest adapters, Grizzly Adams, log and Task Board. Three original unchanged Hot Cuisine calendar tests passed. Other tests were read, not executed. The separate production Task Board transaction owner remains in the ongoing durability lane. No new confirmed finding was established by this package pass.
+Quests remains **REVIEWED: 103/103 files / 30,058 lines**, with three original unchanged calendar tests passed. The complete 14-file Task Board durable-owner review now resolves its actual calendar, custody, sequential XP and receipt boundaries. Unqualified questions remain private.
 
-All 67 packages have substantive coverage; six remain incomplete. Supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**. Lead continues social, world and the synthetic client harness while delegated lanes complete dispatch, durability and server. Every supplementary domain remains in scope. Confirmed counts are unchanged at **P0=0 / P1=4 / P2=16 / P3=0**. Restricted proof remains private and Cast corroboration remains deduplicated.
+Social is now **REVIEWED: 56/56 files / 11,871 lines**. Complete chat/relay, Party/Guild, Premium, Spectate/Cast, achievement and chest-use source and test bodies were read. Real dispatch and bootstrap edges were checked. Exact immutable Git/worktree/ranges passed; one original unchanged rolling-rate-window test passed. Other tests were inspected without execution. No new confirmed finding was established by this package pass.
+
+All 67 packages have substantive coverage; five remain incomplete. Supplementary domains remain **5 IN PROGRESS / 6 NOT STARTED**. Lead continues world and the synthetic client harness while delegated lanes complete dispatch, durability and server. All eleven supplementary domains remain mandatory. Confirmed counts remain **P0=0 / P1=4 / P2=16 / P3=0**. Restricted proof stays private. No SQL, full Cargo, TLS, native Windows or deployment execution is claimed.
 
 The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the actual published head and lifecycle. Repairs remain separate work; this branch changes audit evidence only.

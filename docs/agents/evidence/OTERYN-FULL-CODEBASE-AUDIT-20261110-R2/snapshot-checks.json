@@ -10,15 +10,15 @@
     "workspace_packages": 67,
     "supplementary_domains": 11,
     "tracked_files": 27900,
-    "unique_substantively_analyzed_files": 6377,
-    "fully_analyzed_files": 6239,
-    "selected_range_files": 138,
-    "analyzed_lines_union": 1182650,
+    "unique_substantively_analyzed_files": 6483,
+    "fully_analyzed_files": 6356,
+    "selected_range_files": 127,
+    "analyzed_lines_union": 1207988,
     "binary_files_analyzed": 4,
     "analyzed_binary_bytes_union": 475,
     "workspace_statuses": {
-      "REVIEWED": 61,
-      "IN PROGRESS": 6
+      "REVIEWED": 62,
+      "IN PROGRESS": 5
     },
     "supplementary_statuses": {
       "IN PROGRESS": 5,
