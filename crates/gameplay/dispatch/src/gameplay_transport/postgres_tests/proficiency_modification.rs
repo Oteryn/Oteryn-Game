@@ -5,7 +5,7 @@
 //! `NO_ORB`.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::content::ChannelContentPin;
+use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
