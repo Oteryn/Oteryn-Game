@@ -53,6 +53,7 @@ pub(super) fn context(
 
 pub(in crate::gameplay_transport) fn select(
     drome: &Drome,
+    runtime: &mut ChannelRuntimeV1,
     session: GameSessionId,
     modifier: DromeModifier,
 ) -> Result<(), &'static str> {
@@ -62,6 +63,14 @@ pub(in crate::gameplay_transport) fn select(
         .filter(|current| !current.ended)
         .ok_or("current Drome participant")?;
     let mut battle = current.battle.lock().map_err(|_| "Drome battle")?;
+    if battle.ended
+        || battle
+            .opponents
+            .iter()
+            .any(|actor| !runtime.contains_live_creature(*actor))
+    {
+        return Err("select fixture modifiers before native combat");
+    }
     let owner = battle
         .modifiers
         .as_mut()
@@ -79,5 +88,24 @@ pub(in crate::gameplay_transport) fn select(
     owner.hazards.clear();
     owner.ordinal = 0;
     owner.melee_ordinal = 0;
+    // Keep the exact existing battle's actor policies coherent with this fixture selection.
+    // The ordinary HP consumer still requires its selected modifier on the target slot.
+    for (session, participant) in live.iter().filter(|(_, participant)| {
+        !participant.ended
+            && participant.run == current.run
+            && Arc::ptr_eq(&participant.battle, &current.battle)
+    }) {
+        runtime
+            .player_control_facts(participant.actor, *session)
+            .map_err(|_| "current Drome participant session")?;
+        runtime
+            .bind_tibiadrome_modifiers(participant.actor, current.run, [modifier, other])
+            .map_err(|_| "current Drome participant modifiers")?;
+    }
+    for actor in &battle.opponents {
+        runtime
+            .bind_tibiadrome_modifiers(*actor, current.run, [modifier, other])
+            .map_err(|_| "current Drome opponent modifiers")?;
+    }
     Ok(())
 }

@@ -13,7 +13,8 @@ use std::time::Duration;
 use tokio::io::DuplexStream;
 
 fn cell(x: u8, y: u8) -> Vec<u8> {
-    vec![10, 6, 8, x * 2, 16, y * 2, 24, 14]
+    // The Bundle's native wire floor is -7 (zigzag 13); physics uses +7.
+    vec![10, 6, 8, x * 2, 16, y * 2, 24, 13]
 }
 
 async fn position(
@@ -52,10 +53,14 @@ async fn next_step(client: &mut DuplexStream) -> TestResult<MovementLocalPositio
             if delta.domain_id == 1 {
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
                 let at = value.actor_position;
+                assert!(
+                    (-15..=0).contains(&at.floor),
+                    "Bundle observation uses the native wire floor"
+                );
                 return Ok(MovementLocalPosition {
                     x: at.x,
                     y: at.y,
-                    floor: at.floor,
+                    floor: at.floor.checked_neg().ok_or("native wire floor")?,
                 });
             }
         }
