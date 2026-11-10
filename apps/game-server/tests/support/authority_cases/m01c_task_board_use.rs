@@ -1,16 +1,10 @@
 //! M01c native Task Board acceptance is the only source of programme entry.
-#![cfg(feature = "test-support")]
-use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
-use oteryn_gameplay_domain::domain;
-use oteryn_gameplay_durability::durability;
-use oteryn_gameplay_entities as foundation;
-#[allow(dead_code, reason = "reuse the canonical fenced PostgreSQL harness")]
-#[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
-mod bestiary_postgres_harness;
-use bestiary_postgres_harness as f;
+use crate::bestiary_postgres_harness as f;
 use durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use durability::task_board::{TaskBoardCatalogue, TaskBoardCommand};
 use foundation::{CommandId, CommandRef};
+use oteryn_gameplay_durability::durability;
+use oteryn_gameplay_entities as foundation;
 use oteryn_gameplay_quests::quest::task_board::full::{TaskBoardAction, TaskBoardCreature};
 use std::sync::Arc;
 

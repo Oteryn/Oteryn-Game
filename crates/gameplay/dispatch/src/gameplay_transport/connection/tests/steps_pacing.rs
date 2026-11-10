@@ -425,6 +425,15 @@ impl FreshAdmissionAuthority for RetainedPacedAuthority {
         self.movement.observe(actor).await
     }
 
+    async fn house_scope_ack(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        // As in the House connection fixture, replace only the owner's projection.
+        // The public transport still selects and runs the actual House serve loop.
+        Ok(Some((1, vec![1])))
+    }
+
     fn step_wait_receipts(&self) -> bool {
         self.movement.step_wait_receipts()
     }
@@ -529,6 +538,144 @@ fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
         })?
         .join()
         .map_err(|_| "buffered step test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use crate::foundation::{
+                    ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+                };
+                use oteryn_protocol_oteryn::house_transfer::{
+                    CAPABILITY_HOUSE_TRANSFER_V1, STATE_DOMAIN_HOUSE_SCOPE,
+                };
+                tokio::time::pause();
+                let authority = RetainedPacedAuthority {
+                    movement: PacedAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        turn: std::time::Duration::ZERO,
+                        receipts: true,
+                    },
+                    commands: Default::default(),
+                };
+                let mut admitted = paced_session(&[13, CAPABILITY_HOUSE_TRANSFER_V1])?;
+                // A House retains its Channel actor while the item fence names the
+                // Instance. This is the public serve_admitted House routing condition.
+                admitted.item_fence = Some(CurrentCharacterItemFence {
+                    character_id: crate::domain::CharacterId::from_bytes(CHARACTER)
+                        .map_err(|error| format!("{error:?}"))?,
+                    game_session_id: admitted.game_session_id,
+                    connection_generation: ConnectionGeneration::new(1)
+                        .map_err(|error| format!("{error:?}"))?,
+                    character_lease_generation: 1,
+                    runtime_scope: RuntimeScopeRefV1::instance(admitted.world_id, uuid_v7(0x66))
+                        .map_err(|error| format!("{error:?}"))?,
+                    scope_ownership_generation: ScopeOwnershipGeneration::new(1)
+                        .map_err(|error| format!("{error:?}"))?,
+                });
+                let start = tokio::time::Instant::now();
+                let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                let (end, frames) = drive_session(
+                    &authority,
+                    admitted,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 2, step, StepDirection::East),
+                    ],
+                )
+                .await?;
+                let ConnectionEnd::AdmittedThenDisconnected(mut ended) = end else {
+                    return Err(format!("unexpected House end {end:?}").into());
+                };
+                let chunk = decode_wire_envelope(frames.get(1).ok_or("House snapshot chunk")?)?;
+                let (_, body) =
+                    oteryn_protocol_oteryn::decode_snapshot_chunk_framing(chunk.payload())?;
+                let domains = oteryn_protocol_oteryn::decode_snapshot_body(body)?;
+                assert_eq!(domains.len(), 1);
+                assert_eq!(domains[0].domain_id, STATE_DOMAIN_HOUSE_SCOPE);
+                assert!(tokio::time::Instant::now() < start + PACE);
+                assert_eq!(authority.movement.steps.borrow().len(), 1);
+                assert_eq!(frames.len(), baseline().len() + 2);
+                // House copies the next counter after terminal output, so EOF leaves
+                // the old copy even though the real ledger reserved the second ID.
+                assert_eq!(ended.continuity.next_command_id, 2);
+                assert_eq!(ended.continuity.server_sequence, 3);
+                assert!(!authority.commands.resumable(&ended));
+                let mut wrong_generation = ended;
+                wrong_generation.continuity.connection_generation = 2;
+                assert!(
+                    authority
+                        .commands
+                        .recover_trade_continuity(&mut wrong_generation)
+                        .is_none()
+                );
+                authority
+                    .commands
+                    .recover_trade_continuity(&mut ended)
+                    .ok_or("settle the original discarded House step")?;
+                assert_eq!(ended.continuity.next_command_id, 3);
+                assert_eq!(ended.continuity.server_sequence, 4);
+                assert!(authority.commands.resumable(&ended));
+                authority
+                    .commands
+                    .recover_trade_continuity(&mut ended)
+                    .ok_or("repeat settled House continuity")?;
+                assert_eq!(ended.continuity.server_sequence, 4);
+
+                ended.continuity.connection_generation = 2;
+                ended
+                    .item_fence
+                    .as_mut()
+                    .ok_or("retained House fence")?
+                    .connection_generation =
+                    ConnectionGeneration::new(2).map_err(|error| format!("{error:?}"))?;
+                let (end, frames) = drive_open(
+                    &authority,
+                    ended,
+                    &[
+                        command(2, 2, step, StepDirection::North),
+                        command(2, 3, step, StepDirection::East),
+                    ],
+                    3,
+                )
+                .await?;
+                let replay =
+                    decode_wire_envelope(frames.get(baseline().len()).ok_or("House replay")?)?;
+                let result = oteryn_protocol_oteryn::decode_command_result(replay.payload())?;
+                assert_eq!(replay.connection_generation(), 2);
+                assert_eq!(replay.server_sequence(), 6);
+                assert_eq!(result.command_id, 2);
+                assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                assert_eq!(
+                    result.payload,
+                    encode_step_result(StepDisposition::Rejected)
+                );
+                assert_eq!(authority.movement.steps.borrow().len(), 2);
+                assert!(
+                    authority
+                        .movement
+                        .steps
+                        .borrow()
+                        .iter()
+                        .all(|(direction, _)| *direction == StepDirection::East)
+                );
+                let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                    return Err(format!("unexpected resumed House end {end:?}").into());
+                };
+                assert_eq!(ended.continuity.next_command_id, 4);
+                assert_eq!(ended.continuity.server_sequence, 8);
+                assert!(authority.commands.resumable(&ended));
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "House buffered step test thread")?
         .map_err(Into::into)
 }
 

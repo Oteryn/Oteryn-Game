@@ -116,7 +116,7 @@ fn scope_reset_closes_source_answers_and_allows_a_fresh_destination_query()
             assert!(driver.panel.pending.is_none());
             assert!(driver.next_query > Instant::now());
 
-            let mut peer = Peer { answers: 0 };
+            let mut peer = Peer::default();
             driver.next_query = Instant::now();
             assert_eq!(driver.poll(&mut peer).await?, None);
             assert_eq!(
