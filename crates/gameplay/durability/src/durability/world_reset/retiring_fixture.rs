@@ -29,8 +29,7 @@ pub(crate) enum RetirementPhase {
     ItemLocks,
     GraphRecheck,
     Preparation,
-    Reservation,
-    Wrapper,
+    Batch,
     Root,
     Commit,
 }
@@ -39,12 +38,12 @@ pub(crate) enum RetirementPhase {
 #[derive(Default)]
 pub struct RetirementReport {
     phase: Option<RetirementPhase>,
-    completed_us: [u64; 9],
+    completed_us: [u64; 8],
     in_flight_us: u64,
     total_us: u64,
     descendants: usize,
-    reservations_ok: usize,
-    wrappers_ok: usize,
+    batch_rows_submitted: usize,
+    batch_rows_acknowledged: usize,
     child_index: usize,
     pre_commit_us: Option<u64>,
     commit_budget_us: Option<u64>,
@@ -55,13 +54,13 @@ impl std::fmt::Display for RetirementReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "phase={:?} in_flight_us={} total_us={} descendants={} reservations_ok={} wrappers_ok={} child_index={} pre_commit_us={:?} commit_budget_us={:?} committed={}",
+            "phase={:?} in_flight_us={} total_us={} descendants={} batch_rows_submitted={} batch_rows_acknowledged={} child_index={} pre_commit_us={:?} commit_budget_us={:?} committed={}",
             self.phase,
             self.in_flight_us,
             self.total_us,
             self.descendants,
-            self.reservations_ok,
-            self.wrappers_ok,
+            self.batch_rows_submitted,
+            self.batch_rows_acknowledged,
             self.child_index,
             self.pre_commit_us,
             self.commit_budget_us,
@@ -73,8 +72,7 @@ impl std::fmt::Display for RetirementReport {
             "item_locks",
             "graph_recheck",
             "preparation",
-            "reservation",
-            "wrapper",
+            "batch",
             "root",
             "commit",
         ]
@@ -133,13 +131,15 @@ impl RetirementProbe {
         self.enter(RetirementPhase::Preparation);
     }
 
-    pub(crate) fn reservation_finished(&mut self) {
-        self.report.reservations_ok += 1;
-        self.enter(RetirementPhase::Wrapper);
+    pub(crate) fn begin_batch(&mut self, count: usize) {
+        self.report.batch_rows_submitted = count;
+        self.enter(RetirementPhase::Batch);
     }
 
-    pub(crate) fn wrapper_finished(&mut self) {
-        self.report.wrappers_ok += 1;
+    pub(crate) fn batch_finished(&mut self, count: usize) {
+        // A cancelled server-side call exposes no trustworthy partial count.
+        // Only its successfully returned row count is acknowledged here.
+        self.report.batch_rows_acknowledged = count;
         self.finish_phase();
     }
 

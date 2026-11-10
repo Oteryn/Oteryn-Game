@@ -127,6 +127,77 @@ REVOKE ALL ON FUNCTION game_player_death_retire_entry(uuid,numeric,uuid,uuid,sma
 GRANT EXECUTE ON FUNCTION game_player_death_retire_entry(uuid,numeric,uuid,uuid,smallint,bigint,bigint,text,bigint)
  TO oteryn_game_runtime;
 
+-- One bounded transport call preserves the native owner's exact postorder.
+-- Each child still gets its original reservation followed by the existing
+-- ordered writer; no trigger, current-authority proof or terminal root check
+-- is skipped. A child refusal aborts the batch before its caller can commit.
+CREATE FUNCTION game_player_death_retire_entries(
+ p_items UUID[],p_parents UUID[],p_transactions UUID[],p_events UUID[],
+ p_quantities BIGINT[],p_ordinals TEXT[],p_envelopes BYTEA[],p_entry_kinds SMALLINT[],
+ p_root UUID,p_generation NUMERIC,p_world UUID,p_channel UUID,p_scope_kind SMALLINT,p_instance UUID,
+ p_occurred_at BIGINT,p_node UUID,p_registration_revision NUMERIC,p_schema_revision SMALLINT,
+ p_cause_kind TEXT,p_reset_epoch NUMERIC,p_retirement_binding BYTEA,p_target_digest BYTEA,
+ p_activity_handoff UUID,p_activity_generation NUMERIC,
+ p_event_type_id BIGINT,p_retention_profile_id TEXT,p_retention_ms BIGINT
+) RETURNS BIGINT
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER AS $batch$
+DECLARE n INT:=cardinality(p_items); k INT;
+BEGIN
+ IF n IS NULL OR n>500
+  OR cardinality(p_parents) IS DISTINCT FROM n
+  OR cardinality(p_transactions) IS DISTINCT FROM n
+  OR cardinality(p_events) IS DISTINCT FROM n
+  OR cardinality(p_quantities) IS DISTINCT FROM n
+  OR cardinality(p_ordinals) IS DISTINCT FROM n
+  OR cardinality(p_envelopes) IS DISTINCT FROM n
+  OR cardinality(p_entry_kinds) IS DISTINCT FROM n
+  OR p_cause_kind IS NULL OR p_cause_kind NOT IN('WORLD_RESET','ACTIVITY_RETIREMENT') THEN
+  RAISE EXCEPTION 'invalid death retirement batch' USING ERRCODE='23514';
+ END IF;
+ IF n=0 THEN RETURN 0; END IF;
+ IF array_ndims(p_items) IS DISTINCT FROM 1 OR array_lower(p_items,1) IS DISTINCT FROM 1
+  OR array_dims(p_parents) IS DISTINCT FROM array_dims(p_items)
+  OR array_dims(p_transactions) IS DISTINCT FROM array_dims(p_items)
+  OR array_dims(p_events) IS DISTINCT FROM array_dims(p_items)
+  OR array_dims(p_quantities) IS DISTINCT FROM array_dims(p_items)
+  OR array_dims(p_ordinals) IS DISTINCT FROM array_dims(p_items)
+  OR array_dims(p_envelopes) IS DISTINCT FROM array_dims(p_items)
+  OR array_dims(p_entry_kinds) IS DISTINCT FROM array_dims(p_items) THEN
+  RAISE EXCEPTION 'invalid death retirement batch dimensions' USING ERRCODE='23514';
+ END IF;
+ IF array_position(p_items,NULL) IS NOT NULL OR array_position(p_parents,NULL) IS NOT NULL
+  OR array_position(p_transactions,NULL) IS NOT NULL OR array_position(p_events,NULL) IS NOT NULL
+  OR array_position(p_quantities,NULL) IS NOT NULL OR array_position(p_ordinals,NULL) IS NOT NULL
+  OR array_position(p_envelopes,NULL) IS NOT NULL OR array_position(p_entry_kinds,NULL) IS NOT NULL THEN
+  RAISE EXCEPTION 'null death retirement batch entry' USING ERRCODE='23514';
+ END IF;
+ FOR k IN 1..n LOOP
+  INSERT INTO game_item_decay_retire_reservations
+   (item_instance_id,fence_scope_ownership_generation,corpse_item_instance_id,world_id,channel_id,
+    transaction_id,event_id,quantity_before,placement_ordinal,deadline,occurred_at,envelope,
+    fence_holder_node_id,fence_holder_registration_revision,work_units_used,reserved_at,
+    type2_schema_revision,cause_kind,reset_epoch,retirement_binding,target_digest,
+    ground_root_item_instance_id,scope_kind,instance_id,activity_handoff_id,activity_ownership_generation)
+  VALUES(p_items[k],p_generation,NULL,p_world,p_channel,p_transactions[k],p_events[k],p_quantities[k],
+   p_ordinals[k]::numeric(20,0),NULL,p_occurred_at,p_envelopes[k],p_node,p_registration_revision,0,
+   floor(extract(epoch FROM statement_timestamp())*1000)::bigint,p_schema_revision,p_cause_kind,
+   p_reset_epoch,p_retirement_binding,p_target_digest,p_root,p_scope_kind,p_instance,
+   p_activity_handoff,p_activity_generation);
+  IF NOT game_player_death_retire_entry(p_items[k],p_generation,p_transactions[k],p_parents[k],
+   p_entry_kinds[k],p_event_type_id,p_schema_revision,p_retention_profile_id,p_retention_ms) THEN
+   RAISE EXCEPTION 'death retirement batch entry refused' USING ERRCODE='23514';
+  END IF;
+ END LOOP;
+ RETURN n;
+END $batch$;
+DO $migration$
+DECLARE f TEXT:='game_player_death_retire_entries(uuid[],uuid[],uuid[],uuid[],bigint[],text[],bytea[],smallint[],uuid,numeric,uuid,uuid,smallint,uuid,bigint,uuid,numeric,smallint,text,numeric,bytea,bytea,uuid,numeric,bigint,text,bigint)';
+BEGIN
+ EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
+ EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,oteryn_game_control',f);
+ EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime',f);
+END $migration$;
+
 -- Capture only a current retirement reservation's actual edge. All ancestors
 -- must still be live in the same World, with one parent and a bounded acyclic
 -- path to the receipt-proven death Ground root. A raw DELETE gets no proof.

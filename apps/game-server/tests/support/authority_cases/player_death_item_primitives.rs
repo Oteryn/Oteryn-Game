@@ -1744,6 +1744,181 @@ fn player_death_nested_reset_rechecks_drain_after_early_receipt_proofs() -> Test
         .map_err(Into::into)
 }
 
+async fn run_nested_reset_mid_batch_refusal(admin: String) -> TestResult {
+    use crate::durability::item_decay_retire::DecayRetireError;
+    use crate::durability::{DurabilityError, SqlxFailureClass};
+    use crate::item_transfer_postgres_cases::uuid_text;
+
+    let h = Harness::create(admin, "death_nested_mid_batch").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = carried_chain(&h, &authority, 3).await?;
+    assert_eq!(items.len(), 4);
+    let selected = items[0];
+    drop_unselected_death_root(&h, &authority, selected, false).await?;
+    let reset = prepare_nested_reset(&h, &h.root).await?;
+    let before = nested_reset_terminal_snapshot(&h).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    assert_eq!(h.count("game_item_decay_retire_reservations").await?, 0);
+
+    // Refuse the second descendant only after the first has its real terminal
+    // writes. The nontransactional counters prove that a false helper result
+    // stops the batch before its third child; every original guard stays active.
+    let (definition, body): (String, String) = sqlx::query_as(
+        "SELECT pg_get_functiondef(p.oid),p.prosrc FROM pg_proc p \
+         WHERE p.oid='game_player_death_retire_entry(uuid,numeric,uuid,uuid,smallint,bigint,bigint,text,bigint)'::regprocedure",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(definition.matches(body.as_str()).count(), 1);
+    assert_eq!(body.matches("\nBEGIN\n").count(), 1);
+    sqlx::raw_sql(
+        "CREATE SEQUENCE test_nested_batch_attempts_seq; \
+         CREATE SEQUENCE test_nested_batch_refused_seq; \
+         GRANT USAGE,SELECT ON SEQUENCE test_nested_batch_attempts_seq,test_nested_batch_refused_seq \
+          TO oteryn_game_runtime;",
+    )
+    .execute(&h.pool)
+    .await?;
+    let injection = format!(
+        "\nBEGIN\n \
+         PERFORM nextval('test_nested_batch_attempts_seq'::regclass); \
+         IF p_item='{}'::uuid THEN \
+          IF NOT EXISTS(SELECT 1 FROM game_item_decay_retire_receipts r \
+            JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id \
+             AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id \
+            JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id \
+             AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id \
+             AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id \
+            WHERE r.item_instance_id='{}'::uuid AND r.ground_root_item_instance_id='{}'::uuid \
+             AND r.cause_kind='WORLD_RESET' AND r.created_xact_id=pg_current_xact_id()) THEN \
+           RAISE EXCEPTION 'mid-batch fixture requires a completed first descendant'; \
+          END IF; \
+          PERFORM nextval('test_nested_batch_refused_seq'::regclass); \
+          RETURN FALSE; \
+         END IF;\n",
+        uuid_text(items[2]),
+        uuid_text(items[3]),
+        uuid_text(selected),
+    );
+    let injected_body = body.replacen("\nBEGIN\n", &injection, 1);
+    // Only the captured function and canonical fixture UUIDs enter this
+    // disposable-schema script; preserve the original OID and security mode.
+    sqlx::raw_sql(sqlx::AssertSqlSafe(definition.replacen(
+        body.as_str(),
+        &injected_body,
+        1,
+    )))
+    .execute(&h.pool)
+    .await?;
+    let rejected = h
+        .root
+        .retire_world_reset_ground(&authority, &h.node, &reset)
+        .await;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(definition))
+        .execute(&h.pool)
+        .await?;
+    assert!(matches!(
+        rejected,
+        Err(DecayRetireError::Unavailable(DurabilityError::Database(
+            SqlxFailureClass::Database(_)
+        )))
+    ));
+    let attempts: (i64, bool) =
+        sqlx::query_as("SELECT last_value,is_called FROM test_nested_batch_attempts_seq")
+            .fetch_one(&h.pool)
+            .await?;
+    let refused: (i64, bool) =
+        sqlx::query_as("SELECT last_value,is_called FROM test_nested_batch_refused_seq")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        attempts,
+        (2, true),
+        "no child after the refusal may execute"
+    );
+    assert_eq!(
+        refused,
+        (1, true),
+        "the first descendant finished before refusal"
+    );
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, before);
+    assert_eq!(h.count("game_item_decay_retire_reservations").await?, 1);
+    let frozen: (String, String, String) = sqlx::query_as(
+        "SELECT item_instance_id::text,transaction_id::text,event_id::text \
+         FROM game_item_decay_retire_reservations",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(frozen.0, uuid_text(selected));
+
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    let committed: (String, String, String) = sqlx::query_as(
+        "SELECT item_instance_id::text,transaction_id::text,event_id::text \
+         FROM game_item_decay_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(committed, frozen, "retry retains the frozen root identity");
+    let order: Vec<(String, i64, String)> = sqlx::query_as(
+        "SELECT item_instance_id::text,cmin::text::bigint,created_xact_id::text \
+         FROM game_item_decay_retire_receipts ORDER BY cmin::text::bigint LIMIT 5",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(order.len(), items.len());
+    for ((item, _, transaction), expected) in order.iter().zip(items.iter().rev()) {
+        assert_eq!(item, &uuid_text(*expected));
+        assert_eq!(transaction, &order[0].2);
+    }
+    assert!(order.windows(2).all(|pair| pair[0].1 < pair[1].1));
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 4);
+    let edges: Vec<_> = items.windows(2).map(|pair| (pair[1], pair[0])).collect();
+    assert_nested_retirement_audits(&h, selected, &edges).await?;
+    for item in &items {
+        assert_eq!(h.item_state(*item).await?, (0, 2));
+    }
+    let retired = nested_reset_terminal_snapshot(&h).await?;
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, retired);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_nested_reset_refusal_rolls_back_completed_batch_children() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_nested_reset_mid_batch_refusal(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "nested mid-batch test thread panicked")?
+        .map_err(Into::into)
+}
+
 struct MaximumDeathTree {
     items: Vec<[u8; 16]>,
     edges: Vec<([u8; 16], [u8; 16])>,
