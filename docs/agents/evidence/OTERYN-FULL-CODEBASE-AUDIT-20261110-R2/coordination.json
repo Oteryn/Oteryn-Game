@@ -1,43 +1,52 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T10:23:46.300089+00:00",
-  "lifecycle": "AUTHORING",
+  "observed_at_utc": "2026-11-10T10:41:07.854856+00:00",
+  "lifecycle": "MATERIAL_FREEZE",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
   "owned_prefix": "docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110-R2",
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 20,
+      "ledger_rows": 47,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
-        "oteryn-admin-agent"
+        "oteryn-admin-agent",
+        "oteryn-gameplay-admission-evidence",
+        "oteryn-gameplay-character-recovery-fence",
+        "oteryn-simulation-determinism",
+        "oteryn-game-ops-top"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 41,
+      "ledger_rows": 156,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
         "oteryn-session-tcp",
         "oteryn-error-codes",
-        "oteryn-platform-client"
+        "oteryn-platform-client",
+        "oteryn-session"
       ]
     },
     {
       "lane": "gameplay-rules",
-      "ledger_rows": 30,
+      "ledger_rows": 179,
       "reported_completed_modules": [
         "oteryn-gameplay-source-critical-baseline",
         "oteryn-gameplay-node-files",
         "oteryn-gameplay-weather",
-        "oteryn-gameplay-characters"
+        "oteryn-gameplay-characters",
+        "oteryn-gameplay-housing",
+        "oteryn-gameplay-economy",
+        "oteryn-gameplay-combat-rules",
+        "oteryn-gameplay-encounter-rules"
       ]
     },
     {
       "lane": "client-support",
-      "ledger_rows": 70,
+      "ledger_rows": 787,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -49,8 +58,13 @@
         "oteryn-client-simulation",
         "oteryn-client-assets",
         "oteryn-input-actions",
-        "oteryn-input-platform"
+        "oteryn-input-platform",
+        "oteryn-client-runtime",
+        "oteryn-renderer"
       ]
     }
-  ]
+  ],
+  "publication_predecessor": "0bcd059c8b354c422e128f9fa6803bdf8aaad1e5",
+  "publication_route": "API-native new candidate; sole parent, expected-SHA non-force ref update, actual remote-head requalification",
+  "checkpoint": 2
 }

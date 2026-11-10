@@ -1,4 +1,4 @@
-# OTERYN FULL AUDIT — continuation checkpoint 1
+# OTERYN FULL AUDIT — continuation checkpoint 2
 
 Input base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`.
 Audit is ongoing; all remaining packages and supplementary domains remain in scope.
@@ -6,26 +6,35 @@ Audit is ongoing; all remaining packages and supplementary domains remain in sco
 ## Verified evidence at this checkpoint
 
 - 67 workspace packages; 11 supplementary domains; 27900 tracked input files.
-- 25 packages REVIEWED, 25 IN PROGRESS, 17 NOT STARTED; 0 VERIFIED.
-- 343 distinct files with substantive recorded analysis, including 232 full files and 111 files with selected ranges; 62726 deduplicated analyzed line positions.
-- 192 earlier analyzed files have identical Git blobs and retain their exact previous ranges. Four changed files receive no automatic carryover credit (see `carryover.json`).
-- Source review is distinguished from executed tests. Exact line/hash checks and completed-module file completeness are checked mechanically; this does not substitute for substantive review or runtime tests.
+- 36 packages REVIEWED, 21 IN PROGRESS, 10 NOT STARTED; 0 VERIFIED.
+- 1312 distinct files with substantive recorded analysis: 1150 full files and 162 selected-range files; 128846 deduplicated analyzed line positions.
+- 192 earlier analyzed files have identical Git blobs and retain their exact previous ranges. Four changed files receive no automatic carryover credit (`carryover.json`); any fresh analysis is separately attributed in the ledger.
+- Source review is distinct from tests executed. Coverage includes individually reasoned source/test review and explicitly scoped semantic data validation. Mechanically checking a hash/range does not substitute for either.
 
 ## Findings register
 
-The [first published checkpoint](https://github.com/Oteryn/Oteryn-Game/tree/1c39ebc3347319fe08eaf58299a8a9e9339b0367/docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110) retains the detailed existing register and independent verifications: 0 confirmed P0, 3 confirmed P1, 3 confirmed P2, 0 confirmed P3, 2 LIKELY findings, 4 rejected hypotheses. Its scoped reconciliation already checked this exact continuation input SHA. These counts are not new discoveries in round 2.
+The [first published checkpoint](https://github.com/Oteryn/Oteryn-Game/tree/1c39ebc3347319fe08eaf58299a8a9e9339b0367/docs/agents/evidence/OTERYN-FULL-CODEBASE-AUDIT-20261110) retains three confirmed P1 and three confirmed P2 findings, two LIKELY findings and four rejected hypotheses. Its scoped reconciliation already checked this continuation input SHA.
 
-New candidate PS-R2-001 remains P2 LIKELY, independently under examination; no new confirmed finding is added in this checkpoint. Security-sensitive evidence stays private under `SECURITY.md`.
+Four newly confirmed P2 findings have independent lead verification:
+
+| ID | Confirmed effect | Evidence |
+|---|---|---|
+| GR-SOUL-001 | Valid promoted Premium soul above the free cap is clamped on fresh restoration; raising the later cap does not restore lost points | `verify-soul-cap.md` |
+| CL-001 | Valid UseOn sources in open nested carried containers fail client freshness revalidation | `verify-client-item-actions.md` |
+| CL-002 | Plain custom Use item hotkeys are rejected because their command has no world selection | `verify-client-item-actions.md` |
+| PS-R2-001 | A remembered-device login integration path rejects a valid response | Independent source evidence retained privately under `SECURITY.md` |
+
+Cumulative confirmed counts: **P0=0, P1=3, P2=7, P3=0**. Existing LIKELY=2 and rejected hypotheses=4 remain. Static confirmation does not claim a deployed incident or native end-to-end reproduction. Findings are deferred to separate implementation work; this is an audit-only branch.
 
 ## Navigation
 
-- `coverage.md` and `coverage-ledger.json`: full package/domain matrix and exact source ranges, hashes, remaining files and provenance.
-- `module-reports.json`: per-package results and report references.
-- `admin-review.md`, `protocol-session.md`, `platform-client.md`, `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`: substantive completed package reports; client-support reports are inline in `module-reports.json`.
-- `inventory.json`: actual Cargo members, targets and local dependencies on this base.
-- `carryover.json`: exact-blob transfer and changed-file exclusions.
-- `coordination.json`, `snapshot-checks.json`, `validation.md`: allocation, count checks and publication checks.
+- `coverage.md`, `coverage-ledger.json`: package/domain matrix, exact ranges, hashes, provenance and remaining files.
+- `module-reports.json`: substantive package reports and report references; client-support module results are inline.
+- `admin-review.md`, `admission-recovery-review.md`, `determinism-ops-review.md`: lead package reports.
+- `protocol-session.md`, `platform-client.md`, `session.md`: completed session/platform packages.
+- `characters.md`, `node-files.md`, `weather.md`, `source-critical-baseline.md`, `housing.md`, `economy.md`, `combat-rules.md`, `encounter-rules.md`: gameplay package reports.
+- `inventory.json`, `carryover.json`, `coordination.json`, `snapshot-checks.json`, `validation.md`: exact inventory, transfer, allocation and checks.
 
 ## Continuation
 
-Three read-only workers and the lead continue source review. Large client, server, protocol, gameplay, dispatch, durability, content and tool scopes are not marked complete because smaller dependencies are complete. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the live publication head and next allocation. No game source, main branch, PR, merge or production environment is changed by this audit.
+Three read-only workers and the lead continue. Large client UI/app, protocol, gameplay owners, server, dispatch, durability, content and tool scopes retain explicit remaining files. The [central issue](https://github.com/Oteryn/Oteryn-Game/issues/3088) records the published exact head and allocation. No game source, main branch, PR, merge or production environment is changed.

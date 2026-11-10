@@ -1,0 +1,13 @@
+# Housing — REVIEWED
+
+Base: `4f0b6c62a789489fca6c37dd36d5917d096f328e`. All24 package files (2,330 lines) substantively reviewed; existing tests inspected, not executed in this batch.
+
+Entrypoints cover proxy auction quote/deadline/value plans, bidder and Guildhall eligibility, immutable interior provenance, current-role policy, handoff tile selection, scope identity, ACL parsing, move-out deadlines, podium selection, bed recovery and reclaim batch shape. Pure plans cannot grant current authority. World and house keys remain distinct from Channel identity. Integer arithmetic uses explicit input caps, checked operations or saturating bounded projections.
+
+Auction value analysis covers reserve/raise/lower/repeat, refund, winner price and first rent: balance/escrow conservation is maintained. A suspected Guildhall over-cap successor is refuted in the reachable native path: migration0228 limits maximum+rent to999999999999 before Rust resize and constrains both escrow and aggregate guild balance+escrow under deferred triggers. This is a rejected hypothesis, not a finding. The native SQL recomputes guild-first reserve/leader-first refund under its locks instead of trusting the Rust proposal.
+
+Interior event validation binds item, house, placement transaction, reclaim subject and revision; guest take differs intentionally from tile movement. ACL editing privileges are closed (subowners edit Guest only), and size/line/name bounds reject unsupported authority forms. House entry excludes reserved tiles and counts prepared entries. Reclaim steps require strict item order and valid subjects, also checked by the actual disposition-audit writer.
+
+Cross-module GR-SOUL-001 (P2, independently CONFIRMED by the lead): bed settlement takes the fixed free-account soul maximum100 from characters/vitals and clamps a promoted current-Premium player's valid saved soul above100. The same class occurs in general fresh admission: restore_bed_rest clamps saved soul before the current promotion/Premium projection changes the maximum to200. Independent evidence is in verify-soul-cap.md. This is recoverable soul-resource loss, not demonstrated character lockout, item loss or duplication.
+
+Native integration checks: durability/bed_regen.rs holds recovery/session fencing, checks predecessor lease/world and consumes the sleeper in one transaction; those guards prevent replay but do not supply current Premium maximum. Native Guildhall prepare/apply and SQL headroom guards, plus disposition-audit shape validation, were traced. PostgreSQL, house handoff scheduling and live bed-login reproduction were not executed. No package files remain. Current live ACL and persistence state machines retain their own separate review scope.

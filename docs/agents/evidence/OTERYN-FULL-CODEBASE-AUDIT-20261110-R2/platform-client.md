@@ -1,6 +1,6 @@
 # oteryn-platform-client — source audit
 
-Base `4f0b6c62a789489fca6c37dd36d5917d096f328e`; status **REVIEWED** for all tracked package source, manifests and tests. Native HTTP/TUF/TLS integration tests were inspected, not run. A candidate functional timing defect awaits independent verification; no new confirmed P0/P1 is claimed.
+Base `4f0b6c62a789489fca6c37dd36d5917d096f328e`; status **REVIEWED** for all tracked package source, manifests and tests. Native HTTP/TUF/TLS integration tests were inspected, not run. A functional login integration defect has been independently confirmed by static source review; no new confirmed P0/P1 is claimed.
 
 ## Entrypoints and invariants
 
@@ -25,9 +25,9 @@ Account-service functions validate bounded schemas, identifier and amount ranges
 - Device response shape cannot add nullable optional fields to an enrollment response: exact member counts and typed required fields jointly enforce the endpoint-specific shape.
 - Updater stale partial hypothesis is refuted by the actual caller's cleanup under the install lock; unsigned/incorrect target bytes are not activated by the package API.
 
-## Candidate awaiting verification
+## Independently verified finding
 
-PS-R2-001 is a P2 functional candidate concerning a remembered-device login failure. It remains LIKELY; concrete producer timing and runtime validation are outstanding. Details are retained privately while the lead independently verifies the path.
+PS-R2-001 is a P2 CONFIRMED functional remembered-device login defect. The lead independently checked the accepted Platform producer and actual Game consumer/caller at exact pinned revisions. Detailed authentication evidence is retained privately under SECURITY.md. A native delayed-HTTPS exchange and deployed exposure were not verified.
 
 ## Validation and limits
 

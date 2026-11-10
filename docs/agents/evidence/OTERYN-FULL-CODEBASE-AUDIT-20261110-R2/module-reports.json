@@ -22,6 +22,46 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-admission-evidence",
+      "path": "crates/gameplay/admission-evidence",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "admission-recovery-review.md",
+      "remaining_files": [],
+      "verification": "Full source review; native filesystem/HTTP/SQL tests not executed.",
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-gameplay-character-recovery-fence",
+      "path": "crates/gameplay/character-recovery-fence",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "admission-recovery-review.md",
+      "remaining_files": [],
+      "verification": "Full source review; native filesystem/HTTP/SQL tests not executed.",
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-simulation-determinism",
+      "path": "crates/simulation-determinism",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "determinism-ops-review.md",
+      "remaining_files": [],
+      "verification": "Complete source/test inspection; native Rust, UI and socket execution not run.",
+      "auditor": "lead"
+    },
+    {
+      "module": "oteryn-game-ops-top",
+      "path": "tools/oteryn-game-ops-top",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "report": "determinism-ops-review.md",
+      "remaining_files": [],
+      "verification": "Complete source/test inspection; native Rust, UI and socket execution not run.",
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -53,6 +93,13 @@
       "module": "oteryn-platform-client",
       "status": "REVIEWED",
       "report": "platform-client.md",
+      "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
+      "auditor": "protocol-session"
+    },
+    {
+      "module": "oteryn-session",
+      "status": "REVIEWED",
+      "report": "session.md",
       "verification": "Exact source error-codes rustc unit tests: 25 passed; panic integration tests: 3 passed. Other packages native tests not run.",
       "auditor": "protocol-session"
     },
@@ -102,6 +149,54 @@
       "report": "characters.md",
       "runtime_tests_run": 19,
       "module": "oteryn-gameplay-characters",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-housing",
+      "path": "crates/gameplay/housing",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 24,
+      "remaining_files": [],
+      "report": "housing.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-housing",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-economy",
+      "path": "crates/gameplay/economy",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 28,
+      "remaining_files": [],
+      "report": "economy.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-economy",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-combat-rules",
+      "path": "crates/gameplay/combat-rules",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 29,
+      "remaining_files": [],
+      "report": "combat-rules.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-combat-rules",
+      "auditor": "gameplay-rules"
+    },
+    {
+      "name": "oteryn-gameplay-encounter-rules",
+      "path": "crates/gameplay/encounter-rules",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "status": "REVIEWED",
+      "reviewed_files": 21,
+      "remaining_files": [],
+      "report": "encounter-rules.md",
+      "runtime_tests_run": 0,
+      "module": "oteryn-gameplay-encounter-rules",
       "auditor": "gameplay-rules"
     },
     {
@@ -234,6 +329,58 @@
       "findings": [],
       "remaining_files": [],
       "verification": "Static complete source read plus focused existing Linux native tests in validation.json. No independent second-pass module verification yet; Windows runtime is not claimed.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-client-runtime",
+      "path": "crates/client-runtime",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 91,
+      "entrypoints_and_invariants": "Complete91files/5228lines: runtime/admission retries, feature entrypoints/reexports, all typed/raw protocol adapters, manual house/boss/daily reward codecs, current-view replacement reducers, world-use guard and test fixtures. Authority stays in Session/server; UI reply/state projections are not authoritative. Live root inventory vs open-container provenance and hotkey dispatch traced into real app/server stores.",
+      "dependency_edges": [
+        "oteryn-session: capability/session generation and sequence owner, typed codecs and state snapshots",
+        "apps/client: native admission callback, Stepper dispatch, custom and action-bar item hotkey production callers",
+        "protocol-oteryn: item view domain9/domain14 contract and bounded feature models"
+      ],
+      "negative_hypotheses": [
+        "Party sharedxp request fails runtime validator: refuted because app recognizes strict shared_setting then sends chat_public and current party query.",
+        "Depot open views permit deposits from ground/corpse: refuted by carried ancestry closure and browse exclusion.",
+        "Wheel mutation receipt overwrites latest balances: refuted by independent current queries, including delayed replay regression test source.",
+        "Manual house parser allows unbounded allocation/shifts: refuted by 32KiB/20row/512text/200member limits and pre-shift tag bounds.",
+        "Daily reward malformed overflowing varint: advisory decoder may accept noncanonical bounded values but no production-material impact demonstrated; not a security finding."
+      ],
+      "findings": [
+        "CL-001 P2, independently confirmed by root static review",
+        "CL-002 P2, independently confirmed by root static review"
+      ],
+      "remaining_files": [],
+      "verification": "Static substantive complete package review. Runtime tests including duplex exchanges analyzed, not run. Root independently confirmed CL-001/CL-002 source traces and P2; package-wide independent scrutiny not performed, so package REVIEWED rather than VERIFIED.",
+      "auditor": "client-support"
+    },
+    {
+      "module": "oteryn-renderer",
+      "path": "crates/renderer",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 18,
+      "entrypoints_and_invariants": "All18files/3941lines: transactional SurfaceState lifecycle, batches/atlas/view, bounded LRU resources, lighting/labels, Windows wgpu/MSAA, WGSL layout, capture and alltests/manifest. Pure presentation, no authoritative game mutation.",
+      "dependency_edges": [
+        "foundation ProcessGeneration -> stale-event/acquisition gate",
+        "client-domain TileCoord/Draw -> presentation",
+        "client-assets verified32x32 cell output -> atlas callbacks",
+        "apps/client native shell/current scene and explicit screenshots"
+      ],
+      "negative_hypotheses": [
+        "Stalegeneration physical GPU acquisition: refuted by resources::acquire_frame before callback and tests.",
+        "Malformed atlas helper panics reachable fromuntrusted assets: count assumes invariants, but allactualcallers use builtin4+cappedfixedsizeverifiedcells; no violating caller found.",
+        "GPUinstancebuffer too small: private81920cap perbatch, shared2*MAX*48bytes andmatchingupload/draw.",
+        "Page sameframeeviction: frame_first_tick protects drawnslots; overflowplaceholder.",
+        "Arbitrarydesktopcapture: renderer onlyownedtexture, appwholewindow route explicitlyseparate."
+      ],
+      "findings": [],
+      "remaining_files": [],
+      "verification": "Static complete source/test/manifest analysis. Tests analyzed notrun. NoWindows/DX12/Vulkan device, shader validation, devicefailure injection,screenshotruntime orperformancebenchmark. REVIEWED notVERIFIED.",
       "auditor": "client-support"
     },
     {
