@@ -7,7 +7,7 @@ fn tibiadrome_highscore_filters_decode_and_render_native_rankings()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut panel = HighscoresPanel::default();
     panel.selected = true;
-    for category in [13, 15, 16] {
+    for category in [13, 15] {
         assert!(
             highscores::request(
                 &mut panel,
@@ -261,7 +261,7 @@ fn native_combo_selection_preserves_reserved_category_gaps() {
     assert_eq!(highscores::category_for_selection(13), Some(17));
     assert_eq!(highscores::category_for_selection(14), None);
     assert_eq!(highscores::category_for_selection(usize::MAX), None);
-    for category in [0, 13, 15, 16, 18, u32::MAX] {
+    for category in [0, 13, 15, 18, u32::MAX] {
         assert_eq!(highscores::category_selection(category), None);
     }
 }

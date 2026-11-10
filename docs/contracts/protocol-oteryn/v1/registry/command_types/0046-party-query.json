@@ -4,7 +4,7 @@
   "owner_decision": "PARTY-1 owner allocation 2026-10-23; PARTYPVP0-PARTIES-AND-PVP-V1",
   "capability": 42,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/party_v1.proto#PartyQueryV1",
-  "result_schema": "docs/contracts/protocol-oteryn/v1/party_v1.proto#PartyResultV1; common ACCEPTED carries typed outcome, malformed or unselected requests common REJECTED with empty payload",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/party_v1.proto#PartyResultV1; common ACCEPTED carries typed outcome, malformed or unselected requests common REJECTED with empty payload; payload budget is 65536 bytes with selected PARTY_LIST_V1 (461), otherwise the legacy maximum is 8192 bytes; see docs/contracts/protocol-oteryn/v1/party-list-v1.md",
   "max_payload_bytes": 0,
-  "max_result_payload_bytes": 8192
+  "max_result_payload_bytes": 65536
 }

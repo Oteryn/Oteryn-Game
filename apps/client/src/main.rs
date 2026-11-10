@@ -17,6 +17,8 @@ fn native_client() -> Option<oteryn_client::ClientBootstrap> {
 /// Installation checks finish before a login runtime or presentation package can be loaded.
 fn installation_check() -> Option<std::process::ExitCode> {
     let requested = std::env::args_os().any(|argument| argument == "--check-packages");
+    #[cfg(windows)]
+    let smoke = std::env::args_os().any(|argument| argument == "--smoke");
     match oteryn_client::package_integrity::verify_current(requested) {
         Ok(report) if requested => {
             println!("{report}");
@@ -26,7 +28,7 @@ fn installation_check() -> Option<std::process::ExitCode> {
         Err(error) => {
             eprintln!("Oteryn installation check failed: {error}");
             #[cfg(windows)]
-            if !requested {
+            if !requested && !smoke {
                 oteryn_client::package_integrity::show_repair_required(&error);
             }
             Some(std::process::ExitCode::FAILURE)
@@ -62,6 +64,10 @@ fn main() -> std::process::ExitCode {
     match windows_shell::run(native_client()) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
+            oteryn_client::crash_report::record_startup_failure(
+                "client",
+                &format!("windows shell failed: {error}"),
+            );
             leprintln!("Error: {error:?}", error = error);
             std::process::ExitCode::FAILURE
         }

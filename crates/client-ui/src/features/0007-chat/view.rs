@@ -3,6 +3,20 @@ use oteryn_client_runtime::chat::ChatLine;
 use std::fmt::Write;
 #[must_use]
 pub fn panel_text(panel: &ChatPanel) -> String {
+    tab_text(panel, panel.console.tab)
+}
+
+/// A mirror exposes only text, with no composer or send action of its own.
+#[must_use]
+pub fn mirror_text(panel: &ChatPanel) -> Option<String> {
+    if !panel.open {
+        return None;
+    }
+    panel.console.mirror.map(|tab| tab_text(panel, tab))
+}
+
+fn tab_text(panel: &ChatPanel, tab: super::ConsoleTab) -> String {
+    let show_messages = panel.console.shows_messages(tab);
     let mut text = String::from(tr!("Local Chat — Say / Whisper / Yell / Private\n"));
     if panel.console.presentation.visible[2] {
         text.push_str(&crate::chat_guild_room::panel_text(panel));
@@ -14,18 +28,18 @@ pub fn panel_text(panel: &ChatPanel) -> String {
             .len()
             .saturating_sub(usize::from(presentation.limit)),
     ) {
-        if !presentation.shows(line) || !panel.console.filters.visible(panel.console.tab, line) {
+        if !presentation.shows(line) || !panel.console.filters.visible(tab, line) {
             continue;
         }
         if !panel.console.communication.visible(line) {
             continue;
         }
-        if !panel.console.show_messages {
+        if !show_messages {
             continue;
         }
         use crate::chat::ConsoleTab;
         if !matches!(
-            (panel.console.tab, line),
+            (tab, line),
             (ConsoleTab::All, _)
                 | (ConsoleTab::Local, ChatLine::Local { .. })
                 | (ConsoleTab::Private, ChatLine::Private { .. })
@@ -147,7 +161,7 @@ pub fn panel_text(panel: &ChatPanel) -> String {
             _ => {}
         }
     }
-    if panel.console.show_messages && panel.console.tab == crate::chat::ConsoleTab::All {
+    if show_messages && tab == crate::chat::ConsoleTab::All {
         text.push_str(
             &panel
                 .console

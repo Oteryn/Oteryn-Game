@@ -175,7 +175,7 @@ async fn peer(
     Ok(())
 }
 
-fn check(targeted: bool, expected: SpellCastIntent) -> Result<(), Error> {
+fn check(targeted: bool, expected: SpellCastIntent, facing: bool) -> Result<(), Error> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), Error> {
@@ -222,6 +222,14 @@ fn check(targeted: bool, expected: SpellCastIntent) -> Result<(), Error> {
                         return Err("native action bar did not queue ordinary combat".into());
                     };
                     assert_eq!(command, CombatCommand::Cast(energy_wave));
+                    let command = if facing {
+                        CombatCommand::CastFacing {
+                            spell: energy_wave,
+                            direction: None,
+                        }
+                    } else {
+                        command
+                    };
                     let mut feedback = SpellFeedback::default();
                     let report = run_combat(&mut session, &mut feedback, command).await?;
                     assert_eq!(
@@ -251,6 +259,7 @@ fn clhud_native_bar_aims_at_the_admitted_attack_target() -> Result<(), Error> {
             target: SpellTarget::AttackTarget,
             aim_at_target: true,
         },
+        false,
     )
 }
 
@@ -263,5 +272,19 @@ fn clhud_native_bar_without_opponent_keeps_directional_fallback() -> Result<(), 
             target: SpellTarget::None,
             aim_at_target: false,
         },
+        false,
+    )
+}
+
+#[test]
+fn explicit_facing_cast_ignores_attack_target_on_real_wire() -> Result<(), Error> {
+    check(
+        true,
+        SpellCastIntent {
+            spell: NonZeroU32::new(ENERGY_WAVE_INDEX).ok_or("spell")?,
+            target: SpellTarget::None,
+            aim_at_target: false,
+        },
+        true,
     )
 }

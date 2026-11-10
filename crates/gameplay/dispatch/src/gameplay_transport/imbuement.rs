@@ -3,7 +3,7 @@
 //! The query reads a main backpack direct entry through the durable item owner and its
 //! slots and allowances from the qualified native item policy. Apply and clear run the
 //! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile; the
-//! Canary quest unlock is a declared difference) and Premium for tiers 2 and 3, and then the
+//! official Powerful unlocks) and Premium for tiers 2 and 3, and then the
 //! one fenced durable transaction that consumes the recipe materials, burns the gold and writes
 //! or removes the imbuement (PARITY-IMBUE-FORGE-WIRE-1, migration 0196).
 use super::connection::{UseCommand, UseOutcome};
@@ -23,14 +23,16 @@ use crate::foundation::{CommandId, ExactActorRef};
 use crate::map::view;
 use oteryn_gameplay_items::imbuement::{
     BLANK_IMBUEMENT_SCROLL_ITEM_ID, IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD,
-    IMBUEMENT_ETCHER_ITEM_ID, IMBUEMENT_SCROLLS, IMBUEMENT_TIER_RULES, imbuement_recipe,
-    imbuement_scroll,
+    IMBUEMENT_ETCHER_ITEM_ID, IMBUEMENT_SCROLLS, IMBUEMENT_TIER_RULES, imbuement_category_group,
+    imbuement_recipe, imbuement_scroll,
 };
 use oteryn_protocol_oteryn::imbuement as wire;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
 use sha2::{Digest, Sha256};
 use wire::{ImbuementAction, ImbuementResult};
+#[path = "imbuement_unlocks.rs"]
+mod unlocks;
 
 /// The Canary imbuing shrines, sorted (`data/items/items.xml`, `script="imbuement_shrine"`).
 pub(super) const SHRINE_KEYS: [&str; 10] = [
@@ -87,6 +89,14 @@ pub(super) fn allowance(
             .collect(),
         _ => Vec::new(),
     };
+    families = families
+        .into_iter()
+        .flat_map(|family| match family {
+            2 => vec![21, 22, 23, 24, 25],
+            13 => vec![26],
+            other => vec![other],
+        })
+        .collect();
     families.sort_unstable();
     families.dedup();
     let offers = families
@@ -182,7 +192,9 @@ pub fn decide_imbuement_item_use(
         .offers
         .iter()
         .any(|offer| offer.family == scroll.family && offer.tier == scroll.tier)
-        || applied.iter().any(|row| row.category + 1 == scroll.family)
+        || applied.iter().any(|row| {
+            imbuement_category_group(row.category) == imbuement_category_group(scroll.family - 1)
+        })
     {
         return ImbuementItemDecision::Refused(ImbuementResult::NotAllowed);
     }
@@ -242,7 +254,9 @@ pub(super) fn decide(
                 Decision::Reply(reply(ImbuementResult::NotAllowed))
             } else if occupied(slot) {
                 Decision::Reply(reply(ImbuementResult::SlotOccupied))
-            } else if applied.iter().any(|row| row.category + 1 == offer.family) {
+            } else if applied.iter().any(|row| {
+                imbuement_category_group(row.category) == imbuement_category_group(offer.family - 1)
+            }) {
                 Decision::Reply(reply(ImbuementResult::NotAllowed))
             } else {
                 Decision::Apply {
@@ -485,6 +499,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Only a carried, unequipped instance can be a main backpack direct entry; the owner
         // read below decides that, so every other handle is the same NOT_ALLOWED.
+        let expanded = admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
         let (decision, instance, blank) = match views.resolve(request.item) {
             Some(key @ ItemKey::Instance(instance)) if views.equipped_slot(&key).is_none() => {
                 let target = match self
@@ -507,7 +525,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     target.definition.production_key
                         == format!("oteryn:item.tibia.i{BLANK_IMBUEMENT_SCROLL_ITEM_ID}")
                 });
-                let allowance = target.as_ref().and_then(|target| {
+                let mut allowance = target.as_ref().and_then(|target| {
                     if blank {
                         return Some(blank_scroll_allowance());
                     }
@@ -524,7 +542,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .then(|| allowance(&record.semantics.imbuement))
                         .flatten()
                 });
+                if !expanded && let Some(allowance) = &mut allowance {
+                    // Retain the original family/tier indices for pre-catalogue clients.
+                    if blank {
+                        allowance.offers.retain(|offer| offer.family <= 20);
+                    } else {
+                        for offer in &mut allowance.offers {
+                            offer.family = match offer.family {
+                                21..=25 => 2,
+                                26 => 13,
+                                other => other,
+                            };
+                        }
+                        allowance
+                            .offers
+                            .sort_by_key(|offer| (offer.family, offer.tier));
+                        allowance
+                            .offers
+                            .dedup_by_key(|offer| (offer.family, offer.tier));
+                    }
+                }
                 let applied = target.as_ref().map_or(&[][..], |t| t.applied.as_slice());
+                if !expanded && applied.iter().any(|row| row.category >= 20) {
+                    return encode(&reply(ImbuementResult::NotAllowed));
+                }
                 (
                     decide(request.action, allowance.as_ref(), applied),
                     instance,
@@ -532,6 +573,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             }
             _ => return encode(&reply(ImbuementResult::NotAllowed)),
+        };
+        let unlock = match &decision {
+            Decision::Apply { offer, .. } if offer.tier == 3 => Some(offer.family),
+            _ => None,
         };
         let (write, premium) = match decision {
             Decision::Reply(reply) => return encode(&reply),
@@ -619,6 +664,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if current.item_fence() != fence {
             return ImbuementReply::Rejected;
+        }
+        if let Some(family) = unlock {
+            let Ok(copy) = self
+                .root
+                .read_character_quest_state(self.character, current.character_id)
+                .await
+            else {
+                return ImbuementReply::Unavailable;
+            };
+            if !unlocks::powerful(family, &copy) {
+                return encode(&reply(ImbuementResult::RequirementNotMet));
+            }
         }
         let Ok(Some(bag)) = self
             .root

@@ -1,8 +1,46 @@
-//! Minimal local crash evidence. Panic text, environment values and memory are never collected.
+//! Minimal crash evidence. Panic text, environment values and memory are never collected.
 use std::{
+    fs::OpenOptions,
     io::{self, Write},
     path::{Path, PathBuf},
 };
+
+const STARTUP_LOG: &str = "startup.log";
+const LAUNCHER_EXIT_CODE: &str = "launcher-exit-code.txt";
+
+fn user_data_file(name: &str) -> Option<PathBuf> {
+    crate::native_login::settings_path()
+        .ok()?
+        .parent()
+        .map(|directory| directory.join(name))
+}
+
+fn append_startup_at(path: &Path, component: &str, detail: &str) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+    writeln!(file, "{component}: {detail}")
+}
+
+/// Retain a secret-free startup failure for a window-subsystem process whose stderr is hidden.
+pub fn record_startup_failure(component: &str, detail: &str) {
+    if let Some(path) = user_data_file(STARTUP_LOG) {
+        let _ = append_startup_at(&path, component, detail);
+    }
+}
+
+/// Publish the launcher's own result so unattended installer diagnostics can distinguish spawn
+/// failure from a client that started and exited.
+pub fn record_launcher_exit_code(code: u8) {
+    let Some(path) = user_data_file(LAUNCHER_EXIT_CODE) else {
+        return;
+    };
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let _ = std::fs::write(path, format!("{code}\n"));
+}
 
 pub struct CrashReport {
     source: String,
@@ -76,7 +114,7 @@ pub fn install_hook() {
         previous(info);
     }));
 }
-/// Review the retained report, discarding it only after a decision or a successful export.
+/// Review retained evidence, removing it only after declining or durably saving approved text.
 /// The native login caller supplies its synchronous consent dialog.
 pub fn review_pending_at(
     pending: &Path,
@@ -93,6 +131,10 @@ pub fn review_pending_at(
             "Crash report is too large",
         ));
     }
+    let preview = crate::support_delivery::preview(&preview);
+    if preview.len() > 4096 {
+        return Err(io::Error::other("Crash report is too large"));
+    }
     let approved = consent(&preview);
     if approved {
         save(&preview, destination, true)?;
@@ -100,27 +142,23 @@ pub fn review_pending_at(
     std::fs::remove_file(pending)?;
     Ok(approved)
 }
-/// Review and optional local export run on the UI thread, after a previous crash.
+/// Preview and delivery consent run on the UI thread after a previous crash.
 #[cfg(windows)]
 pub fn review_pending() {
     let Some(path) = pending_path() else { return };
     if !path.exists() {
         return;
     }
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let destination = path.with_file_name(format!("crash-report-{stamp}.txt"));
+    let destination = path.with_file_name("approved-crash.txt");
     match review_pending_at(&path, &destination, |preview| {
         consent_dialog(&lfmt!(
-            "{preview}\nSave a local report to share manually? Nothing is uploaded.",
+            "{preview}\nSend exactly this report to the Oteryn game server on your next signed-in play session? Yes queues delivery; No discards it.",
             preview = preview
         ))
     }) {
-        Ok(true) => {
-            crate::win_mutex::show_error(&lfmt!("Crash report saved to {}", destination.display()))
-        }
+        Ok(true) => crate::win_mutex::show_error(tr!(
+            "Crash report queued for delivery on your next play session."
+        )),
         Ok(false) => {}
         Err(_) => crate::win_mutex::show_error(
             "Cannot review or save the crash report. The pending report was retained.",
@@ -147,5 +185,25 @@ pub(crate) fn consent_dialog(message: &str) -> bool {
             wide(tr!("Oteryn — local report consent")).as_ptr(),
             MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
         ) == IDYES
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::append_startup_at;
+
+    #[test]
+    fn startup_failures_are_appended_for_later_diagnosis() -> std::io::Result<()> {
+        let directory =
+            std::env::temp_dir().join(format!("oteryn-startup-log-{}", std::process::id()));
+        let path = directory.join("nested").join("startup.log");
+        let _ = std::fs::remove_dir_all(&directory);
+        append_startup_at(&path, "launcher", "spawn failed")?;
+        append_startup_at(&path, "client", "window creation failed")?;
+        assert_eq!(
+            std::fs::read_to_string(&path)?,
+            "launcher: spawn failed\nclient: window creation failed\n"
+        );
+        std::fs::remove_dir_all(directory)
     }
 }

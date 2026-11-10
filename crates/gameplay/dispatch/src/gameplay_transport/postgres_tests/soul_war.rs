@@ -129,7 +129,7 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
         let awards = crate::durability::party_kill_xp::commit_in_transaction(&mut tx, &scope, owner.holder, PartyKillXpRequest {
             death_key: source.death_key.as_ref().to_vec(), principal: fence.character_id, creature: source.creature.clone(), base_xp: source.raw_xp,
             death_at_ms: source.death_at_ms, death_at_us: source.death_at_us, shared: false, party_id: None, party_revision: None,
-            members: vec![PartyKillXpMember { fence,
+            members: vec![PartyKillXpMember { task_board_eligible: true, fence,
                 request: ExperienceAwardRequest {
                     occurrence: ExperienceRewardOccurrence::from_bytes(source.occurrence).map_err(debug)?,
                     amount: oteryn_simulation_determinism::ExactI64::new(before),

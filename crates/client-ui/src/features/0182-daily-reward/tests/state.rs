@@ -1,5 +1,38 @@
 use super::*;
 #[test]
+fn proficiency_bonus_presentation_matches_server_streak_milestones() {
+    let mut panel = DailyRewardPanel::default();
+    assert!(!panel_text(&panel).contains("chance to gain double XP"));
+    for (streak, chance) in [
+        (0, 0),
+        (1, 1),
+        (6, 6),
+        (7, 7),
+        (8, 7),
+        (13, 7),
+        (14, 8),
+        (20, 8),
+        (21, 9),
+        (27, 9),
+        (28, 10),
+        (100_000, 10),
+    ] {
+        panel.wall = Some(daily_reward::DailyRewardWall {
+            lane_day: 1,
+            streak,
+            jokers: 0,
+            claimed: false,
+            claim_enabled: false,
+        });
+        let text = panel_text(&panel);
+        assert!(text.contains(&format!(
+            "Weapon proficiency XP: {chance}% chance to gain double XP"
+        )));
+        assert!(text.contains("1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28"));
+    }
+}
+
+#[test]
 fn confirmed_claim_disables_repeat_claim_and_projects_receipt() {
     let mut panel = DailyRewardPanel {
         selected: true,

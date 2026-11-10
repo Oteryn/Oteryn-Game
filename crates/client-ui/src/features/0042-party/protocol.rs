@@ -116,6 +116,7 @@ pub fn apply_result(panel: &mut PartyPanel, response: &PartyResponse) -> bool {
             .any(|entry| entry.handle == *handle)
     });
     panel.state = Some(state);
+    panel.reconcile_list();
     panel.received_at = Some(std::time::Instant::now());
     true
 }

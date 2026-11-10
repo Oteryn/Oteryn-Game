@@ -19,7 +19,7 @@ pub(in crate::play) fn submit(
         panel.feedback = tr!("Unavailable in this session").into();
         return;
     }
-    if panel.pending {
+    if panel.pending || panel.speed_pending {
         panel.feedback = tr!("Waiting for the server").into();
         return;
     }
@@ -29,6 +29,19 @@ pub(in crate::play) fn submit(
                 && commands.send(PlayCommand::Feature(command)).is_err()
             {
                 panel.failed(tr!("The session has ended"));
+            } else if matches!(
+                intent,
+                Intent::Query | Intent::Start | Intent::Shuffle | Intent::Find | Intent::Atlas
+            ) {
+                panel.speed_pending = true;
+                if commands.send(PlayCommand::Feature(oteryn_client_runtime::raw_feature::FeatureCommand {
+                    capability: 57,
+                    kind: oteryn_client_runtime::cyclopedia_map::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY,
+                    payload: Vec::new(),
+                })).is_err() {
+                    panel.speed_pending = false;
+                    panel.failed(tr!("The session has ended"));
+                }
             }
         }
         Err(message) => panel.feedback = message,

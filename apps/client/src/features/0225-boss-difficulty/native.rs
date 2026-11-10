@@ -35,8 +35,13 @@ pub(super) fn submit(
             return None;
         };
         if !matches!(intent, Intent::Cancel) {
-            let Some(value) = difficulty.trim().parse::<u16>().ok().filter(|d| *d <= 25) else {
-                panel.feedback = Some(tr!("Enter a difficulty from 0 to 25"));
+            let Some(value) = difficulty
+                .trim()
+                .parse::<u16>()
+                .ok()
+                .filter(|d| *d <= oteryn_client_runtime::boss_difficulty::MAX_DIFFICULTY)
+            else {
+                panel.feedback = Some(tr!("Enter a difficulty from 0 to 28"));
                 return None;
             };
             panel.difficulty = value;
@@ -167,14 +172,7 @@ mod platform {
                 [205, 45, 400, 24],
                 WS_BORDER | ES_READONLY as u32,
             );
-            control(
-                hwnd,
-                "STATIC",
-                tr!("Difficulty (0–25)"),
-                113,
-                [10, 80, 190, 24],
-                0,
-            );
+            control(hwnd, "STATIC", tr!("Difficulty"), 113, [10, 80, 190, 24], 0);
             let difficulty = control(
                 hwnd,
                 "COMBOBOX",

@@ -56,7 +56,7 @@ pub(in crate::play) fn configure(
     panel: &mut oteryn_client_ui::spell_action_bar::ActionBarPanel,
     fields: &[String],
 ) -> bool {
-    if !matches!(fields.len(), 4 | 12 | ACTION_BAR_SLOTS) {
+    if !matches!(fields.len(), 4 | 12 | 36 | ACTION_BAR_SLOTS) {
         return false;
     }
     let mut next = panel.bar.clone();
@@ -155,7 +155,7 @@ pub(in crate::play) fn edit_slot(
             7 => Some(BarAction::Passive {
                 ability: PassiveAbility::Serene,
             }),
-            9..=11 => fields
+            9..=12 => fields
                 .get(2)
                 .and_then(|text| text.trim().parse().ok())
                 .map(|definition| BarAction::Use {
@@ -163,7 +163,8 @@ pub(in crate::play) fn edit_slot(
                     mode: match action {
                         9 => super::view::ItemUseMode::SelfActor,
                         10 => super::view::ItemUseMode::Target,
-                        _ => super::view::ItemUseMode::Cursor,
+                        11 => super::view::ItemUseMode::Cursor,
+                        _ => super::view::ItemUseMode::CursorPosition,
                     },
                 }),
             _ => None,
@@ -192,6 +193,35 @@ pub(in crate::play) fn edit_slot(
         };
         Some(index)
     };
+    if let Some(index) = index {
+        let aim = match fields.get(5).map(|text| text.trim()) {
+            Some("facing") => Some(super::view::SpellAim::Facing),
+            Some("cursor") => Some(super::view::SpellAim::Cursor),
+            Some("target") => Some(super::view::SpellAim::Target),
+            _ => None,
+        };
+        if let Some(aim) = aim {
+            let entry = mailbox
+                .spell_catalog
+                .catalog
+                .entries()
+                .iter()
+                .find(|entry| entry.cast_index == index);
+            let action = entry.map(|entry| super::view::BarAction::Spell {
+                name: entry.name.clone(),
+                words: entry.words.clone(),
+                aim,
+            });
+            mailbox.spell_bar.feedback =
+                if action.is_some_and(|action| super::view::set_extra(mailbox, slot - 1, action)) {
+                    "Saved spell and aiming mode"
+                } else {
+                    "Choose a spell from the live catalogue"
+                }
+                .into();
+            return;
+        }
+    }
     mailbox.spell_bar.feedback =
         if crate::play::feature_0287_actor_spell_catalog::view::assign_cast_index(
             mailbox,

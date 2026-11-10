@@ -3,7 +3,7 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::weapon_proficiency::{Intent, WeaponProficiencyPanel, request};
 
 pub(in crate::play) fn action_clicked(id: usize, notification: usize) -> bool {
-    (matches!(id, 101..=114) || id == 116) && notification == 0 // Win32 BN_CLICKED
+    (matches!(id, 101..=114) || matches!(id, 116..=118)) && notification == 0 // Win32 BN_CLICKED
 }
 
 pub(in crate::play) fn display(p: &WeaponProficiencyPanel) -> String {
@@ -58,6 +58,8 @@ pub(in crate::play) fn submit(
         106 => Intent::ReshapeChoose,
         107 => Intent::DeclineOffer,
         108 => Intent::Clear,
+        117 => Intent::ConfirmClear,
+        118 => Intent::CancelClear,
         _ => return None,
     };
     let parsed = (|| {
@@ -93,7 +95,21 @@ pub(in crate::play) fn choose(p: &mut WeaponProficiencyPanel, field: usize, row:
         return false;
     }
     match field {
-        0 => p.select_weapon(row),
+        0 => p
+            .visible_weapons()
+            .get(row)
+            .copied()
+            .is_some_and(|row| p.select_weapon(row)),
+        6 => {
+            let choice = p.perk_tree_rows().get(row).and_then(|(_, choice)| *choice);
+            if let Some((level, perk)) = choice {
+                p.level = level as u8;
+                p.perk = perk as u8;
+                true
+            } else {
+                false
+            }
+        }
         1 => p.choose_level(row),
         2 => {
             let valid = p
@@ -106,6 +122,7 @@ pub(in crate::play) fn choose(p: &mut WeaponProficiencyPanel, field: usize, row:
             valid
         }
         3 if row < 2 => {
+            p.clear_confirmation = None;
             p.slot = row as u8 + 1;
             p.shaping_choice = 0;
             true
@@ -139,6 +156,16 @@ pub(in crate::play) fn visual_submit(
     }
     if matches!(id, 109..=114) {
         return submit(p, id, [""; 6], clear);
+    }
+    if matches!(id, 108 | 118) {
+        return request(
+            p,
+            if id == 108 {
+                Intent::Clear
+            } else {
+                Intent::CancelClear
+            },
+        );
     }
     let entry = p.weapon_entry()?;
     let level = entry.levels.get(usize::from(p.level))?;

@@ -2,6 +2,34 @@ use super::*;
 impl ReferencePreferences {
     pub const MOUSE_PRESETS: [&'static str; 2] = ["Right-handed", "Left-handed"];
 
+    pub const EFFECT_OPACITY_SLIDERS: [(&'static str, &'static str); 3] = [
+        (
+            "Own effects opacity %",
+            "Opacity of your own effects: 0% hidden, 100% fully visible.",
+        ),
+        (
+            "Other players' effects opacity %",
+            "Opacity of other players' effects: 0% hidden, 100% fully visible.",
+        ),
+        (
+            "Monster effects opacity %",
+            "Opacity of monster effects: 0% hidden, 100% fully visible.",
+        ),
+    ];
+
+    pub fn set_effect_opacity_slider(
+        &mut self,
+        index: usize,
+        percent: i32,
+    ) -> Result<(), PreferenceError> {
+        if !(0..=100).contains(&percent) {
+            return Err(PreferenceError);
+        }
+        let value = self.effect_opacity.get_mut(index).ok_or(PreferenceError)?;
+        *value = percent as u8;
+        Ok(())
+    }
+
     pub fn set_mouse_preset(&mut self, index: usize) -> Result<(), PreferenceError> {
         if index >= Self::MOUSE_PRESETS.len() {
             return Err(PreferenceError);

@@ -35,7 +35,7 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
         wait_seconds: 5,
         result_server_sequence: 3,
     });
-    outbox.store_initialize(true);
+    outbox.store_initialize(true, false);
     let request = oteryn_client_runtime::cui3::store::StorePurchaseRequest {
         purchase_request_id: [1, 144, 0, 0, 0, 0, 112, 0, 128, 0, 0, 0, 0, 0, 0, 1],
         offer_key: "mount".into(),

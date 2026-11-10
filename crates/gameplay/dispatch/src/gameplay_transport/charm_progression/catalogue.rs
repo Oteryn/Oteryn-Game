@@ -58,9 +58,12 @@ pub(super) async fn dispatch(
     if let Some(after) = charm_after {
         return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
     }
-    project(native, request)
-        .and_then(|page| wire::encode_page(&page).ok())
-        .map_or(GuildReply::Rejected, GuildReply::Payload)
+    let Some(page) = project(native, request) else { return GuildReply::Rejected; };
+    if payload.len() == 8 {
+        owner.echo_warden_bestiary_page(admitted, page).await
+    } else {
+        wire::encode_page(&page).map_or(GuildReply::Rejected, GuildReply::Payload)
+    }
 }
 fn category<'a>(native: &'a NativeGameplayState, key: &str) -> &'a str {
     native
@@ -83,7 +86,7 @@ fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Opti
         .policies()
         .iter()
         .find(|p| p.definition_key == race.key())?;
-    Some(Card {
+    Some(Card { echo_warden_completed: None,
         outfit_look_type: policy.outfit_look_type,
         object_look_type: policy.object_look_type,
         race: ordinal,

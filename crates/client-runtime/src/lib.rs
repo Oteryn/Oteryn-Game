@@ -49,6 +49,8 @@ pub mod player_report;
 #[path = "features/0039-timed-item/protocol.rs"]
 pub mod timed_item;
 
+pub use oteryn_session::property_services::support_intake;
+
 /// Cast wire values pass through the session boundary.
 pub use oteryn_session::cast;
 pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
@@ -204,6 +206,7 @@ pub use oteryn_session::animus_mastery;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+pub use oteryn_session::action_bar_cooldowns;
 pub use oteryn_session::battle_instinct_status;
 pub use oteryn_session::condition_status;
 pub use oteryn_session::death_protection;

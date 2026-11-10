@@ -6,6 +6,44 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
         .clone()
         .unwrap_or_else(|| tr!("No server result yet").to_owned());
     if let Some(page) = &p.catalogue {
+        use super::{mastery_target, progress_level, progress_percent};
+        let mastered = page
+            .entries
+            .iter()
+            .filter(|entry| entry.experience >= mastery_target(entry))
+            .count();
+        state.push_str(&lfmt!(
+            "\nSummary: {} weapons, {} mastered\n",
+            page.entries.len(),
+            mastered
+        ));
+        for definition in &p.advancements {
+            if let Some(entry) = page
+                .entries
+                .iter()
+                .find(|entry| entry.definition == *definition)
+            {
+                state.push_str(&lfmt!(
+                    "Advancement: {} — level {}\n",
+                    entry.name,
+                    progress_level(entry)
+                ));
+            }
+        }
+        if let Some(entry) = p.weapon_entry().or_else(|| p.progress_entry()) {
+            state.push_str(&lfmt!(
+                "Mastery: {} — {}% ({} / {} XP)\nPerk tree\n",
+                entry.name,
+                progress_percent(entry),
+                entry.experience,
+                mastery_target(entry)
+            ));
+            for (text, _) in p.perk_tree_rows() {
+                state.push_str(&text);
+                state.push('\n');
+            }
+        }
+
         use std::fmt::Write;
         let _ = lwriteln!(
             state,
@@ -49,6 +87,10 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
         );
         for (index, slot) in shaping.slots.iter().enumerate() {
             if let Some(slot) = slot {
+                if usize::from(p.slot) == index + 1 {
+                    state.push_str("╔════════════════════════════════════╗\n");
+                    state.push_str(tr!("║ Selected modified slot\n"));
+                }
                 let cost = shaping
                     .rank_dust
                     .get(usize::from(slot.rank))
@@ -61,6 +103,9 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
                     slot.rank,
                     slot.current
                 );
+                if usize::from(p.slot) == index + 1 {
+                    state.push_str("╚════════════════════════════════════╝\n");
+                }
                 if slot.rank < 10 {
                     let _ = lwriteln!(state, "Next rank ({} dust): {}", cost, slot.next);
                 } else {
@@ -107,4 +152,35 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
         Some(f) => lfmt!("Weapon proficiency\n{state}\n{f}", f = f, state = state),
         None => lfmt!("Weapon proficiency\n{state}", state = state),
     }
+}
+
+/// A small per-frame snapshot; the HUD never clones the complete perk catalogue.
+pub struct HudView {
+    pub definition: u32,
+    pub name: String,
+    pub percent: u32,
+    pub pending: bool,
+    pub advancement: Option<(u32, String)>,
+}
+pub fn hud_view(p: &WeaponProficiencyPanel) -> Option<HudView> {
+    if !p.selected {
+        return None;
+    }
+    let entry = p.progress_entry()?;
+    let advancement = p.advancements.first().and_then(|definition| {
+        let entry = p
+            .catalogue
+            .as_ref()?
+            .entries
+            .iter()
+            .find(|entry| entry.definition == *definition)?;
+        Some((*definition, entry.name.clone()))
+    });
+    Some(HudView {
+        definition: entry.definition,
+        name: entry.name.clone(),
+        percent: super::progress_percent(entry),
+        pending: p.pending,
+        advancement,
+    })
 }

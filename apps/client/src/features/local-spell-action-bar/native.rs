@@ -8,6 +8,7 @@ mod events;
 #[path = "native/panes.rs"]
 mod panes;
 use events::Actions;
+use oteryn_client::hud_error::{HudInitError, HudPart};
 use oteryn_client::play::{HudAction, HudPanel};
 use windows_sys::Win32::{
     Foundation::HWND,
@@ -20,11 +21,14 @@ use winit::{
 
 #[path = "../local-reference-preferences/arcs_native.rs"]
 mod arcs;
+#[path = "../0195-weapon-proficiency/hud_native.rs"]
+mod proficiency;
 #[path = "../local-reference-preferences/shortcut_strip.rs"]
 mod shortcuts;
 #[path = "slots_native.rs"]
 mod slots;
 pub(super) struct Hud {
+    proficiency: proficiency::ProficiencyHud,
     arcs: arcs::ArcHud,
     spells: slots::SpellRow,
     shortcuts: shortcuts::ShortcutStrip,
@@ -38,23 +42,28 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 impl Hud {
-    pub(super) fn new(window: &Window) -> Option<Self> {
-        let RawWindowHandle::Win32(handle) = window.window_handle().ok()?.as_raw() else {
-            return None;
+    pub(super) fn new(window: &Window) -> Result<Self, HudInitError> {
+        let RawWindowHandle::Win32(handle) = window
+            .window_handle()
+            .map_err(|_| HudInitError::new(HudPart::WindowHandle, 0))?
+            .as_raw()
+        else {
+            return Err(HudInitError::new(HudPart::WindowHandle, 0));
         };
         let common = INITCOMMONCONTROLSEX {
             dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
             dwICC: ICC_PROGRESS_CLASS,
         };
         if unsafe { InitCommonControlsEx(&common) } == 0 {
-            return None;
+            return Err(last_error(HudPart::CommonControls));
         }
         let actions = Actions::default();
         let panes = HudPanel::ALL
             .into_iter()
             .map(|id| panes::Pane::new(handle.hwnd.get() as HWND, id, actions.clone()))
-            .collect::<Option<Vec<_>>>()?;
-        Some(Self {
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
+            proficiency: proficiency::ProficiencyHud::new(handle.hwnd.get() as HWND)?,
             panes,
             actions,
             arcs: arcs::ArcHud::new(handle.hwnd.get() as HWND)?,
@@ -70,6 +79,12 @@ impl Hud {
             pane.hide();
         }
     }
+}
+
+fn last_error(part: HudPart) -> HudInitError {
+    HudInitError::new(part, unsafe {
+        windows_sys::Win32::Foundation::GetLastError()
+    })
 }
 impl super::Application {
     pub(super) fn update_hud(&mut self) {
@@ -116,6 +131,20 @@ impl super::Application {
             ];
             let layout = play.view.preferences().effective_hud_layout();
             self.settings.sync_hud_menu(&layout);
+            hud.proficiency.update(
+                &play.link,
+                play.view
+                    .preferences()
+                    .status_panel_visible
+                    .then(|| {
+                        layout.rect(
+                            HudPanel::Resources,
+                            root,
+                            play.view.preferences().interface_scale,
+                        )
+                    })
+                    .flatten(),
+            );
             hud.arcs.update(play.view.hud_arc_layout());
             let labels = play.link.spell_slot_labels();
             for gesture in hud.spells.update(
@@ -158,6 +187,7 @@ impl super::Application {
             }
         } else if let Some(hud) = &mut self.hud {
             hud.hide();
+            hud.proficiency.hide();
             hud.spells
                 .update(None, &oteryn_client::play::BarLayout::default(), &[]);
             hud.arcs.update(None);

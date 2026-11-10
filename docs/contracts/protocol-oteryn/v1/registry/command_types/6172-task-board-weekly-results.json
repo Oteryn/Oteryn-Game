@@ -1,0 +1,10 @@
+{
+  "id": 6172,
+  "name": "TASK_BOARD_WEEKLY_RESULTS",
+  "owner_decision": "T184: Monday results and next-week difficulty",
+  "capability": 474,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/task_board_v1.md#weekly-results",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/task_board_v1.md#weekly-results",
+  "max_payload_bytes": 192,
+  "max_result_payload_bytes": 16384
+}

@@ -2,6 +2,9 @@ use super::{StorePage, StorePanel, StoreSort};
 use std::fmt::Write;
 pub fn panel_text(panel: &StorePanel) -> String {
     let mut text = lfmt!("Store - {:?}", panel.page);
+    if let Some(balance) = panel.cosmetic_tokens {
+        text.push_str(&format!("\nCosmetic Tokens (this character): {balance}"));
+    }
     match panel.page {
         StorePage::Catalogue => {
             if let Some(page) = &panel.catalogue {

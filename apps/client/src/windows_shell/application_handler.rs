@@ -29,12 +29,14 @@ impl ApplicationHandler for Application {
             event_loop.exit();
             return;
         }
-        self.hud = hud::Hud::new(&window);
+        self.hud = match hud::Hud::new(&window) {
+            Ok(hud) => Some(hud),
+            Err(error) => {
+                self.fail(event_loop, ShellError::HudInitialization(error));
+                return;
+            }
+        };
         self.settings.attach(&window);
-        if self.hud.is_none() {
-            self.fail(event_loop, ShellError::WindowCreation);
-            return;
-        }
         let size = window.inner_size();
         // The map is loaded on the first resume and kept across suspends.
         let center = self
@@ -68,12 +70,26 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         }
-        let Ok(mut renderer) = WindowsRenderer::new(
+        let (graphics, _) = self.settings.graphics_settings();
+        let Ok(mut renderer) = WindowsRenderer::with_graphics(
             Arc::clone(&window),
             self.generation,
             size.width,
             size.height,
-        ) else {
+            graphics.engine,
+            graphics.antialiasing,
+        )
+        .or_else(|_| {
+            let renderer = WindowsRenderer::new(
+                Arc::clone(&window),
+                self.generation,
+                size.width,
+                size.height,
+            )?;
+            let (engine, antialiasing) = renderer.graphics();
+            self.settings.reject_graphics(engine, antialiasing);
+            Ok::<_, oteryn_renderer::RendererError>(renderer)
+        }) else {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };
@@ -143,6 +159,13 @@ impl ApplicationHandler for Application {
                 }
             }
         }
+        if matches!(event, WindowEvent::CursorLeft { .. })
+            && let Some(play) = &mut self.play
+        {
+            play.view.clear_bar_pointer(&play.link);
+        }
+        // Every window event goes through the adapter and router first; select or walk is
+        // triggered only by the routed gameplay action.
         if let Ok(events) = self.input.process_window_event(&event) {
             self.handle_input(event_loop, &events);
         }

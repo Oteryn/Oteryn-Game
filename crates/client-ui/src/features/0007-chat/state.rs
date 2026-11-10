@@ -31,6 +31,7 @@ pub struct Console {
     pub presentation: super::Presentation,
     pub communication: CommunicationLists,
     pub tab: ConsoleTab,
+    pub mirror: Option<ConsoleTab>,
     pub mode: ComposerMode,
     pub show_messages: bool,
     pub filters: super::ConsoleFilters,
@@ -45,6 +46,7 @@ impl Default for Console {
             presentation: Default::default(),
             communication: Default::default(),
             tab: ConsoleTab::All,
+            mirror: None,
             mode: ComposerMode::On,
             show_messages: true,
             filters: Default::default(),
@@ -58,6 +60,24 @@ impl Console {
         self.tab_filters[self.tab as usize] = self.show_messages;
         self.tab = tab;
         self.show_messages = self.tab_filters[tab as usize];
+    }
+    /// The rightmost third of the console is the mirror drop target.
+    pub fn drop_tab(&mut self, tab: ConsoleTab, x: i32, width: i32) -> bool {
+        if width <= 0 || x < width - width / 3 || x >= width {
+            return false;
+        }
+        self.mirror = Some(tab);
+        true
+    }
+    pub fn shows_messages(&self, tab: ConsoleTab) -> bool {
+        if tab == self.tab {
+            self.show_messages
+        } else {
+            self.tab_filters[tab as usize]
+        }
+    }
+    pub fn close(&mut self) {
+        self.mirror = None;
     }
     pub fn temporary_on(&mut self) {
         self.mode = ComposerMode::Temporary;

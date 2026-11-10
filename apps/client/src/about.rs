@@ -1,8 +1,8 @@
-//! Product identification and an optional, local-only client experience questionnaire.
+//! Product identification and an optional client experience questionnaire.
 use std::{io, path::Path};
 pub fn about_text() -> String {
     format!(
-        "Oteryn Game Client\r\nRelease: {}\r\nBuild: {}\r\n{} / {}\r\nLicense: MPL-2.0\r\nProject: https://github.com/Oteryn/Oteryn-Game\r\nSurvey participation is optional. Responses are saved locally only after review and consent.",
+        "Oteryn Game Client\r\nRelease: {}\r\nBuild: {}\r\n{} / {}\r\nLicense: MPL-2.0\r\nProject: https://github.com/Oteryn/Oteryn-Game\r\nSurvey participation is optional. Responses are queued for delivery to the Oteryn game server only after review and consent.",
         crate::RELEASE_ID,
         crate::CLIENT_BUILD,
         std::env::consts::OS,
@@ -34,23 +34,24 @@ impl Survey {
 /// The sign-in survey's invitation, answer, preview and consent flow.
 pub fn review_survey_at(path: &Path, mut ask: impl FnMut(&str) -> bool) -> io::Result<bool> {
     if !ask(tr!(
-        "Would you like to answer an optional one-question Oteryn client survey? You can decline to save your answer after reviewing it. Nothing is uploaded."
+        "Would you like to answer an optional one-question Oteryn client survey? You can decline delivery after reviewing your answer."
     )) {
         return Ok(false);
     }
     let survey = Survey::new(ask(tr!(
         "Was browser sign-in easy? Yes = Easy; No = Difficult."
     )));
+    let preview = crate::support_delivery::preview(&survey.preview());
     if !ask(&lfmt!(
-        "{}\nSave this response as a local file?",
-        survey.preview()
+        "{}\nSend exactly this response to the Oteryn game server on your next signed-in play session?",
+        preview
     )) {
         return Ok(false);
     }
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    survey.save(path, true)
+    crate::crash_report::save(&preview, path, true)
 }
 #[cfg(windows)]
 pub(crate) fn run_survey() {
@@ -59,18 +60,13 @@ pub(crate) fn run_survey() {
         let directory = settings
             .parent()
             .ok_or_else(|| io::Error::other(tr!("No configuration directory")))?;
-        let stamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos();
-        let path = directory.join(format!("client-survey-{stamp}.txt"));
+        let path = directory.join("approved-survey.txt");
         Ok(review_survey_at(&path, crate::crash_report::consent_dialog)?.then_some(path))
     })();
     match result {
         Ok(None) => {}
-        Ok(Some(path)) => show_information(&lfmt!(
-            "Survey response saved to {}. You can share or delete this file yourself.",
-            path.display()
+        Ok(Some(_)) => show_information(tr!(
+            "Survey response queued for delivery on your next play session."
         )),
         Err(_) => show_information(tr!("Cannot save the response. No response was sent.")),
     }

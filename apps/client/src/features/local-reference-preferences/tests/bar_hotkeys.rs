@@ -27,7 +27,7 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
             .iter()
             .filter(|binding| binding.id.starts_with("local-spell-action-bar-spell-"))
             .count(),
-        36
+        oteryn_client_runtime::spell::ACTION_BAR_SLOTS
     );
     let (link, mut commands, outbox) = play_channel();
     let mut play = view()?;
