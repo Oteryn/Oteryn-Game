@@ -96,13 +96,21 @@
       "verification": "Independent permanent-condition producer, actual qualified periodic owner, committed successor and appearance-consumer source proof; no runtime, Cargo or SQL execution",
       "report": "verify-permanent-appearance.md",
       "public_safe": true
+    },
+    {
+      "id": "CL-018",
+      "severity": "P2",
+      "status": "CONFIRMED",
+      "verification": "Independent accepted contract, actual reciprocal marriage grant, maintained content pins, sex-qualified catalogue and durable selection proof; 23 exact source references checked; no native/Cargo/SQL execution.",
+      "report": "verify-marriage-outfit.md",
+      "public_safe": true
     }
   ],
   "prior_checkpoint": "1c39ebc3347319fe08eaf58299a8a9e9339b0367",
   "cumulative_confirmed_counts": {
     "P0": 0,
     "P1": 4,
-    "P2": 14,
+    "P2": 15,
     "P3": 0
   },
   "prior_likely": 2,

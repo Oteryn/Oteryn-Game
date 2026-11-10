@@ -1,0 +1,984 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "package": "gameplay/content",
+  "status": "PASS",
+  "tracked_files": 139,
+  "full_files": 139,
+  "lines": 71505,
+  "checks": [
+    {
+      "path": "crates/gameplay/content/Cargo.toml",
+      "git_blob": "ea5e3279b15c9b0e25470200d860b0c57419df5a",
+      "sha256": "e0beeea58a35af302ac9d603a57025817e31e1fbbe7b009d7822e8aaf4828df2",
+      "lines": 36,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/build.rs",
+      "git_blob": "90c9190b27c0c294668035fbc2f0d3c696447ded",
+      "sha256": "f10c1a6bf292cf965886ae1144e63cf8238d09463c6ef65fb225c562f7c02ecb",
+      "lines": 5,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/bin/oteryn-game-platform-catalog.rs",
+      "git_blob": "07e4d74b5085080ed5b440a73d5fbbbe3fd3d68a",
+      "sha256": "7433905ef112ef4bb5eec2be9b3a41e19482567c9561370853f3577e9875a647",
+      "lines": 42,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/activation.rs",
+      "git_blob": "4770418db6edd7ff2812d835e601c96370d386ac",
+      "sha256": "d1b509d39d8f2ff94e0280d477bc41c9437c20c32fb516daa1868f3ca4ff82e4",
+      "lines": 1325,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/artifact.rs",
+      "git_blob": "5246a9d9400399de0f0e62263e2c3e15b0a96206",
+      "sha256": "34672fecef3d9b815c9b8eb86763b5db65fb756ed6e3dd8ade4c9c24f5c906dc",
+      "lines": 1189,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/blessing_catalogue.rs",
+      "git_blob": "9cc262cbcd4a96ea795047e376cdd2ab2ea076d9",
+      "sha256": "bac87c14da5f7ef096b17c422f5076ad981dbaeaa3d9db2de89f9c5b616defe3",
+      "lines": 112,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/blessing_catalogue_tests.rs",
+      "git_blob": "a932e7da7bedd45b5f32406958535fc1c212783e",
+      "sha256": "85301fc54ed961a218742df8d73993fbfe2f902009cd75c3cd819a98c49c68a3",
+      "lines": 103,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/bosses/activity_template.rs",
+      "git_blob": "1cda2baa18cce21ac2ea12eae39cced6140ba3b7",
+      "sha256": "e8b9039203d5d26f7658aa3f78308732bce64a354a3d5da40bb710feaae9b02a",
+      "lines": 784,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/bosses/mod.rs",
+      "git_blob": "7a25ba95f5a17b1fab4c3d1d2300262da7b37bd9",
+      "sha256": "0380120a8df9086594ed95247683ddd3e69c31115aa217f46b013d8fae195d7e",
+      "lines": 4,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/bosses/primal_closure.rs",
+      "git_blob": "ccd5660050936d8e35e117f1d4935bb71be7a277",
+      "sha256": "7cecb2fb9a6e20415607574f1009dac268cd256365f4063d77e2a79368a7be27",
+      "lines": 199,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/bosses/tentacles.rs",
+      "git_blob": "e063fa39db645c247d9db7671453e28832ad313a",
+      "sha256": "0249e10480afa7498bd4ee95a904ae22a1546ddd58c09afc509db3addebd7349",
+      "lines": 119,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/bundle_spell_tiles.rs",
+      "git_blob": "b6e6955d35bf975f9b034571b3d69ff8607200ed",
+      "sha256": "26c931ede80d25cf0c6c8f127658625ca773013d3e0494ba472a4e96381ccc05",
+      "lines": 75,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/channel_content_pin.rs",
+      "git_blob": "7682c799635b3da6c463a5aef6ecd15a6184112b",
+      "sha256": "b5f1497a4e62991a136a3443bb64b6594ea8aa5e0d7b1f9c6537cb1c65fef7fa",
+      "lines": 78,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/character_progression_content.rs",
+      "git_blob": "33b9f83f85a1782a0a99046cb70201537b32f72c",
+      "sha256": "2e0899e38c150acd140eec6be2afbd83d1f128e150c145e492b75a948bf06636",
+      "lines": 453,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/character_progression_content/test_support.rs",
+      "git_blob": "7078123d9a194f1077a5a4ca20a2b99914a76a85",
+      "sha256": "f421c046fea613383a9f2b74236acfffbb41c436eb72575c5c981c31decafa9c",
+      "lines": 65,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/character_progression_content/tests.rs",
+      "git_blob": "eb6c6cad03891aa673fed14354b54e53c9bdf722",
+      "sha256": "663d3b488e68e474b88da2f7bda749e385367e74b6702a428840f43793849888",
+      "lines": 249,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/charm_source.rs",
+      "git_blob": "14977928a29b173efefa6994d3f68a2f180ab3d0",
+      "sha256": "2aa81b23250149b61e3b97d63b8f73b509040ce0c9b9eac41ee33f5e1caecdcf",
+      "lines": 346,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/charm_source/tests.rs",
+      "git_blob": "fea8f68499699e9bb8dec0b33db03c6b93d8c9f9",
+      "sha256": "6702cffcc9aa9b802ffc289abe0b1168d66a968bf991aab037c5ea7c67f894ea",
+      "lines": 311,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/charm_source_effect.rs",
+      "git_blob": "6331c2535e08a193aacccc534d9b647eedf969a1",
+      "sha256": "65a0f63f2c6da806711a05a94895828769493189c86f0bf859c50eab099e31e9",
+      "lines": 104,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/charm_source_json.rs",
+      "git_blob": "77e1a8858ee0e2db6093b25631d9ca4720095c99",
+      "sha256": "26c78134cee4496f5961fea05f1043ea40c21980ca4474b264df306350a1cd2a",
+      "lines": 100,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/charm_source_json/tests.rs",
+      "git_blob": "3a2a8cbf93d18d85eb356e1310ddc6285e15c95f",
+      "sha256": "f8b71e77cd4aa9e3c0c2c5d446a1c6d1019fba590c845959d16dfa27d3b8b260",
+      "lines": 95,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/compiler.rs",
+      "git_blob": "bf22fc324761461d41e70eb1228c9875244c06da",
+      "sha256": "f994d471889afc6d935189eaa83b606c1c8d603d3f733ab43bbed1c54023ec5e",
+      "lines": 601,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/creature_attack_geometry.rs",
+      "git_blob": "ef406b0883c48a9bdcb87fe0e0d990ac50c950ff",
+      "sha256": "a5851a6d0b511a801b14bd0d0fcf8959d138c6901de99d87f2de2dee952ed719",
+      "lines": 274,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/creature_policy.rs",
+      "git_blob": "04d99e87a4654dd4a2243ed9cfd7c1cebf2c7828",
+      "sha256": "94bd7a3f6cc66c46a5eeb1627ae7586b9010bbecdd5e0e68c4339b683b6c9172",
+      "lines": 242,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/creature_reward.rs",
+      "git_blob": "a9b23d91b67738f9695f3d1297295bdc8c21fbc7",
+      "sha256": "9de673ad629fcc79dd598b5b42f26ca5b067ce4276370d8608c9e599dd52509d",
+      "lines": 819,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/cw2_b1_import_tests.rs",
+      "git_blob": "a13131e3e033dd8263d5d0fa110e02981ae24ba7",
+      "sha256": "20f38e3809adb07b658a28f93e8b106ee68c201997a2054d52c766cd43871852",
+      "lines": 448,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/daily_boost.rs",
+      "git_blob": "d50beba934b0dd89c3952d8e71df18c465d5f598",
+      "sha256": "0caaa324e038033c68cfa0907f5edabefe95c2d4a8b837a4743944e69f1b64be",
+      "lines": 125,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/daily_reward.rs",
+      "git_blob": "a0ad18c8a49bfac544cb59a89a8aa9d90247142b",
+      "sha256": "d625aee21df3b1ab19049425a16a72e3220a1ca3ac29c28e6af9bfde24511a8d",
+      "lines": 78,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/digest.rs",
+      "git_blob": "0dcfd10856ee13d5a15d04b75118dc7416df022f",
+      "sha256": "2168d3f065b456e0581d5881fa8ab4a74fe6cbf93192dce155b90e98661b6735",
+      "lines": 97,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/encounter_map_item.rs",
+      "git_blob": "1030b04c126ddd31a235c80de8871186f2df5a60",
+      "sha256": "170acb4b2415decd7fddabca4356cfc15e3aae028fe78bc6710eab54ba72862f",
+      "lines": 804,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/field_condition.rs",
+      "git_blob": "017649eb2c222fc1749dadc6c5191efbf83d5804",
+      "sha256": "72cc141c378856c36bdba70ef27b877a4a0ed34e704489bd1e61145d4faba0b0",
+      "lines": 296,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/field_condition_crystal_parity_tests.rs",
+      "git_blob": "a1f8a586282f241a966da68e0d71d3c5d8b48098",
+      "sha256": "686fbc36abddf23cf07b9ae2199ee98247b870f12b126db61307bf0c4f7b8cae",
+      "lines": 525,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/fixture.rs",
+      "git_blob": "07e1ac91bf6e45a8810a9895a339412044868592",
+      "sha256": "a8cbee922752bc821ff49dd387b0475bb44d6d4bb40d4fbc1234ad1132ba8175",
+      "lines": 161,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/item_abilities.rs",
+      "git_blob": "01075384387c07ba65f58be5bb075903e27277ed",
+      "sha256": "ba2fcd9497f0514bb900d66e10bba278842f781b39a2cfc92eda2b090e66cf9a",
+      "lines": 776,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/item_family.rs",
+      "git_blob": "530952b14e9671d77b3a66a3304eb0871c10d7a7",
+      "sha256": "722aa3c2ff7e7fc9f5c3971df2dc4245a079d403503e7ddbf3cdbd54df055bcf",
+      "lines": 3,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/item_identity_tests.rs",
+      "git_blob": "d3e77409ddf943b06daaeea2521cf1a26b98a2d8",
+      "sha256": "9704e529f4c48375c343d1173538ae40b7db9fd11e48fd705f91e9c2b9150f53",
+      "lines": 32,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/item_ref.rs",
+      "git_blob": "3899c54204e89ff216ab31a0c0c5e3f332bdb921",
+      "sha256": "3c14ff652c6a908d97b0b4756217fe9d378097dd4227bb2e48055ddba63fe7f3",
+      "lines": 99,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/item_ref/tests.rs",
+      "git_blob": "23920083946f5584373beee8a4bfdfab78feab07",
+      "sha256": "4c93bd138a19e256b0877b7e81b6d1b0e0cda6877701cdafc01418e89fbc6c31",
+      "lines": 300,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/item_spell_augments.rs",
+      "git_blob": "a883c9a86de9ed31b6010a75e5050804b5901df3",
+      "sha256": "9afc358cd4c6ce37f31fe66111b5440cdf994ffdd74f7e98a5b05a7fa4751af0",
+      "lines": 26,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/mod.rs",
+      "git_blob": "2786b2d81bc71769364abcb2d3b520b65ee3f3f8",
+      "sha256": "6d88ca1d376c3279b44731adf805ebe2158e1ff0698ad0f3579a9b480289266b",
+      "lines": 194,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/model.rs",
+      "git_blob": "aa13be638850f2029f2ee152c053f989d2871d6a",
+      "sha256": "0695f188c3baecdf97a5ea1139da57e628d8be9d5d0ac0c7ced5591bd2beb609",
+      "lines": 617,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_cell_lookup.rs",
+      "git_blob": "c105cf57636b230fa58f43d05f214815f07dd9b9",
+      "sha256": "b2a50cd942c997b75ba071921748b210521b9f372f7ca19ab91581540e4e11ab",
+      "lines": 160,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay.rs",
+      "git_blob": "fdd6684f49fad20195fd23657ddd6819c919b7f5",
+      "sha256": "614b87897d4d76c20ed3558b7422a2bd935de5a15b840ccaee04c6e5257271c9",
+      "lines": 4573,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs",
+      "git_blob": "f1bd6254515b12eb9a315974006d4214d34d0bd8",
+      "sha256": "0fe66037f98bcb06a841557753313e233fdc1c525a91aa031e8b3c00211b9bff",
+      "lines": 560,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs",
+      "git_blob": "3f34d123fb807f318b8488fb8b3029f2d15e4bfa",
+      "sha256": "5f013797da9caf3fb95c958875b0ef78f853f81fbd1d4eb916c8de26f8fbceb8",
+      "lines": 288,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/tests.rs",
+      "git_blob": "9279ec26cb644054a23b4e3d25ce2bcd5b8495c4",
+      "sha256": "b5e43627f373b084624251b7ffea98e937f104b5cc72ca469f959d0643139775",
+      "lines": 481,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_view.rs",
+      "git_blob": "348d6f21d49568abde6998c767df55c9ec00e62b",
+      "sha256": "ab61bfbf6fbdbaec444b20f8903491b603ce67d959878405da9968aa5008c495",
+      "lines": 165,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/item_profile_updates.rs",
+      "git_blob": "56cbe15c193015009b630043ec07e6c07c74020f",
+      "sha256": "bdf880262e9ad13329d2fa1d49cc0ab69b6a35a69a16bf76911a02d116ea2b25",
+      "lines": 127,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/market_catalogue.rs",
+      "git_blob": "d8d4e34b136b577f08948c9852434e84c0c68173",
+      "sha256": "397c32309a91c2f97c149b180fd15483be787dfac5f261e37f3e380d4d9e9c41",
+      "lines": 234,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/market_filter_catalogue.json",
+      "git_blob": "c803a31b00a73b8e4060a03b15e64f90a4a9f929",
+      "sha256": "0c881e2ef0fbbc558149573df727e1a98f84fdec1949da212ffcf58b19661147",
+      "lines": 1,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/mount_taming.rs",
+      "git_blob": "2af7082dc924ae258b0903b2de50e9442300a411",
+      "sha256": "4febba9b8f34833941b655c4d0807d73d7409d5b0e777a243e1ccdb2ef2f8daa",
+      "lines": 315,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/native_cosmetics.rs",
+      "git_blob": "b40134e6b6cf61973e478e128f830823f592cf11",
+      "sha256": "7881a78fe3bc17774da152ee44f2b1713265d9c42fe7b9d11a0b7c540d53ef96",
+      "lines": 393,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/native_cosmetics/provisioning.rs",
+      "git_blob": "4c9ff88808d0b5cdd25547643f78b872012ce68d",
+      "sha256": "8d69f8df3c4baaea7a4afccda0ecc336e8965a6188b4bb306521ac816c9e0dd6",
+      "lines": 113,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/native_cosmetics/provisioning/tests.rs",
+      "git_blob": "ba5f6888d4553d956231de44e00af1f7f6d36568",
+      "sha256": "37f1c673aa9de3cf41d385d38b68ccf7d6993c10cd0aede5309e897906a112ea",
+      "lines": 134,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/starting_loadout_input.rs",
+      "git_blob": "6b57543f433bfe72a2f21803133d3ff37776e18a",
+      "sha256": "0f072b133cc61c23acb399526ac8ae3ce9fe4f70ea235ab2943c69bfb3e3d254",
+      "lines": 94,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs",
+      "git_blob": "cb2eeeb0f7ed942aa7a58d682fd8cc8f382487a5",
+      "sha256": "641aad231de946a335325aba786eaf0660273091d3f799f69a965c8addfe21be",
+      "lines": 654,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/test_support/cosmetics_fixture.rs",
+      "git_blob": "dddbdc83ade825d1529fb1b5d7417a2021d2dd52",
+      "sha256": "c5c76e6c7e6d8bcec3a76a1de34a90261db67c107ff7eea77d225c1ddc6011eb",
+      "lines": 73,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/tests/grant_mappings_tests.rs",
+      "git_blob": "410f967a4ff5100b17bd080618572087597719f9",
+      "sha256": "f30644bd082b0d958cc3369080541b8a17cf874655dc233440557ebf0892187f",
+      "lines": 93,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_items.rs",
+      "git_blob": "57f4f1428a39ab173a04b8435685fdc2ba0ff986",
+      "sha256": "044098e62303955ee3ca02d2e826a129e14294099867c198b36b20f93fb11ee2",
+      "lines": 294,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_source_world_carrier.rs",
+      "git_blob": "20f89da202bc6c3ae3761211f44838566ce99d25",
+      "sha256": "d57779c21c4943436fa61055bc3246d84a8a301df200a12934b9bd9a50d99434",
+      "lines": 217,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_spell_appearances.rs",
+      "git_blob": "0c8cb67dc76a96f0b04d3034bd8021a457d23083",
+      "sha256": "c7287d020c906598346a50f6fe88bb83f37545fc7614841ddf1cd63239a5c09f",
+      "lines": 931,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/newhaven_travel.rs",
+      "git_blob": "ebad3c87518e255ef289fe473155cec63545c1f1",
+      "sha256": "e3bf041368e65343d30ddda5253006a6db1a3c821c2c06d6bb748a7f32673f18",
+      "lines": 35,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/newhaven_tutorial_land.bin",
+      "git_blob": "ef6fe61ea1e880ed5b059e8346f5ba786448fea2",
+      "sha256": "e9b3c5a0671f21333a56d491a8bc9b3eb94b6134c09cbddfd44aa7c9af59fbe0",
+      "lines": 1,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/newhaven_tutorial_land.rs",
+      "git_blob": "4829a4be2f37f5513dc5744b8bb44a4a58663a44",
+      "sha256": "25b826e9ed2a3f4a56e6920eb0786a1afb7019457b3d033b6bedea960d90368a",
+      "lines": 16,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/newhaven_tutorial_land_tests.rs",
+      "git_blob": "2ceae76e16ae669ec5a19582b5131e762fd14c9d",
+      "sha256": "d6f27306a665eb9a193f37e6f806f3eb78b747dacf813389ec32072aa4f2c0c0",
+      "lines": 23,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue.rs",
+      "git_blob": "e12f97e01abd7a88dd2641d1b9b46cab59ea90b5",
+      "sha256": "ba5f73967f990392c9aee2e158f220695f836f0b531258c33de28b5ac6903a0f",
+      "lines": 267,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/grizzly_shop.rs",
+      "git_blob": "3cb0e30f2cfcce543fd8f150ba836a1c6e6a017c",
+      "sha256": "c48ae13e565b8a714b2fc74f2bc07d839f1a18dd407a7b9be816df9907ea2a5c",
+      "lines": 224,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/healing.rs",
+      "git_blob": "24632331c152c987fecccc9abec2dc604ea7c74e",
+      "sha256": "0ad1abbb01d2d8a24769dfa8f6c8015bae7f42042deaa503dc12838d992ebdd7",
+      "lines": 47,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/premium_services.rs",
+      "git_blob": "03807b1671c8bccf4127a0cceb38c6eb912a62fe",
+      "sha256": "1203f5db167f4b6d87b8af43ce0a52d42a435836514bc9b1437cdd5c74ad20b3",
+      "lines": 122,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/replies.rs",
+      "git_blob": "44a5ce7a81b8fb86f326741a115a62ada38ca31c",
+      "sha256": "385b617791e9d199d83eb95380a05da3b264c9e86c97cece06bb5e3ee53703b9",
+      "lines": 116,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/s10_nonquest.rs",
+      "git_blob": "212560c7a92df8fe31744bcda4f0154164034458",
+      "sha256": "c356f40e941f497c2eb55c79dfafdaba0890abe56c96da7f1bf785ba41afa7b1",
+      "lines": 227,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/service.rs",
+      "git_blob": "d14afc9ce3a356f98cae4eb4447ae81c0605c839",
+      "sha256": "ca7c06d8ba75298c79544f9b9f674259171d0afc337147562f6f52dd8bc183ba",
+      "lines": 519,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/subtype_trades.rs",
+      "git_blob": "084894b0ebf7b2faf143ad58d732969136733044",
+      "sha256": "8483019f40b261436912a12bbeaafacc885c2dc41d70628260be04022118455d",
+      "lines": 150,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/travel.rs",
+      "git_blob": "5ef483821c9a1a2c0361f53d8604efaf3c3e2597",
+      "sha256": "f4bbc4e47f2d2134a4c31464a4f4655622d0f3b9b09b2d3496d3861fcca3dedb",
+      "lines": 395,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json",
+      "git_blob": "d84f21780cd7781ee1300fd3e5ffba571a8485d7",
+      "sha256": "81238409297d3237c98c7dcffdd1f61b8c69348cdb67c1333dc7cc2e5a7b14e6",
+      "lines": 2855,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/npc_catalogue/walk_terrain.rs",
+      "git_blob": "e686248b6d8c0afb2f94a623e9227c97b7ed7ac3",
+      "sha256": "38719b1bc89bea25f65ca2a218b0f4db7e96517c2ec202eb1b6dd493b5bbd563",
+      "lines": 82,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production.rs",
+      "git_blob": "fe779351ab3caa0db4ed739aa5efbb24808c6068",
+      "sha256": "98cd0cf8ee3bd050c0d8aea62681092784670b4e6b29ad7a60c6ef9e1ea2d650",
+      "lines": 3281,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/compiler.rs",
+      "git_blob": "830367ff20de3918bce298612bcd5d1d76e84b15",
+      "sha256": "dd5612fb54a2945eac5ff5b3e3fb232c488680cd4210f08fb1bfb734f8a057f7",
+      "lines": 191,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/integrity.rs",
+      "git_blob": "296b451056c7bc7ffe8e2a3be9a97476931bba3f",
+      "sha256": "dcc90274fd3d0e558666babfda89026106a572cc4cc290063449583207428868",
+      "lines": 252,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/limits.rs",
+      "git_blob": "2c4269c067c0d71473971aa10f24e6cdc989999d",
+      "sha256": "184a324331a3ad4c54173c379f0cfcf05a963c5b55b31179876c82d798120ad5",
+      "lines": 155,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/mod.rs",
+      "git_blob": "c326fbeea645670e61f76e05af2b624987756225",
+      "sha256": "f96be2d9a6a428a2de82eb69430211af45ce9c1db62fbfc225aa68d5932a206b",
+      "lines": 8,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/population.rs",
+      "git_blob": "9612339884b1c0f3f62d19a5d0b7c3052510536a",
+      "sha256": "1e472e9b60cc50a5b5b7fc2d5ed5fb1fb78b2a7f53b7ef527af46ae35aa0b42b",
+      "lines": 15,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/references.rs",
+      "git_blob": "901f6ef071b98ff3cefd720b87cfbc09d7b52450",
+      "sha256": "9d8e9353d1e60c7c4d3f1f2bd760c48baaded8ee4688c25223e5f9357d396154",
+      "lines": 186,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/production/tests/staging.rs",
+      "git_blob": "6e4373d710a7c634e5687ebd587a464d48e7d3fe",
+      "sha256": "6c7d2bdcccfa48ff99d0829b867ff99727db7b42673b66c7e3f6e615a50bd027",
+      "lines": 138,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project.rs",
+      "git_blob": "f1eeba3b0229cf48112efbd04999634aa278e41f",
+      "sha256": "e6b8ae93bfb005715f8c29df0d9b2a9072355816874b3ba6667477bcbae44e42",
+      "lines": 2592,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/bestiary.rs",
+      "git_blob": "31b13c08d31cba2587cc68ddfbd548e41ad85fff",
+      "sha256": "7677b99f1960c85a0a09afaedb66f6e4d9605f28b6e1645cf7d1f53e4c79d97a",
+      "lines": 602,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/native_entry.rs",
+      "git_blob": "d9f555bc1ba1862438800492b62498afff72223a",
+      "sha256": "98c27d7cc8392f06eefde53cefb98be3e1acb38734dbc09a85574ad62abee8c4",
+      "lines": 2700,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/native_entry_room.json",
+      "git_blob": "aad96479efdcc52ff44d22312cbeb834df59414f",
+      "sha256": "5f7ba6cd2589e20adcf97975fd002ca7c6a6b5e1ad9390a69893c391c3de27f6",
+      "lines": 689,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/native_house_tiles.rs",
+      "git_blob": "953c4065e416a51be1ad79b39c1c98bbdbcb2bf1",
+      "sha256": "2ece49a8995eec99988b61a4db01586e02c946e880ffe7fb1ac93fb62b0b45e2",
+      "lines": 295,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/native_spell_entry_room.json",
+      "git_blob": "44bc6933acd20e103b463cac71dcdc157f87db1b",
+      "sha256": "a8f9e716ccf31348df46a23b1cd3bd73e6a6d06e9295d1f9e6b6303ebc102953",
+      "lines": 601,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/native_spell_tiles.rs",
+      "git_blob": "7a064d6142f3abfa81442b5b638ecd96bb5cf370",
+      "sha256": "abc4ee0354393faf34bae92b5ce8fa14af47b2051edde8dc24d3bc07d0b1699a",
+      "lines": 554,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/native_spell_world.rs",
+      "git_blob": "3e216668f2b1346bf2f690b2961f7197a442fa9d",
+      "sha256": "69cba4fae2641f22b7099e763c4229b08547efe3697609cc2d2da33726458688",
+      "lines": 1122,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/public_view.rs",
+      "git_blob": "03feda8e0ecf80d6a7d2d39d2489e54f1eb01cf0",
+      "sha256": "f1bb8b89646022df4d9f882c7bbb29aafc051cb1d54137c31d79916a5e1cf9a1",
+      "lines": 481,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2.rs",
+      "git_blob": "cd2e703e4923119ffad34962416b96b490026780",
+      "sha256": "95916cff0e0a8943c97ed6458766732bbfe472fb800e1e056bf3bf43da7e5072",
+      "lines": 3259,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/creature.rs",
+      "git_blob": "56573fb58f9d3ca3f8e28b515d91c006a3f97cb1",
+      "sha256": "73441211407a97278de7e41476bddadbfe6d9fd2553ad51aa65135c756d392f0",
+      "lines": 1812,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/encounter.rs",
+      "git_blob": "31db7c6a37b87983105f80c795886780da68ebb6",
+      "sha256": "526644039cca4fe1470f3a2fd8ebda448ead2ac155d4e962a3a35f31073df64c",
+      "lines": 2166,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/item_conversion.rs",
+      "git_blob": "6ce39b9e242a28029a3eddbb5faf4a05de3706e8",
+      "sha256": "938489c26d604b07950db983d5953de8963e1bc36651131046dfd45baaafc8fc",
+      "lines": 636,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/item_conversion/digging.rs",
+      "git_blob": "10bf3ebfc14f52c864d5f4497a6913ffc89de5ef",
+      "sha256": "a1f1cefd90c4bfa01d0167340b7a42da1e1e6b25794213a3188efe50c4433442",
+      "lines": 40,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/item_conversion_tests.rs",
+      "git_blob": "550f0dd5f6ff94f2573442f2e3608f05d3a846ac",
+      "sha256": "bf3cd50394114e87a9b0213c8b53820868a3efe10c5639acf59ff138c905cc3e",
+      "lines": 34,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/proficiency.rs",
+      "git_blob": "32213ef61318e5ad5ce156036dd95e662d4203f6",
+      "sha256": "2ba9a3bf3ed4cb7265b133ff06946b9878398f2fad72ef3693dc20c24be2afec",
+      "lines": 347,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/proficiency/import.rs",
+      "git_blob": "3c37d258e0a2498e09121548ef21fda411de4280",
+      "sha256": "d0cc537e00ab3a213d354167ff03732cbdc137932eff2b20b5aabbf3bcebc88b",
+      "lines": 541,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/proficiency/shaping.rs",
+      "git_blob": "2125a3938551c9e5f5406d2271b2623a37595697",
+      "sha256": "bac323e69c2ede6b1f964f0276e6d7ad759148a9963e82be6e3f026fffae9fa1",
+      "lines": 557,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/ranged.rs",
+      "git_blob": "0c786d35b4448b2d816f9d1e67623d814b2d08d8",
+      "sha256": "f2a972e2f1f6ff7645c8d38d964410fa79f58031dd275ae59b01c471b2f69498",
+      "lines": 388,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/v2/state_validation.rs",
+      "git_blob": "14a9d2a29a36075f04e13472b6236adfe1768bf2",
+      "sha256": "c37bff6ac33e40a847e4981d2027cb57bdf920df927a1d57c6c0b24a4a73a026",
+      "lines": 563,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project_fs.rs",
+      "git_blob": "e149dc5688047cbe12c9eb698073c024baae967c",
+      "sha256": "6717e01729717ae835c59b0956d7a667ac3d7ef69ddc215a5b8a707df6612314",
+      "lines": 3051,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project_fs/tests/linux.rs",
+      "git_blob": "cf5614ebaf23d0475997b6eaf11c9279bc9919e2",
+      "sha256": "970114b667b808d1f782632a18be02f6adcc6428b9b2839fd0f80e07f1d33ce5",
+      "lines": 1,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project_fs/tests/publication.rs",
+      "git_blob": "6b287edcb6d09957044dd8f0bc6eed559f85b2af",
+      "sha256": "fca3e6295cb12bf856f9d6eaeaa25f0077694eb9f1a5974fdcbca716c770e191",
+      "lines": 575,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact.rs",
+      "git_blob": "2479ec18d3306a639051ae0ea5e251056fe17446",
+      "sha256": "232db7d674de544d7bbeabcdc120c7bd007741f8c0ba8cd31c18b29c89115c9f",
+      "lines": 3648,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_native_item_batch_tests.rs",
+      "git_blob": "337144b79b6930ca30d23aebe2b65bce1b4f22d6",
+      "sha256": "171b13c0694afcad3ac334ddf94a379406ee2090880b92c0f1999136eba7a926",
+      "lines": 155,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_tests_bed_sets.rs",
+      "git_blob": "9b2316893e1791c360fbad36ee5760b9e772a5b9",
+      "sha256": "a6ea9f4aefefd629686f7985ae06da9183c143afa3f47c3cd22f560bdd97318e",
+      "lines": 140,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_tests_beds.rs",
+      "git_blob": "7e64b0d71fc98d4a22863fc834cc0ded2d2db626",
+      "sha256": "4d483ac13e6b575165bc51203d2d62ad2af1750d0ef8d40ead784d6dd6023d2d",
+      "lines": 482,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_tests_profiles.rs",
+      "git_blob": "c5b213eb73f1a1ea7e41a63728999436195a2dc3",
+      "sha256": "b998ee4709d37e9740c875d8a1be99d84f60c1baa8a481c6b9dce7c147faab63",
+      "lines": 288,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_tests_v4.rs",
+      "git_blob": "def24a8b9930bf502b6ef1dc7ec4719343b1cb6d",
+      "sha256": "534970fa41e875a2267327594d239d2276fcdd639e163b0218e7ff59a9b0760b",
+      "lines": 360,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_tests_v5.rs",
+      "git_blob": "d71fccaa80f007c6170b146f10b4a000c8285377",
+      "sha256": "56ff9f3cce340bbe081634e583d33a6f6faffbe3bb63ddd7ed60af666f9863ac",
+      "lines": 387,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_tests_v6.rs",
+      "git_blob": "0197a98a663eda1a90316dff0f7b202b7713856f",
+      "sha256": "e022c5dcacd803240abf203721969d2741c7a05c5ffbce3361a8e75cc9f5e48d",
+      "lines": 413,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_artifact_typed_item_codec_tests.rs",
+      "git_blob": "6536360f07936ab8d657ccdd3ab9b9db429576b5",
+      "sha256": "0e43fd14ce967ffe2bd2cbe30275137e23f695e4d1ba85ce498f0ae7529c3626",
+      "lines": 314,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_playable.rs",
+      "git_blob": "e1d47a10aa462161c7e60ab30139fd1e8b925d9e",
+      "sha256": "f090002566f663b57fae0d37ab0a35e4db1117d8871d8aa021488ad8b90261c2",
+      "lines": 3142,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/reference_static_cell.rs",
+      "git_blob": "80b5c95ee623300c429d8f2a6b418736af5b8811",
+      "sha256": "f4b77d2578bf6ddd2cbb1fed9bdd084b98bf608feba3e2b59b171f7a5b7939b6",
+      "lines": 350,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/soulpit_activity.rs",
+      "git_blob": "c90fbf626da637ec5f667a456db5a2564050670b",
+      "sha256": "83178802be45c28a060257c1cf5e21801dc7ddebb70845559f452be0abf15044",
+      "lines": 314,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/authoring.rs",
+      "git_blob": "de74ec2e703a20d395cb461c15c2346bf51e0bd9",
+      "sha256": "442ce10d63bdeda07ef8b99df1b9a297543f2ffa3d1d7afb222cc0ab558e89f9",
+      "lines": 634,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/chain.rs",
+      "git_blob": "b77573ea052358397fb84d7be0bc7a9349137afe",
+      "sha256": "8001b2f0ef768e0f8f213b26deb6359d82c6c170d39aa1c3b630ab8d99355c7c",
+      "lines": 22,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/executable_catalog.rs",
+      "git_blob": "603cb65138fd7873f9b0f397dc9645431eea62d2",
+      "sha256": "21bacaf0025b21a1ea5b0b705c6fb30f057a224262b8e8c0360602569e132c26",
+      "lines": 1633,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/formula.rs",
+      "git_blob": "a82555ef6d156b6bfbe819f11da7640a776aa31c",
+      "sha256": "fbf6f88a1e5828ad2e88fc43f630e904bf7fe1e461431737c8ddcaa6fa93fa08",
+      "lines": 280,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/mod.rs",
+      "git_blob": "9d5b2db2c522a8b4deb2d69989dedd38cda4d4f4",
+      "sha256": "99bbc8b4db7909b43d12a27a8cd5e07eddbd9a826e4c975232b936e46b5929e7",
+      "lines": 417,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/native.rs",
+      "git_blob": "bdafd9310f1639e2e23f397f82d1366e5d74d0c4",
+      "sha256": "9231d408ea28d3313b540f22ed22ca5d5acff7b1545607e342c874df6999f51e",
+      "lines": 120,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/party.rs",
+      "git_blob": "626579ebc5ad26c1d11e64f51bf0fe95ecbf92ab",
+      "sha256": "a9a731753971abce049a8fde779f38d38afda2867bce771c7c916ca543655654",
+      "lines": 29,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_data/target.rs",
+      "git_blob": "d240a7559348ac7acf068ee1b3f56a5d701edeff",
+      "sha256": "122b9603512c69357b3fb2d16bd69645152727dc43bd36bcf6b39911507b9d15",
+      "lines": 23,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_familiar_config.rs",
+      "git_blob": "0c8f46bae673ef4e74fa69032fd11cb1c25e7d6f",
+      "sha256": "3f170742cd73ac12f598b804a799105e264d73285aaea381c79725bef6e58312",
+      "lines": 112,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_familiar_defenses.rs",
+      "git_blob": "ac8f3dd7035e8ceb780f33a58904a9a1c20ec921",
+      "sha256": "84e4b3cd3eeef1e882c9beed4b3e34b1cf7725d26c85a3533f62c217a9352488",
+      "lines": 255,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_wheel_profile.rs",
+      "git_blob": "fb954d7b7f129c5b880f43882b5375bdb6a6a7e4",
+      "sha256": "3afc036a09b742b8904e9ea8323451080caa298e16a3014de7d9ed0b1c1d6a8c",
+      "lines": 299,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/static_cell_engine.rs",
+      "git_blob": "b5f5b4857b4b461a8030e446d188aa8755f18ba4",
+      "sha256": "e7bdf8ec28ba79d3f405a9db98315c348f83fd5eea6fee69a4ca72b0b1ef4331",
+      "lines": 563,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/store_cosmetics.rs",
+      "git_blob": "55e19f1ae7888ee27158cc308ee53e2eefb13c9b",
+      "sha256": "02992317fc5dc42624ef47bbd400dc5c06dbe5d2bbb3f413bf0965d7951a74ab",
+      "lines": 132,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/tests.rs",
+      "git_blob": "0126ca67f5a7416e61205a25c992766940024cd2",
+      "sha256": "a3579c3a4fecd876f90742d8c0d4b9b9ed1fbb4b8e5641f122c001d24a2349db",
+      "lines": 267,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/timed_item_definition.rs",
+      "git_blob": "6039c0f8e62675324191fa8628b80e8d70e11038",
+      "sha256": "1ab885bb40ee1fd06999a3dca553cb5ef52f5649177f7212681052ff619e3e21",
+      "lines": 76,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/training_formula.rs",
+      "git_blob": "21bc177a07a9a2e0b653ed31ffc069a5eb155c03",
+      "sha256": "477d758d7ef8c9b9639321d97459d8962820cc8f80b50e022039d5c234d7bc5d",
+      "lines": 195,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/world_reward_claims.rs",
+      "git_blob": "8324baa4402da3af37f68b356ebe18944c715e8c",
+      "sha256": "c2acf071a025aac523233dcb955fc93777ecaf448e63cf11825bf91d5f15fe60",
+      "lines": 1218,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/src/lib.rs",
+      "git_blob": "69f821e35dfd0d4c74eb433cf20e68e493ad563f",
+      "sha256": "21c04654bad5b729be0b614a6f83e0d02cd12efadc79f10f8650c4b1a42ee588",
+      "lines": 6,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/tests/public_visibility.rs",
+      "git_blob": "8e4dc785a9c10561836e457824d35e68424952f3",
+      "sha256": "69649d784f4afe54543351618d6148e62d4a16e59a7240d1a6b718bfa5f65326",
+      "lines": 41,
+      "status": "PASS"
+    },
+    {
+      "path": "crates/gameplay/content/tests/quest_item_keys.rs",
+      "git_blob": "fdb3917d56b76e474933706508b460e75bdd3faf",
+      "sha256": "4e784f909be3f27be8628b4c34dfbc4ba68c825c2724b03df7eb868d7a135612",
+      "lines": 68,
+      "status": "PASS"
+    }
+  ],
+  "verification": "All current tracked package blobs equal immutable Git HEAD and ledger SHA256/full ranges; no native/Rust/SQL execution."
+}

@@ -1,0 +1,201 @@
+{
+  "id": "CL-018",
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "verified_at_utc": "2026-11-10T15:06:05.262141+00:00",
+  "status": "PASS",
+  "method": "Independent root direct source/caller/state inspection plus exact SHA256/Git-blob/range checks and maintained-data pin/selected semantic checks. Not runtime execution.",
+  "source_checks": [
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_view.rs",
+      "sha256": "ab61bfbf6fbdbaec444b20f8903491b603ce67d959878405da9968aa5008c495",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs",
+      "sha256": "0fe66037f98bcb06a841557753313e233fdc1c525a91aa031e8b3c00211b9bff",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/grant_mappings.rs",
+      "sha256": "5f013797da9caf3fb95c958875b0ef78f853f81fbd1d4eb916c8de26f8fbceb8",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/domain/src/domain/appearance/earned_cosmetics.rs",
+      "sha256": "fe34c3c55bde13704bfa18da46bf45dc482c4b8ac3caf1fa85d18f2bdb67b518",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/domain/src/domain/appearance.rs",
+      "sha256": "339db4493f415e5cd96c07b5f78473c21b0f9eb78d584e44e2c8e4e329fd24d3",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs",
+      "sha256": "ebaecce3b216ea89a7f75cb566df8795d476785fb9f5d226d54b92681c0dc895",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change/catalogue.rs",
+      "sha256": "ce4f1b779644ea1a809da3ea03b5bf907be044598d7420e5757fb604d11a8fc4",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change/offer.rs",
+      "sha256": "9e84e2fd7d3a5f16e2aa830a0478dc3fb4596029c3d86c9061f971b01045a47b",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change/observation.rs",
+      "sha256": "ce363b4b6404b78491361f393d0a197fc166e9c93c6be6fa786fb712f966c3aa",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/appearance_change/observation/house.rs",
+      "sha256": "798f44ef0ee1339db3a521cd2da840ad3c78b088607af5d406d7db3405da849f",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/marriage.rs",
+      "sha256": "74ac3650b9f664156a070c1c5aba2916e4b055cc82884a046824f22523e7346f",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "sha256": "ba2aca7f0e2d2c5317453a7ae4fda4baffa9b69d0b02c79643e0df216cd75fe8",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/npc_marriage.rs",
+      "sha256": "5f816b649df9c3a0e53cd9ceaf17c5b0b7961add130b96bd3457d04a90603981",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance/marriage.rs",
+      "sha256": "835de571e5ba3dfc6eeeab7305007264bcabc5ca1b6daf018087088e4597b8bb",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance/earned_unlocks.rs",
+      "sha256": "d512598cd750563ac91cce7a999ee995de42183a26d88915bfb82eaaabead6bd",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance/current_appearance.rs",
+      "sha256": "5117caaedc15b75d8c36e150176de97ae45970dbbe6bd1f08dfa6e0ddc2b3d65",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance/stored.rs",
+      "sha256": "e60a3659b0c62e6b24dd2715acc7fc9089fbf3d18df4ba0ba435476a364b4642",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance.rs",
+      "sha256": "48fe1b67f423131e28cdae6b0fa09fa1dad72fd5157505f005d91bc1d64fb262",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srv9b_marriage.rs",
+      "sha256": "3f3420b8e8f93cd8496ce0a73db26b70808c721ab9e99145094fbfc5a05dccf1",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "docs/contracts/OTERYN_NPC_MARRIAGE_V1.md",
+      "sha256": "ac6a01d15d66969ee08d31b5f155d33eb5627aa5bc6a0691759c84778a83823d",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "content/cosmetics/outfits/native-cosmetics.json",
+      "sha256": "82acb126978c2b375e7ef8dccd01f5de126945ac17ccf5cf407b71a692832211",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "content/spells.manifest.json",
+      "sha256": "de4b9d7547355d6dc8e4da2e4bd7237dd924b610a06c16edbd48a0976e784ff0",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    },
+    {
+      "path": "content/cosmetics/outfits/authoring.json",
+      "sha256": "46e1014e08e882794f5829184aab354c4ed3b22174dbeca0bd26ff319dc21c47",
+      "declared_hash_match": true,
+      "git_blob_identical": true,
+      "ranges_valid": true
+    }
+  ],
+  "maintained_cosmetics_descriptor_pin": "PASS",
+  "maintained_authoring_pin": "PASS",
+  "selected_outfit": {
+    "selector": "/document/outfits/40",
+    "male": 328,
+    "female": 329,
+    "starter_male": false,
+    "starter_female": false
+  },
+  "whole_mapping_array_exact_key_absence": {
+    "keys_checked": 295,
+    "key": "oteryn:appearance-grant/npc/lynda/newly-wed-base",
+    "matches": 0
+  },
+  "only_authored_newly_wed_grant": [
+    [
+      116,
+      {
+        "grant_key": "oteryn:outfit.newly_wed/quest-grant/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.newly_wed"
+        },
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      }
+    ]
+  ],
+  "runtime_test_execution": "NOT RUN",
+  "coverage_limit": "Selected semantic data evidence is not credited as full review of minified manifest or authoring file."
+}

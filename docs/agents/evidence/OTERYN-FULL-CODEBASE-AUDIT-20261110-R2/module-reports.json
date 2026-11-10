@@ -172,6 +172,16 @@
       "auditor": "lead"
     },
     {
+      "module": "oteryn-gameplay-items",
+      "path": "crates/gameplay/items",
+      "report": "items-review.md",
+      "verification": "All59 tracked package files directly read; exact Git/SHA/range unions and clean source PASS. Four original imbuement tests executed unchanged and passed; full Cargo/native/SQL not run.",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "remaining_files": [],
+      "auditor": "lead"
+    },
+    {
       "module": "oteryn-identity",
       "status": "REVIEWED",
       "report": "protocol-session.md",
@@ -728,6 +738,34 @@
       "verification": "Complete81files/21163lines; all source tests read. 267 read-only JSON/schema/inter-fixture checks PASS. Exact base/hash/ranges PASS. No Cargo/native/TLS/SQL/filesystem test execution; not independently VERIFIED.",
       "auditor": "client-support",
       "report": "native-admission-source.md"
+    },
+    {
+      "module": "oteryn-gameplay-content",
+      "path": "crates/gameplay/content",
+      "status": "REVIEWED",
+      "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+      "reviewed_files": 139,
+      "reviewed_lines": 71505,
+      "entrypoints_and_invariants": "Full133 Rust files/manifest/four JSON/binary mask. Bounded project capture/publication, canonical typed source closure, native gameplay map/Item/Creature/cosmetic/NPC/loot/reward/spell adapters, current generation and immutable versus mutable ownership separation; see content.md.",
+      "dependency_edges": [
+        "Actual game-server qualification and NPC boot/talk-book consumers",
+        "Dispatch appearance, bundle chest USE and Soulpit current owner paths",
+        "World map activity fork and LocalObject source binding; durable custody/appearance/travel ownership remains external"
+      ],
+      "negative_hypotheses": [
+        "SHA-qualified data does not by itself grant current Channel/Instance/Character authority.",
+        "Entry map House absence does not transfer to bundle; actual marker evidence required.",
+        "Soulpit uses dedicated parent-aware fresh Instance fork, not unavailable generic bounded-port instance default.",
+        "Boss template closure rejects summons; no new reachability proof for GR-AI001.",
+        "Newhaven policy activation remains deployment/configuration UNKNOWN; no finding."
+      ],
+      "findings": [
+        "CL-018 CONFIRMED_STATIC P2 by root; one bounded earned-appearance integration defect. No new duplicate finding ID."
+      ],
+      "remaining_files": [],
+      "verification": "139/139 Git blob/SHA/full ranges PASS. Read-only land mask10 checks, market5095 rows + generator --check, travel233 rows/3695 checks, native rooms1184 checks PASS. All source tests read, no Cargo/native/SQL/live activation execution. Not independently package-wide VERIFIED.",
+      "auditor": "client-support",
+      "report": "content.md"
     },
     {
       "module": "oteryn-foundation",

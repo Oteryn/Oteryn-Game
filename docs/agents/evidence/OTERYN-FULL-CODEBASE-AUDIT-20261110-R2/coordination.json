@@ -1,6 +1,6 @@
 {
   "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
-  "observed_at_utc": "2026-11-10T14:50:31.413824+00:00",
+  "observed_at_utc": "2026-11-10T15:21:30.509174+00:00",
   "lifecycle": "AUTHORING",
   "branch": "audit/full-codebase-20261110-4f0b6c62",
   "sole_writer": "lead /root",
@@ -8,7 +8,7 @@
   "lanes": [
     {
       "lane": "lead",
-      "ledger_rows": 605,
+      "ledger_rows": 686,
       "reported_completed_modules": [
         "oteryn-admin-contracts",
         "oteryn-admin-agent",
@@ -26,12 +26,13 @@
         "oteryn-gameplay-entities",
         "oteryn-gameplay-progression",
         "oteryn-gameplay-monster-ai",
-        "oteryn-gameplay-spell"
+        "oteryn-gameplay-spell",
+        "oteryn-gameplay-items"
       ]
     },
     {
       "lane": "protocol-session",
-      "ledger_rows": 1393,
+      "ledger_rows": 1573,
       "reported_completed_modules": [
         "oteryn-identity",
         "oteryn-platform-contracts",
@@ -62,7 +63,7 @@
     },
     {
       "lane": "client-support",
-      "ledger_rows": 3068,
+      "ledger_rows": 3181,
       "reported_completed_modules": [
         "oteryn-client-domain",
         "oteryn-synthetic-assets",
@@ -81,15 +82,16 @@
         "oteryn-client",
         "oteryn-gameplay-foundation",
         "oteryn-gameplay-content-promotion",
-        "oteryn-gameplay-native-admission-source"
+        "oteryn-gameplay-native-admission-source",
+        "oteryn-gameplay-content"
       ]
     }
   ],
-  "checkpoint": 12,
-  "allocation_comment": 6770484480,
-  "predecessor": "2beefdcd0b1513f479f06f25ef7ae29870329c6d",
-  "predecessor_tree": "d81299a8d8ed65db1f81bbab6a63f84103c72c92",
-  "expected_sha": "2beefdcd0b1513f479f06f25ef7ae29870329c6d",
+  "checkpoint": 13,
+  "allocation_comment": 6771150089,
+  "predecessor": "5e6daf42caf59d9e899a9ee721076d351e252477",
+  "predecessor_tree": "15a265755cc14c39843118ec409f271384a4c223",
+  "expected_sha": "5e6daf42caf59d9e899a9ee721076d351e252477",
   "latest_main": "af33fd3baeac15d9991bd24c91bcacc8733492e2",
-  "latest_main_observed_at_utc": "2026-11-10T14:49:53Z"
+  "latest_main_observed_at_utc": "2026-11-10T15:15:57Z"
 }

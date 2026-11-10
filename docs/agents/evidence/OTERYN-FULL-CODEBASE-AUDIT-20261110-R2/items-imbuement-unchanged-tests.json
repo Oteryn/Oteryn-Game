@@ -1,0 +1,24 @@
+{
+  "base_sha": "4f0b6c62a789489fca6c37dd36d5917d096f328e",
+  "verified_at_utc": "2026-11-10T15:07:35.099827+00:00",
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "method": "Direct rustc --test of original imbuement module via absolute path; original catalogue and test modules resolved unchanged. No Cargo/native/SQL execution.",
+  "source_files": [
+    {
+      "path": "crates/gameplay/items/src/imbuement.rs",
+      "sha256": "91c8ce12af81427848b717aa93a171c200b4f9b32889f0cc7e868d11dca51a8b"
+    },
+    {
+      "path": "crates/gameplay/items/src/imbuement_catalogue.rs",
+      "sha256": "0a693024228822af5ca2ffb9558582958dbd9c36a2b5b1ce68ec9a27f8d1ae59"
+    },
+    {
+      "path": "crates/gameplay/items/src/imbuement_tests.rs",
+      "sha256": "944df7427fa2f3d147fe6067c6c4b3eabf7713ff3ce6ce5b7aa18dd7bd95f937"
+    }
+  ],
+  "compile_exit": 0,
+  "test_exit": 0,
+  "test_output": "\nrunning 4 tests\ntest imbuement::tests::filled_scroll_ids_round_trip_only_intricate_and_powerful_recipes ... ok\ntest imbuement::tests::imbuement_catalogue_matches_tier_rules_and_covers_every_single_family ... ok\ntest imbuement::tests::imbuement_reference_parity ... ok\ntest imbuement::tests::utility_categories_run_online_and_combat_categories_pause ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+  "status": "PASS"
+}
