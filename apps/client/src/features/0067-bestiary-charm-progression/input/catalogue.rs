@@ -177,13 +177,6 @@ pub(in crate::play) fn apply(
             return true;
         }
         panel.catalogue.detail = format!("{} [{}]\r\n{}", card.name, card.category, card.detail);
-        if let Some(completed) = card.echo_warden_completed {
-            panel.catalogue.detail.push_str(if completed {
-                "\r\nEcho Warden: complete"
-            } else {
-                "\r\nEcho Warden: incomplete"
-            });
-        }
         panel.catalogue.detail_card = Some(card.clone());
         panel.catalogue.next_loot = page.next;
     }

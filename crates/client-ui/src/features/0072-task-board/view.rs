@@ -55,11 +55,10 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
     let bounty = &reply.bounty;
     let _ = lwriteln!(
         text,
-        "Bounty: state {}, difficulty {}, rerolls {}, free offer reroll at {}",
+        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
         bounty.state,
         bounty.difficulty,
-        bounty.rerolls,
-        bounty.daily_reroll_at
+        bounty.rerolls
     );
     if bounty.elite || bounty.active.as_ref().is_some_and(|task| task.elite) {
         text.push_str(tr!(

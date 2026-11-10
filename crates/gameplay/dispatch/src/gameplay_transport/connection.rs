@@ -29,7 +29,8 @@ use crate::durability::item_transfer::{
 use crate::foundation::{
     AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
     GameSessionId, MessageType, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
-    encode_protocol_error, encode_server_accepted, encode_server_resume_accepted,
+    encode_protocol_error, encode_protocol_error_with_trace, encode_server_accepted,
+    encode_server_accepted_with_trace, encode_server_resume_accepted,
 };
 mod item_use_view_refresh;
 pub(in crate::gameplay_transport) use item_use_view_refresh::refresh_newhaven_inventory;
@@ -38,6 +39,57 @@ use appearance_change::SessionAppearance;
 use moved_step::moved_step_frames;
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
+
+struct ConnectionTraceContext {
+    trace: [u8; 16],
+    enabled: std::cell::Cell<bool>,
+}
+
+tokio::task_local! {
+    static CONNECTION_TRACE: ConnectionTraceContext;
+}
+
+pub(super) async fn with_connection_trace<F: Future>(trace: [u8; 16], future: F) -> F::Output {
+    with_connection_trace_state(trace, false, future).await
+}
+
+pub(super) async fn with_selected_connection_trace<F: Future>(
+    trace: [u8; 16],
+    future: F,
+) -> F::Output {
+    with_connection_trace_state(trace, true, future).await
+}
+
+async fn with_connection_trace_state<F: Future>(
+    trace: [u8; 16],
+    enabled: bool,
+    future: F,
+) -> F::Output {
+    CONNECTION_TRACE
+        .scope(
+            ConnectionTraceContext {
+                trace,
+                enabled: std::cell::Cell::new(enabled),
+            },
+            future,
+        )
+        .await
+}
+
+fn connection_trace() -> Option<[u8; 16]> {
+    CONNECTION_TRACE
+        .try_with(|context| context.enabled.get().then_some(context.trace))
+        .ok()
+        .flatten()
+}
+
+pub(super) fn diagnostic_connection_trace() -> Option<[u8; 16]> {
+    CONNECTION_TRACE.try_with(|context| context.trace).ok()
+}
+
+fn enable_connection_trace() {
+    let _ = CONNECTION_TRACE.try_with(|context| context.enabled.set(true));
+}
 
 use super::actor_spell::{
     ActorVitals, DELTA_TYPE_ACTOR_VITALS_V1, SNAPSHOT_TYPE_ACTOR_VITALS_V1,
@@ -420,6 +472,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 
 /// DEFLAKE-2: the closed-schema operator line of a silent fresh-admission or resume refusal.
 /// It names the refusal kind alone, never a session, account, character or transport.
+#[cfg(test)]
 pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'static str> {
     match refusal {
         AdmissionRefusal::Unavailable => Some("event=admission_refused kind=unavailable"),
@@ -431,10 +484,31 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
     }
 }
 
-fn report_admission_refusal(refusal: AdmissionRefusal) {
-    if let Some(line) = admission_refused_event(refusal) {
-        super::operator_event(line);
+pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
+    let (kind, reason) = match refusal {
+        AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => ("rejected", None),
+        AdmissionRefusal::Unavailable => ("unavailable", None),
+        AdmissionRefusal::Classified(error) => ("classified", Some(error)),
+        AdmissionRefusal::Queued(_) => ("queued", None),
+        AdmissionRefusal::RecoveryCapabilityRequired => ("recovery_capability", None),
+    };
+    let trace = diagnostic_connection_trace().map(super::format_connection_trace);
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Warn,
+        "admission",
+        "admission_refused",
+    )
+    .field("kind", oteryn_error_codes::FieldValue::Token(kind));
+    if let Some(error) = reason {
+        line = line.field(
+            "reason_code",
+            oteryn_error_codes::FieldValue::U64(u64::from(error.code())),
+        );
     }
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
 }
 
 /// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
@@ -812,6 +886,9 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    if selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1) {
+        enable_connection_trace();
+    }
     // ADMIT0 §4: no capability refusal precedes the owner's grant authentication; the owner
     // checks the Channel's required set itself and answers ADMISSION_CAPABILITY_REQUIRED.
     let attempt = FreshAdmissionAttempt {
@@ -852,7 +929,7 @@ where
     admitted.continuity.achievement_notice_revision = selected
         .contains(CAPABILITY_ACHIEVEMENT_NOTICES_V1)
         .then_some(0);
-    let accepted = encode_server_accepted(&crate::foundation::ServerAcceptedValue {
+    let accepted_value = crate::foundation::ServerAcceptedValue {
         game_session_id: admitted.game_session_id,
         world_id: admitted.world_id,
         channel_id: admitted.channel_id,
@@ -861,7 +938,13 @@ where
         next_command_id: 1,
         schema_revision: SERVER_SCHEMA_REVISION,
         selected_capabilities: selected.as_slice(),
-    })
+    };
+    let accepted = match connection_trace().filter(|_| {
+        selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    }) {
+        Some(trace) => encode_server_accepted_with_trace(&accepted_value, &trace),
+        None => encode_server_accepted(&accepted_value),
+    }
     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
     let accepted = if let Some(document) = authority.client_bulletin().await {
         oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
@@ -896,8 +979,12 @@ pub async fn hold_admitted<S>(stream: &mut S, admitted: AdmittedSession) -> Conn
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    let Ok(frame) = read_frame(stream).await else {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    let frame = match read_frame(stream).await {
+        Ok(frame) => frame,
+        Err(error) if error.kind() == std::io::ErrorKind::InvalidData => {
+            return close_admitted(stream, admitted, FoundationProtocolError::MalformedFrame).await;
+        }
+        Err(_) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
     };
     let error = match decode_wire_envelope(&frame) {
         Err(error) => error,
@@ -913,8 +1000,8 @@ where
 }
 
 /// ARCH-PROGRESSION-SOURCE-0 §1.5: an admitted session that is not playable but holds a runtime
-/// actor is held at most `policy.interval * policy.missed_limit`; then the connection closes
-/// with no frame, so a silent client cannot keep its committed GameSession and slot. A frame
+/// actor is held at most `policy.interval * policy.missed_limit`; then the connection reports
+/// `NOT_SUPPORTED` before closing, so a silent client cannot keep its committed GameSession and slot. A frame
 /// before the bound ends it as `hold_admitted` does. A session with no actor is held unbounded.
 async fn hold_refused<S>(
     stream: &mut S,
@@ -930,10 +1017,7 @@ where
     let bound = policy.interval.saturating_mul(policy.missed_limit);
     match tokio::time::timeout(bound, hold_admitted(stream, admitted)).await {
         Ok(end) => end,
-        Err(_) => {
-            let _ = tokio::io::AsyncWriteExt::shutdown(stream).await;
-            ConnectionEnd::AdmittedThenDisconnected(admitted)
-        }
+        Err(_) => close_admitted(stream, admitted, FoundationProtocolError::NotSupported).await,
     }
 }
 
@@ -1079,7 +1163,7 @@ where
 {
     #[cfg(test)]
     super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
-    let end = serve_admitted_actor(stream, admitted, authority, policy).await;
+    let end = Box::pin(serve_admitted_actor(stream, admitted, authority, policy)).await;
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
         | ConnectionEnd::AdmittedThenDisconnected(current)
@@ -1441,8 +1525,11 @@ async fn send_error<S: AsyncWrite + Unpin>(
     error: FoundationProtocolError,
     generation: u64,
 ) -> std::io::Result<()> {
-    let frame = encode_protocol_error(error, generation)
-        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+    let frame = match connection_trace() {
+        Some(trace) => encode_protocol_error_with_trace(error, generation, &trace),
+        None => encode_protocol_error(error, generation),
+    }
+    .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
     write_frame(stream, &frame).await
 }
 

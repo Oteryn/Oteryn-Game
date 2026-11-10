@@ -132,7 +132,7 @@ fn full_reply() -> task_board::full::Reply {
             selected: 0,
             current: 0,
             rerolls: 3,
-            daily_reroll_at: 1_800_000_000,
+            daily_reroll_at: 0,
             offers: vec![],
             active: None,
             lists: vec![],
@@ -201,6 +201,9 @@ fn full_task_board_reply_reaches_the_play_panel() -> Result<(), Error> {
                     let text = panel_text(&panel);
                     assert!(text.contains("3031: 75/100"));
                     assert!(text.contains("1907"));
+                    assert!(text.contains("Reroll Tokens 3"));
+                    assert!(text.contains("each reroll costs 1 token"));
+                    assert!(!text.contains("free offer reroll"));
                 }
                 {
                     let recorded = full_commands.lock().unwrap_or_else(PoisonError::into_inner);

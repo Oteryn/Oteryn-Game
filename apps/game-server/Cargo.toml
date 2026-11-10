@@ -46,6 +46,7 @@ oteryn-gameplay-domain = { version = "=0.1.0", path = "../../crates/gameplay/dom
 base64.workspace = true
 ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
+oteryn-task-supervisor = { version = "=0.1.0", path = "../../crates/task-supervisor" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../../crates/gameplay/admission-evidence" }
 oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../../crates/gameplay/character-recovery-fence" }

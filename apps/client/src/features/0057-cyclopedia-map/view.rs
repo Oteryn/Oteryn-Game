@@ -1,4 +1,21 @@
 use crate::play::{PlayLink, mailbox::lock};
+impl crate::play::PlayView {
+    pub(in crate::play) fn present_cyclopedia_discovery(&self, link: &PlayLink) {
+        let notice = lock(&link.mailbox)
+            .properties
+            .cyclopedia_map
+            .discovery_banner
+            .take();
+        if let Some(sequence) = notice {
+            self.game_notifications.show(
+                &format!("cyclopedia-discovery:{sequence}"),
+                tr!("Subarea discovered! All seven points of interest found."),
+                false,
+            );
+        }
+    }
+}
+
 impl PlayLink {
     pub fn cyclopedia_map_panel(&self) -> oteryn_client_ui::cyclopedia_map::Panel {
         lock(&self.mailbox).properties.cyclopedia_map.clone()
@@ -323,3 +340,7 @@ pub(in crate::play) mod atlas;
 #[cfg(test)]
 #[path = "view/atlas_tests.rs"]
 mod atlas_tests;
+
+#[cfg(test)]
+#[path = "view/discovery_tests.rs"]
+mod discovery_tests;
