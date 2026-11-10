@@ -118,6 +118,57 @@ loop; the CI history named the culprit commit in minutes.
    later commits may conflict, and the feature leaves `main` until it comes
    back with the fix.
 
+## 7. Node boot and server diagnostics
+
+<!-- LOGDBG: names below come from the four LOGDBG lanes; re-check them when
+the lanes land. -->
+
+Read a red node boot run from its causes, not its last lines.
+
+- **Cause and root.** Every qualification `CHECK ... FAIL` line and every
+  `SEAM_EVIDENCE e2e_all scenario=<row> status=FAIL` line ends with
+  `cause=<kind> root=<row>/<check-or-precondition>`; kinds are `deadline`,
+  `no-progress`, `precondition`, `transport`, `server-refused`, `assertion`
+  and `blocked-by`. `failure_summary.py` prints the failed rows grouped by
+  `root=` at the top of the stage output and in the job summary: fix the
+  roots, the `blocked-by` rows follow them.
+- **Fail-fast.** A row whose declared need (a fixture character released, an
+  earlier row) already failed does not run: every check prints `FAIL
+  cause=blocked-by root=<id> seconds=0`, still `status=FAIL`.
+  `NODE_BOOT_NO_FAILFAST=1` runs every row, to see whether a blocked row also
+  fails on its own.
+- **No progress.** A row with no new PASS for `NODE_BOOT_NO_PROGRESS_S`
+  (default 90) seconds ends with `cause=no-progress phase=<last phase>`; the
+  row budgets themselves are unchanged.
+- **Smaller runs.** `NODE_BOOT_E2E_ONLY=<groups>` (`core`, `f4`, `f5`, `f6`,
+  `f7add`, `f7clock`, `f7cont`, `f7forge`, `f7run`) runs those groups and
+  their prerequisites. Parallel stacks on one machine take `NODE_BOOT_BASE`,
+  `NODE_BOOT_PROJECT`, `NODE_BOOT_SERVICE_USER`, `NODE_BOOT_SKIP_BASIC` and
+  the `NODE_BOOT_PG_PORT` / `NODE_BOOT_PLATFORM_PORT` / `NODE_BOOT_GAME_PORT`
+  overrides; unset, `run.sh` behaves as in CI.
+- **Dev loop.** `NODE_BOOT_REUSE_STACK=1` (refused in CI) reruns only the
+  seam stage against a stack that is already up: one hypothesis in minutes,
+  not a 35-minute run.
+- **PostgreSQL.** The node boot database logs lock waits and slow statements;
+  `pg_observe.py` samples blocked, long and idle-in-transaction backends every
+  2 s and dumps the top statements per stage into the failure-log directory.
+- **Timeline.** `timeline.py --node-log node.log [--pg-activity <file>] --out
+  trace.json` turns holder, connection, admission and PostgreSQL samples into
+  a trace for <https://ui.perfetto.dev>.
+- **Server detail events.** `holder_wait` (waiter, waited_ms, attempts,
+  dominant_owner) names who held the durability holder; `release_deferred`
+  says why an expired grace session was not released (the f6 cascade);
+  `character_authority_check_failed stage=revision_chain` carries the
+  receipt family, the violation and the revisions.
+- **Client and server join.** A server `ProtocolError`, at join too, reaches
+  the client as `E<code> (trace <hex>)`; grep the server log for that trace
+  (`transport_close`, `serve_end`, `join_prepare_failed`). A plain EOF at
+  join means the server closed without a frame.
+- **Stuck tasks.** `tools/diagnostics/console-build.sh` builds the game
+  server with tokio-console support into `target/diagnostics`; run it with
+  `TOKIO_CONSOLE_BIND=127.0.0.1:6669` and attach `tokio-console`. Supervised
+  tasks show their supervisor names. Local debugging only.
+
 ## Known signatures in this repository
 
 | symptom | usual cause |
