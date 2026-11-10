@@ -337,5 +337,7 @@
  "Silver": "Silver",
  "Platinum": "Platinum",
  "Dust (Premium)": "Dust (Premium)",
- "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Elite tasks: monsters deal +100% damage and take -50% damage.\n"
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Elite tasks: monsters deal +100% damage and take -50% damage.\n",
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
+ "Reroll bounty (1 token)": "Reroll bounty (1 token)"
 }

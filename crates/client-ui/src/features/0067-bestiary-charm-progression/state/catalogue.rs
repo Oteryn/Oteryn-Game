@@ -54,6 +54,17 @@ pub fn text(panel: &super::Panel) -> String {
         out.push_str("Next catalogue page available\r\n");
     }
     out.push_str(&catalogue.detail);
+    if let Some((current, goal)) = catalogue.echo_warden_progress(&panel.fields[1]) {
+        let state = if current == goal {
+            "complete"
+        } else {
+            "incomplete"
+        };
+        let _ = write!(
+            out,
+            "\r\nEcho Warden: {current}/{goal} first defeat ({state})"
+        );
+    }
     if catalogue.next_loot.is_some() {
         out.push_str("\r\nMore loot entries available");
     }
@@ -61,6 +72,14 @@ pub fn text(panel: &super::Panel) -> String {
 }
 
 impl Catalogue {
+    /// The server records the first Warden defeat per species, independently of normal kills.
+    /// A legacy card without the optional observation is unknown, not zero progress.
+    pub fn echo_warden_progress(&self, race: &str) -> Option<(u8, u8)> {
+        self.selected_card(race)?
+            .echo_warden_completed
+            .map(|completed| (u8::from(completed), 1))
+    }
+
     pub fn selected_card(
         &self,
         race: &str,

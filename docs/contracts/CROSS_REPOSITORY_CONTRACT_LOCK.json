@@ -74,7 +74,7 @@
       "canonical_contract_path": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
       "schema_path": "docs/contracts/protocol-oteryn/v1/foundation.proto",
       "schema_revision": 1,
-      "schema_sha256": "6e1c614661e72daac529be9d0ec06317201b916cd47ae17ff1590da5c7205ebe",
+      "schema_sha256": "61d6fabe6f0733eed983fcd2e753e816036844c7f05ca1f9514ba090f144ed38",
       "registry_path": "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json",
       "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
       "source_pull_request": 94,

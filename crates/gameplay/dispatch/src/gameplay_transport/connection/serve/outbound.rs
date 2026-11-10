@@ -65,7 +65,13 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
-    if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
+    if matches!(
+        dispatch,
+        Dispatch::Logout(LogoutResult::Accepted)
+            | Dispatch::ServerModal(
+                crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(_)
+            )
+    ) {
         // §1.6: the release committed before this result. No command is read any more and
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
@@ -440,6 +446,7 @@ where
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)
+        | Dispatch::ServerModal(_)
         | Dispatch::Vip(_)
         | Dispatch::Appearance(_)
         | Dispatch::Training(_)

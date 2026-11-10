@@ -12,6 +12,8 @@ use super::{
 pub(super) enum Dispatch {
     /// A complete command result with no subsequent mechanic-specific effects.
     Reply(crate::foundation::CommandStatus, Vec<u8>),
+    /// A rule callback may acknowledge a committed release or close on uncertainty.
+    ServerModal(crate::gameplay_transport::server_modal::ServerModalOutcome),
     Vip(Option<Vec<u8>>),
     /// STEP-PACE-WIRE-1: the step and its `step_wait_ms` pacing receipt (0: none).
     Step(StepOutcome, u32),

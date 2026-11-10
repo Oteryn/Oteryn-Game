@@ -78,7 +78,10 @@ message ServerAccepted {
 
   repeated uint32 selected_capability_id = 10;
 
-  reserved 11 to 20;
+  // Present only when CONNECTION_TRACE_V1 (20) is selected.
+  bytes connection_trace = 11;
+
+  reserved 12 to 20;
   // Optional operator news/events JSON, bounded to 256 KiB; presentation only.
   string operator_bulletin_json = 21;
 }
@@ -110,7 +113,10 @@ message ServerResumeAccepted {
   uint32 schema_revision = 5;
   repeated uint32 selected_capability_id = 6;
 
-  reserved 7 to 16;
+  // Present only when CONNECTION_TRACE_V1 (20) is selected.
+  bytes connection_trace = 7;
+
+  reserved 8 to 16;
 }
 
 message LivenessProbe {
@@ -252,7 +258,10 @@ message ProtocolError {
   uint64 expected_command_id = 4;
   uint64 expected_server_sequence = 5;
 
-  reserved 6 to 15;
+  // Diagnostic UUIDv7. Capability-gated by CONNECTION_TRACE_V1 (20).
+  bytes connection_trace = 6;
+
+  reserved 7 to 15;
 
   // Optional authenticated node-capacity queue detail (T003).
   // Both are absent, or position is 1..128 and retry is 1..30000ms.

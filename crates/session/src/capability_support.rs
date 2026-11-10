@@ -34,6 +34,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ATTACK_V1,
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,
+    oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
     logout::CAPABILITY_LOGOUT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,

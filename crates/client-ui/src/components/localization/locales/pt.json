@@ -337,5 +337,7 @@
  "Silver": "Prata",
  "Platinum": "Platina",
  "Dust (Premium)": "Pó (Premium)",
- "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Tarefas de elite: monstros causam +100% de dano e recebem -50% de dano.\n"
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Tarefas de elite: monstros causam +100% de dano e recebem -50% de dano.\n",
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Recompensa: estado {}, dificuldade {}, fichas de troca {} — cada troca custa 1 ficha",
+ "Reroll bounty (1 token)": "Trocar recompensa (1 ficha)"
 }

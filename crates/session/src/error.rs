@@ -12,6 +12,11 @@ pub enum SessionError {
         received: u64,
     },
     Protocol(FoundationProtocolError),
+    /// The server diagnosed this admitted connection and closed it after this frame.
+    ServerProtocolError {
+        code: u32,
+        connection_trace: Option<[u8; 16]>,
+    },
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
     ActorSpell(actor_spell::ActorSpellError),
@@ -178,6 +183,20 @@ impl fmt::Display for SessionError {
             }
             Self::Io(error) => write!(formatter, "transport I/O failed: {error}"),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
+            Self::ServerProtocolError {
+                code,
+                connection_trace,
+            } => match connection_trace {
+                Some(trace) => write!(
+                    formatter,
+                    "server closed the connection with E{code:04} (trace {})",
+                    trace
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                ),
+                None => write!(formatter, "server closed the connection with E{code:04}"),
+            },
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
             }

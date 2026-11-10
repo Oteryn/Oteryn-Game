@@ -10,12 +10,12 @@
     "apps/game-server/src/node/raid_scheduler.rs:219",
     "apps/game-server/src/node/raid_scheduler.rs:222",
     "apps/game-server/src/node/raid_scheduler/world_changes.rs:162",
-    "apps/game-server/src/node/serve.rs:229",
-    "apps/game-server/src/node/serve.rs:253",
-    "apps/game-server/src/node/serve.rs:308",
-    "apps/game-server/src/node/serve.rs:314",
-    "apps/game-server/src/node/serve.rs:3309",
-    "apps/game-server/src/node/serve.rs:349",
+    "apps/game-server/src/node/serve.rs:241",
+    "apps/game-server/src/node/serve.rs:290",
+    "apps/game-server/src/node/serve.rs:3412",
+    "apps/game-server/src/node/serve.rs:345",
+    "apps/game-server/src/node/serve.rs:351",
+    "apps/game-server/src/node/serve.rs:386",
     "apps/game-server/src/node/serve/world_reset.rs:98"
   ],
   "crates/error-codes": [
@@ -57,15 +57,6 @@
   "crates/gameplay/monster-ai": [
     "crates/gameplay/monster-ai/src/monster_lab.rs:411",
     "crates/gameplay/monster-ai/src/monster_lab.rs:426"
-  ],
-  "crates/gameplay/native-admission-source": [
-    "crates/gameplay/native-admission-source/src/account_characters.rs:561",
-    "crates/gameplay/native-admission-source/src/public_projections.rs:1098",
-    "crates/gameplay/native-admission-source/src/public_projections.rs:1213",
-    "crates/gameplay/native-admission-source/src/public_projections.rs:1240",
-    "crates/gameplay/native-admission-source/src/public_projections.rs:1272",
-    "crates/gameplay/native-admission-source/src/runtime_status.rs:514",
-    "crates/gameplay/native-admission-source/src/world_event_outcomes/publisher.rs:293"
   ],
   "crates/gameplay/quests": [
     "crates/gameplay/quests/build_authored_bindings.rs:16",

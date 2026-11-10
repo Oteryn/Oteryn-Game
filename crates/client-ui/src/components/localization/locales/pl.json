@@ -337,5 +337,7 @@
  "Silver": "Srebrne",
  "Platinum": "Platynowe",
  "Dust (Premium)": "Pył (Premium)",
- "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Zadania elitarne: potwory zadają +100% obrażeń i otrzymują -50% obrażeń.\n"
+ "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Zadania elitarne: potwory zadają +100% obrażeń i otrzymują -50% obrażeń.\n",
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Zlecenie: stan {}, trudność {}, żetony losowania {} — każde losowanie kosztuje 1 żeton",
+ "Reroll bounty (1 token)": "Losuj zlecenie (1 żeton)"
 }

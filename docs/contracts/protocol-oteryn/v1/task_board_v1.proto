@@ -74,7 +74,7 @@ message TaskBoardBountyV1 {
   uint32 selected = 3; // 0 absent, otherwise original index +1
   uint32 current = 4;
   uint64 rerolls = 5; // 0..i64::MAX; daily threshold10 is not a balance cap
-  uint64 daily_reroll_at = 6; // free offer reroll cooldown; not a daily token claim
+  uint64 daily_reroll_at = 6; // legacy field, now always zero; rerolls consume one token
   repeated TaskBoardBountyOfferV1 offers = 7; // <=3
   optional TaskBoardBountyOfferV1 active = 8;
   repeated TaskBoardListSlotV1 lists = 9; // <=5

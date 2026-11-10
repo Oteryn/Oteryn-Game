@@ -55,3 +55,29 @@ include!("tests/spell_vitals.rs");
 include!("tests/spell_resume.rs");
 include!("tests/achievements_highscores.rs");
 include!("tests/notices.rs");
+
+#[tokio::test]
+async fn malformed_frame_yields_protocol_error_then_close() -> Result<(), Box<dyn Error>> {
+    let (mut client, mut server) = tokio::io::duplex(256);
+    let admitted = positioned()?;
+    let task = tokio::spawn(async move { hold_admitted(&mut server, admitted).await });
+
+    // A zero body length is forbidden by FND-02 framing.
+    client.write_all(&0_u32.to_be_bytes()).await?;
+    client.shutdown().await?;
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    let frames = split_frames(&output)?;
+    assert_eq!(frames.len(), 1);
+    let envelope = decode_wire_envelope(&frames[0])?;
+    assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+    assert_eq!(
+        oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?.error_code,
+        FoundationProtocolError::MalformedFrame.code()
+    );
+    assert!(matches!(
+        task.await?,
+        ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::MalformedFrame)
+    ));
+    Ok(())
+}

@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::domain::forge_creature::ForgeCreature;
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, CommandStatus, GameSessionId, MessageType, MovementLocalPosition,
     NodeId, WorldId, decode_wire_envelope,
@@ -636,15 +637,20 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
             "the active native reward row retains the rat's base XP"
         );
         // A real rat kill: auto-attack swings, then the durable kill settle credits the task.
-        {
+        let rat_forge = {
             let mut runtime = owner.runtime.lock().await;
+            assert!(
+                runtime.daily_boost().is_none(),
+                "the native source-map fixture has no daily creature boost"
+            );
             let now = owner.owner_now();
             // Real connection vitals drive this same spawn-owner maintenance. Complete
             // the due pass explicitly so fast exchanges have the same classification.
             crate::gameplay_transport::drive_owner_spawns(&mut runtime, now.get());
+            let rat_forge = runtime.companion_snapshot(rat_actor).map_err(debug)?.forge;
             assert_eq!(
-                runtime.companion_snapshot(rat_actor).map_err(debug)?.forge,
-                Some(crate::domain::forge_creature::ForgeCreature::Fiendish),
+                rat_forge,
+                Some(ForgeCreature::Fiendish),
                 "the only eligible native spawn fills the Forge population"
             );
             assert_eq!(
@@ -659,7 +665,8 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
                 ),
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
-        }
+            rat_forge
+        };
         let mut swings = 0;
         loop {
             owner.refresh_attack_weapon(actor, session).await;
@@ -688,7 +695,8 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         }
         assert_eq!(
             experience(&harness).await?,
-            before_real_kill + FIENDISH_RAT_XP_AT_LEVEL_8
+            before_real_kill + FIENDISH_RAT_XP_AT_LEVEL_8,
+            "the real kill's XP matches its pre-kill Forge tag: {rat_forge:?}"
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
@@ -862,8 +870,7 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
         println!(
             "<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_daily_claim_rejected_without_token_or_timer_change"
         );
-        let free = full_board(&owner, &mut admitted, 11, 0, "").await?;
-        assert_eq!((free.refusal, free.bounty.rerolls), (0, 1));
+        assert_eq!(after_retired.bounty.daily_reroll_at, 0);
         let reroll_id = admitted.continuity.next_command_id;
         let rerolled = full_board(&owner, &mut admitted, 11, 0, "").await?;
         assert_eq!((rerolled.refusal, rerolled.bounty.rerolls), (0, 0));
@@ -874,6 +881,11 @@ fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) ->
             wire::full::decode_reply(&replay[0].2).map_err(debug)?,
             rerolled
         );
+        let before_refusal = token_case::value_snapshot(&harness).await?;
+        let refused = full_board(&owner, &mut admitted, 11, 0, "").await?;
+        assert_eq!((refused.refusal, refused.bounty.rerolls), (4, 0));
+        assert_eq!(refused.bounty, rerolled.bounty);
+        assert_eq!(token_case::value_snapshot(&harness).await?, before_refusal);
         println!(
             "<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_daily_claim_and_paid_reroll_ledger"
         );
